@@ -115,13 +115,15 @@ func GetBlocks(context webhook.Context) []Block {
 		})
 	}
 
-	blockList = append(blockList, Block{
-		Type: "section",
-		Text: &BlockMarkdown{
-			Type: "mrkdwn",
-			Text: fmt.Sprintf("Actor: %s (%s)", context.ActorName, context.ActorEmail),
-		},
-	})
+	if context.ActorName != "" {
+		blockList = append(blockList, Block{
+			Type: "section",
+			Text: &BlockMarkdown{
+				Type: "mrkdwn",
+				Text: fmt.Sprintf("Actor: %s (%s)", context.ActorName, context.ActorEmail),
+			},
+		})
+	}
 
 	blockList = append(blockList, Block{
 		Type: "actions",

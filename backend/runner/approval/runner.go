@@ -258,14 +258,15 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 		// Trigger ISSUE_APPROVAL_REQUESTED webhook
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   creator,
 			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				ApprovalRole: role,
-				Approvers:    approvers,
+				Creator: &webhook.User{
+					Name:  creator.Name,
+					Email: creator.Email,
+				},
+				Issue:     webhook.NewIssue(issue),
+				Approvers: approvers,
 			},
 		})
 	}()

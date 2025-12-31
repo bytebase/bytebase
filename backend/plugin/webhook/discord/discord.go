@@ -1,4 +1,4 @@
-package webhook
+package discord
 
 import (
 	"bytes"
@@ -10,81 +10,85 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
-// DiscordWebhookResponse is the API message for Discord webhook response.
-type DiscordWebhookResponse struct {
+// WebhookResponse is the API message for Discord webhook response.
+type WebhookResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-// DiscordWebhookEmbedField is the API message for Discord webhook embed field.
-type DiscordWebhookEmbedField struct {
+// WebhookEmbedField is the API message for Discord webhook embed field.
+type WebhookEmbedField struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-// DiscordWebhookEmbedAuthor is the API message for Discord webhook embed Author.
-type DiscordWebhookEmbedAuthor struct {
+// WebhookEmbedAuthor is the API message for Discord webhook embed Author.
+type WebhookEmbedAuthor struct {
 	Name string `json:"name"`
 }
 
-// DiscordWebhookEmbed is the API message for Discord webhook embed.
-type DiscordWebhookEmbed struct {
-	Title       string                     `json:"title"`
-	Type        string                     `json:"type"`
-	Description string                     `json:"description,omitempty"`
-	URL         string                     `json:"url,omitempty"`
-	Timestamp   string                     `json:"timestamp"`
-	Author      DiscordWebhookEmbedAuthor  `json:"author"`
-	FieldList   []DiscordWebhookEmbedField `json:"fields,omitempty"`
+// WebhookEmbed is the API message for Discord webhook embed.
+type WebhookEmbed struct {
+	Title       string              `json:"title"`
+	Type        string              `json:"type"`
+	Description string              `json:"description,omitempty"`
+	URL         string              `json:"url,omitempty"`
+	Timestamp   string              `json:"timestamp"`
+	Author      *WebhookEmbedAuthor `json:"author,omitempty"`
+	FieldList   []WebhookEmbedField `json:"fields,omitempty"`
 }
 
-// DiscordWebhook is the API message for Discord webhook.
-type DiscordWebhook struct {
-	EmbedList []DiscordWebhookEmbed `json:"embeds"`
+// Webhook is the API message for Discord webhook.
+type Webhook struct {
+	EmbedList []WebhookEmbed `json:"embeds"`
 }
 
 func init() {
-	Register(storepb.WebhookType_DISCORD, &DiscordReceiver{})
+	webhook.Register(storepb.WebhookType_DISCORD, &Receiver{})
 }
 
-// DiscordReceiver is the receiver for Discord.
-type DiscordReceiver struct {
+// Receiver is the receiver for Discord.
+type Receiver struct {
 }
 
-func (*DiscordReceiver) Post(context Context) error {
-	embedList := []DiscordWebhookEmbed{}
+func (*Receiver) Post(context webhook.Context) error {
+	embedList := []WebhookEmbed{}
 
-	fieldList := []DiscordWebhookEmbedField{}
+	fieldList := []WebhookEmbedField{}
 	for _, meta := range context.GetMetaList() {
-		fieldList = append(fieldList, DiscordWebhookEmbedField(meta))
+		fieldList = append(fieldList, WebhookEmbedField(meta))
 	}
 
 	status := ""
 	switch context.Level {
-	case WebhookSuccess:
+	case webhook.WebhookSuccess:
 		status = ":white_check_mark: "
-	case WebhookWarn:
+	case webhook.WebhookWarn:
 		status = ":warning: "
-	case WebhookError:
+	case webhook.WebhookError:
 		status = ":exclamation: "
 	default:
 		// No status icon for other levels
 		status = ""
 	}
-	embedList = append(embedList, DiscordWebhookEmbed{
+	embed := WebhookEmbed{
 		Title:       fmt.Sprintf("%s%s", status, context.Title),
 		Type:        "rich",
 		Description: context.Description,
 		URL:         context.Link,
-		Author: DiscordWebhookEmbedAuthor{
+		FieldList:   fieldList,
+	}
+	if context.ActorName != "" {
+		embed.Author = &WebhookEmbedAuthor{
 			Name: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
-		},
-		FieldList: fieldList,
-	})
+		}
+	}
+	embedList = append(embedList, embed)
 
-	post := DiscordWebhook{
+	post := Webhook{
 		EmbedList: embedList,
 	}
 	body, err := json.Marshal(post)
@@ -99,7 +103,7 @@ func (*DiscordReceiver) Post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout: webhook.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -116,7 +120,7 @@ func (*DiscordReceiver) Post(context Context) error {
 		return errors.Errorf("failed to POST webhook %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
 	}
 
-	webhookResponse := &DiscordWebhookResponse{}
+	webhookResponse := &WebhookResponse{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
 		return errors.Wrapf(err, "malformed webhook response from %s", context.URL)
 	}

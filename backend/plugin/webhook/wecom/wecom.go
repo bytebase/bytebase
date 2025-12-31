@@ -63,7 +63,9 @@ func getMessageCard(context webhook.Context) *WebhookMarkdown {
 	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("**%s**: %s", meta.Name, meta.Value))
 	}
-	metaStrList = append(metaStrList, fmt.Sprintf("**Actor**: %s (%s)", context.ActorName, context.ActorEmail))
+	if context.ActorName != "" {
+		metaStrList = append(metaStrList, fmt.Sprintf("**Actor**: %s (%s)", context.ActorName, context.ActorEmail))
+	}
 
 	status := ""
 	switch context.Level {

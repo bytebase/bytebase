@@ -8,20 +8,15 @@ import (
 )
 
 type Event struct {
-	Actor   *store.UserMessage
-	Type    storepb.Activity_Type
-	Comment string
-	// nullable
-	Issue   *Issue
 	Project *Project
-	Rollout *Rollout
+	Type    storepb.Activity_Type
 
-	// Focused event types
+	// Focused event types (only one is set)
 	IssueCreated      *EventIssueCreated
 	ApprovalRequested *EventIssueApprovalRequested
 	SentBack          *EventIssueSentBack
-	PipelineFailed    *EventPipelineFailed
-	PipelineCompleted *EventPipelineCompleted
+	RolloutFailed     *EventRolloutFailed
+	RolloutCompleted  *EventRolloutCompleted
 }
 
 func NewIssue(i *store.IssueMessage) *Issue {
@@ -48,7 +43,8 @@ func NewProject(p *store.ProjectMessage) *Project {
 
 func NewRollout(r *store.PlanMessage) *Rollout {
 	return &Rollout{
-		UID: int(r.UID),
+		UID:   int(r.UID),
+		Title: r.Name,
 	}
 }
 
@@ -68,30 +64,31 @@ type Project struct {
 }
 
 type Rollout struct {
-	UID int
+	UID   int
+	Title string
 }
 
 type EventIssueCreated struct {
-	CreatorName  string
-	CreatorEmail string
+	Creator *User
+	Issue   *Issue
 }
 
 type EventIssueApprovalRequested struct {
-	ApprovalRole string
-	Approvers    []User
+	Creator   *User
+	Issue     *Issue
+	Approvers []User
 }
 
 type EventIssueSentBack struct {
-	ApproverName  string
-	ApproverEmail string
-	CreatorName   string
-	CreatorEmail  string
-	Reason        string
+	Approver *User
+	Creator  *User
+	Issue    *Issue
+	Reason   string
 }
 
-type EventPipelineFailed struct {
-	FailedTasks      []FailedTask
-	FirstFailureTime time.Time
+type EventRolloutFailed struct {
+	Rollout     *Rollout
+	FailedTasks []FailedTask
 }
 
 type FailedTask struct {
@@ -103,10 +100,8 @@ type FailedTask struct {
 	FailedAt     time.Time
 }
 
-type EventPipelineCompleted struct {
-	TotalTasks  int
-	StartedAt   time.Time
-	CompletedAt time.Time
+type EventRolloutCompleted struct {
+	Rollout *Rollout
 }
 
 type User struct {

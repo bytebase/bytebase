@@ -390,11 +390,6 @@ func (s *Scheduler) recordPipelineFailure(ctx context.Context, task *store.TaskM
 			return errors.Errorf("project %v not found", plan.ProjectID)
 		}
 
-		issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
-		if err != nil {
-			return errors.Wrap(err, "failed to get issue")
-		}
-
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get instance")
@@ -413,24 +408,16 @@ func (s *Scheduler) recordPipelineFailure(ctx context.Context, task *store.TaskM
 			plan.UID,
 			failedTask,
 			func(failedTasks []webhook.FailedTask) {
-				firstFailureTime := time.Now().Add(-5 * time.Minute)
-				if len(failedTasks) > 0 {
-					firstFailureTime = failedTasks[0].FailedAt
-				}
-
 				// Use background context to avoid cancellation issues
 				webhookCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 
 				s.webhookManager.CreateEvent(webhookCtx, &webhook.Event{
-					Actor:   store.SystemBotUser,
 					Type:    storepb.Activity_PIPELINE_FAILED,
 					Project: webhook.NewProject(project),
-					Issue:   webhook.NewIssue(issue),
-					Rollout: webhook.NewRollout(plan),
-					PipelineFailed: &webhook.EventPipelineFailed{
-						FailedTasks:      failedTasks,
-						FirstFailureTime: firstFailureTime,
+					RolloutFailed: &webhook.EventRolloutFailed{
+						Rollout:     webhook.NewRollout(plan),
+						FailedTasks: failedTasks,
 					},
 				})
 			},
