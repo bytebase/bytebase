@@ -159,6 +159,14 @@ func postMessage(context webhook.Context) error {
 		factList = append(factList, WebhookSectionFact(meta))
 	}
 
+	section := WebhookSection{
+		FactList: factList,
+		Text:     context.Description,
+	}
+	if context.ActorName != "" {
+		section.ActivityTitle = fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail)
+	}
+
 	post := Webhook{
 		Type:       "MessageCard",
 		Context:    "https://schema.org/extensions",
@@ -166,11 +174,7 @@ func postMessage(context webhook.Context) error {
 		ThemeColor: themeColor,
 		Title:      context.Title,
 		SectionList: []WebhookSection{
-			{
-				ActivityTitle: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
-				FactList:      factList,
-				Text:          context.Description,
-			},
+			section,
 		},
 		ActionList: []WebhookAction{
 			{
@@ -251,10 +255,12 @@ func getAdaptiveCard(context webhook.Context) *AdaptiveCard {
 			Value: meta.Value,
 		})
 	}
-	facts = append(facts, fact{
-		Title: "Actor",
-		Value: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
-	})
+	if context.ActorName != "" {
+		facts = append(facts, fact{
+			Title: "Actor",
+			Value: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
+		})
+	}
 
 	if len(facts) > 0 {
 		body = append(body, factSet{

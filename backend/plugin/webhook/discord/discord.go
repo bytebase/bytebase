@@ -37,7 +37,7 @@ type WebhookEmbed struct {
 	Description string              `json:"description,omitempty"`
 	URL         string              `json:"url,omitempty"`
 	Timestamp   string              `json:"timestamp"`
-	Author      WebhookEmbedAuthor  `json:"author"`
+	Author      *WebhookEmbedAuthor `json:"author,omitempty"`
 	FieldList   []WebhookEmbedField `json:"fields,omitempty"`
 }
 
@@ -74,16 +74,19 @@ func (*Receiver) Post(context webhook.Context) error {
 		// No status icon for other levels
 		status = ""
 	}
-	embedList = append(embedList, WebhookEmbed{
+	embed := WebhookEmbed{
 		Title:       fmt.Sprintf("%s%s", status, context.Title),
 		Type:        "rich",
 		Description: context.Description,
 		URL:         context.Link,
-		Author: WebhookEmbedAuthor{
+		FieldList:   fieldList,
+	}
+	if context.ActorName != "" {
+		embed.Author = &WebhookEmbedAuthor{
 			Name: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
-		},
-		FieldList: fieldList,
-	})
+		}
+	}
+	embedList = append(embedList, embed)
 
 	post := Webhook{
 		EmbedList: embedList,

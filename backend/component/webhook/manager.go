@@ -201,8 +201,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			creatorName = creatorUser.Name
 		}
 		webhookCtx.Issue = &webhook.Issue{
-			ID:   issue.UID,
-			Name: issue.Title,
+			ID:          issue.UID,
+			Name:        issue.Title,
+			Status:      issue.Status,
+			Type:        issue.Type,
+			Description: issue.Description,
 			Creator: webhook.Creator{
 				Name:  creatorName,
 				Email: actor.Email,
@@ -213,7 +216,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	// Set rollout information if available
 	if rollout != nil {
 		webhookCtx.Rollout = &webhook.Rollout{
-			UID: rollout.UID,
+			UID:   rollout.UID,
+			Title: rollout.Title,
 		}
 	}
 

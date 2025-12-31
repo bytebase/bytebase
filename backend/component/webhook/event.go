@@ -43,7 +43,8 @@ func NewProject(p *store.ProjectMessage) *Project {
 
 func NewRollout(r *store.PlanMessage) *Rollout {
 	return &Rollout{
-		UID: int(r.UID),
+		UID:   int(r.UID),
+		Title: r.Name,
 	}
 }
 
@@ -63,7 +64,8 @@ type Project struct {
 }
 
 type Rollout struct {
-	UID int
+	UID   int
+	Title string
 }
 
 type EventIssueCreated struct {
