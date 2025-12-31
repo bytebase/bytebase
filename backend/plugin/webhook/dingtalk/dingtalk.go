@@ -231,7 +231,9 @@ func getMarkdownText(context webhook.Context) string {
 	for _, meta := range context.GetMetaListZh() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
-	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.ActorName, context.ActorEmail))
+	if context.ActorName != "" {
+		metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.ActorName, context.ActorEmail))
+	}
 
 	text := fmt.Sprintf("# %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, strings.Join(metaStrList, "\n"), context.Link)
 	if context.Description != "" {
