@@ -10875,13 +10875,8 @@ components:
                         - APPROVED
                         - REJECTED
                         - SKIPPED
-                        - ERROR
                     type: string
                     format: enum
-                approvalStatusError:
-                    readOnly: true
-                    type: string
-                    description: Only populated when approval_status == ERROR
         IssueComment:
             type: object
             properties:

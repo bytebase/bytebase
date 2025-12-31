@@ -513,13 +513,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 18;
    */
   approvalStatus: Issue_ApprovalStatus;
-
-  /**
-   * Only populated when approval_status == ERROR
-   *
-   * @generated from field: string approval_status_error = 19;
-   */
-  approvalStatusError: string;
 };
 
 /**
@@ -682,13 +675,6 @@ export enum Issue_ApprovalStatus {
    * @generated from enum value: SKIPPED = 5;
    */
   SKIPPED = 5,
-
-  /**
-   * Error occurred during approval evaluation.
-   *
-   * @generated from enum value: ERROR = 6;
-   */
-  ERROR = 6,
 }
 
 /**

@@ -142,7 +142,6 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	// Verify approval finding completed successfully
 	a.NotNil(issue)
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete")
-	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus, "Approval finding should not have errors")
 
 	// Verify that the approval template was correctly assigned
 	// Note: The status may be SKIPPED/APPROVED if the user is a workspace owner
@@ -292,7 +291,6 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 	// Verify approval finding completed
 	a.NotNil(issue)
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
-	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus)
 
 	// Verify the first rule was applied (not the catch-all)
 	a.Equal("Prod Change Database - First Rule", issue.GetApprovalTemplate().GetTitle(), "First matching rule should be applied")
@@ -423,7 +421,6 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 	// Verify approval finding completed
 	a.NotNil(issue)
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
-	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus)
 
 	// Since no rule matches test environment, no approval template should be assigned
 	// and the issue should be auto-approved (or skipped)
@@ -637,7 +634,6 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 	// Verify fallback rule was applied
 	a.NotNil(issue)
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
-	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus)
 	a.NotNil(issue.ApprovalTemplate, "Fallback approval template should be assigned")
 	a.Equal("Fallback Rule", issue.GetApprovalTemplate().GetTitle(), "Fallback rule should be applied")
 }
@@ -776,7 +772,6 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 	// Verify source-specific rule was applied, NOT the fallback
 	a.NotNil(issue)
 	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
-	a.NotEqual(v1pb.Issue_ERROR, issue.ApprovalStatus)
 	a.NotNil(issue.ApprovalTemplate)
 	a.Equal("Source Specific Rule (should be used)", issue.GetApprovalTemplate().GetTitle(),
 		"Source-specific rule should take priority over fallback even when fallback is first in list")

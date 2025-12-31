@@ -84,8 +84,8 @@ waitApproval:
 				return errors.Wrapf(err, "timeout after %v waiting for approval (failed to fetch issue state)", time.Since(startTime))
 			}
 			issue := issueResp.Msg
-			return errors.Errorf("timeout after %v waiting for approval to complete, current approval status: %s, approval status error: %v",
-				time.Since(startTime), issue.ApprovalStatus.String(), issue.ApprovalStatusError)
+			return errors.Errorf("timeout after %v waiting for approval to complete, current approval status: %s",
+				time.Since(startTime), issue.ApprovalStatus.String())
 
 		case <-ticker.C:
 			issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
@@ -93,9 +93,6 @@ waitApproval:
 				return err
 			}
 			issue := issueResp.Msg
-			if issue.ApprovalStatus == v1pb.Issue_ERROR {
-				return errors.Errorf("approval finding error: %v", issue.ApprovalStatusError)
-			}
 			if issue.ApprovalStatus == v1pb.Issue_APPROVED || issue.ApprovalStatus == v1pb.Issue_SKIPPED {
 				break waitApproval
 			}

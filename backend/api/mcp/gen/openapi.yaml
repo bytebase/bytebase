@@ -10737,10 +10737,6 @@ components:
         approvalStatus:
           title: approval_status
           $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
-        approvalStatusError:
-          type: string
-          title: approval_status_error
-          description: Only populated when approval_status == ERROR
       title: Issue
       additionalProperties: false
     bytebase.v1.Issue.ApprovalStatus:
@@ -10753,7 +10749,6 @@ components:
         - APPROVED
         - REJECTED
         - SKIPPED
-        - ERROR
       description: The overall approval status for the issue.
     bytebase.v1.Issue.Approver:
       type: object

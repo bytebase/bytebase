@@ -319,9 +319,6 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.ApprovalStatus != y.ApprovalStatus {
 		return false
 	}
-	if x.ApprovalStatusError != y.ApprovalStatusError {
-		return false
-	}
 	return true
 }
 

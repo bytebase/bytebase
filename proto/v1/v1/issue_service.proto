@@ -433,12 +433,8 @@ message Issue {
     REJECTED = 4;
     // Approval was skipped.
     SKIPPED = 5;
-    // Error occurred during approval evaluation.
-    ERROR = 6;
   }
   ApprovalStatus approval_status = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Only populated when approval_status == ERROR
-  string approval_status_error = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GrantRequest {
