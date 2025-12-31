@@ -208,3 +208,67 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		},
 	})
 }
+
+// getFailedTaskRuns returns all failed task runs for a plan to include in webhook payload.
+func (s *Scheduler) getFailedTaskRuns(ctx context.Context, planID int64) []webhook.FailedTask {
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	if err != nil {
+		slog.Error("failed to list tasks for failed webhook", log.BBError(err))
+		return nil
+	}
+
+	var failures []webhook.FailedTask
+	for _, task := range tasks {
+		if task.LatestTaskRunStatus != storepb.TaskRun_FAILED {
+			continue
+		}
+
+		// Get the latest failed task run
+		taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{TaskUID: &task.ID})
+		if err != nil {
+			slog.Error("failed to list task runs", log.BBError(err))
+			continue
+		}
+
+		// Find the latest failed run
+		var latestFailed *store.TaskRunMessage
+		for _, tr := range taskRuns {
+			if tr.Status == storepb.TaskRun_FAILED {
+				if latestFailed == nil || tr.UpdatedAt.After(latestFailed.UpdatedAt) {
+					latestFailed = tr
+				}
+			}
+		}
+
+		if latestFailed == nil {
+			continue
+		}
+
+		errorMsg := ""
+		if latestFailed.ResultProto != nil && latestFailed.ResultProto.Detail != "" {
+			errorMsg = latestFailed.ResultProto.Detail
+		}
+
+		// Construct task name from type and database
+		taskName := task.Type.String()
+		if task.DatabaseName != nil && *task.DatabaseName != "" {
+			taskName = taskName + " - " + *task.DatabaseName
+		}
+
+		dbName := ""
+		if task.DatabaseName != nil {
+			dbName = *task.DatabaseName
+		}
+
+		failures = append(failures, webhook.FailedTask{
+			TaskID:       int64(task.ID),
+			TaskName:     taskName,
+			DatabaseName: dbName,
+			InstanceName: task.InstanceID,
+			ErrorMessage: errorMsg,
+			FailedAt:     latestFailed.UpdatedAt,
+		})
+	}
+
+	return failures
+}
