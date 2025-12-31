@@ -204,26 +204,11 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 	}
 
 	// Send PIPELINE_COMPLETED webhook
-	startedAt := time.Now()
-	completedAt := time.Now()
-	if earliestStart != nil {
-		startedAt = *earliestStart
-	}
-	if latestEnd != nil {
-		completedAt = *latestEnd
-	}
-
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   store.SystemBotUser,
 		Type:    storepb.Activity_PIPELINE_COMPLETED,
-		Comment: "",
-		Issue:   webhook.NewIssue(issueN),
-		Rollout: webhook.NewRollout(plan),
 		Project: webhook.NewProject(project),
-		PipelineCompleted: &webhook.EventPipelineCompleted{
-			TotalTasks:  len(tasks),
-			StartedAt:   startedAt,
-			CompletedAt: completedAt,
+		RolloutCompleted: &webhook.EventRolloutCompleted{
+			Rollout: webhook.NewRollout(plan),
 		},
 	})
 }

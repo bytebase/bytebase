@@ -430,13 +430,14 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 
 	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
 		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
-		Issue:   webhook.NewIssue(issue),
 		IssueCreated: &webhook.EventIssueCreated{
-			CreatorName:  user.Name,
-			CreatorEmail: user.Email,
+			Creator: &webhook.User{
+				Name:  user.Name,
+				Email: user.Email,
+			},
+			Issue: webhook.NewIssue(issue),
 		},
 	})
 
@@ -509,13 +510,14 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 
 	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
 		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
-		Issue:   webhook.NewIssue(issue),
 		IssueCreated: &webhook.EventIssueCreated{
-			CreatorName:  user.Name,
-			CreatorEmail: user.Email,
+			Creator: &webhook.User{
+				Name:  user.Name,
+				Email: user.Email,
+			},
+			Issue: webhook.NewIssue(issue),
 		},
 	})
 
@@ -577,13 +579,14 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 
 	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
 		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
-		Issue:   webhook.NewIssue(issue),
 		IssueCreated: &webhook.EventIssueCreated{
-			CreatorName:  user.Name,
-			CreatorEmail: user.Email,
+			Creator: &webhook.User{
+				Name:  user.Name,
+				Email: user.Email,
+			},
+			Issue: webhook.NewIssue(issue),
 		},
 	})
 
@@ -699,16 +702,24 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			return
 		}
 
+		// Get issue creator for webhook event
+		creator, err := s.store.GetUserByEmail(ctx, issue.CreatorEmail)
+		if err != nil {
+			slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+			creator = store.SystemBotUser
+		}
+
 		// Send ISSUE_APPROVAL_REQUESTED webhook
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   user,
 			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				ApprovalRole: role,
-				Approvers:    approvers,
+				Creator: &webhook.User{
+					Name:  creator.Name,
+					Email: creator.Email,
+				},
+				Issue:     webhook.NewIssue(issue),
+				Approvers: approvers,
 			},
 		})
 	}()
@@ -846,17 +857,19 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 
 	// Trigger ISSUE_SENT_BACK webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
 		Type:    storepb.Activity_ISSUE_SENT_BACK,
-		Comment: req.Msg.Comment,
-		Issue:   webhook.NewIssue(issue),
 		Project: webhook.NewProject(project),
 		SentBack: &webhook.EventIssueSentBack{
-			ApproverName:  user.Name,
-			ApproverEmail: user.Email,
-			CreatorName:   creator.Name,
-			CreatorEmail:  creator.Email,
-			Reason:        req.Msg.Comment,
+			Approver: &webhook.User{
+				Name:  user.Name,
+				Email: user.Email,
+			},
+			Creator: &webhook.User{
+				Name:  creator.Name,
+				Email: creator.Email,
+			},
+			Issue:  webhook.NewIssue(issue),
+			Reason: req.Msg.Comment,
 		},
 	})
 
@@ -942,16 +955,24 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 			return
 		}
 
+		// Get issue creator for webhook event
+		creator, err := s.store.GetUserByEmail(ctx, issue.CreatorEmail)
+		if err != nil {
+			slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+			creator = store.SystemBotUser
+		}
+
 		// Send ISSUE_APPROVAL_REQUESTED webhook
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   user,
 			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				ApprovalRole: role,
-				Approvers:    approvers,
+				Creator: &webhook.User{
+					Name:  creator.Name,
+					Email: creator.Email,
+				},
+				Issue:     webhook.NewIssue(issue),
+				Approvers: approvers,
 			},
 		})
 	}()

@@ -1,4 +1,4 @@
-package webhook
+package discord
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
 // DiscordWebhookResponse is the API message for Discord webhook response.
@@ -46,14 +47,14 @@ type DiscordWebhook struct {
 }
 
 func init() {
-	Register(storepb.WebhookType_DISCORD, &DiscordReceiver{})
+	webhook.Register(storepb.WebhookType_DISCORD, &DiscordReceiver{})
 }
 
 // DiscordReceiver is the receiver for Discord.
 type DiscordReceiver struct {
 }
 
-func (*DiscordReceiver) Post(context Context) error {
+func (*DiscordReceiver) Post(context webhook.Context) error {
 	embedList := []DiscordWebhookEmbed{}
 
 	fieldList := []DiscordWebhookEmbedField{}
@@ -63,11 +64,11 @@ func (*DiscordReceiver) Post(context Context) error {
 
 	status := ""
 	switch context.Level {
-	case WebhookSuccess:
+	case webhook.WebhookSuccess:
 		status = ":white_check_mark: "
-	case WebhookWarn:
+	case webhook.WebhookWarn:
 		status = ":warning: "
-	case WebhookError:
+	case webhook.WebhookError:
 		status = ":exclamation: "
 	default:
 		// No status icon for other levels
@@ -99,7 +100,7 @@ func (*DiscordReceiver) Post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout: webhook.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {

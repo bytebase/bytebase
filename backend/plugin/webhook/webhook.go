@@ -61,20 +61,6 @@ type Rollout struct {
 	Title string
 }
 
-type Stage struct {
-	Name string
-}
-
-// TaskResult is the latest result of a task.
-// The `detail` field is only present if the status is TaskFailed.
-// The `SkippedReason` field is only present if the task is skipped.
-type TaskResult struct {
-	Name          string
-	Status        string
-	Detail        string
-	SkippedReason string
-}
-
 // Project object of project.
 type Project struct {
 	Name  string
@@ -96,19 +82,15 @@ type Context struct {
 	CreatedTS   int64
 	Issue       *Issue
 	Rollout     *Rollout
-	Stage       *Stage
 	Project     *Project
-	TaskResult  *TaskResult
 	// End users that should be mentioned.
 	MentionEndUsers []*store.UserMessage
 
 	DirectMessage bool
 	IMSetting     *storepb.AppIMSetting
 
-	// New event data
-	ApprovalRole    string
-	FailedTasks     []FailedTaskInfo
-	PipelineMetrics *PipelineMetrics
+	// Event-specific data
+	FailedTasks []FailedTaskInfo
 }
 
 // FailedTaskInfo contains information about a failed task.
@@ -118,14 +100,6 @@ type FailedTaskInfo struct {
 	Database     string
 	ErrorMessage string
 	FailedAt     string
-}
-
-// PipelineMetrics contains metrics about a pipeline execution.
-type PipelineMetrics struct {
-	TotalTasks   int
-	StartedAt    string
-	CompletedAt  string
-	DurationSecs int64
 }
 
 // Receiver is the webhook receiver.
@@ -168,38 +142,6 @@ func (c *Context) GetMetaList() []Meta {
 		}
 	}
 
-	if c.Stage != nil {
-		m = append(m, Meta{
-			Name:  "Stage",
-			Value: c.Stage.Name,
-		})
-	}
-
-	if c.TaskResult != nil {
-		if c.TaskResult.Name != "" {
-			m = append(m, Meta{
-				Name:  "Task",
-				Value: c.TaskResult.Name,
-			})
-		}
-		m = append(m, Meta{
-			Name:  "Status",
-			Value: c.TaskResult.Status,
-		})
-		if c.TaskResult.Detail != "" {
-			m = append(m, Meta{
-				Name:  "Result Detail",
-				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
-			})
-		}
-		if c.TaskResult.SkippedReason != "" {
-			m = append(m, Meta{
-				Name:  "Skipped Reason",
-				Value: c.TaskResult.SkippedReason,
-			})
-		}
-	}
-
 	return m
 }
 
@@ -234,38 +176,6 @@ func (c *Context) GetMetaListZh() []Meta {
 			m = append(m, Meta{
 				Name:  "发布",
 				Value: c.Rollout.Title,
-			})
-		}
-	}
-
-	if c.Stage != nil {
-		m = append(m, Meta{
-			Name:  "阶段",
-			Value: c.Stage.Name,
-		})
-	}
-
-	if c.TaskResult != nil {
-		if c.TaskResult.Name != "" {
-			m = append(m, Meta{
-				Name:  "任务",
-				Value: c.TaskResult.Name,
-			})
-		}
-		m = append(m, Meta{
-			Name:  "状态",
-			Value: c.TaskResult.Status,
-		})
-		if c.TaskResult.Detail != "" {
-			m = append(m, Meta{
-				Name:  "结果详情",
-				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
-			})
-		}
-		if c.TaskResult.SkippedReason != "" {
-			m = append(m, Meta{
-				Name:  "跳过原因",
-				Value: c.TaskResult.SkippedReason,
 			})
 		}
 	}

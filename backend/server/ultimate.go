@@ -67,7 +67,10 @@ import (
 
 	// IM webhooks.
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/discord"
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/lark"
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/slack"
+	_ "github.com/bytebase/bytebase/backend/plugin/webhook/teams"
 	_ "github.com/bytebase/bytebase/backend/plugin/webhook/wecom"
 )
