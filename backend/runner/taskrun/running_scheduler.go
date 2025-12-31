@@ -45,73 +45,29 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 }
 
 func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
-	// Query AVAILABLE tasks (ready for execution)
-	availableTaskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_AVAILABLE},
-	})
+	// Atomically claim all AVAILABLE task runs
+	claimed, err := s.store.ClaimAvailableTaskRuns(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to list available task runs")
+		return errors.Wrapf(err, "failed to claim available task runs")
 	}
 
-	for _, taskRun := range availableTaskRuns {
-		if err := s.claimAndExecuteTaskRun(ctx, taskRun); err != nil {
-			slog.Error("failed to claim and execute task run", log.BBError(err))
-		}
-	}
-
-	// Also re-execute orphaned RUNNING tasks (for restart recovery)
-	runningTaskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_RUNNING},
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to list running task runs")
-	}
-
-	for _, taskRun := range runningTaskRuns {
-		// Skip if already executing in this instance
-		if _, ok := s.stateCfg.RunningTaskRuns.Load(taskRun.ID); ok {
-			continue
-		}
-		// Re-execute orphaned RUNNING task
-		if err := s.executeTaskRun(ctx, taskRun); err != nil {
-			slog.Error("failed to re-execute orphaned task run", log.BBError(err))
+	for _, c := range claimed {
+		if err := s.executeTaskRun(ctx, c.TaskRunUID, c.TaskUID); err != nil {
+			slog.Error("failed to execute task run", slog.Int("id", c.TaskRunUID), log.BBError(err))
 		}
 	}
 
 	return nil
 }
 
-// claimAndExecuteTaskRun attempts to atomically claim an AVAILABLE task and execute it.
-func (s *Scheduler) claimAndExecuteTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
-	// Optimistic locking: attempt to claim by updating AVAILABLE -> RUNNING
-	claimed, err := s.store.ClaimAvailableTaskRun(ctx, taskRun.ID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to claim task run")
-	}
-	if !claimed {
-		// Another instance claimed it
-		return nil
-	}
-
-	return s.executeTaskRun(ctx, taskRun)
-}
-
 // executeTaskRun executes a task run that is already in RUNNING status.
-func (s *Scheduler) executeTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
-	task, err := s.store.GetTaskByID(ctx, taskRun.TaskUID)
+func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int) error {
+	task, err := s.store.GetTaskByID(ctx, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-	if err != nil {
-		return errors.Wrapf(err, "failed to get instance")
-	}
-	if instance == nil {
-		return errors.Errorf("instance %v not found", task.InstanceID)
-	}
-	if instance.Deleted {
-		return errors.Errorf("instance %v is deleted", task.InstanceID)
+	if task == nil {
+		return errors.Errorf("task %v not found", taskUID)
 	}
 
 	executor, ok := s.executorMap[task.Type]
@@ -120,25 +76,22 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 	}
 
 	// Update started_at
-	if err := s.store.UpdateTaskRunStartAt(ctx, taskRun.ID); err != nil {
+	if err := s.store.UpdateTaskRunStartAt(ctx, taskRunUID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
-	// Register as running
-	s.stateCfg.RunningTaskRuns.Store(taskRun.ID, true)
-
-	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
+	s.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
 		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
 			Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING,
 		},
 	})
 
-	go s.runTaskRunOnce(ctx, taskRun, task, executor)
+	go s.runTaskRunOnce(ctx, taskRunUID, task, executor)
 	return nil
 }
 
-func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
+func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *store.TaskMessage, executor Executor) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -149,14 +102,14 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		}
 	}()
 	defer func() {
-		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
+		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRunUID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
+	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRunUID, cancel)
 
-	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
+	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
 
 	switch {
 	case !done && err != nil:
@@ -189,7 +142,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		code := common.Ok
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRun.ID,
+			ID:      taskRunUID,
 			Updater: common.SystemBotEmail,
 			Status:  storepb.TaskRun_CANCELED,
 			Code:    &code,
@@ -232,7 +185,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		code := common.ErrorCode(err)
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRun.ID,
+			ID:      taskRunUID,
 			Updater: common.SystemBotEmail,
 			Status:  storepb.TaskRun_FAILED,
 			Code:    &code,
@@ -262,7 +215,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		code := common.Ok
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRun.ID,
+			ID:      taskRunUID,
 			Updater: common.SystemBotEmail,
 			Status:  storepb.TaskRun_DONE,
 			Code:    &code,
