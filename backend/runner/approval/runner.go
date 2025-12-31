@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	celtypes "github.com/google/cel-go/common/types"
 
@@ -174,12 +173,8 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return approvalTemplate, celVarsList, true, nil
 	}()
 	if err != nil {
-		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  true,
-			ApprovalFindingError: err.Error(),
-		}, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED); updateErr != nil {
-			return false, multierr.Append(errors.Wrap(updateErr, "failed to update issue payload"), err)
-		}
+		// Don't persist error - it will be logged by caller
+		// User can rerun plan check to retry
 		return false, err
 	}
 	if !done {

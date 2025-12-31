@@ -618,9 +618,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
 	}
-	if payload.Approval.ApprovalFindingError != "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
-	}
 	if payload.Approval.ApprovalTemplate == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
@@ -794,9 +791,6 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
 	}
-	if payload.Approval.ApprovalFindingError != "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
-	}
 	if payload.Approval.ApprovalTemplate == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
@@ -899,9 +893,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-	}
-	if payload.Approval.ApprovalFindingError != "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
 	}
 	if payload.Approval.ApprovalTemplate == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
