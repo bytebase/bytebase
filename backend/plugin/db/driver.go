@@ -103,6 +103,8 @@ type ConnectionContext struct {
 	ReadOnly bool
 	// MessageBuffer is used for logging messages from the database server.
 	MessageBuffer []*v1pb.QueryResult_Message
+	// TaskRunUID is set when executing a task run, used to set application_name for connection identification.
+	TaskRunUID *int
 }
 
 // AppendMessage appends a message to the message buffer.
@@ -192,10 +194,6 @@ type ExecuteOptions struct {
 	// If true, log the statement of the command.
 	// else only log the command index.
 	LogCommandStatement bool
-
-	// Record the connection id first before executing.
-	SetConnectionID    func(id string)
-	DeleteConnectionID func()
 
 	// The maximum number of retries for lock timeout statements.
 	MaximumRetries int
