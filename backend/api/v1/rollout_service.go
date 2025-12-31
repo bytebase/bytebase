@@ -838,6 +838,9 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 	}
 
+	// Signal to check plan completion (may send PIPELINE_COMPLETED webhook if all tasks done/skipped)
+	s.stateCfg.PlanCompletionCheckChan <- planID
+
 	return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 }
 
@@ -943,6 +946,9 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch patch task run status to canceled"))
 	}
+
+	// Signal to check plan completion (may send PIPELINE_COMPLETED webhook if all tasks done/canceled)
+	s.stateCfg.PlanCompletionCheckChan <- planID
 
 	return connect.NewResponse(&v1pb.BatchCancelTaskRunsResponse{}), nil
 }

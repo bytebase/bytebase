@@ -231,8 +231,8 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
 
-		// Check if plan is complete and send PIPELINE_COMPLETED webhook if needed
-		s.checkPlanCompletion(ctx, task.PlanID)
+		// Signal to check plan completion (may send PIPELINE_COMPLETED webhook)
+		s.stateCfg.PlanCompletionCheckChan <- task.PlanID
 		return
 	default:
 		// This case should not happen in normal flow, but adding for completeness

@@ -27,7 +27,6 @@ type Scheduler struct {
 	webhookManager *webhook.Manager
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
-	pipelineEvents *PipelineEventsTracker
 }
 
 // NewScheduler will create a new scheduler.
@@ -43,7 +42,6 @@ func NewScheduler(
 		webhookManager: webhookManager,
 		profile:        profile,
 		executorMap:    map[storepb.Task_Type]Executor{},
-		pipelineEvents: NewPipelineEventsTracker(),
 	}
 }
 
@@ -75,7 +73,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	<-ctx.Done()
 }
 
-func (*Scheduler) runTaskCompletionListener(ctx context.Context) {
+func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -87,7 +85,14 @@ func (*Scheduler) runTaskCompletionListener(ctx context.Context) {
 	}()
 	slog.Info("Task completion listener started")
 
-	<-ctx.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case planID := <-s.stateCfg.PlanCompletionCheckChan:
+			s.checkPlanCompletion(ctx, planID)
+		}
+	}
 }
 
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
@@ -140,9 +145,6 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 	if !allComplete {
 		return
 	}
-
-	// Always clear the failure window when plan completes
-	s.pipelineEvents.Clear(planID)
 
 	// Only send completion webhook if there were no failures
 	if hasFailures {

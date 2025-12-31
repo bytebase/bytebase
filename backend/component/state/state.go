@@ -27,12 +27,16 @@ type State struct {
 
 	// RolloutCreationChan is the channel for automatic rollout creation.
 	RolloutCreationChan chan int64
+
+	// PlanCompletionCheckChan signals when a plan might be complete (for PIPELINE_COMPLETED webhook).
+	PlanCompletionCheckChan chan int64
 }
 
 func New() (*State, error) {
 	return &State{
-		PlanCheckTickleChan: make(chan int, 1000),
-		TaskRunTickleChan:   make(chan int, 1000),
-		RolloutCreationChan: make(chan int64, 100),
+		PlanCheckTickleChan:     make(chan int, 1000),
+		TaskRunTickleChan:       make(chan int, 1000),
+		RolloutCreationChan:     make(chan int64, 100),
+		PlanCompletionCheckChan: make(chan int64, 1000),
 	}, nil
 }
