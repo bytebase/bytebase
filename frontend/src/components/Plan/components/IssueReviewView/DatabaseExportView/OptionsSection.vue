@@ -47,7 +47,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { cloneDeep, includes } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -55,13 +55,12 @@ import { planServiceClientConnect } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContext } from "../../../logic";
 import ExportFormatSelector from "../../ExportOption/ExportFormatSelector.vue";
 import ExportPasswordInputer from "../../ExportOption/ExportPasswordInputer.vue";
 
 const { t } = useI18n();
-const { plan, rollout, readonly, isCreating } = usePlanContext();
+const { plan, readonly, isCreating } = usePlanContext();
 
 // Get export config from plan context
 const exportDataConfig = computed(() => {
