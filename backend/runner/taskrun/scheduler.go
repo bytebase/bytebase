@@ -106,28 +106,26 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return
 	}
 
-	// Check if all tasks are in terminal state (DONE/SKIPPED/CANCELED) without failures
+	// Check if all tasks are complete (DONE or SKIPPED) without failures
 	allComplete := true
 	hasFailures := false
 
 	for _, task := range tasks {
 		status := task.LatestTaskRunStatus
 
-		// Check if task is in terminal state
-		isTerminal := status == storepb.TaskRun_DONE ||
-			status == storepb.TaskRun_FAILED ||
-			status == storepb.TaskRun_CANCELED ||
+		// Only DONE and SKIPPED are considered complete
+		// FAILED and CANCELED are not complete states
+		isComplete := status == storepb.TaskRun_DONE ||
 			status == storepb.TaskRun_SKIPPED ||
 			task.Payload.GetSkipped()
 
-		if !isTerminal {
+		if !isComplete {
+			// Check if task has a failure
+			if status == storepb.TaskRun_FAILED && !task.Payload.GetSkipped() {
+				hasFailures = true
+			}
 			allComplete = false
 			break
-		}
-
-		// Track failures (excluding skipped/canceled tasks)
-		if status == storepb.TaskRun_FAILED && !task.Payload.GetSkipped() {
-			hasFailures = true
 		}
 	}
 
