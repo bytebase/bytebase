@@ -12,8 +12,6 @@ type State struct {
 
 	TaskRunSchedulerInfo sync.Map // map[taskRunID]*storepb.SchedulerInfo
 
-	// RunningTaskRuns is the set of running taskruns.
-	RunningTaskRuns sync.Map // map[taskRunID]bool
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
 

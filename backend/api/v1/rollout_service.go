@@ -526,27 +526,30 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, appName 
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
 		query := `
+			WITH target_session AS (
+				SELECT pid FROM pg_catalog.pg_stat_activity WHERE application_name = $1 LIMIT 1
+			)
 			SELECT
-				pid,
-				pg_blocking_pids(pid) AS blocked_by_pids,
-				query,
-				state,
-				wait_event_type,
-				wait_event,
-				datname,
-				usename,
-				application_name,
-				client_addr,
-				client_port,
-				backend_start,
-				xact_start,
-				query_start
+				a.pid,
+				pg_blocking_pids(a.pid) AS blocked_by_pids,
+				a.query,
+				a.state,
+				a.wait_event_type,
+				a.wait_event,
+				a.datname,
+				a.usename,
+				a.application_name,
+				a.client_addr,
+				a.client_port,
+				a.backend_start,
+				a.xact_start,
+				a.query_start
 			FROM
-				pg_catalog.pg_stat_activity
-			WHERE application_name = $1
-			OR pid = ANY(pg_blocking_pids((SELECT pid FROM pg_stat_activity WHERE application_name = $1 LIMIT 1)))
-			OR (SELECT pid FROM pg_stat_activity WHERE application_name = $1 LIMIT 1) = ANY(pg_blocking_pids(pid))
-			ORDER BY pid
+				pg_catalog.pg_stat_activity a
+			WHERE a.application_name = $1
+			   OR (SELECT pid FROM target_session) = ANY(pg_blocking_pids(a.pid))
+			   OR a.pid = ANY(pg_blocking_pids((SELECT pid FROM target_session)))
+			ORDER BY a.pid
 		`
 		rows, err := db.QueryContext(ctx, query, appName)
 		if err != nil {
