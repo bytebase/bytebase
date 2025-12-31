@@ -947,8 +947,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch patch task run status to canceled"))
 	}
 
-	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-	s.stateCfg.PlanCompletionCheckChan <- planID
+	// Note: Don't signal plan completion - canceling is interrupting execution, not completing the plan
 
 	return connect.NewResponse(&v1pb.BatchCancelTaskRunsResponse{}), nil
 }
