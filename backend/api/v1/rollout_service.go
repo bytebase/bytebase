@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -654,6 +656,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout (plan) %v not found", planID))
 	}
 
+	// Reset notification state so user gets fresh feedback on retry
+	if err := s.store.ResetPlanWebhookDelivery(ctx, planID); err != nil {
+		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
+		// Don't fail the request - notification is non-critical
+	}
+
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		ProjectID: &projectID,
 		PlanUID:   &planID,
@@ -802,7 +810,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	var taskUIDs []int
-	var tasksToSkip []*store.TaskMessage
 	environmentSet := map[string]struct{}{}
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
@@ -814,7 +821,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %v not found in the rollout", taskID))
 		}
 		taskUIDs = append(taskUIDs, taskID)
-		tasksToSkip = append(tasksToSkip, taskMsg)
 		environmentSet[taskMsg.Environment] = struct{}{}
 	}
 
@@ -832,9 +838,8 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 	}
 
-	for _, task := range tasksToSkip {
-		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
-	}
+	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
+	s.stateCfg.PlanCompletionCheckChan <- planID
 
 	return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 }
@@ -941,6 +946,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch patch task run status to canceled"))
 	}
+
+	// Note: Don't signal plan completion - canceling is interrupting execution, not completing the plan
 
 	return connect.NewResponse(&v1pb.BatchCancelTaskRunsResponse{}), nil
 }

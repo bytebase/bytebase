@@ -27,7 +27,6 @@ type Scheduler struct {
 	webhookManager *webhook.Manager
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
-	pipelineEvents *PipelineEventsTracker
 }
 
 // NewScheduler will create a new scheduler.
@@ -43,7 +42,6 @@ func NewScheduler(
 		webhookManager: webhookManager,
 		profile:        profile,
 		executorMap:    map[storepb.Task_Type]Executor{},
-		pipelineEvents: NewPipelineEventsTracker(),
 	}
 }
 
@@ -85,30 +83,21 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 			slog.Error("runTaskCompletionListener PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
-	slog.Info("Task completion listener started")
+	slog.Info("Plan completion checker started")
 
 	for {
 		select {
-		case taskUID := <-s.stateCfg.TaskSkippedOrDoneChan:
-			if err := func() error {
-				task, err := s.store.GetTaskByID(ctx, taskUID)
-				if err != nil {
-					return errors.Wrapf(err, "failed to get task")
-				}
-
-				// Check if entire plan is complete and handle webhooks
-				s.checkPlanCompletion(ctx, task.PlanID)
-
-				return nil
-			}(); err != nil {
-				slog.Error("failed to handle task completion", log.BBError(err))
-			}
 		case <-ctx.Done():
 			return
+		case planID := <-s.stateCfg.PlanCompletionCheckChan:
+			s.checkPlanCompletion(ctx, planID)
 		}
 	}
 }
 
+// checkPlanCompletion checks if all tasks in a plan are complete and successful.
+// If so, sends PIPELINE_COMPLETED webhook.
+// Called when tasks are marked DONE/SKIPPED, or when tasks are skipped/canceled via API.
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 	// Get all tasks for this plan
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
@@ -117,85 +106,42 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return
 	}
 
-	// Check if all tasks are in terminal state
-	allComplete := true
-	hasFailures := false
-	var earliestStart, latestEnd *time.Time
-
+	// Check if all tasks are complete (DONE or SKIPPED)
 	for _, task := range tasks {
 		status := task.LatestTaskRunStatus
 
-		// Check if task is in terminal state
-		isTerminal := status == storepb.TaskRun_DONE ||
-			status == storepb.TaskRun_FAILED ||
-			status == storepb.TaskRun_CANCELED ||
+		// Only DONE and SKIPPED are considered complete
+		// FAILED and CANCELED are not complete states
+		isComplete := status == storepb.TaskRun_DONE ||
 			status == storepb.TaskRun_SKIPPED ||
 			task.Payload.GetSkipped()
 
-		if !isTerminal {
-			allComplete = false
-			break
-		}
-
-		// Track failures (excluding skipped tasks)
-		if status == storepb.TaskRun_FAILED && !task.Payload.GetSkipped() {
-			hasFailures = true
-		}
-
-		// Track start/end times for metrics
-		if task.RunAt != nil {
-			if earliestStart == nil || task.RunAt.Before(*earliestStart) {
-				earliestStart = task.RunAt
-			}
-		}
-		if task.UpdatedAt != nil {
-			if latestEnd == nil || task.UpdatedAt.After(*latestEnd) {
-				latestEnd = task.UpdatedAt
-			}
+		if !isComplete {
+			// Not all tasks complete - no webhook
+			return
 		}
 	}
 
-	// Not all tasks complete yet
-	if !allComplete {
-		return
-	}
-
-	// Always clear the failure window when plan completes
-	s.pipelineEvents.Clear(planID)
-
-	// Only send completion webhook if there were no failures
-	if hasFailures {
-		return
-	}
-
-	// Get plan, project and issue for webhook
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	// All tasks complete and successful - try to claim completion notification
+	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, planID)
 	if err != nil {
-		slog.Error("failed to get plan for completion webhook", log.BBError(err))
+		slog.Error("failed to claim pipeline completion notification", log.BBError(err))
 		return
 	}
-	if plan == nil {
-		slog.Error("plan not found for completion webhook", slog.Int64("plan_id", planID))
+	if !claimed {
+		return // Already sent
+	}
+
+	// Get plan and project for webhook
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	if err != nil || plan == nil {
+		slog.Error("failed to get plan for completion webhook", log.BBError(err))
 		return
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-	if err != nil {
+	if err != nil || project == nil {
 		slog.Error("failed to get project for completion webhook", log.BBError(err))
-		return
-	}
-	if project == nil {
-		slog.Error("project not found for completion webhook", slog.String("project_id", plan.ProjectID))
-		return
-	}
-
-	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
-	if err != nil {
-		slog.Error("failed to get issue for completion webhook", log.BBError(err))
-		return
-	}
-	if issueN == nil {
-		slog.Error("issue not found for completion webhook", slog.Int64("plan_id", planID))
 		return
 	}
 

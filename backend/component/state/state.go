@@ -20,9 +20,6 @@ type State struct {
 	// RunningPlanCheckRunsCancelFunc is the cancelFunc of running plan checks.
 	RunningPlanCheckRunsCancelFunc sync.Map // map[planCheckRunUID]context.CancelFunc
 
-	// TaskSkippedOrDoneChan is the channel for notifying the task is skipped or done.
-	TaskSkippedOrDoneChan chan int
-
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.
@@ -30,13 +27,16 @@ type State struct {
 
 	// RolloutCreationChan is the channel for automatic rollout creation.
 	RolloutCreationChan chan int64
+
+	// PlanCompletionCheckChan signals when a plan might be complete (for PIPELINE_COMPLETED webhook).
+	PlanCompletionCheckChan chan int64
 }
 
 func New() (*State, error) {
 	return &State{
-		TaskSkippedOrDoneChan: make(chan int, 1000),
-		PlanCheckTickleChan:   make(chan int, 1000),
-		TaskRunTickleChan:     make(chan int, 1000),
-		RolloutCreationChan:   make(chan int64, 100),
+		PlanCheckTickleChan:     make(chan int, 1000),
+		TaskRunTickleChan:       make(chan int, 1000),
+		RolloutCreationChan:     make(chan int64, 100),
+		PlanCompletionCheckChan: make(chan int64, 1000),
 	}, nil
 }
