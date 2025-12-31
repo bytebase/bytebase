@@ -60,9 +60,6 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if approval == nil || !approval.ApprovalFindingDone {
 		return false, nil
 	}
-	if approval.ApprovalFindingError != "" {
-		return false, nil
-	}
 	if approval.ApprovalTemplate == nil {
 		return true, nil
 	}

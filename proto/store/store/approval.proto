@@ -34,9 +34,6 @@ message IssuePayloadApproval {
   // Whether the system has finished finding a matching approval template.
   // False means the backend is still searching for matching templates.
   bool approval_finding_done = 3;
-
-  // Error message if approval template finding failed.
-  string approval_finding_error = 4;
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.

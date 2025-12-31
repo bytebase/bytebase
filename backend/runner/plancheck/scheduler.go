@@ -135,12 +135,15 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 	// Auto-create rollout if plan checks pass
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planCheckRun.PlanUID})
 	if err != nil {
-		slog.Error("failed to get issue for rollout creation after plan check",
+		slog.Error("failed to get issue for approval check after plan check",
 			slog.Int("plan_id", int(planCheckRun.PlanUID)),
 			log.BBError(err))
 		return
 	}
 	if issue != nil && issue.PlanUID != nil {
+		// Trigger approval finding
+		s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
+		// Trigger rollout creation (existing behavior)
 		s.stateCfg.RolloutCreationChan <- planCheckRun.PlanUID
 	}
 }

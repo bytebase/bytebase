@@ -87,10 +87,8 @@ type IssuePayloadApproval struct {
 	// Whether the system has finished finding a matching approval template.
 	// False means the backend is still searching for matching templates.
 	ApprovalFindingDone bool `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
-	// Error message if approval template finding failed.
-	ApprovalFindingError string `protobuf:"bytes,4,opt,name=approval_finding_error,json=approvalFindingError,proto3" json:"approval_finding_error,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *IssuePayloadApproval) Reset() {
@@ -142,13 +140,6 @@ func (x *IssuePayloadApproval) GetApprovalFindingDone() bool {
 		return x.ApprovalFindingDone
 	}
 	return false
-}
-
-func (x *IssuePayloadApproval) GetApprovalFindingError() string {
-	if x != nil {
-		return x.ApprovalFindingError
-	}
-	return ""
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.
@@ -321,12 +312,11 @@ var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\"\xe0\x03\n" +
+	"\x14store/approval.proto\x12\x0ebytebase.store\"\xaa\x03\n" +
 	"\x14IssuePayloadApproval\x12M\n" +
 	"\x11approval_template\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\x10approvalTemplate\x12K\n" +
 	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
-	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x1a\xc1\x01\n" +
+	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x1a\xc1\x01\n" +
 	"\bApprover\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12\x1c\n" +
 	"\tprincipal\x18\x02 \x01(\tR\tprincipal\"I\n" +

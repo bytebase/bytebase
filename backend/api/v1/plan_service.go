@@ -312,6 +312,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
 			if issue != nil {
+				// Reset approval finding status
 				if _, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 					PayloadUpsert: &storepb.Issue{
 						Approval: &storepb.IssuePayloadApproval{
@@ -319,10 +320,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 						},
 					},
 				}); err != nil {
-					slog.Error("failed to update issue to refind approval", log.BBError(err))
-				} else {
-					s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+					slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
 				}
+				// Note: Don't trigger ApprovalCheckChan here - plan update creates new plan check run,
+				// which will trigger approval finding on completion
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update_mask path %q", path))

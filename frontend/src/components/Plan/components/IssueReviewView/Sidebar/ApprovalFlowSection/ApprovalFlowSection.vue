@@ -16,19 +16,6 @@
           {{ $t("custom-approval.issue-review.generating-approval-flow") }}
         </span>
       </div>
-      <div
-        v-else-if="issue.approvalStatus === Issue_ApprovalStatus.ERROR"
-        class="flex items-center gap-x-2"
-      >
-        <span class="text-error text-sm">{{ issue.approvalStatusError }}</span>
-        <NButton
-          size="tiny"
-          :loading="retrying"
-          @click="retryFindingApprovalFlow"
-        >
-          {{ $t("common.retry") }}
-        </NButton>
-      </div>
       <NTimeline
         v-else-if="approvalSteps.length > 0"
         size="large"
@@ -54,11 +41,10 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NTimeline } from "naive-ui";
-import { computed, ref } from "vue";
+import { NTimeline } from "naive-ui";
+import { computed } from "vue";
 import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
-import { useIssueV1Store } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -69,10 +55,6 @@ const props = defineProps<{
   issue: Issue;
 }>();
 
-const emit = defineEmits<{
-  (e: "issue-updated"): void;
-}>();
-
 const approvalTemplate = computed(() => {
   return props.issue.approvalTemplate;
 });
@@ -80,16 +62,4 @@ const approvalTemplate = computed(() => {
 const approvalSteps = computed(() => {
   return approvalTemplate.value?.flow?.roles || [];
 });
-
-const retrying = ref(false);
-
-const retryFindingApprovalFlow = async () => {
-  retrying.value = true;
-  try {
-    await useIssueV1Store().regenerateReviewV1(props.issue.name);
-    emit("issue-updated");
-  } finally {
-    retrying.value = false;
-  }
-};
 </script>

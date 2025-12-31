@@ -365,22 +365,56 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	var issue *store.IssueMessage
 	switch req.Msg.Issue.Type {
 	case v1pb.Issue_GRANT_REQUEST:
 		if req.Msg.Issue.Title == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
 		}
-		return s.createIssueGrantRequest(ctx, project, req.Msg)
+		issue, err = s.createIssueGrantRequest(ctx, project, req.Msg)
 	case v1pb.Issue_DATABASE_CHANGE:
-		return s.createIssueDatabaseChange(ctx, project, req.Msg)
+		issue, err = s.createIssueDatabaseChange(ctx, project, req.Msg)
 	case v1pb.Issue_DATABASE_EXPORT:
-		return s.createIssueDatabaseDataExport(ctx, project, req.Msg)
+		issue, err = s.createIssueDatabaseDataExport(ctx, project, req.Msg)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", req.Msg.Issue.Type))
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Trigger ISSUE_CREATED webhook
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Type:    storepb.Activity_ISSUE_CREATED,
+		Project: webhook.NewProject(project),
+		IssueCreated: &webhook.EventIssueCreated{
+			Creator: &webhook.User{
+				Name:  user.Name,
+				Email: user.Email,
+			},
+			Issue: webhook.NewIssue(issue),
+		},
+	})
+
+	// Trigger approval finding for all issues
+	// For DATABASE_CHANGE: Will return early if plan check not ready, then retry when plan check completes
+	// For other types: Processes immediately
+	s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
+
+	converted, err := s.convertToIssue(issue)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
+	}
+
+	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -426,30 +460,11 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	converted, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	return connect.NewResponse(converted), nil
+	return issue, nil
 }
 
-func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	// Check if grant request feature is enabled.
 	// Grant requests are only available in Enterprise plan.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
@@ -506,30 +521,11 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	converted, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	return connect.NewResponse(converted), nil
+	return issue, nil
 }
 
-func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -575,27 +571,8 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	converted, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	return connect.NewResponse(converted), nil
+	return issue, nil
 }
 
 // ApproveIssue approves the approval flow of the issue.
@@ -617,9 +594,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	}
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-	}
-	if payload.Approval.ApprovalFindingError != "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
 	}
 	if payload.Approval.ApprovalTemplate == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
@@ -794,9 +768,6 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
 	}
-	if payload.Approval.ApprovalFindingError != "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
-	}
 	if payload.Approval.ApprovalTemplate == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
 	}
@@ -899,9 +870,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 	if !payload.Approval.ApprovalFindingDone {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-	}
-	if payload.Approval.ApprovalFindingError != "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding failed: %v", payload.Approval.ApprovalFindingError))
 	}
 	if payload.Approval.ApprovalTemplate == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("approval template is required"))
@@ -1049,24 +1017,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
-		case "approval_status":
-			if req.Msg.Issue.ApprovalStatus != v1pb.Issue_CHECKING {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("can only set approval_status to CHECKING to trigger re-finding approval templates"))
-			}
-			payload := issue.Payload
-			if payload.Approval == nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
-			}
-			if !payload.Approval.ApprovalFindingDone {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-			}
-
-			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = &storepb.Issue{}
-			}
-			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
 		case "title":
 			// Prevent updating title if plan exists.
 			if issue.PlanUID != nil {
@@ -1138,10 +1088,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	issue, err = s.store.UpdateIssue(ctx, issue.UID, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-	}
-
-	if updateMasks["approval_finding_done"] {
-		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 	}
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {

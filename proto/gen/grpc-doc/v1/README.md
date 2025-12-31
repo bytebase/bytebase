@@ -1072,7 +1072,6 @@ Webhook integration type.
 | risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
 | labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
 | approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
-| approval_status_error | [string](#string) |  | Only populated when approval_status == ERROR |
 
 
 
@@ -1369,7 +1368,6 @@ The overall approval status for the issue.
 | APPROVED | 3 | Issue has been approved. |
 | REJECTED | 4 | Issue has been rejected. |
 | SKIPPED | 5 | Approval was skipped. |
-| ERROR | 6 | Error occurred during approval evaluation. |
 
 
 

@@ -114,7 +114,6 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
 	}
 	issueV1.ApprovalStatus = computeApprovalStatus(approval)
-	issueV1.ApprovalStatusError = approval.GetApprovalFindingError()
 
 	return issueV1, nil
 }
@@ -124,11 +123,6 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 	// Note: approval.GetApprovalFindingDone() returns false when approval is nil
 	if !approval.GetApprovalFindingDone() {
 		return v1pb.Issue_CHECKING
-	}
-
-	// If there's an error finding approval, status is error
-	if approval.GetApprovalFindingError() != "" {
-		return v1pb.Issue_ERROR
 	}
 
 	// If no approval template, approval is skipped (not required)
