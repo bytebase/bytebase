@@ -54,9 +54,7 @@ Use a channel-based architecture similar to the existing `RolloutCreationChan` p
 
 ### Key Insight
 
-Approval finding depends on plan check summary report data, so the natural trigger point is plan check completion. Other triggers (issue creation, plan update) either:
-- Check if plan check is already done → trigger immediately
-- Create a new plan check → which triggers approval finding when it completes
+Approval finding depends on plan check summary report data, so the natural trigger point is plan check completion. If users need to trigger approval finding manually, they can click "Rerun plan checks" in the UI.
 
 ### Architecture
 
@@ -110,7 +108,7 @@ The channel is in-memory per-instance, which is acceptable because:
 type State struct {
     // ADD new channel:
     // ApprovalCheckChan signals when an issue needs approval template finding.
-    // Triggered by plan check completion, issue creation (if checks done).
+    // Triggered by plan check completion.
     ApprovalCheckChan chan int64 // issue UID
 
     // REMOVE old sync.Map:
@@ -256,52 +254,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 }
 ```
 
-### Trigger 2: Issue Creation (If Plan Check Already Done)
-
-**Location:** `backend/api/v1/issue_service.go`
-
-**Add helper function:**
-
-```go
-// tryTriggerApprovalCheck checks if plan check is already done and triggers approval finding.
-// Called after issue creation to handle the case where plan checks completed before issue was created.
-func (s *IssueService) tryTriggerApprovalCheck(ctx context.Context, issue *store.IssueMessage) {
-    if issue.PlanUID == nil {
-        return
-    }
-
-    planCheckRun, err := s.store.GetPlanCheckRun(ctx, *issue.PlanUID)
-    if err != nil {
-        slog.Debug("failed to get plan check run for approval trigger check",
-            slog.Int("plan_uid", int(*issue.PlanUID)), log.BBError(err))
-        return
-    }
-
-    // If plan check is already DONE, trigger approval finding
-    if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusDone {
-        s.stateCfg.ApprovalCheckChan <- issue.UID
-    }
-}
-```
-
-**Update 3 issue creation methods:**
-
-In `CreateIssue()`, after creating the issue:
-
-```go
-// OLD:
-s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-
-// NEW:
-s.tryTriggerApprovalCheck(ctx, issue)
-```
-
-Same change in:
-- `CreateIssue()` (DATABASE_CHANGE)
-- `CreateIssue()` (GRANT_REQUEST)
-- `CreateIssue()` (DATABASE_EXPORT)
-
-### Trigger 3: Plan Update
+### Trigger 2: Plan Update
 
 **Location:** `backend/api/v1/plan_service.go`
 
@@ -569,15 +522,12 @@ This prevents:
 
 2. **Trigger points**
    - Test plan check completion triggers channel
-   - Test issue creation with done plan check triggers channel
-   - Test issue creation with pending plan check doesn't trigger
    - Test plan update resets approval status
 
 ### Integration Tests
 
 1. **End-to-end flow**
    - Create issue → plan check runs → approval found
-   - Create issue with pre-completed plan check → immediate approval
    - Update plan → new plan check → new approval
 
 2. **Error scenarios**
