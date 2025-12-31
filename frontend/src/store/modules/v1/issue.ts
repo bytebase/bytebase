@@ -13,10 +13,8 @@ import {
   GetIssueRequestSchema,
   Issue_ApprovalStatus,
   Issue_Type,
-  IssueSchema,
   IssueStatus,
   SearchIssuesRequestSchema,
-  UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractProjectResourceName,
@@ -77,17 +75,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
 export const useIssueV1Store = defineStore("issue_v1", () => {
   const projectStore = useProjectV1Store();
 
-  const regenerateReviewV1 = async (name: string) => {
-    const request = create(UpdateIssueRequestSchema, {
-      issue: create(IssueSchema, {
-        name,
-        approvalStatus: Issue_ApprovalStatus.CHECKING,
-      }),
-      updateMask: { paths: ["approval_status"] },
-    });
-    await issueServiceClientConnect.updateIssue(request);
-  };
-
   const listIssues = async (
     { find, pageSize, pageToken }: ListIssueParams,
     composeIssueConfig?: ComposeIssueConfig
@@ -136,7 +123,6 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   return {
     listIssues,
     fetchIssueByName,
-    regenerateReviewV1,
   };
 });
 
