@@ -182,8 +182,7 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 	return nil
 }
 
-// schedulingContext holds pre-fetched data for a scheduling cycle.
-// Reduces O(N) database queries to O(1) by fetching all active task runs once.
+// schedulingContext holds pre-fetched and indexed active task run data for a scheduling cycle.
 type schedulingContext struct {
 	// Pre-indexed active task runs (AVAILABLE + RUNNING)
 	activeByDatabase  map[string]int // dbKey -> blocking taskID (first found)
