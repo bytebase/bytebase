@@ -71,6 +71,7 @@ import {
   useCurrentProjectV1,
   useSheetV1Store,
 } from "@/store";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID } from "@/utils";
@@ -84,7 +85,7 @@ const emit = defineEmits<{ "update:selectedSpecId": [specId: string] }>();
 
 const dialog = useDialog();
 const { t } = useI18n();
-const { plan, isCreating } = usePlanContext();
+const { plan, issue, isCreating } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const { project } = useCurrentProjectV1();
 
@@ -92,7 +93,10 @@ const specs = computed(() => plan.value.specs);
 const { isSpecEmpty } = useSpecsValidation(specs);
 const showAddSpecDrawer = ref(false);
 const canModifySpecs = computed(
-  () => isCreating.value || !plan.value.hasRollout
+  () =>
+    (isCreating.value || !plan.value.hasRollout) &&
+    issue.value?.status !== IssueStatus.CANCELED &&
+    issue.value?.status !== IssueStatus.DONE
 );
 
 const getDropdownOptions = (): DropdownOption[] =>

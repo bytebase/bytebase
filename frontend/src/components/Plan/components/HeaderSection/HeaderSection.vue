@@ -1,17 +1,17 @@
 <template>
   <div class="py-2 px-2 sm:px-4">
     <div class="flex flex-row items-center justify-between gap-2">
-      <NTag v-if="showDraftTag" round>
-        <template #icon>
-          <CircleDotDashedIcon class="w-4 h-4" />
-        </template>
-        {{ $t("common.draft") }}
-      </NTag>
-      <NTag v-else-if="showClosedTag" round type="default">
+      <NTag v-if="showClosedTag" round type="default">
         <template #icon>
           <BanIcon class="w-4 h-4" />
         </template>
         {{ $t("common.closed") }}
+      </NTag>
+      <NTag v-else-if="showDraftTag" round>
+        <template #icon>
+          <CircleDotDashedIcon class="w-4 h-4" />
+        </template>
+        {{ $t("common.draft") }}
       </NTag>
       <NTag v-else-if="showDoneTag" round type="success">
         <template #icon>
@@ -48,7 +48,11 @@ import {
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+} from "@/router/dashboard/projectV1";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { isValidPlanName } from "@/utils";
@@ -61,14 +65,23 @@ import TitleInput from "./TitleInput.vue";
 const route = useRoute();
 const { isCreating, plan, issue } = usePlanContext();
 
+const isPlanDetailPage = computed(() => {
+  return (
+    route.name === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
+    route.name === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
+  );
+});
+
+const isIssueDetailPage = computed(() => {
+  return route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1;
+});
+
 const hasSidebar = computed(() => {
   // Check if we're in a layout with sidebar (Issue overview tab only)
   // The sidebar only exists when there's an issue AND we're on the overview tab
   if (!plan.value.issue) return false;
 
-  // Check current route to see if we're on the overview tab
-  // This would be the ISSUE_DETAIL_V1 route, not the PLAN_DETAIL or ROLLOUT routes
-  return route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1;
+  return isIssueDetailPage.value;
 });
 
 const { mode: sidebarMode, mobileSidebarOpen } = useSidebarContext();
@@ -78,6 +91,8 @@ const handleMobileSidebarOpen = () => {
 };
 
 const showDraftTag = computed(() => {
+  // Only show draft tag on plan detail page
+  if (!isPlanDetailPage.value) return false;
   return (
     !isCreating.value &&
     isValidPlanName(plan.value.name) &&
@@ -87,13 +102,20 @@ const showDraftTag = computed(() => {
 });
 
 const showClosedTag = computed(() => {
-  return (
-    plan.value.state === State.DELETED ||
-    issue.value?.status === IssueStatus.CANCELED
-  );
+  // On plan detail page: show when plan is deleted
+  if (isPlanDetailPage.value) {
+    return plan.value.state === State.DELETED;
+  }
+  // On issue detail page: show when issue is canceled
+  if (isIssueDetailPage.value) {
+    return issue.value?.status === IssueStatus.CANCELED;
+  }
+  return false;
 });
 
 const showDoneTag = computed(() => {
+  // Only show done tag on issue detail page
+  if (!isIssueDetailPage.value) return false;
   return issue.value?.status === IssueStatus.DONE;
 });
 
