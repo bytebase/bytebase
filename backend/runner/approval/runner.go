@@ -3,12 +3,10 @@ package approval
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"maps"
 	"math"
 	"sync"
-	"time"
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
@@ -45,73 +43,48 @@ func NewRunner(store *store.Store, stateCfg *state.State, webhookManager *webhoo
 	}
 }
 
-const approvalRunnerInterval = 1 * time.Second
-
 // Run runs the runner.
 func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.NewTicker(approvalRunnerInterval)
-	defer ticker.Stop()
 	defer wg.Done()
-	slog.Debug(fmt.Sprintf("Approval runner started and will run every %v", approvalRunnerInterval))
-	r.retryFindApprovalTemplate(ctx)
+	slog.Debug("Approval runner started (event-driven)")
 
 	for {
 		select {
-		case <-ticker.C:
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						err, ok := r.(error)
-						if !ok {
-							err = errors.Errorf("%v", r)
-						}
-						slog.Error("Approval runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
-					}
-				}()
-				r.runOnce(ctx)
-			}()
+		case issueUID := <-r.stateCfg.ApprovalCheckChan:
+			r.processIssue(ctx, issueUID)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (r *Runner) runOnce(ctx context.Context) {
+func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
+	// Get fresh issue from database
+	uid := int(issueUID)
+	issue, err := r.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+	if err != nil {
+		slog.Error("failed to get issue for approval check",
+			slog.Int64("issue_uid", issueUID), log.BBError(err))
+		return
+	}
+	if issue == nil {
+		return // Issue deleted, nothing to do
+	}
+
 	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
 	if err != nil {
 		slog.Error("failed to get workspace approval setting", log.BBError(err))
 		return
 	}
 
-	r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
-		issue, ok := value.(*store.IssueMessage)
-		if !ok {
-			return true
-		}
-		done, err := r.findApprovalTemplateForIssue(ctx, issue, approvalSetting)
-		if err != nil {
-			slog.Error("failed to find approval template for issue", slog.Int("issue", issue.UID), log.BBError(err))
-		}
-		if err != nil || done {
-			r.stateCfg.ApprovalFinding.Delete(key)
-		}
-		return true
-	})
-}
-
-func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
-	issues, err := r.store.ListIssues(ctx, &store.FindIssueMessage{
-		StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
-	})
+	// Find approval template - errors are logged, not persisted
+	_, err = r.findApprovalTemplateForIssue(ctx, issue, approvalSetting)
 	if err != nil {
-		err := errors.Wrap(err, "failed to list issues")
-		slog.Error("failed to retry finding approval template", log.BBError(err))
-	}
-	for _, issue := range issues {
-		payload := issue.Payload
-		if payload.Approval == nil || !payload.Approval.ApprovalFindingDone {
-			r.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-		}
+		slog.Error("failed to find approval template",
+			slog.Int64("issue_uid", issueUID),
+			slog.String("issue_title", issue.Title),
+			log.BBError(err))
+		// Don't persist error - user can rerun plan check to retry
 	}
 }
 
