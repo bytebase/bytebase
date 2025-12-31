@@ -221,31 +221,50 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	return taskRun, nil
 }
 
-// ClaimAvailableTaskRun attempts to atomically claim an AVAILABLE task run by updating it to RUNNING.
-// Returns true if the claim succeeded, false if another process claimed it first.
-func (s *Store) ClaimAvailableTaskRun(ctx context.Context, taskRunID int) (bool, error) {
+// ClaimedTaskRun represents a claimed task run with its task UID.
+type ClaimedTaskRun struct {
+	TaskRunUID int
+	TaskUID    int
+}
+
+// ClaimAvailableTaskRuns atomically claims all AVAILABLE task runs by updating them to RUNNING
+// and returns the claimed task run and task UIDs. This combines list + claim into a single atomic operation.
+// Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different tasks.
+func (s *Store) ClaimAvailableTaskRuns(ctx context.Context) ([]*ClaimedTaskRun, error) {
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET status = ?, updated_at = now()
-		WHERE id = ? AND status = ?
-	`, storepb.TaskRun_RUNNING.String(), taskRunID, storepb.TaskRun_AVAILABLE.String())
+		WHERE id IN (
+			SELECT task_run.id FROM task_run
+			WHERE task_run.status = ?
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING id, task_id
+	`, storepb.TaskRun_RUNNING.String(), storepb.TaskRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to claim task run")
+		return nil, errors.Wrapf(err, "failed to claim task runs")
 	}
+	defer rows.Close()
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get rows affected")
+	var claimed []*ClaimedTaskRun
+	for rows.Next() {
+		var c ClaimedTaskRun
+		if err := rows.Scan(&c.TaskRunUID, &c.TaskUID); err != nil {
+			return nil, err
+		}
+		claimed = append(claimed, &c)
 	}
-
-	return rowsAffected == 1, nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return claimed, nil
 }
 
 func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
