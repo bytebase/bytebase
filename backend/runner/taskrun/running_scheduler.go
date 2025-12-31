@@ -199,7 +199,8 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			return
 		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_FAILED, taskRunResult.Detail)
-		s.recordPipelineFailure(ctx, task, taskRunResult.Detail)
+		// Send PIPELINE_FAILED webhook (HA-safe atomic claim)
+		s.sendPipelineFailureWebhook(ctx, task)
 		return
 
 	case done && err == nil:
@@ -247,61 +248,49 @@ func (*Scheduler) createActivityForTaskRunStatusUpdate(_ context.Context, _ *sto
 	// No webhook events for task run status updates
 }
 
-func (s *Scheduler) recordPipelineFailure(ctx context.Context, task *store.TaskMessage, errDetail string) {
-	if err := func() error {
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to get plan")
-		}
-		if plan == nil {
-			return errors.Errorf("plan %v not found", task.PlanID)
-		}
-
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to get project")
-		}
-		if project == nil {
-			return errors.Errorf("project %v not found", plan.ProjectID)
-		}
-
-		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to get instance")
-		}
-
-		failedTask := webhook.FailedTask{
-			TaskID:       int64(task.ID),
-			TaskName:     task.Type.String(),
-			DatabaseName: task.GetDatabaseName(),
-			InstanceName: instance.Metadata.Title,
-			ErrorMessage: errDetail,
-			FailedAt:     time.Now(),
-		}
-
-		s.pipelineEvents.RecordTaskFailure(
-			plan.UID,
-			failedTask,
-			func(failedTasks []webhook.FailedTask) {
-				// Use background context to avoid cancellation issues
-				webhookCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel()
-
-				s.webhookManager.CreateEvent(webhookCtx, &webhook.Event{
-					Type:    storepb.Activity_PIPELINE_FAILED,
-					Project: webhook.NewProject(project),
-					RolloutFailed: &webhook.EventRolloutFailed{
-						Rollout:     webhook.NewRollout(plan),
-						FailedTasks: failedTasks,
-					},
-				})
-			},
-		)
-
-		return nil
-	}(); err != nil {
-		slog.Error("failed to record pipeline failure", log.BBError(err))
+// sendPipelineFailureWebhook attempts to send PIPELINE_FAILED webhook.
+// Uses atomic claim to prevent duplicate sends in HA deployments.
+func (s *Scheduler) sendPipelineFailureWebhook(ctx context.Context, task *store.TaskMessage) {
+	// Try to claim notification (only one replica succeeds)
+	claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.PlanID)
+	if err != nil {
+		slog.Error("failed to claim pipeline failure notification", log.BBError(err))
+		return
 	}
+	if !claimed {
+		// Already sent by this or another replica
+		return
+	}
+
+	// Get plan context
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	if err != nil || plan == nil {
+		slog.Error("failed to get plan for failure webhook", log.BBError(err))
+		return
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	if err != nil || project == nil {
+		slog.Error("failed to get project for failure webhook", log.BBError(err))
+		return
+	}
+
+	// Get all failed tasks
+	failures := s.getFailedTaskRuns(ctx, task.PlanID)
+	if len(failures) == 0 {
+		slog.Warn("no failed tasks found for pipeline failure webhook", slog.Int64("plan_id", task.PlanID))
+		return
+	}
+
+	// Send webhook
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Type:    storepb.Activity_PIPELINE_FAILED,
+		Project: webhook.NewProject(project),
+		RolloutFailed: &webhook.EventRolloutFailed{
+			Rollout:     webhook.NewRollout(plan),
+			FailedTasks: failures,
+		},
+	})
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.
