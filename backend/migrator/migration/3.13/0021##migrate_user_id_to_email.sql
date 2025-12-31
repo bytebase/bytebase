@@ -1,9 +1,11 @@
--- OPTIMIZED VERSION
 -- Migrate user references from users/{id} format to users/{email} format
 --
 -- Key optimizations:
 -- 1. Pre-build id->email lookup table (eliminates correlated subqueries)
 -- 2. O(1) hash lookups instead of O(n×m) correlated subqueries
+--
+-- NOTE: The audit_log table migration is handled in Go code (migrator.go)
+-- to support batching and avoid timeout issues on large datasets.
 
 -- ============================================================================
 -- Build temporary lookup table for O(1) id->email conversion
@@ -221,27 +223,6 @@ WHERE payload->'approval' ? 'approvers'
       FROM jsonb_array_elements(payload->'approval'->'approvers') AS approver
       WHERE approver ? 'principalId'
   );
-
--- ============================================================================
--- 6. Update audit_log table - User field
--- ============================================================================
-UPDATE audit_log
-SET payload = (
-    SELECT jsonb_set(
-        audit_log.payload,
-        '{user}',
-        to_jsonb(COALESCE(
-            (
-                SELECT u.email_format
-                FROM user_id_to_email u
-                WHERE u.id = CAST(SUBSTRING(audit_log.payload->>'user' FROM 7) AS INTEGER)
-            ),
-            audit_log.payload->>'user'
-        ))
-    )
-)
-WHERE payload->>'user' LIKE 'users/%'
-  AND payload->>'user' NOT LIKE 'users/%@%';
 
 -- Cleanup temp table
 DROP TABLE user_id_to_email;

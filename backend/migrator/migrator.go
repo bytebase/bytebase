@@ -22,6 +22,20 @@ const latestSchemaFileName = "migration/LATEST.sql"
 //go:embed migration
 var migrationFS embed.FS
 
+// GoMigrationFunc is a function that performs data migration in Go code.
+// It receives a context and database connection, and should handle its own
+// transaction management for optimal performance (e.g., batching large updates).
+type GoMigrationFunc func(ctx context.Context, conn *sql.Conn) error
+
+// goMigrations is a registry of version-specific Go migrations that run
+// in addition to or instead of SQL migrations. These are useful for:
+// - Large data migrations that need batching
+// - Complex transformations better expressed in Go
+// - Operations that benefit from programmatic control
+var goMigrations = map[string]GoMigrationFunc{
+	"3.13.21": migrate3_13_21,
+}
+
 // MigrateSchema migrates the schema for metadata database.
 func MigrateSchema(ctx context.Context, db *sql.DB) error {
 	files, err := getSortedVersionedFiles()
@@ -75,6 +89,18 @@ func MigrateSchema(ctx context.Context, db *sql.DB) error {
 		}
 		version := f.version.String()
 		slog.Info(fmt.Sprintf("Migrating %s.", version))
+
+		// Run Go migration FIRST if one exists for this version
+		// This ensures that if Go migration fails, the version is not recorded
+		// and both SQL and Go migrations will retry on next startup
+		if goMigration, exists := goMigrations[version]; exists {
+			slog.Info(fmt.Sprintf("Running Go migration for %s.", version))
+			if err := goMigration(ctx, conn); err != nil {
+				return errors.Wrapf(err, "Go migration %s failed", version)
+			}
+		}
+
+		// Run SQL migration, which records the version upon success
 		if err := executeMigration(ctx, conn, string(buf), version); err != nil {
 			return err
 		}
@@ -207,4 +233,159 @@ func getLatestDatabaseVersion(ctx context.Context, conn *sql.Conn) (*semver.Vers
 		return nil, errors.Wrapf(err, "invalid version %q", v)
 	}
 	return &version, nil
+}
+
+// migrate3_13_21 migrates audit_log user references from users/{id} to users/{email} format.
+// This is done in Go with batching to handle large audit_log tables efficiently.
+func migrate3_13_21(ctx context.Context, conn *sql.Conn) error {
+	const batchSize = 10000
+
+	// Build user ID to email lookup map
+	userMap, err := buildUserIDToEmailMap(ctx, conn)
+	if err != nil {
+		return errors.Wrap(err, "failed to build user ID to email map")
+	}
+
+	var lastID int64
+	totalUpdated := 0
+	batchCount := 0
+
+	for {
+		rowsUpdated, maxID, done, err := migrateAuditLogBatch(ctx, conn, userMap, lastID, batchSize)
+		if err != nil {
+			return err
+		}
+		if done {
+			break
+		}
+
+		totalUpdated += rowsUpdated
+		batchCount++
+		lastID = maxID
+
+		// Log progress every 10 batches (100k rows)
+		if batchCount%10 == 0 {
+			slog.Info(fmt.Sprintf("Updated %d audit_log rows...", totalUpdated))
+		}
+	}
+
+	slog.Info(fmt.Sprintf("Completed audit_log migration. Total rows updated: %d", totalUpdated))
+	return nil
+}
+
+// migrateAuditLogBatch processes a single batch of audit_log updates.
+func migrateAuditLogBatch(ctx context.Context, conn *sql.Conn, userMap map[int]string, lastID int64, batchSize int) (rowsUpdated int, maxID int64, done bool, err error) {
+	txn, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, 0, false, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer txn.Rollback()
+
+	// Get batch of rows to update
+	rows, err := txn.QueryContext(ctx, `
+		SELECT id, payload->>'user' AS user_ref
+		FROM audit_log
+		WHERE id > $1
+		  AND payload->>'user' LIKE 'users/%'
+		  AND payload->>'user' NOT LIKE 'users/%@%'
+		ORDER BY id
+		LIMIT $2
+	`, lastID, batchSize)
+	if err != nil {
+		return 0, 0, false, errors.Wrap(err, "failed to query batch")
+	}
+	defer rows.Close()
+
+	// Build VALUES clause for bulk update
+	var valueStrings []string
+	var valueArgs []any
+	argPos := 1
+
+	for rows.Next() {
+		var id int64
+		var userRef string
+		if err := rows.Scan(&id, &userRef); err != nil {
+			return 0, 0, false, errors.Wrap(err, "failed to scan row")
+		}
+
+		newUserRef := convertUserIDToEmail(userRef, userMap)
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d)", argPos, argPos+1))
+		valueArgs = append(valueArgs, id, newUserRef)
+		argPos += 2
+		maxID = id
+	}
+	if err := rows.Err(); err != nil {
+		return 0, 0, false, errors.Wrap(err, "failed to iterate rows")
+	}
+
+	// If no rows, we're done
+	if len(valueStrings) == 0 {
+		return 0, 0, true, nil
+	}
+
+	// Execute bulk update: UPDATE audit_log SET ... FROM (VALUES ...) AS v(id, new_user) WHERE audit_log.id = v.id
+	updateSQL := fmt.Sprintf(`
+		UPDATE audit_log
+		SET payload = jsonb_set(payload, '{user}', to_jsonb(v.new_user))
+		FROM (VALUES %s) AS v(id, new_user)
+		WHERE audit_log.id = v.id
+	`, strings.Join(valueStrings, ", "))
+
+	result, err := txn.ExecContext(ctx, updateSQL, valueArgs...)
+	if err != nil {
+		return 0, 0, false, errors.Wrap(err, "failed to execute batch update")
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	// Commit this batch
+	if err := txn.Commit(); err != nil {
+		return 0, 0, false, errors.Wrap(err, "failed to commit batch")
+	}
+
+	return int(rowsAffected), maxID, false, nil
+}
+
+// buildUserIDToEmailMap creates a lookup map from user ID to email format.
+func buildUserIDToEmailMap(ctx context.Context, conn *sql.Conn) (map[int]string, error) {
+	rows, err := conn.QueryContext(ctx, `SELECT id, email FROM principal WHERE email IS NOT NULL`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userMap := make(map[int]string)
+	for rows.Next() {
+		var id int
+		var email string
+		if err := rows.Scan(&id, &email); err != nil {
+			return nil, err
+		}
+		userMap[id] = email
+	}
+	return userMap, rows.Err()
+}
+
+// convertUserIDToEmail converts a user reference from users/{id} to users/{email} format.
+func convertUserIDToEmail(userRef string, userMap map[int]string) string {
+	// Already in email format
+	if !strings.HasPrefix(userRef, "users/") || strings.Contains(userRef, "@") {
+		return userRef
+	}
+
+	// Extract ID from users/{id}
+	idStr := strings.TrimPrefix(userRef, "users/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		// Can't parse as int, return original
+		return userRef
+	}
+
+	// Look up email
+	if email, found := userMap[id]; found {
+		return fmt.Sprintf("users/%s", email)
+	}
+
+	// Not found, return original
+	return userRef
 }
