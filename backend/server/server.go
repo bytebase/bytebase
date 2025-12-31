@@ -21,12 +21,12 @@ import (
 	"github.com/bytebase/bytebase/backend/api/oauth2"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/demo"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -78,8 +78,8 @@ type Server struct {
 	// PG server stoppers.
 	stopper []func()
 
-	// stateCfg is the shared in-momory state within the server.
-	stateCfg *state.State
+	// bus is the message bus for inter-component communication within the server.
+	bus *bus.Bus
 
 	// boot specifies that whether the server boot correctly
 	cancel context.CancelFunc
@@ -149,9 +149,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		slog.Warn("failed to start sample instances", log.BBError(err))
 	}
 
-	s.stateCfg, err = state.New()
+	s.bus, err = bus.New()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create state config")
+		return nil, errors.Wrapf(err, "failed to create message bus")
 	}
 
 	if err := s.store.BackfillIssueTSVector(ctx); err != nil {
@@ -185,22 +185,22 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.echoServer = echo.New()
 
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory)
-	s.approvalRunner = approval.NewRunner(stores, s.stateCfg, s.webhookManager, s.licenseService)
+	s.approvalRunner = approval.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
-	s.taskScheduler = taskrun.NewScheduler(stores, s.stateCfg, s.webhookManager, profile)
+	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, profile)
 	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer))
-	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.bus, s.schemaSyncer, profile))
 	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService))
-	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.bus, s.schemaSyncer, profile))
 
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory)
-	s.planCheckScheduler = plancheck.NewScheduler(stores, s.stateCfg, combinedExecutor)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor)
 
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)
 
 	// LSP server.
-	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
+	s.lspServer = lsp.NewServer(s.store, profile, secret, s.bus, s.iamManager, s.licenseService)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
 	oauth2Service := oauth2.NewService(stores, profile, secret)
@@ -209,7 +209,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create MCP server")
 	}
 
-	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
+	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, profile)

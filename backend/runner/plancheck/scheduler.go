@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -21,10 +21,10 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
+func NewScheduler(s *store.Store, bus *bus.Bus, executor *CombinedExecutor) *Scheduler {
 	return &Scheduler{
 		store:    s,
-		stateCfg: stateCfg,
+		bus:      bus,
 		executor: executor,
 	}
 }
@@ -32,7 +32,7 @@ func NewScheduler(s *store.Store, stateCfg *state.State, executor *CombinedExecu
 // Scheduler is the plan check run scheduler.
 type Scheduler struct {
 	store    *store.Store
-	stateCfg *state.State
+	bus      *bus.Bus
 	executor *CombinedExecutor
 }
 
@@ -46,7 +46,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 		select {
 		case <-ticker.C:
 			s.runOnce(ctx)
-		case <-s.stateCfg.PlanCheckTickleChan:
+		case <-s.bus.PlanCheckTickleChan:
 			s.runOnce(ctx)
 		case <-ctx.Done():
 			return
@@ -82,20 +82,20 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) {
 	// Skip the plan check run if it is already running.
-	if _, ok := s.stateCfg.RunningPlanChecks.Load(planCheckRun.UID); ok {
+	if _, ok := s.bus.RunningPlanChecks.Load(planCheckRun.UID); ok {
 		return
 	}
 
-	s.stateCfg.RunningPlanChecks.Store(planCheckRun.UID, true)
+	s.bus.RunningPlanChecks.Store(planCheckRun.UID, true)
 	go func() {
 		defer func() {
-			s.stateCfg.RunningPlanChecks.Delete(planCheckRun.UID)
-			s.stateCfg.RunningPlanCheckRunsCancelFunc.Delete(planCheckRun.UID)
+			s.bus.RunningPlanChecks.Delete(planCheckRun.UID)
+			s.bus.RunningPlanCheckRunsCancelFunc.Delete(planCheckRun.UID)
 		}()
 
 		ctxWithCancel, cancel := context.WithCancel(ctx)
 		defer cancel()
-		s.stateCfg.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
+		s.bus.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
 
 		var results []*storepb.PlanCheckRunResult_Result
 		var err error
@@ -142,9 +142,9 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 	}
 	if issue != nil && issue.PlanUID != nil {
 		// Trigger approval finding
-		s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
+		s.bus.ApprovalCheckChan <- int64(issue.UID)
 		// Trigger rollout creation (existing behavior)
-		s.stateCfg.RolloutCreationChan <- planCheckRun.PlanUID
+		s.bus.RolloutCreationChan <- planCheckRun.PlanUID
 	}
 }
 

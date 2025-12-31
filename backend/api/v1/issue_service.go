@@ -16,8 +16,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -32,7 +32,7 @@ type IssueService struct {
 	v1connect.UnimplementedIssueServiceHandler
 	store          *store.Store
 	webhookManager *webhook.Manager
-	stateCfg       *state.State
+	bus            *bus.Bus
 	licenseService *enterprise.LicenseService
 	iamManager     *iam.Manager
 }
@@ -47,14 +47,14 @@ type filterIssueMessage struct {
 func NewIssueService(
 	store *store.Store,
 	webhookManager *webhook.Manager,
-	stateCfg *state.State,
+	bus *bus.Bus,
 	licenseService *enterprise.LicenseService,
 	iamManager *iam.Manager,
 ) *IssueService {
 	return &IssueService{
 		store:          store,
 		webhookManager: webhookManager,
-		stateCfg:       stateCfg,
+		bus:            bus,
 		licenseService: licenseService,
 		iamManager:     iamManager,
 	}
@@ -404,7 +404,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	// Trigger approval finding for all issues
 	// For DATABASE_CHANGE: Will return early if plan check not ready, then retry when plan check completes
 	// For other types: Processes immediately
-	s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
+	s.bus.ApprovalCheckChan <- int64(issue.UID)
 
 	converted, err := s.convertToIssue(issue)
 	if err != nil {
@@ -741,7 +741,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	// Auto-create rollout if this approval completes the approval flow
 	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
 		if issue.PlanUID != nil {
-			s.stateCfg.RolloutCreationChan <- *issue.PlanUID
+			s.bus.RolloutCreationChan <- *issue.PlanUID
 		}
 	}
 

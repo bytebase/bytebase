@@ -15,10 +15,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
-	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
@@ -31,11 +31,11 @@ import (
 )
 
 // NewDatabaseMigrateExecutor creates a database migration task executor.
-func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, bus *bus.Bus, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DatabaseMigrateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
-		stateCfg:     stateCfg,
+		bus:          bus,
 		schemaSyncer: schemaSyncer,
 		profile:      profile,
 	}
@@ -45,7 +45,7 @@ func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFacto
 type DatabaseMigrateExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
-	stateCfg     *state.State
+	bus          *bus.Bus
 	schemaSyncer *schemasync.Syncer
 	profile      *config.Profile
 }

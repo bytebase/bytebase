@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -23,7 +23,7 @@ const (
 // Scheduler is the scheduler for task run.
 type Scheduler struct {
 	store          *store.Store
-	stateCfg       *state.State
+	bus            *bus.Bus
 	webhookManager *webhook.Manager
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
@@ -32,13 +32,13 @@ type Scheduler struct {
 // NewScheduler will create a new scheduler.
 func NewScheduler(
 	store *store.Store,
-	stateCfg *state.State,
+	bus *bus.Bus,
 	webhookManager *webhook.Manager,
 	profile *config.Profile,
 ) *Scheduler {
 	return &Scheduler{
 		store:          store,
-		stateCfg:       stateCfg,
+		bus:            bus,
 		webhookManager: webhookManager,
 		profile:        profile,
 		executorMap:    map[storepb.Task_Type]Executor{},
@@ -63,9 +63,9 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go s.runTaskCompletionListener(ctx)
 
 	// Start rollout creator component
-	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg, s.webhookManager)
+	rolloutCreator := NewRolloutCreator(s.store, s.bus, s.webhookManager)
 	wg.Add(3)
-	go rolloutCreator.Run(ctx, wg, s.stateCfg.RolloutCreationChan)
+	go rolloutCreator.Run(ctx, wg, s.bus.RolloutCreationChan)
 	go s.runPendingTaskRunsScheduler(ctx, wg)
 	go s.runRunningTaskRunsScheduler(ctx, wg)
 
@@ -89,7 +89,7 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case planID := <-s.stateCfg.PlanCompletionCheckChan:
+		case planID := <-s.bus.PlanCompletionCheckChan:
 			s.checkPlanCompletion(ctx, planID)
 		}
 	}

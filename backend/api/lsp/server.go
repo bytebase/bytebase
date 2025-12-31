@@ -4,9 +4,9 @@ import (
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -18,7 +18,7 @@ type Server struct {
 	store           *store.Store
 	profile         *config.Profile
 	secret          string
-	stateCfg        *state.State
+	bus             *bus.Bus
 	iamManager      *iam.Manager
 	licenseService  *enterprise.LicenseService
 	authInterceptor *auth.APIAuthInterceptor
@@ -29,7 +29,7 @@ func NewServer(
 	store *store.Store,
 	profile *config.Profile,
 	secret string,
-	stateCfg *state.State,
+	bus *bus.Bus,
 	iamManager *iam.Manager,
 	licenseService *enterprise.LicenseService,
 ) *Server {
@@ -37,9 +37,9 @@ func NewServer(
 		store:           store,
 		profile:         profile,
 		secret:          secret,
-		stateCfg:        stateCfg,
+		bus:             bus,
 		iamManager:      iamManager,
 		licenseService:  licenseService,
-		authInterceptor: auth.New(store, secret, licenseService, stateCfg, profile),
+		authInterceptor: auth.New(store, secret, licenseService, bus, profile),
 	}
 }

@@ -16,7 +16,7 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -28,16 +28,16 @@ import (
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
 	store          *store.Store
-	stateCfg       *state.State
+	bus            *bus.Bus
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, bus *bus.Bus, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
 	return &Runner{
 		store:          store,
-		stateCfg:       stateCfg,
+		bus:            bus,
 		webhookManager: webhookManager,
 		licenseService: licenseService,
 	}
@@ -50,7 +50,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case issueUID := <-r.stateCfg.ApprovalCheckChan:
+		case issueUID := <-r.bus.ApprovalCheckChan:
 			r.processIssue(ctx, issueUID)
 		case <-ctx.Done():
 			return

@@ -13,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -25,15 +25,15 @@ import (
 type PlanService struct {
 	v1connect.UnimplementedPlanServiceHandler
 	store      *store.Store
-	stateCfg   *state.State
+	bus        *bus.Bus
 	iamManager *iam.Manager
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, stateCfg *state.State, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager) *PlanService {
 	return &PlanService{
 		store:      store,
-		stateCfg:   stateCfg,
+		bus:        bus,
 		iamManager: iamManager,
 	}
 }
@@ -194,7 +194,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 	// Tickle plan check scheduler.
-	s.stateCfg.PlanCheckTickleChan <- 0
+	s.bus.PlanCheckTickleChan <- 0
 
 	convertedPlan, err := convertToPlan(ctx, s.store, plan)
 	if err != nil {
@@ -346,7 +346,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 		}
 		// Tickle plan check scheduler.
-		s.stateCfg.PlanCheckTickleChan <- 0
+		s.bus.PlanCheckTickleChan <- 0
 	}
 
 	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)
@@ -434,7 +434,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	}
 
 	// Tickle plan check scheduler.
-	s.stateCfg.PlanCheckTickleChan <- 0
+	s.bus.PlanCheckTickleChan <- 0
 
 	return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
 }
@@ -470,7 +470,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 	}
 
 	// Cancel the plan check run.
-	if cancelFunc, ok := s.stateCfg.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
+	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
 		cancelFunc.(context.CancelFunc)()
 	}
 
