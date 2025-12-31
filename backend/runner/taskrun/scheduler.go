@@ -75,7 +75,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	<-ctx.Done()
 }
 
-func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
+func (*Scheduler) runTaskCompletionListener(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -87,12 +87,7 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 	}()
 	slog.Info("Task completion listener started")
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		}
-	}
+	<-ctx.Done()
 }
 
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {

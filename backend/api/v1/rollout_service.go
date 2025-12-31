@@ -810,7 +810,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	var taskUIDs []int
-	var tasksToSkip []*store.TaskMessage
 	environmentSet := map[string]struct{}{}
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
@@ -822,7 +821,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %v not found in the rollout", taskID))
 		}
 		taskUIDs = append(taskUIDs, taskID)
-		tasksToSkip = append(tasksToSkip, taskMsg)
 		environmentSet[taskMsg.Environment] = struct{}{}
 	}
 
