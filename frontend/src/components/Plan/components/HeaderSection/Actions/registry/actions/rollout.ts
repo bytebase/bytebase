@@ -1,4 +1,5 @@
 import { t } from "@/plugins/i18n";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { ActionDefinition } from "../types";
 
 export const ROLLOUT_CREATE: ActionDefinition = {
@@ -14,6 +15,8 @@ export const ROLLOUT_CREATE: ActionDefinition = {
     if (ctx.isIssueOnly) return false;
     if (ctx.plan.hasRollout) return false;
     if (!ctx.issue) return false;
+    // Don't show create rollout when issue is closed
+    if (ctx.issueStatus === IssueStatus.CANCELED) return false;
     if (!ctx.permissions.createRollout) return false;
 
     // Project setting validations are handled in RolloutCreatePanel
