@@ -239,8 +239,6 @@ CREATE TABLE plan_webhook_delivery (
     delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER SEQUENCE plan_webhook_delivery_plan_id_seq RESTART WITH 101;
-
 -- task table stores the task for a plan
 CREATE TABLE task (
     id serial PRIMARY KEY,
