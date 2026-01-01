@@ -62,7 +62,7 @@ require (
 	github.com/jackc/pgtype v1.14.4
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/labstack/echo-contrib v0.17.4
-	github.com/labstack/echo/v4 v4.13.4
+	github.com/labstack/echo/v4 v4.15.0
 	github.com/lestrrat-go/jwx/v3 v3.0.12
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
@@ -94,9 +94,9 @@ require (
 	github.com/zeebo/xxh3 v1.0.2
 	go.mongodb.org/mongo-driver/v2 v2.4.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.45.0
+	golang.org/x/crypto v0.46.0
 	golang.org/x/oauth2 v0.33.0
-	golang.org/x/text v0.31.0
+	golang.org/x/text v0.32.0
 	google.golang.org/api v0.257.0
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217
@@ -272,9 +272,9 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39 // indirect
 	golang.org/x/mod v0.30.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251111182119-bc8e575c7b54 // indirect
-	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -377,7 +377,7 @@ require (
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.47.0
+	golang.org/x/net v0.48.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
