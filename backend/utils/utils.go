@@ -31,25 +31,31 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 }
 
 // FindNextPendingRole finds the next pending role in the approval flow.
-func FindNextPendingRole(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) string {
+func FindNextPendingRole(approval *storepb.IssuePayloadApproval) string {
+	if approval == nil || approval.ApprovalTemplate == nil {
+		return ""
+	}
 	// We can do the finding like this for now because we are presuming that
 	// one role is approved by one approver.
 	// and the approver status is either
 	// APPROVED or REJECTED.
-	if len(approvers) >= len(template.Flow.Roles) {
+	if len(approval.Approvers) >= len(approval.ApprovalTemplate.Flow.Roles) {
 		return ""
 	}
-	return template.Flow.Roles[len(approvers)]
+	return approval.ApprovalTemplate.Flow.Roles[len(approval.Approvers)]
 }
 
 // FindRejectedRole finds the rejected role in the approval flow.
-func FindRejectedRole(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) string {
-	for i, approver := range approvers {
-		if i >= len(template.Flow.Roles) {
+func FindRejectedRole(approval *storepb.IssuePayloadApproval) string {
+	if approval == nil || approval.ApprovalTemplate == nil {
+		return ""
+	}
+	for i, approver := range approval.Approvers {
+		if i >= len(approval.ApprovalTemplate.Flow.Roles) {
 			return ""
 		}
 		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
-			return template.Flow.Roles[i]
+			return approval.ApprovalTemplate.Flow.Roles[i]
 		}
 	}
 	return ""
@@ -63,7 +69,7 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if approval.ApprovalTemplate == nil {
 		return true, nil
 	}
-	return FindRejectedRole(approval.ApprovalTemplate, approval.Approvers) == "" && FindNextPendingRole(approval.ApprovalTemplate, approval.Approvers) == "", nil
+	return FindRejectedRole(approval) == "" && FindNextPendingRole(approval) == "", nil
 }
 
 // CheckIssueApproved checks if the issue is approved.
