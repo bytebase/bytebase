@@ -15,7 +15,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -23,6 +22,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -401,10 +401,27 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		},
 	})
 
-	// Trigger approval finding for all issues
-	// For DATABASE_CHANGE: Will return early if plan check not ready, then retry when plan check completes
-	// For other types: Processes immediately
-	s.bus.ApprovalCheckChan <- int64(issue.UID)
+	// Trigger approval finding based on issue type
+	switch issue.Type {
+	case storepb.Issue_GRANT_REQUEST, storepb.Issue_DATABASE_EXPORT:
+		// GRANT_REQUEST and DATABASE_EXPORT can determine approval immediately:
+		// - GRANT_REQUEST only looks at issue message
+		// - DATABASE_EXPORT only looks at the plan (already available)
+		// Call synchronously to get approval status in the create response
+		if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
+			slog.Error("failed to find approval template",
+				slog.Int("issue_uid", issue.UID),
+				slog.String("issue_title", issue.Title),
+				log.BBError(err))
+			// Continue anyway - non-fatal error
+		}
+	case storepb.Issue_DATABASE_CHANGE:
+		// DATABASE_CHANGE needs to wait for plan check to complete
+		// Trigger async approval finding via event channel
+		s.bus.ApprovalCheckChan <- int64(issue.UID)
+	default:
+		// For other issue types, no approval finding needed
+	}
 
 	converted, err := s.convertToIssue(issue)
 	if err != nil {
