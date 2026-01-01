@@ -445,16 +445,17 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
-	if request.Issue.Title == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
-	}
-
 	var planUID *int64
 	var grantRequest *storepb.GrantRequest
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
 	case v1pb.Issue_GRANT_REQUEST:
+		// Title is required for grant requests
+		if request.Issue.Title == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
+		}
+
 		// Check if grant request feature is enabled
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied,
