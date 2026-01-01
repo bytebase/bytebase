@@ -210,47 +210,16 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	}
 	payload.RiskLevel = riskLevel
 
-	if err := updateIssueApprovalPayload(ctx, stores, issue, payload.Approval, riskLevel); err != nil {
+	if _, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{
+			Approval:  payload.Approval,
+			RiskLevel: riskLevel,
+		},
+	}); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
 	}
 
-	func() {
-		if payload.Approval.ApprovalTemplate == nil {
-			return
-		}
-		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
-		if role == "" {
-			return
-		}
-
-		// Get issue creator as actor
-		creator, err := stores.GetUserByEmail(ctx, issue.CreatorEmail)
-		if err != nil {
-			slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
-			creator = store.SystemBotUser
-		}
-
-		// Get approvers for this role
-		approvers, err := getApproversForRole(ctx, stores, issue.ProjectID, role)
-		if err != nil {
-			slog.Warn("failed to get approvers", log.BBError(err))
-			approvers = []webhook.User{} // Continue with empty list
-		}
-
-		// Trigger ISSUE_APPROVAL_REQUESTED webhook
-		webhookManager.CreateEvent(ctx, &webhook.Event{
-			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
-			Project: webhook.NewProject(project),
-			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				Creator: &webhook.User{
-					Name:  creator.Name,
-					Email: creator.Email,
-				},
-				Issue:     webhook.NewIssue(issue),
-				Approvers: approvers,
-			},
-		})
-	}()
+	NotifyApprovalRequested(ctx, stores, webhookManager, issue, project)
 
 	return nil
 }
@@ -839,18 +808,6 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	}
 }
 
-func updateIssueApprovalPayload(ctx context.Context, stores *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval, riskLevel storepb.RiskLevel) error {
-	if _, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
-		PayloadUpsert: &storepb.Issue{
-			Approval:  approval,
-			RiskLevel: riskLevel,
-		},
-	}); err != nil {
-		return errors.Wrap(err, "failed to update issue payload")
-	}
-	return nil
-}
-
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.
 func expandCELVars(base map[string]any, statementTypes, tableNames []string) []map[string]any {
 	if len(statementTypes) == 0 {
@@ -924,4 +881,45 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 	}
 
 	return approvers, nil
+}
+
+// NotifyApprovalRequested sends the ISSUE_APPROVAL_REQUESTED webhook event for the next pending approval stage.
+// It finds the next pending role, retrieves approvers for that role, and triggers the webhook.
+// This should be called after:
+// - Creating an issue with an approval template
+// - Approving an issue stage (to notify next stage approvers)
+// - Sending back an issue (to notify the current stage approvers again)
+func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, issue *store.IssueMessage, project *store.ProjectMessage) {
+	role := utils.FindNextPendingRole(issue.Payload.Approval)
+	if role == "" {
+		return
+	}
+
+	// Get issue creator as actor
+	creator, err := stores.GetUserByEmail(ctx, issue.CreatorEmail)
+	if err != nil {
+		slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+		creator = store.SystemBotUser
+	}
+
+	// Get approvers for this role
+	approvers, err := getApproversForRole(ctx, stores, issue.ProjectID, role)
+	if err != nil {
+		slog.Warn("failed to get approvers", log.BBError(err))
+		approvers = []webhook.User{} // Continue with empty list
+	}
+
+	// Trigger ISSUE_APPROVAL_REQUESTED webhook
+	webhookManager.CreateEvent(ctx, &webhook.Event{
+		Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
+		Project: webhook.NewProject(project),
+		ApprovalRequested: &webhook.EventIssueApprovalRequested{
+			Creator: &webhook.User{
+				Name:  creator.Name,
+				Email: creator.Email,
+			},
+			Issue:     webhook.NewIssue(issue),
+			Approvers: approvers,
+		},
+	})
 }
