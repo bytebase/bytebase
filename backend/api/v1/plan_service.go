@@ -15,26 +15,33 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/webhook"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // PlanService represents a service for managing plan.
 type PlanService struct {
 	v1connect.UnimplementedPlanServiceHandler
-	store      *store.Store
-	bus        *bus.Bus
-	iamManager *iam.Manager
+	store          *store.Store
+	bus            *bus.Bus
+	iamManager     *iam.Manager
+	webhookManager *webhook.Manager
+	licenseService *enterprise.LicenseService
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *PlanService {
 	return &PlanService{
-		store:      store,
-		bus:        bus,
-		iamManager: iamManager,
+		store:          store,
+		bus:            bus,
+		iamManager:     iamManager,
+		webhookManager: webhookManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -313,17 +320,29 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 			if issue != nil {
 				// Reset approval finding status
-				if _, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+				updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 					PayloadUpsert: &storepb.Issue{
 						Approval: &storepb.IssuePayloadApproval{
 							ApprovalFindingDone: false,
 						},
 					},
-				}); err != nil {
+				})
+				if err != nil {
 					slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
 				}
-				// Note: Don't trigger ApprovalCheckChan here - plan update creates new plan check run,
+
+				// DATABASE_CHANGE: Don't trigger ApprovalCheckChan here - plan update creates new plan check run,
 				// which will trigger approval finding on completion
+				// DATABASE_EXPORT: Re-run approval finding synchronously (no plan checks for export data)
+				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
+					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
+						slog.Error("failed to find approval template after plan update",
+							slog.Int("issue_uid", updatedIssue.UID),
+							slog.String("issue_title", updatedIssue.Title),
+							log.BBError(err))
+						// Continue anyway - non-fatal error
+					}
+				}
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update_mask path %q", path))
