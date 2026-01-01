@@ -370,22 +370,13 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	var issue *store.IssueMessage
-	switch req.Msg.Issue.Type {
-	case v1pb.Issue_GRANT_REQUEST:
-		if req.Msg.Issue.Title == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
-		}
-		issue, err = s.createIssueGrantRequest(ctx, project, req.Msg)
-	case v1pb.Issue_DATABASE_CHANGE:
-		issue, err = s.createIssueDatabaseChange(ctx, project, req.Msg)
-	case v1pb.Issue_DATABASE_EXPORT:
-		issue, err = s.createIssueDatabaseDataExport(ctx, project, req.Msg)
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", req.Msg.Issue.Type))
-	}
+	issue, err := s.buildIssueMessage(ctx, project, user.Email, req.Msg)
 	if err != nil {
 		return nil, err
+	}
+	issue, err = s.store.CreateIssue(ctx, issue)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
 	// Trigger ISSUE_CREATED webhook
@@ -431,150 +422,101 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	if request.Issue.Plan == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan is required"))
+func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
+	if request.Issue.Title == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
 	}
 
 	var planUID *int64
-	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
-	}
-	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
-	}
-	planUID = &plan.UID
+	var grantRequest *storepb.GrantRequest
 
-	issueCreateMessage := &store.IssueMessage{
-		ProjectID:    project.ResourceID,
-		CreatorEmail: user.Email,
-		PlanUID:      planUID,
-		Title:        request.Issue.Title,
-		Status:       storepb.Issue_OPEN,
-		Type:         storepb.Issue_DATABASE_CHANGE,
-		Description:  request.Issue.Description,
-		Payload: &storepb.Issue{
-			Approval: &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-				ApprovalTemplate:    nil,
-				Approvers:           nil,
-			},
-			Labels: request.Issue.Labels,
-		},
-	}
+	// Type-specific validation and preparation
+	switch request.Issue.Type {
+	case v1pb.Issue_GRANT_REQUEST:
+		// Check if grant request feature is enabled
+		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
+			return nil, connect.NewError(connect.CodePermissionDenied,
+				errors.Errorf("role request requires approval workflow feature (available in Enterprise plan)"))
+		}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
-	}
+		// Validate grant request fields
+		if request.Issue.GrantRequest.GetRole() == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect grant request role"))
+		}
+		if request.Issue.GrantRequest.GetUser() == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect grant request user"))
+		}
 
-	return issue, nil
-}
+		// Validate CEL expression if it's not empty
+		if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
+			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment"))
+			}
+			if _, issues := e.Compile(expression); issues != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("found issues in grant request condition expression, issues: %v", issues.String()))
+			}
+		}
 
-func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
-	// Check if grant request feature is enabled.
-	// Grant requests are only available in Enterprise plan.
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied,
-			errors.Errorf("role request requires approval workflow feature (available in Enterprise plan)"))
-	}
-
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	if request.Issue.GrantRequest.GetRole() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect grant request role"))
-	}
-	if request.Issue.GrantRequest.GetUser() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect grant request user"))
-	}
-	// Validate CEL expression if it's not empty.
-	if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
-		e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
+		// Convert grant request (inlined from convertGrantRequest)
+		grantRequestUserEmail, err := common.GetUserEmail(request.Issue.GrantRequest.User)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user email from %q", request.Issue.GrantRequest.User))
 		}
-		if _, issues := e.Compile(expression); issues != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("found issues in grant request condition expression, issues: %v", issues.String()))
+		grantRequestUser, err := s.store.GetUserByEmail(ctx, grantRequestUserEmail)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", grantRequestUserEmail))
 		}
+		if grantRequestUser == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", request.Issue.GrantRequest.User))
+		}
+		grantRequest = &storepb.GrantRequest{
+			Role:       request.Issue.GrantRequest.Role,
+			User:       common.FormatUserEmail(grantRequestUser.Email),
+			Condition:  request.Issue.GrantRequest.Condition,
+			Expiration: request.Issue.GrantRequest.Expiration,
+		}
+
+	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_DATABASE_EXPORT:
+		// Validate and fetch plan (shared logic for both types)
+		if request.Issue.Plan == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan is required"))
+		}
+
+		_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
+		}
+
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
+		}
+		if plan == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
+		}
+		planUID = &plan.UID
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", request.Issue.Type))
 	}
 
-	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
+	// Convert v1pb.Issue_Type to storepb.Issue_Type
+	issueType, err := convertToAPIIssueType(request.Issue.Type)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert GrantRequest"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to convert issue type"))
 	}
-	issueCreateMessage := &store.IssueMessage{
+
+	// Build the issue message (common structure)
+	issue := &store.IssueMessage{
 		ProjectID:    project.ResourceID,
-		CreatorEmail: user.Email,
-		PlanUID:      nil,
-		Title:        request.Issue.Title,
-		Status:       storepb.Issue_OPEN,
-		Type:         storepb.Issue_GRANT_REQUEST,
-		Description:  request.Issue.Description,
-		Payload: &storepb.Issue{
-			GrantRequest: convertedGrantRequest,
-			Approval: &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-				ApprovalTemplate:    nil,
-				Approvers:           nil,
-			},
-			Labels: request.Issue.Labels,
-		},
-	}
-
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
-	}
-
-	return issue, nil
-}
-
-func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
-	if request.Issue.Plan == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan is required"))
-	}
-
-	var planUID *int64
-	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
-	}
-	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
-	}
-	planUID = &plan.UID
-
-	issueCreateMessage := &store.IssueMessage{
-		ProjectID:    project.ResourceID,
-		CreatorEmail: user.Email,
+		CreatorEmail: userEmail,
 		PlanUID:      planUID,
 		Title:        request.Issue.Title,
 		Status:       storepb.Issue_OPEN,
-		Type:         storepb.Issue_DATABASE_EXPORT,
+		Type:         issueType,
 		Description:  request.Issue.Description,
 		Payload: &storepb.Issue{
+			GrantRequest: grantRequest,
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: false,
 				ApprovalTemplate:    nil,
@@ -582,11 +524,6 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 			},
 			Labels: request.Issue.Labels,
 		},
-	}
-
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
 	return issue, nil
