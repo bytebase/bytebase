@@ -167,38 +167,6 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		return nil
 	}
 
-	// Grant privilege and close issue similar to actions on issue approval.
-	if issue.Type == storepb.Issue_GRANT_REQUEST && approvalTemplate == nil {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, stores, issue, payload.GrantRequest); err != nil {
-			return err
-		}
-		if err := func() error {
-			newStatus := storepb.Issue_DONE
-			updatedIssue, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
-			if err != nil {
-				return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
-			}
-
-			if _, err := stores.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_IssueUpdate_{
-						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-							FromStatus: &issue.Status,
-							ToStatus:   &updatedIssue.Status,
-						},
-					},
-				},
-			}); err != nil {
-				return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
-			}
-
-			return nil
-		}(); err != nil {
-			return errors.Wrap(err, "failed to update issue status")
-		}
-	}
-
 	// Calculate risk level separately from approval flow
 	// TODO(p0ny): maybe move risk calculation to another runner in the future
 	riskLevel := calculateRiskLevelFromCELVars(celVarsList)

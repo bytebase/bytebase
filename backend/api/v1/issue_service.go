@@ -406,6 +406,28 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 				log.BBError(err))
 			// Continue anyway - non-fatal error
 		}
+
+		// Refresh issue to get updated approval payload
+		uid := issue.UID
+		issue, err = s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to refresh issue"))
+		}
+
+		// For GRANT_REQUEST that is auto-approved (no approval template), complete it
+		if issue.Type == storepb.Issue_GRANT_REQUEST {
+			approved, err := utils.CheckApprovalApproved(issue.Payload.Approval)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if approval is approved"))
+			}
+			if approved {
+				issue, err = s.completeGrantRequestIssue(ctx, issue, issue.Payload.GrantRequest)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal,
+						errors.Wrapf(err, "failed to complete grant request"))
+				}
+			}
+		}
 	case storepb.Issue_DATABASE_CHANGE:
 		// DATABASE_CHANGE needs to wait for plan check to complete
 		// Trigger async approval finding via event channel
@@ -592,14 +614,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
-	// Grant the privilege if the issue is approved.
-	if approved && issue.Type == storepb.Issue_GRANT_REQUEST {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, payload.GrantRequest); err != nil {
-			return nil, err
-		}
-		// TODO(p0ny): Post project IAM policy update activity.
-	}
-
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
@@ -616,38 +630,11 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 
-	// If the issue is a grant request and approved, we will always auto close it.
-	if issue.Type == storepb.Issue_GRANT_REQUEST {
-		if err := func() error {
-			payload := issue.Payload
-			approved, err := utils.CheckApprovalApproved(payload.Approval)
-			if err != nil {
-				return errors.Wrap(err, "failed to check if the approval is approved")
-			}
-			if approved {
-				newStatus := storepb.Issue_DONE
-				updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
-				if err != nil {
-					return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
-				}
-
-				if _, err := s.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
-					IssueUID: issue.UID,
-					Payload: &storepb.IssueCommentPayload{
-						Event: &storepb.IssueCommentPayload_IssueUpdate_{
-							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-								FromStatus: &issue.Status,
-								ToStatus:   &updatedIssue.Status,
-							},
-						},
-					},
-				}); err != nil {
-					return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
-				}
-			}
-			return nil
-		}(); err != nil {
-			slog.Debug("failed to update issue status to done if grant request issue is approved", log.BBError(err))
+	// If the issue is a grant request and approved, complete it
+	if issue.Type == storepb.Issue_GRANT_REQUEST && approved {
+		issue, err = s.completeGrantRequestIssue(ctx, issue, payload.GrantRequest)
+		if err != nil {
+			slog.Debug("failed to complete grant request issue", log.BBError(err))
 		}
 	}
 
@@ -1238,6 +1225,44 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
 	}
 	return issue, nil
+}
+
+// completeGrantRequestIssue grants privilege and closes a grant request issue.
+// Called when:
+// 1. Issue created without approval template (auto-approved)
+// 2. Issue approval flow completes
+//
+// Returns the updated issue with DONE status.
+func (s *IssueService) completeGrantRequestIssue(ctx context.Context, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) (*store.IssueMessage, error) {
+	// Grant the privilege
+	if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, grantRequest); err != nil {
+		return nil, err
+	}
+
+	// Update issue status to DONE
+	newStatus := storepb.Issue_DONE
+	updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+	}
+
+	// Create issue comment documenting the status change
+	if _, err := s.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+		IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{
+			Event: &storepb.IssueCommentPayload_IssueUpdate_{
+				IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+					FromStatus: &issue.Status,
+					ToStatus:   &updatedIssue.Status,
+				},
+			},
+		},
+	}); err != nil {
+		// Non-fatal: log warning but continue
+		slog.Warn("failed to create issue comment after changing the issue status", log.BBError(err))
+	}
+
+	return updatedIssue, nil
 }
 
 func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) bool {
