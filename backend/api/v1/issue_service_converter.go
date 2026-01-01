@@ -262,29 +262,6 @@ func convertToGrantRequest(v *storepb.GrantRequest) *v1pb.GrantRequest {
 	}
 }
 
-func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantRequest) (*storepb.GrantRequest, error) {
-	if v == nil {
-		return nil, nil
-	}
-	email, err := common.GetUserEmail(v.User)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user email from %q", v.User)
-	}
-	user, err := s.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user by email %q", email)
-	}
-	if user == nil {
-		return nil, errors.Errorf("user %q not found", v.User)
-	}
-	return &storepb.GrantRequest{
-		Role:       v.Role,
-		User:       common.FormatUserEmail(user.Email),
-		Condition:  v.Condition,
-		Expiration: v.Expiration,
-	}, nil
-}
-
 func convertToIssueComments(issueName string, issueComments []*store.IssueCommentMessage) []*v1pb.IssueComment {
 	var res []*v1pb.IssueComment
 	for _, ic := range issueComments {
