@@ -95,7 +95,7 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.4.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.46.0
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.34.0
 	golang.org/x/text v0.32.0
 	google.golang.org/api v0.257.0
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217
