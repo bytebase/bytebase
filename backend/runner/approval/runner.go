@@ -9,11 +9,9 @@ import (
 	"sync"
 
 	"github.com/google/cel-go/cel"
+	celtypes "github.com/google/cel-go/common/types"
 	"github.com/pkg/errors"
 
-	celtypes "github.com/google/cel-go/common/types"
-
-	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
@@ -58,6 +56,23 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
+// FindAndApplyApprovalTemplate finds and applies the approval template for an issue.
+// This is a utility function that can be called synchronously (from issue creation)
+// or asynchronously (from the event handler).
+func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
+	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get workspace approval setting")
+	}
+
+	// Find approval template - errors are logged, not persisted
+	err = findApprovalTemplateForIssue(ctx, stores, webhookManager, licenseService, issue, approvalSetting)
+	if err != nil {
+		return errors.Wrap(err, "failed to find approval template")
+	}
+	return nil
+}
+
 func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 	// Get fresh issue from database
 	uid := int(issueUID)
@@ -77,9 +92,7 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 		return
 	}
 
-	// Find approval template - errors are logged, not persisted
-	_, err = r.findApprovalTemplateForIssue(ctx, issue, approvalSetting)
-	if err != nil {
+	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
 		slog.Error("failed to find approval template",
 			slog.Int64("issue_uid", issueUID),
 			slog.String("issue_title", issue.Title),
@@ -88,29 +101,29 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 	}
 }
 
-func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) (bool, error) {
+func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage, approvalSetting *storepb.WorkspaceApprovalSetting) error {
 	payload := issue.Payload
 	if payload.Approval != nil && payload.Approval.ApprovalFindingDone {
-		return true, nil
+		return nil
 	}
 
-	project, err := r.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
 	if err != nil {
-		return false, errors.Wrap(err, "failed to get project")
+		return errors.Wrap(err, "failed to get project")
 	}
 	if project == nil {
-		return false, errors.Errorf("project %s not found", issue.ProjectID)
+		return errors.Errorf("project %s not found", issue.ProjectID)
 	}
 
 	approvalTemplate, celVarsList, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, bool, error) {
 		// no need to find if feature is not enabled
-		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
+		if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
 			return nil, nil, true, nil
 		}
 
 		// Step 1: Determine approval source from issue type
-		approvalSource, err := r.getApprovalSourceFromIssue(ctx, issue)
+		approvalSource, err := getApprovalSourceFromIssue(ctx, stores, issue)
 		if err != nil {
 			return nil, nil, false, errors.Wrap(err, "failed to get approval source from issue")
 		}
@@ -120,7 +133,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 
 		// Step 2: Build CEL variables for evaluation
-		celVarsList, done, err := r.buildCELVariablesForIssue(ctx, issue)
+		celVarsList, done, err := buildCELVariablesForIssue(ctx, stores, issue)
 		if err != nil {
 			return nil, nil, false, errors.Wrap(err, "failed to build CEL variables for issue")
 		}
@@ -148,25 +161,25 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	if err != nil {
 		// Don't persist error - it will be logged by caller
 		// User can rerun plan check to retry
-		return false, err
+		return err
 	}
 	if !done {
-		return false, nil
+		return nil
 	}
 
 	// Grant privilege and close issue similar to actions on issue approval.
 	if issue.Type == storepb.Issue_GRANT_REQUEST && approvalTemplate == nil {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
-			return false, err
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, stores, issue, payload.GrantRequest); err != nil {
+			return err
 		}
 		if err := func() error {
 			newStatus := storepb.Issue_DONE
-			updatedIssue, err := r.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+			updatedIssue, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 			if err != nil {
 				return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 			}
 
-			if _, err := r.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+			if _, err := stores.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -182,7 +195,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 			return nil
 		}(); err != nil {
-			return false, errors.Wrap(err, "failed to update issue status")
+			return errors.Wrap(err, "failed to update issue status")
 		}
 	}
 
@@ -197,8 +210,8 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 	}
 	payload.RiskLevel = riskLevel
 
-	if err := updateIssueApprovalPayload(ctx, r.store, issue, payload.Approval, riskLevel); err != nil {
-		return false, errors.Wrap(err, "failed to update issue payload")
+	if err := updateIssueApprovalPayload(ctx, stores, issue, payload.Approval, riskLevel); err != nil {
+		return errors.Wrap(err, "failed to update issue payload")
 	}
 
 	func() {
@@ -211,21 +224,21 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		}
 
 		// Get issue creator as actor
-		creator, err := r.store.GetUserByEmail(ctx, issue.CreatorEmail)
+		creator, err := stores.GetUserByEmail(ctx, issue.CreatorEmail)
 		if err != nil {
 			slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
 			creator = store.SystemBotUser
 		}
 
 		// Get approvers for this role
-		approvers, err := r.getApproversForRole(ctx, issue.ProjectID, role)
+		approvers, err := getApproversForRole(ctx, stores, issue.ProjectID, role)
 		if err != nil {
 			slog.Warn("failed to get approvers", log.BBError(err))
 			approvers = []webhook.User{} // Continue with empty list
 		}
 
 		// Trigger ISSUE_APPROVAL_REQUESTED webhook
-		r.webhookManager.CreateEvent(ctx, &webhook.Event{
+		webhookManager.CreateEvent(ctx, &webhook.Event{
 			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
@@ -239,7 +252,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		})
 	}()
 
-	return true, nil
+	return nil
 }
 
 // calculateRiskLevelFromCELVars calculates the risk level from CEL variables.
@@ -387,26 +400,142 @@ func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
 // buildCELVariablesForIssue builds the CEL variable maps for evaluating approval rules.
 // Returns a list of CEL variable maps (one per task/component), done flag, and error.
 // done=false means the caller should retry later (e.g., waiting for plan check runs).
-func (r *Runner) buildCELVariablesForIssue(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	switch issue.Type {
 	case storepb.Issue_GRANT_REQUEST:
-		return r.buildCELVariablesForGrantRequest(ctx, issue)
+		return buildCELVariablesForGrantRequest(ctx, stores, issue)
 	case storepb.Issue_DATABASE_CHANGE:
-		return r.buildCELVariablesForDatabaseChange(ctx, issue)
+		return buildCELVariablesForDatabaseChange(ctx, stores, issue)
 	case storepb.Issue_DATABASE_EXPORT:
-		return r.buildCELVariablesForDataExport(ctx, issue)
+		return buildCELVariablesForDataExport(ctx, stores, issue)
 	default:
 		return nil, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
 }
 
+// specTarget represents a database target extracted from a spec.
+type specTarget struct {
+	database    *store.DatabaseMessage
+	sheetSha256 string
+}
+
+// unfoldDatabaseTargets unfolds database groups and returns all database targets.
+// If the targets list contains a single database group reference, it unfolds it to individual databases.
+// Otherwise, it returns the targets as-is.
+func unfoldDatabaseTargets(ctx context.Context, stores *store.Store, dbTargets []string, projectID string, allDatabases []*store.DatabaseMessage) ([]string, error) {
+	// Check if this is a database group (single target)
+	if len(dbTargets) == 1 {
+		if _, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(dbTargets[0]); err == nil {
+			// This is a database group - unfold it
+			databaseGroup, err := stores.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+				ResourceID: &databaseGroupID,
+				ProjectID:  &projectID,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database group")
+			}
+			if databaseGroup == nil {
+				return nil, errors.Errorf("database group %q not found", dbTargets[0])
+			}
+
+			matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get matched databases in database group %q", databaseGroupID)
+			}
+
+			// Replace dbTargets with unfolded databases
+			var unfolded []string
+			for _, db := range matchedDatabases {
+				unfolded = append(unfolded, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+			}
+			return unfolded, nil
+		}
+	}
+	return dbTargets, nil
+}
+
+// unfoldSpecTargets unfolds database groups in specs and returns all database targets.
+func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]specTarget, error) {
+	// Batch fetch all databases for the project
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
+	}
+
+	// Build a map for quick lookup: instanceID/databaseName -> DatabaseMessage
+	databaseMap := make(map[string]*store.DatabaseMessage)
+	for _, db := range allDatabases {
+		key := common.FormatDatabase(db.InstanceID, db.DatabaseName)
+		databaseMap[key] = db
+	}
+
+	var targets []specTarget
+
+	for _, spec := range specs {
+		switch config := spec.Config.(type) {
+		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+			instanceID, err := common.GetInstanceID(config.CreateDatabaseConfig.Target)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse instance from target %q", config.CreateDatabaseConfig.Target)
+			}
+			// For CREATE_DATABASE, create a synthetic database message
+			// since the database doesn't exist yet
+			envID := config.CreateDatabaseConfig.Environment
+			targets = append(targets, specTarget{
+				database: &store.DatabaseMessage{
+					InstanceID:             instanceID,
+					DatabaseName:           config.CreateDatabaseConfig.Database,
+					EffectiveEnvironmentID: &envID,
+				},
+				sheetSha256: "",
+			})
+
+		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ChangeDatabaseConfig.Targets, projectID, allDatabases)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, target := range dbTargets {
+				db := databaseMap[target]
+				if db == nil {
+					return nil, errors.Errorf("database %q not found", target)
+				}
+				targets = append(targets, specTarget{
+					database:    db,
+					sheetSha256: config.ChangeDatabaseConfig.SheetSha256,
+				})
+			}
+
+		case *storepb.PlanConfig_Spec_ExportDataConfig:
+			dbTargets, err := unfoldDatabaseTargets(ctx, stores, config.ExportDataConfig.Targets, projectID, allDatabases)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, target := range dbTargets {
+				db := databaseMap[target]
+				if db == nil {
+					return nil, errors.Errorf("database %q not found", target)
+				}
+				targets = append(targets, specTarget{
+					database:    db,
+					sheetSha256: config.ExportDataConfig.SheetSha256,
+				})
+			}
+		}
+	}
+
+	return targets, nil
+}
+
 // buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
 // This includes DDL and DML operations.
-func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
-	plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
@@ -414,7 +543,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	planCheckRun, err := r.store.GetPlanCheckRun(ctx, plan.UID)
+	planCheckRun, err := stores.GetPlanCheckRun(ctx, plan.UID)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
@@ -448,70 +577,45 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		}
 	}
 
-	// Build CEL variables for each task
-	tasks, err := apiv1.GetPipelineCreate(ctx, r.store, plan.Config.GetSpecs(), issue.ProjectID)
+	// Unfold database groups and get all targets
+	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to get pipeline create")
+		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
 
 	var celVarsList []map[string]any
-	for _, task := range tasks {
-		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{
-			ResourceID: &task.InstanceID,
-		})
-		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
-		}
-		if instance.Deleted {
-			continue
-		}
-
+	for _, target := range targets {
 		taskStatement := ""
-		sheetSha256 := task.Payload.GetSheetSha256()
-		if sheetSha256 != "" {
-			sheet, err := r.store.GetSheetFull(ctx, sheetSha256)
+		if target.sheetSha256 != "" {
+			sheet, err := stores.GetSheetFull(ctx, target.sheetSha256)
 			if err != nil {
-				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetSha256)
+				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", target.sheetSha256)
 			}
 			if sheet == nil {
-				return nil, true, errors.Errorf("sheet %v not found", sheetSha256)
+				return nil, true, errors.Errorf("sheet %v not found", target.sheetSha256)
 			}
 			taskStatement = sheet.Statement
 		}
 
-		var environmentID string
-		var databaseName string
-		if task.Type == storepb.Task_DATABASE_CREATE {
-			databaseName = task.Payload.GetDatabaseName()
-			environmentID = task.Payload.GetEnvironmentId()
-		} else {
-			database, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &task.InstanceID,
-				DatabaseName: task.DatabaseName,
-			})
-			if err != nil {
-				return nil, false, err
-			}
-			databaseName = database.DatabaseName
-			if database.EffectiveEnvironmentID != nil {
-				environmentID = *database.EffectiveEnvironmentID
-			}
+		environmentID := ""
+		if target.database.EffectiveEnvironmentID != nil {
+			environmentID = *target.database.EffectiveEnvironmentID
 		}
 
 		// Base CEL variables
 		celVars := map[string]any{
 			common.CELAttributeResourceEnvironmentID: environmentID,
 			common.CELAttributeResourceProjectID:     issue.ProjectID,
-			common.CELAttributeResourceInstanceID:    instance.ResourceID,
-			common.CELAttributeResourceDatabaseName:  databaseName,
-			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
+			common.CELAttributeResourceInstanceID:    target.database.InstanceID,
+			common.CELAttributeResourceDatabaseName:  target.database.DatabaseName,
+			common.CELAttributeResourceDBEngine:      target.database.Engine.String(),
 			common.CELAttributeStatementText:         taskStatement,
 		}
 
 		// Add summary report data if available
 		result, ok := latestPlanCheckRun[Key{
-			InstanceID:   instance.ResourceID,
-			DatabaseName: databaseName,
+			InstanceID:   target.database.InstanceID,
+			DatabaseName: target.database.DatabaseName,
 		}]
 		if !ok {
 			celVarsList = append(celVarsList, celVars)
@@ -551,11 +655,11 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 }
 
 // buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
-func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
-	plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
@@ -563,45 +667,25 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	tasks, err := apiv1.GetPipelineCreate(ctx, r.store, plan.Config.GetSpecs(), issue.ProjectID)
+	// Unfold database groups and get all targets (only EXPORT_DATA targets)
+	targets, err := unfoldSpecTargets(ctx, stores, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to get pipeline create")
+		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
 
 	var celVarsList []map[string]any
-	for _, task := range tasks {
-		if task.Type != storepb.Task_DATABASE_EXPORT {
-			continue
-		}
-		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{
-			ResourceID: &task.InstanceID,
-		})
-		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
-		}
-		if instance.Deleted {
-			continue
-		}
-
-		database, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &task.InstanceID,
-			DatabaseName: task.DatabaseName,
-		})
-		if err != nil {
-			return nil, false, err
-		}
-
+	for _, target := range targets {
 		envID := ""
-		if database.EffectiveEnvironmentID != nil {
-			envID = *database.EffectiveEnvironmentID
+		if target.database.EffectiveEnvironmentID != nil {
+			envID = *target.database.EffectiveEnvironmentID
 		}
 
 		celVars := map[string]any{
 			common.CELAttributeResourceEnvironmentID: envID,
 			common.CELAttributeResourceProjectID:     issue.ProjectID,
-			common.CELAttributeResourceInstanceID:    instance.ResourceID,
-			common.CELAttributeResourceDatabaseName:  database.DatabaseName,
-			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
+			common.CELAttributeResourceInstanceID:    target.database.InstanceID,
+			common.CELAttributeResourceDatabaseName:  target.database.DatabaseName,
+			common.CELAttributeResourceDBEngine:      target.database.Engine.String(),
 		}
 		celVarsList = append(celVarsList, celVars)
 	}
@@ -614,7 +698,7 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 }
 
 // buildCELVariablesForGrantRequest builds CEL variables for GRANT_REQUEST issues.
-func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+func buildCELVariablesForGrantRequest(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
 	if payload.GrantRequest == nil {
 		return nil, false, errors.New("grant request payload not found")
@@ -639,7 +723,7 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 
 	// If no specific databases, create one entry per environment
 	if len(factors.Databases) == 0 {
-		environments, err := r.store.GetEnvironment(ctx)
+		environments, err := stores.GetEnvironment(ctx)
 		if err != nil {
 			return nil, false, err
 		}
@@ -656,13 +740,13 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 	}
 
 	// Build one entry per database
-	databaseMap, err := r.getDatabaseMap(ctx, factors.Databases)
+	databases, err := getDatabasesForGrantRequest(ctx, stores, issue.ProjectID, factors.Databases)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to retrieve database map")
+		return nil, false, errors.Wrap(err, "failed to retrieve databases for grant request")
 	}
 
 	var celVarsList []map[string]any
-	for _, database := range databaseMap {
+	for _, database := range databases {
 		celVars := maps.Clone(baseVars)
 		if database.EffectiveEnvironmentID != nil {
 			celVars[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
@@ -679,33 +763,40 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 	return celVarsList, true, nil
 }
 
-func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[string]*store.DatabaseMessage, error) {
-	databaseMap := make(map[string]*store.DatabaseMessage)
-	for _, database := range databases {
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(database)
-		if err != nil {
-			return nil, err
-		}
-		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-		if err != nil {
-			return nil, err
-		}
-		if instance == nil || instance.Deleted {
-			continue
-		}
-		db, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instanceID,
-			DatabaseName: &databaseName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if db == nil {
-			continue
-		}
-		databaseMap[database] = db
+// getDatabasesForGrantRequest fetches database messages for the given database identifiers.
+// Used exclusively by grant request approval flow to retrieve database information.
+// Returns a deduplicated list of databases.
+func getDatabasesForGrantRequest(ctx context.Context, stores *store.Store, projectID string, databaseIdentifiers []string) ([]*store.DatabaseMessage, error) {
+	// Parse and deduplicate database identifiers
+	type dbKey struct {
+		instanceID   string
+		databaseName string
 	}
-	return databaseMap, nil
+	requestedDBs := make(map[dbKey]bool)
+	for _, identifier := range databaseIdentifiers {
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(identifier)
+		if err != nil {
+			return nil, err
+		}
+		requestedDBs[dbKey{instanceID: instanceID, databaseName: databaseName}] = true
+	}
+
+	// Batch fetch all databases in the project
+	allDatabases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
+	}
+
+	// Filter to only requested databases
+	var result []*store.DatabaseMessage
+	for _, db := range allDatabases {
+		key := dbKey{instanceID: db.InstanceID, databaseName: db.DatabaseName}
+		if requestedDBs[key] {
+			result = append(result, db)
+		}
+	}
+
+	return result, nil
 }
 
 // getApprovalSourceFromPlan determines the approval rule source enum from the plan config.
@@ -725,7 +816,7 @@ func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceAppr
 }
 
 // getApprovalSourceFromIssue determines the approval rule source enum from the issue type.
-func (r *Runner) getApprovalSourceFromIssue(ctx context.Context, issue *store.IssueMessage) (storepb.WorkspaceApprovalSetting_Rule_Source, error) {
+func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) (storepb.WorkspaceApprovalSetting_Rule_Source, error) {
 	switch issue.Type {
 	case storepb.Issue_GRANT_REQUEST:
 		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE, nil
@@ -733,7 +824,7 @@ func (r *Runner) getApprovalSourceFromIssue(ctx context.Context, issue *store.Is
 		if issue.PlanUID == nil {
 			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("expected plan UID in issue %v", issue.UID)
 		}
-		plan, err := r.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
 		if err != nil {
 			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 		}
@@ -748,8 +839,8 @@ func (r *Runner) getApprovalSourceFromIssue(ctx context.Context, issue *store.Is
 	}
 }
 
-func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval, riskLevel storepb.RiskLevel) error {
-	if _, err := s.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+func updateIssueApprovalPayload(ctx context.Context, stores *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval, riskLevel storepb.RiskLevel) error {
+	if _, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval:  approval,
 			RiskLevel: riskLevel,
@@ -803,21 +894,21 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 // getApproversForRole retrieves the list of users who have the specified role
 // for the given project. It queries both project and workspace IAM policies.
 // Only returns END_USER type principals (excludes service accounts, system bots, etc).
-func (r *Runner) getApproversForRole(ctx context.Context, projectID string, role string) ([]webhook.User, error) {
+func getApproversForRole(ctx context.Context, stores *store.Store, projectID string, role string) ([]webhook.User, error) {
 	// Get project IAM policy
-	projectIAM, err := r.store.GetProjectIamPolicy(ctx, projectID)
+	projectIAM, err := stores.GetProjectIamPolicy(ctx, projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project IAM policy")
 	}
 
 	// Get workspace IAM policy
-	workspaceIAM, err := r.store.GetWorkspaceIamPolicy(ctx)
+	workspaceIAM, err := stores.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
 	}
 
 	// Get all users with the specified role
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, r.store, role, projectIAM.Policy, workspaceIAM.Policy)
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, stores, role, projectIAM.Policy, workspaceIAM.Policy)
 
 	// Convert to webhook.User format, filtering by END_USER principal type
 	approvers := make([]webhook.User, 0, len(users))
