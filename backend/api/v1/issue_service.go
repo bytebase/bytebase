@@ -447,6 +447,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	var planUID *int64
 	var grantRequest *storepb.GrantRequest
+	var title, description string
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
@@ -500,6 +501,9 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			Expiration: request.Issue.GrantRequest.Expiration,
 		}
 
+		title = request.Issue.Title
+		description = request.Issue.Description
+
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_DATABASE_EXPORT:
 		// Validate and fetch plan (shared logic for both types)
 		if request.Issue.Plan == "" {
@@ -519,6 +523,16 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 		}
 		planUID = &plan.UID
+
+		// Use plan's title and description as defaults if not provided by request
+		title = request.Issue.Title
+		if title == "" {
+			title = plan.Name
+		}
+		description = request.Issue.Description
+		if description == "" {
+			description = plan.Description
+		}
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", request.Issue.Type))
 	}
@@ -534,10 +548,10 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		ProjectID:    project.ResourceID,
 		CreatorEmail: userEmail,
 		PlanUID:      planUID,
-		Title:        request.Issue.Title,
+		Title:        title,
 		Status:       storepb.Issue_OPEN,
 		Type:         issueType,
-		Description:  request.Issue.Description,
+		Description:  description,
 		Payload: &storepb.Issue{
 			GrantRequest: grantRequest,
 			Approval: &storepb.IssuePayloadApproval{
