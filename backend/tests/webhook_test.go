@@ -187,12 +187,12 @@ func TestWebhookIntegration(t *testing.T) {
 		}))
 		require.NoError(t, err)
 
-		// Create an issue with empty title and description
+		// Create an issue for webhook testing
 		issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 			Parent: ctl.project.Name,
 			Issue: &v1pb.Issue{
-				Title:       "", // Empty title
-				Description: "", // Empty description
+				Title:       "Test webhook issue",
+				Description: "", // Empty description is OK
 				Type:        v1pb.Issue_DATABASE_CHANGE,
 				Plan:        planResp.Msg.Name,
 			},
