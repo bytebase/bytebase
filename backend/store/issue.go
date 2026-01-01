@@ -259,7 +259,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			searchCondition.Or("issue.ts_vector @@ query")
 			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
 		}
-		searchCondition.Or("plan.name ILIKE ?", "%"+*v+"%")
+		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
 		where.And("(?)", searchCondition)
 	}
 	if len(find.StatusList) != 0 {
@@ -281,13 +281,12 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			issue.updated_at,
 			issue.project,
 			issue.plan_id,
-			COALESCE(plan.name, issue.name) AS name,
+			issue.name,
 			issue.status,
 			issue.type,
-			COALESCE(plan.description, issue.description) AS description,
+			issue.description,
 			issue.payload
 		FROM ?
-		LEFT JOIN plan ON issue.plan_id = plan.id
 	`, from)
 	if where.Len() > 0 {
 		q.Space("WHERE ?", where)
@@ -481,10 +480,9 @@ func (s *Store) BackfillIssueTSVector(ctx context.Context) error {
 		selectQuery := qb.Q().Space(`
 			SELECT
 				issue.id,
-				COALESCE(plan.name, issue.name) AS name,
-				COALESCE(plan.description, issue.description) AS description
+				issue.name,
+				issue.description
 			FROM issue
-			LEFT JOIN plan ON issue.plan_id = plan.id
 			WHERE issue.ts_vector IS NULL
 			ORDER BY issue.id
 			LIMIT ?
