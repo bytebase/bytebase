@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/runner/approval"
 
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -20,7 +21,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -257,6 +257,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 	if storePlanConfigHasRelease(oldPlan.Config) && slices.Contains(req.UpdateMask.Paths, "specs") {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("disallowed to update the plan specs because the plan is created from a release"))
+	}
+
+	// Disallow updating CREATE_DATABASE plan specs
+	if storePlanConfigHasCreateDatabase(oldPlan.Config) && slices.Contains(req.UpdateMask.Paths, "specs") {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("disallowed to update the plan specs for CREATE_DATABASE plans"))
 	}
 
 	ok, err = func() (bool, error) {
@@ -704,6 +709,15 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 			if c.ChangeDatabaseConfig.Release != "" {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func storePlanConfigHasCreateDatabase(plan *storepb.PlanConfig) bool {
+	for _, spec := range plan.GetSpecs() {
+		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_CreateDatabaseConfig); ok {
+			return true
 		}
 	}
 	return false
