@@ -90,8 +90,6 @@ type Task struct {
 	SkippedReason string `protobuf:"bytes,2,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
 	// UUID that identifies the spec this task implements.
 	SpecId string `protobuf:"bytes,3,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
-	// The SHA256 hash of the sheet content (hex-encoded).
-	SheetSha256 string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The environment where the database will be created.
 	EnvironmentId string `protobuf:"bytes,5,opt,name=environment_id,json=environmentId,proto3" json:"environment_id,omitempty"`
 	// Name of the database to create.
@@ -102,14 +100,17 @@ type Task struct {
 	CharacterSet string `protobuf:"bytes,8,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
 	// Collation for the new database.
 	Collation string `protobuf:"bytes,9,opt,name=collation,proto3" json:"collation,omitempty"`
-	// Schema version after migration is applied.
-	SchemaVersion string `protobuf:"bytes,10,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// Source of the task's SQL content - either a single sheet or an entire release.
+	//
+	// Types that are valid to be assigned to Source:
+	//
+	//	*Task_SheetSha256
+	//	*Task_Release
+	Source isTask_Source `protobuf_oneof:"source"`
 	// Whether to create an automatic backup before applying changes.
 	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Configuration flags for gh-ost migration tool.
 	Flags map[string]string `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Source information if task is created from a release.
-	TaskReleaseSource *TaskReleaseSource `protobuf:"bytes,13,opt,name=task_release_source,json=taskReleaseSource,proto3" json:"task_release_source,omitempty"`
 	// Password to encrypt the exported data archive.
 	Password string `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
 	// Format of the exported data (SQL, CSV, JSON, etc).
@@ -171,13 +172,6 @@ func (x *Task) GetSpecId() string {
 	return ""
 }
 
-func (x *Task) GetSheetSha256() string {
-	if x != nil {
-		return x.SheetSha256
-	}
-	return ""
-}
-
 func (x *Task) GetEnvironmentId() string {
 	if x != nil {
 		return x.EnvironmentId
@@ -213,9 +207,27 @@ func (x *Task) GetCollation() string {
 	return ""
 }
 
-func (x *Task) GetSchemaVersion() string {
+func (x *Task) GetSource() isTask_Source {
 	if x != nil {
-		return x.SchemaVersion
+		return x.Source
+	}
+	return nil
+}
+
+func (x *Task) GetSheetSha256() string {
+	if x != nil {
+		if x, ok := x.Source.(*Task_SheetSha256); ok {
+			return x.SheetSha256
+		}
+	}
+	return ""
+}
+
+func (x *Task) GetRelease() string {
+	if x != nil {
+		if x, ok := x.Source.(*Task_Release); ok {
+			return x.Release
+		}
 	}
 	return ""
 }
@@ -230,13 +242,6 @@ func (x *Task) GetEnablePriorBackup() bool {
 func (x *Task) GetFlags() map[string]string {
 	if x != nil {
 		return x.Flags
-	}
-	return nil
-}
-
-func (x *Task) GetTaskReleaseSource() *TaskReleaseSource {
-	if x != nil {
-		return x.TaskReleaseSource
 	}
 	return nil
 }
@@ -262,74 +267,46 @@ func (x *Task) GetEnableGhost() bool {
 	return false
 }
 
-// TaskReleaseSource contains information about the release file this task originated from.
-type TaskReleaseSource struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Resource name of the release file.
-	// Format: projects/{project}/releases/{release}/files/{id}
-	File          string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type isTask_Source interface {
+	isTask_Source()
 }
 
-func (x *TaskReleaseSource) Reset() {
-	*x = TaskReleaseSource{}
-	mi := &file_store_task_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+type Task_SheetSha256 struct {
+	// The SHA256 hash of a single sheet content (hex-encoded).
+	// Used for non-release tasks.
+	SheetSha256 string `protobuf:"bytes,10,opt,name=sheet_sha256,json=sheetSha256,proto3,oneof"`
 }
 
-func (x *TaskReleaseSource) String() string {
-	return protoimpl.X.MessageStringOf(x)
+type Task_Release struct {
+	// The release resource name: projects/{project}/releases/{release}.
+	// Used for GitOps release-based tasks that execute multiple files.
+	Release string `protobuf:"bytes,13,opt,name=release,proto3,oneof"`
 }
 
-func (*TaskReleaseSource) ProtoMessage() {}
+func (*Task_SheetSha256) isTask_Source() {}
 
-func (x *TaskReleaseSource) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TaskReleaseSource.ProtoReflect.Descriptor instead.
-func (*TaskReleaseSource) Descriptor() ([]byte, []int) {
-	return file_store_task_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *TaskReleaseSource) GetFile() string {
-	if x != nil {
-		return x.File
-	}
-	return ""
-}
+func (*Task_Release) isTask_Source() {}
 
 var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xb6\x06\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xe4\x05\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
-	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12!\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12%\n" +
+	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12%\n" +
 	"\x0eenvironment_id\x18\x05 \x01(\tR\renvironmentId\x12#\n" +
 	"\rdatabase_name\x18\x06 \x01(\tR\fdatabaseName\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\a \x01(\tR\ttableName\x12#\n" +
 	"\rcharacter_set\x18\b \x01(\tR\fcharacterSet\x12\x1c\n" +
-	"\tcollation\x18\t \x01(\tR\tcollation\x12%\n" +
-	"\x0eschema_version\x18\n" +
-	" \x01(\tR\rschemaVersion\x12.\n" +
+	"\tcollation\x18\t \x01(\tR\tcollation\x12#\n" +
+	"\fsheet_sha256\x18\n" +
+	" \x01(\tH\x00R\vsheetSha256\x12\x1a\n" +
+	"\arelease\x18\r \x01(\tH\x00R\arelease\x12.\n" +
 	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
-	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12Q\n" +
-	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12\x1a\n" +
+	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12\x1a\n" +
 	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
 	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12!\n" +
 	"\fenable_ghost\x18\x10 \x01(\bR\venableGhost\x1a8\n" +
@@ -342,9 +319,8 @@ const file_store_task_proto_rawDesc = "" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
 	"\x10DATABASE_MIGRATE\x10\x02\x12\x13\n" +
 	"\x0fDATABASE_EXPORT\x10\x03\x12\x10\n" +
-	"\fDATABASE_SDL\x10\x04\"'\n" +
-	"\x11TaskReleaseSource\x12\x12\n" +
-	"\x04file\x18\x01 \x01(\tR\x04fileB\x8c\x01\n" +
+	"\fDATABASE_SDL\x10\x04B\b\n" +
+	"\x06sourceB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tTaskProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -360,23 +336,21 @@ func file_store_task_proto_rawDescGZIP() []byte {
 }
 
 var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_task_proto_goTypes = []any{
-	(Task_Type)(0),            // 0: bytebase.store.Task.Type
-	(*Task)(nil),              // 1: bytebase.store.Task
-	(*TaskReleaseSource)(nil), // 2: bytebase.store.TaskReleaseSource
-	nil,                       // 3: bytebase.store.Task.FlagsEntry
-	(ExportFormat)(0),         // 4: bytebase.store.ExportFormat
+	(Task_Type)(0),    // 0: bytebase.store.Task.Type
+	(*Task)(nil),      // 1: bytebase.store.Task
+	nil,               // 2: bytebase.store.Task.FlagsEntry
+	(ExportFormat)(0), // 3: bytebase.store.ExportFormat
 }
 var file_store_task_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
-	2, // 1: bytebase.store.Task.task_release_source:type_name -> bytebase.store.TaskReleaseSource
-	4, // 2: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
+	3, // 1: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_store_task_proto_init() }
@@ -385,13 +359,17 @@ func file_store_task_proto_init() {
 		return
 	}
 	file_store_common_proto_init()
+	file_store_task_proto_msgTypes[0].OneofWrappers = []any{
+		(*Task_SheetSha256)(nil),
+		(*Task_Release)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_proto_rawDesc), len(file_store_task_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -1302,10 +1302,6 @@
                   <a href="#bytebase.store.Task.FlagsEntry"><span class="badge">M</span>Task.FlagsEntry</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.TaskReleaseSource"><span class="badge">M</span>TaskReleaseSource</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.store.Task.Type"><span class="badge">E</span>Task.Type</a>
@@ -12702,13 +12698,6 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
-                </tr>
-              
-                <tr>
                   <td>environment_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -12744,10 +12733,19 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>schema_version</td>
+                  <td>sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Schema version after migration is applied. </p></td>
+                  <td><p>The SHA256 hash of a single sheet content (hex-encoded).
+Used for non-release tasks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The release resource name: projects/{project}/releases/{release}.
+Used for GitOps release-based tasks that execute multiple files. </p></td>
                 </tr>
               
                 <tr>
@@ -12762,13 +12760,6 @@ Default to this mode.</p></td>
                   <td><a href="#bytebase.store.Task.FlagsEntry">Task.FlagsEntry</a></td>
                   <td>repeated</td>
                   <td><p>Configuration flags for gh-ost migration tool. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_release_source</td>
-                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
-                  <td></td>
-                  <td><p>Source information if task is created from a release. </p></td>
                 </tr>
               
                 <tr>
@@ -12821,31 +12812,6 @@ Default to this mode.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskReleaseSource">TaskReleaseSource</h3>
-        <p>TaskReleaseSource contains information about the release file this task originated from.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>file</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Resource name of the release file.
-Format: projects/{project}/releases/{release}/files/{id} </p></td>
                 </tr>
               
             </tbody>

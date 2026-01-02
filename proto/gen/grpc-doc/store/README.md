@@ -283,7 +283,6 @@
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
     - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
-    - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
     - [Task.Type](#bytebase-store-Task-Type)
   
@@ -4668,16 +4667,15 @@ Task is the metadata for database operation tasks.
 | skipped | [bool](#bool) |  | Whether the task was skipped during execution. |
 | skipped_reason | [string](#string) |  | Reason why the task was skipped. |
 | spec_id | [string](#string) |  | UUID that identifies the spec this task implements. |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | environment_id | [string](#string) |  | The environment where the database will be created. |
 | database_name | [string](#string) |  | Name of the database to create. |
 | table_name | [string](#string) |  | Optional table name to create (required for some databases like MongoDB). |
 | character_set | [string](#string) |  | Character set for the new database. |
 | collation | [string](#string) |  | Collation for the new database. |
-| schema_version | [string](#string) |  | Schema version after migration is applied. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of a single sheet content (hex-encoded). Used for non-release tasks. |
+| release | [string](#string) |  | The release resource name: projects/{project}/releases/{release}. Used for GitOps release-based tasks that execute multiple files. |
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
 | flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
-| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  | Source information if task is created from a release. |
 | password | [string](#string) |  | Password to encrypt the exported data archive. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | Format of the exported data (SQL, CSV, JSON, etc). |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -4697,21 +4695,6 @@ Task is the metadata for database operation tasks.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskReleaseSource"></a>
-
-### TaskReleaseSource
-TaskReleaseSource contains information about the release file this task originated from.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Resource name of the release file. Format: projects/{project}/releases/{release}/files/{id} |
 
 
 

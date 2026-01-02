@@ -72,19 +72,6 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 		return nil
 	}
 
-	// Check 2: Version ordering (blocking tasks with smaller versions)
-	if task.DatabaseName != nil {
-		if schemaVersion := task.Payload.GetSchemaVersion(); schemaVersion != "" {
-			blockingTaskID, err := s.store.FindBlockingTaskByVersion(ctx, task.PlanID, task.InstanceID, *task.DatabaseName, schemaVersion)
-			if err != nil {
-				return errors.Wrapf(err, "failed to find blocking versioned tasks")
-			}
-			if blockingTaskID != nil {
-				s.storeWaitingCause(taskRun.ID, *blockingTaskID)
-				return nil
-			}
-		}
-	}
 
 	// Check 3: Database mutual exclusion (for sequential tasks)
 	canProceed, blockingTaskID := sc.checkDatabaseMutualExclusion(task)

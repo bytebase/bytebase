@@ -419,8 +419,13 @@ message Task {
 
   // Payload for updating a database schema.
   message DatabaseUpdate {
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 1;
+    // The source can be either a sheet or a release.
+    oneof source {
+      // Format: projects/{project}/sheets/{sheet}
+      string sheet = 1;
+      // Format: projects/{project}/releases/{release}
+      string release = 4;
+    }
     // The target schema version after this update.
     string schema_version = 2;
     // The type of database change (MIGRATE or SDL).

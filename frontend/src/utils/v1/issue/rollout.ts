@@ -199,7 +199,11 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
     return task.payload.value.sheet ?? "";
   }
   if (task.payload?.case === "databaseUpdate") {
-    return task.payload.value.sheet ?? "";
+    // Task.DatabaseUpdate now uses oneof source { sheet | release }
+    if (task.payload.value.source.case === "sheet") {
+      return task.payload.value.source.value ?? "";
+    }
+    return "";
   }
   if (task.payload?.case === "databaseDataExport") {
     return task.payload.value.sheet ?? "";
@@ -211,10 +215,24 @@ export const setSheetNameForTask = (task: Task, sheetName: string) => {
   if (task.payload?.case === "databaseCreate") {
     task.payload.value.sheet = sheetName;
   } else if (task.payload?.case === "databaseUpdate") {
-    task.payload.value.sheet = sheetName;
+    // Task.DatabaseUpdate now uses oneof source { sheet | release }
+    task.payload.value.source = {
+      case: "sheet",
+      value: sheetName,
+    };
   } else if (task.payload?.case === "databaseDataExport") {
     task.payload.value.sheet = sheetName;
   }
+};
+
+export const releaseNameOfTaskV1 = (task: Task): string => {
+  if (task.payload?.case === "databaseUpdate") {
+    // Task.DatabaseUpdate now uses oneof source { sheet | release }
+    if (task.payload.value.source.case === "release") {
+      return task.payload.value.source.value ?? "";
+    }
+  }
+  return "";
 };
 
 export const stringifyTaskStatus = (

@@ -14620,6 +14620,9 @@ components:
                 sheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
+                release:
+                    type: string
+                    description: 'Format: projects/{project}/releases/{release}'
                 schemaVersion:
                     type: string
                     description: The target schema version after this update.

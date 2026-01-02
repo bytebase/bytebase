@@ -13,7 +13,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
@@ -163,7 +162,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 				Collation:     c.Collation,
 				EnvironmentId: dbEnvironmentID,
 				DatabaseName:  databaseName,
-				SheetSha256:   sheet.Sha256,
+				Source: &storepb.Task_SheetSha256{
+					SheetSha256: sheet.Sha256,
+				},
 			},
 		}
 		return []*store.TaskMessage{
@@ -188,20 +189,55 @@ func getTaskCreatesFromChangeDatabaseConfig(
 		return nil, err
 	}
 
-	// If a release is specified, we need to expand it into individual tasks for each release file
-	if c.Release != "" {
-		return getTaskCreatesFromChangeDatabaseConfigWithRelease(ctx, s, spec, c, databases)
-	}
-
-	// Possible targets: list of instances/{instance}/databases/{database}.
 	var tasks []*store.TaskMessage
 	for _, database := range databases {
-		v, err := getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(spec, c, database)
-		if err != nil {
-			return nil, err
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
 		}
-		tasks = append(tasks, v...)
+
+		// Determine task type
+		taskType := storepb.Task_DATABASE_MIGRATE
+		if c.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL {
+			taskType = storepb.Task_DATABASE_SDL
+		}
+
+		// Build task payload
+		payload := &storepb.Task{
+			SpecId:            spec.Id,
+			EnablePriorBackup: c.EnablePriorBackup,
+		}
+
+		// Set source: either release or sheet
+		if c.Release != "" {
+			payload.Source = &storepb.Task_Release{
+				Release: c.Release,
+			}
+		} else {
+			payload.Source = &storepb.Task_SheetSha256{
+				SheetSha256: c.SheetSha256,
+			}
+		}
+
+		// Add ghost flags if specified
+		if c.EnableGhost {
+			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
+				return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+			}
+			payload.Flags = c.GhostFlags
+			payload.EnableGhost = c.EnableGhost
+		}
+
+		taskCreate := &store.TaskMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Environment:  env,
+			Type:         taskType,
+			Payload:      payload,
+		}
+		tasks = append(tasks, taskCreate)
 	}
+
 	return tasks, nil
 }
 
@@ -266,9 +302,11 @@ func getTaskCreatesFromExportDataConfig(
 	}
 
 	payload := &storepb.Task{
-		SpecId:      spec.Id,
-		SheetSha256: c.SheetSha256,
-		Format:      c.Format,
+		SpecId: spec.Id,
+		Source: &storepb.Task_SheetSha256{
+			SheetSha256: c.SheetSha256,
+		},
+		Format: c.Format,
 	}
 	if c.Password != nil {
 		payload.Password = *c.Password
@@ -289,196 +327,6 @@ func getTaskCreatesFromExportDataConfig(
 		})
 	}
 	return tasks, nil
-}
-
-func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
-	spec *storepb.PlanConfig_Spec,
-	c *storepb.PlanConfig_ChangeDatabaseConfig,
-	database *store.DatabaseMessage,
-) ([]*store.TaskMessage, error) {
-	switch c.Type {
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
-		}
-
-		// Handle ghost flags if ghost migration is enabled
-		var flags map[string]string
-		if c.EnableGhost {
-			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-				return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
-			}
-			flags = c.GhostFlags
-		}
-
-		taskCreate := &store.TaskMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Environment:  env,
-			Type:         storepb.Task_DATABASE_MIGRATE,
-			Payload: &storepb.Task{
-				SpecId:            spec.Id,
-				SheetSha256:       c.SheetSha256,
-				Flags:             flags,
-				EnablePriorBackup: c.EnablePriorBackup,
-				EnableGhost:       c.EnableGhost,
-			},
-		}
-		return []*store.TaskMessage{taskCreate}, nil
-
-	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
-		}
-		taskCreate := &store.TaskMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Environment:  env,
-			Type:         storepb.Task_DATABASE_SDL,
-			Payload: &storepb.Task{
-				SpecId:      spec.Id,
-				SheetSha256: c.SheetSha256,
-			},
-		}
-		return []*store.TaskMessage{taskCreate}, nil
-
-	default:
-		return nil, errors.Errorf("unsupported change database config type %q", c.Type)
-	}
-}
-
-func getTaskCreatesFromChangeDatabaseConfigWithRelease(
-	ctx context.Context,
-	s *store.Store,
-	spec *storepb.PlanConfig_Spec,
-	c *storepb.PlanConfig_ChangeDatabaseConfig,
-	databases []*store.DatabaseMessage,
-) ([]*store.TaskMessage, error) {
-	// Parse release name to get project ID and release UID
-	_, releaseUID, err := common.GetProjectReleaseUID(c.Release)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse release name %q", c.Release)
-	}
-
-	// Fetch the release
-	release, err := s.GetReleaseByUID(ctx, releaseUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get release %d", releaseUID)
-	}
-	if release == nil {
-		return nil, errors.Errorf("release %d not found", releaseUID)
-	}
-
-	// Create tasks for each release file that hasn't been applied
-	var taskCreates []*store.TaskMessage
-	for _, database := range databases {
-		// Get existing revisions for the database to check which files have already been applied
-		revisions, err := s.ListRevisions(ctx, &store.FindRevisionMessage{
-			InstanceID:   &database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list revisions for database %q", database.DatabaseName)
-		}
-
-		// Find the max declarative version. Could be nil.
-		var maxDeclarativeVersion *model.Version
-		// Create a map of applied versions of VERSIONED revisions
-		appliedVersions := make(map[string]string) // version -> sha256
-		for _, revision := range revisions {
-			switch revision.Payload.Type {
-			case storepb.SchemaChangeType_VERSIONED:
-				appliedVersions[revision.Version] = revision.Payload.SheetSha256
-			case storepb.SchemaChangeType_DECLARATIVE:
-				v, err := model.NewVersion(revision.Version)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse revision version %q", revision.Version)
-				}
-				if maxDeclarativeVersion == nil || maxDeclarativeVersion.LessThan(v) {
-					maxDeclarativeVersion = v
-				}
-			default:
-				return nil, errors.Errorf("unexpected revision type %q", revision.Payload.Type)
-			}
-		}
-
-		for _, file := range release.Payload.Files {
-			switch file.Type {
-			case storepb.SchemaChangeType_VERSIONED:
-				// Skip if this version has already been applied
-				if _, ok := appliedVersions[file.Version]; ok {
-					// Skip files that have been applied with the same content
-					// If SHA256 differs, it means the file has been modified after being applied. CheckRelease should have warned it.
-					continue
-				}
-
-				// Create task payload
-				payload := &storepb.Task{
-					SpecId:        spec.Id,
-					SheetSha256:   file.SheetSha256,
-					SchemaVersion: file.Version,
-					EnableGhost:   file.EnableGhost,
-					TaskReleaseSource: &storepb.TaskReleaseSource{
-						File: common.FormatReleaseFile(c.Release, file.Id),
-					},
-				}
-
-				// Add ghost flags if this is a ghost migration
-				if file.EnableGhost && c.GhostFlags != nil {
-					payload.Flags = c.GhostFlags
-				}
-
-				env := ""
-				if database.EffectiveEnvironmentID != nil {
-					env = *database.EffectiveEnvironmentID
-				}
-				taskCreate := &store.TaskMessage{
-					InstanceID:   database.InstanceID,
-					DatabaseName: &database.DatabaseName,
-					Environment:  env,
-					Type:         storepb.Task_DATABASE_MIGRATE,
-					Payload:      payload,
-				}
-				taskCreates = append(taskCreates, taskCreate)
-			case storepb.SchemaChangeType_DECLARATIVE:
-				// skip if applied revisions contain an equal or higher version than the declarative file
-				v, err := model.NewVersion(file.Version)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse file version %q", file.Version)
-				}
-				if maxDeclarativeVersion != nil && v.LessThanOrEqual(maxDeclarativeVersion) {
-					continue
-				}
-
-				payload := &storepb.Task{
-					SpecId:        spec.Id,
-					SheetSha256:   file.SheetSha256,
-					SchemaVersion: file.Version,
-					TaskReleaseSource: &storepb.TaskReleaseSource{
-						File: common.FormatReleaseFile(c.Release, file.Id),
-					},
-				}
-				env := ""
-				if database.EffectiveEnvironmentID != nil {
-					env = *database.EffectiveEnvironmentID
-				}
-				taskCreate := &store.TaskMessage{
-					InstanceID:   database.InstanceID,
-					DatabaseName: &database.DatabaseName,
-					Environment:  env,
-					Type:         storepb.Task_DATABASE_SDL,
-					Payload:      payload,
-				}
-				taskCreates = append(taskCreates, taskCreate)
-			default:
-				return nil, errors.Errorf("unsupported release file type %q", file.Type)
-			}
-		}
-	}
-
-	return taskCreates, nil
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
