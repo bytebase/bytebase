@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"time"
 
 	"github.com/pkg/errors"
@@ -63,29 +62,6 @@ type TaskFind struct {
 	TypeList *[]storepb.Task_Type
 
 	LatestTaskRunStatusList *[]storepb.TaskRun_Status
-}
-
-// TaskPatch is the API message for patching a task.
-type TaskPatch struct {
-	ID int
-
-	// Standard fields
-	// Value is assigned from the jwt subject field passed by the client.
-	UpdaterID int
-
-	// Domain specific fields
-	DatabaseName *string
-	Type         *storepb.Task_Type
-
-	SheetSha256       *string
-	SchemaVersion     *string
-	ExportFormat      *storepb.ExportFormat
-	ExportPassword    *string
-	EnablePriorBackup *bool
-	EnableGhost       *bool
-
-	// Flags for gh-ost.
-	Flags *map[string]string
 }
 
 // GetTaskByID gets a task by ID.
@@ -388,97 +364,6 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 		return nil, err
 	}
 	return tasks, nil
-}
-
-// UpdateTask updates an existing task.
-// Returns ENOTFOUND if task does not exist.
-func (s *Store) UpdateTask(ctx context.Context, patch *TaskPatch) (*TaskMessage, error) {
-	set := qb.Q()
-	if v := patch.DatabaseName; v != nil {
-		set.Comma("db_name = ?", *v)
-	}
-	if v := patch.Type; v != nil {
-		set.Comma("type = ?", v.String())
-	}
-
-	payloadParts := qb.Q()
-	if v := patch.SheetSha256; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('sheetSha256', ?::TEXT)", *v)
-	}
-	if v := patch.SchemaVersion; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('schemaVersion', ?::TEXT)", *v)
-	}
-	if v := patch.ExportFormat; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('format', ?::INT)", *v)
-	}
-	if v := patch.ExportPassword; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('password', ?::TEXT)", *v)
-	}
-	if v := patch.EnablePriorBackup; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('enablePriorBackup', ?::BOOLEAN)", *v)
-	}
-	if v := patch.EnableGhost; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('enableGhost', ?::BOOLEAN)", *v)
-	}
-	if v := patch.Flags; v != nil {
-		jsonb, err := json.Marshal(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal flags")
-		}
-		payloadParts.Join(" || ", "jsonb_build_object('flags', ?::JSONB)", jsonb)
-	}
-	if payloadParts.Len() > 0 {
-		set.Comma("payload = payload || ?", payloadParts)
-	}
-
-	if set.Len() == 0 {
-		return nil, errors.Errorf("no fields to update")
-	}
-
-	query, args, err := qb.Q().Space(`UPDATE task SET ? WHERE id = ? RETURNING id, plan_id, instance, db_name, environment, type, payload`, set, patch.ID).ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	task := &TaskMessage{}
-	var payload []byte
-	var typeString string
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&task.ID,
-		&task.PlanID,
-		&task.InstanceID,
-		&task.DatabaseName,
-		&task.Environment,
-		&typeString,
-		&payload,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task not found with ID %d", patch.ID)}
-		}
-		return nil, err
-	}
-	if typeValue, ok := storepb.Task_Type_value[typeString]; ok {
-		task.Type = storepb.Task_Type(typeValue)
-	} else {
-		return nil, errors.Errorf("invalid task type string: %s", typeString)
-	}
-
-	taskPayload := &storepb.Task{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal plan config")
-	}
-	task.Payload = taskPayload
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return task, nil
 }
 
 // BatchSkipTasks batch skip tasks.
