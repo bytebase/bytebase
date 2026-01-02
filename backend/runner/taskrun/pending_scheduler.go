@@ -72,7 +72,6 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 		return nil
 	}
 
-
 	// Check 3: Database mutual exclusion (for sequential tasks)
 	canProceed, blockingTaskID := sc.checkDatabaseMutualExclusion(task)
 	if !canProceed {

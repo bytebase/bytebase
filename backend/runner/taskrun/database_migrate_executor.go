@@ -280,6 +280,8 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 				maxDeclarativeVersion = v
 				maxDeclarativeVersionString = revision.Version
 			}
+		default:
+			// Ignore other schema change types
 		}
 	}
 
