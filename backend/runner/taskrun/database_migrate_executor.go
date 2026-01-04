@@ -345,8 +345,44 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 				slog.String("database", *task.DatabaseName),
 				slog.String("file", file.Path))
 
-			// Execute SDL migration for this file
-			_, _, err = runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version)
+			// Get instance and database for SDL diff
+			instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+			if err != nil {
+				return true, nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
+			}
+			database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+			if err != nil {
+				return true, nil, errors.Wrapf(err, "failed to get database %s", *task.DatabaseName)
+			}
+
+			// Create execFunc that uses SDL diff logic (same pattern as SchemaDeclareExecutor)
+			execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
+				opts.LogComputeDiffStart()
+				migrationSQL, err := diff(ctx, exec.store, instance, database, execStatement)
+				if err != nil {
+					opts.LogComputeDiffEnd(err.Error())
+					return errors.Wrapf(err, "failed to diff database schema")
+				}
+				opts.LogComputeDiffEnd("")
+
+				// Log statement string.
+				opts.LogCommandStatement = true
+				if _, err := driver.Execute(ctx, migrationSQL, opts); err != nil {
+					return err
+				}
+				return nil
+			}
+
+			// Temporarily change task type to DATABASE_SDL so revision is created with correct type
+			originalTaskType := task.Type
+			task.Type = storepb.Task_DATABASE_SDL
+
+			// Execute SDL migration for this file using the diff logic
+			_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, execFunc)
+
+			// Restore original task type
+			task.Type = originalTaskType
+
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to execute declarative release file %s (version %s)", file.Path, file.Version)
 			}
