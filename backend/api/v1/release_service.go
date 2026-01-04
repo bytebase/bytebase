@@ -64,7 +64,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
 	}
 
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files, true)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, req.Msg.Release.Files, req.Msg.Release.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
@@ -446,13 +446,12 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 
 // validateAndSanitizeReleaseFiles validates and sanitizes the release files inputs.
 // It ensures that each file has either a sheet or a statement, and that the sheet is valid.
-// It also checks for duplicate versions and sorts the files by version.
-// For creating release with declarative files, it checks if there is only one file.
+// It also checks for duplicate versions in versioned releases and sorts the files by version.
 //
 // The input files are modified in place.
 // If a sheet is provided, it populates the statement from the sheet.
 // If a statement is provided, it computes the sheetSha256 from the statement.
-func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File, _ bool) ([]*v1pb.Release_File, error) {
+func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File, releaseType v1pb.Release_Type) ([]*v1pb.Release_File, error) {
 	if len(files) == 0 {
 		return nil, errors.Errorf("release files cannot be empty")
 	}
@@ -492,11 +491,14 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 		default:
 		}
 
-		// Version validation only - no per-file type checking
-		if _, ok := versionSet[f.Version]; ok {
-			return nil, errors.Errorf("found duplicate version %q", f.Version)
+		// Version validation for versioned releases only.
+		// Declarative releases can have multiple files with the same version.
+		if releaseType == v1pb.Release_VERSIONED {
+			if _, ok := versionSet[f.Version]; ok {
+				return nil, errors.Errorf("found duplicate version %q", f.Version)
+			}
+			versionSet[f.Version] = struct{}{}
 		}
-		versionSet[f.Version] = struct{}{}
 	}
 
 	// Create files with additional parsed version data for sorting.

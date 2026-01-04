@@ -109,7 +109,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate and sanitize release files.
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, false)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, request.Release.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
