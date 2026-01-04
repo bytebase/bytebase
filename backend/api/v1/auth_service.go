@@ -56,8 +56,6 @@ const (
 	errMsgInvalidRecoveryCode = "invalid recovery code"
 	errMsgTooManyPassword     = "too many failed login attempts, please try again later" // Will be used for password rate limiting
 	errMsgTooManyMFA          = "too many failed MFA attempts, please try again later"
-
-	refreshTokenGracePeriod = 30 * time.Second
 )
 
 var (
@@ -187,9 +185,9 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token not found"))
 	}
 
-	// 2. Look up in database
+	// 2. Look up and delete atomically
 	tokenHash := auth.HashToken(refreshToken)
-	stored, err := s.store.GetWebRefreshToken(ctx, tokenHash)
+	stored, err := s.store.GetAndDeleteWebRefreshToken(ctx, tokenHash)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get refresh token"))
 	}
@@ -199,25 +197,10 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 
 	// 3. Check expiration
 	if time.Now().After(stored.ExpiresAt) {
-		if err := s.store.DeleteWebRefreshToken(ctx, tokenHash); err != nil {
-			slog.Error("failed to delete expired refresh token", log.BBError(err))
-		}
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token expired"))
 	}
 
-	// 4. Check if already rotated (grace period)
-	if stored.RotatedAt != nil {
-		if time.Since(*stored.RotatedAt) > refreshTokenGracePeriod {
-			if err := s.store.DeleteWebRefreshToken(ctx, tokenHash); err != nil {
-				slog.Error("failed to delete rotated refresh token", log.BBError(err))
-			}
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token already used"))
-		}
-		// Within grace period - return success but don't issue new tokens
-		return connect.NewResponse(&v1pb.RefreshResponse{}), nil
-	}
-
-	// 5. Get user
+	// 4. Get user
 	user, err := s.store.GetUserByEmail(ctx, stored.UserEmail)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get user"))
@@ -226,19 +209,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	// 6. Atomically mark old token as rotated (grace period starts)
-	// If another request already rotated it, we're in a race - return success without new tokens
-	rotated, err := s.store.MarkWebRefreshTokenRotated(ctx, tokenHash)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to rotate refresh token"))
-	}
-	if !rotated {
-		// Another request already rotated this token - we're within grace period
-		// Return success but don't issue new tokens (the other request already did)
-		return connect.NewResponse(&v1pb.RefreshResponse{}), nil
-	}
-
-	// 7. Issue new tokens
+	// 5. Issue new tokens
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService)
 	accessToken, err := auth.GenerateAccessToken(user.Email, s.secret, accessTokenDuration)
 	if err != nil {
@@ -259,7 +230,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
 	}
 
-	// 8. Set cookies and return
+	// 6. Set cookies and return
 	resp := connect.NewResponse(&v1pb.RefreshResponse{})
 	origin := req.Header().Get("Origin")
 	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, accessToken).String())

@@ -309,7 +309,7 @@ func migrateAuditLogBatch(ctx context.Context, conn *sql.Conn, userMap map[int]s
 		}
 
 		newUserRef := convertUserIDToEmail(userRef, userMap)
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d)", argPos, argPos+1))
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d::bigint, $%d::text)", argPos, argPos+1))
 		valueArgs = append(valueArgs, id, newUserRef)
 		argPos += 2
 		maxID = id
