@@ -113,7 +113,7 @@
       title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: updater_id'
       startposition:
-        line: 5
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -142,7 +142,7 @@
       title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: creator_id'
       startposition:
-        line: 5
+        line: 1
         column: 0
       endposition: null
     - status: 2
@@ -150,7 +150,7 @@
       title: COLUMN_REQUIRED
       content: 'Table `student` requires columns: creator_id, updater_id'
       startposition:
-        line: 9
+        line: 6
         column: 0
       endposition: null
 - statement: |-
