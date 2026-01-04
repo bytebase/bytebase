@@ -759,7 +759,6 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 
 			// Plan checks only run for sheet-based migrations (releases are skipped above).
 			// Sheet-based migrations are always imperative (MIGRATE), never declarative (SDL).
-			enableSDL := false
 			enableGhost := config.ChangeDatabaseConfig.EnableGhost
 
 			for _, target := range databases {
@@ -776,7 +775,6 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
 					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,
 					EnableGhost:       config.ChangeDatabaseConfig.EnableGhost,
-					EnableSdl:         enableSDL,
 					GhostFlags:        config.ChangeDatabaseConfig.GhostFlags,
 					Types:             types,
 				})

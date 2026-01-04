@@ -23,7 +23,6 @@ message PlanCheckRunConfig {
     string sheet_sha256 = 2;
     bool enable_prior_backup = 3;
     bool enable_ghost = 4;
-    bool enable_sdl = 5;
     map<string, string> ghost_flags = 6;
     repeated PlanCheckType types = 7;
   }

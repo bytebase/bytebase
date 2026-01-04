@@ -2988,7 +2988,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | sheet_sha256 | [string](#string) |  |  |
 | enable_prior_backup | [bool](#bool) |  |  |
 | enable_ghost | [bool](#bool) |  |  |
-| enable_sdl | [bool](#bool) |  |  |
 | ghost_flags | [PlanCheckRunConfig.CheckTarget.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry) | repeated |  |
 | types | [PlanCheckType](#bytebase-store-PlanCheckType) | repeated |  |
 

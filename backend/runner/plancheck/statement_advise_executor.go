@@ -60,7 +60,6 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *stor
 	}
 	enablePriorBackup := target.EnablePriorBackup
 	enableGhost := target.EnableGhost
-	enableSDL := target.EnableSdl
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
 	if err != nil {
@@ -93,7 +92,7 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *stor
 		return nil, errors.Errorf("database not found %q", databaseName)
 	}
 
-	results, err := e.runReview(ctx, instance, database, fullSheet.Statement, enablePriorBackup, enableGhost, enableSDL)
+	results, err := e.runReview(ctx, instance, database, fullSheet.Statement, enablePriorBackup, enableGhost)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +118,6 @@ func (e *StatementAdviseExecutor) runReview(
 	statement string,
 	enablePriorBackup bool,
 	enableGhost bool,
-	enableSDL bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
 	dbMetadata, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
@@ -168,7 +166,6 @@ func (e *StatementAdviseExecutor) runReview(
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
 		DBSchema:              dbMetadata.GetProto(),
-		EnableSDL:             enableSDL,
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,
 		FinalMetadata:         finalMetadata,
