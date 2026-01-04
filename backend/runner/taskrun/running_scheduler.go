@@ -271,9 +271,6 @@ func isSequentialTask(task *store.TaskMessage) bool {
 	case storepb.Task_DATABASE_MIGRATE:
 		// All DATABASE_MIGRATE operations (DDL/GHOST) should be sequential
 		return true
-	case storepb.Task_DATABASE_SDL:
-		// SDL operations should be sequential
-		return true
 	case storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
 		return false

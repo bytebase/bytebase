@@ -4713,9 +4713,8 @@ Type represents the type of database operation to perform.
 | ---- | ------ | ----------- |
 | TASK_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CREATE | 1 | Create a new database. |
-| DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
+| DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. Execution strategy is determined by release type (VERSIONED/DECLARATIVE) or sheet content for non-release tasks. |
 | DATABASE_EXPORT | 3 | Export data from a database. |
-| DATABASE_SDL | 4 | Apply declarative schema changes (state-based migration). |
 
 
  

@@ -12850,19 +12850,15 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
               <tr>
                 <td>DATABASE_MIGRATE</td>
                 <td>2</td>
-                <td><p>Apply schema/data migrations to an existing database.</p></td>
+                <td><p>Apply schema/data migrations to an existing database.
+Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
+or sheet content for non-release tasks.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
                 <td>3</td>
                 <td><p>Export data from a database.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SDL</td>
-                <td>4</td>
-                <td><p>Apply declarative schema changes (state-based migration).</p></td>
               </tr>
             
           </tbody>

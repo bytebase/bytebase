@@ -1164,7 +1164,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
 	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xc3\x06\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xbd\x06\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12/\n" +
@@ -1176,7 +1176,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
 	"\x06digest\x18\b \x01(\tR\x06digest\x12-\n" +
-	"\x04type\x18\t \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xe7\x01\n" +
+	"\x04type\x18\t \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xe1\x01\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
@@ -1185,7 +1185,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
 	"\tstatement\x18\a \x01(\fB\x03\xe0A\x04R\tstatement\x12&\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256J\x04\b\x05\x10\x06\x1aN\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\x1aN\n" +
 	"\tVCSSource\x12/\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x14.bytebase.v1.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\"<\n" +
