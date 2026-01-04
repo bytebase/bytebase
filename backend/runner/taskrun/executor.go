@@ -388,7 +388,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	}
 
 	// create pending changelog
-	changelogType := convertTaskType(mc.task)
+	changelogType := convertTaskType(mc.task, mc.releaseType)
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:         mc.database.InstanceID,
 		DatabaseName:       mc.database.DatabaseName,
@@ -507,10 +507,15 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 	return current.LessThan(nv)
 }
 
-func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
+func convertTaskType(t *store.TaskMessage, releaseType storepb.SchemaChangeType) storepb.ChangelogPayload_Type {
 	//exhaustive:enforce
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
+		// For DATABASE_MIGRATE tasks, check if it's a DECLARATIVE release
+		// DECLARATIVE releases should create SDL type changelogs for SDL diff tracking
+		if releaseType == storepb.SchemaChangeType_DECLARATIVE {
+			return storepb.ChangelogPayload_SDL
+		}
 		return storepb.ChangelogPayload_MIGRATE
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
