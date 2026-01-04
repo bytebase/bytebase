@@ -23,7 +23,6 @@ message ReleasePayload {
     reserved 3; // Previously: string sheet (resource name)
     // The SHA256 hash of the sheet content (hex-encoded).
     string sheet_sha256 = 4;
-    reserved 5; // Previously: SchemaChangeType type
     string version = 6;
     // Whether to use gh-ost for online schema migration.
     bool enable_ghost = 7;

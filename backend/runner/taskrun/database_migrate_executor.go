@@ -128,7 +128,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 		}
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "")
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED)
 	if result != nil {
 		// Save prior backup detail to task run result.
 		result.PriorBackupDetail = priorBackupDetail
@@ -324,7 +324,7 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			})
 
 			// Execute migration for this file
-			_, _, err = runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version)
+			_, _, err = runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, releaseType)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
 			}
@@ -399,7 +399,7 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			task.Type = storepb.Task_DATABASE_SDL
 
 			// Execute SDL migration for this file using the diff logic
-			_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, execFunc)
+			_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, releaseType, execFunc)
 
 			// Restore original task type
 			task.Type = originalTaskType

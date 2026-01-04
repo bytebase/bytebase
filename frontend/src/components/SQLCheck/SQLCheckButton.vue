@@ -80,7 +80,7 @@ import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_p
 import {
   CheckReleaseRequestSchema,
   CheckReleaseResponseSchema,
-  Release_File_Type,
+  Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Level, AdviceSchema } from "@/types/proto-es/v1/sql_service_pb";
@@ -159,11 +159,11 @@ const runCheckInternal = async (statement: string) => {
   const request = create(CheckReleaseRequestSchema, {
     parent: database.project,
     release: {
+      type: Release_Type.VERSIONED,
       files: [
         {
           // Use "0" for dummy version.
           version: "0",
-          type: Release_File_Type.VERSIONED,
           statement: new TextEncoder().encode(statement),
           enableGhost: enableGhost ?? false,
         },

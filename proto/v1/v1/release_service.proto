@@ -318,8 +318,6 @@ message Release {
     // The path of the file. e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
 
-    reserved 5; // Previously: Type type (moved to Release level)
-
     // The version identifier for the file.
     string version = 6;
     // Whether to use gh-ost for online schema migration.
