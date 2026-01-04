@@ -15,6 +15,7 @@ import {
   unknownStage,
   unknownTask,
 } from "@/types";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Rollout,
@@ -305,4 +306,24 @@ export const databaseForTask = (project: Project, task: Task) => {
     default:
       return unknownDatabase();
   }
+};
+
+export const isReleaseBasedTask = (task: Task): boolean => {
+  if (task.payload?.case === "databaseUpdate") {
+    return task.payload.value.source?.case === "release";
+  }
+
+  return false;
+};
+
+export const releaseNameOfPlan = (plan: Plan): string | undefined => {
+  for (const spec of plan.specs) {
+    if (spec.config.case === "changeDatabaseConfig") {
+      const release = spec.config.value.release;
+      if (release) {
+        return release;
+      }
+    }
+  }
+  return undefined;
 };

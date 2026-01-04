@@ -148,7 +148,7 @@
         </div>
 
         <!-- SQL Statement section -->
-        <div>
+        <div v-if="!isReleaseTask">
           <div class="flex items-center justify-between mb-1">
             <span class="text-sm font-medium text-gray-700">{{ t("common.statement") }}</span>
             <RouterLink
@@ -240,6 +240,7 @@ import {
   extractStageNameFromTaskName,
   extractStageUID,
   extractTaskUID,
+  isReleaseBasedTask,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
@@ -314,6 +315,8 @@ const taskDetailRoute = computed(() => {
     },
   };
 });
+
+const isReleaseTask = computed(() => isReleaseBasedTask(props.task));
 
 const { loading, displayedStatement, isStatementTruncated } = useTaskStatement(
   () => props.task,
