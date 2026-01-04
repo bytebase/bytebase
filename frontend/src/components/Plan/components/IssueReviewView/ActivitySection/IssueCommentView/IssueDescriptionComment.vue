@@ -26,7 +26,7 @@
                 >
                   <ActionCreator :creator="creatorName" />
                   <span class="text-gray-600 wrap-break-word min-w-0">{{
-                    createdSentence
+                    $t("activity.sentence.created-issue")
                   }}</span>
                   <HumanizeTs
                     :ts="getTimeForPbTimestampProtoEs(createTime, 0) / 1000"
@@ -72,11 +72,10 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { PencilIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
@@ -84,11 +83,7 @@ import {
   IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  PlanSchema,
-  UpdatePlanRequestSchema,
-} from "@/types/proto-es/v1/plan_service_pb";
-import { hasProjectPermissionV2, isValidPlanName } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import EditableMarkdownContent from "./EditableMarkdownContent.vue";
 
@@ -96,8 +91,7 @@ defineProps<{
   issueComments: IssueComment[];
 }>();
 
-const { t } = useI18n();
-const { plan, issue } = usePlanContext();
+const { issue } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const { project } = useCurrentProjectV1();
@@ -108,20 +102,12 @@ const state = reactive({
   isSaving: false,
 });
 
-const hasPlan = computed(() => isValidPlanName(plan.value.name));
-
-const createdSentence = computed(() => {
-  // In IssueReviewView context, we always show "created issue"
-  // because this view is for managing issues (even though data may come from plan)
-  return t("activity.sentence.created-issue");
-});
-
 const creatorName = computed(() => {
-  return issue.value?.creator || plan.value?.creator || "";
+  return issue.value?.creator || "";
 });
 
 const createTime = computed((): Timestamp | undefined => {
-  return issue.value?.createTime || plan.value?.createTime;
+  return issue.value?.createTime;
 });
 
 const creator = computed(() => {
@@ -129,17 +115,12 @@ const creator = computed(() => {
 });
 
 const description = computed(() => {
-  return hasPlan.value
-    ? plan.value.description || ""
-    : issue.value?.description || "";
+  return issue.value?.description || "";
 });
 
 const allowEdit = computed(() => {
   if (currentUser.value.name === creator.value?.name) {
     return true;
-  }
-  if (hasPlan.value) {
-    return hasProjectPermissionV2(project.value, "bb.plans.update");
   }
   return hasProjectPermissionV2(project.value, "bb.issues.update");
 });
@@ -159,34 +140,21 @@ const cancelEdit = () => {
 };
 
 const saveEdit = async () => {
-  if (!allowSave.value) return;
+  if (!allowSave.value || !issue.value) return;
 
   try {
     state.isSaving = true;
 
-    if (hasPlan.value) {
-      const planPatch = create(PlanSchema, {
-        name: plan.value.name,
-        description: state.editContent,
-      });
-      const request = create(UpdatePlanRequestSchema, {
-        plan: planPatch,
-        updateMask: { paths: ["description"] },
-      });
-      const response = await planServiceClientConnect.updatePlan(request);
-      Object.assign(plan.value, response);
-    } else if (issue.value) {
-      const issuePatch = create(IssueSchema, {
-        name: issue.value.name,
-        description: state.editContent,
-      });
-      const request = create(UpdateIssueRequestSchema, {
-        issue: issuePatch,
-        updateMask: { paths: ["description"] },
-      });
-      const response = await issueServiceClientConnect.updateIssue(request);
-      Object.assign(issue.value, response);
-    }
+    const issuePatch = create(IssueSchema, {
+      name: issue.value.name,
+      description: state.editContent,
+    });
+    const request = create(UpdateIssueRequestSchema, {
+      issue: issuePatch,
+      updateMask: { paths: ["description"] },
+    });
+    const response = await issueServiceClientConnect.updateIssue(request);
+    Object.assign(issue.value, response);
 
     cancelEdit();
   } catch (error) {
