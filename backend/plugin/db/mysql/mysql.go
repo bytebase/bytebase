@@ -433,11 +433,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 
 				opts.LogCommandResponse(0, nil, err.Error())
 
-				return &db.ErrorWithPosition{
-					Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
-					Start: command.Start,
-					End:   command.End,
-				}
+				return err
 			}
 
 			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()
@@ -475,7 +471,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 		//nolint
 		exer := driverConn.(driver.ExecerContext)
 
-		for i, command := range commands {
+		for _, command := range commands {
 			opts.LogCommandExecute(command.Range, command.Text)
 
 			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
@@ -491,11 +487,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 				opts.LogCommandResponse(0, nil, err.Error())
 				// In auto-commit mode, we stop at the first error
 				// The database is left in a partially migrated state
-				return &db.ErrorWithPosition{
-					Err:   errors.Wrapf(err, "failed to execute statement %d in auto-commit mode", i+1),
-					Start: command.Start,
-					End:   command.End,
-				}
+				return err
 			}
 
 			allRowsAffected := sqlResult.(mysql.Result).AllRowsAffected()

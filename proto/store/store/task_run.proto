@@ -36,11 +36,6 @@ message TaskRunResult {
   // Detailed execution information or error message.
   string detail = 1;
 
-  // Starting position in the SQL statement where an error occurred.
-  Position start_position = 3;
-  // Ending position in the SQL statement where an error occurred.
-  Position end_position = 4;
-
   // UID of the export archive generated for export tasks.
   int32 export_archive_uid = 5;
 

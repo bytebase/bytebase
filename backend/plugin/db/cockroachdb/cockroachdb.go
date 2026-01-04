@@ -382,11 +382,7 @@ func (d *Driver) executeInTransactionMode(
 				if err != nil {
 					opts.LogCommandResponse(0, nil, err.Error())
 
-					return &db.ErrorWithPosition{
-						Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
-						Start: command.Start,
-						End:   command.End,
-					}
+					return err
 				}
 
 				var rowsAffected int64
