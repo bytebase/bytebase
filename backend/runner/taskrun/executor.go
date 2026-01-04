@@ -80,10 +80,6 @@ type migrateContext struct {
 		file string
 	}
 
-	// mutable
-	// changelog uid
-	changelog int64
-
 	// needDump indicates whether schema dump is needed before/after migration.
 	// False for pure DML (INSERT, UPDATE, DELETE) since they don't change schema.
 	needDump bool
@@ -272,8 +268,7 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	}
 
 	return true, &storepb.TaskRunResult{
-		Detail:    detail,
-		Changelog: common.FormatChangelog(instance.ResourceID, database.DatabaseName, mc.changelog),
+		Detail: detail,
 	}, nil
 }
 
@@ -290,7 +285,7 @@ func executeMigrationWithFunc(
 ) (skipped bool, resErr error) {
 	// Phase 1 - Dump before migration.
 	// Check if versioned is already applied.
-	skipExecution, err := beginMigration(ctx, s, mc, opts)
+	skipExecution, changelogUID, err := beginMigration(ctx, s, mc, opts)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to begin migration")
 	}
@@ -301,7 +296,7 @@ func executeMigrationWithFunc(
 	defer func() {
 		// Phase 3 - Dump after migration.
 		// Insert revision for versioned.
-		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */, opts); err != nil {
+		if err := endMigration(ctx, s, mc, changelogUID, resErr == nil /* isDone */, opts); err != nil {
 			slog.Error("failed to end migration",
 				log.BBError(err),
 			)
@@ -317,7 +312,8 @@ func executeMigrationWithFunc(
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext, opts db.ExecuteOptions) (bool, error) {
+// Returns (skipExecution, changelogUID, error).
+func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext, opts db.ExecuteOptions) (bool, int64, error) {
 	// list revisions and see if it has been applied
 	// we can do this because
 	// versioned migrations are executed one by one
@@ -336,21 +332,21 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				Type:         common.NewP(storepb.SchemaChangeType_DECLARATIVE),
 			})
 			if err != nil {
-				return false, errors.Wrapf(err, "failed to list revisions")
+				return false, 0, errors.Wrapf(err, "failed to list revisions")
 			}
 			if len(list) > 0 {
 				// If the version is equal or higher than the current version, return error
 				latestRevision := list[0]
 				latestVersion, err := model.NewVersion(latestRevision.Version)
 				if err != nil {
-					return false, errors.Wrapf(err, "failed to parse latest revision version %q", latestRevision.Version)
+					return false, 0, errors.Wrapf(err, "failed to parse latest revision version %q", latestRevision.Version)
 				}
 				currentVersion, err := model.NewVersion(mc.version)
 				if err != nil {
-					return false, errors.Wrapf(err, "failed to parse current version %q", mc.version)
+					return false, 0, errors.Wrapf(err, "failed to parse current version %q", mc.version)
 				}
 				if currentVersion.LessThanOrEqual(latestVersion) {
-					return false, errors.Errorf("cannot apply SDL migration with version %s because an equal or newer version %s already exists", mc.version, latestRevision.Version)
+					return false, 0, errors.Errorf("cannot apply SDL migration with version %s because an equal or newer version %s already exists", mc.version, latestRevision.Version)
 				}
 			}
 		} else {
@@ -362,12 +358,12 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				Type:         common.NewP(storepb.SchemaChangeType_VERSIONED),
 			})
 			if err != nil {
-				return false, errors.Wrapf(err, "failed to list revisions")
+				return false, 0, errors.Wrapf(err, "failed to list revisions")
 			}
 			if len(list) > 0 {
 				// This version has been executed.
 				// skip execution.
-				return true, nil
+				return true, 0, nil
 			}
 		}
 	}
@@ -379,7 +375,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
-			return false, errors.Wrapf(err, "failed to sync database metadata and schema")
+			return false, 0, errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
 		opts.LogDatabaseSyncEnd("")
 		syncHistoryPrevUID = &syncHistoryPrev
@@ -403,17 +399,16 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 			DumpVersion: schema.GetDumpFormatVersion(mc.instance.Metadata.GetEngine()),
 		}})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to create changelog")
+		return false, 0, errors.Wrapf(err, "failed to create changelog")
 	}
-	mc.changelog = changelogUID
 
-	return false, nil
+	return false, changelogUID, nil
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool, opts db.ExecuteOptions) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, changelogUID int64, isDone bool, opts db.ExecuteOptions) error {
 	update := &store.UpdateChangelogMessage{
-		UID: mc.changelog,
+		UID: changelogUID,
 	}
 
 	if mc.needDump {

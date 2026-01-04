@@ -484,9 +484,6 @@ message TaskRun {
   // Below are the results of a task run.
   // Detailed information about the task run result.
   string detail = 6;
-  // The resource name of the changelog.
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-  string changelog = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The time when the task run started execution.
   google.protobuf.Timestamp start_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
