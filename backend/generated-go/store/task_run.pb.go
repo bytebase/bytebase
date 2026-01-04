@@ -140,10 +140,6 @@ type TaskRunResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Detailed execution information or error message.
 	Detail string `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
-	// Starting position in the SQL statement where an error occurred.
-	StartPosition *Position `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	// Ending position in the SQL statement where an error occurred.
-	EndPosition *Position `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	// UID of the export archive generated for export tasks.
 	ExportArchiveUid int32 `protobuf:"varint,5,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
 	// Backup details that can be used to rollback changes.
@@ -190,20 +186,6 @@ func (x *TaskRunResult) GetDetail() string {
 		return x.Detail
 	}
 	return ""
-}
-
-func (x *TaskRunResult) GetStartPosition() *Position {
-	if x != nil {
-		return x.StartPosition
-	}
-	return nil
-}
-
-func (x *TaskRunResult) GetEndPosition() *Position {
-	if x != nil {
-		return x.EndPosition
-	}
-	return nil
 }
 
 func (x *TaskRunResult) GetExportArchiveUid() int32 {
@@ -584,11 +566,9 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"\xc4\x02\n" +
+	"\tAVAILABLE\x10\b\"\xc6\x01\n" +
 	"\rTaskRunResult\x12\x16\n" +
-	"\x06detail\x18\x01 \x01(\tR\x06detail\x12?\n" +
-	"\x0estart_position\x18\x03 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\x12,\n" +
+	"\x06detail\x18\x01 \x01(\tR\x06detail\x12,\n" +
 	"\x12export_archive_uid\x18\x05 \x01(\x05R\x10exportArchiveUid\x12Q\n" +
 	"\x13prior_backup_detail\x18\x06 \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\x12\x1c\n" +
 	"\tchangelog\x18\a \x01(\tR\tchangelog\"\xcd\x03\n" +
@@ -637,25 +617,23 @@ var file_store_task_run_proto_goTypes = []any{
 	(*PriorBackupDetail_Item)(nil),       // 5: bytebase.store.PriorBackupDetail.Item
 	(*PriorBackupDetail_Item_Table)(nil), // 6: bytebase.store.PriorBackupDetail.Item.Table
 	(*SchedulerInfo_WaitingCause)(nil),   // 7: bytebase.store.SchedulerInfo.WaitingCause
-	(*Position)(nil),                     // 8: bytebase.store.Position
-	(*timestamppb.Timestamp)(nil),        // 9: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil),        // 8: google.protobuf.Timestamp
+	(*Position)(nil),                     // 9: bytebase.store.Position
 }
 var file_store_task_run_proto_depIdxs = []int32{
-	8,  // 0: bytebase.store.TaskRunResult.start_position:type_name -> bytebase.store.Position
-	8,  // 1: bytebase.store.TaskRunResult.end_position:type_name -> bytebase.store.Position
-	3,  // 2: bytebase.store.TaskRunResult.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
-	5,  // 3: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
-	9,  // 4: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
-	7,  // 5: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
-	6,  // 6: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	6,  // 7: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	8,  // 8: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
-	8,  // 9: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	3, // 0: bytebase.store.TaskRunResult.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
+	5, // 1: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
+	8, // 2: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
+	7, // 3: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
+	6, // 4: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
+	6, // 5: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
+	9, // 6: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
+	9, // 7: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_store_task_run_proto_init() }

@@ -4834,8 +4834,6 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Detailed execution information or error message. |
-| start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
-| end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
 | prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
 | changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |

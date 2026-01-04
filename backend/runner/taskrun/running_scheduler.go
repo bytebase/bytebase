@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -165,11 +164,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		taskRunResult := &storepb.TaskRunResult{
 			Detail:    err.Error(),
 			Changelog: "",
-		}
-		var errWithPosition *db.ErrorWithPosition
-		if errors.As(err, &errWithPosition) {
-			taskRunResult.StartPosition = errWithPosition.Start
-			taskRunResult.EndPosition = errWithPosition.End
 		}
 		resultBytes, marshalErr := protojson.Marshal(taskRunResult)
 		if marshalErr != nil {

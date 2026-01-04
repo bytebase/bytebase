@@ -179,11 +179,7 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 		sqlResult, err := tx.ExecContext(ctx, command.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, nil, err.Error())
-			return 0, &db.ErrorWithPosition{
-				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
-				Start: command.Start,
-				End:   command.End,
-			}
+			return 0, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
@@ -207,7 +203,7 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 // executeInAutoCommitMode executes statements sequentially in auto-commit mode
 func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
-	for i, command := range commands {
+	for _, command := range commands {
 		opts.LogCommandExecute(command.Range, command.Text)
 
 		sqlResult, err := conn.ExecContext(ctx, command.Text)
@@ -215,11 +211,7 @@ func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, comm
 			opts.LogCommandResponse(0, nil, err.Error())
 			// In auto-commit mode, we stop at the first error
 			// The database is left in a partially migrated state
-			return totalRowsAffected, &db.ErrorWithPosition{
-				Err:   errors.Wrapf(err, "failed to execute statement %d in auto-commit mode", i+1),
-				Start: command.Start,
-				End:   command.End,
-			}
+			return totalRowsAffected, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {

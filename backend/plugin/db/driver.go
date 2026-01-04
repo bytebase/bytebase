@@ -352,18 +352,3 @@ func (o *ExecuteOptions) LogTransactionControl(t storepb.TaskRunLog_TransactionC
 		slog.Warn("failed to log command transaction control", log.BBError(err))
 	}
 }
-
-// ErrorWithPosition is the error with the position information.
-type ErrorWithPosition struct {
-	Err   error
-	Start *storepb.Position
-	End   *storepb.Position
-}
-
-func (e *ErrorWithPosition) Error() string {
-	return e.Err.Error()
-}
-
-func (e *ErrorWithPosition) Unwrap() error {
-	return e.Err
-}
