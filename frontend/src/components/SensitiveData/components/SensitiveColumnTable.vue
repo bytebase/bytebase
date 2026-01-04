@@ -14,7 +14,7 @@
 import { create } from "@bufbuild/protobuf";
 import { TrashIcon } from "lucide-vue-next";
 import { type DataTableColumn, NDataTable, NPopconfirm } from "naive-ui";
-import { computed, h, ref, watch, withModifiers } from "vue";
+import { computed, h, withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
@@ -45,32 +45,18 @@ const props = defineProps<{
   rowClickable: boolean;
   rowSelectable: boolean;
   columnList: MaskData[];
-  checkedColumnIndexList: number[];
+  checkedColumnList: MaskData[];
 }>();
 
 const emit = defineEmits<{
   (event: "delete", item: MaskData): void;
-  (event: "checked:update", list: number[]): void;
+  (event: "update:checkedColumnList", list: MaskData[]): void;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
-const checkedColumnIndex = ref<Set<number>>(
-  new Set(props.checkedColumnIndexList)
-);
 const settingStore = useSettingV1Store();
 const dbCatalogStore = useDatabaseCatalogV1Store();
-
-watch(
-  () => props.columnList,
-  () => (checkedColumnIndex.value = new Set()),
-  { deep: true }
-);
-watch(
-  () => props.checkedColumnIndexList,
-  (val) => (checkedColumnIndex.value = new Set(val)),
-  { deep: true }
-);
 
 const itemKey = (item: MaskData) => {
   const parts = [];
@@ -93,14 +79,7 @@ const classificationConfig = computed(() => {
 });
 
 const checkedItemKeys = computed(() => {
-  const keys: string[] = [];
-  props.checkedColumnIndexList.forEach((index) => {
-    const item = props.columnList[index];
-    if (item) {
-      keys.push(itemKey(item));
-    }
-  });
-  return keys;
+  return props.checkedColumnList.map(itemKey);
 });
 
 const dataTableColumns = computed(() => {
@@ -289,13 +268,13 @@ const onMaskingClear = async (item: MaskData) => {
 
 const handleUpdateCheckedRowKeys = (keys: string[]) => {
   const keysSet = new Set(keys);
-  const checkedIndexList: number[] = [];
-  props.columnList.forEach((item, index) => {
-    const key = itemKey(item);
+  const checkedList: MaskData[] = [];
+  for (const column of props.columnList) {
+    const key = itemKey(column);
     if (keysSet.has(key)) {
-      checkedIndexList.push(index);
+      checkedList.push(column);
     }
-  });
-  emit("checked:update", checkedIndexList);
+  }
+  emit("update:checkedColumnList", checkedList);
 };
 </script>

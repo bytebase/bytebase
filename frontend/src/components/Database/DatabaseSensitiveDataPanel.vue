@@ -36,9 +36,8 @@
       :row-selectable="!isMaskingForNoSQL"
       :show-operation="hasUpdateCatalogPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
-      :checked-column-index-list="checkedColumnIndexList"
+      v-model:checked-column-list="state.pendingGrantAccessColumn"
       @delete="onColumnRemove"
-      @checked:update="updateCheckedColumnList($event)"
     />
   </div>
 
@@ -313,32 +312,5 @@ const onGrantAccessButtonClick = () => {
     return;
   }
   state.showGrantAccessDrawer = true;
-};
-
-const checkedColumnIndexList = computed(() => {
-  const resp = [];
-  for (const column of state.pendingGrantAccessColumn) {
-    const index = filteredColumnList.value.findIndex((col) => {
-      return (
-        col.table === column.table &&
-        col.schema === column.schema &&
-        col.column === column.column
-      );
-    });
-    if (index >= 0) {
-      resp.push(index);
-    }
-  }
-  return resp;
-});
-
-const updateCheckedColumnList = (indexes: number[]) => {
-  state.pendingGrantAccessColumn = [];
-  for (const index of indexes) {
-    const col = filteredColumnList.value[index];
-    if (col) {
-      state.pendingGrantAccessColumn.push(col);
-    }
-  }
 };
 </script>
