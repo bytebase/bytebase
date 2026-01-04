@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // IdentityProviderService implements the identity provider service.
@@ -70,14 +71,8 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
-	}
-	// Use command-line flag value if set, otherwise use database value
-	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
-	if externalURL == "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
+	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile); err != nil {
+		return nil, err
 	}
 
 	if req.Msg.IdentityProvider == nil {
@@ -105,7 +100,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		return connect.NewResponse(identityProvider), nil
 	}
 
-	identityProviderMessage, err = s.store.CreateIdentityProvider(ctx, identityProviderMessage)
+	identityProviderMessage, err := s.store.CreateIdentityProvider(ctx, identityProviderMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create identity provider"))
 	}
@@ -229,14 +224,9 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
-	}
-	// Use command-line flag value if set, otherwise use database value
-	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
-	if externalURL == "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
+		return nil, err
 	}
 
 	switch identityProvider.Type {
@@ -262,7 +252,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to new oauth2 identity provider"))
 		}
 
-		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", externalURL)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to exchange access token, error: %s", err.Error()))
@@ -313,7 +303,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create new OIDC identity provider"))
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", externalURL)
 		token, err := oidcIdentityProvider.ExchangeToken(ctx, redirectURL, oidcContext.Code)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to exchange access token, error: %s", err.Error()))

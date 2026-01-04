@@ -19,8 +19,6 @@ import (
 type OperatorType string
 
 const (
-	setupExternalURLError = "external URL isn't setup yet, see https://docs.bytebase.com/get-started/self-host/external-url"
-
 	ComparatorTypeEqual        OperatorType = "="
 	ComparatorTypeLess         OperatorType = "<"
 	ComparatorTypeLessEqual    OperatorType = "<="

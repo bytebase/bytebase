@@ -684,18 +684,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("missing authorization token")
 	}
 
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
-	if err != nil {
-		return err
-	}
-	// Use command-line flag value if set, otherwise use database value
-	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
-	if externalURL == "" {
-		return errors.Errorf("external URL is empty")
-	}
-
 	workspaceID := c.Param("workspaceID")
-
 	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get system setting")

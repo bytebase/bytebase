@@ -10,6 +10,9 @@
       <NDivider />
     </template>
     <template #body>
+      <MissingExternalURLAttention
+        class="mb-6"
+      />
       <div class="flex flex-col gap-y-4">
         <div v-if="create">
           <div>
@@ -251,6 +254,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { MissingExternalURLAttention } from "@/components/v2/Form";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {

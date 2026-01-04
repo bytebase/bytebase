@@ -123,15 +123,6 @@ func Unobfuscate(dst, seed string) (string, error) {
 	return string(unobfuscated), nil
 }
 
-// GetEffectiveExternalURL returns the external URL to use, preferring the command-line flag over the database setting.
-// This ensures that when the --external-url flag is set, it takes precedence over any value stored in the database.
-func GetEffectiveExternalURL(flagValue, dbValue string) string {
-	if flagValue != "" {
-		return flagValue
-	}
-	return dbValue
-}
-
 // NormalizeExternalURL will format the external url.
 func NormalizeExternalURL(url string) (string, error) {
 	r := strings.TrimSpace(url)

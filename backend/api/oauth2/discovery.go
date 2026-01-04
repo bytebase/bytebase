@@ -2,10 +2,14 @@ package oauth2
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
+
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 type authorizationServerMetadata struct {
@@ -33,9 +37,15 @@ type protectedResourceMetadata struct {
 // It uses externalURL from profile/setting if configured, otherwise derives from the request.
 func (s *Service) getBaseURL(c echo.Context) string {
 	ctx := c.Request().Context()
-	if externalURL := s.getExternalURL(ctx); externalURL != "" {
+
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
+	if err != nil {
+		slog.Warn("failed to get external url for OAuth2", log.BBError(err))
+	}
+	if externalURL != "" {
 		return strings.TrimSuffix(externalURL, "/")
 	}
+
 	// Derive from request as fallback
 	req := c.Request()
 	scheme := "https"
