@@ -19,9 +19,6 @@ func (x *ReleasePayload_File) Equal(y *ReleasePayload_File) bool {
 	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
 	if x.Version != y.Version {
 		return false
 	}
@@ -66,6 +63,9 @@ func (x *ReleasePayload) Equal(y *ReleasePayload) bool {
 		}
 	}
 	if !x.VcsSource.Equal(y.VcsSource) {
+		return false
+	}
+	if x.Type != y.Type {
 		return false
 	}
 	return true

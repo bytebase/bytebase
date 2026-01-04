@@ -128,7 +128,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 		}
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "")
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED)
 	if result != nil {
 		// Save prior backup detail to task run result.
 		result.PriorBackupDetail = priorBackupDetail
@@ -235,7 +235,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		}
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", execFunc)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED, execFunc)
 }
 
 func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, releaseName string) (bool, *storepb.TaskRunResult, error) {
@@ -285,9 +285,12 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 		}
 	}
 
+	// Extract release type once before the loop
+	releaseType := release.Payload.Type
+
 	// Execute unapplied files in order
 	for _, file := range release.Payload.Files {
-		switch file.Type {
+		switch releaseType {
 		case storepb.SchemaChangeType_VERSIONED:
 			// Skip if already applied
 			if appliedVersions[file.Version] {
@@ -321,7 +324,7 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			})
 
 			// Execute migration for this file
-			_, _, err = runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version)
+			_, _, err = runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, releaseType)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
 			}
@@ -396,7 +399,7 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			task.Type = storepb.Task_DATABASE_SDL
 
 			// Execute SDL migration for this file using the diff logic
-			_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, execFunc)
+			_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, releaseType, execFunc)
 
 			// Restore original task type
 			task.Type = originalTaskType
@@ -406,7 +409,7 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			}
 
 		default:
-			return true, nil, errors.Errorf("unsupported release file type %q", file.Type)
+			return true, nil, errors.Errorf("unsupported release type %q", releaseType)
 		}
 	}
 

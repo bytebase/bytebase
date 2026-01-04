@@ -114,7 +114,7 @@ import {
 import {
   CheckReleaseRequestSchema,
   type CheckReleaseResponse_CheckResult,
-  Release_File_Type,
+  Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import { type Advice, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
@@ -216,11 +216,11 @@ const runChecks = async () => {
     const request = create(CheckReleaseRequestSchema, {
       parent: `${projectNamePrefix}${extractProjectResourceName(plan.value.name)}`,
       release: {
+        type: Release_Type.VERSIONED,
         files: [
           {
             // Use "0" for dummy version.
             version: "0",
-            type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
             enableGhost:
               config.type === DatabaseChangeType.MIGRATE && config.enableGhost,

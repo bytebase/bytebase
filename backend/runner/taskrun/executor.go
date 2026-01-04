@@ -80,6 +80,10 @@ type migrateContext struct {
 		file string
 	}
 
+	// releaseType is the schema change type from the release (if available).
+	// Set to SCHEMA_CHANGE_TYPE_UNSPECIFIED if not from a release.
+	releaseType storepb.SchemaChangeType
+
 	// needDump indicates whether schema dump is needed before/after migration.
 	// False for pure DML (INSERT, UPDATE, DELETE) since they don't change schema.
 	needDump bool
@@ -91,8 +95,8 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 	}
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string) (terminated bool, result *storepb.TaskRunResult, err error) {
-	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, syncer, profile, task, taskRunUID, sheet, schemaVersion, nil /* default */)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string, releaseType storepb.SchemaChangeType) (terminated bool, result *storepb.TaskRunResult, err error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, syncer, profile, task, taskRunUID, sheet, schemaVersion, releaseType, nil /* default */)
 }
 
 func runMigrationWithFunc(
@@ -106,12 +110,14 @@ func runMigrationWithFunc(
 	taskRunUID int,
 	sheet *store.SheetMessage,
 	schemaVersion string,
+	releaseType storepb.SchemaChangeType,
 	execFunc execFuncType,
 ) (terminated bool, result *storepb.TaskRunResult, err error) {
 	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheet, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
+	mc.releaseType = releaseType
 
 	// Pre-compute whether schema dump is needed.
 	// Skip dump for pure DML statements (INSERT, UPDATE, DELETE) as they don't change schema.
@@ -425,6 +431,15 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	if isDone {
 		// if isDone, record in revision
 		if mc.version != "" {
+			// Determine revision type from release if available, otherwise use task type
+			revisionType := storepb.SchemaChangeType_VERSIONED
+			if mc.releaseType != storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED {
+				revisionType = mc.releaseType
+			} else if mc.task.Type == storepb.Task_DATABASE_SDL {
+				// Fallback to task type for backward compatibility
+				revisionType = storepb.SchemaChangeType_DECLARATIVE
+			}
+
 			r := &store.RevisionMessage{
 				InstanceID:   mc.database.InstanceID,
 				DatabaseName: mc.database.DatabaseName,
@@ -434,11 +449,8 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					File:        mc.release.file,
 					SheetSha256: mc.sheet.Sha256,
 					TaskRun:     mc.taskRunName,
-					Type:        storepb.SchemaChangeType_VERSIONED,
+					Type:        revisionType,
 				},
-			}
-			if mc.task.Type == storepb.Task_DATABASE_SDL {
-				r.Payload.Type = storepb.SchemaChangeType_DECLARATIVE
 			}
 
 			revision, err := storeInstance.CreateRevision(ctx, r)

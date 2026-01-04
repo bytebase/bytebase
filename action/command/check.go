@@ -66,9 +66,16 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
+		releaseType := v1pb.Release_VERSIONED
+		if w.Declarative {
+			releaseType = v1pb.Release_DECLARATIVE
+		}
 		checkReleaseResponse, err := client.CheckRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
-			Parent:      w.Project,
-			Release:     &v1pb.Release{Files: releaseFiles},
+			Parent: w.Project,
+			Release: &v1pb.Release{
+				Files: releaseFiles,
+				Type:  releaseType,
+			},
 			Targets:     w.Targets,
 			CustomRules: w.CustomRules,
 		})

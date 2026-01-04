@@ -4,6 +4,7 @@
     <BasicInfo />
     <ReleaseFileTable
       :files="release.files"
+      :release-type="release.type"
       :show-selection="false"
       @row-click="(_, file) => (state.selectedReleaseFile = file)"
     />

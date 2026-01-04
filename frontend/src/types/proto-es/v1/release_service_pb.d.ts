@@ -456,6 +456,13 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
    * @generated from field: string digest = 8;
    */
   digest: string;
+
+  /**
+   * The type of schema change for all files in this release.
+   *
+   * @generated from field: bytebase.v1.Release.Type type = 9;
+   */
+  type: Release_Type;
 };
 
 /**
@@ -483,13 +490,6 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
    * @generated from field: string path = 2;
    */
   path: string;
-
-  /**
-   * The type of the file.
-   *
-   * @generated from field: bytebase.v1.Release.File.Type type = 5;
-   */
-  type: Release_File_Type;
 
   /**
    * The version identifier for the file.
@@ -538,39 +538,6 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
 export declare const Release_FileSchema: GenMessage<Release_File>;
 
 /**
- * The type of migration file.
- *
- * @generated from enum bytebase.v1.Release.File.Type
- */
-export enum Release_File_Type {
-  /**
-   * Unspecified type.
-   *
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Versioned migration file with sequential version numbers.
-   *
-   * @generated from enum value: VERSIONED = 1;
-   */
-  VERSIONED = 1,
-
-  /**
-   * Declarative schema definition file describing desired state.
-   *
-   * @generated from enum value: DECLARATIVE = 2;
-   */
-  DECLARATIVE = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.Release.File.Type.
- */
-export declare const Release_File_TypeSchema: GenEnum<Release_File_Type>;
-
-/**
  * Version control system source information.
  *
  * @generated from message bytebase.v1.Release.VCSSource
@@ -596,6 +563,39 @@ export declare type Release_VCSSource = Message<"bytebase.v1.Release.VCSSource">
  * Use `create(Release_VCSSourceSchema)` to create a new message.
  */
 export declare const Release_VCSSourceSchema: GenMessage<Release_VCSSource>;
+
+/**
+ * The type of schema change.
+ *
+ * @generated from enum bytebase.v1.Release.Type
+ */
+export enum Release_Type {
+  /**
+   * Unspecified type.
+   *
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Versioned schema migration.
+   *
+   * @generated from enum value: VERSIONED = 1;
+   */
+  VERSIONED = 1,
+
+  /**
+   * Declarative schema definition.
+   *
+   * @generated from enum value: DECLARATIVE = 2;
+   */
+  DECLARATIVE = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.Release.Type.
+ */
+export declare const Release_TypeSchema: GenEnum<Release_Type>;
 
 /**
  * ReleaseService manages releases for coordinating deployments.

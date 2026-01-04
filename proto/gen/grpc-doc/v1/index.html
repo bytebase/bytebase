@@ -2159,7 +2159,7 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.Release.File.Type"><span class="badge">E</span>Release.File.Type</a>
+                  <a href="#bytebase.v1.Release.Type"><span class="badge">E</span>Release.Type</a>
                 </li>
               
               
@@ -23769,6 +23769,13 @@ Whether to provide digest and how to generate it is up to the user.
 If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. </p></td>
                 </tr>
               
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Release.Type">Release.Type</a></td>
+                  <td></td>
+                  <td><p>The type of schema change for all files in this release. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23798,13 +23805,6 @@ If the digest is not empty, it must be unique in the project. Otherwise, an ALRE
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The path of the file. e.g., `2.2/V0001_create_table.sql`. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.Release.File.Type">Release.File.Type</a></td>
-                  <td></td>
-                  <td><p>The type of the file. </p></td>
                 </tr>
               
                 <tr>
@@ -24033,8 +24033,8 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
-        <h3 id="bytebase.v1.Release.File.Type">Release.File.Type</h3>
-        <p>The type of migration file.</p>
+        <h3 id="bytebase.v1.Release.Type">Release.Type</h3>
+        <p>The type of schema change.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -24050,13 +24050,13 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>VERSIONED</td>
                 <td>1</td>
-                <td><p>Versioned migration file with sequential version numbers.</p></td>
+                <td><p>Versioned schema migration.</p></td>
               </tr>
             
               <tr>
                 <td>DECLARATIVE</td>
                 <td>2</td>
-                <td><p>Declarative schema definition file describing desired state.</p></td>
+                <td><p>Declarative schema definition.</p></td>
               </tr>
             
           </tbody>

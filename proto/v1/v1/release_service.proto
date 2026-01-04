@@ -298,14 +298,26 @@ message Release {
   // If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
   string digest = 8;
 
+  // The type of schema change for all files in this release.
+  Type type = 9;
+
+  // The type of schema change.
+  enum Type {
+    // Unspecified type.
+    TYPE_UNSPECIFIED = 0;
+    // Versioned schema migration.
+    VERSIONED = 1;
+    // Declarative schema definition.
+    DECLARATIVE = 2;
+  }
+
   // A SQL file in a release.
   message File {
     // The unique identifier for the file.
     string id = 1;
     // The path of the file. e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
-    // The type of the file.
-    Type type = 5;
+
     // The version identifier for the file.
     string version = 6;
     // Whether to use gh-ost for online schema migration.
@@ -321,16 +333,6 @@ message Release {
     bytes statement = 7 [(google.api.field_behavior) = INPUT_ONLY];
     // The SHA256 hash value of the sheet content or the statement.
     string sheet_sha256 = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-    // The type of migration file.
-    enum Type {
-      // Unspecified type.
-      TYPE_UNSPECIFIED = 0;
-      // Versioned migration file with sequential version numbers.
-      VERSIONED = 1;
-      // Declarative schema definition file describing desired state.
-      DECLARATIVE = 2;
-    }
   }
 
   // Version control system source information.

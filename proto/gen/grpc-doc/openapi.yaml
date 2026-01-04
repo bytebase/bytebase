@@ -12611,6 +12611,14 @@ components:
                          The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
                          Whether to provide digest and how to generate it is up to the user.
                          If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - VERSIONED
+                        - DECLARATIVE
+                    type: string
+                    description: The type of schema change for all files in this release.
+                    format: enum
         Release_File:
             type: object
             properties:
@@ -12620,14 +12628,6 @@ components:
                 path:
                     type: string
                     description: The path of the file. e.g., `2.2/V0001_create_table.sql`.
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - VERSIONED
-                        - DECLARATIVE
-                    type: string
-                    description: The type of the file.
-                    format: enum
                 version:
                     type: string
                     description: The version identifier for the file.

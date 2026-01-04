@@ -17,12 +17,13 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   type Release_File,
-  Release_File_Type,
+  Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 
 const props = withDefaults(
   defineProps<{
     files: Release_File[];
+    releaseType: Release_Type;
     showSelection?: boolean;
     rowClickable?: boolean;
     selectedFiles?: Release_File[];
@@ -86,17 +87,17 @@ const columnList = computed(() => {
 });
 
 const getReleaseFileTypeText = (file: Release_File) => {
-  switch (file.type) {
-    case Release_File_Type.DECLARATIVE:
+  switch (props.releaseType) {
+    case Release_Type.DECLARATIVE:
       return "SDL";
-    case Release_File_Type.VERSIONED:
+    case Release_Type.VERSIONED:
       return file.enableGhost
         ? `${t("issue.title.change-database")} (gh-ost)`
         : t("issue.title.change-database");
-    case Release_File_Type.TYPE_UNSPECIFIED:
+    case Release_Type.TYPE_UNSPECIFIED:
       return "";
     default:
-      file.type satisfies never;
+      props.releaseType satisfies never;
       return "";
   }
 };

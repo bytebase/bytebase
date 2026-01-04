@@ -84,13 +84,13 @@
                 </div>
               </div>
               <div
-                v-if="file.type"
+                v-if="release.type"
                 :class="[
                   'inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs shrink-0',
                   'bg-blue-100 text-blue-800 ',
                 ]"
               >
-                {{ getReleaseFileTypeText(file.type) }}
+                {{ getReleaseFileTypeText(release.type) }}
               </div>
             </div>
             <div
@@ -162,7 +162,7 @@ import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidReleaseName } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { Release_File_Type } from "@/types/proto-es/v1/release_service_pb";
+import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
@@ -202,13 +202,13 @@ const getChangeTypeText = (enableGhost: boolean) => {
     : t("release.change-type.ddl");
 };
 
-const getReleaseFileTypeText = (fileType: Release_File_Type) => {
+const getReleaseFileTypeText = (fileType: Release_Type) => {
   switch (fileType) {
-    case Release_File_Type.VERSIONED:
+    case Release_Type.VERSIONED:
       return t("release.file-type.versioned");
-    case Release_File_Type.DECLARATIVE:
+    case Release_Type.DECLARATIVE:
       return t("release.file-type.declarative");
-    case Release_File_Type.TYPE_UNSPECIFIED:
+    case Release_Type.TYPE_UNSPECIFIED:
       return t("release.file-type.unspecified");
     default:
       fileType satisfies never;
