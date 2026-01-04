@@ -2196,8 +2196,13 @@ func (x *Task_DatabaseCreate) GetEnvironment() string {
 // Payload for updating a database schema.
 type Task_DatabaseUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	// The source can be either a sheet or a release.
+	//
+	// Types that are valid to be assigned to Source:
+	//
+	//	*Task_DatabaseUpdate_Sheet
+	//	*Task_DatabaseUpdate_Release
+	Source isTask_DatabaseUpdate_Source `protobuf_oneof:"source"`
 	// The target schema version after this update.
 	SchemaVersion string `protobuf:"bytes,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The type of database change (MIGRATE or SDL).
@@ -2236,9 +2241,27 @@ func (*Task_DatabaseUpdate) Descriptor() ([]byte, []int) {
 	return file_v1_rollout_service_proto_rawDescGZIP(), []int{16, 1}
 }
 
+func (x *Task_DatabaseUpdate) GetSource() isTask_DatabaseUpdate_Source {
+	if x != nil {
+		return x.Source
+	}
+	return nil
+}
+
 func (x *Task_DatabaseUpdate) GetSheet() string {
 	if x != nil {
-		return x.Sheet
+		if x, ok := x.Source.(*Task_DatabaseUpdate_Sheet); ok {
+			return x.Sheet
+		}
+	}
+	return ""
+}
+
+func (x *Task_DatabaseUpdate) GetRelease() string {
+	if x != nil {
+		if x, ok := x.Source.(*Task_DatabaseUpdate_Release); ok {
+			return x.Release
+		}
 	}
 	return ""
 }
@@ -2256,6 +2279,24 @@ func (x *Task_DatabaseUpdate) GetDatabaseChangeType() DatabaseChangeType {
 	}
 	return DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 }
+
+type isTask_DatabaseUpdate_Source interface {
+	isTask_DatabaseUpdate_Source()
+}
+
+type Task_DatabaseUpdate_Sheet struct {
+	// Format: projects/{project}/sheets/{sheet}
+	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3,oneof"`
+}
+
+type Task_DatabaseUpdate_Release struct {
+	// Format: projects/{project}/releases/{release}
+	Release string `protobuf:"bytes,4,opt,name=release,proto3,oneof"`
+}
+
+func (*Task_DatabaseUpdate_Sheet) isTask_DatabaseUpdate_Source() {}
+
+func (*Task_DatabaseUpdate_Release) isTask_DatabaseUpdate_Source() {}
 
 // Payload for exporting database data.
 type Task_DatabaseDataExport struct {
@@ -3596,7 +3637,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x02id\x18\x02 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
 	"\venvironment\x18\x03 \x01(\tR\venvironment\x12'\n" +
 	"\x05tasks\x18\x04 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:O\xeaAL\n" +
-	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\xef\v\n" +
+	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\x97\f\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\aspec_id\x18\x02 \x01(\tR\x06specId\x120\n" +
@@ -3618,11 +3659,13 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x04 \x01(\tR\x05sheet\x12#\n" +
 	"\rcharacter_set\x18\x05 \x01(\tR\fcharacterSet\x12\x1c\n" +
 	"\tcollation\x18\x06 \x01(\tR\tcollation\x12 \n" +
-	"\venvironment\x18\a \x01(\tR\venvironment\x1a\xa0\x01\n" +
-	"\x0eDatabaseUpdate\x12\x14\n" +
-	"\x05sheet\x18\x01 \x01(\tR\x05sheet\x12%\n" +
+	"\venvironment\x18\a \x01(\tR\venvironment\x1a\xc8\x01\n" +
+	"\x0eDatabaseUpdate\x12\x16\n" +
+	"\x05sheet\x18\x01 \x01(\tH\x00R\x05sheet\x12\x1a\n" +
+	"\arelease\x18\x04 \x01(\tH\x00R\arelease\x12%\n" +
 	"\x0eschema_version\x18\x02 \x01(\tR\rschemaVersion\x12Q\n" +
-	"\x14database_change_type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x12databaseChangeType\x1a\xa3\x01\n" +
+	"\x14database_change_type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x12databaseChangeTypeB\b\n" +
+	"\x06source\x1a\xa3\x01\n" +
 	"\x12DatabaseDataExport\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x121\n" +
@@ -4038,6 +4081,10 @@ func file_v1_rollout_service_proto_init() {
 	file_v1_rollout_service_proto_msgTypes[17].OneofWrappers = []any{}
 	file_v1_rollout_service_proto_msgTypes[21].OneofWrappers = []any{
 		(*TaskRunSession_Postgres_)(nil),
+	}
+	file_v1_rollout_service_proto_msgTypes[25].OneofWrappers = []any{
+		(*Task_DatabaseUpdate_Sheet)(nil),
+		(*Task_DatabaseUpdate_Release)(nil),
 	}
 	file_v1_rollout_service_proto_msgTypes[26].OneofWrappers = []any{}
 	file_v1_rollout_service_proto_msgTypes[31].OneofWrappers = []any{

@@ -326,7 +326,10 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Sheet != y.Sheet {
+	if x.GetSheet() != y.GetSheet() {
+		return false
+	}
+	if x.GetRelease() != y.GetRelease() {
 		return false
 	}
 	if x.SchemaVersion != y.SchemaVersion {

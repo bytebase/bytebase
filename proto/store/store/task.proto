@@ -27,8 +27,6 @@ message Task {
   string skipped_reason = 2;
   // UUID that identifies the spec this task implements.
   string spec_id = 3;
-  // The SHA256 hash of the sheet content (hex-encoded).
-  string sheet_sha256 = 4;
 
   // The environment where the database will be created.
   string environment_id = 5;
@@ -41,14 +39,20 @@ message Task {
   // Collation for the new database.
   string collation = 9;
 
-  // Schema version after migration is applied.
-  string schema_version = 10;
+  // Source of the task's SQL content - either a single sheet or an entire release.
+  oneof source {
+    // The SHA256 hash of a single sheet content (hex-encoded).
+    // Used for non-release tasks.
+    string sheet_sha256 = 10;
+    // The release resource name: projects/{project}/releases/{release}.
+    // Used for GitOps release-based tasks that execute multiple files.
+    string release = 13;
+  }
+
   // Whether to create an automatic backup before applying changes.
   bool enable_prior_backup = 11;
   // Configuration flags for gh-ost migration tool.
   map<string, string> flags = 12;
-  // Source information if task is created from a release.
-  TaskReleaseSource task_release_source = 13;
 
   // Password to encrypt the exported data archive.
   string password = 14;
@@ -56,11 +60,4 @@ message Task {
   ExportFormat format = 15;
   // Whether to use gh-ost for online schema migration.
   bool enable_ghost = 16;
-}
-
-// TaskReleaseSource contains information about the release file this task originated from.
-message TaskReleaseSource {
-  // Resource name of the release file.
-  // Format: projects/{project}/releases/{release}/files/{id}
-  string file = 1;
 }

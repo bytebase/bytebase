@@ -598,11 +598,27 @@ export declare const Task_DatabaseCreateSchema: GenMessage<Task_DatabaseCreate>;
  */
 export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpdate"> & {
   /**
-   * Format: projects/{project}/sheets/{sheet}
+   * The source can be either a sheet or a release.
    *
-   * @generated from field: string sheet = 1;
+   * @generated from oneof bytebase.v1.Task.DatabaseUpdate.source
    */
-  sheet: string;
+  source: {
+    /**
+     * Format: projects/{project}/sheets/{sheet}
+     *
+     * @generated from field: string sheet = 1;
+     */
+    value: string;
+    case: "sheet";
+  } | {
+    /**
+     * Format: projects/{project}/releases/{release}
+     *
+     * @generated from field: string release = 4;
+     */
+    value: string;
+    case: "release";
+  } | { case: undefined; value?: undefined };
 
   /**
    * The target schema version after this update.

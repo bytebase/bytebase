@@ -1414,7 +1414,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		err = json.Unmarshal(data1, &output1)
 		a.NoError(err)
 
-		// Execute second declarative rollout with same schema (should succeed but create empty rollout)
+		// Execute second declarative rollout with same schema (should succeed with task as no-op)
 		result2, err := executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
@@ -1428,7 +1428,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--output", outputFile2,
 			"--declarative",
 		)
-		// Second rollout should succeed due to new idempotency behavior
+		// Second rollout should succeed (SDL diff detects no changes, executes as no-op)
 		a.NoError(err, "Second declarative rollout should succeed")
 
 		// Read second output
@@ -1438,11 +1438,11 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		err = json.Unmarshal(data2, &output2)
 		a.NoError(err)
 
-		// Rollout should be created even if it's empty
+		// Rollout should be created for second execution
 		rolloutName := output2["rollout"]
 		a.NotEmpty(rolloutName, "Rollout should be created for second execution")
 
-		// Execute third declarative rollout with same schema (should also succeed but create empty rollout)
+		// Execute third declarative rollout with same schema (should also succeed with task as no-op)
 		result3, err := executeActionCommand(ctx,
 			"rollout",
 			"--url", ctl.rootURL,
@@ -1456,7 +1456,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--output", outputFile3,
 			"--declarative",
 		)
-		// Third rollout should also succeed due to new idempotency behavior
+		// Third rollout should also succeed (SDL diff detects no changes, executes as no-op)
 		a.NoError(err, "Third declarative rollout should succeed")
 
 		// Read third output
@@ -1466,7 +1466,7 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		err = json.Unmarshal(data3, &output3)
 		a.NoError(err)
 
-		// Verify that all rollouts reuse the same release
+		// Verify that all rollouts reuse the same release (content-based deduplication)
 		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
 			Parent: ctl.project.Name,
 		}))
@@ -1499,21 +1499,20 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NotContains(result2.Stderr, "error", "second rollout should complete without errors")
 		a.NotContains(result3.Stderr, "error", "third rollout should complete without errors")
 
-		// Verify that second rollout is created but empty (zero tasks)
+		// Verify that second rollout has 1 task (idempotency handled by SDL diff at execution)
 		rollout2, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 			Name: rolloutName,
 		}))
 		a.NoError(err)
-		// Check that rollout has zero tasks
+		// Check that rollout has 1 task (executes as no-op when schema matches)
 		totalTasks := 0
 		for _, stage := range rollout2.Msg.Stages {
 			totalTasks += len(stage.Tasks)
 		}
-		a.Equal(0, totalTasks, "Second rollout should have zero tasks")
-		// Empty rollout should have zero stages
-		a.Len(rollout2.Msg.Stages, 0, "Second rollout should have zero stages")
+		a.Equal(1, totalTasks, "Second rollout should have 1 task")
+		a.Len(rollout2.Msg.Stages, 1, "Second rollout should have 1 stage")
 
-		// Verify third rollout is also created but empty
+		// Verify third rollout also has 1 task
 		rolloutName3 := output3["rollout"]
 		a.NotEmpty(rolloutName3, "Rollout should be created for third execution")
 
@@ -1521,14 +1520,13 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			Name: rolloutName3,
 		}))
 		a.NoError(err)
-		// Check that rollout has zero tasks
+		// Check that rollout has 1 task (executes as no-op when schema matches)
 		totalTasks = 0
 		for _, stage := range rollout3.Msg.Stages {
 			totalTasks += len(stage.Tasks)
 		}
-		a.Equal(0, totalTasks, "Third rollout should have zero tasks")
-		// Empty rollout should have zero stages
-		a.Len(rollout3.Msg.Stages, 0, "Third rollout should have zero stages")
+		a.Equal(1, totalTasks, "Third rollout should have 1 task")
+		a.Len(rollout3.Msg.Stages, 1, "Third rollout should have 1 stage")
 	})
 
 	t.Run("DeclarativeMultipleDatabases", func(t *testing.T) {
