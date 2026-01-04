@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	"github.com/pkg/errors"
 )
@@ -65,13 +66,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	var webhookCtx webhook.Context
 	var mentionUsers []*store.UserMessage
 
-	setting, err := m.store.GetWorkspaceProfileSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get workspace setting")
-	}
-
 	// Use command-line flag value if set, otherwise use database value
-	externalURL := common.GetEffectiveExternalURL(m.profile.ExternalURL, setting.ExternalUrl)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, m.store, m.profile)
+	if err != nil {
+		return nil, err
+	}
 
 	level := webhook.WebhookInfo
 	title := ""

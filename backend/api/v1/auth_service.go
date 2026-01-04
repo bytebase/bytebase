@@ -31,6 +31,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -303,13 +304,10 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
+		return nil, err
 	}
-
-	// Use command-line flag value if set, otherwise use database value
-	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
 
 	var userInfo *storepb.IdentityProviderUserInfo
 	switch idp.Type {

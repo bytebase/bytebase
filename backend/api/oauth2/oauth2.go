@@ -1,7 +1,6 @@
 package oauth2
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -17,7 +16,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/store"
@@ -47,16 +45,6 @@ func NewService(store *store.Store, profile *config.Profile, secret string) *Ser
 		profile: profile,
 		secret:  secret,
 	}
-}
-
-// getExternalURL returns the effective external URL from profile flag or workspace setting.
-func (s *Service) getExternalURL(ctx context.Context) string {
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
-	if err != nil {
-		slog.Warn("failed to get workspace profile setting for OAuth2, using profile external URL", log.BBError(err))
-		return s.profile.ExternalURL
-	}
-	return common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
 }
 
 func (s *Service) RegisterRoutes(e *echo.Echo) {

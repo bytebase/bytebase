@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/utils"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -787,6 +788,10 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project))
 	}
 
+	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile); err != nil {
+		return nil, err
+	}
+
 	create, err := convertToStoreProjectWebhookMessage(req.Msg.Webhook)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -832,6 +837,10 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 	}
 	if project.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectID))
+	}
+
+	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile); err != nil {
+		return nil, err
 	}
 
 	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
@@ -952,14 +961,9 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 
 // TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v1pb.TestWebhookRequest]) (*connect.Response[v1pb.TestWebhookResponse], error) {
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
-	}
-	// Use command-line flag value if set, otherwise use database value
-	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
-	if externalURL == "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
+		return nil, err
 	}
 
 	projectID, err := common.GetProjectID(req.Msg.Project)
