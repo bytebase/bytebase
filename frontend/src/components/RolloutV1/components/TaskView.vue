@@ -84,7 +84,7 @@
     </div>
 
     <!-- Sheet Statement -->
-    <div class="w-full flex-1 min-h-0">
+    <div v-if="!isReleaseTask" class="w-full flex-1 min-h-0">
       <div class="flex items-center justify-between mb-2">
         <span class="text-base font-medium">{{ $t("common.statement") }}</span>
         <div>
@@ -161,6 +161,7 @@ import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
   getSheetStatement,
+  isReleaseBasedTask,
   sheetNameOfTaskV1,
 } from "@/utils";
 import TaskRollbackButton from "./TaskRollbackButton.vue";
@@ -211,6 +212,8 @@ const task = computed(() => {
     ) || unknownTask()
   );
 });
+
+const isReleaseTask = computed(() => isReleaseBasedTask(task.value));
 
 const taskRuns = computed(() => {
   return allTaskRuns.value.filter((run) =>
