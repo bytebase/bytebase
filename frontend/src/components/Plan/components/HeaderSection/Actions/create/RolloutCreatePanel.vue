@@ -75,9 +75,16 @@ import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { usePlanContext } from "@/components/Plan/logic";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import {
+  issueServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
+import {
+  BatchUpdateIssuesStatusRequestSchema,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUIDFromRolloutName,
@@ -162,6 +169,17 @@ const handleConfirm = async () => {
     const createdRollout = await rolloutServiceClientConnect.createRollout(
       create(CreateRolloutRequestSchema, { parent: plan.value.name })
     );
+
+    // Mark issue as done after rollout created.
+    if (issue.value) {
+      await issueServiceClientConnect.batchUpdateIssuesStatus(
+        create(BatchUpdateIssuesStatusRequestSchema, {
+          parent: project.value.name,
+          issues: [issue.value.name],
+          status: IssueStatus.DONE,
+        })
+      );
+    }
 
     pushNotification({
       module: "bytebase",

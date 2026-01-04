@@ -81,6 +81,7 @@ import {
   useCurrentProjectV1,
   useSheetV1Store,
 } from "@/store";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID } from "@/utils";
@@ -105,9 +106,10 @@ const { setEditingState } = useEditorState();
 const showAddSpecDrawer = ref(false);
 
 // Allow adding/removing specs when:
-// 1. Plan is being created (isCreating = true), OR
-// 2. Plan is created but rollout is empty (!plan.hasRollout)
+// 1. Plan is not closed (state !== DELETED), AND
+// 2. Plan is being created (isCreating = true), OR plan has no rollout
 const canModifySpecs = computed(() => {
+  if (plan.value.state === State.DELETED) return false;
   return isCreating.value || !plan.value.hasRollout;
 });
 
