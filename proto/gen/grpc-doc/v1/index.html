@@ -2502,6 +2502,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.ReleaseFileExecute"><span class="badge">M</span>TaskRunLogEntry.ReleaseFileExecute</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.RetryInfo"><span class="badge">M</span>TaskRunLogEntry.RetryInfo</a>
                 </li>
               
@@ -27599,6 +27603,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>Compute diff details (if type is COMPUTE_DIFF). </p></td>
                 </tr>
               
+                <tr>
+                  <td>release_file_execute</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.ReleaseFileExecute">TaskRunLogEntry.ReleaseFileExecute</a></td>
+                  <td></td>
+                  <td><p>Release file execution details (if type is RELEASE_FILE_EXECUTE). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -27811,6 +27822,37 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Error message if the backup failed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.ReleaseFileExecute">TaskRunLogEntry.ReleaseFileExecute</h3>
+        <p>Release file execution details.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The version of the file being executed (e.g., &#34;0001&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). </p></td>
                 </tr>
               
             </tbody>
@@ -28453,6 +28495,12 @@ Use payload DatabaseUpdate.</p></td>
                 <td>COMPUTE_DIFF</td>
                 <td>8</td>
                 <td><p>Schema diff computation.</p></td>
+              </tr>
+            
+              <tr>
+                <td>RELEASE_FILE_EXECUTE</td>
+                <td>9</td>
+                <td><p>Release file execution.</p></td>
               </tr>
             
           </tbody>

@@ -311,6 +311,15 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 				slog.String("database", *task.DatabaseName),
 				slog.String("file", file.Path))
 
+			// Log release file execution
+			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+				Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
+				ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
+					Version:  file.Version,
+					FilePath: file.Path,
+				},
+			})
+
 			// Execute migration for this file
 			_, _, err = runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version)
 			if err != nil {
@@ -344,6 +353,15 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 				slog.String("version", file.Version),
 				slog.String("database", *task.DatabaseName),
 				slog.String("file", file.Path))
+
+			// Log release file execution
+			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+				Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
+				ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
+					Version:  file.Version,
+					FilePath: file.Path,
+				},
+			})
 
 			// Get instance and database for SDL diff
 			instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})

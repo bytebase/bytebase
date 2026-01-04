@@ -1282,6 +1282,13 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
    * @generated from field: bytebase.v1.TaskRunLogEntry.ComputeDiff compute_diff = 11;
    */
   computeDiff?: TaskRunLogEntry_ComputeDiff;
+
+  /**
+   * Release file execution details (if type is RELEASE_FILE_EXECUTE).
+   *
+   * @generated from field: bytebase.v1.TaskRunLogEntry.ReleaseFileExecute release_file_execute = 12;
+   */
+  releaseFileExecute?: TaskRunLogEntry_ReleaseFileExecute;
 };
 
 /**
@@ -1673,6 +1680,33 @@ export declare type TaskRunLogEntry_ComputeDiff = Message<"bytebase.v1.TaskRunLo
 export declare const TaskRunLogEntry_ComputeDiffSchema: GenMessage<TaskRunLogEntry_ComputeDiff>;
 
 /**
+ * Release file execution details.
+ *
+ * @generated from message bytebase.v1.TaskRunLogEntry.ReleaseFileExecute
+ */
+export declare type TaskRunLogEntry_ReleaseFileExecute = Message<"bytebase.v1.TaskRunLogEntry.ReleaseFileExecute"> & {
+  /**
+   * The version of the file being executed (e.g., "0001").
+   *
+   * @generated from field: string version = 1;
+   */
+  version: string;
+
+  /**
+   * The file path within the release (e.g., "2.2/V0001_create_table.sql").
+   *
+   * @generated from field: string file_path = 2;
+   */
+  filePath: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.ReleaseFileExecute.
+ * Use `create(TaskRunLogEntry_ReleaseFileExecuteSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_ReleaseFileExecuteSchema: GenMessage<TaskRunLogEntry_ReleaseFileExecute>;
+
+/**
  * The type of log entry.
  *
  * @generated from enum bytebase.v1.TaskRunLogEntry.Type
@@ -1740,6 +1774,13 @@ export enum TaskRunLogEntry_Type {
    * @generated from enum value: COMPUTE_DIFF = 8;
    */
   COMPUTE_DIFF = 8,
+
+  /**
+   * Release file execution.
+   *
+   * @generated from enum value: RELEASE_FILE_EXECUTE = 9;
+   */
+  RELEASE_FILE_EXECUTE = 9,
 }
 
 /**

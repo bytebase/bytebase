@@ -600,6 +600,8 @@ message TaskRunLogEntry {
     RETRY_INFO = 7;
     // Schema diff computation.
     COMPUTE_DIFF = 8;
+    // Release file execution.
+    RELEASE_FILE_EXECUTE = 9;
   }
   // The type of this log entry.
   Type type = 1;
@@ -623,6 +625,8 @@ message TaskRunLogEntry {
   RetryInfo retry_info = 10;
   // Compute diff details (if type is COMPUTE_DIFF).
   ComputeDiff compute_diff = 11;
+  // Release file execution details (if type is RELEASE_FILE_EXECUTE).
+  ReleaseFileExecute release_file_execute = 12;
 
   // Schema dump operation details.
   message SchemaDump {
@@ -738,6 +742,14 @@ message TaskRunLogEntry {
     google.protobuf.Timestamp end_time = 2;
     // Error message if computation failed.
     string error = 3;
+  }
+
+  // Release file execution details.
+  message ReleaseFileExecute {
+    // The version of the file being executed (e.g., "0001").
+    string version = 1;
+    // The file path within the release (e.g., "2.2/V0001_create_table.sql").
+    string file_path = 2;
   }
 }
 

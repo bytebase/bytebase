@@ -16307,6 +16307,10 @@ components:
           title: compute_diff
           description: Compute diff details (if type is COMPUTE_DIFF).
           $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.ComputeDiff'
+        releaseFileExecute:
+          title: release_file_execute
+          description: Release file execution details (if type is RELEASE_FILE_EXECUTE).
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.ReleaseFileExecute'
       title: TaskRunLogEntry
       additionalProperties: false
     bytebase.v1.TaskRunLogEntry.CommandExecute:
@@ -16424,6 +16428,20 @@ components:
       title: PriorBackup
       additionalProperties: false
       description: Prior backup operation details.
+    bytebase.v1.TaskRunLogEntry.ReleaseFileExecute:
+      type: object
+      properties:
+        version:
+          type: string
+          title: version
+          description: The version of the file being executed (e.g., "0001").
+        filePath:
+          type: string
+          title: file_path
+          description: The file path within the release (e.g., "2.2/V0001_create_table.sql").
+      title: ReleaseFileExecute
+      additionalProperties: false
+      description: Release file execution details.
     bytebase.v1.TaskRunLogEntry.RetryInfo:
       type: object
       properties:
@@ -16516,6 +16534,7 @@ components:
         - PRIOR_BACKUP
         - RETRY_INFO
         - COMPUTE_DIFF
+        - RELEASE_FILE_EXECUTE
       description: The type of log entry.
     bytebase.v1.TaskRunSession:
       type: object
