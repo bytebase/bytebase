@@ -280,7 +280,6 @@
     },
     "comment": "Comentario",
     "started": "Iniciado",
-    "view-change": "Ver cambio",
     "status": {
       "running": "Ejecutándose",
       "available": "Disponible",

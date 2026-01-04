@@ -280,7 +280,6 @@
     },
     "comment": "コメント",
     "started": "から始まりました",
-    "view-change": "変更を表示する",
     "status": {
       "running": "ランニング",
       "available": "利用可能",
