@@ -131,7 +131,7 @@
 <script lang="ts" setup>
 import { SquareChartGanttIcon } from "lucide-vue-next";
 import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
@@ -227,15 +227,26 @@ watch(
 );
 
 // Also clear transition flag after a short delay to handle stages with no runs
+let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined;
+
 watch(
   () => props.stage?.name,
   () => {
-    // Give time for data to load, then clear transition flag
-    setTimeout(() => {
+    if (transitionTimeoutId !== undefined) {
+      clearTimeout(transitionTimeoutId);
+    }
+    transitionTimeoutId = setTimeout(() => {
       isStageTransitioning.value = false;
+      transitionTimeoutId = undefined;
     }, 300);
   }
 );
+
+onUnmounted(() => {
+  if (transitionTimeoutId !== undefined) {
+    clearTimeout(transitionTimeoutId);
+  }
+});
 
 // Maximum number of task runs to display in the timeline
 const MAX_DISPLAY_ITEMS = 50;

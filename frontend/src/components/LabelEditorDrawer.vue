@@ -71,8 +71,8 @@ const state = reactive<LocalState>({
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 
 const convertKVListToLabelsList = () => {
+  const labels = convertKVListToLabels(state.kvList);
   return props.labels.map((oldLabel) => {
-    const labels = convertKVListToLabels(state.kvList);
     for (const label of state.kvList) {
       if (!label.value) {
         if (oldLabel[label.key]) {

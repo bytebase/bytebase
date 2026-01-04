@@ -19,20 +19,17 @@
       <div class="w-full flex flex-col mt-1 gap-y-1">
         <div
           class="w-full flex flex-row justify-between items-center gap-1 group hover:opacity-90 cursor-pointer"
-          v-for="task in affectedTasks"
-          :key="task.name"
-          @click="onClickTask(task)"
+          v-for="item in affectedTasks"
+          :key="item.task.name"
+          @click="onClickTask(item.task)"
         >
           <span class="group-hover:underline truncate">
-            {{ databaseForTask(projectOfIssue(issue), task).databaseName }}
+            {{ databaseForTask(projectOfIssue(issue), item.task).databaseName }}
           </span>
           <span
-            class="shrink-0"
-            :class="
-              !affectedTaskMap.get(task.name) ? 'opacity-80' : 'font-medium'
-            "
+            class="shrink-0 opacity-80"
           >
-            {{ affectedTaskMap.get(task.name) }}
+            {{ item.count }}
           </span>
         </div>
       </div>
@@ -56,9 +53,10 @@ const { issue, events } = useIssueContext();
 
 const tasks = computed(() => flattenTaskV1List(issue.value.rolloutEntity));
 
-const affectedTaskMap = computed(() => {
-  const tempMap = new Map<string, bigint>();
-  props.taskSummaryReportMap.forEach((planCheckRun, task) => {
+const affectedTasks = computed(() => {
+  const tempMap = new Map<string, { task: Task; count: bigint }>();
+
+  for (const [taskName, planCheckRun] of props.taskSummaryReportMap.entries()) {
     if (
       planCheckRun.results.every(
         (result) =>
@@ -66,7 +64,12 @@ const affectedTaskMap = computed(() => {
           result.report.value.affectedRows === undefined
       )
     ) {
-      return;
+      continue;
+    }
+
+    const task = tasks.value.find((t) => t.name === taskName);
+    if (!task) {
+      continue;
     }
 
     const count = planCheckRun.results.reduce((acc, result) => {
@@ -75,19 +78,11 @@ const affectedTaskMap = computed(() => {
       }
       return acc;
     }, 0n);
-    tempMap.set(task, count);
-  });
-  return new Map(
-    Array.from(tempMap.entries()).sort((a, b) => Number(b[1] - a[1]))
-  );
-});
 
-const affectedTasks = computed(
-  () =>
-    Array.from(affectedTaskMap.value.keys())
-      .map((task) => tasks.value.find((t) => t.name === task))
-      .filter((task) => task) as Task[]
-);
+    tempMap.set(taskName, { task, count });
+  }
+  return Array.from(tempMap.values()).sort((a, b) => Number(b.count - a.count));
+});
 
 const summaryReportResults = computed(() =>
   Array.from(props.taskSummaryReportMap.values()).flatMap(
