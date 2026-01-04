@@ -29,11 +29,11 @@ const (
 	// Create a new database.
 	Task_DATABASE_CREATE Task_Type = 1
 	// Apply schema/data migrations to an existing database.
+	// Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
+	// or sheet content for non-release tasks.
 	Task_DATABASE_MIGRATE Task_Type = 2
 	// Export data from a database.
 	Task_DATABASE_EXPORT Task_Type = 3
-	// Apply declarative schema changes (state-based migration).
-	Task_DATABASE_SDL Task_Type = 4
 )
 
 // Enum value maps for Task_Type.
@@ -43,14 +43,12 @@ var (
 		1: "DATABASE_CREATE",
 		2: "DATABASE_MIGRATE",
 		3: "DATABASE_EXPORT",
-		4: "DATABASE_SDL",
 	}
 	Task_Type_value = map[string]int32{
 		"TASK_TYPE_UNSPECIFIED": 0,
 		"DATABASE_CREATE":       1,
 		"DATABASE_MIGRATE":      2,
 		"DATABASE_EXPORT":       3,
-		"DATABASE_SDL":          4,
 	}
 )
 
@@ -291,7 +289,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xe4\x05\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xd2\x05\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -313,13 +311,12 @@ const file_store_task_proto_rawDesc = "" +
 	"\n" +
 	"FlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"s\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"a\n" +
 	"\x04Type\x12\x19\n" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
 	"\x10DATABASE_MIGRATE\x10\x02\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x03\x12\x10\n" +
-	"\fDATABASE_SDL\x10\x04B\b\n" +
+	"\x0fDATABASE_EXPORT\x10\x03B\b\n" +
 	"\x06sourceB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tTaskProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 

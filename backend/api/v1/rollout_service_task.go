@@ -196,11 +196,8 @@ func getTaskCreatesFromChangeDatabaseConfig(
 			env = *database.EffectiveEnvironmentID
 		}
 
-		// Determine task type
+		// All change database tasks use DATABASE_MIGRATE type
 		taskType := storepb.Task_DATABASE_MIGRATE
-		if c.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL {
-			taskType = storepb.Task_DATABASE_SDL
-		}
 
 		// Build task payload
 		payload := &storepb.Task{

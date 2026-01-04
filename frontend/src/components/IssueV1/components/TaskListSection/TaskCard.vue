@@ -59,7 +59,6 @@ import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -101,7 +100,7 @@ const showGhostTag = computed(() => {
   const spec = specForTask(issue.value.planEntity, props.task);
   return (
     spec?.config?.case === "changeDatabaseConfig" &&
-    spec.config.value?.type === DatabaseChangeType.MIGRATE &&
+    !spec.config.value?.release &&
     spec.config.value?.enableGhost === true
   );
 });

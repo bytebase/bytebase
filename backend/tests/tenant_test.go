@@ -155,7 +155,6 @@ func TestDatabaseGroup(t *testing.T) {
 			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 				Targets:     []string{databaseGroup.Name},
 				Sheet:       sheet.Name,
-				Type:        v1pb.DatabaseChangeType_MIGRATE,
 				EnableGhost: false,
 			},
 		},

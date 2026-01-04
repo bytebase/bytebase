@@ -137,15 +137,6 @@ message Range {
   int32 end = 2;
 }
 
-// DatabaseChangeType is the database change type.
-enum DatabaseChangeType {
-  DATABASE_CHANGE_TYPE_UNSPECIFIED = 0;
-  // Used for imperative schema migration including CREATE DATABASE.
-  MIGRATE = 1;
-  // Used for state-based declarative schema migration including CREATE DATABASE.
-  SDL = 2;
-}
-
 // RiskLevel is the risk level.
 enum RiskLevel {
   // Unspecified risk level.

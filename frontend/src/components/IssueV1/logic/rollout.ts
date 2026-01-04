@@ -87,8 +87,6 @@ export const semanticTaskType = (type: Task_Type) => {
       return t("task.type.database-create");
     case Task_Type.DATABASE_MIGRATE:
       return t("task.type.migrate");
-    case Task_Type.DATABASE_SDL:
-      return t("task.type.database-sdl");
     case Task_Type.DATABASE_EXPORT:
       return t("task.type.database-export");
     case Task_Type.GENERAL:

@@ -5,7 +5,6 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
   Plan,
@@ -32,7 +31,6 @@ interface TaskCreate {
   specId: string;
   type: Task_Type;
   sheet: string;
-  databaseChangeType: DatabaseChangeType;
 }
 
 /**
@@ -138,17 +136,11 @@ async function generateChangeDatabaseTasks(
   for (const target of targets) {
     if (!isValidDatabaseName(target)) continue;
 
-    const taskType =
-      config.type === DatabaseChangeType.SDL
-        ? Task_Type.DATABASE_SDL
-        : Task_Type.DATABASE_MIGRATE;
-
     tasks.push({
       databaseName: target,
       specId,
-      type: taskType,
+      type: Task_Type.DATABASE_MIGRATE,
       sheet: config.sheet,
-      databaseChangeType: config.type,
     });
   }
 
@@ -240,7 +232,6 @@ function createTask(
           value: taskCreate.sheet,
         },
         schemaVersion: "",
-        databaseChangeType: taskCreate.databaseChangeType,
       }),
     },
   });

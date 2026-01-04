@@ -57,16 +57,6 @@ message PlanConfig {
     // Format: projects/{project}/releases/{release}
     string release = 9;
 
-    // Type is the database change type.
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      // Used for imperative schema migration including CREATE DATABASE.
-      MIGRATE = 1;
-      // Used for state-based declarative schema migration including CREATE DATABASE.
-      SDL = 2;
-    }
-    Type type = 3;
-
     map<string, string> ghost_flags = 7;
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.

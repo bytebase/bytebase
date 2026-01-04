@@ -3,7 +3,6 @@ import { cloneDeep } from "lodash-es";
 import { planServiceClientConnect } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { projectNamePrefix, useProjectV1Store, useSheetV1Store } from "@/store";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -21,13 +20,7 @@ export const getSpecTitle = (spec: Plan_Spec): string => {
   if (spec.config?.case === "createDatabaseConfig") {
     title = t("plan.spec.type.create-database");
   } else if (spec.config?.case === "changeDatabaseConfig") {
-    const config = spec.config.value;
-    if (config.type === DatabaseChangeType.SDL) {
-      title = "SDL";
-    } else {
-      // MIGRATE type (with or without ghost)
-      title = t("plan.spec.type.database-change");
-    }
+    title = t("plan.spec.type.database-change");
   } else if (spec.config?.case === "exportDataConfig") {
     title = t("plan.spec.type.export-data");
   } else {

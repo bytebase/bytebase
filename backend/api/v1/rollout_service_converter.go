@@ -275,8 +275,6 @@ func convertToTask(project *store.ProjectMessage, task *store.TaskMessage) (*v1p
 	case storepb.Task_DATABASE_MIGRATE:
 		// All DATABASE_MIGRATE tasks are treated as schema updates (DDL or GHOST)
 		return convertToTaskFromSchemaUpdate(project, task)
-	case storepb.Task_DATABASE_SDL:
-		return convertToTaskFromSchemaUpdate(project, task)
 	case storepb.Task_DATABASE_EXPORT:
 		return convertToTaskFromDatabaseDataExport(project, task)
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
@@ -321,23 +319,10 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		return nil, errors.Errorf("schema update task database is nil")
 	}
 
-	// Determine DatabaseChangeType based on task type
-	var databaseChangeType v1pb.DatabaseChangeType
-	switch task.Type {
-	case storepb.Task_DATABASE_MIGRATE:
-		databaseChangeType = v1pb.DatabaseChangeType_MIGRATE
-	case storepb.Task_DATABASE_SDL:
-		databaseChangeType = v1pb.DatabaseChangeType_SDL
-	default:
-		databaseChangeType = v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
-	}
-
 	stageID := common.FormatStageID(task.Environment)
 
 	// Build DatabaseUpdate payload
-	databaseUpdate := &v1pb.Task_DatabaseUpdate{
-		DatabaseChangeType: databaseChangeType,
-	}
+	databaseUpdate := &v1pb.Task_DatabaseUpdate{}
 
 	// Set source: either sheet or release
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
@@ -432,8 +417,6 @@ func convertToTaskType(task *store.TaskMessage) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_CREATE
 	case storepb.Task_DATABASE_MIGRATE:
 		return v1pb.Task_DATABASE_MIGRATE
-	case storepb.Task_DATABASE_SDL:
-		return v1pb.Task_DATABASE_SDL
 	case storepb.Task_DATABASE_EXPORT:
 		return v1pb.Task_DATABASE_EXPORT
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:

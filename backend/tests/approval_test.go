@@ -101,7 +101,6 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},
@@ -250,7 +249,6 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},
@@ -380,7 +378,6 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},
@@ -595,7 +592,6 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},
@@ -733,7 +729,6 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
 						Sheet:   sheet.Msg.Name,
-						Type:    v1pb.DatabaseChangeType_MIGRATE,
 					},
 				},
 			}},

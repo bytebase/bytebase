@@ -22,58 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Type is the database change type.
-type PlanConfig_ChangeDatabaseConfig_Type int32
-
-const (
-	PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED PlanConfig_ChangeDatabaseConfig_Type = 0
-	// Used for imperative schema migration including CREATE DATABASE.
-	PlanConfig_ChangeDatabaseConfig_MIGRATE PlanConfig_ChangeDatabaseConfig_Type = 1
-	// Used for state-based declarative schema migration including CREATE DATABASE.
-	PlanConfig_ChangeDatabaseConfig_SDL PlanConfig_ChangeDatabaseConfig_Type = 2
-)
-
-// Enum value maps for PlanConfig_ChangeDatabaseConfig_Type.
-var (
-	PlanConfig_ChangeDatabaseConfig_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "MIGRATE",
-		2: "SDL",
-	}
-	PlanConfig_ChangeDatabaseConfig_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"MIGRATE":          1,
-		"SDL":              2,
-	}
-)
-
-func (x PlanConfig_ChangeDatabaseConfig_Type) Enum() *PlanConfig_ChangeDatabaseConfig_Type {
-	p := new(PlanConfig_ChangeDatabaseConfig_Type)
-	*p = x
-	return p
-}
-
-func (x PlanConfig_ChangeDatabaseConfig_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PlanConfig_ChangeDatabaseConfig_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_plan_proto_enumTypes[0].Descriptor()
-}
-
-func (PlanConfig_ChangeDatabaseConfig_Type) Type() protoreflect.EnumType {
-	return &file_store_plan_proto_enumTypes[0]
-}
-
-func (x PlanConfig_ChangeDatabaseConfig_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PlanConfig_ChangeDatabaseConfig_Type.Descriptor instead.
-func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 2, 0}
-}
-
 type PlanConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Specs []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
@@ -355,9 +303,8 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	SheetSha256 string `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The resource name of the release.
 	// Format: projects/{project}/releases/{release}
-	Release    string                               `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
-	Type       PlanConfig_ChangeDatabaseConfig_Type `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.PlanConfig_ChangeDatabaseConfig_Type" json:"type,omitempty"`
-	GhostFlags map[string]string                    `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Release    string            `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
+	GhostFlags map[string]string `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Whether to use gh-ost for online schema migration.
@@ -415,13 +362,6 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetRelease() string {
 		return x.Release
 	}
 	return ""
-}
-
-func (x *PlanConfig_ChangeDatabaseConfig) GetType() PlanConfig_ChangeDatabaseConfig_Type {
-	if x != nil {
-		return x.Type
-	}
-	return PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 }
 
 func (x *PlanConfig_ChangeDatabaseConfig) GetGhostFlags() map[string]string {
@@ -524,8 +464,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xee\n" +
-	"\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xf0\t\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12\x1f\n" +
@@ -545,24 +484,19 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xdf\x03\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xe1\x02\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12\x18\n" +
-	"\arelease\x18\t \x01(\tR\arelease\x12H\n" +
-	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12`\n" +
+	"\arelease\x18\t \x01(\tR\arelease\x12`\n" +
 	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
 	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x12!\n" +
 	"\fenable_ghost\x18\f \x01(\bR\venableGhost\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"2\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aMIGRATE\x10\x01\x12\a\n" +
-	"\x03SDL\x10\x02\x1a\xb3\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xb3\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
 	"\atargets\x18\x05 \x03(\tR\atargets\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x124\n" +
@@ -583,31 +517,28 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 	return file_store_plan_proto_rawDescData
 }
 
-var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_plan_proto_goTypes = []any{
-	(PlanConfig_ChangeDatabaseConfig_Type)(0), // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	(*PlanConfig)(nil),                        // 1: bytebase.store.PlanConfig
-	(*PlanConfig_Spec)(nil),                   // 2: bytebase.store.PlanConfig.Spec
-	(*PlanConfig_CreateDatabaseConfig)(nil),   // 3: bytebase.store.PlanConfig.CreateDatabaseConfig
-	(*PlanConfig_ChangeDatabaseConfig)(nil),   // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig
-	(*PlanConfig_ExportDataConfig)(nil),       // 5: bytebase.store.PlanConfig.ExportDataConfig
-	nil,                                       // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(ExportFormat)(0),                         // 7: bytebase.store.ExportFormat
+	(*PlanConfig)(nil),                      // 0: bytebase.store.PlanConfig
+	(*PlanConfig_Spec)(nil),                 // 1: bytebase.store.PlanConfig.Spec
+	(*PlanConfig_CreateDatabaseConfig)(nil), // 2: bytebase.store.PlanConfig.CreateDatabaseConfig
+	(*PlanConfig_ChangeDatabaseConfig)(nil), // 3: bytebase.store.PlanConfig.ChangeDatabaseConfig
+	(*PlanConfig_ExportDataConfig)(nil),     // 4: bytebase.store.PlanConfig.ExportDataConfig
+	nil,                                     // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	(ExportFormat)(0),                       // 6: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
-	3, // 1: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	4, // 2: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	5, // 3: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0, // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	6, // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	7, // 6: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	1, // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
+	2, // 1: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	3, // 2: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	4, // 3: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	5, // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	6, // 5: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -627,14 +558,13 @@ func file_store_plan_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_plan_proto_goTypes,
 		DependencyIndexes: file_store_plan_proto_depIdxs,
-		EnumInfos:         file_store_plan_proto_enumTypes,
 		MessageInfos:      file_store_plan_proto_msgTypes,
 	}.Build()
 	File_store_plan_proto = out.File

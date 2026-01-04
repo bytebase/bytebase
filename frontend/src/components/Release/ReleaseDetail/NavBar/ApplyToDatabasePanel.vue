@@ -65,7 +65,6 @@ import {
 } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
   CreatePlanRequestSchema,
   Plan_ChangeDatabaseConfigSchema,
@@ -124,7 +123,7 @@ const handleCreate = async () => {
                 ? state.targetSelectState.selectedDatabaseNameList
                 : [state.targetSelectState.selectedDatabaseGroup!]) || [],
             release: release.value.name,
-            type: DatabaseChangeType.MIGRATE,
+
             enableGhost,
           }),
         },

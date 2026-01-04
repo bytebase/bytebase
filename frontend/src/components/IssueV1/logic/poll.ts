@@ -35,10 +35,7 @@ const clearCache = (issue: ComposedIssue) => {
       case Task_Type.TYPE_UNSPECIFIED:
         continue;
       case Task_Type.DATABASE_MIGRATE:
-        // Always clear the schema cache for MIGRATE tasks (DDL/Ghost)
-        useDBSchemaV1Store().removeCache(database.name);
-        break;
-      case Task_Type.DATABASE_SDL:
+        // Always clear the schema cache for MIGRATE tasks
         useDBSchemaV1Store().removeCache(database.name);
         break;
       default:

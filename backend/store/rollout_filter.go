@@ -112,8 +112,6 @@ func convertV1ToStoreTaskType(taskType v1pb.Task_Type) storepb.Task_Type {
 		return storepb.Task_DATABASE_CREATE
 	case v1pb.Task_DATABASE_MIGRATE:
 		return storepb.Task_DATABASE_MIGRATE
-	case v1pb.Task_DATABASE_SDL:
-		return storepb.Task_DATABASE_SDL
 	case v1pb.Task_DATABASE_EXPORT:
 		return storepb.Task_DATABASE_EXPORT
 	case v1pb.Task_TYPE_UNSPECIFIED, v1pb.Task_GENERAL:

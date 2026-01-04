@@ -8824,14 +8824,6 @@ components:
         - DATABASE_CHANGE_MODE_UNSPECIFIED
         - PIPELINE
         - EDITOR
-    bytebase.v1.DatabaseChangeType:
-      type: string
-      title: DatabaseChangeType
-      enum:
-        - DATABASE_CHANGE_TYPE_UNSPECIFIED
-        - MIGRATE
-        - SDL
-      description: DatabaseChangeType is the database change type.
     bytebase.v1.DatabaseGroup:
       type: object
       properties:
@@ -12661,10 +12653,6 @@ components:
           description: |-
             The resource name of the release.
              Format: projects/{project}/releases/{release}
-        type:
-          title: type
-          description: Type is the database change type.
-          $ref: '#/components/schemas/bytebase.v1.DatabaseChangeType'
         ghostFlags:
           type: object
           title: ghost_flags
@@ -15961,10 +15949,6 @@ components:
               type: string
               title: schema_version
               description: The target schema version after this update.
-            databaseChangeType:
-              title: database_change_type
-              description: The type of database change (MIGRATE or SDL).
-              $ref: '#/components/schemas/bytebase.v1.DatabaseChangeType'
         - oneOf:
             - properties:
                 release:
@@ -16006,7 +15990,6 @@ components:
         - DATABASE_CREATE
         - DATABASE_MIGRATE
         - DATABASE_EXPORT
-        - DATABASE_SDL
     bytebase.v1.TaskMetadata:
       type: object
       properties:

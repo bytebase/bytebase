@@ -41,7 +41,6 @@ export const useInstanceForTask = (task: Task) => {
       instanceName = task.target;
       break;
     case Task_Type.DATABASE_MIGRATE:
-    case Task_Type.DATABASE_SDL:
     case Task_Type.DATABASE_EXPORT:
       instanceName = extractDatabaseResourceName(task.target).instance;
       break;

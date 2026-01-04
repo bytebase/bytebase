@@ -219,10 +219,6 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.DatabaseChangeType"><span class="badge">E</span>DatabaseChangeType</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
                 </li>
               
@@ -2897,35 +2893,6 @@ Examples:
         
       
 
-      
-        <h3 id="bytebase.v1.DatabaseChangeType">DatabaseChangeType</h3>
-        <p>DatabaseChangeType is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DATABASE_CHANGE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>1</td>
-                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
-                <td>2</td>
-                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.Engine">Engine</h3>
         <p>Database engine type.</p>
@@ -21299,13 +21266,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
-                  <td></td>
-                  <td><p>Type is the database change type. </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -27167,13 +27127,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><p>The target schema version after this update. </p></td>
                 </tr>
               
-                <tr>
-                  <td>database_change_type</td>
-                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
-                  <td></td>
-                  <td><p>The type of database change (MIGRATE or SDL). </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -28277,13 +28230,6 @@ Use payload DatabaseUpdate.</p></td>
                 <td>4</td>
                 <td><p>Database export task that exports query results or table data.
 Use payload DatabaseDataExport.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SDL</td>
-                <td>5</td>
-                <td><p>Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-Use payload DatabaseUpdate.</p></td>
               </tr>
             
           </tbody>

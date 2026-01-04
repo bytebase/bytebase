@@ -398,7 +398,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Targets: []string{database.Name},
 							Sheet:   sheet.Name,
-							Type:    v1pb.DatabaseChangeType_MIGRATE,
 						},
 					},
 				},

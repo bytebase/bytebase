@@ -4,7 +4,6 @@ import { computed, inject, provide, ref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -60,8 +59,9 @@ export const provideTransactionModeSettingContext = (refs: {
       return false;
     }
     const config = selectedSpec.value.config.value;
-    // Show for all MIGRATE types (DDL, DML, Ghost), but not SDL
-    return config.type === DatabaseChangeType.MIGRATE;
+    // Show for sheet-based migrations only (not release-based).
+    // Release-based migrations don't support transaction mode configuration.
+    return !config.release;
   });
 
   const allowChange = computed(() => {

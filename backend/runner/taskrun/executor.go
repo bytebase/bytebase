@@ -169,8 +169,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		storepb.Task_DATABASE_EXPORT,
 		storepb.Task_DATABASE_CREATE:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
-	case storepb.Task_DATABASE_MIGRATE,
-		storepb.Task_DATABASE_SDL:
+	case storepb.Task_DATABASE_MIGRATE:
 		// Valid type for migration context
 	default:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
@@ -329,7 +328,8 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	// however we can warn users not to unless they know
 	// what they are doing
 	if mc.version != "" {
-		if mc.task.Type == storepb.Task_DATABASE_SDL {
+		// Determine revision type from release if available
+		if mc.releaseType == storepb.SchemaChangeType_DECLARATIVE {
 			// Declarative case
 			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &mc.database.InstanceID,
@@ -431,13 +431,10 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	if isDone {
 		// if isDone, record in revision
 		if mc.version != "" {
-			// Determine revision type from release if available, otherwise use task type
+			// Determine revision type from release if available
 			revisionType := storepb.SchemaChangeType_VERSIONED
 			if mc.releaseType != storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED {
 				revisionType = mc.releaseType
-			} else if mc.task.Type == storepb.Task_DATABASE_SDL {
-				// Fallback to task type for backward compatibility
-				revisionType = storepb.SchemaChangeType_DECLARATIVE
 			}
 
 			r := &store.RevisionMessage{
@@ -515,8 +512,6 @@ func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
 		return storepb.ChangelogPayload_MIGRATE
-	case storepb.Task_DATABASE_SDL:
-		return storepb.ChangelogPayload_SDL
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_CREATE,
@@ -531,8 +526,6 @@ func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
 func isChangeDatabaseTask(task *store.TaskMessage) bool {
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		return true
-	case storepb.Task_DATABASE_SDL:
 		return true
 	case storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
@@ -550,8 +543,7 @@ func computeNeedDump(taskType storepb.Task_Type, engine storepb.Engine, statemen
 		// For DATABASE_MIGRATE, skip dump if all statements are DML
 		// (INSERT, UPDATE, DELETE) since they don't change schema.
 		return !base.IsAllDML(engine, statement)
-	case storepb.Task_DATABASE_SDL,
-		storepb.Task_DATABASE_CREATE:
+	case storepb.Task_DATABASE_CREATE:
 		return true
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,

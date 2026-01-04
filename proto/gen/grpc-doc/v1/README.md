@@ -15,7 +15,6 @@
     - [Position](#bytebase-v1-Position)
     - [Range](#bytebase-v1-Range)
   
-    - [DatabaseChangeType](#bytebase-v1-DatabaseChangeType)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [RiskLevel](#bytebase-v1-RiskLevel)
@@ -768,19 +767,6 @@ Check the documentation of the field using Range for specific semantics.
 
 
  
-
-
-<a name="bytebase-v1-DatabaseChangeType"></a>
-
-### DatabaseChangeType
-DatabaseChangeType is the database change type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATABASE_CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
-
 
 
 <a name="bytebase-v1-Engine"></a>
@@ -7547,7 +7533,6 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | Type is the database change type. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -9678,7 +9663,6 @@ Payload for updating a database schema.
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} |
 | schema_version | [string](#string) |  | The target schema version after this update. |
-| database_change_type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | The type of database change (MIGRATE or SDL). |
 
 
 
@@ -10113,7 +10097,6 @@ PostgreSQL session information read from `pg_stat_activity`.
 | DATABASE_CREATE | 2 | Database creation task that creates a new database. Use payload DatabaseCreate. |
 | DATABASE_MIGRATE | 3 | Database migration task that applies versioned schema changes. Use payload DatabaseUpdate. |
 | DATABASE_EXPORT | 4 | Database export task that exports query results or table data. Use payload DatabaseDataExport. |
-| DATABASE_SDL | 5 | Database SDL (Schema Definition Language) task that synchronizes declarative schema. Use payload DatabaseUpdate. |
 
 
 

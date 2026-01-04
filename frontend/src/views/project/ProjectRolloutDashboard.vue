@@ -124,7 +124,7 @@ const rolloutSearchParams = computed(() => {
 
 const mergedRolloutFind = computed((): RolloutFind => {
   return buildRolloutFindBySearchParams(rolloutSearchParams.value, {
-    taskType: [Task_Type.DATABASE_MIGRATE, Task_Type.DATABASE_SDL],
+    taskType: [Task_Type.DATABASE_MIGRATE],
   });
 });
 
