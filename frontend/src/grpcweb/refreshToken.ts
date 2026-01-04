@@ -1,8 +1,12 @@
+import { v4 as uuidv4 } from "uuid";
 import { authServiceClientConnect } from "@/grpcweb";
 
 const LOCK_KEY = "bb_refresh_lock";
 const LOCK_TIMEOUT_MS = 10000; // 10 seconds max lock hold time
 const POLL_INTERVAL_MS = 50;
+
+// Unique tab identifier - prevents race when two tabs call Date.now() in same millisecond
+const TAB_ID = uuidv4();
 
 let localPromise: Promise<void> | null = null;
 
@@ -44,19 +48,30 @@ function tryAcquireLock(): boolean {
   const existing = localStorage.getItem(LOCK_KEY);
 
   if (existing) {
-    const lockTime = parseInt(existing, 10);
+    const lockTime = parseLockTime(existing);
     // Lock is still valid (not expired)
-    if (now - lockTime < LOCK_TIMEOUT_MS) {
+    if (lockTime !== null && now - lockTime < LOCK_TIMEOUT_MS) {
       return false;
     }
-    // Lock expired - we can take over
+    // Lock expired or invalid - we can take over
   }
 
-  localStorage.setItem(LOCK_KEY, now.toString());
+  const lockValue = `${TAB_ID}_${now}`;
+  localStorage.setItem(LOCK_KEY, lockValue);
 
   // Double-check we got the lock (handles near-simultaneous writes)
   const check = localStorage.getItem(LOCK_KEY);
-  return check === now.toString();
+  return check === lockValue;
+}
+
+function parseLockTime(lockValue: string): number | null {
+  // Format: "tabId_timestamp"
+  const parts = lockValue.split("_");
+  if (parts.length < 2) {
+    return null;
+  }
+  const timestamp = parseInt(parts[parts.length - 1], 10);
+  return isNaN(timestamp) ? null : timestamp;
 }
 
 function releaseLock(): void {
@@ -69,9 +84,14 @@ async function waitForLockRelease(): Promise<void> {
   return new Promise((resolve) => {
     const checkLock = () => {
       const existing = localStorage.getItem(LOCK_KEY);
+      const lockTime = existing ? parseLockTime(existing) : null;
 
       // Lock released or expired
-      if (!existing || Date.now() - parseInt(existing, 10) >= LOCK_TIMEOUT_MS) {
+      if (
+        !existing ||
+        lockTime === null ||
+        Date.now() - lockTime >= LOCK_TIMEOUT_MS
+      ) {
         resolve();
         return;
       }
