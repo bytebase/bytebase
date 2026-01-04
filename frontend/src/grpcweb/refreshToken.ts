@@ -1,23 +1,90 @@
 import { authServiceClientConnect } from "@/grpcweb";
 
-let refreshPromise: Promise<void> | null = null;
+const LOCK_KEY = "bb_refresh_lock";
+const LOCK_TIMEOUT_MS = 10000; // 10 seconds max lock hold time
+const POLL_INTERVAL_MS = 50;
+
+let localPromise: Promise<void> | null = null;
 
 /**
  * Refresh the access token using the refresh token cookie.
- * Uses singleton pattern to prevent concurrent refresh calls within the same tab.
- * Cross-tab races are handled by server-side grace period (30 seconds).
+ * Uses localStorage lock for cross-tab coordination.
+ * Only one tab performs the refresh; others wait for completion.
  */
 export async function refreshTokens(): Promise<void> {
-  if (refreshPromise) {
-    return refreshPromise;
+  // Same-tab deduplication
+  if (localPromise) {
+    return localPromise;
   }
 
-  refreshPromise = authServiceClientConnect
-    .refresh({})
-    .then(() => {})
-    .finally(() => {
-      refreshPromise = null;
-    });
+  localPromise = doRefresh().finally(() => {
+    localPromise = null;
+  });
 
-  return refreshPromise;
+  return localPromise;
+}
+
+async function doRefresh(): Promise<void> {
+  // Try to acquire lock
+  if (!tryAcquireLock()) {
+    // Another tab is refreshing - wait for it to complete
+    await waitForLockRelease();
+    return;
+  }
+
+  try {
+    await authServiceClientConnect.refresh({});
+  } finally {
+    releaseLock();
+  }
+}
+
+function tryAcquireLock(): boolean {
+  const now = Date.now();
+  const existing = localStorage.getItem(LOCK_KEY);
+
+  if (existing) {
+    const lockTime = parseInt(existing, 10);
+    // Lock is still valid (not expired)
+    if (now - lockTime < LOCK_TIMEOUT_MS) {
+      return false;
+    }
+    // Lock expired - we can take over
+  }
+
+  localStorage.setItem(LOCK_KEY, now.toString());
+
+  // Double-check we got the lock (handles near-simultaneous writes)
+  const check = localStorage.getItem(LOCK_KEY);
+  return check === now.toString();
+}
+
+function releaseLock(): void {
+  localStorage.removeItem(LOCK_KEY);
+}
+
+async function waitForLockRelease(): Promise<void> {
+  const startTime = Date.now();
+
+  return new Promise((resolve) => {
+    const checkLock = () => {
+      const existing = localStorage.getItem(LOCK_KEY);
+
+      // Lock released or expired
+      if (!existing || Date.now() - parseInt(existing, 10) >= LOCK_TIMEOUT_MS) {
+        resolve();
+        return;
+      }
+
+      // Safety timeout - don't wait forever
+      if (Date.now() - startTime >= LOCK_TIMEOUT_MS) {
+        resolve();
+        return;
+      }
+
+      setTimeout(checkLock, POLL_INTERVAL_MS);
+    };
+
+    checkLock();
+  });
 }

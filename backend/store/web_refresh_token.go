@@ -14,7 +14,6 @@ type WebRefreshTokenMessage struct {
 	TokenHash string
 	UserEmail string
 	ExpiresAt time.Time
-	RotatedAt *time.Time
 }
 
 func (s *Store) CreateWebRefreshToken(ctx context.Context, create *WebRefreshTokenMessage) error {
@@ -36,7 +35,7 @@ func (s *Store) CreateWebRefreshToken(ctx context.Context, create *WebRefreshTok
 
 func (s *Store) GetWebRefreshToken(ctx context.Context, tokenHash string) (*WebRefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		SELECT token_hash, user_email, expires_at, rotated_at
+		SELECT token_hash, user_email, expires_at
 		FROM web_refresh_token
 		WHERE token_hash = ?
 	`, tokenHash)
@@ -47,47 +46,41 @@ func (s *Store) GetWebRefreshToken(ctx context.Context, tokenHash string) (*WebR
 	}
 
 	msg := &WebRefreshTokenMessage{}
-	var rotatedAt sql.NullTime
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt, &rotatedAt,
+		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "failed to get web refresh token")
 	}
-	if rotatedAt.Valid {
-		msg.RotatedAt = &rotatedAt.Time
-	}
 	return msg, nil
 }
 
-// MarkWebRefreshTokenRotated atomically marks a token as rotated.
-// Returns true if the token was rotated (rotated_at was null), false if already rotated.
-// This prevents race conditions when multiple requests try to rotate the same token.
-func (s *Store) MarkWebRefreshTokenRotated(ctx context.Context, tokenHash string) (bool, error) {
+// GetAndDeleteWebRefreshToken atomically retrieves and deletes a refresh token.
+// Returns the token if found and deleted, nil if not found.
+func (s *Store) GetAndDeleteWebRefreshToken(ctx context.Context, tokenHash string) (*WebRefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		UPDATE web_refresh_token
-		SET rotated_at = NOW()
-		WHERE token_hash = ? AND rotated_at IS NULL
+		DELETE FROM web_refresh_token
+		WHERE token_hash = ?
+		RETURNING token_hash, user_email, expires_at
 	`, tokenHash)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to mark web refresh token as rotated")
+	msg := &WebRefreshTokenMessage{}
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "failed to get and delete web refresh token")
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get rows affected")
-	}
-
-	return rowsAffected > 0, nil
+	return msg, nil
 }
 
 func (s *Store) DeleteWebRefreshToken(ctx context.Context, tokenHash string) error {
@@ -138,24 +131,6 @@ func (s *Store) DeleteExpiredWebRefreshTokens(ctx context.Context) (int64, error
 	result, err := s.GetDB().ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to delete expired web refresh tokens")
-	}
-	return result.RowsAffected()
-}
-
-func (s *Store) DeleteRotatedWebRefreshTokens(ctx context.Context, gracePeriod time.Duration) (int64, error) {
-	q := qb.Q().Space(`
-		DELETE FROM web_refresh_token
-		WHERE rotated_at IS NOT NULL AND rotated_at < ?
-	`, time.Now().Add(-gracePeriod))
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return 0, err
-	}
-
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to delete rotated web refresh tokens")
 	}
 	return result.RowsAffected()
 }
