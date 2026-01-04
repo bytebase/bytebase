@@ -348,7 +348,6 @@
     "type": {
       "database-create": "データベース作成",
       "migrate": "マイグレーション",
-      "database-sdl": "SDL",
       "database-export": "データエクスポート",
       "general": "一般"
     }
