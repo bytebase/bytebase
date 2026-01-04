@@ -443,11 +443,9 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					return errors.Errorf("release %q not found", mc.release.release)
 				}
 				revisionType = release.Payload.Type
-			} else {
+			} else if mc.task.Type == storepb.Task_DATABASE_SDL {
 				// Fallback to task type for backward compatibility
-				if mc.task.Type == storepb.Task_DATABASE_SDL {
-					revisionType = storepb.SchemaChangeType_DECLARATIVE
-				}
+				revisionType = storepb.SchemaChangeType_DECLARATIVE
 			}
 
 			r := &store.RevisionMessage{
