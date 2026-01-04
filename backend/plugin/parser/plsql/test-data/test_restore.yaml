@@ -19,7 +19,7 @@
     UPDATE T_GENERATED SET b = 4 WHERE a = 4;
     UPDATE T_GENERATED SET b = 5 WHERE a = 5;
     UPDATE T_GENERATED SET b = 6 WHERE a = 6;
-    UPDATE T_GENERATED SET b = 7 WHERE a = 7
+    UPDATE T_GENERATED SET b = 7 WHERE a = 7;
     */
     MERGE INTO "DB"."T_GENERATED" t
     USING "bbarchive"."prefix_T_GENERATED" b
@@ -49,7 +49,7 @@
     UPDATE T_GENERATED SET a = 4 WHERE b = 4;
     UPDATE T_GENERATED SET a = 5 WHERE b = 5;
     UPDATE T_GENERATED SET a = 6 WHERE b = 6;
-    UPDATE T_GENERATED SET a = 7 WHERE b = 7
+    UPDATE T_GENERATED SET a = 7 WHERE b = 7;
     */
     MERGE INTO "DB"."T_GENERATED" t
     USING "bbarchive"."prefix_T_GENERATED" b
@@ -66,7 +66,7 @@
   result: |-
     /*
     Original SQL:
-    DELETE FROM T_GENERATED where a = 1
+    DELETE FROM T_GENERATED where a = 1;
     */
     INSERT INTO "DB"."T_GENERATED" SELECT * FROM "bbarchive"."prefix_1_T_GENERATED";
 - input: UPDATE T_GENERATED SET a = 1 WHERE a = 2;
@@ -77,7 +77,7 @@
   result: |-
     /*
     Original SQL:
-    UPDATE T_GENERATED SET a = 1 WHERE a = 2
+    UPDATE T_GENERATED SET a = 1 WHERE a = 2;
     */
     MERGE INTO "DB"."T_GENERATED" t
     USING "bbarchive"."prefix_1_T_GENERATED" b
@@ -94,7 +94,7 @@
   result: |-
     /*
     Original SQL:
-    UPDATE test SET test.c1 = 1 WHERE test.c1 = 1
+    UPDATE test SET test.c1 = 1 WHERE test.c1 = 1;
     */
     MERGE INTO "DB"."TEST" t
     USING "bbarchive"."prefix_1_test" b
@@ -111,7 +111,7 @@
   result: |-
     /*
     Original SQL:
-    UPDATE test SET c1 = 1 WHERE c1 = 1
+    UPDATE test SET c1 = 1 WHERE c1 = 1;
     */
     MERGE INTO "DB"."TEST" t
     USING "bbarchive"."prefix_1_test" b
