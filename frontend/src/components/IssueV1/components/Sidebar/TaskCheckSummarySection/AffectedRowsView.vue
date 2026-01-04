@@ -54,7 +54,7 @@ const { issue, events } = useIssueContext();
 const tasks = computed(() => flattenTaskV1List(issue.value.rolloutEntity));
 
 const affectedTasks = computed(() => {
-  const tempMap = new Map<string, { task: Task; count: bigint; }>();
+  const tempMap = new Map<string, { task: Task; count: bigint }>();
 
   for (const [taskName, planCheckRun] of props.taskSummaryReportMap.entries()) {
     if (
@@ -67,7 +67,7 @@ const affectedTasks = computed(() => {
       continue;
     }
 
-    const task = tasks.value.find((t) => t.name === taskName)
+    const task = tasks.value.find((t) => t.name === taskName);
     if (!task) {
       continue;
     }
