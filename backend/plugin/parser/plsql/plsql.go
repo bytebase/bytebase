@@ -119,21 +119,39 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 
 	// Iterate through children in order to preserve statement ordering and re-parse each one
 	var result []*base.ANTLRAST
+	prevStopTokenIndex := -1
 	for _, child := range sqlScript.GetChildren() {
 		var stmtText string
 		var stmtBaseLine int
+		var startToken, stopToken antlr.Token
 
 		// Type assert to get the specific statement type
 		if stmt, ok := child.(parser.IUnit_statementContext); ok {
-			stmtText = tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop())
-			stmtBaseLine = stmt.GetStart().GetLine() - 1 // Convert to 0-based
+			startToken = stmt.GetStart()
+			stopToken = stmt.GetStop()
 		} else if sqlPlusCmd, ok := child.(parser.ISql_plus_commandContext); ok {
-			stmtText = tokens.GetTextFromTokens(sqlPlusCmd.GetStart(), sqlPlusCmd.GetStop())
-			stmtBaseLine = sqlPlusCmd.GetStart().GetLine() - 1 // Convert to 0-based
+			startToken = sqlPlusCmd.GetStart()
+			stopToken = sqlPlusCmd.GetStop()
 		} else {
 			// Skip other node types (e.g., EOF)
 			continue
 		}
+
+		// Calculate the leading whitespace/comments before this statement (like SplitSQL does)
+		leadingContent := ""
+		if startTokenIndex := startToken.GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
+			leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(startTokenIndex-1))
+		}
+
+		// Include leading whitespace in the statement text
+		stmtText = leadingContent + tokens.GetTextFromTokens(startToken, stopToken)
+
+		// stmtBaseLine is where the leading content starts (for re-parsing with correct offsets).
+		// This ensures token positions in the re-parsed AST are correct when combined with SplitSQL's BaseLine.
+		// Formula: first token's line - 1 (convert to 0-based) - number of newlines in leading content
+		stmtBaseLine = startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
+
+		prevStopTokenIndex = stopToken.GetTokenIndex()
 
 		// Skip empty statements
 		if strings.TrimSpace(stmtText) == "" || stmtText == ";" {
@@ -146,6 +164,8 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 			return nil, err
 		}
 
+		// StartPosition points to the first character of Text (including leading whitespace),
+		// not the first token. This enables replacing BaseLine with Start.GetLine() - 1 in advisors.
 		result = append(result, &base.ANTLRAST{
 			StartPosition: &storepb.Position{Line: int32(stmtBaseLine) + 1},
 			Tree:          stmtTree,
