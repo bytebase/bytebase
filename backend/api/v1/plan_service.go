@@ -908,10 +908,17 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 
 func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) *v1pb.Plan_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
+
+	// Only format sheet if SheetSha256 is not empty (for non-release tasks)
+	var sheet string
+	if c.SheetSha256 != "" {
+		sheet = common.FormatSheet(projectID, c.SheetSha256)
+	}
+
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Targets:           c.Targets,
-			Sheet:             common.FormatSheet(projectID, c.SheetSha256),
+			Sheet:             sheet,
 			Release:           c.Release,
 			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
 			GhostFlags:        c.GhostFlags,

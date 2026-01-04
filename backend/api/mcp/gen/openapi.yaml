@@ -6515,14 +6515,18 @@ components:
           format: int32
           description: The maximum number of rows to return.
         schema:
-          type: string
+          type:
+            - string
+            - "null"
           title: schema
           description: |-
             The default schema to execute the statement. Equals to the current schema
              in Oracle and search path in Postgres.
           nullable: true
         container:
-          type: string
+          type:
+            - string
+            - "null"
           title: container
           description: |-
             Container is the container name to execute the query against, used for
@@ -8161,7 +8165,9 @@ components:
             The parent plan for which this rollout will be created.
              Format: projects/{project}/plans/{plan}
         target:
-          type: string
+          type:
+            - string
+            - "null"
           title: target
           description: |-
             Create the rollout only for the specified target.
@@ -8268,7 +8274,9 @@ components:
           type: string
           title: description
         levelId:
-          type: string
+          type:
+            - string
+            - "null"
           title: level_id
           nullable: true
       title: DataClassification
@@ -8741,14 +8749,18 @@ components:
           title: schema_version
           description: The version of database schema.
         environment:
-          type: string
+          type:
+            - string
+            - "null"
           title: environment
           description: |-
             The environment resource.
              Format: environments/prod where prod is the environment resource ID.
           nullable: true
         effectiveEnvironment:
-          type: string
+          type:
+            - string
+            - "null"
           title: effective_environment
           description: |-
             The effective environment based on environment tag above and environment
@@ -9554,7 +9566,9 @@ components:
              read-only data sources. Or it can be used to query a specific read-only
              data source.
         schema:
-          type: string
+          type:
+            - string
+            - "null"
           title: schema
           description: |-
             The default schema to search objects. Equals to the current schema in
@@ -10533,7 +10547,9 @@ components:
           title: data_sources
           description: Data source configurations for connecting to the instance.
         environment:
-          type: string
+          type:
+            - string
+            - "null"
           title: environment
           description: |-
             The environment resource.
@@ -10619,7 +10635,9 @@ components:
             The name of the instance.
              Format: instances/{instance}
         environment:
-          type: string
+          type:
+            - string
+            - "null"
           title: environment
           description: |-
             The environment resource.
@@ -10642,23 +10660,31 @@ components:
           title: role_name
           description: The role name. It's unique within the instance.
         password:
-          type: string
+          type:
+            - string
+            - "null"
           title: password
           description: The role password.
           nullable: true
         connectionLimit:
-          type: integer
+          type:
+            - integer
+            - "null"
           title: connection_limit
           format: int32
           description: The connection count limit for this role.
           nullable: true
         validUntil:
-          type: string
+          type:
+            - string
+            - "null"
           title: valid_until
           description: The expiration for the role's password.
           nullable: true
         attribute:
-          type: string
+          type:
+            - string
+            - "null"
           title: attribute
           description: |-
             The role attribute.
@@ -10860,19 +10886,27 @@ components:
       type: object
       properties:
         fromTitle:
-          type: string
+          type:
+            - string
+            - "null"
           title: from_title
           nullable: true
         toTitle:
-          type: string
+          type:
+            - string
+            - "null"
           title: to_title
           nullable: true
         fromDescription:
-          type: string
+          type:
+            - string
+            - "null"
           title: from_description
           nullable: true
         toDescription:
-          type: string
+          type:
+            - string
+            - "null"
           title: to_description
           nullable: true
         fromStatus:
@@ -10906,14 +10940,18 @@ components:
             The spec that was updated.
              Format: projects/{project}/plans/{plan}/specs/{spec}
         fromSheet:
-          type: string
+          type:
+            - string
+            - "null"
           title: from_sheet
           description: |-
             The previous sheet.
              Format: projects/{project}/sheets/{sheet}
           nullable: true
         toSheet:
-          type: string
+          type:
+            - string
+            - "null"
           title: to_sheet
           description: |-
             The new sheet.
@@ -12083,17 +12121,23 @@ components:
           description: The idp_context is used to get the user information from identity provider.
           $ref: '#/components/schemas/bytebase.v1.IdentityProviderContext'
         otpCode:
-          type: string
+          type:
+            - string
+            - "null"
           title: otp_code
           description: The otp_code is used to verify the user's identity by MFA.
           nullable: true
         recoveryCode:
-          type: string
+          type:
+            - string
+            - "null"
           title: recovery_code
           description: The recovery_code is used to recovery the user's identity with MFA.
           nullable: true
         mfaTempToken:
-          type: string
+          type:
+            - string
+            - "null"
           title: mfa_temp_token
           description: The mfa_temp_token is used to verify the user's identity by MFA.
           nullable: true
@@ -12109,7 +12153,9 @@ components:
             Access token for authenticated requests.
              Only returned when web=false. For web=true, the token is set as an HTTP-only cookie.
         mfaTempToken:
-          type: string
+          type:
+            - string
+            - "null"
           title: mfa_temp_token
           description: Temporary token for MFA verification.
           nullable: true
@@ -12712,7 +12758,9 @@ components:
           description: The format of the exported file.
           $ref: '#/components/schemas/bytebase.v1.ExportFormat'
         password:
-          type: string
+          type:
+            - string
+            - "null"
           title: password
           description: |-
             The zip password provide by users.
@@ -13379,7 +13427,9 @@ components:
           type: string
           title: statement
         error:
-          type: string
+          type:
+            - string
+            - "null"
           title: error
           nullable: true
         duration:
@@ -13453,7 +13503,9 @@ components:
           title: explain
           description: Explain the statement.
         schema:
-          type: string
+          type:
+            - string
+            - "null"
           title: schema
           description: |-
             The default schema to search objects. Equals to the current schema in
@@ -13463,7 +13515,9 @@ components:
           title: query_option
           $ref: '#/components/schemas/bytebase.v1.QueryOption'
         container:
-          type: string
+          type:
+            - string
+            - "null"
           title: container
           description: |-
             Container is the container name to execute the query against, used for
@@ -14277,7 +14331,9 @@ components:
             The plan to run plan checks.
              Format: projects/{project}/plans/{plan}
         specId:
-          type: string
+          type:
+            - string
+            - "null"
           title: spec_id
           description: |-
             The UUID of the specific spec to run plan checks for.
@@ -14958,7 +15014,9 @@ components:
              When paginating, all other parameters provided to `ListReleases` must match
              the call that provided the page token.
         digest:
-          type: string
+          type:
+            - string
+            - "null"
           title: digest
           description: Search by the digest of the release.
           nullable: true
@@ -15884,7 +15942,9 @@ components:
           description: The format of the exported file.
           $ref: '#/components/schemas/bytebase.v1.ExportFormat'
         password:
-          type: string
+          type:
+            - string
+            - "null"
           title: password
           description: |-
             The zip password provided by users.
@@ -15895,19 +15955,33 @@ components:
       description: Payload for exporting database data.
     bytebase.v1.Task.DatabaseUpdate:
       type: object
-      properties:
-        sheet:
-          type: string
-          title: sheet
-          description: 'Format: projects/{project}/sheets/{sheet}'
-        schemaVersion:
-          type: string
-          title: schema_version
-          description: The target schema version after this update.
-        databaseChangeType:
-          title: database_change_type
-          description: The type of database change (MIGRATE or SDL).
-          $ref: '#/components/schemas/bytebase.v1.DatabaseChangeType'
+      allOf:
+        - properties:
+            schemaVersion:
+              type: string
+              title: schema_version
+              description: The target schema version after this update.
+            databaseChangeType:
+              title: database_change_type
+              description: The type of database change (MIGRATE or SDL).
+              $ref: '#/components/schemas/bytebase.v1.DatabaseChangeType'
+        - oneOf:
+            - properties:
+                release:
+                  type: string
+                  title: release
+                  description: 'Format: projects/{project}/releases/{release}'
+              title: release
+              required:
+                - release
+            - properties:
+                sheet:
+                  type: string
+                  title: sheet
+                  description: 'Format: projects/{project}/sheets/{sheet}'
+              title: sheet
+              required:
+                - sheet
       title: DatabaseUpdate
       additionalProperties: false
       description: Payload for updating a database schema.
@@ -16512,27 +16586,37 @@ components:
           title: query
           description: Current query being executed.
         state:
-          type: string
+          type:
+            - string
+            - "null"
           title: state
           description: Session state (active, idle, etc.).
           nullable: true
         waitEventType:
-          type: string
+          type:
+            - string
+            - "null"
           title: wait_event_type
           description: Wait event type if session is waiting.
           nullable: true
         waitEvent:
-          type: string
+          type:
+            - string
+            - "null"
           title: wait_event
           description: Specific wait event if session is waiting.
           nullable: true
         datname:
-          type: string
+          type:
+            - string
+            - "null"
           title: datname
           description: Database name.
           nullable: true
         usename:
-          type: string
+          type:
+            - string
+            - "null"
           title: usename
           description: User name.
           nullable: true
@@ -16541,12 +16625,16 @@ components:
           title: application_name
           description: Application name.
         clientAddr:
-          type: string
+          type:
+            - string
+            - "null"
           title: client_addr
           description: Client IP address.
           nullable: true
         clientPort:
-          type: string
+          type:
+            - string
+            - "null"
           title: client_port
           description: Client port number.
           nullable: true
@@ -17205,7 +17293,9 @@ components:
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
         otpCode:
-          type: string
+          type:
+            - string
+            - "null"
           title: otp_code
           description: The otp_code is used to verify the user's identity by MFA.
           nullable: true

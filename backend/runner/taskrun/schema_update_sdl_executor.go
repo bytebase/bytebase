@@ -73,7 +73,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return nil
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, task.Payload.GetSchemaVersion(), execFunc)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", execFunc)
 }
 
 func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {

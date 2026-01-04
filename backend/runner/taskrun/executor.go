@@ -175,13 +175,11 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	if isChangeDatabaseTask(task) {
-		if f := task.Payload.GetTaskReleaseSource().GetFile(); f != "" {
-			project, release, _, err := common.GetProjectReleaseUIDFile(f)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse file %s", f)
-			}
-			mc.release.release = common.FormatReleaseName(project, release)
-			mc.release.file = f
+		// For release-based tasks, store the release name
+		if releaseName := task.Payload.GetRelease(); releaseName != "" {
+			mc.release.release = releaseName
+			// File is not tracked at task level anymore for release-based tasks
+			mc.release.file = ""
 		}
 	}
 

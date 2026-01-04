@@ -234,7 +234,11 @@ function createTask(
     payload: {
       case: "databaseUpdate",
       value: create(Task_DatabaseUpdateSchema, {
-        sheet: taskCreate.sheet,
+        // Task.DatabaseUpdate now uses oneof source { sheet | release }
+        source: {
+          case: "sheet",
+          value: taskCreate.sheet,
+        },
         schemaVersion: "",
         databaseChangeType: taskCreate.databaseChangeType,
       }),

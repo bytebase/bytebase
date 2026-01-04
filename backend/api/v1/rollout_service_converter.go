@@ -335,6 +335,23 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 	}
 
 	stageID := common.FormatStageID(task.Environment)
+
+	// Build DatabaseUpdate payload
+	databaseUpdate := &v1pb.Task_DatabaseUpdate{
+		DatabaseChangeType: databaseChangeType,
+	}
+
+	// Set source: either sheet or release
+	if releaseName := task.Payload.GetRelease(); releaseName != "" {
+		databaseUpdate.Source = &v1pb.Task_DatabaseUpdate_Release{
+			Release: releaseName,
+		}
+	} else if sheetSha256 := task.Payload.GetSheetSha256(); sheetSha256 != "" {
+		databaseUpdate.Source = &v1pb.Task_DatabaseUpdate_Sheet{
+			Sheet: common.FormatSheet(project.ResourceID, sheetSha256),
+		}
+	}
+
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
@@ -343,11 +360,7 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName)),
 		Payload: &v1pb.Task_DatabaseUpdate_{
-			DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
-				Sheet:              common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
-				SchemaVersion:      task.Payload.GetSchemaVersion(),
-				DatabaseChangeType: databaseChangeType,
-			},
+			DatabaseUpdate: databaseUpdate,
 		},
 	}
 	if task.UpdatedAt != nil {
