@@ -92,7 +92,8 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[endPos])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : endPos+1])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -105,7 +106,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				int32(tokens[endPos].GetColumn()),
 				tokens[endPos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:endPos+1], parser.GoogleSQLLexerSEMI_SYMBOL),
 		})
 		byteOffset += stmtByteLength

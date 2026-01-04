@@ -52,6 +52,6 @@
       title: INDEX_TOTAL_NUMBER_LIMIT
       content: The count of index in table `t` should be no more than 5, but found 6
       startposition:
-        line: 9
+        line: 1
         column: 0
       endposition: null

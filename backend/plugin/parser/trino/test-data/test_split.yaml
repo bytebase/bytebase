@@ -1,31 +1,111 @@
-- description: "multiple statements same line"
-  input: "SELECT * FROM users; SELECT * FROM orders;"
+- description: multiple statements same line
+  input: SELECT * FROM users; SELECT * FROM orders;
   result:
-    - text: "SELECT * FROM users;"
+    - text: SELECT * FROM users;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 21}
-      range: {start: 0, end: 20}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 21
+      range:
+        start: 0
+        end: 20
       empty: false
-    - text: "SELECT * FROM orders;"
+    - text: " SELECT * FROM orders;"
       baseline: 0
-      start: {line: 1, column: 22}
-      end: {line: 1, column: 43}
-      range: {start: 21, end: 42}
+      start:
+        line: 1
+        column: 21
+      end:
+        line: 1
+        column: 43
+      range:
+        start: 20
+        end: 42
       empty: false
-
-- description: "unicode in table names"
-  input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
+- description: unicode in table names
+  input: "SELECT * FROM \u8868\u540D; INSERT INTO \u8868 VALUES (1);"
   result:
-    - text: "SELECT * FROM 表名;"
+    - text: "SELECT * FROM \u8868\u540D;"
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 18}
-      range: {start: 0, end: 21}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 18
+      range:
+        start: 0
+        end: 21
       empty: false
-    - text: "INSERT INTO 表 VALUES (1);"
+    - text: " INSERT INTO \u8868 VALUES (1);"
       baseline: 0
-      start: {line: 1, column: 19}
-      end: {line: 1, column: 44}
-      range: {start: 22, end: 49}
+      start:
+        line: 1
+        column: 18
+      end:
+        line: 1
+        column: 44
+      range:
+        start: 21
+        end: 49
+      empty: false
+- description: 'position semantic: leading newlines'
+  input: "\n\nSELECT 1;"
+  result:
+    - text: "\n\nSELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 10
+      range:
+        start: 0
+        end: 11
+      empty: false
+- description: 'position semantic: leading spaces and newlines'
+  input: "\n  \n  SELECT 1;"
+  result:
+    - text: "\n  \n  SELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 12
+      range:
+        start: 0
+        end: 15
+      empty: false
+- description: 'position semantic: multi-statement with leading whitespace'
+  input: "SELECT 1;\n\n  SELECT 2;"
+  result:
+    - text: SELECT 1;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+    - text: "\n\n  SELECT 2;"
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 3
+        column: 12
+      range:
+        start: 9
+        end: 22
       empty: false

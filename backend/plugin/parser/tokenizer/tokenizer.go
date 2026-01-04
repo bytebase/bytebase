@@ -218,11 +218,12 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 	var res []base.Statement
 	delimiter := []rune{';'}
 
-	t.skipBlank()
 	t.emptyStatement = true
+	// Record position BEFORE skipping whitespace to include leading whitespace in Text
 	startPos := t.cursor
 	startLine := t.line          // Track the starting line number (1-based)
 	startColumn := t.getColumn() // Track the starting column (1-based)
+	t.skipBlank()
 	for {
 		switch {
 		case t.char(0) == eofRune:
@@ -289,13 +290,14 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 					},
 				})
 			}
-			t.skipBlank()
 			if err := t.processStreaming(text); err != nil {
 				return nil, err
 			}
+			// Record position BEFORE skipping whitespace to include leading whitespace in Text
 			startPos = t.pos()
 			startLine = t.line          // Update startLine for next statement
 			startColumn = t.getColumn() // Update startColumn for next statement
+			t.skipBlank()
 			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
@@ -325,13 +327,14 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 					},
 				})
 			}
-			t.skipBlank()
 			if err := t.processStreaming(text); err != nil {
 				return nil, err
 			}
+			// Record position BEFORE skipping whitespace to include leading whitespace in Text
 			startPos = t.pos()
 			startLine = t.line          // Update startLine for next statement
 			startColumn = t.getColumn() // Update startColumn for next statement
+			t.skipBlank()
 			t.emptyStatement = true
 		case t.char(0) == '/' && t.char(1) == '*':
 			if err := t.scanComment(); err != nil {
@@ -384,11 +387,12 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 	var res []base.Statement
 
-	t.skipBlank()
 	t.emptyStatement = true
+	// Record position BEFORE skipping whitespace to include leading whitespace in Text
 	startPos := t.cursor
 	firstStatementLine := t.line
 	firstStatementColumn := t.getColumn()
+	t.skipBlank()
 	for {
 		switch {
 		case t.char(0) == '/' && t.char(1) == '*':
@@ -433,13 +437,14 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 					},
 				})
 			}
-			t.skipBlank()
 			if err := t.processStreaming(text); err != nil {
 				return nil, err
 			}
+			// Record position BEFORE skipping whitespace to include leading whitespace in Text
 			startPos = t.pos()
 			firstStatementLine = t.line
 			firstStatementColumn = t.getColumn()
+			t.skipBlank()
 			t.emptyStatement = true
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())

@@ -66,7 +66,8 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			stmtStartByte := len(statement[:stmtStartChar])
 			stmtEndByte := len(statement[:stmtEndChar])
 
-			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : i+1])
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, stmtStartByte)
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.Statement{
@@ -81,7 +82,10 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 					int32(tokens[i].GetColumn()),
 					tokens[i].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: base.IsEmpty(tokens[start:i+1], parser.MySQLLexerSEMICOLON_SYMBOL),
 			})
 			i++
@@ -103,7 +107,8 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			stmtStartByte := len(statement[:stmtStartChar])
 			stmtEndByte := len(statement[:stmtEndChar])
 
-			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:newStart])
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, stmtStartByte)
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.Statement{
@@ -119,7 +124,10 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 					int32(tokens[newStart-1].GetColumn()),
 					tokens[newStart-1].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: base.IsEmpty(tokens[start:i], parser.MySQLLexerSEMICOLON_SYMBOL),
 			})
 			i = newStart
@@ -140,7 +148,8 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		stmtStartByte := len(statement[:stmtStartChar])
 		stmtEndByte := len(statement[:stmtEndChar])
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, stmtStartByte)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -155,7 +164,10 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 				int32(tokens[endPos-1].GetColumn()),
 				tokens[endPos-1].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:endPos], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 	}
@@ -241,7 +253,8 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -256,7 +269,10 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 				int32(tokens[pos].GetColumn()),
 				tokens[pos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 		byteOffset += stmtByteLength
@@ -268,7 +284,8 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[eofPos-1])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -283,7 +300,10 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 				int32(tokens[eofPos-1].GetColumn()),
 				tokens[eofPos-1].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 	}
@@ -437,7 +457,8 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -452,7 +473,10 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 				int32(tokens[pos].GetColumn()),
 				tokens[pos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 		byteOffset += stmtByteLength
@@ -464,7 +488,8 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[eofPos-1])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -479,7 +504,10 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 				int32(tokens[eofPos-1].GetColumn()),
 				tokens[eofPos-1].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.MySQLLexerSEMICOLON_SYMBOL),
 		})
 	}

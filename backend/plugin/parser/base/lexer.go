@@ -78,6 +78,7 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 	tokens := stream.GetAllTokens()
 	var buf []antlr.Token
 	var sqls []Statement
+	byteOffset := 0
 
 	for i, token := range tokens {
 		// Collect all tokens except the last one (EOF)
@@ -101,31 +102,56 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 				}
 			}
 
-			// Get the position of the first default channel token for Start position
-			antlrPosition := FirstDefaultChannelTokenPosition(buf)
+			stmtText := bufStr.String()
+			stmtByteLength := len(stmtText)
+
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := CalculateLineAndColumn(statement, byteOffset)
 
 			// Use the last token in the buffer for End position (not EOF token when at end of stream)
 			lastToken := buf[len(buf)-1]
 			sqls = append(sqls, Statement{
-				Text:     bufStr.String(),
+				Text:     stmtText,
 				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
 				Range: &storepb.Range{
-					Start: int32(buf[0].GetStart()),
-					End:   int32(lastToken.GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRTokenToExclusiveEndPosition(
 					int32(lastToken.GetLine()),
 					int32(lastToken.GetColumn()),
 					lastToken.GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: empty,
 			})
 
+			byteOffset += stmtByteLength
 			buf = nil
 			continue
 		}
 	}
 
 	return sqls, nil
+}
+
+// CalculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
+// for a given byte offset in the statement.
+func CalculateLineAndColumn(statement string, byteOffset int) (line, column int) {
+	if byteOffset > len(statement) {
+		byteOffset = len(statement)
+	}
+	// Range over string iterates over runes (code points), not bytes
+	for _, r := range statement[:byteOffset] {
+		if r == '\n' {
+			line++
+			column = 0
+		} else {
+			column++
+		}
+	}
+	return line, column
 }

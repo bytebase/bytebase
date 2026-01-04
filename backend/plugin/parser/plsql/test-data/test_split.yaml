@@ -1,121 +1,297 @@
-- description: "multiple SELECT statements"
-  input: "SELECT * FROM t1; SELECT * FROM t2"
+- description: multiple SELECT statements
+  input: SELECT * FROM t1; SELECT * FROM t2
   result:
-    - text: "SELECT * FROM t1"
+    - text: SELECT * FROM t1
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 17}
-      range: {start: 0, end: 16}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 17
+      range:
+        start: 0
+        end: 16
       empty: false
-    - text: "SELECT * FROM t2"
+    - text: ; SELECT * FROM t2
       baseline: 0
-      start: {line: 1, column: 19}
-      end: {line: 1, column: 35}
-      range: {start: 18, end: 34}
+      start:
+        line: 1
+        column: 17
+      end:
+        line: 1
+        column: 35
+      range:
+        start: 16
+        end: 34
       empty: false
-
-- description: "multiple statements with newlines"
+- description: multiple statements with newlines
   input: "\n\t\t\t\tselect * from t;\n\t\t\t\tcreate table table$1 (id int)\n\t\t\t"
   result:
-    - text: "select * from t"
+    - text: "\n\t\t\t\tselect * from t"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 2
+        column: 20
+      range:
+        start: 0
+        end: 20
+      empty: false
+    - text: ";\n\t\t\t\tcreate table table$1 (id int)"
       baseline: 1
-      start: {line: 2, column: 5}
-      end: {line: 2, column: 20}
-      range: {start: 5, end: 20}
+      start:
+        line: 2
+        column: 20
+      end:
+        line: 3
+        column: 34
+      range:
+        start: 20
+        end: 56
       empty: false
-    - text: "create table table$1 (id int)"
-      baseline: 2
-      start: {line: 3, column: 5}
-      end: {line: 3, column: 34}
-      range: {start: 26, end: 56}
-      empty: false
-
-- description: "procedure with forward slash separator"
-  input: "CREATE OR REPLACE PROCEDURE test_proc IS\nBEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Hello');\nEND;\n/"
+- description: procedure with forward slash separator
+  input: |-
+    CREATE OR REPLACE PROCEDURE test_proc IS
+    BEGIN
+        CALL DBMS_OUTPUT.PUT_LINE('Hello');
+    END;
+    /
   result:
-    - text: "CREATE OR REPLACE PROCEDURE test_proc IS\nBEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Hello');\nEND;"
+    - text: |-
+        CREATE OR REPLACE PROCEDURE test_proc IS
+        BEGIN
+            CALL DBMS_OUTPUT.PUT_LINE('Hello');
+        END;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 4, column: 5}
-      range: {start: 0, end: 91}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 4
+        column: 5
+      range:
+        start: 0
+        end: 91
       empty: false
-
-- description: "two procedures with forward slash separator"
-  input: "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;\n/\nCREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;\n/"
+- description: two procedures with forward slash separator
+  input: |-
+    CREATE OR REPLACE PROCEDURE proc1 IS
+    BEGIN
+        NULL;
+    END;
+    /
+    CREATE OR REPLACE PROCEDURE proc2 IS
+    BEGIN
+        NULL;
+    END;
+    /
   result:
-    - text: "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;"
+    - text: |-
+        CREATE OR REPLACE PROCEDURE proc1 IS
+        BEGIN
+            NULL;
+        END;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 4, column: 5}
-      range: {start: 0, end: 57}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 4
+        column: 5
+      range:
+        start: 0
+        end: 57
       empty: false
-    - text: "CREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;"
-      baseline: 5
-      start: {line: 6, column: 1}
-      end: {line: 9, column: 5}
-      range: {start: 60, end: 117}
+    - text: "\n/\nCREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;"
+      baseline: 3
+      start:
+        line: 4
+        column: 5
+      end:
+        line: 9
+        column: 5
+      range:
+        start: 57
+        end: 117
       empty: false
-
-- description: "SELECT statements separated by forward slash"
-  input: "SELECT * FROM t1;\n/\nSELECT * FROM t2;"
+- description: SELECT statements separated by forward slash
+  input: |-
+    SELECT * FROM t1;
+    /
+    SELECT * FROM t2;
   result:
-    - text: "SELECT * FROM t1"
+    - text: SELECT * FROM t1
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 17}
-      range: {start: 0, end: 16}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 17
+      range:
+        start: 0
+        end: 16
       empty: false
-    - text: "SELECT * FROM t2"
-      baseline: 2
-      start: {line: 3, column: 1}
-      end: {line: 3, column: 17}
-      range: {start: 20, end: 36}
+    - text: ";\n/\nSELECT * FROM t2"
+      baseline: 0
+      start:
+        line: 1
+        column: 17
+      end:
+        line: 3
+        column: 17
+      range:
+        start: 16
+        end: 36
       empty: false
-
-- description: "anonymous block with forward slash"
-  input: "BEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Test');\nEND;\n/"
+- description: anonymous block with forward slash
+  input: |-
+    BEGIN
+        CALL DBMS_OUTPUT.PUT_LINE('Test');
+    END;
+    /
   result:
-    - text: "BEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Test');\nEND;"
+    - text: |-
+        BEGIN
+            CALL DBMS_OUTPUT.PUT_LINE('Test');
+        END;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 3, column: 5}
-      range: {start: 0, end: 49}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 5
+      range:
+        start: 0
+        end: 49
       empty: false
-
-- description: "ALTER TABLE with PARTITION"
-  input: "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE;"
+- description: ALTER TABLE with PARTITION
+  input: |-
+    ALTER TABLE DATA.TEST
+    MODIFY PARTITION BY RANGE (TXN_DATE)
+    INTERVAL (NUMTODSINTERVAL(1, 'DAY'))
+    (
+    	PARTITION TEST_PO VALUES LESS THAN (
+    		TO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')
+    	)
+    )
+    ONLINE;
   result:
-    - text: "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE"
+    - text: |-
+        ALTER TABLE DATA.TEST
+        MODIFY PARTITION BY RANGE (TXN_DATE)
+        INTERVAL (NUMTODSINTERVAL(1, 'DAY'))
+        (
+        	PARTITION TEST_PO VALUES LESS THAN (
+        		TO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')
+        	)
+        )
+        ONLINE
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 9, column: 7}
-      range: {start: 0, end: 233}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 9
+        column: 7
+      range:
+        start: 0
+        end: 233
       empty: false
-
-- description: "CALL procedure"
-  input: "CALL my_procedure()"
+- description: CALL procedure
+  input: CALL my_procedure()
   result:
-    - text: "CALL my_procedure()"
+    - text: CALL my_procedure()
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 20}
-      range: {start: 0, end: 19}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 20
+      range:
+        start: 0
+        end: 19
       empty: false
-
-- description: "DROP TABLESPACE with CASCADE CONSTRAINTS"
-  input: "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS"
+- description: DROP TABLESPACE with CASCADE CONSTRAINTS
+  input: DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS
   result:
-    - text: "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS"
+    - text: DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 59}
-      range: {start: 0, end: 58}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 59
+      range:
+        start: 0
+        end: 58
       empty: false
-
-- description: "DROP TABLESPACE CASCADE alone should error"
-  input: "DROP TABLESPACE xxx CASCADE"
+- description: DROP TABLESPACE CASCADE alone should error
+  input: DROP TABLESPACE xxx CASCADE
   error: "Syntax error at line 1:28 \nrelated text: DROP TABLESPACE xxx CASCADE;"
-
-- description: "DROP TABLESPACE then CASCADE should error"
-  input: "DROP TABLESPACE xxx; CASCADE"
+- description: DROP TABLESPACE then CASCADE should error
+  input: DROP TABLESPACE xxx; CASCADE
   error: "Syntax error at line 1:29 \nrelated text: DROP TABLESPACE xxx; CASCADE;"
+- description: 'position semantic: leading newlines'
+  input: "\n\nSELECT 1 FROM dual"
+  result:
+    - text: "\n\nSELECT 1 FROM dual"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 19
+      range:
+        start: 0
+        end: 20
+      empty: false
+- description: 'position semantic: leading spaces and newlines'
+  input: "\n  \n  SELECT 1 FROM dual"
+  result:
+    - text: "\n  \n  SELECT 1 FROM dual"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 21
+      range:
+        start: 0
+        end: 24
+      empty: false
+- description: 'position semantic: multi-statement with leading whitespace'
+  input: "SELECT 1 FROM dual;\n\n  SELECT 2 FROM dual"
+  result:
+    - text: SELECT 1 FROM dual
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 19
+      range:
+        start: 0
+        end: 18
+      empty: false
+    - text: ";\n\n  SELECT 2 FROM dual"
+      baseline: 0
+      start:
+        line: 1
+        column: 19
+      end:
+        line: 3
+        column: 21
+      range:
+        start: 18
+        end: 41
+      empty: false
