@@ -170,7 +170,6 @@ const doCreateIssue = async () => {
     },
   });
 
-  // TODO(ed): handle no permission
   window.open(route.fullPath, "_blank");
 
   emit("close");
