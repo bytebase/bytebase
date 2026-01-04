@@ -1543,8 +1543,6 @@ type TaskRun struct {
 	// The resource name of the changelog.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
 	Changelog string `protobuf:"bytes,7,opt,name=changelog,proto3" json:"changelog,omitempty"`
-	// The schema version after this task run completes.
-	SchemaVersion string `protobuf:"bytes,8,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The time when the task run started execution.
 	StartTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	// The export archive status for data export tasks.
@@ -1637,13 +1635,6 @@ func (x *TaskRun) GetDetail() string {
 func (x *TaskRun) GetChangelog() string {
 	if x != nil {
 		return x.Changelog
-	}
-	return ""
-}
-
-func (x *TaskRun) GetSchemaVersion() string {
-	if x != nil {
-		return x.SchemaVersion
 	}
 	return ""
 }
@@ -3692,7 +3683,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x11bytebase.com/Task\x12Cprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
-	"\t_run_time\"\x9b\x0f\n" +
+	"\t_run_time\"\xf4\x0e\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acreator\x18\x02 \x01(\tR\acreator\x12@\n" +
@@ -3702,8 +3693,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"updateTime\x123\n" +
 	"\x06status\x18\x05 \x01(\x0e2\x1b.bytebase.v1.TaskRun.StatusR\x06status\x12\x16\n" +
 	"\x06detail\x18\x06 \x01(\tR\x06detail\x12!\n" +
-	"\tchangelog\x18\a \x01(\tB\x03\xe0A\x03R\tchangelog\x12%\n" +
-	"\x0eschema_version\x18\b \x01(\tR\rschemaVersion\x12>\n" +
+	"\tchangelog\x18\a \x01(\tB\x03\xe0A\x03R\tchangelog\x12>\n" +
 	"\n" +
 	"start_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\tstartTime\x12\\\n" +
 	"\x15export_archive_status\x18\n" +

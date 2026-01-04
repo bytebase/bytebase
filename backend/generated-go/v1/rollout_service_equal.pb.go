@@ -541,9 +541,6 @@ func (x *TaskRun) Equal(y *TaskRun) bool {
 	if x.Changelog != y.Changelog {
 		return false
 	}
-	if x.SchemaVersion != y.SchemaVersion {
-		return false
-	}
 	if p, q := x.StartTime, y.StartTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}

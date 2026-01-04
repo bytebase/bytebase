@@ -39,15 +39,14 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, bus *bus.Bus, taskRu
 func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
-		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
-		Creator:       common.FormatUserEmail(taskRun.CreatorEmail),
-		CreateTime:    timestamppb.New(taskRun.CreatedAt),
-		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
-		Status:        convertToTaskRunStatus(taskRun.Status),
-		Detail:        taskRun.ResultProto.Detail,
-		Changelog:     taskRun.ResultProto.Changelog,
-		SchemaVersion: taskRun.ResultProto.Version,
-		Sheet:         "",
+		Name:       common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
+		Creator:    common.FormatUserEmail(taskRun.CreatorEmail),
+		CreateTime: timestamppb.New(taskRun.CreatedAt),
+		UpdateTime: timestamppb.New(taskRun.UpdatedAt),
+		Status:     convertToTaskRunStatus(taskRun.Status),
+		Detail:     taskRun.ResultProto.Detail,
+		Changelog:  taskRun.ResultProto.Changelog,
+		Sheet:      "",
 	}
 	if taskRun.StartedAt != nil {
 		t.StartTime = timestamppb.New(*taskRun.StartedAt)

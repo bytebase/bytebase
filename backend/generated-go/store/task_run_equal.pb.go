@@ -23,9 +23,6 @@ func (x *TaskRunResult) Equal(y *TaskRunResult) bool {
 	if x.Detail != y.Detail {
 		return false
 	}
-	if x.Version != y.Version {
-		return false
-	}
 	if !x.StartPosition.Equal(y.StartPosition) {
 		return false
 	}

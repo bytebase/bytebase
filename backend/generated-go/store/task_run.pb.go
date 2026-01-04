@@ -140,8 +140,6 @@ type TaskRunResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Detailed execution information or error message.
 	Detail string `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
-	// Schema version after the migration was applied.
-	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	// Starting position in the SQL statement where an error occurred.
 	StartPosition *Position `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
 	// Ending position in the SQL statement where an error occurred.
@@ -190,13 +188,6 @@ func (*TaskRunResult) Descriptor() ([]byte, []int) {
 func (x *TaskRunResult) GetDetail() string {
 	if x != nil {
 		return x.Detail
-	}
-	return ""
-}
-
-func (x *TaskRunResult) GetVersion() string {
-	if x != nil {
-		return x.Version
 	}
 	return ""
 }
@@ -593,10 +584,9 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"\xde\x02\n" +
+	"\tAVAILABLE\x10\b\"\xc4\x02\n" +
 	"\rTaskRunResult\x12\x16\n" +
-	"\x06detail\x18\x01 \x01(\tR\x06detail\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12?\n" +
+	"\x06detail\x18\x01 \x01(\tR\x06detail\x12?\n" +
 	"\x0estart_position\x18\x03 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
 	"\fend_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\x12,\n" +
 	"\x12export_archive_uid\x18\x05 \x01(\x05R\x10exportArchiveUid\x12Q\n" +

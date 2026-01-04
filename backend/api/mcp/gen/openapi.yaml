@@ -16096,10 +16096,6 @@ components:
           description: |-
             The resource name of the changelog.
              Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-        schemaVersion:
-          type: string
-          title: schema_version
-          description: The schema version after this task run completes.
         startTime:
           title: start_time
           description: The time when the task run started execution.

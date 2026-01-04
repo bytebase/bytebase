@@ -35,8 +35,6 @@ message TaskRun {
 message TaskRunResult {
   // Detailed execution information or error message.
   string detail = 1;
-  // Schema version after the migration was applied.
-  string version = 2;
 
   // Starting position in the SQL statement where an error occurred.
   Position start_position = 3;
