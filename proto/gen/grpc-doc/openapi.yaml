@@ -14277,9 +14277,6 @@ components:
                     description: |-
                         The resource name of the changelog.
                          Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-                schemaVersion:
-                    type: string
-                    description: The schema version after this task run completes.
                 startTime:
                     readOnly: true
                     type: string

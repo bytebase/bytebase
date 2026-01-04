@@ -274,7 +274,6 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	return true, &storepb.TaskRunResult{
 		Detail:    detail,
 		Changelog: common.FormatChangelog(instance.ResourceID, database.DatabaseName, mc.changelog),
-		Version:   mc.version,
 	}, nil
 }
 

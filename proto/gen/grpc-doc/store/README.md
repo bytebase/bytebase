@@ -4834,7 +4834,6 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Detailed execution information or error message. |
-| version | [string](#string) |  | Schema version after the migration was applied. |
 | start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
 | end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |

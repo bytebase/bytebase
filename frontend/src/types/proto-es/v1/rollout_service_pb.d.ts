@@ -859,13 +859,6 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
   changelog: string;
 
   /**
-   * The schema version after this task run completes.
-   *
-   * @generated from field: string schema_version = 8;
-   */
-  schemaVersion: string;
-
-  /**
    * The time when the task run started execution.
    *
    * @generated from field: google.protobuf.Timestamp start_time = 9;
