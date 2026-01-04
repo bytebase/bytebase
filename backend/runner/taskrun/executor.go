@@ -425,6 +425,31 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	if isDone {
 		// if isDone, record in revision
 		if mc.version != "" {
+			// Determine revision type from release if available, otherwise use task type
+			revisionType := storepb.SchemaChangeType_VERSIONED
+			if mc.release.release != "" {
+				projectID, releaseUID, err := common.GetProjectReleaseUID(mc.release.release)
+				if err != nil {
+					return errors.Wrapf(err, "failed to parse release name %q", mc.release.release)
+				}
+				release, err := storeInstance.GetRelease(ctx, &store.FindReleaseMessage{
+					ProjectID: &projectID,
+					UID:       &releaseUID,
+				})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get release")
+				}
+				if release == nil {
+					return errors.Errorf("release %q not found", mc.release.release)
+				}
+				revisionType = release.Payload.Type
+			} else {
+				// Fallback to task type for backward compatibility
+				if mc.task.Type == storepb.Task_DATABASE_SDL {
+					revisionType = storepb.SchemaChangeType_DECLARATIVE
+				}
+			}
+
 			r := &store.RevisionMessage{
 				InstanceID:   mc.database.InstanceID,
 				DatabaseName: mc.database.DatabaseName,
@@ -434,11 +459,8 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					File:        mc.release.file,
 					SheetSha256: mc.sheet.Sha256,
 					TaskRun:     mc.taskRunName,
-					Type:        storepb.SchemaChangeType_VERSIONED,
+					Type:        revisionType,
 				},
-			}
-			if mc.task.Type == storepb.Task_DATABASE_SDL {
-				r.Payload.Type = storepb.SchemaChangeType_DECLARATIVE
 			}
 
 			revision, err := storeInstance.CreateRevision(ctx, r)

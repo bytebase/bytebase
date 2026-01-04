@@ -80,10 +80,10 @@ func TestGitOpsCheck(t *testing.T) {
 	// Create a release with migration files simulating GitOps workflow.
 	release := &v1pb.Release{
 		Title: "GitOps Check Release v1.0",
+		Type:  v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:        "migrations/001__create_users_table.sql",
-				Type:        v1pb.Release_File_VERSIONED,
 				Version:     "001",
 				EnableGhost: false,
 				Statement: []byte(`CREATE TABLE users (
@@ -95,7 +95,6 @@ func TestGitOpsCheck(t *testing.T) {
 			},
 			{
 				Path:        "migrations/002__add_email_index.sql",
-				Type:        v1pb.Release_File_VERSIONED,
 				Version:     "002",
 				EnableGhost: false,
 				Statement:   []byte(`CREATE INDEX idx_users_email ON users(email);`),
@@ -201,10 +200,10 @@ func TestGitOpsRollout(t *testing.T) {
 		Parent: project.Name,
 		Release: &v1pb.Release{
 			Title: "GitOps Rollout Release v1.0",
+			Type:  v1pb.Release_VERSIONED,
 			Files: []*v1pb.Release_File{
 				{
 					Path:        "migrations/001__create_products_table.sql",
-					Type:        v1pb.Release_File_VERSIONED,
 					Version:     "001",
 					EnableGhost: false,
 					Statement: []byte(`CREATE TABLE products (
@@ -387,10 +386,10 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		Parent: project.Name,
 		Release: &v1pb.Release{
 			Title: "GitOps Multi-Target Release v1.0",
+			Type:  v1pb.Release_VERSIONED,
 			Files: []*v1pb.Release_File{
 				{
 					Path:        "migrations/1.0.0__create_table_one.sql",
-					Type:        v1pb.Release_File_VERSIONED,
 					Version:     "1.0.0",
 					EnableGhost: false,
 					Statement: []byte(`CREATE TABLE table_one (
@@ -400,7 +399,6 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 				},
 				{
 					Path:        "migrations/1.0.1__create_table_two.sql",
-					Type:        v1pb.Release_File_VERSIONED,
 					Version:     "1.0.1",
 					EnableGhost: false,
 					Statement: []byte(`CREATE TABLE table_two (
@@ -410,7 +408,6 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 				},
 				{
 					Path:        "migrations/1.0.2__create_table_three.sql",
-					Type:        v1pb.Release_File_VERSIONED,
 					Version:     "1.0.2",
 					EnableGhost: false,
 					Statement: []byte(`CREATE TABLE table_three (
@@ -620,10 +617,10 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	// Step 1: Create a release with version 1.0.0 file.
 	originalRelease := &v1pb.Release{
 		Title: "Original Release v1.0.0",
+		Type:  v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:        "migrations/1.0.0__create_users_table.sql",
-				Type:        v1pb.Release_File_VERSIONED,
 				Version:     "1.0.0",
 				EnableGhost: false,
 				Statement: []byte(`CREATE TABLE users (
@@ -691,10 +688,10 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	// Step 3: Create a release with version 1.0.0 file but with different content.
 	modifiedRelease := &v1pb.Release{
 		Title: "Modified Release v1.0.0",
+		Type:  v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:        "migrations/1.0.0__create_users_table.sql",
-				Type:        v1pb.Release_File_VERSIONED,
 				Version:     "1.0.0",
 				EnableGhost: false,
 				Statement: []byte(`CREATE TABLE users (
@@ -765,10 +762,10 @@ func TestGitOpsCheckEmptyTargets(t *testing.T) {
 	// Create a release with a migration file.
 	release := &v1pb.Release{
 		Title: "Test Release",
+		Type:  v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:      "migrations/001__create_table.sql",
-				Type:      v1pb.Release_File_VERSIONED,
 				Version:   "001",
 				Statement: []byte(`CREATE TABLE test_table (id INT);`),
 			},
@@ -840,10 +837,10 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 	// Create a release with declarative SDL files.
 	release := &v1pb.Release{
 		Title: "Declarative SDL Release",
+		Type:  v1pb.Release_DECLARATIVE,
 		Files: []*v1pb.Release_File{
 			{
 				Path:    "schema/users.sql",
-				Type:    v1pb.Release_File_DECLARATIVE,
 				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE public.users (
     id SERIAL NOT NULL,
@@ -980,10 +977,10 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 
 			release := &v1pb.Release{
 				Title: fmt.Sprintf("Test Release - %s", tc.name),
+				Type:  v1pb.Release_DECLARATIVE,
 				Files: []*v1pb.Release_File{
 					{
 						Path:      "schema/test.sql",
-						Type:      v1pb.Release_File_DECLARATIVE,
 						Version:   "1.0.0",
 						Statement: []byte(tc.statement),
 					},
@@ -1038,7 +1035,6 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			files: []*v1pb.Release_File{
 				{
 					Path:    "migrations/001__create_t1.sql",
-					Type:    v1pb.Release_File_VERSIONED,
 					Version: "001",
 					Statement: []byte(`CREATE TABLE t1 (
 	id SERIAL PRIMARY KEY,
@@ -1047,7 +1043,6 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 				},
 				{
 					Path:      "migrations/002__alter_t1.sql",
-					Type:      v1pb.Release_File_VERSIONED,
 					Version:   "002",
 					Statement: []byte(`ALTER TABLE t1 ADD COLUMN email VARCHAR(255);`),
 				},
@@ -1059,7 +1054,6 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			files: []*v1pb.Release_File{
 				{
 					Path:    "migrations/001__create_t1.sql",
-					Type:    v1pb.Release_File_VERSIONED,
 					Version: "001",
 					Statement: []byte(`CREATE TABLE t1 (
 	id SERIAL PRIMARY KEY,
@@ -1068,7 +1062,6 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 				},
 				{
 					Path:      "migrations/002__alter_t2.sql",
-					Type:      v1pb.Release_File_VERSIONED,
 					Version:   "002",
 					Statement: []byte(`ALTER TABLE t2 ADD COLUMN email VARCHAR(255);`),
 				},
@@ -1166,6 +1159,7 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 
 			release := &v1pb.Release{
 				Title: fmt.Sprintf("Test Release - %s", tc.name),
+				Type:  v1pb.Release_VERSIONED,
 				Files: tc.files,
 			}
 
@@ -1262,10 +1256,10 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 	// Create a release with multiple declarative SDL files.
 	release := &v1pb.Release{
 		Title: "Multi-File Declarative SDL Release",
+		Type:  v1pb.Release_DECLARATIVE,
 		Files: []*v1pb.Release_File{
 			{
 				Path:    "schema/users.sql",
-				Type:    v1pb.Release_File_DECLARATIVE,
 				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE public.users (
     id SERIAL NOT NULL,
@@ -1275,7 +1269,6 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 			},
 			{
 				Path:    "schema/products.sql",
-				Type:    v1pb.Release_File_DECLARATIVE,
 				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE public.products (
     id SERIAL NOT NULL,

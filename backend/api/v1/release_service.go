@@ -105,6 +105,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		Payload: &storepb.ReleasePayload{
 			Title:     req.Msg.Release.Title,
 			VcsSource: convertReleaseVcsSource(req.Msg.Release.VcsSource),
+			Type:      storepb.SchemaChangeType(req.Msg.Release.Type),
 		},
 	}
 
@@ -129,7 +130,6 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 			Id:          f.Id,
 			Path:        f.Path,
 			SheetSha256: sheetSha256s[i],
-			Type:        storepb.SchemaChangeType(f.Type),
 			Version:     f.Version,
 			EnableGhost: f.EnableGhost,
 		})
@@ -322,6 +322,11 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 			payload.Title = req.Msg.Release.Title
 			update.Payload = payload
 		}
+		if path == "type" {
+			payload := release.Payload
+			payload.Type = storepb.SchemaChangeType(req.Msg.Release.Type)
+			update.Payload = payload
+		}
 	}
 
 	releaseMessage, err := s.store.UpdateRelease(ctx, update)
@@ -402,6 +407,7 @@ func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 		State:      convertDeletedToState(release.Deleted),
 		Digest:     release.Digest,
+		Type:       v1pb.Release_Type(release.Payload.Type),
 	}
 
 	for _, f := range release.Payload.Files {
@@ -411,7 +417,6 @@ func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 			Path:        f.Path,
 			Sheet:       common.FormatSheet(release.ProjectID, f.SheetSha256),
 			SheetSha256: f.SheetSha256,
-			Type:        v1pb.Release_File_Type(f.Type),
 			Version:     f.Version,
 			EnableGhost: f.EnableGhost,
 		})
@@ -447,13 +452,12 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 // The input files are modified in place.
 // If a sheet is provided, it populates the statement from the sheet.
 // If a statement is provided, it computes the sheetSha256 from the statement.
-func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File, createRelease bool) ([]*v1pb.Release_File, error) {
+func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File, _ bool) ([]*v1pb.Release_File, error) {
 	if len(files) == 0 {
 		return nil, errors.Errorf("release files cannot be empty")
 	}
 
 	versionSet := map[string]struct{}{}
-	fileTypeCount := map[v1pb.Release_File_Type]int{}
 
 	for _, f := range files {
 		f.Id = uuid.NewString()
@@ -488,29 +492,11 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 		default:
 		}
 
-		switch f.Type {
-		case v1pb.Release_File_VERSIONED:
-			if _, ok := versionSet[f.Version]; ok {
-				return nil, errors.Errorf("found duplicate version %q", f.Version)
-			}
-			versionSet[f.Version] = struct{}{}
-		case v1pb.Release_File_DECLARATIVE:
-			versionSet[f.Version] = struct{}{}
-			if len(versionSet) > 1 {
-				return nil, errors.Errorf("declarative files should have the same version, found %v", versionSet)
-			}
-		default:
-			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
+		// Version validation only - no per-file type checking
+		if _, ok := versionSet[f.Version]; ok {
+			return nil, errors.Errorf("found duplicate version %q", f.Version)
 		}
-
-		fileTypeCount[f.Type]++
-	}
-
-	if fileTypeCount[v1pb.Release_File_VERSIONED] > 0 && fileTypeCount[v1pb.Release_File_DECLARATIVE] > 0 {
-		return nil, errors.Errorf("cannot have both versioned and declarative files")
-	}
-	if createRelease && fileTypeCount[v1pb.Release_File_DECLARATIVE] > 1 {
-		return nil, errors.Errorf("cannot have multiple declarative files when creating release")
+		versionSet[f.Version] = struct{}{}
 	}
 
 	// Create files with additional parsed version data for sorting.

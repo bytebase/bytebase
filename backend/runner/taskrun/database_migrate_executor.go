@@ -285,9 +285,12 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 		}
 	}
 
+	// Extract release type once before the loop
+	releaseType := release.Payload.Type
+
 	// Execute unapplied files in order
 	for _, file := range release.Payload.Files {
-		switch file.Type {
+		switch releaseType {
 		case storepb.SchemaChangeType_VERSIONED:
 			// Skip if already applied
 			if appliedVersions[file.Version] {
@@ -406,7 +409,7 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			}
 
 		default:
-			return true, nil, errors.Errorf("unsupported release file type %q", file.Type)
+			return true, nil, errors.Errorf("unsupported release type %q", releaseType)
 		}
 	}
 
