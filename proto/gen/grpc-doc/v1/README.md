@@ -519,7 +519,7 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
-    - [Release.File.Type](#bytebase-v1-Release-File-Type)
+    - [Release.Type](#bytebase-v1-Release-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
   
@@ -8432,6 +8432,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the release. |
 | digest | [string](#string) |  | The digest of the release. The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease. Whether to provide digest and how to generate it is up to the user. If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. |
+| type | [Release.Type](#bytebase-v1-Release-Type) |  | The type of schema change for all files in this release. |
 
 
 
@@ -8448,7 +8449,6 @@ A SQL file in a release.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
-| type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  | The version identifier for the file. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
@@ -8548,16 +8548,16 @@ When paginating, all other parameters provided to `ListReleases` must match the 
  
 
 
-<a name="bytebase-v1-Release-File-Type"></a>
+<a name="bytebase-v1-Release-Type"></a>
 
-### Release.File.Type
-The type of migration file.
+### Release.Type
+The type of schema change.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| VERSIONED | 1 | Versioned migration file with sequential version numbers. |
-| DECLARATIVE | 2 | Declarative schema definition file describing desired state. |
+| VERSIONED | 1 | Versioned schema migration. |
+| DECLARATIVE | 2 | Declarative schema definition. |
 
 
  

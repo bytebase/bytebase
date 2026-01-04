@@ -3610,6 +3610,7 @@ Activity type enumeration.
 | title | [string](#string) |  |  |
 | files | [ReleasePayload.File](#bytebase-store-ReleasePayload-File) | repeated |  |
 | vcs_source | [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource) |  |  |
+| type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 
 
 
@@ -3627,7 +3628,6 @@ Activity type enumeration.
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
-| type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 | version | [string](#string) |  |  |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 

@@ -13838,6 +13838,10 @@ components:
              The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
              Whether to provide digest and how to generate it is up to the user.
              If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
+        type:
+          title: type
+          description: The type of schema change for all files in this release.
+          $ref: '#/components/schemas/bytebase.v1.Release.Type'
       title: Release
       additionalProperties: false
     bytebase.v1.Release.File:
@@ -13851,10 +13855,6 @@ components:
           type: string
           title: path
           description: The path of the file. e.g., `2.2/V0001_create_table.sql`.
-        type:
-          title: type
-          description: The type of the file.
-          $ref: '#/components/schemas/bytebase.v1.Release.File.Type'
         version:
           type: string
           title: version
@@ -13884,14 +13884,14 @@ components:
       title: File
       additionalProperties: false
       description: A SQL file in a release.
-    bytebase.v1.Release.File.Type:
+    bytebase.v1.Release.Type:
       type: string
       title: Type
       enum:
         - TYPE_UNSPECIFIED
         - VERSIONED
         - DECLARATIVE
-      description: The type of migration file.
+      description: The type of schema change.
     bytebase.v1.Release.VCSSource:
       type: object
       properties:

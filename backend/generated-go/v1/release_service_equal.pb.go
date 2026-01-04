@@ -266,9 +266,6 @@ func (x *Release_File) Equal(y *Release_File) bool {
 	if x.Path != y.Path {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
 	if x.Version != y.Version {
 		return false
 	}
@@ -337,6 +334,9 @@ func (x *Release) Equal(y *Release) bool {
 		return false
 	}
 	if x.Digest != y.Digest {
+		return false
+	}
+	if x.Type != y.Type {
 		return false
 	}
 	return true
