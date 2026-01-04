@@ -190,7 +190,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { cloneDeep, includes, isEmpty } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { ExpandIcon, TableIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -220,7 +220,6 @@ import {
 import type { SQLDialect } from "@/types";
 import { dialectOfEngineV1, isValidDatabaseGroupName } from "@/types";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   getSheetStatement,
@@ -244,8 +243,7 @@ type LocalState = {
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, planCheckRuns, rollout, events, readonly } =
-  usePlanContext();
+const { isCreating, plan, planCheckRuns, events, readonly } = usePlanContext();
 const { selectedSpec, getDatabaseTargets, targets } = useSelectedSpec();
 const editorState = useEditorState();
 
@@ -337,25 +335,9 @@ const shouldShowEditButton = computed(() => {
   if (editorState.isEditing.value) {
     return false;
   }
-  if (plan.value.hasRollout && rollout?.value) {
-    const tasks = rollout.value.stages
-      .flatMap((stage) => stage.tasks)
-      .filter((task) => task.specId === selectedSpec.value.id);
-    if (
-      tasks.some((task) =>
-        includes(
-          [
-            Task_Status.RUNNING,
-            Task_Status.PENDING,
-            Task_Status.DONE,
-            Task_Status.SKIPPED,
-          ],
-          task.status
-        )
-      )
-    ) {
-      return false;
-    }
+  // Hide edit button for plans that have a rollout.
+  if (plan.value.hasRollout) {
+    return false;
   }
   return true;
 });
