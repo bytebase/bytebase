@@ -61,7 +61,7 @@ func TestPLSQLParser_MultipleStatements(t *testing.T) {
 	tests := []struct {
 		statement     string
 		expectedCount int   // Number of individual statements
-		expectedLines []int // BaseLine for each result
+		expectedLines []int // StartPosition.Line - 1 for each result (0-based line of first character, including leading whitespace)
 	}{
 		{
 			statement:     "SELECT * FROM t1;",
@@ -69,17 +69,19 @@ func TestPLSQLParser_MultipleStatements(t *testing.T) {
 			expectedLines: []int{0},
 		},
 		{
+			// Statement 2's first character is the newline at end of line 1
 			statement: `SELECT * FROM t1;
 SELECT * FROM t2;`,
 			expectedCount: 2,
-			expectedLines: []int{0, 1},
+			expectedLines: []int{0, 0},
 		},
 		{
+			// Statement 2's first char is newline at end of line 1, statement 3's first char is newline at end of line 2
 			statement: `SELECT * FROM t1;
 SELECT * FROM t2;
 INSERT INTO t3 VALUES (1, 2);`,
 			expectedCount: 3,
-			expectedLines: []int{0, 1, 2},
+			expectedLines: []int{0, 0, 1},
 		},
 	}
 
