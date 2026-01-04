@@ -59,20 +59,20 @@ import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { planServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import {
+  planServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
-import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   CreatePlanRequestSchema,
   Plan_ChangeDatabaseConfigSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { generateIssueTitle, issueV1Slug } from "@/utils";
+import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { useReleaseDetailContext } from "../context";
-import { createIssueFromPlan } from "./utils";
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -83,8 +83,6 @@ type LocalState = {
 };
 
 const router = useRouter();
-const databaseStore = useDatabaseV1Store();
-const dbGroupStore = useDBGroupStore();
 const { release, project } = useReleaseDetailContext();
 
 const state = reactive<LocalState>({});
@@ -107,16 +105,6 @@ const handleCreate = async () => {
   if (!state.targetSelectState) {
     return;
   }
-
-  const databaseList = state.targetSelectState.selectedDatabaseNameList.map(
-    (name) => databaseStore.getDatabaseByName(name)
-  );
-  const databaseGroup = create(
-    DatabaseGroupSchema,
-    dbGroupStore.getDBGroupByName(
-      state.targetSelectState.selectedDatabaseGroup || ""
-    )
-  );
 
   // Determine enableGhost from release files
   const firstFile = release.value.files?.[0];
@@ -143,27 +131,29 @@ const handleCreate = async () => {
       },
     ],
   });
-  const request = create(CreatePlanRequestSchema, {
+
+  // Create plan
+  const planRequest = create(CreatePlanRequestSchema, {
     parent: project.value.name,
     plan: newPlan,
   });
-  const response = await planServiceClientConnect.createPlan(request);
-  const createdIssue = await createIssueFromPlan(project.value.name, {
-    ...response,
-    // Override title and description.
-    title: generateIssueTitle(
-      "bb.issue.database.update",
-      state.targetSelectState.changeSource === "DATABASE"
-        ? databaseList.map((db) => db.databaseName)
-        : [databaseGroup?.title]
-    ),
-    description: `Apply release "${release.value.title}"`,
+  const createdPlan = await planServiceClientConnect.createPlan(planRequest);
+
+  // Create rollout directly without creating an issue
+  const rolloutRequest = create(CreateRolloutRequestSchema, {
+    parent: createdPlan.name,
   });
+  await rolloutServiceClientConnect.createRollout(rolloutRequest);
+
+  // Extract planId from plan name (format: projects/{project}/plans/{planId})
+  const planId = createdPlan.name.split("/").pop();
+
+  // Redirect to rollout view
   router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
     params: {
       projectId: getProjectNameReleaseId(release.value.name)[0],
-      issueSlug: issueV1Slug(createdIssue.name, createdIssue.title),
+      planId,
     },
   });
 };
