@@ -235,7 +235,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		}
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", execFunc)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED, execFunc)
 }
 
 func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, releaseName string) (bool, *storepb.TaskRunResult, error) {
