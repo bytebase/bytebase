@@ -86,7 +86,7 @@ import { usePlanContext } from "../../logic";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, readonly } = usePlanContext();
+const { isCreating, plan, readonly, issue } = usePlanContext();
 const { refreshResources } = useResourcePoller();
 
 const state = reactive({
@@ -103,6 +103,10 @@ const allowEdit = computed(() => {
   }
   if (isCreating.value) {
     return true;
+  }
+  // Plans with rollout should have readonly description
+  if (!issue.value && plan.value.hasRollout) {
+    return false;
   }
   if (extractUserId(plan.value.creator) === currentUser.value.email) {
     return true;
