@@ -45,7 +45,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun
 		UpdateTime: timestamppb.New(taskRun.UpdatedAt),
 		Status:     convertToTaskRunStatus(taskRun.Status),
 		Detail:     taskRun.ResultProto.Detail,
-		Changelog:  taskRun.ResultProto.Changelog,
 		Sheet:      "",
 	}
 	if taskRun.StartedAt != nil {

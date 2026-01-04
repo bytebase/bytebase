@@ -14271,12 +14271,6 @@ components:
                     description: |-
                         Below are the results of a task run.
                          Detailed information about the task run result.
-                changelog:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The resource name of the changelog.
-                         Format: instances/{instance}/databases/{database}/changelogs/{changelog}
                 startTime:
                     readOnly: true
                     type: string

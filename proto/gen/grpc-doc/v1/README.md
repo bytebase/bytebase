@@ -9698,7 +9698,6 @@ Payload for updating a database schema.
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | status | [TaskRun.Status](#bytebase-v1-TaskRun-Status) |  | The current execution status of the task run. |
 | detail | [string](#string) |  | Below are the results of a task run. Detailed information about the task run result. |
-| changelog | [string](#string) |  | The resource name of the changelog. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the task run started execution. |
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  | The export archive status for data export tasks. |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |

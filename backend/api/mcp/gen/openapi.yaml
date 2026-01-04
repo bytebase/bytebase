@@ -16090,12 +16090,6 @@ components:
           description: |-
             Below are the results of a task run.
              Detailed information about the task run result.
-        changelog:
-          type: string
-          title: changelog
-          description: |-
-            The resource name of the changelog.
-             Format: instances/{instance}/databases/{database}/changelogs/{changelog}
         startTime:
           title: start_time
           description: The time when the task run started execution.

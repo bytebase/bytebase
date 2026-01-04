@@ -851,14 +851,6 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
   detail: string;
 
   /**
-   * The resource name of the changelog.
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-   *
-   * @generated from field: string changelog = 7;
-   */
-  changelog: string;
-
-  /**
    * The time when the task run started execution.
    *
    * @generated from field: google.protobuf.Timestamp start_time = 9;

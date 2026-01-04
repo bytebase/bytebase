@@ -41,9 +41,6 @@ message TaskRunResult {
 
   // Backup details that can be used to rollback changes.
   PriorBackupDetail prior_backup_detail = 6;
-  // Resource name of the changelog entry created by this run.
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-  string changelog = 7;
 }
 
 // PriorBackupDetail contains information about automatic backups created before migration.

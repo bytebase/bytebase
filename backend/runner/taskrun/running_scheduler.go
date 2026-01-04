@@ -126,8 +126,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			log.BBError(err),
 		)
 		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
-			Detail:    "The task run is canceled",
-			Changelog: "",
+			Detail: "The task run is canceled",
 		})
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
@@ -162,8 +161,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			log.BBError(err),
 		)
 		taskRunResult := &storepb.TaskRunResult{
-			Detail:    err.Error(),
-			Changelog: "",
+			Detail: err.Error(),
 		}
 		resultBytes, marshalErr := protojson.Marshal(taskRunResult)
 		if marshalErr != nil {
