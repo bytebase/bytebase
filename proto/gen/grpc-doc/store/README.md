@@ -307,6 +307,7 @@
     - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
     - [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd)
     - [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart)
+    - [TaskRunLog.ReleaseFileExecute](#bytebase-store-TaskRunLog-ReleaseFileExecute)
     - [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
@@ -4900,6 +4901,7 @@ Status represents the current execution state of a task run.
 | retry_info | [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo) |  |  |
 | compute_diff_start | [TaskRunLog.ComputeDiffStart](#bytebase-store-TaskRunLog-ComputeDiffStart) |  |  |
 | compute_diff_end | [TaskRunLog.ComputeDiffEnd](#bytebase-store-TaskRunLog-ComputeDiffEnd) |  |  |
+| release_file_execute | [TaskRunLog.ReleaseFileExecute](#bytebase-store-TaskRunLog-ReleaseFileExecute) |  |  |
 
 
 
@@ -5009,6 +5011,22 @@ Status represents the current execution state of a task run.
 
 ### TaskRunLog.PriorBackupStart
 
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-ReleaseFileExecute"></a>
+
+### TaskRunLog.ReleaseFileExecute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The version of the file being executed (e.g., &#34;0001&#34;). |
+| file_path | [string](#string) |  | The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). |
 
 
 
@@ -5138,6 +5156,7 @@ Status represents the current execution state of a task run.
 | RETRY_INFO | 11 |  |
 | COMPUTE_DIFF_START | 12 |  |
 | COMPUTE_DIFF_END | 13 |  |
+| RELEASE_FILE_EXECUTE | 14 |  |
 
 
  

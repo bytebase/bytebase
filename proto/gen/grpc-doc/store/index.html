@@ -1397,6 +1397,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.TaskRunLog.ReleaseFileExecute"><span class="badge">M</span>TaskRunLog.ReleaseFileExecute</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TaskRunLog.RetryInfo"><span class="badge">M</span>TaskRunLog.RetryInfo</a>
                 </li>
               
@@ -13292,6 +13296,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>release_file_execute</td>
+                  <td><a href="#bytebase.store.TaskRunLog.ReleaseFileExecute">TaskRunLog.ReleaseFileExecute</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13468,6 +13479,37 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
         <p></p>
 
         
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.ReleaseFileExecute">TaskRunLog.ReleaseFileExecute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The version of the file being executed (e.g., &#34;0001&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -13750,6 +13792,12 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
               <tr>
                 <td>COMPUTE_DIFF_END</td>
                 <td>13</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RELEASE_FILE_EXECUTE</td>
+                <td>14</td>
                 <td><p></p></td>
               </tr>
             

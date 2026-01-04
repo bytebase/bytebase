@@ -606,6 +606,18 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				},
 			}
 			entries = append(entries, e)
+
+		case storepb.TaskRunLog_RELEASE_FILE_EXECUTE:
+			e := &v1pb.TaskRunLogEntry{
+				Type:     v1pb.TaskRunLogEntry_RELEASE_FILE_EXECUTE,
+				LogTime:  timestamppb.New(l.T),
+				DeployId: l.Payload.DeployId,
+				ReleaseFileExecute: &v1pb.TaskRunLogEntry_ReleaseFileExecute{
+					Version:  l.Payload.ReleaseFileExecute.Version,
+					FilePath: l.Payload.ReleaseFileExecute.FilePath,
+				},
+			}
+			entries = append(entries, e)
 		default:
 		}
 	}

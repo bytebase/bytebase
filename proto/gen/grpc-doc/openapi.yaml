@@ -14329,6 +14329,7 @@ components:
                         - PRIOR_BACKUP
                         - RETRY_INFO
                         - COMPUTE_DIFF
+                        - RELEASE_FILE_EXECUTE
                     type: string
                     description: The type of this log entry.
                     format: enum
@@ -14371,6 +14372,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunLogEntry_ComputeDiff'
                     description: Compute diff details (if type is COMPUTE_DIFF).
+                releaseFileExecute:
+                    allOf:
+                        - $ref: '#/components/schemas/TaskRunLogEntry_ReleaseFileExecute'
+                    description: Release file execution details (if type is RELEASE_FILE_EXECUTE).
         TaskRunLogEntry_CommandExecute:
             type: object
             properties:
@@ -14442,6 +14447,16 @@ components:
                     type: string
                     description: Error message if the backup failed.
             description: Prior backup operation details.
+        TaskRunLogEntry_ReleaseFileExecute:
+            type: object
+            properties:
+                version:
+                    type: string
+                    description: The version of the file being executed (e.g., "0001").
+                filePath:
+                    type: string
+                    description: The file path within the release (e.g., "2.2/V0001_create_table.sql").
+            description: Release file execution details.
         TaskRunLogEntry_RetryInfo:
             type: object
             properties:
