@@ -335,9 +335,6 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x.SchemaVersion != y.SchemaVersion {
 		return false
 	}
-	if x.DatabaseChangeType != y.DatabaseChangeType {
-		return false
-	}
 	return true
 }
 

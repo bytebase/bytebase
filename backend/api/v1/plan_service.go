@@ -757,8 +757,10 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 				}
 			}
 
-			enableSDL := config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
-			enableGhost := config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.ChangeDatabaseConfig.EnableGhost
+			// Plan checks only run for sheet-based migrations (releases are skipped above).
+			// Sheet-based migrations are always imperative (MIGRATE), never declarative (SDL).
+			enableSDL := false
+			enableGhost := config.ChangeDatabaseConfig.EnableGhost
 
 			for _, target := range databases {
 				types := []storepb.PlanCheckType{
@@ -920,24 +922,10 @@ func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.Pla
 			Targets:           c.Targets,
 			Sheet:             sheet,
 			Release:           c.Release,
-			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
 			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
 			EnableGhost:       c.EnableGhost,
 		},
-	}
-}
-
-func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) v1pb.DatabaseChangeType {
-	switch t {
-	case storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
-		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		return v1pb.DatabaseChangeType_MIGRATE
-	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
-		return v1pb.DatabaseChangeType_SDL
-	default:
-		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 	}
 }
 
@@ -1000,17 +988,6 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseConfig) *storepb.PlanConfig_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
 
-	// Convert v1 DatabaseChangeType to store Type
-	var storeType storepb.PlanConfig_ChangeDatabaseConfig_Type
-	switch c.Type {
-	case v1pb.DatabaseChangeType_MIGRATE:
-		storeType = storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE
-	case v1pb.DatabaseChangeType_SDL:
-		storeType = storepb.PlanConfig_ChangeDatabaseConfig_SDL
-	default:
-		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
-	}
-
 	// Sheet can be empty when using Release-based workflow (SQL comes from release files).
 	// Plans can use either Sheet-based or Release-based approach, but not both.
 	var sheetSha256 string
@@ -1026,7 +1003,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Targets:           c.Targets,
 			SheetSha256:       sheetSha256,
 			Release:           c.Release,
-			Type:              storeType,
 			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
 			EnableGhost:       c.EnableGhost,

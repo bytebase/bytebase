@@ -19,7 +19,6 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 				Targets:     []string{database.Name},
 				Sheet:       sheet.Name,
-				Type:        v1pb.DatabaseChangeType_MIGRATE,
 				EnableGhost: enableGhost,
 			},
 		},

@@ -164,8 +164,6 @@
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
-    - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
-  
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
     - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
@@ -2801,7 +2799,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -2885,19 +2882,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 
 
  
-
-
-<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-Type"></a>
-
-### PlanConfig.ChangeDatabaseConfig.Type
-Type is the database change type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
-
 
  
 

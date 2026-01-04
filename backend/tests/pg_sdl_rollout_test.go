@@ -138,7 +138,6 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Targets: []string{database.Name},
 							Sheet:   sheet.Name,
-							Type:    v1pb.DatabaseChangeType_SDL,
 						},
 					},
 				},

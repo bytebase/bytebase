@@ -319,16 +319,10 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		return nil, errors.Errorf("schema update task database is nil")
 	}
 
-	// All DATABASE_MIGRATE tasks use MIGRATE as the change type
-	// (the actual execution behavior is determined by the release type when applicable)
-	databaseChangeType := v1pb.DatabaseChangeType_MIGRATE
-
 	stageID := common.FormatStageID(task.Environment)
 
 	// Build DatabaseUpdate payload
-	databaseUpdate := &v1pb.Task_DatabaseUpdate{
-		DatabaseChangeType: databaseChangeType,
-	}
+	databaseUpdate := &v1pb.Task_DatabaseUpdate{}
 
 	// Set source: either sheet or release
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
