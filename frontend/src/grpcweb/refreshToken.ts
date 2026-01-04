@@ -30,10 +30,12 @@ async function doRefresh(): Promise<void> {
   }
 
   // Another tab is refreshing - wait for broadcast
-  await waitForBroadcast();
+  const receivedBroadcast = await waitForBroadcast();
 
-  // After wait, try once more (handles race condition or failed refresh)
-  await tryAcquireAndRefresh();
+  // Only retry if timed out (missed broadcast or other tab failed)
+  if (!receivedBroadcast) {
+    await tryAcquireAndRefresh();
+  }
 }
 
 async function tryAcquireAndRefresh(): Promise<boolean> {
@@ -44,33 +46,30 @@ async function tryAcquireAndRefresh(): Promise<boolean> {
       if (!lock) {
         return false;
       }
-      try {
-        await authServiceClientConnect.refresh({});
-      } finally {
-        // Notify waiting tabs regardless of success/failure
-        const channel = new BroadcastChannel(CHANNEL_NAME);
-        channel.postMessage("complete");
-        channel.close();
-      }
+      await authServiceClientConnect.refresh({});
+      // Only broadcast on success - failure lets waiting tabs timeout and retry
+      const channel = new BroadcastChannel(CHANNEL_NAME);
+      channel.postMessage("complete");
+      channel.close();
       return true;
     }
   );
 }
 
-function waitForBroadcast(): Promise<void> {
+function waitForBroadcast(): Promise<boolean> {
   return new Promise((resolve) => {
     const channel = new BroadcastChannel(CHANNEL_NAME);
 
-    const cleanup = () => {
+    const cleanup = (received: boolean) => {
       channel.close();
-      resolve();
+      resolve(received);
     };
 
-    const timeout = setTimeout(cleanup, WAIT_TIMEOUT_MS);
+    const timeout = setTimeout(() => cleanup(false), WAIT_TIMEOUT_MS);
 
     channel.onmessage = () => {
       clearTimeout(timeout);
-      cleanup();
+      cleanup(true);
     };
   });
 }
