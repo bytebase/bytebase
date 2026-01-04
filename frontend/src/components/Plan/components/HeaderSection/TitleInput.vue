@@ -99,6 +99,10 @@ const allowEdit = computed(() => {
   if (isCreating.value) {
     return true;
   }
+  // Plans with rollout should have readonly title
+  if (!issue.value && plan.value.hasRollout) {
+    return false;
+  }
 
   // For grant requests, check issue permissions
   if (isGrantRequest.value && issue.value) {

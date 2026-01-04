@@ -30,29 +30,21 @@ const ACTIONABLE_TASK_STATUSES = new Set([
 /**
  * Composable that determines whether the "Ready for Rollout" link should be shown.
  * This link appears when:
- * - Issue is a database change (not export/create)
  * - User is not already on the rollout tab
  * - Rollout exists
- * - Issue is DONE, OR issue is OPEN and approved with actionable tasks
+ * - For plans without issue: always show when rollout exists
+ * - For plans with issue: issue is a database change AND
+ *   (issue is DONE, OR issue is OPEN and approved with actionable tasks)
  */
 export const useRolloutReadyLink = () => {
   const route = useRoute();
-  const { issue, rollout } = usePlanContext();
+  const { plan, issue, rollout } = usePlanContext();
 
   const isOnRolloutTab = computed(() => {
     return ROLLOUT_ROUTES.has(route.name as string);
   });
 
   const shouldShow = computed(() => {
-    if (!issue.value) {
-      return false;
-    }
-
-    // Only show for database change issues
-    if (issue.value.type !== Issue_Type.DATABASE_CHANGE) {
-      return false;
-    }
-
     // Hide if on rollout tab
     if (isOnRolloutTab.value) {
       return false;
@@ -71,6 +63,20 @@ export const useRolloutReadyLink = () => {
       )
     );
     if (hasDatabaseCreateOrExportTasks) {
+      return false;
+    }
+
+    // For plans without issue but with rollout, show the link
+    if (!issue.value && plan.value.hasRollout) {
+      return true;
+    }
+
+    if (!issue.value) {
+      return false;
+    }
+
+    // Only show for database change issues
+    if (issue.value.type !== Issue_Type.DATABASE_CHANGE) {
       return false;
     }
 
