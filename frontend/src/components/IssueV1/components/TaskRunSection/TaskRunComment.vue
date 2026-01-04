@@ -39,11 +39,7 @@ import {
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isPostgresFamily } from "@/types/v1/instance";
-import {
-  databaseForTask,
-  extractTaskUID,
-  flattenTaskV1List,
-} from "@/utils";
+import { databaseForTask, extractTaskUID, flattenTaskV1List } from "@/utils";
 import { displayTaskRunLogEntryType } from "@/utils/v1/taskRunLog";
 import { useIssueContext } from "../../logic";
 
