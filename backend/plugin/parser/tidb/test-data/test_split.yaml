@@ -1,91 +1,209 @@
-- description: "simple single statement"
-  input: "SELECT 1;"
+- description: simple single statement
+  input: SELECT 1;
   result:
-    - text: "SELECT 1;"
+    - text: SELECT 1;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 10}
-      range: {start: 0, end: 9}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
       empty: false
-
-- description: "multi-line statement"
-  input: "SELECT\n  1;"
+- description: multi-line statement
+  input: |-
+    SELECT
+      1;
   result:
-    - text: "SELECT\n  1;"
+    - text: |-
+        SELECT
+          1;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 2, column: 5}
-      range: {start: 0, end: 11}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 2
+        column: 5
+      range:
+        start: 0
+        end: 11
       empty: false
-
-- description: "multiple statements"
+- description: multiple statements
   input: "SELECT 1;\nSELECT 2;"
   result:
-    - text: "SELECT 1;"
+    - text: SELECT 1;
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 10}
-      range: {start: 0, end: 9}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
       empty: false
-    - text: "SELECT 2;"
-      baseline: 1
-      start: {line: 2, column: 1}
-      end: {line: 2, column: 10}
-      range: {start: 10, end: 19}
+    - text: "\nSELECT 2;"
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 2
+        column: 10
+      range:
+        start: 9
+        end: 19
       empty: false
-
-- description: "multi-byte characters - Chinese"
-  input: "SELECT '中文';"
+- description: multi-byte characters - Chinese
+  input: SELECT '中文';
   result:
-    - text: "SELECT '中文';"
+    - text: SELECT '中文';
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 13}
-      range: {start: 0, end: 16}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 13
+      range:
+        start: 0
+        end: 16
       empty: false
-
-- description: "multi-byte characters - emoji"
-  input: "SELECT '🎉';"
+- description: multi-byte characters - emoji
+  input: "SELECT '\U0001F389';"
   result:
-    - text: "SELECT '🎉';"
+    - text: "SELECT '\U0001F389';"
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 12}
-      range: {start: 0, end: 14}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 12
+      range:
+        start: 0
+        end: 14
       empty: false
-
-- description: "multi-byte on second line"
-  input: "SELECT\n  '中文';"
+- description: multi-byte on second line
+  input: |-
+    SELECT
+      '中文';
   result:
-    - text: "SELECT\n  '中文';"
+    - text: |-
+        SELECT
+          '中文';
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 2, column: 8}
-      range: {start: 0, end: 18}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 2
+        column: 8
+      range:
+        start: 0
+        end: 18
       empty: false
-
-- description: "multiple statements with multi-byte"
-  input: "SELECT '中';\nSELECT '文';"
+- description: multiple statements with multi-byte
+  input: "SELECT '\u4E2D';\nSELECT '\u6587';"
   result:
-    - text: "SELECT '中';"
+    - text: "SELECT '\u4E2D';"
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 12}
-      range: {start: 0, end: 13}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 12
+      range:
+        start: 0
+        end: 13
       empty: false
-    - text: "SELECT '文';"
-      baseline: 1
-      start: {line: 2, column: 1}
-      end: {line: 2, column: 12}
-      range: {start: 14, end: 27}
+    - text: "\nSELECT '\u6587';"
+      baseline: 0
+      start:
+        line: 1
+        column: 12
+      end:
+        line: 2
+        column: 12
+      range:
+        start: 13
+        end: 27
       empty: false
-
-- description: "statement with leading spaces and multi-byte"
-  input: "  SELECT '中';"
+- description: statement with leading spaces and multi-byte
+  input: '  SELECT ''中'';'
   result:
-    - text: "SELECT '中';"
+    - text: '  SELECT ''中'';'
       baseline: 0
-      start: {line: 1, column: 3}
-      end: {line: 1, column: 14}
-      range: {start: 2, end: 15}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 14
+      range:
+        start: 0
+        end: 15
+      empty: false
+- description: 'position semantic: leading newlines'
+  input: "\n\nSELECT 1;"
+  result:
+    - text: "\n\nSELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 10
+      range:
+        start: 0
+        end: 11
+      empty: false
+- description: 'position semantic: leading spaces and newlines'
+  input: "\n  \n  SELECT 1;"
+  result:
+    - text: "\n  \n  SELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 12
+      range:
+        start: 0
+        end: 15
+      empty: false
+- description: 'position semantic: multi-statement with leading whitespace'
+  input: "SELECT 1;\n\n  SELECT 2;"
+  result:
+    - text: SELECT 1;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+    - text: "\n\n  SELECT 2;"
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 3
+        column: 12
+      range:
+        start: 9
+        end: 22
       empty: false

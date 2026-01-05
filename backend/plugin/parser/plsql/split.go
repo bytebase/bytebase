@@ -1,15 +1,12 @@
 package plsql
 
 import (
-	"strings"
-
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func init() {
@@ -35,44 +32,66 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	prevStopTokenIndex := -1
 	var result []base.Statement
 	for _, item := range tree.GetChildren() {
+		// Skip past sql_plus_command (like "/" block terminator) to prevent it from being
+		// included in the next statement's leadingContent.
+		if sqlPlusCmd, ok := item.(parser.ISql_plus_commandContext); ok {
+			// Calculate the leading whitespace/comments before this sql_plus_command
+			leadingContent := ""
+			if startTokenIndex := sqlPlusCmd.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
+				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(sqlPlusCmd.GetStart().GetTokenIndex()-1))
+			}
+			// Skip past both the leading content and the command itself
+			cmdText := tokens.GetTextFromTokens(sqlPlusCmd.GetStart(), sqlPlusCmd.GetStop())
+			byteOffsetStart += len(leadingContent) + len(cmdText)
+			prevStopTokenIndex = sqlPlusCmd.GetStop().GetTokenIndex()
+			continue
+		}
+
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
 			var lastToken antlr.Token
-			// tokens looks like
-			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
-				byteOffsetStart += len(tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1)))
-			}
-			byteOffsetEnd := byteOffsetStart + len(tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop()))
 
-			// The go-ora driver requires semicolon for anonymous block,
-			// but does not support semicolon for other statements.
+			// Calculate the leading whitespace/comments before this statement
+			leadingContent := ""
+			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
+				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1))
+			}
+
+			// The go-ora driver requires semicolon for anonymous blocks/procedures/functions,
+			// but does NOT support semicolon for other statements (CREATE TABLE, SELECT, etc.).
+			stopTokenIndex := stmt.GetStop().GetTokenIndex()
 			if needSemicolon(stmt) {
-				lastToken = tokens.Get(stmt.GetStop().GetTokenIndex())
-				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+				// For procedures/functions/anonymous blocks: include semicolon if present, add if missing
+				lastToken = tokens.Get(stopTokenIndex)
+				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
 					text += ";"
 				}
 			} else {
-				stopIndex := stmt.GetStop().GetTokenIndex()
+				// For regular statements: EXCLUDE the semicolon (go-ora doesn't support it)
 				if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
-					stopIndex--
+					stopTokenIndex--
 				}
-				lastToken = tokens.Get(stopIndex)
-				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-				text = strings.TrimRightFunc(text, utils.IsSpaceOrSemicolon)
+				lastToken = tokens.Get(stopTokenIndex)
+				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 			}
+
+			// Calculate byte offsets using lastToken (which includes semicolon if present)
+			// byteOffsetStart is where the previous statement ended (including any leading whitespace)
+			tokenByteOffset := byteOffsetStart + len(leadingContent)
+			byteOffsetEnd := tokenByteOffset + len(tokens.GetTextFromTokens(stmt.GetStart(), lastToken))
+
+			// Calculate start position based on byteOffsetStart (including leading whitespace)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffsetStart)
 
 			result = append(result, base.Statement{
 				Text: text,
 				// BaseLine is 0-based line offset of this statement in the original SQL
-				BaseLine: stmt.GetStart().GetLine() - 1,
-				Start: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(stmt.GetStart().GetLine()),
-						Column: int32(stmt.GetStart().GetColumn()),
-					},
-					statement,
-				),
+				BaseLine: startLine,
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				End: common.ConvertANTLRTokenToExclusiveEndPosition(
 					int32(lastToken.GetLine()),
 					int32(lastToken.GetColumn()),
@@ -85,7 +104,15 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				},
 			})
 			byteOffsetStart = byteOffsetEnd
+			// Set prevStopTokenIndex to the last token we want to "consume" for this statement.
+			// For statements where the semicolon is a separator (not part of the statement parse tree),
+			// we need to skip past the semicolon so it's not included in the next statement's leadingContent.
 			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
+			if nextIdx := prevStopTokenIndex + 1; nextIdx < len(tokens.GetAllTokens()) {
+				if nextToken := tokens.Get(nextIdx); nextToken.GetTokenType() == parser.PlSqlParserSEMICOLON {
+					prevStopTokenIndex = nextIdx
+				}
+			}
 		}
 	}
 	return result, nil

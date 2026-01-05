@@ -1,29 +1,79 @@
-- description: "single SELECT statement"
-  input: "SELECT * FROM c"
+- description: single SELECT statement
+  input: SELECT * FROM c
   result:
-    - text: "SELECT * FROM c"
+    - text: SELECT * FROM c
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 16}
-      range: {start: 0, end: 15}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 16
+      range:
+        start: 0
+        end: 15
       empty: false
-
-- description: "SELECT with WHERE"
-  input: "SELECT c.id FROM users c WHERE c.active = true"
+- description: SELECT with WHERE
+  input: SELECT c.id FROM users c WHERE c.active = true
   result:
-    - text: "SELECT c.id FROM users c WHERE c.active = true"
+    - text: SELECT c.id FROM users c WHERE c.active = true
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 1, column: 47}
-      range: {start: 0, end: 46}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 47
+      range:
+        start: 0
+        end: 46
       empty: false
-
-- description: "multi-line SELECT"
-  input: "SELECT\n  * FROM c"
+- description: multi-line SELECT
+  input: |-
+    SELECT
+      * FROM c
   result:
-    - text: "SELECT\n  * FROM c"
+    - text: |-
+        SELECT
+          * FROM c
       baseline: 0
-      start: {line: 1, column: 1}
-      end: {line: 2, column: 11}
-      range: {start: 0, end: 17}
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 2
+        column: 11
+      range:
+        start: 0
+        end: 17
+      empty: false
+- description: 'position semantic: leading newlines'
+  input: "\n\nSELECT 1"
+  result:
+    - text: "\n\nSELECT 1"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 9
+      range:
+        start: 0
+        end: 10
+      empty: false
+- description: 'position semantic: leading spaces and newlines'
+  input: "\n  \n  SELECT 1"
+  result:
+    - text: "\n  \n  SELECT 1"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 11
+      range:
+        start: 0
+        end: 14
       empty: false

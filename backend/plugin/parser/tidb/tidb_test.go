@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"strings"
 	"testing"
 
 	tidbparser "github.com/pingcap/tidb/pkg/parser"
@@ -12,7 +11,11 @@ import (
 )
 
 type setLineTestData struct {
-	statement          string
+	statement string
+	// firstLine is the 1-based line number where the CREATE TABLE statement starts.
+	// This is used to set OriginTextPosition, which the tokenizer uses to calculate
+	// absolute line numbers for columns and constraints.
+	firstLine          int
 	columnLineList     []int
 	constraintLineList []int
 }
@@ -21,11 +24,13 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 	tests := []setLineTestData{
 		{
 			statement:          "CREATE TABLE t as select * from t1",
+			firstLine:          1,
 			columnLineList:     []int{},
 			constraintLineList: []int{},
 		},
 		{
 			statement:          "CREATE TABLE t like t1",
+			firstLine:          1,
 			columnLineList:     []int{},
 			constraintLineList: []int{},
 		},
@@ -43,12 +48,13 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 
 				-- it's a comment.
 				FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)
-				
+
 
 
 
 			)
 			`,
+			firstLine:          1,
 			columnLineList:     []int{3, 3, 4, 5},
 			constraintLineList: []int{6, 7, 8, 9, 10, 10, 13},
 		},
@@ -65,6 +71,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 				"\r\n" +
 				"FOREIGN KEY (a, b, c) REFERENCES t1(a, b, c)" + "\r\n" +
 				")",
+			firstLine:          1,
 			columnLineList:     []int{3, 3, 4, 5},
 			constraintLineList: []int{6, 7, 8, 8, 10},
 		},
@@ -75,6 +82,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 				b int CHECK(b>1), c int UNIQUE
 			)
 			`,
+			firstLine:          1,
 			columnLineList:     []int{3, 4, 4},
 			constraintLineList: []int{},
 		},
@@ -87,6 +95,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 				UNIQUE(name)
 			)
 			`,
+			firstLine:          1,
 			columnLineList:     []int{3, 4},
 			constraintLineList: []int{5, 6},
 		},
@@ -102,7 +111,7 @@ func TestMySQLCreateTableSetLine(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, len(test.columnLineList), len(node.Cols))
 		require.Equal(t, len(test.constraintLineList), len(node.Constraints))
-		node.SetOriginTextPosition(strings.Count(test.statement, "\n") + 1)
+		node.SetOriginTextPosition(test.firstLine)
 		err = SetLineForMySQLCreateTableStmt(node)
 		require.NoError(t, err)
 		for i, col := range node.Cols {

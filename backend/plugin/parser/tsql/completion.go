@@ -1320,8 +1320,9 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 			newCaretLine = caretLine - previousSQLEndLine + 1 // Convert to 1-based.
 			if caretLine == previousSQLEndLine {
 				// The caret is in the same line as the last line of the previous SQL statement.
-				// We need to adjust the caret offset.
-				newCaretOffset = caretOffset - previousSQLEndColumn - 1 // Convert to 0-based.
+				// End.Column is 1-based exclusive, so (End.Column - 1) gives 0-based start of next statement.
+				// newCaretOffset = caretOffset - (previousSQLEndColumn - 1)
+				newCaretOffset = caretOffset - previousSQLEndColumn + 1
 			}
 			break
 		}

@@ -60,10 +60,13 @@ func IsEmpty(tokens []antlr.Token, semi int) bool {
 // SplitSQLByLexer is a grammar-free helper function that splits SQL statements using an ANTLR lexer.
 // It works with any ANTLR-based lexer by accepting the token stream and semicolon token type as parameters.
 //
+// IMPORTANT: This function requires that the lexer sends whitespace to the hidden channel
+// (using `-> channel(HIDDEN)` in the grammar), NOT skipping it. This ensures GetAllTokens()
+// returns all tokens including whitespace, allowing us to use token positions directly.
+//
 // Parameters:
 //   - stream: The ANTLR token stream (must be already filled with stream.Fill())
 //   - semiTokenType: The token type value for semicolon in the specific grammar
-//   - statement: The original SQL statement string (used for position conversion)
 //
 // Returns:
 //   - A slice of Statement, each representing one statement with its text, position, and metadata
@@ -73,11 +76,12 @@ func IsEmpty(tokens []antlr.Token, semi int) bool {
 //	lexer := parser.NewSnowflakeLexer(antlr.NewInputStream(statement))
 //	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 //	stream.Fill()
-//	return SplitSQLByLexer(stream, parser.SnowflakeLexerSEMI, statement)
-func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, statement string) ([]Statement, error) {
+//	return SplitSQLByLexer(stream, parser.SnowflakeLexerSEMI)
+func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int) ([]Statement, error) {
 	tokens := stream.GetAllTokens()
 	var buf []antlr.Token
 	var sqls []Statement
+	byteOffset := 0
 
 	for i, token := range tokens {
 		// Collect all tokens except the last one (EOF)
@@ -101,31 +105,54 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 				}
 			}
 
-			// Get the position of the first default channel token for Start position
-			antlrPosition := FirstDefaultChannelTokenPosition(buf)
+			stmtText := bufStr.String()
+			stmtByteLength := len(stmtText)
 
 			// Use the last token in the buffer for End position (not EOF token when at end of stream)
 			lastToken := buf[len(buf)-1]
+			// Use buf[0]'s position directly since GetAllTokens() includes hidden channel tokens (whitespace/comments)
 			sqls = append(sqls, Statement{
-				Text:     bufStr.String(),
+				Text:     stmtText,
 				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
 				Range: &storepb.Range{
-					Start: int32(buf[0].GetStart()),
-					End:   int32(lastToken.GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRTokenToExclusiveEndPosition(
 					int32(lastToken.GetLine()),
 					int32(lastToken.GetColumn()),
 					lastToken.GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(buf[0].GetLine()),
+					Column: int32(buf[0].GetColumn() + 1),
+				},
 				Empty: empty,
 			})
 
+			byteOffset += stmtByteLength
 			buf = nil
 			continue
 		}
 	}
 
 	return sqls, nil
+}
+
+// CalculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
+// for a given byte offset in the statement.
+func CalculateLineAndColumn(statement string, byteOffset int) (line, column int) {
+	if byteOffset > len(statement) {
+		byteOffset = len(statement)
+	}
+	// Range over string iterates over runes (code points), not bytes
+	for _, r := range statement[:byteOffset] {
+		if r == '\n' {
+			line++
+			column = 0
+		} else {
+			column++
+		}
+	}
+	return line, column
 }
