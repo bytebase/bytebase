@@ -73,8 +73,97 @@
 
         <!-- Sections within deploy group -->
         <div v-if="isDeployExpanded(deployGroup.deployId)">
+          <!-- Orphan sections (before any release file marker) -->
           <div
             v-for="section in deployGroup.sections"
+            :key="section.id"
+            class="border-b border-gray-200 last:border-b-0"
+          >
+            <SectionHeader
+              :section="section"
+              :is-expanded="isSectionExpanded(section.id)"
+              :indent="true"
+              @toggle="toggleSection(section.id)"
+            />
+            <SectionContent
+              v-if="isSectionExpanded(section.id)"
+              :section="section"
+              :indent="true"
+            />
+          </div>
+
+          <!-- Release file groups -->
+          <div
+            v-for="(fileGroup, fileIdx) in deployGroup.releaseFileGroups"
+            :key="`${deployGroup.deployId}-file-${fileIdx}`"
+            class="border-b border-gray-200 last:border-b-0"
+          >
+            <!-- Release file header -->
+            <div
+              class="flex items-center gap-x-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 cursor-pointer select-none ml-4"
+              @click="toggleReleaseFile(`${deployGroup.deployId}-file-${fileIdx}`)"
+            >
+              <component
+                :is="isReleaseFileExpanded(`${deployGroup.deployId}-file-${fileIdx}`) ? ChevronDownIcon : ChevronRightIcon"
+                class="w-3.5 h-3.5 text-blue-500 shrink-0"
+              />
+              <FileCodeIcon class="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span class="text-blue-700 font-medium">
+                {{ getReleaseFileLabel(fileGroup.version, fileGroup.filePath) }}
+              </span>
+            </div>
+
+            <!-- Sections within release file group -->
+            <div v-if="isReleaseFileExpanded(`${deployGroup.deployId}-file-${fileIdx}`)" class="ml-4">
+              <div
+                v-for="section in fileGroup.sections"
+                :key="section.id"
+                class="border-b border-gray-200 last:border-b-0"
+              >
+                <SectionHeader
+                  :section="section"
+                  :is-expanded="isSectionExpanded(section.id)"
+                  :indent="true"
+                  @toggle="toggleSection(section.id)"
+                />
+                <SectionContent
+                  v-if="isSectionExpanded(section.id)"
+                  :section="section"
+                  :indent="true"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Single-deploy view with release files -->
+    <template v-else-if="hasReleaseFiles">
+      <div
+        v-for="(fileGroup, fileIdx) in releaseFileGroups"
+        :key="`file-${fileIdx}`"
+        class="border-b border-gray-200 last:border-b-0"
+      >
+        <!-- Release file header -->
+        <div
+          class="flex items-center gap-x-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 cursor-pointer select-none"
+          @click="toggleReleaseFile(`file-${fileIdx}`)"
+        >
+          <component
+            :is="isReleaseFileExpanded(`file-${fileIdx}`) ? ChevronDownIcon : ChevronRightIcon"
+            class="w-3.5 h-3.5 text-blue-500 shrink-0"
+          />
+          <FileCodeIcon class="w-3.5 h-3.5 text-blue-500 shrink-0" />
+          <span class="text-blue-700 font-medium">
+            {{ getReleaseFileLabel(fileGroup.version, fileGroup.filePath) }}
+          </span>
+        </div>
+
+        <!-- Sections within release file group -->
+        <div v-if="isReleaseFileExpanded(`file-${fileIdx}`)">
+          <div
+            v-for="section in fileGroup.sections"
             :key="section.id"
             class="border-b border-gray-200 last:border-b-0"
           >
@@ -94,7 +183,7 @@
       </div>
     </template>
 
-    <!-- Single-deploy view: standard flat sections -->
+    <!-- Single-deploy view: standard flat sections (no release files) -->
     <template v-else>
       <div
         v-for="section in sections"
@@ -122,6 +211,7 @@ import {
   ChevronRightIcon,
   ChevronsDownUpIcon,
   ChevronsUpDownIcon,
+  FileCodeIcon,
   ListIcon,
   ServerIcon,
 } from "lucide-vue-next";
@@ -139,11 +229,15 @@ const props = defineProps<{
 const {
   sections,
   hasMultipleDeploys,
+  hasReleaseFiles,
+  releaseFileGroups,
   deployGroups,
   toggleSection,
   toggleDeploy,
+  toggleReleaseFile,
   isSectionExpanded,
   isDeployExpanded,
+  isReleaseFileExpanded,
   expandAll,
   collapseAll,
   areAllExpanded,
@@ -160,5 +254,12 @@ const toggleExpandAll = () => {
   } else {
     expandAll();
   }
+};
+
+const getReleaseFileLabel = (version: string, filePath: string): string => {
+  if (filePath) {
+    return `${version}: ${filePath}`;
+  }
+  return version;
 };
 </script>

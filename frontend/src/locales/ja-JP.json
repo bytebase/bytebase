@@ -381,7 +381,8 @@
       "transaction": "取引",
       "prior-backup": "事前のバックアップ",
       "retry": "リトライ",
-      "compute-diff": "差分計算"
+      "compute-diff": "差分計算",
+      "release-file-execute": "リリースファイル"
     },
     "log-detail": {
       "dumping": "ダンピング...",

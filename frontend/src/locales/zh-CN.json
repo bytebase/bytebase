@@ -381,7 +381,8 @@
       "transaction": "事务",
       "prior-backup": "预备份",
       "retry": "重试",
-      "compute-diff": "计算差异"
+      "compute-diff": "计算差异",
+      "release-file-execute": "发布包文件"
     },
     "log-detail": {
       "dumping": "导出中...",

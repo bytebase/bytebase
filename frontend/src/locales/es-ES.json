@@ -381,7 +381,8 @@
       "transaction": "Transacción",
       "prior-backup": "Copia de seguridad previa",
       "retry": "Rever",
-      "compute-diff": "Calcular diferencia"
+      "compute-diff": "Calcular diferencia",
+      "release-file-execute": "Archivo de lanzamiento"
     },
     "log-detail": {
       "dumping": "dumping...",

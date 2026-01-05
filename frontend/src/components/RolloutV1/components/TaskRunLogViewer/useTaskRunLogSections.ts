@@ -15,7 +15,13 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { addToSet, deleteFromSet } from "../utils/reactivity";
-import type { DeployGroup, DisplayItem, Section, SectionStatus } from "./types";
+import type {
+  DeployGroup,
+  DisplayItem,
+  ReleaseFileGroup,
+  Section,
+  SectionStatus,
+} from "./types";
 import {
   formatDuration,
   formatRelativeTime,
@@ -23,8 +29,10 @@ import {
   getTimestampMs,
   getUniqueDeployIds,
   groupEntriesByDeploy,
+  groupEntriesByReleaseFile,
   groupEntriesByType,
   hasError,
+  hasReleaseFileMarkers,
   isComplete,
 } from "./utils";
 
@@ -39,13 +47,18 @@ const STATUS_CONFIG: Record<SectionStatus, { icon: Component; class: string }> =
 export interface UseTaskRunLogSectionsReturn {
   sections: ComputedRef<Section[]>;
   hasMultipleDeploys: ComputedRef<boolean>;
+  hasReleaseFiles: ComputedRef<boolean>;
+  releaseFileGroups: ComputedRef<ReleaseFileGroup[]>;
   deployGroups: ComputedRef<DeployGroup[]>;
   expandedSections: Ref<Set<string>>;
   expandedDeploys: Ref<Set<string>>;
+  expandedReleaseFiles: Ref<Set<string>>;
   toggleSection: (sectionId: string) => void;
   toggleDeploy: (deployId: string) => void;
+  toggleReleaseFile: (fileId: string) => void;
   isSectionExpanded: (sectionId: string) => boolean;
   isDeployExpanded: (deployId: string) => boolean;
+  isReleaseFileExpanded: (fileId: string) => boolean;
   expandAll: () => void;
   collapseAll: () => void;
   areAllExpanded: ComputedRef<boolean>;
@@ -63,6 +76,8 @@ export const useTaskRunLogSections = (
   const userCollapsedSections = ref<Set<string>>(new Set());
   const expandedDeploys = ref<Set<string>>(new Set());
   const userCollapsedDeploys = ref<Set<string>>(new Set());
+  const expandedReleaseFiles = ref<Set<string>>(new Set());
+  const userCollapsedReleaseFiles = ref<Set<string>>(new Set());
 
   const getSectionLabel = (type: TaskRunLogEntry_Type): string => {
     const labelMap: Partial<Record<TaskRunLogEntry_Type, string>> = {
@@ -82,6 +97,9 @@ export const useTaskRunLogSections = (
       [TaskRunLogEntry_Type.PRIOR_BACKUP]: t("task-run.log-type.prior-backup"),
       [TaskRunLogEntry_Type.RETRY_INFO]: t("task-run.log-type.retry"),
       [TaskRunLogEntry_Type.COMPUTE_DIFF]: t("task-run.log-type.compute-diff"),
+      [TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE]: t(
+        "task-run.log-type.release-file-execute"
+      ),
     };
     return labelMap[type] ?? "Unknown";
   };
@@ -177,6 +195,14 @@ export const useTaskRunLogSections = (
         if (diff.error) return diff.error;
         if (diff.startTime && diff.endTime) return "completed";
         return t("task-run.log-detail.computing");
+      }
+      case TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE: {
+        const rfe = entry.releaseFileExecute;
+        if (!rfe) return "";
+        if (rfe.filePath) {
+          return `${rfe.version}: ${rfe.filePath}`;
+        }
+        return rfe.version;
       }
       default:
         return "";
@@ -276,6 +302,56 @@ export const useTaskRunLogSections = (
     return deployIds.length > 1;
   });
 
+  const hasReleaseFiles = computed((): boolean => {
+    const entriesValue = toValue(entries);
+    return hasReleaseFileMarkers(entriesValue);
+  });
+
+  // Build release file groups from entries
+  const buildReleaseFileGroupsFromEntries = (
+    entriesList: TaskRunLogEntry[],
+    idPrefix = "",
+    forceError = false
+  ): ReleaseFileGroup[] => {
+    const fileGroups = groupEntriesByReleaseFile(entriesList);
+
+    return fileGroups
+      .filter((group) => group.file !== null) // Only include groups with file markers
+      .map((group, idx) => {
+        const fileId = idPrefix ? `${idPrefix}-file-${idx}` : `file-${idx}`;
+        return {
+          version: group.file!.version,
+          filePath: group.file!.filePath,
+          sections: buildSectionsFromEntries(group.entries, fileId, forceError),
+        };
+      });
+  };
+
+  // Get orphan sections (entries before any release file marker)
+  const getOrphanSections = (
+    entriesList: TaskRunLogEntry[],
+    idPrefix = "",
+    forceError = false
+  ): Section[] => {
+    const fileGroups = groupEntriesByReleaseFile(entriesList);
+    const orphanGroup = fileGroups.find((group) => group.file === null);
+    if (!orphanGroup || orphanGroup.entries.length === 0) {
+      return [];
+    }
+    return buildSectionsFromEntries(
+      orphanGroup.entries,
+      idPrefix ? `${idPrefix}-orphan` : "orphan",
+      forceError
+    );
+  };
+
+  // Release file groups for single-deploy view
+  const releaseFileGroups = computed((): ReleaseFileGroup[] => {
+    const entriesValue = toValue(entries);
+    if (!hasReleaseFileMarkers(entriesValue)) return [];
+    return buildReleaseFileGroupsFromEntries(entriesValue);
+  });
+
   const deployGroups = computed((): DeployGroup[] => {
     const entriesValue = toValue(entries);
     if (!entriesValue.length) return [];
@@ -288,13 +364,27 @@ export const useTaskRunLogSections = (
     return deployIds.map((deployId, idx) => {
       const deployEntries = entriesByDeploy.get(deployId) || [];
       const isLatestDeploy = idx === deployIds.length - 1;
+      const forceError = !isLatestDeploy;
+
+      // Check if this deploy has release file markers
+      const hasFiles = hasReleaseFileMarkers(deployEntries);
+
+      if (hasFiles) {
+        return {
+          deployId,
+          releaseFileGroups: buildReleaseFileGroupsFromEntries(
+            deployEntries,
+            deployId,
+            forceError
+          ),
+          sections: getOrphanSections(deployEntries, deployId, forceError),
+        };
+      }
+
       return {
         deployId,
-        sections: buildSectionsFromEntries(
-          deployEntries,
-          deployId,
-          !isLatestDeploy // forceError: true for non-latest deploys
-        ),
+        releaseFileGroups: [],
+        sections: buildSectionsFromEntries(deployEntries, deployId, forceError),
       };
     });
   });
@@ -327,11 +417,34 @@ export const useTaskRunLogSections = (
     return expandedDeploys.value.has(deployId);
   };
 
-  // Get all section IDs (both from flat sections and deploy groups)
+  const toggleReleaseFile = (fileId: string) => {
+    if (expandedReleaseFiles.value.has(fileId)) {
+      deleteFromSet(expandedReleaseFiles, fileId);
+      addToSet(userCollapsedReleaseFiles, fileId);
+    } else {
+      addToSet(expandedReleaseFiles, fileId);
+      deleteFromSet(userCollapsedReleaseFiles, fileId);
+    }
+  };
+
+  const isReleaseFileExpanded = (fileId: string): boolean => {
+    return expandedReleaseFiles.value.has(fileId);
+  };
+
+  // Get all section IDs (from flat sections, release file groups, and deploy groups)
   const getAllSectionIds = (): string[] => {
     if (hasMultipleDeploys.value) {
-      return deployGroups.value.flatMap((group) =>
-        group.sections.map((section) => section.id)
+      return deployGroups.value.flatMap((group) => {
+        const orphanSectionIds = group.sections.map((s) => s.id);
+        const fileSectionIds = group.releaseFileGroups.flatMap((fg) =>
+          fg.sections.map((s) => s.id)
+        );
+        return [...orphanSectionIds, ...fileSectionIds];
+      });
+    }
+    if (hasReleaseFiles.value) {
+      return releaseFileGroups.value.flatMap((fg) =>
+        fg.sections.map((s) => s.id)
       );
     }
     return sections.value.map((section) => section.id);
@@ -340,6 +453,18 @@ export const useTaskRunLogSections = (
   // Get all deploy IDs
   const getAllDeployIds = (): string[] => {
     return deployGroups.value.map((group) => group.deployId);
+  };
+
+  // Get all release file IDs
+  const getAllReleaseFileIds = (): string[] => {
+    if (hasMultipleDeploys.value) {
+      return deployGroups.value.flatMap((group, deployIdx) =>
+        group.releaseFileGroups.map(
+          (_, fileIdx) => `${group.deployId}-file-${fileIdx}`
+        )
+      );
+    }
+    return releaseFileGroups.value.map((_, idx) => `file-${idx}`);
   };
 
   const expandAll = () => {
@@ -354,6 +479,11 @@ export const useTaskRunLogSections = (
         addToSet(expandedDeploys, deployId);
         deleteFromSet(userCollapsedDeploys, deployId);
       }
+    }
+    // Expand all release file groups
+    for (const fileId of getAllReleaseFileIds()) {
+      addToSet(expandedReleaseFiles, fileId);
+      deleteFromSet(userCollapsedReleaseFiles, fileId);
     }
   };
 
@@ -370,6 +500,11 @@ export const useTaskRunLogSections = (
         addToSet(userCollapsedDeploys, deployId);
       }
     }
+    // Collapse all release file groups
+    for (const fileId of getAllReleaseFileIds()) {
+      deleteFromSet(expandedReleaseFiles, fileId);
+      addToSet(userCollapsedReleaseFiles, fileId);
+    }
   };
 
   const areAllExpanded = computed((): boolean => {
@@ -380,22 +515,40 @@ export const useTaskRunLogSections = (
       expandedSections.value.has(id)
     );
 
+    // Check release file groups
+    const allReleaseFileIds = getAllReleaseFileIds();
+    const allReleaseFilesExpanded =
+      allReleaseFileIds.length === 0 ||
+      allReleaseFileIds.every((id) => expandedReleaseFiles.value.has(id));
+
     // For multi-deploy view, also check deploy groups
     if (hasMultipleDeploys.value) {
       const allDeployIds = getAllDeployIds();
       const allDeploysExpanded = allDeployIds.every((id) =>
         expandedDeploys.value.has(id)
       );
-      return allSectionsExpanded && allDeploysExpanded;
+      return (
+        allSectionsExpanded && allDeploysExpanded && allReleaseFilesExpanded
+      );
     }
 
-    return allSectionsExpanded;
+    return allSectionsExpanded && allReleaseFilesExpanded;
   });
 
   const totalSections = computed((): number => {
     if (hasMultipleDeploys.value) {
-      return deployGroups.value.reduce(
-        (sum, group) => sum + group.sections.length,
+      return deployGroups.value.reduce((sum, group) => {
+        const orphanCount = group.sections.length;
+        const fileCount = group.releaseFileGroups.reduce(
+          (fSum, fg) => fSum + fg.sections.length,
+          0
+        );
+        return sum + orphanCount + fileCount;
+      }, 0);
+    }
+    if (hasReleaseFiles.value) {
+      return releaseFileGroups.value.reduce(
+        (sum, fg) => sum + fg.sections.length,
         0
       );
     }
@@ -404,13 +557,23 @@ export const useTaskRunLogSections = (
 
   const totalEntries = computed((): number => {
     if (hasMultipleDeploys.value) {
-      return deployGroups.value.reduce(
-        (sum, group) =>
-          sum +
-          group.sections.reduce(
-            (sSum, section) => sSum + section.entryCount,
-            0
-          ),
+      return deployGroups.value.reduce((sum, group) => {
+        const orphanEntries = group.sections.reduce(
+          (sSum, section) => sSum + section.entryCount,
+          0
+        );
+        const fileEntries = group.releaseFileGroups.reduce(
+          (fSum, fg) =>
+            fSum + fg.sections.reduce((sSum, s) => sSum + s.entryCount, 0),
+          0
+        );
+        return sum + orphanEntries + fileEntries;
+      }, 0);
+    }
+    if (hasReleaseFiles.value) {
+      return releaseFileGroups.value.reduce(
+        (sum, fg) =>
+          sum + fg.sections.reduce((sSum, s) => sSum + s.entryCount, 0),
         0
       );
     }
@@ -442,7 +605,7 @@ export const useTaskRunLogSections = (
         if (!userCollapsedDeploys.value.has(deployGroup.deployId)) {
           addToSet(expandedDeploys, deployGroup.deployId);
         }
-        // Auto-expand error sections within deploy groups
+        // Auto-expand error sections within deploy groups (orphan sections)
         for (const section of deployGroup.sections) {
           if (
             section.status === "error" &&
@@ -451,7 +614,48 @@ export const useTaskRunLogSections = (
             addToSet(expandedSections, section.id);
           }
         }
+        // Auto-expand release file groups and their error sections
+        deployGroup.releaseFileGroups.forEach((fg, fileIdx) => {
+          const fileId = `${deployGroup.deployId}-file-${fileIdx}`;
+          // Auto-expand all release file groups by default
+          if (!userCollapsedReleaseFiles.value.has(fileId)) {
+            addToSet(expandedReleaseFiles, fileId);
+          }
+          // Auto-expand error sections within file groups
+          for (const section of fg.sections) {
+            if (
+              section.status === "error" &&
+              !userCollapsedSections.value.has(section.id)
+            ) {
+              addToSet(expandedSections, section.id);
+            }
+          }
+        });
       }
+    },
+    { immediate: true }
+  );
+
+  // Auto-expand release file groups (single-deploy view)
+  watch(
+    releaseFileGroups,
+    (newReleaseFileGroups) => {
+      newReleaseFileGroups.forEach((fg, idx) => {
+        const fileId = `file-${idx}`;
+        // Auto-expand all release file groups by default
+        if (!userCollapsedReleaseFiles.value.has(fileId)) {
+          addToSet(expandedReleaseFiles, fileId);
+        }
+        // Auto-expand error sections within file groups
+        for (const section of fg.sections) {
+          if (
+            section.status === "error" &&
+            !userCollapsedSections.value.has(section.id)
+          ) {
+            addToSet(expandedSections, section.id);
+          }
+        }
+      });
     },
     { immediate: true }
   );
@@ -459,13 +663,18 @@ export const useTaskRunLogSections = (
   return {
     sections,
     hasMultipleDeploys,
+    hasReleaseFiles,
+    releaseFileGroups,
     deployGroups,
     expandedSections,
     expandedDeploys,
+    expandedReleaseFiles,
     toggleSection,
     toggleDeploy,
+    toggleReleaseFile,
     isSectionExpanded,
     isDeployExpanded,
+    isReleaseFileExpanded,
     expandAll,
     collapseAll,
     areAllExpanded,

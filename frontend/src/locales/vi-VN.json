@@ -381,7 +381,8 @@
       "transaction": "Giao dịch",
       "prior-backup": "Sao lưu trước",
       "retry": "Thử lại",
-      "compute-diff": "Tính toán chênh lệch"
+      "compute-diff": "Tính toán chênh lệch",
+      "release-file-execute": "Tệp phát hành"
     },
     "log-detail": {
       "dumping": "đổ rác...",
