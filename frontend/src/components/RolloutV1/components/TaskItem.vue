@@ -182,6 +182,13 @@
           </template>
         </div>
 
+        <!-- Release Info section for release-based tasks -->
+        <ReleaseInfoCard
+          v-else
+          :release-name="releaseName"
+          :compact="true"
+        />
+
         <!-- Latest Task Run Info -->
         <LatestTaskRunInfo
           v-if="latestTaskRun"
@@ -241,6 +248,7 @@ import {
   extractStageUID,
   extractTaskUID,
   isReleaseBasedTask,
+  releaseNameOfTaskV1,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
@@ -249,6 +257,7 @@ import { useTaskRunLogSummary } from "./composables/useTaskRunLogSummary";
 import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
 import LatestTaskRunInfo from "./LatestTaskRunInfo.vue";
+import ReleaseInfoCard from "./ReleaseInfoCard.vue";
 import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 
@@ -317,6 +326,9 @@ const taskDetailRoute = computed(() => {
 });
 
 const isReleaseTask = computed(() => isReleaseBasedTask(props.task));
+
+// Release name for release-based tasks
+const releaseName = computed(() => releaseNameOfTaskV1(props.task));
 
 const { loading, displayedStatement, isStatementTruncated } = useTaskStatement(
   () => props.task,
