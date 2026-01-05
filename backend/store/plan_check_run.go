@@ -49,6 +49,7 @@ type FindPlanCheckRunMessage struct {
 }
 
 // CreatePlanCheckRun creates or replaces the plan check run for a plan.
+// Always creates with AVAILABLE status for HA-safe scheduling.
 func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) error {
 	result, err := protojson.Marshal(create.Result)
 	if err != nil {
@@ -63,7 +64,7 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 			result = EXCLUDED.result,
 			updated_at = now()
 	`
-	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, create.Status, result); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
 		return errors.Wrapf(err, "failed to upsert plan check run")
 	}
 	return nil
