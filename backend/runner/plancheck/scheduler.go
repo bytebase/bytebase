@@ -88,35 +88,35 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planUID int64)
 	// Fetch plan to derive check targets at runtime
 	plan, err := s.store.GetPlan(ctxWithCancel, &store.FindPlanMessage{UID: &planUID})
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		return
 	}
 	if plan == nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, "plan not found")
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, "plan not found")
 		return
 	}
 
 	project, err := s.store.GetProject(ctxWithCancel, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		return
 	}
 	if project == nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, "project not found")
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, "project not found")
 		return
 	}
 
 	// Get database group if needed (for spec expansion)
 	databaseGroup, err := s.getDatabaseGroupForPlan(ctxWithCancel, plan)
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		return
 	}
 
 	// Derive check targets from plan
 	targets, err := DeriveCheckTargets(project, plan, databaseGroup)
 	if err != nil {
-		s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, err.Error())
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		return
 	}
 
@@ -131,9 +131,9 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planUID int64)
 	}
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			s.markPlanCheckRunCanceled(ctxWithCancel, uid, planUID, err.Error())
+			s.markPlanCheckRunCanceled(ctxWithCancel, uid, err.Error())
 		} else {
-			s.markPlanCheckRunFailed(ctxWithCancel, uid, planUID, err.Error())
+			s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		}
 	} else {
 		s.markPlanCheckRunDone(ctxWithCancel, uid, planUID, results)
@@ -169,7 +169,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, uid int, planUID i
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, uid int, _ int64, reason string) {
+func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, uid int, reason string) {
 	result := &storepb.PlanCheckRunResult{
 		Error: reason,
 	}
@@ -182,7 +182,7 @@ func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, uid int, _ int64
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, uid int, _ int64, reason string) {
+func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, uid int, reason string) {
 	result := &storepb.PlanCheckRunResult{
 		Error: reason,
 	}
