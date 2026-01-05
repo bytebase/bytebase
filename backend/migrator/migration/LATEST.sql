@@ -215,14 +215,14 @@ CREATE TABLE plan_check_run (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     plan_id bigint NOT NULL REFERENCES plan(id),
-    status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
+    status text NOT NULL CHECK (status IN ('AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
     result jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(plan_id);
 
-CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
+CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status IN ('AVAILABLE', 'RUNNING');
 
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 
