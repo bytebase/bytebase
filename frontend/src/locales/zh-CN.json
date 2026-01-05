@@ -86,7 +86,6 @@
     "status": "状态",
     "stage": "阶段",
     "task": "任务",
-    "blocking-task": "阻塞任务",
     "sql": "SQL",
     "unassigned": "未指派",
     "new": "创建",
@@ -360,8 +359,6 @@
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
-      "waiting-connection": "等待可用的实例连接。实例连接数已达到 Bytebase 上设置的限制。上次报告时间：{time}。",
-      "waiting-task": "等待另一个任务完成。上次报告时间：{time}。",
       "waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{time}。"
     },
     "rollback": {

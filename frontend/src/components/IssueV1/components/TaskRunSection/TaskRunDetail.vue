@@ -39,7 +39,6 @@ import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -60,8 +59,6 @@ const props = defineProps<{
   taskRun: TaskRun;
   database?: Database;
 }>();
-
-const sheetStore = useSheetV1Store();
 
 const state = reactive<LocalState>({
   currentTab: "LOG",

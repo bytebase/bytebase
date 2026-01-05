@@ -86,7 +86,6 @@
     "status": "州",
     "stage": "ステージ",
     "task": "タスク",
-    "blocking-task": "タスクをブロック中",
     "sql": "SQL",
     "unassigned": "割り当てられていない",
     "new": "作成する",
@@ -360,8 +359,6 @@
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
-      "waiting-connection": "利用可能なインスタンス接続を待っています。インスタンス接続カウントは、Bytebaseの制限設定に達しました。最後の報告は {time} です。",
-      "waiting-task": "別のタスクが完了するのを待っています。最後の報告は {time} です。",
       "waiting-max-tasks-per-rollout": "他のタスクが完了するのを待っています。ロールアウトごとの最大実行タスク数制限に達しました。最後の報告は {time} です。"
     },
     "rollback": {
