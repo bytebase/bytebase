@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { DatabaseChangeType, ExportFormat, Position, Range } from "./common_pb";
+import type { ExportFormat, Position, Range } from "./common_pb";
 
 /**
  * Describes the file v1/rollout_service.proto.
@@ -626,13 +626,6 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
    * @generated from field: string schema_version = 2;
    */
   schemaVersion: string;
-
-  /**
-   * The type of database change (MIGRATE or SDL).
-   *
-   * @generated from field: bytebase.v1.DatabaseChangeType database_change_type = 3;
-   */
-  databaseChangeType: DatabaseChangeType;
 };
 
 /**
@@ -792,14 +785,6 @@ export enum Task_Type {
    * @generated from enum value: DATABASE_EXPORT = 4;
    */
   DATABASE_EXPORT = 4,
-
-  /**
-   * Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-   * Use payload DatabaseUpdate.
-   *
-   * @generated from enum value: DATABASE_SDL = 5;
-   */
-  DATABASE_SDL = 5,
 }
 
 /**

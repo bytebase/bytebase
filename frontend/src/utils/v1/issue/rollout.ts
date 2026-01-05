@@ -296,7 +296,6 @@ export const databaseForTask = (project: Project, task: Task) => {
       // extract database info from the task's and payload's properties.
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
     case Task_Type.DATABASE_MIGRATE:
-    case Task_Type.DATABASE_SDL:
     case Task_Type.DATABASE_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {

@@ -24,6 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -263,35 +264,22 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 		return true, nil, errors.Wrapf(err, "failed to list revisions for database %q", *task.DatabaseName)
 	}
 
-	// Build map of applied versions
-	appliedVersions := make(map[string]bool)
-	var maxDeclarativeVersion *model.Version
-	var maxDeclarativeVersionString string
-	for _, revision := range revisions {
-		switch revision.Payload.Type {
-		case storepb.SchemaChangeType_VERSIONED:
-			appliedVersions[revision.Version] = true
-		case storepb.SchemaChangeType_DECLARATIVE:
-			v, err := model.NewVersion(revision.Version)
-			if err != nil {
-				return true, nil, errors.Wrapf(err, "failed to parse revision version %q", revision.Version)
-			}
-			if maxDeclarativeVersion == nil || maxDeclarativeVersion.LessThan(v) {
-				maxDeclarativeVersion = v
-				maxDeclarativeVersionString = revision.Version
-			}
-		default:
-			// Ignore other schema change types
-		}
-	}
-
-	// Extract release type once before the loop
+	// Extract release type to determine execution strategy
 	releaseType := release.Payload.Type
 
-	// Execute unapplied files in order
-	for _, file := range release.Payload.Files {
-		switch releaseType {
-		case storepb.SchemaChangeType_VERSIONED:
+	switch releaseType {
+	case storepb.SchemaChangeType_VERSIONED:
+		// For VERSIONED releases, apply each unapplied migration file in order
+		// Build map of applied versions
+		appliedVersions := make(map[string]bool)
+		for _, revision := range revisions {
+			if revision.Payload.Type == storepb.SchemaChangeType_VERSIONED {
+				appliedVersions[revision.Version] = true
+			}
+		}
+
+		// Execute unapplied files in order
+		for _, file := range release.Payload.Files {
 			// Skip if already applied
 			if appliedVersions[file.Version] {
 				slog.Info("skipping already applied version",
@@ -328,94 +316,94 @@ func (exec *DatabaseMigrateExecutor) runReleaseTask(ctx context.Context, driverC
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
 			}
+		}
 
-		case storepb.SchemaChangeType_DECLARATIVE:
-			// Skip if a higher or equal version has been applied
+	case storepb.SchemaChangeType_DECLARATIVE:
+		// For DECLARATIVE releases, apply only the latest schema state
+		// Find the latest file version in the release (declarative releases should have only one file)
+		var latestFile *storepb.ReleasePayload_File
+		var latestVersion *model.Version
+		for _, file := range release.Payload.Files {
 			v, err := model.NewVersion(file.Version)
 			if err != nil {
 				return true, nil, errors.Wrapf(err, "failed to parse file version %q", file.Version)
 			}
-			if maxDeclarativeVersion != nil && v.LessThanOrEqual(maxDeclarativeVersion) {
-				slog.Info("skipping declarative file with version <= max applied",
-					slog.String("version", file.Version),
-					slog.String("max_applied", maxDeclarativeVersionString),
-					slog.String("database", *task.DatabaseName))
-				continue
+			if latestVersion == nil || latestVersion.LessThan(v) {
+				latestVersion = v
+				latestFile = file
 			}
-
-			// Fetch and execute this file
-			sheet, err := exec.store.GetSheetFull(ctx, file.SheetSha256)
-			if err != nil {
-				return true, nil, errors.Wrapf(err, "failed to get sheet %s for version %s", file.SheetSha256, file.Version)
-			}
-			if sheet == nil {
-				return true, nil, errors.Errorf("sheet not found: %s", file.SheetSha256)
-			}
-
-			slog.Info("executing declarative release file",
-				slog.String("version", file.Version),
-				slog.String("database", *task.DatabaseName),
-				slog.String("file", file.Path))
-
-			// Log release file execution
-			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-				Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
-				ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
-					Version:  file.Version,
-					FilePath: file.Path,
-				},
-			})
-
-			// Get instance and database for SDL diff
-			instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-			if err != nil {
-				return true, nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
-			}
-			database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
-			if err != nil {
-				return true, nil, errors.Wrapf(err, "failed to get database %s", *task.DatabaseName)
-			}
-
-			// Create execFunc that uses SDL diff logic (same pattern as SchemaDeclareExecutor)
-			execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
-				opts.LogComputeDiffStart()
-				migrationSQL, err := diff(ctx, exec.store, instance, database, execStatement)
-				if err != nil {
-					opts.LogComputeDiffEnd(err.Error())
-					return errors.Wrapf(err, "failed to diff database schema")
-				}
-				opts.LogComputeDiffEnd("")
-
-				// Log statement string.
-				opts.LogCommandStatement = true
-				if _, err := driver.Execute(ctx, migrationSQL, opts); err != nil {
-					return err
-				}
-				return nil
-			}
-
-			// Temporarily change task type to DATABASE_SDL so revision is created with correct type
-			originalTaskType := task.Type
-			task.Type = storepb.Task_DATABASE_SDL
-
-			// Execute SDL migration for this file using the diff logic
-			_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, file.Version, releaseType, execFunc)
-
-			// Restore original task type
-			task.Type = originalTaskType
-
-			if err != nil {
-				return true, nil, errors.Wrapf(err, "failed to execute declarative release file %s (version %s)", file.Path, file.Version)
-			}
-
-		default:
-			return true, nil, errors.Errorf("unsupported release type %q", releaseType)
 		}
+
+		if latestFile == nil {
+			return true, nil, errors.Errorf("no files found in declarative release")
+		}
+
+		// Fetch the schema file
+		sheet, err := exec.store.GetSheetFull(ctx, latestFile.SheetSha256)
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "failed to get sheet %s for version %s", latestFile.SheetSha256, latestFile.Version)
+		}
+		if sheet == nil {
+			return true, nil, errors.Errorf("sheet not found: %s", latestFile.SheetSha256)
+		}
+
+		slog.Info("executing declarative release",
+			slog.String("version", latestFile.Version),
+			slog.String("database", *task.DatabaseName),
+			slog.String("file", latestFile.Path))
+
+		// Log release file execution
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
+			ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
+				Version:  latestFile.Version,
+				FilePath: latestFile.Path,
+			},
+		})
+
+		// Get instance and database for SDL diff
+		instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
+		}
+		database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "failed to get database %s", *task.DatabaseName)
+		}
+
+		// Create execFunc that uses SDL diff logic (same as old SchemaDeclareExecutor)
+		execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
+			opts.LogComputeDiffStart()
+			migrationSQL, err := diff(ctx, exec.store, instance, database, execStatement)
+			if err != nil {
+				opts.LogComputeDiffEnd(err.Error())
+				return errors.Wrapf(err, "failed to diff database schema")
+			}
+			opts.LogComputeDiffEnd("")
+
+			// Log statement string.
+			opts.LogCommandStatement = true
+			if _, err := driver.Execute(ctx, migrationSQL, opts); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		// Execute SDL migration using the diff logic
+		// For DECLARATIVE releases, pass empty string for version (revisions are not version-tracked)
+		// runMigrationWithFunc will handle version checking for DECLARATIVE releases (see executor.go:332-357)
+		_, _, err = runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", releaseType, execFunc)
+		if err != nil {
+			return true, nil, errors.Wrapf(err, "failed to execute declarative release (version %s)", latestFile.Version)
+		}
+
+	default:
+		return true, nil, errors.Errorf("unsupported release type %q", releaseType)
 	}
 
 	// All files executed successfully
 	return true, &storepb.TaskRunResult{
-		Detail: "All release files executed successfully",
+		Detail: "Release executed successfully",
 	}, nil
 }
 
@@ -766,4 +754,131 @@ func (v *prependStatementsVisitor) extractStatementText(ctx *postgresql.Variable
 	}
 
 	return text
+}
+
+func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {
+	pengine, err := common.ConvertToParserEngine(instance.Metadata.GetEngine())
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to convert %q to parser engine", instance.Metadata.GetEngine())
+	}
+
+	dbMetadata, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
+	}
+	if dbMetadata == nil {
+		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
+	}
+
+	// Try to get the previous successful SDL text and schema from task history
+	previousUserSDLText, previousSchema, err := getPreviousSuccessfulSDLAndSchema(ctx, s, database.InstanceID, database.DatabaseName)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get previous SDL text and schema for database %q", database.DatabaseName)
+	}
+
+	// Use GetSDLDiff with previous SDL text and schema
+	// - engine: the database engine
+	// - currentSDLText: user's target SDL input
+	// - previousUserSDLText: previous SDL text (empty triggers initialization scenario)
+	// - currentSchema: current database schema (used as baseline in initialization)
+	// - previousSchema: previous database schema from changelog
+	schemaDiff, err := schema.GetSDLDiff(pengine, sheetContent, previousUserSDLText, dbMetadata, previousSchema)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to compute SDL schema diff")
+	}
+
+	// Filter out bbdataarchive schema changes for Postgres
+	if instance.Metadata.GetEngine() == storepb.Engine_POSTGRES {
+		schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
+	}
+
+	migrationSQL, err := schema.GenerateMigration(pengine, schemaDiff)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to generate migration SQL")
+	}
+
+	return migrationSQL, nil
+}
+
+// getPreviousSuccessfulSDLText retrieves the SDL text from the most recent
+// successfully completed SDL changelog for the given database.
+// Returns empty string if no previous successful SDL changelog is found.
+// getPreviousSuccessfulSDLAndSchema gets both the SDL text and database schema from the most recent successful SDL changelog
+func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, *model.DatabaseMetadata, error) {
+	// Find the most recent successful SDL changelog for this database
+	// We only want MIGRATE_SDL type changelogs that are completed (DONE status)
+	doneStatus := store.ChangelogStatusDone
+	limit := 1 // We only need the most recent one
+
+	changelogs, err := s.ListChangelogs(ctx, &store.FindChangelogMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+		TypeList:     []string{storepb.ChangelogPayload_SDL.String()}, // Only SDL migrations
+		Status:       &doneStatus,
+		Limit:        &limit, // Get only the most recent one
+		ShowFull:     false,  // We only need the PrevSyncHistoryUID and sheet reference
+	})
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "failed to list previous SDL changelogs for database %s", databaseName)
+	}
+
+	if len(changelogs) == 0 {
+		// No previous SDL changelogs found - this is fine, we'll use initialization scenario
+		return "", nil, nil
+	}
+
+	mostRecentChangelog := changelogs[0] // ListChangelogs should return them in descending order by creation time
+
+	// Extract the sheet ID from the changelog payload
+	var previousUserSDLText string
+	if mostRecentChangelog.Payload != nil && mostRecentChangelog.Payload.SheetSha256 != "" {
+		sheetSha256 := mostRecentChangelog.Payload.SheetSha256
+
+		// Get the sheet content (original SDL text)
+		sheet, err := s.GetSheetFull(ctx, sheetSha256)
+		if err != nil {
+			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet %s", sheetSha256)
+		}
+		if sheet == nil {
+			return "", nil, errors.Errorf("sheet %s not found", sheetSha256)
+		}
+		previousUserSDLText = sheet.Statement
+	}
+
+	// Get the previous schema from sync history
+	// Use SyncHistoryUID (after applying the SDL) instead of PrevSyncHistoryUID (before applying)
+	// This represents the database schema state after the previous SDL was successfully applied
+	var previousSchema *model.DatabaseMetadata
+	if mostRecentChangelog.SyncHistoryUID != nil {
+		// Get the sync history record to obtain the schema metadata
+		syncHistory, err := s.GetSyncHistoryByUID(ctx, *mostRecentChangelog.SyncHistoryUID)
+		if err != nil {
+			return "", nil, errors.Wrapf(err, "failed to get sync history by UID %d", *mostRecentChangelog.SyncHistoryUID)
+		}
+
+		if syncHistory != nil && syncHistory.Metadata != nil {
+			// Get instance to determine engine and case sensitivity
+			instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			if err != nil {
+				return "", nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+			}
+			if instance == nil {
+				return "", nil, errors.Errorf("instance %s not found", instanceID)
+			}
+
+			// Create a DatabaseSchema wrapper using the metadata from sync history
+			previousSchema = model.NewDatabaseMetadata(
+				syncHistory.Metadata,
+				[]byte(syncHistory.Schema), // Use the schema content from sync history
+				&storepb.DatabaseConfig{},  // Empty config
+				instance.Metadata.GetEngine(),
+				store.IsObjectCaseSensitive(instance),
+			)
+		}
+	}
+
+	return previousUserSDLText, previousSchema, nil
 }

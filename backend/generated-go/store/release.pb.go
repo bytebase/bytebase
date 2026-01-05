@@ -225,19 +225,19 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xcc\x03\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xc6\x03\n" +
 	"\x0eReleasePayload\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
 	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x124\n" +
-	"\x04type\x18\x04 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x1a\x96\x01\n" +
+	"\x04type\x18\x04 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x1a\x90\x01\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
-	"\fenable_ghost\x18\a \x01(\bR\venableGhostJ\x04\b\x03\x10\x04J\x04\b\x05\x10\x06\x1aQ\n" +
+	"\fenable_ghost\x18\a \x01(\bR\venableGhostJ\x04\b\x03\x10\x04\x1aQ\n" +
 	"\tVCSSource\x122\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03urlB\x8f\x01\n" +

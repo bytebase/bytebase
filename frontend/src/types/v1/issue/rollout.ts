@@ -44,6 +44,6 @@ export const TaskTypeListWithStatement: Task_Type[] = [
   Task_Type.GENERAL,
   Task_Type.DATABASE_CREATE,
   Task_Type.DATABASE_MIGRATE,
-  Task_Type.DATABASE_SDL,
+
   Task_Type.DATABASE_EXPORT,
 ];

@@ -112,9 +112,6 @@ const (
 	// Database export task that exports query results or table data.
 	// Use payload DatabaseDataExport.
 	Task_DATABASE_EXPORT Task_Type = 4
-	// Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-	// Use payload DatabaseUpdate.
-	Task_DATABASE_SDL Task_Type = 5
 )
 
 // Enum value maps for Task_Type.
@@ -125,7 +122,6 @@ var (
 		2: "DATABASE_CREATE",
 		3: "DATABASE_MIGRATE",
 		4: "DATABASE_EXPORT",
-		5: "DATABASE_SDL",
 	}
 	Task_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
@@ -133,7 +129,6 @@ var (
 		"DATABASE_CREATE":  2,
 		"DATABASE_MIGRATE": 3,
 		"DATABASE_EXPORT":  4,
-		"DATABASE_SDL":     5,
 	}
 )
 
@@ -2199,10 +2194,8 @@ type Task_DatabaseUpdate struct {
 	Source isTask_DatabaseUpdate_Source `protobuf_oneof:"source"`
 	// The target schema version after this update.
 	SchemaVersion string `protobuf:"bytes,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	// The type of database change (MIGRATE or SDL).
-	DatabaseChangeType DatabaseChangeType `protobuf:"varint,3,opt,name=database_change_type,json=databaseChangeType,proto3,enum=bytebase.v1.DatabaseChangeType" json:"database_change_type,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Task_DatabaseUpdate) Reset() {
@@ -2265,13 +2258,6 @@ func (x *Task_DatabaseUpdate) GetSchemaVersion() string {
 		return x.SchemaVersion
 	}
 	return ""
-}
-
-func (x *Task_DatabaseUpdate) GetDatabaseChangeType() DatabaseChangeType {
-	if x != nil {
-		return x.DatabaseChangeType
-	}
-	return DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
 }
 
 type isTask_DatabaseUpdate_Source interface {
@@ -3686,7 +3672,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x02id\x18\x02 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
 	"\venvironment\x18\x03 \x01(\tR\venvironment\x12'\n" +
 	"\x05tasks\x18\x04 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:O\xeaAL\n" +
-	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\x97\f\n" +
+	"\x12bytebase.com/Stage\x126projects/{project}/plans/{plan}/rollout/stages/{stage}\"\xb1\v\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\aspec_id\x18\x02 \x01(\tR\x06specId\x120\n" +
@@ -3708,12 +3694,11 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x04 \x01(\tR\x05sheet\x12#\n" +
 	"\rcharacter_set\x18\x05 \x01(\tR\fcharacterSet\x12\x1c\n" +
 	"\tcollation\x18\x06 \x01(\tR\tcollation\x12 \n" +
-	"\venvironment\x18\a \x01(\tR\venvironment\x1a\xc8\x01\n" +
+	"\venvironment\x18\a \x01(\tR\venvironment\x1au\n" +
 	"\x0eDatabaseUpdate\x12\x16\n" +
 	"\x05sheet\x18\x01 \x01(\tH\x00R\x05sheet\x12\x1a\n" +
 	"\arelease\x18\x04 \x01(\tH\x00R\arelease\x12%\n" +
-	"\x0eschema_version\x18\x02 \x01(\tR\rschemaVersion\x12Q\n" +
-	"\x14database_change_type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x12databaseChangeTypeB\b\n" +
+	"\x0eschema_version\x18\x02 \x01(\tR\rschemaVersionB\b\n" +
 	"\x06source\x1a\xa3\x01\n" +
 	"\x12DatabaseDataExport\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x14\n" +
@@ -3730,14 +3715,13 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x05\x12\f\n" +
 	"\bCANCELED\x10\x06\x12\v\n" +
-	"\aSKIPPED\x10\a\"{\n" +
+	"\aSKIPPED\x10\a\"i\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aGENERAL\x10\x01\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x02\x12\x14\n" +
 	"\x10DATABASE_MIGRATE\x10\x03\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x04\x12\x10\n" +
-	"\fDATABASE_SDL\x10\x05:[\xeaAX\n" +
+	"\x0fDATABASE_EXPORT\x10\x04:[\xeaAX\n" +
 	"\x11bytebase.com/Task\x12Cprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
@@ -4017,10 +4001,9 @@ var file_v1_rollout_service_proto_goTypes = []any{
 	(*TaskRunSession_Postgres)(nil),                        // 50: bytebase.v1.TaskRunSession.Postgres
 	(*TaskRunSession_Postgres_Session)(nil),                // 51: bytebase.v1.TaskRunSession.Postgres.Session
 	(*timestamppb.Timestamp)(nil),                          // 52: google.protobuf.Timestamp
-	(DatabaseChangeType)(0),                                // 53: bytebase.v1.DatabaseChangeType
-	(ExportFormat)(0),                                      // 54: bytebase.v1.ExportFormat
-	(*Position)(nil),                                       // 55: bytebase.v1.Position
-	(*Range)(nil),                                          // 56: bytebase.v1.Range
+	(ExportFormat)(0),                                      // 53: bytebase.v1.ExportFormat
+	(*Position)(nil),                                       // 54: bytebase.v1.Position
+	(*Range)(nil),                                          // 55: bytebase.v1.Range
 }
 var file_v1_rollout_service_proto_depIdxs = []int32{
 	52, // 0: bytebase.v1.BatchRunTasksRequest.run_time:type_name -> google.protobuf.Timestamp
@@ -4058,64 +4041,63 @@ var file_v1_rollout_service_proto_depIdxs = []int32{
 	47, // 32: bytebase.v1.TaskRunLogEntry.compute_diff:type_name -> bytebase.v1.TaskRunLogEntry.ComputeDiff
 	48, // 33: bytebase.v1.TaskRunLogEntry.release_file_execute:type_name -> bytebase.v1.TaskRunLogEntry.ReleaseFileExecute
 	50, // 34: bytebase.v1.TaskRunSession.postgres:type_name -> bytebase.v1.TaskRunSession.Postgres
-	53, // 35: bytebase.v1.Task.DatabaseUpdate.database_change_type:type_name -> bytebase.v1.DatabaseChangeType
-	54, // 36: bytebase.v1.Task.DatabaseDataExport.format:type_name -> bytebase.v1.ExportFormat
-	36, // 37: bytebase.v1.TaskRun.PriorBackupDetail.items:type_name -> bytebase.v1.TaskRun.PriorBackupDetail.Item
-	52, // 38: bytebase.v1.TaskRun.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
-	38, // 39: bytebase.v1.TaskRun.SchedulerInfo.waiting_cause:type_name -> bytebase.v1.TaskRun.SchedulerInfo.WaitingCause
-	37, // 40: bytebase.v1.TaskRun.PriorBackupDetail.Item.source_table:type_name -> bytebase.v1.TaskRun.PriorBackupDetail.Item.Table
-	37, // 41: bytebase.v1.TaskRun.PriorBackupDetail.Item.target_table:type_name -> bytebase.v1.TaskRun.PriorBackupDetail.Item.Table
-	55, // 42: bytebase.v1.TaskRun.PriorBackupDetail.Item.start_position:type_name -> bytebase.v1.Position
-	55, // 43: bytebase.v1.TaskRun.PriorBackupDetail.Item.end_position:type_name -> bytebase.v1.Position
-	39, // 44: bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.task:type_name -> bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task
-	52, // 45: bytebase.v1.TaskRunLogEntry.SchemaDump.start_time:type_name -> google.protobuf.Timestamp
-	52, // 46: bytebase.v1.TaskRunLogEntry.SchemaDump.end_time:type_name -> google.protobuf.Timestamp
-	52, // 47: bytebase.v1.TaskRunLogEntry.CommandExecute.log_time:type_name -> google.protobuf.Timestamp
-	56, // 48: bytebase.v1.TaskRunLogEntry.CommandExecute.range:type_name -> bytebase.v1.Range
-	49, // 49: bytebase.v1.TaskRunLogEntry.CommandExecute.response:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
-	52, // 50: bytebase.v1.TaskRunLogEntry.DatabaseSync.start_time:type_name -> google.protobuf.Timestamp
-	52, // 51: bytebase.v1.TaskRunLogEntry.DatabaseSync.end_time:type_name -> google.protobuf.Timestamp
-	5,  // 52: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.status:type_name -> bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status
-	6,  // 53: bytebase.v1.TaskRunLogEntry.TransactionControl.type:type_name -> bytebase.v1.TaskRunLogEntry.TransactionControl.Type
-	52, // 54: bytebase.v1.TaskRunLogEntry.PriorBackup.start_time:type_name -> google.protobuf.Timestamp
-	52, // 55: bytebase.v1.TaskRunLogEntry.PriorBackup.end_time:type_name -> google.protobuf.Timestamp
-	34, // 56: bytebase.v1.TaskRunLogEntry.PriorBackup.prior_backup_detail:type_name -> bytebase.v1.TaskRun.PriorBackupDetail
-	52, // 57: bytebase.v1.TaskRunLogEntry.ComputeDiff.start_time:type_name -> google.protobuf.Timestamp
-	52, // 58: bytebase.v1.TaskRunLogEntry.ComputeDiff.end_time:type_name -> google.protobuf.Timestamp
-	52, // 59: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.log_time:type_name -> google.protobuf.Timestamp
-	51, // 60: bytebase.v1.TaskRunSession.Postgres.session:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
-	51, // 61: bytebase.v1.TaskRunSession.Postgres.blocking_sessions:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
-	51, // 62: bytebase.v1.TaskRunSession.Postgres.blocked_sessions:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
-	52, // 63: bytebase.v1.TaskRunSession.Postgres.Session.backend_start:type_name -> google.protobuf.Timestamp
-	52, // 64: bytebase.v1.TaskRunSession.Postgres.Session.xact_start:type_name -> google.protobuf.Timestamp
-	52, // 65: bytebase.v1.TaskRunSession.Postgres.Session.query_start:type_name -> google.protobuf.Timestamp
-	13, // 66: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
-	14, // 67: bytebase.v1.RolloutService.ListRollouts:input_type -> bytebase.v1.ListRolloutsRequest
-	16, // 68: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
-	17, // 69: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
-	19, // 70: bytebase.v1.RolloutService.GetTaskRun:input_type -> bytebase.v1.GetTaskRunRequest
-	20, // 71: bytebase.v1.RolloutService.GetTaskRunLog:input_type -> bytebase.v1.GetTaskRunLogRequest
-	27, // 72: bytebase.v1.RolloutService.GetTaskRunSession:input_type -> bytebase.v1.GetTaskRunSessionRequest
-	7,  // 73: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
-	9,  // 74: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
-	11, // 75: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
-	29, // 76: bytebase.v1.RolloutService.PreviewTaskRunRollback:input_type -> bytebase.v1.PreviewTaskRunRollbackRequest
-	21, // 77: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
-	15, // 78: bytebase.v1.RolloutService.ListRollouts:output_type -> bytebase.v1.ListRolloutsResponse
-	21, // 79: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
-	18, // 80: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
-	24, // 81: bytebase.v1.RolloutService.GetTaskRun:output_type -> bytebase.v1.TaskRun
-	25, // 82: bytebase.v1.RolloutService.GetTaskRunLog:output_type -> bytebase.v1.TaskRunLog
-	28, // 83: bytebase.v1.RolloutService.GetTaskRunSession:output_type -> bytebase.v1.TaskRunSession
-	8,  // 84: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
-	10, // 85: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
-	12, // 86: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
-	30, // 87: bytebase.v1.RolloutService.PreviewTaskRunRollback:output_type -> bytebase.v1.PreviewTaskRunRollbackResponse
-	77, // [77:88] is the sub-list for method output_type
-	66, // [66:77] is the sub-list for method input_type
-	66, // [66:66] is the sub-list for extension type_name
-	66, // [66:66] is the sub-list for extension extendee
-	0,  // [0:66] is the sub-list for field type_name
+	53, // 35: bytebase.v1.Task.DatabaseDataExport.format:type_name -> bytebase.v1.ExportFormat
+	36, // 36: bytebase.v1.TaskRun.PriorBackupDetail.items:type_name -> bytebase.v1.TaskRun.PriorBackupDetail.Item
+	52, // 37: bytebase.v1.TaskRun.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
+	38, // 38: bytebase.v1.TaskRun.SchedulerInfo.waiting_cause:type_name -> bytebase.v1.TaskRun.SchedulerInfo.WaitingCause
+	37, // 39: bytebase.v1.TaskRun.PriorBackupDetail.Item.source_table:type_name -> bytebase.v1.TaskRun.PriorBackupDetail.Item.Table
+	37, // 40: bytebase.v1.TaskRun.PriorBackupDetail.Item.target_table:type_name -> bytebase.v1.TaskRun.PriorBackupDetail.Item.Table
+	54, // 41: bytebase.v1.TaskRun.PriorBackupDetail.Item.start_position:type_name -> bytebase.v1.Position
+	54, // 42: bytebase.v1.TaskRun.PriorBackupDetail.Item.end_position:type_name -> bytebase.v1.Position
+	39, // 43: bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.task:type_name -> bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task
+	52, // 44: bytebase.v1.TaskRunLogEntry.SchemaDump.start_time:type_name -> google.protobuf.Timestamp
+	52, // 45: bytebase.v1.TaskRunLogEntry.SchemaDump.end_time:type_name -> google.protobuf.Timestamp
+	52, // 46: bytebase.v1.TaskRunLogEntry.CommandExecute.log_time:type_name -> google.protobuf.Timestamp
+	55, // 47: bytebase.v1.TaskRunLogEntry.CommandExecute.range:type_name -> bytebase.v1.Range
+	49, // 48: bytebase.v1.TaskRunLogEntry.CommandExecute.response:type_name -> bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse
+	52, // 49: bytebase.v1.TaskRunLogEntry.DatabaseSync.start_time:type_name -> google.protobuf.Timestamp
+	52, // 50: bytebase.v1.TaskRunLogEntry.DatabaseSync.end_time:type_name -> google.protobuf.Timestamp
+	5,  // 51: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.status:type_name -> bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status
+	6,  // 52: bytebase.v1.TaskRunLogEntry.TransactionControl.type:type_name -> bytebase.v1.TaskRunLogEntry.TransactionControl.Type
+	52, // 53: bytebase.v1.TaskRunLogEntry.PriorBackup.start_time:type_name -> google.protobuf.Timestamp
+	52, // 54: bytebase.v1.TaskRunLogEntry.PriorBackup.end_time:type_name -> google.protobuf.Timestamp
+	34, // 55: bytebase.v1.TaskRunLogEntry.PriorBackup.prior_backup_detail:type_name -> bytebase.v1.TaskRun.PriorBackupDetail
+	52, // 56: bytebase.v1.TaskRunLogEntry.ComputeDiff.start_time:type_name -> google.protobuf.Timestamp
+	52, // 57: bytebase.v1.TaskRunLogEntry.ComputeDiff.end_time:type_name -> google.protobuf.Timestamp
+	52, // 58: bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.log_time:type_name -> google.protobuf.Timestamp
+	51, // 59: bytebase.v1.TaskRunSession.Postgres.session:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
+	51, // 60: bytebase.v1.TaskRunSession.Postgres.blocking_sessions:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
+	51, // 61: bytebase.v1.TaskRunSession.Postgres.blocked_sessions:type_name -> bytebase.v1.TaskRunSession.Postgres.Session
+	52, // 62: bytebase.v1.TaskRunSession.Postgres.Session.backend_start:type_name -> google.protobuf.Timestamp
+	52, // 63: bytebase.v1.TaskRunSession.Postgres.Session.xact_start:type_name -> google.protobuf.Timestamp
+	52, // 64: bytebase.v1.TaskRunSession.Postgres.Session.query_start:type_name -> google.protobuf.Timestamp
+	13, // 65: bytebase.v1.RolloutService.GetRollout:input_type -> bytebase.v1.GetRolloutRequest
+	14, // 66: bytebase.v1.RolloutService.ListRollouts:input_type -> bytebase.v1.ListRolloutsRequest
+	16, // 67: bytebase.v1.RolloutService.CreateRollout:input_type -> bytebase.v1.CreateRolloutRequest
+	17, // 68: bytebase.v1.RolloutService.ListTaskRuns:input_type -> bytebase.v1.ListTaskRunsRequest
+	19, // 69: bytebase.v1.RolloutService.GetTaskRun:input_type -> bytebase.v1.GetTaskRunRequest
+	20, // 70: bytebase.v1.RolloutService.GetTaskRunLog:input_type -> bytebase.v1.GetTaskRunLogRequest
+	27, // 71: bytebase.v1.RolloutService.GetTaskRunSession:input_type -> bytebase.v1.GetTaskRunSessionRequest
+	7,  // 72: bytebase.v1.RolloutService.BatchRunTasks:input_type -> bytebase.v1.BatchRunTasksRequest
+	9,  // 73: bytebase.v1.RolloutService.BatchSkipTasks:input_type -> bytebase.v1.BatchSkipTasksRequest
+	11, // 74: bytebase.v1.RolloutService.BatchCancelTaskRuns:input_type -> bytebase.v1.BatchCancelTaskRunsRequest
+	29, // 75: bytebase.v1.RolloutService.PreviewTaskRunRollback:input_type -> bytebase.v1.PreviewTaskRunRollbackRequest
+	21, // 76: bytebase.v1.RolloutService.GetRollout:output_type -> bytebase.v1.Rollout
+	15, // 77: bytebase.v1.RolloutService.ListRollouts:output_type -> bytebase.v1.ListRolloutsResponse
+	21, // 78: bytebase.v1.RolloutService.CreateRollout:output_type -> bytebase.v1.Rollout
+	18, // 79: bytebase.v1.RolloutService.ListTaskRuns:output_type -> bytebase.v1.ListTaskRunsResponse
+	24, // 80: bytebase.v1.RolloutService.GetTaskRun:output_type -> bytebase.v1.TaskRun
+	25, // 81: bytebase.v1.RolloutService.GetTaskRunLog:output_type -> bytebase.v1.TaskRunLog
+	28, // 82: bytebase.v1.RolloutService.GetTaskRunSession:output_type -> bytebase.v1.TaskRunSession
+	8,  // 83: bytebase.v1.RolloutService.BatchRunTasks:output_type -> bytebase.v1.BatchRunTasksResponse
+	10, // 84: bytebase.v1.RolloutService.BatchSkipTasks:output_type -> bytebase.v1.BatchSkipTasksResponse
+	12, // 85: bytebase.v1.RolloutService.BatchCancelTaskRuns:output_type -> bytebase.v1.BatchCancelTaskRunsResponse
+	30, // 86: bytebase.v1.RolloutService.PreviewTaskRunRollback:output_type -> bytebase.v1.PreviewTaskRunRollbackResponse
+	76, // [76:87] is the sub-list for method output_type
+	65, // [65:76] is the sub-list for method input_type
+	65, // [65:65] is the sub-list for extension type_name
+	65, // [65:65] is the sub-list for extension extendee
+	0,  // [0:65] is the sub-list for field type_name
 }
 
 func init() { file_v1_rollout_service_proto_init() }

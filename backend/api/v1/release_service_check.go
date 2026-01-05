@@ -280,7 +280,7 @@ loop:
 					resp.AffectedRows += summaryReport.AffectedRows
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, false /* enableSDL */, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -634,7 +634,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	finalMetadata *model.DatabaseMetadata,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
-	enableSDL bool,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
@@ -657,7 +656,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	connection := driver.GetDB()
 
 	context := advisor.Context{
-		EnableSDL:             enableSDL,
 		DBSchema:              dbMetadataProto,
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,

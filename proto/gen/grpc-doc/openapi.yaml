@@ -11850,14 +11850,6 @@ components:
                     description: |-
                         The resource name of the release.
                          Format: projects/{project}/releases/{release}
-                type:
-                    enum:
-                        - DATABASE_CHANGE_TYPE_UNSPECIFIED
-                        - MIGRATE
-                        - SDL
-                    type: string
-                    description: Type is the database change type.
-                    format: enum
                 ghostFlags:
                     type: object
                     additionalProperties:
@@ -14167,7 +14159,6 @@ components:
                         - DATABASE_CREATE
                         - DATABASE_MIGRATE
                         - DATABASE_EXPORT
-                        - DATABASE_SDL
                     type: string
                     format: enum
                 target:
@@ -14632,14 +14623,6 @@ components:
                 schemaVersion:
                     type: string
                     description: The target schema version after this update.
-                databaseChangeType:
-                    enum:
-                        - DATABASE_CHANGE_TYPE_UNSPECIFIED
-                        - MIGRATE
-                        - SDL
-                    type: string
-                    description: The type of database change (MIGRATE or SDL).
-                    format: enum
             description: Payload for updating a database schema.
         TessellationConfig:
             type: object

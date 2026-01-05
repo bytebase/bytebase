@@ -102,7 +102,6 @@ import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
 import { releaseServiceClientConnect } from "@/grpcweb";
 import { projectNamePrefix } from "@/store";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
   type PlanCheckRun,
   type PlanCheckRun_Result,
@@ -222,8 +221,7 @@ const runChecks = async () => {
             // Use "0" for dummy version.
             version: "0",
             statement: new TextEncoder().encode(statement),
-            enableGhost:
-              config.type === DatabaseChangeType.MIGRATE && config.enableGhost,
+            enableGhost: !config.release && config.enableGhost,
           },
         ],
       },

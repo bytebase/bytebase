@@ -814,10 +814,6 @@
                 </li>
               
               
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
-                </li>
-              
               
               
             </ul>
@@ -8199,13 +8195,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -8435,35 +8424,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
       
 
       
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
-        <p>Type is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>1</td>
-                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
-                <td>2</td>
-                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
 
       
 
@@ -8650,13 +8610,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
               
                 <tr>
                   <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_sdl</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -12850,19 +12803,15 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
               <tr>
                 <td>DATABASE_MIGRATE</td>
                 <td>2</td>
-                <td><p>Apply schema/data migrations to an existing database.</p></td>
+                <td><p>Apply schema/data migrations to an existing database.
+Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
+or sheet content for non-release tasks.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
                 <td>3</td>
                 <td><p>Export data from a database.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SDL</td>
-                <td>4</td>
-                <td><p>Apply declarative schema changes (state-based migration).</p></td>
               </tr>
             
           </tbody>

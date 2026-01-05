@@ -463,8 +463,15 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 
 		switch {
 		// Validate that either sheet or statement is provided
+		// For DECLARATIVE releases, empty content is allowed (represents dropping all objects)
 		case f.Sheet == "" && len(f.Statement) == 0:
-			return nil, errors.Errorf("either sheet or statement must be set for file %q", f.Path)
+			if releaseType != v1pb.Release_DECLARATIVE {
+				return nil, errors.Errorf("either sheet or statement must be set for file %q", f.Path)
+			}
+			// For declarative releases with empty content, set empty statement and compute SHA256
+			f.Statement = []byte{}
+			h := sha256.Sum256(f.Statement)
+			f.SheetSha256 = hex.EncodeToString(h[:])
 		case f.Sheet != "" && len(f.Statement) > 0:
 			return nil, errors.Errorf("cannot set both sheet and statement for file %q", f.Path)
 
