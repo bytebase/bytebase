@@ -3,7 +3,7 @@ import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { ref } from "vue";
-import { settingServiceClientConnect } from "@/grpcweb";
+import { settingServiceClientConnect } from "@/connect";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import type { Setting } from "@/types/proto-es/v1/setting_service_pb";
 import {

@@ -86,7 +86,6 @@
     "status": "Trạng thái",
     "stage": "Giai đoạn",
     "task": "Tác vụ",
-    "blocking-task": "Tác vụ chặn",
     "sql": "SQL",
     "unassigned": "Chưa gán",
     "new": "Mới",
@@ -362,8 +361,6 @@
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
-      "waiting-connection": "Đang chờ kết nối thể hiện có sẵn. Số lượng kết nối thể hiện đã đạt đến giới hạn được đặt trên Bytebase. Báo cáo gần nhất lúc {time}.",
-      "waiting-task": "Đang chờ một tác vụ khác kết thúc. Báo cáo gần nhất lúc {time}.",
       "waiting-max-tasks-per-rollout": "Đang chờ các tác vụ khác hoàn thành. Đã đạt đến giới hạn số lượng tác vụ đang chạy tối đa cho mỗi lần triển khai. Báo cáo gần nhất lúc {time}."
     },
     "rollback": {

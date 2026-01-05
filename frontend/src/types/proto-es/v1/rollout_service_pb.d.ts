@@ -864,13 +864,6 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
   schedulerInfo?: TaskRun_SchedulerInfo;
 
   /**
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: string sheet = 13;
-   */
-  sheet: string;
-
-  /**
    * The task run should run after run_time.
    * This can only be set when creating the task run calling BatchRunTasks.
    *
@@ -1021,22 +1014,6 @@ export declare type TaskRun_SchedulerInfo_WaitingCause = Message<"bytebase.v1.Ta
    */
   cause: {
     /**
-     * Waiting due to connection limit reached.
-     *
-     * @generated from field: bool connection_limit = 1;
-     */
-    value: boolean;
-    case: "connectionLimit";
-  } | {
-    /**
-     * Waiting for another task to complete.
-     *
-     * @generated from field: bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task task = 2;
-     */
-    value: TaskRun_SchedulerInfo_WaitingCause_Task;
-    case: "task";
-  } | {
-    /**
      * Waiting due to parallel tasks limit.
      *
      * @generated from field: bool parallel_tasks_limit = 3;
@@ -1051,26 +1028,6 @@ export declare type TaskRun_SchedulerInfo_WaitingCause = Message<"bytebase.v1.Ta
  * Use `create(TaskRun_SchedulerInfo_WaitingCauseSchema)` to create a new message.
  */
 export declare const TaskRun_SchedulerInfo_WaitingCauseSchema: GenMessage<TaskRun_SchedulerInfo_WaitingCause>;
-
-/**
- * Information about a blocking task.
- *
- * @generated from message bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task
- */
-export declare type TaskRun_SchedulerInfo_WaitingCause_Task = Message<"bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task"> & {
-  /**
-   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
-   *
-   * @generated from field: string task = 1;
-   */
-  task: string;
-};
-
-/**
- * Describes the message bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task.
- * Use `create(TaskRun_SchedulerInfo_WaitingCause_TaskSchema)` to create a new message.
- */
-export declare const TaskRun_SchedulerInfo_WaitingCause_TaskSchema: GenMessage<TaskRun_SchedulerInfo_WaitingCause_Task>;
 
 /**
  * @generated from enum bytebase.v1.TaskRun.Status

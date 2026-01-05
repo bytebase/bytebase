@@ -1,8 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { head } from "lodash-es";
-import { celServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { celServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import {
   ConstantSchema,

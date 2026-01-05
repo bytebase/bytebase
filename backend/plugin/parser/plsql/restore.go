@@ -337,7 +337,8 @@ func extractSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (s
 			result = append(result, list[i].Text)
 		}
 	}
-	return strings.Join(result, ";\n"), nil
+	// Statements include their leading whitespace and trailing semicolons.
+	return strings.Join(result, ""), nil
 }
 
 func equalOrLess(a, b *storepb.Position) bool {

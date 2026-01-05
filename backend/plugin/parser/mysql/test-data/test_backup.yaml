@@ -160,8 +160,8 @@
       sourcetablename: t2
       targettablename: _rollback_t2_db2
       startposition:
-        line: 2
-        column: 1
+        line: 1
+        column: 39
       endposition:
         line: 2
         column: 39

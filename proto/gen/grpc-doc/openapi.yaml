@@ -13209,13 +13209,6 @@ components:
         SchedulerInfo_WaitingCause:
             type: object
             properties:
-                connectionLimit:
-                    type: boolean
-                    description: Waiting due to connection limit reached.
-                task:
-                    allOf:
-                        - $ref: '#/components/schemas/WaitingCause_Task'
-                    description: Waiting for another task to complete.
                 parallelTasksLimit:
                     type: boolean
                     description: Waiting due to parallel tasks limit.
@@ -14284,10 +14277,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/TaskRun_SchedulerInfo'
                     description: Scheduling information about the task run.
-                sheet:
-                    readOnly: true
-                    type: string
-                    description: 'Format: projects/{project}/sheets/{sheet}'
                 runTime:
                     readOnly: true
                     type: string
@@ -14959,13 +14948,6 @@ components:
                 skipDump:
                     type: boolean
             description: ViewMetadata is the metadata for views.
-        WaitingCause_Task:
-            type: object
-            properties:
-                task:
-                    type: string
-                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}'
-            description: Information about a blocking task.
         Webhook:
             required:
                 - type

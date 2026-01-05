@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
-import { projectServiceClientConnect } from "@/grpcweb";
+import { projectServiceClientConnect } from "@/connect";
 import type { IdType } from "@/types";
 import {
   AddWebhookRequestSchema,

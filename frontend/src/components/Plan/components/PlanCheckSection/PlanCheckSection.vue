@@ -72,7 +72,7 @@ import { CircleQuestionMarkIcon, PlayIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import {
   extractUserId,
   pushNotification,

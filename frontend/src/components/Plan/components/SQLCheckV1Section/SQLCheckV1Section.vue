@@ -100,7 +100,7 @@ import { computed, ref, watch } from "vue";
 import { getLocalSheetByName } from "@/components/Plan";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
-import { releaseServiceClientConnect } from "@/grpcweb";
+import { releaseServiceClientConnect } from "@/connect";
 import { projectNamePrefix } from "@/store";
 import {
   type PlanCheckRun,

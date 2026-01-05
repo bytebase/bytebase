@@ -73,7 +73,7 @@ import { NButton, NPopover } from "naive-ui";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { releaseServiceClientConnect } from "@/grpcweb";
+import { releaseServiceClientConnect } from "@/connect";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";

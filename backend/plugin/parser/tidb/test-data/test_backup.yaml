@@ -54,8 +54,8 @@
       sourcetablename: t2
       targettablename: _rollback_1_t2
       startposition:
-        line: 2
-        column: 1
+        line: 1
+        column: 39
       endposition:
         line: 2
         column: 39
@@ -244,8 +244,8 @@
       sourcetablename: test
       targettablename: _rollback_1_test
       startposition:
-        line: 2
-        column: 1
+        line: 1
+        column: 47
       endposition:
         line: 2
         column: 47

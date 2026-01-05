@@ -35,7 +35,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { ref } from "vue";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import type { ComposedDatabase } from "@/types";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {

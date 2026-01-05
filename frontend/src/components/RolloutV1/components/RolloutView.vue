@@ -39,7 +39,7 @@ import { useRoute, useRouter } from "vue-router";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import { useRolloutPreview } from "@/components/RolloutV1/logic";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
 import { pushNotification } from "@/store/modules/notification";

@@ -33,7 +33,7 @@ import { head } from "lodash-es";
 import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
-import { sqlServiceClientConnect } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/connect";
 import { useSQLEditorTabStore } from "@/store";
 import {
   type AICompletionRequest_Message,

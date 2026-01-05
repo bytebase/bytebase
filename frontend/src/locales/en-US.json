@@ -86,7 +86,6 @@
     "status": "Status",
     "stage": "Stage",
     "task": "Task | Tasks",
-    "blocking-task": "Blocking task",
     "sql": "SQL",
     "unassigned": "Unassigned",
     "new": "New",
@@ -362,8 +361,6 @@
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
-      "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit set on Bytebase. Last report at {time}.",
-      "waiting-task": "Waiting for another task to finish. Last report at {time}.",
       "waiting-max-tasks-per-rollout": "Waiting for other tasks to finish. Maximum running tasks limit per rollout has been reached. Last report at {time}."
     },
     "rollback": {

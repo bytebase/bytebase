@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { t } from "@/plugins/i18n";
 import { projectNamePrefix, useProjectV1Store, useSheetV1Store } from "@/store";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";

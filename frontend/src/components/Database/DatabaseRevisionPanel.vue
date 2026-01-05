@@ -56,7 +56,7 @@ import { RevisionDataTable, RevisionDetailPanel } from "@/components/Revision";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { revisionServiceClientConnect } from "@/grpcweb";
+import { revisionServiceClientConnect } from "@/connect";
 import type { ComposedDatabase } from "@/types";
 import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { useDatabaseDetailContext } from "./context";

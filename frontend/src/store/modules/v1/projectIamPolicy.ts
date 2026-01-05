@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, shallowReactive, unref, watch } from "vue";
-import { projectServiceClientConnect } from "@/grpcweb";
+import { projectServiceClientConnect } from "@/connect";
 import {
   ALL_USERS_USER_EMAIL,
   type ComposedDatabase,

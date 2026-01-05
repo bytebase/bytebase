@@ -946,7 +946,9 @@ func tidbCreateTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *
 	}
 
 	if node.Select != nil {
-		content := fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", node.Text())
+		// Trim leading whitespace for display - node.Text() may include leading whitespace
+		// to maintain position consistency, but error messages should show clean SQL.
+		content := fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", strings.TrimSpace(node.Text()))
 		return &storepb.Advice{
 			Status:        storepb.Advice_WARNING,
 			Code:          code.StatementCreateTableAs.Int32(),

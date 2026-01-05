@@ -65,7 +65,7 @@ import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTooltip, useDialog } from "naive-ui";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentProjectV1,

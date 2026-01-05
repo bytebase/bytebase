@@ -31,7 +31,7 @@ import {
   hasWorkspacePermissionV2,
   isValidSpannerHost,
 } from "@/utils";
-import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 import type { LabelListEditor } from "../Label";
 import type { ResourceIdField } from "../v2";
 import type { EditDataSource } from "./common";

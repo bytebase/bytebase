@@ -4,8 +4,8 @@ import { useLocalStorage } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { authServiceClientConnect, userServiceClientConnect } from "@/grpcweb";
-import { ignoredCodesContextKey } from "@/grpcweb/context-key";
+import { authServiceClientConnect, userServiceClientConnect } from "@/connect";
+import { ignoredCodesContextKey } from "@/connect/context-key";
 import { router } from "@/router";
 import {
   AUTH_MFA_MODULE,

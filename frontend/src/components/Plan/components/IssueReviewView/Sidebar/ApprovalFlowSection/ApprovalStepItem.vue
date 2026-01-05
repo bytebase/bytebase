@@ -91,7 +91,7 @@ import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useIssueContext } from "@/components/IssueV1";
 import { tryUsePlanContext } from "@/components/Plan/logic";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentProjectV1,

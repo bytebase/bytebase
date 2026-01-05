@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { databaseServiceClientConnect } from "@/grpcweb";
+import { databaseServiceClientConnect } from "@/connect";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import {

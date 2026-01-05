@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { defineStore } from "pinia";
-import { auditLogServiceClientConnect } from "@/grpcweb";
+import { auditLogServiceClientConnect } from "@/connect";
 import type { AuditLogFilter, SearchAuditLogsParams } from "@/types";
 import {
   AuditLog_Severity,

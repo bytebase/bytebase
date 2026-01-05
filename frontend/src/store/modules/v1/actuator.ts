@@ -3,7 +3,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import semver from "semver";
 import { computed, ref } from "vue";
-import { actuatorServiceClientConnect } from "@/grpcweb";
+import { actuatorServiceClientConnect } from "@/connect";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
   type AppFeatures,

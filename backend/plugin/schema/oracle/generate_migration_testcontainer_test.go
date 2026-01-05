@@ -1874,8 +1874,18 @@ func executeStatements(db *sql.DB, statements string) error {
 			continue
 		}
 
-		// Skip pure comment lines
-		if strings.HasPrefix(stmt, "--") {
+		// Skip statements that contain only comments
+		// Strip all comment lines and check if there's actual SQL
+		lines := strings.Split(stmt, "\n")
+		hasSQL := false
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed != "" && !strings.HasPrefix(trimmed, "--") {
+				hasSQL = true
+				break
+			}
+		}
+		if !hasSQL {
 			continue
 		}
 

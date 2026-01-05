@@ -10,7 +10,7 @@ import {
   unref,
 } from "vue";
 import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { extractUserId, useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";

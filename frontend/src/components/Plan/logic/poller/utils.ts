@@ -4,7 +4,7 @@ import {
   issueServiceClientConnect,
   planServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";

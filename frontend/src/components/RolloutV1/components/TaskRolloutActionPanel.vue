@@ -270,7 +270,7 @@ import { projectOfPlan } from "@/components/Plan/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { trackPriorBackupOnTaskRun } from "@/composables/usePriorBackupTelemetry";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentUserV1,

@@ -86,7 +86,6 @@
     "status": "Estado",
     "stage": "Etapa",
     "task": "Tarea",
-    "blocking-task": "Tarea de bloqueo",
     "sql": "SQL",
     "unassigned": "No asignado",
     "new": "Nuevo",
@@ -362,8 +361,6 @@
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
-      "waiting-connection": "Esperando conexiones de instancias disponibles. El recuento de conexión de instancia ha alcanzado el límite establecido en Bytebase. Último informe a las {time}.",
-      "waiting-task": "Esperando a que termine otra tarea. Último informe a las {time}.",
       "waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue. Último informe a las {time}."
     },
     "rollback": {

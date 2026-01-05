@@ -16113,10 +16113,6 @@ components:
           title: scheduler_info
           description: Scheduling information about the task run.
           $ref: '#/components/schemas/bytebase.v1.TaskRun.SchedulerInfo'
-        sheet:
-          type: string
-          title: sheet
-          description: 'Format: projects/{project}/sheets/{sheet}'
         runTime:
           title: run_time
           description: |-
@@ -16205,14 +16201,6 @@ components:
       type: object
       oneOf:
         - properties:
-            connectionLimit:
-              type: boolean
-              title: connection_limit
-              description: Waiting due to connection limit reached.
-          title: connection_limit
-          required:
-            - connectionLimit
-        - properties:
             parallelTasksLimit:
               type: boolean
               title: parallel_tasks_limit
@@ -16220,27 +16208,9 @@ components:
           title: parallel_tasks_limit
           required:
             - parallelTasksLimit
-        - properties:
-            task:
-              title: task
-              description: Waiting for another task to complete.
-              $ref: '#/components/schemas/bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task'
-          title: task
-          required:
-            - task
       title: WaitingCause
       additionalProperties: false
       description: Information about why a task run is waiting.
-    bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task:
-      type: object
-      properties:
-        task:
-          type: string
-          title: task
-          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}'
-      title: Task
-      additionalProperties: false
-      description: Information about a blocking task.
     bytebase.v1.TaskRun.Status:
       type: string
       title: Status

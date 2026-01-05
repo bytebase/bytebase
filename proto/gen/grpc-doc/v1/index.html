@@ -2470,10 +2470,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task"><span class="badge">M</span>TaskRun.SchedulerInfo.WaitingCause.Task</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TaskRunLog"><span class="badge">M</span>TaskRunLog</a>
                 </li>
               
@@ -27258,13 +27254,6 @@ Detailed information about the task run result. </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
                   <td>run_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td>optional</td>
@@ -27429,48 +27418,10 @@ Format: instances/{instance}/databases/{database} </p></td>
             <tbody>
               
                 <tr>
-                  <td>connection_limit</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Waiting due to connection limit reached. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task</td>
-                  <td><a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task">TaskRun.SchedulerInfo.WaitingCause.Task</a></td>
-                  <td></td>
-                  <td><p>Waiting for another task to complete. </p></td>
-                </tr>
-              
-                <tr>
                   <td>parallel_tasks_limit</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Waiting due to parallel tasks limit. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task">TaskRun.SchedulerInfo.WaitingCause.Task</h3>
-        <p>Information about a blocking task.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>task</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} </p></td>
                 </tr>
               
             </tbody>

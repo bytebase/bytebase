@@ -2,8 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { databaseServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { databaseServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 // Removed conversion imports as part of Bold Migration Strategy
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";

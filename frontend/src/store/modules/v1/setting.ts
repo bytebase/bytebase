@@ -3,8 +3,8 @@ import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import { createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { settingServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { settingServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import {
   type DataClassificationSetting_DataClassificationConfig,

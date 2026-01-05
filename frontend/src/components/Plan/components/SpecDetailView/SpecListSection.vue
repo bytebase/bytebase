@@ -73,7 +73,7 @@ import { NButton, NDropdown, NTab, NTabs, NTooltip, useDialog } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,

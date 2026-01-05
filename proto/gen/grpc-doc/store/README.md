@@ -4816,7 +4816,7 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  | Detailed execution information or error message. |
+| detail | [string](#string) |  | Error message for failed task runs. Empty for successful or canceled runs. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
 | prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
 

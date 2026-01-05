@@ -35,7 +35,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { targetsForSpec } from "@/components/Plan/logic";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { allowGhostForDatabase } from "./common";

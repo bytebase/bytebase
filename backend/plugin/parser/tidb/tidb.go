@@ -57,15 +57,25 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 		}
 
 		node := nodes[0]
-		node.SetText(nil, singleSQL.Text)
-		node.SetOriginTextPosition(int(singleSQL.End.GetLine()))
+		// node.Text() includes leading whitespace from singleSQL.Text.
+		// This maintains consistency: Statement.Start points to first char of Statement.Text,
+		// and AST position matches Statement position.
+		// Trim only at display points (e.g., error messages) where needed.
+
+		// Calculate the start line. The native TiDB parser may strip leading newlines
+		// from its internal Text(), so we count how many were stripped.
+		nativeText := node.Text()
+		leadingNewlinesStripped := strings.Count(singleSQL.Text, "\n") - strings.Count(nativeText, "\n")
+		actualStartLine := singleSQL.BaseLine + leadingNewlinesStripped + 1
+
+		node.SetOriginTextPosition(actualStartLine)
 		if n, ok := node.(*ast.CreateTableStmt); ok {
 			if err := SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, errors.Wrapf(err, "failed to set line for create table statement at line %d", singleSQL.End.GetLine())
+				return nil, errors.Wrapf(err, "failed to set line for create table statement at line %d", actualStartLine)
 			}
 		}
 		results = append(results, &AST{
-			StartPosition: &storepb.Position{Line: int32(singleSQL.BaseLine) + 1},
+			StartPosition: &storepb.Position{Line: int32(actualStartLine)},
 			Node:          node,
 		})
 	}
@@ -172,7 +182,9 @@ func SetLineForMySQLCreateTableStmt(node *ast.CreateTableStmt) error {
 	if len(node.Cols) == 0 {
 		return nil
 	}
-	firstLine := node.OriginTextPosition() - strings.Count(node.Text(), "\n")
+	// OriginTextPosition() now stores the first line of the statement (1-based),
+	// so we can use it directly as firstLine.
+	firstLine := node.OriginTextPosition()
 	return tokenizer.NewTokenizer(node.Text()).SetLineForMySQLCreateTableStmt(node, firstLine)
 }
 

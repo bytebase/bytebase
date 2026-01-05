@@ -2,7 +2,7 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
-import { sqlServiceClientConnect } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/connect";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,

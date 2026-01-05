@@ -4,8 +4,8 @@ import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import { projectServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { projectServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import type { MaybeRef, ResourceId } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,

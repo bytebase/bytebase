@@ -51,7 +51,7 @@ import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
