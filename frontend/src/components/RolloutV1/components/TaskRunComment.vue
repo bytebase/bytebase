@@ -72,34 +72,10 @@ const comment = computed(() => {
         time: new Date(earliestAllowedTime.value).toLocaleString(),
       });
     }
-    if (taskRun.schedulerInfo) {
-      const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.cause?.case === "task") {
-        return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
-        });
-      }
-    }
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.schedulerInfo) {
       const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.cause?.case === "connectionLimit") {
-        return t("task-run.status.waiting-connection", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
-        });
-      }
-      if (cause?.cause?.case === "task") {
-        return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
-        });
-      }
       if (cause?.cause?.case === "parallelTasksLimit") {
         return t("task-run.status.waiting-max-tasks-per-rollout", {
           time: getDateForPbTimestampProtoEs(
@@ -114,21 +90,7 @@ const comment = computed(() => {
 
 const commentLink = computed((): CommentLink => {
   const { taskRun } = props;
-  if (
-    taskRun.status === TaskRun_Status.PENDING ||
-    taskRun.status === TaskRun_Status.RUNNING
-  ) {
-    const task =
-      taskRun.schedulerInfo?.waitingCause?.cause?.case === "task"
-        ? taskRun.schedulerInfo.waitingCause.cause.value.task
-        : undefined;
-    if (task) {
-      return {
-        title: t("common.blocking-task"),
-        link: `/${task}`,
-      };
-    }
-  } else if (taskRun.status === TaskRun_Status.FAILED) {
+  if (taskRun.status === TaskRun_Status.FAILED) {
     if (comment.value.includes("version")) {
       return {
         title: t("common.troubleshoot"),

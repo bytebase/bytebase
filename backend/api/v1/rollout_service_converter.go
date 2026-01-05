@@ -55,11 +55,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun
 
 	if v, ok := bus.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
 		if info, ok := v.(*storepb.SchedulerInfo); ok {
-			si, err := convertToSchedulerInfo(ctx, s, info)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to convert to scheduler info")
-			}
-			t.SchedulerInfo = si
+			t.SchedulerInfo = convertToSchedulerInfo(info)
 		}
 	}
 
@@ -82,25 +78,20 @@ func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun
 	return t, nil
 }
 
-func convertToSchedulerInfo(ctx context.Context, s *store.Store, si *storepb.SchedulerInfo) (*v1pb.TaskRun_SchedulerInfo, error) {
+func convertToSchedulerInfo(si *storepb.SchedulerInfo) *v1pb.TaskRun_SchedulerInfo {
 	if si == nil {
-		return nil, nil
-	}
-
-	cause, err := convertToSchedulerInfoWaitingCause(si.WaitingCause)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert to scheduler info waiting cause")
+		return nil
 	}
 
 	return &v1pb.TaskRun_SchedulerInfo{
 		ReportTime:   si.ReportTime,
-		WaitingCause: cause,
-	}, nil
+		WaitingCause: convertToSchedulerInfoWaitingCause(si.WaitingCause),
+	}
 }
 
-func convertToSchedulerInfoWaitingCause(c *storepb.SchedulerInfo_WaitingCause) (*v1pb.TaskRun_SchedulerInfo_WaitingCause, error) {
+func convertToSchedulerInfoWaitingCause(c *storepb.SchedulerInfo_WaitingCause) *v1pb.TaskRun_SchedulerInfo_WaitingCause {
 	if c == nil {
-		return nil, nil
+		return nil
 	}
 	switch cause := c.Cause.(type) {
 	case *storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit:
@@ -108,9 +99,9 @@ func convertToSchedulerInfoWaitingCause(c *storepb.SchedulerInfo_WaitingCause) (
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit{
 				ParallelTasksLimit: cause.ParallelTasksLimit,
 			},
-		}, nil
+		}
 	default:
-		return nil, nil
+		return nil
 	}
 }
 
