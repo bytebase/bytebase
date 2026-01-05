@@ -596,9 +596,6 @@
     - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
     - [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
-    - [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail)
-    - [TaskRun.PriorBackupDetail.Item](#bytebase-v1-TaskRun-PriorBackupDetail-Item)
-    - [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table)
     - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
     - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
     - [TaskRunLog](#bytebase-v1-TaskRunLog)
@@ -608,6 +605,9 @@
     - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
+    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail)
+    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item)
+    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table)
     - [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute)
     - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
@@ -9703,59 +9703,9 @@ Payload for updating a database schema.
 | detail | [string](#string) |  | Below are the results of a task run. Detailed information about the task run result. |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the task run started execution. |
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  | The export archive status for data export tasks. |
-| prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
+| has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, rollback SQL can be generated via PreviewTaskRunRollback. Backup details are available in the task run logs. |
 | scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  | Scheduling information about the task run. |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. This can only be set when creating the task run calling BatchRunTasks. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-PriorBackupDetail"></a>
-
-### TaskRun.PriorBackupDetail
-Prior backup detail for rollback purposes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [TaskRun.PriorBackupDetail.Item](#bytebase-v1-TaskRun-PriorBackupDetail-Item) | repeated | The list of backed up tables. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-PriorBackupDetail-Item"></a>
-
-### TaskRun.PriorBackupDetail.Item
-A single backup table mapping.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_table | [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table) |  | The original table information. |
-| target_table | [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table) |  | The target backup table information. |
-| start_position | [Position](#bytebase-v1-Position) |  | The start position in the SQL statement. |
-| end_position | [Position](#bytebase-v1-Position) |  | The end position in the SQL statement. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-PriorBackupDetail-Item-Table"></a>
-
-### TaskRun.PriorBackupDetail.Item.Table
-Table information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
-| schema | [string](#string) |  | The schema name. |
-| table | [string](#string) |  | The table name. |
 
 
 
@@ -9915,8 +9865,58 @@ Prior backup operation details.
 | ----- | ---- | ----- | ----------- |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup started. |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup ended. |
-| prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The backup details. |
+| prior_backup_detail | [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail) |  | The backup details. |
 | error | [string](#string) |  | Error message if the backup failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail"></a>
+
+### TaskRunLogEntry.PriorBackup.PriorBackupDetail
+Prior backup detail for rollback purposes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item) | repeated | The list of backed up tables. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item"></a>
+
+### TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item
+A single backup table mapping.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_table | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table) |  | The original table information. |
+| target_table | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table) |  | The target backup table information. |
+| start_position | [Position](#bytebase-v1-Position) |  | The start position in the SQL statement. |
+| end_position | [Position](#bytebase-v1-Position) |  | The end position in the SQL statement. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table"></a>
+
+### TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table
+Table information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | The schema name. |
+| table | [string](#string) |  | The table name. |
 
 
 

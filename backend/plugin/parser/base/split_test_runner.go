@@ -89,7 +89,7 @@ func assertStatementsEqual(t *testing.T, expected []StatementResult, actual []St
 		msg := append([]any{"statement %d mismatch", i}, msgAndArgs...)
 
 		require.Equal(t, exp.Text, act.Text, msg...)
-		require.Equal(t, exp.BaseLine, act.BaseLine, msg...)
+		require.Equal(t, exp.BaseLine, act.BaseLine(), msg...)
 		require.Equal(t, exp.Empty, act.Empty, msg...)
 
 		require.NotNil(t, act.Start, msg...)
@@ -162,7 +162,7 @@ func recordTestResults(t *testing.T, fullPath string, testCases []SplitTestCase,
 		for j, stmt := range result {
 			updated[i].Result[j] = StatementResult{
 				Text:     stmt.Text,
-				BaseLine: stmt.BaseLine,
+				BaseLine: stmt.BaseLine(),
 				Empty:    stmt.Empty,
 			}
 			if stmt.Start != nil {

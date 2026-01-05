@@ -26,7 +26,7 @@ func ParseSpannerGoogleSQL(sql string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleSpannerGoogleSQL(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleSpannerGoogleSQL(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}

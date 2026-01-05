@@ -57,7 +57,7 @@ const createRestoreIssue = async () => {
   if (!allowRollback.value) {
     return;
   }
-  if (!latestTaskRun.value?.priorBackupDetail) {
+  if (!latestTaskRun.value?.hasPriorBackup) {
     return;
   }
 

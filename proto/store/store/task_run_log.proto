@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/common.proto";
-import "store/task_run.proto";
 
 option go_package = "generated-go/store";
 
@@ -106,4 +105,33 @@ message TaskRunLog {
     // The file path within the release (e.g., "2.2/V0001_create_table.sql").
     string file_path = 2;
   }
+}
+
+// PriorBackupDetail contains information about automatic backups created before migration.
+message PriorBackupDetail {
+  // Item represents a single backup operation for a table.
+  message Item {
+    // Table identifies a database table.
+    message Table {
+      // The database containing the table.
+      // Format: instances/{instance}/databases/{database}
+      string database = 1;
+      // Schema name (for databases that support schemas).
+      string schema = 2;
+      // Table name.
+      string table = 3;
+    }
+
+    // The original table that was backed up.
+    Table source_table = 1;
+    // The backup table where data was copied.
+    Table target_table = 2;
+    // Starting position in SQL for this backup operation.
+    Position start_position = 3;
+    // Ending position in SQL for this backup operation.
+    Position end_position = 4;
+  }
+
+  // List of backup operations performed.
+  repeated Item items = 1;
 }

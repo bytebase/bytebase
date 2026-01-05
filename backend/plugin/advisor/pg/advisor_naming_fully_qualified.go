@@ -52,7 +52,7 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 			dbMetadata: checkCtx.DBSchema,
 			tokens:     antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.BaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)

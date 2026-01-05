@@ -48,8 +48,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		endLine, endColumn := base.CalculateLineAndColumn(statement, endPos)
 
 		list = append(list, base.Statement{
-			Text:     text,
-			BaseLine: startLine,
+			Text: text,
 			Start: &storepb.Position{
 				Line:   int32(startLine + 1),   // 1-based
 				Column: int32(startColumn + 1), // 1-based per proto spec

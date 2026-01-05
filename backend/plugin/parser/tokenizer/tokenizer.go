@@ -232,8 +232,6 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				if t.f == nil {
 					res = append(res, base.Statement{
 						Text: s,
-						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-						BaseLine: startLine - 1,
 						Start: &store.Position{
 							Line:   int32(startLine),
 							Column: int32(startColumn),
@@ -273,8 +271,6 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 			if t.f == nil {
 				res = append(res, base.Statement{
 					Text: text,
-					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine: startLine - 1,
 					Start: &store.Position{
 						Line:   int32(startLine),
 						Column: int32(startColumn),
@@ -310,8 +306,6 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 			if t.f == nil {
 				res = append(res, base.Statement{
 					Text: text,
-					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine: startLine - 1,
 					Start: &store.Position{
 						Line:   int32(startLine),
 						Column: int32(startColumn),
@@ -420,8 +414,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.Statement{
-					Text:     text,
-					BaseLine: firstStatementLine - 1, // 0-based line of first token
+					Text: text,
 					Start: &store.Position{
 						Line:   int32(firstStatementLine), // 1-based per proto spec
 						Column: int32(firstStatementColumn),
@@ -454,8 +447,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 					// The cursor might be past all content (on blank lines or at EOF).
 					endLine := t.line - t.aboveNonBlankLineDistance()
 					res = append(res, base.Statement{
-						Text:     s,
-						BaseLine: firstStatementLine - 1, // 0-based line of first token
+						Text: s,
 						Start: &store.Position{
 							Line:   int32(firstStatementLine), // 1-based per proto spec
 							Column: int32(firstStatementColumn),

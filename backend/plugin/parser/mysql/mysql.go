@@ -220,7 +220,7 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ANTLR
 		}
 
 		result = append(result, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(s.BaseLine) + 1},
+			StartPosition: &storepb.Position{Line: int32(s.BaseLine()) + 1},
 			Tree:          tree,
 			Tokens:        tokens,
 		})

@@ -104,8 +104,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffsetStart)
 
 		result = append(result, base.Statement{
-			Text:     text,
-			BaseLine: startLine,
+			Text: text,
 			Range: &storepb.Range{
 				Start: int32(byteOffsetStart),
 				End:   int32(rangeEnd),

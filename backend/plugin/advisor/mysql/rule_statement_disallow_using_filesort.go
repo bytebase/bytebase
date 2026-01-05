@@ -44,8 +44,8 @@ func (*StatementDisallowUsingFilesortAdvisor) Check(ctx context.Context, checkCt
 
 	if rule.driver != nil {
 		for _, stmt := range checkCtx.ParsedStatements {
-			rule.SetBaseLine(stmt.BaseLine)
-			checker.SetBaseLine(stmt.BaseLine)
+			rule.SetBaseLine(stmt.BaseLine())
+			checker.SetBaseLine(stmt.BaseLine())
 			if stmt.AST == nil {
 				continue
 			}

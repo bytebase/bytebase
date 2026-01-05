@@ -49,7 +49,7 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.BaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

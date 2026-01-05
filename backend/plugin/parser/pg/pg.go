@@ -76,7 +76,7 @@ func ParsePostgreSQL(sql string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}

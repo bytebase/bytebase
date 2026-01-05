@@ -403,65 +403,6 @@ func (x *Task) Equal(y *Task) bool {
 	return true
 }
 
-func (x *TaskRun_PriorBackupDetail_Item_Table) Equal(y *TaskRun_PriorBackupDetail_Item_Table) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Database != y.Database {
-		return false
-	}
-	if x.Schema != y.Schema {
-		return false
-	}
-	if x.Table != y.Table {
-		return false
-	}
-	return true
-}
-
-func (x *TaskRun_PriorBackupDetail_Item) Equal(y *TaskRun_PriorBackupDetail_Item) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.SourceTable.Equal(y.SourceTable) {
-		return false
-	}
-	if !x.TargetTable.Equal(y.TargetTable) {
-		return false
-	}
-	if !x.StartPosition.Equal(y.StartPosition) {
-		return false
-	}
-	if !x.EndPosition.Equal(y.EndPosition) {
-		return false
-	}
-	return true
-}
-
-func (x *TaskRun_PriorBackupDetail) Equal(y *TaskRun_PriorBackupDetail) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Items) != len(y.Items) {
-		return false
-	}
-	for i := 0; i < len(x.Items); i++ {
-		if !x.Items[i].Equal(y.Items[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *TaskRun_SchedulerInfo_WaitingCause) Equal(y *TaskRun_SchedulerInfo_WaitingCause) bool {
 	if x == y {
 		return true
@@ -522,7 +463,7 @@ func (x *TaskRun) Equal(y *TaskRun) bool {
 	if x.ExportArchiveStatus != y.ExportArchiveStatus {
 		return false
 	}
-	if !x.PriorBackupDetail.Equal(y.PriorBackupDetail) {
+	if x.HasPriorBackup != y.HasPriorBackup {
 		return false
 	}
 	if !x.SchedulerInfo.Equal(y.SchedulerInfo) {
@@ -667,6 +608,65 @@ func (x *TaskRunLogEntry_TransactionControl) Equal(y *TaskRunLogEntry_Transactio
 	}
 	if x.Error != y.Error {
 		return false
+	}
+	return true
+}
+
+func (x *TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table) Equal(y *TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Database != y.Database {
+		return false
+	}
+	if x.Schema != y.Schema {
+		return false
+	}
+	if x.Table != y.Table {
+		return false
+	}
+	return true
+}
+
+func (x *TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item) Equal(y *TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.SourceTable.Equal(y.SourceTable) {
+		return false
+	}
+	if !x.TargetTable.Equal(y.TargetTable) {
+		return false
+	}
+	if !x.StartPosition.Equal(y.StartPosition) {
+		return false
+	}
+	if !x.EndPosition.Equal(y.EndPosition) {
+		return false
+	}
+	return true
+}
+
+func (x *TaskRunLogEntry_PriorBackup_PriorBackupDetail) Equal(y *TaskRunLogEntry_PriorBackup_PriorBackupDetail) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Items) != len(y.Items) {
+		return false
+	}
+	for i := 0; i < len(x.Items); i++ {
+		if !x.Items[i].Equal(y.Items[i]) {
+			return false
+		}
 	}
 	return true
 }

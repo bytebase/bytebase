@@ -65,7 +65,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 				Title:         title,
 				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
 				Code:          code.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: common.ConvertANTLRLineToPosition(stmt.BaseLine),
+				StartPosition: common.ConvertANTLRLineToPosition(stmt.BaseLine()),
 			})
 		}
 	}

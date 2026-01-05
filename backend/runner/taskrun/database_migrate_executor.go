@@ -154,8 +154,8 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 
 	result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, "", storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED)
 	if result != nil {
-		// Save prior backup detail to task run result.
-		result.PriorBackupDetail = priorBackupDetail
+		// Set has_prior_backup flag based on whether backup was created.
+		result.HasPriorBackup = priorBackupDetail != nil && len(priorBackupDetail.Items) > 0
 	}
 	return result, err
 }

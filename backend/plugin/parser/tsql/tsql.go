@@ -79,7 +79,7 @@ func ParseTSQL(sql string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		antlrAST, err := parseSingleTSQL(stmt.Text, stmt.BaseLine)
+		antlrAST, err := parseSingleTSQL(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}

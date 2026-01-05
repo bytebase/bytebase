@@ -494,36 +494,10 @@ message TaskRun {
   // The export archive status for data export tasks.
   ExportArchiveStatus export_archive_status = 10;
 
-  // Prior backup detail for rollback purposes.
-  message PriorBackupDetail {
-    // A single backup table mapping.
-    message Item {
-      // Table information.
-      message Table {
-        // The database information.
-        // Format: instances/{instance}/databases/{database}
-        string database = 1;
-        // The schema name.
-        string schema = 2;
-        // The table name.
-        string table = 3;
-      }
-
-      // The original table information.
-      Table source_table = 1;
-      // The target backup table information.
-      Table target_table = 2;
-      // The start position in the SQL statement.
-      Position start_position = 3;
-      // The end position in the SQL statement.
-      Position end_position = 4;
-    }
-
-    // The list of backed up tables.
-    repeated Item items = 1;
-  }
-  // The prior backup detail that will be used to rollback the task run.
-  PriorBackupDetail prior_backup_detail = 11;
+  // Indicates whether a prior backup was created for this task run.
+  // When true, rollback SQL can be generated via PreviewTaskRunRollback.
+  // Backup details are available in the task run logs.
+  bool has_prior_backup = 11;
 
   // Information about task run scheduling.
   message SchedulerInfo {
@@ -697,12 +671,41 @@ message TaskRunLogEntry {
 
   // Prior backup operation details.
   message PriorBackup {
+    // Prior backup detail for rollback purposes.
+    message PriorBackupDetail {
+      // A single backup table mapping.
+      message Item {
+        // Table information.
+        message Table {
+          // The database information.
+          // Format: instances/{instance}/databases/{database}
+          string database = 1;
+          // The schema name.
+          string schema = 2;
+          // The table name.
+          string table = 3;
+        }
+
+        // The original table information.
+        Table source_table = 1;
+        // The target backup table information.
+        Table target_table = 2;
+        // The start position in the SQL statement.
+        Position start_position = 3;
+        // The end position in the SQL statement.
+        Position end_position = 4;
+      }
+
+      // The list of backed up tables.
+      repeated Item items = 1;
+    }
+
     // When the backup started.
     google.protobuf.Timestamp start_time = 1;
     // When the backup ended.
     google.protobuf.Timestamp end_time = 2;
     // The backup details.
-    TaskRun.PriorBackupDetail prior_backup_detail = 3;
+    PriorBackupDetail prior_backup_detail = 3;
     // Error message if the backup failed.
     string error = 4;
   }

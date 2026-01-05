@@ -71,9 +71,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun
 		}
 	}
 
-	if taskRun.ResultProto.PriorBackupDetail != nil {
-		t.PriorBackupDetail = convertToTaskRunPriorBackupDetail(taskRun.ResultProto.PriorBackupDetail)
-	}
+	t.HasPriorBackup = taskRun.ResultProto.HasPriorBackup
 
 	return t, nil
 }
@@ -124,28 +122,28 @@ func convertToTaskRunStatus(status storepb.TaskRun_Status) v1pb.TaskRun_Status {
 	}
 }
 
-func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDetail) *v1pb.TaskRun_PriorBackupDetail {
+func convertToTaskRunLogPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDetail) *v1pb.TaskRunLogEntry_PriorBackup_PriorBackupDetail {
 	if priorBackupDetail == nil {
 		return nil
 	}
-	convertTable := func(table *storepb.PriorBackupDetail_Item_Table) *v1pb.TaskRun_PriorBackupDetail_Item_Table {
-		return &v1pb.TaskRun_PriorBackupDetail_Item_Table{
+	convertTable := func(table *storepb.PriorBackupDetail_Item_Table) *v1pb.TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table {
+		return &v1pb.TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table{
 			Database: table.Database,
 			Schema:   table.Schema,
 			Table:    table.Table,
 		}
 	}
 
-	items := []*v1pb.TaskRun_PriorBackupDetail_Item{}
+	items := []*v1pb.TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item{}
 	for _, item := range priorBackupDetail.Items {
-		items = append(items, &v1pb.TaskRun_PriorBackupDetail_Item{
+		items = append(items, &v1pb.TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item{
 			SourceTable:   convertTable(item.SourceTable),
 			TargetTable:   convertTable(item.TargetTable),
 			StartPosition: convertToPosition(item.StartPosition),
 			EndPosition:   convertToPosition(item.EndPosition),
 		})
 	}
-	return &v1pb.TaskRun_PriorBackupDetail{
+	return &v1pb.TaskRunLogEntry_PriorBackup_PriorBackupDetail{
 		Items: items,
 	}
 }
@@ -507,7 +505,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			}
 			prev.PriorBackup.EndTime = timestamppb.New(l.T)
 			prev.PriorBackup.Error = l.Payload.PriorBackupEnd.Error
-			prev.PriorBackup.PriorBackupDetail = convertToTaskRunPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
+			prev.PriorBackup.PriorBackupDetail = convertToTaskRunLogPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_START:
 			e := &v1pb.TaskRunLogEntry{

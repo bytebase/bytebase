@@ -12104,6 +12104,15 @@ components:
                         - $ref: '#/components/schemas/Position'
                     description: The end position in the SQL statement.
             description: A single backup table mapping.
+        PriorBackup_PriorBackupDetail:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PriorBackupDetail_Item'
+                    description: The list of backed up tables.
+            description: Prior backup detail for rollback purposes.
         ProcedureMetadata:
             type: object
             properties:
@@ -14268,10 +14277,12 @@ components:
                     type: string
                     description: The export archive status for data export tasks.
                     format: enum
-                priorBackupDetail:
-                    allOf:
-                        - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
-                    description: The prior backup detail that will be used to rollback the task run.
+                hasPriorBackup:
+                    type: boolean
+                    description: |-
+                        Indicates whether a prior backup was created for this task run.
+                         When true, rollback SQL can be generated via PreviewTaskRunRollback.
+                         Backup details are available in the task run logs.
                 schedulerInfo:
                     readOnly: true
                     allOf:
@@ -14421,7 +14432,7 @@ components:
                     format: date-time
                 priorBackupDetail:
                     allOf:
-                        - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
+                        - $ref: '#/components/schemas/PriorBackup_PriorBackupDetail'
                     description: The backup details.
                 error:
                     type: string
@@ -14523,15 +14534,6 @@ components:
                         $ref: '#/components/schemas/Postgres_Session'
                     description: '`blocked_sessions` are blocked by `session`.'
             description: PostgreSQL session information.
-        TaskRun_PriorBackupDetail:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PriorBackupDetail_Item'
-                    description: The list of backed up tables.
-            description: Prior backup detail for rollback purposes.
         TaskRun_SchedulerInfo:
             type: object
             properties:

@@ -54,7 +54,7 @@ func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		if !ok {
 			continue
 		}
-		checker.baseLine = stmt.BaseLine
+		checker.baseLine = stmt.BaseLine()
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
