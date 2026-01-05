@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { DatabaseChangeType, ExportFormat, Position, State } from "./common_pb";
+import type { ExportFormat, Position, State } from "./common_pb";
 import type { Advice_Level } from "./sql_service_pb";
 
 /**
@@ -418,13 +418,6 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
    * @generated from field: string release = 3;
    */
   release: string;
-
-  /**
-   * Type is the database change type.
-   *
-   * @generated from field: bytebase.v1.DatabaseChangeType type = 4;
-   */
-  type: DatabaseChangeType;
 
   /**
    * @generated from field: map<string, string> ghost_flags = 5;

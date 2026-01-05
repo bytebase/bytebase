@@ -12,16 +12,6 @@
             {{ title }}
           </h1>
 
-          <div v-if="releaseRoute" class="px-3 sm:px-4 pb-2">
-            <router-link
-              :to="releaseRoute"
-              class="inline-flex items-center gap-x-2 text-sm text-accent hover:underline"
-            >
-              <span>{{ $t("release.title") }}: {{ release.title }}</span>
-              <ExternalLinkIcon class="w-4 h-4" />
-            </router-link>
-          </div>
-
           <router-view v-slot="{ Component }">
             <keep-alive :max="3">
               <component :is="Component" />
@@ -38,7 +28,6 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { ExternalLinkIcon } from "lucide-vue-next";
 import { NSpin } from "naive-ui";
 import { computed, ref, toRef, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -52,10 +41,8 @@ import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import RolloutBreadcrumb from "@/components/RolloutV1/components/RolloutBreadcrumb.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
-import { PROJECT_V1_ROUTE_RELEASE_DETAIL } from "@/router/dashboard/projectV1";
-import { usePolicyV1Store, useReleaseByName } from "@/store";
+import { usePolicyV1Store } from "@/store";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
-import { extractReleaseUID, releaseNameOfPlan } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -97,25 +84,6 @@ watchEffect(() => {
   }
 });
 const title = computed(() => issue.value?.title || plan.value?.title || "");
-
-const releaseName = computed(() => {
-  if (!plan.value) return undefined;
-  return releaseNameOfPlan(plan.value);
-});
-
-const { release } = useReleaseByName(computed(() => releaseName.value || ""));
-
-const releaseRoute = computed(() => {
-  if (!releaseName.value) return undefined;
-
-  return {
-    name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
-    params: {
-      projectId: props.projectId,
-      releaseId: extractReleaseUID(releaseName.value),
-    },
-  };
-});
 
 providePlanContext({
   isCreating,

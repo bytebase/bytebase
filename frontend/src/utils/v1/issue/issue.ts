@@ -41,7 +41,6 @@ export const flattenTaskV1List = (rollout: Rollout | undefined) => {
 const DATABASE_RELATED_TASK_TYPE_LIST = [
   Task_Type.DATABASE_CREATE,
   Task_Type.DATABASE_MIGRATE,
-  Task_Type.DATABASE_SDL,
 ];
 
 export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {

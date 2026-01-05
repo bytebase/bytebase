@@ -14,11 +14,11 @@ message Task {
     // Create a new database.
     DATABASE_CREATE = 1;
     // Apply schema/data migrations to an existing database.
+    // Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
+    // or sheet content for non-release tasks.
     DATABASE_MIGRATE = 2;
     // Export data from a database.
     DATABASE_EXPORT = 3;
-    // Apply declarative schema changes (state-based migration).
-    DATABASE_SDL = 4;
   }
 
   // Whether the task was skipped during execution.

@@ -280,7 +280,6 @@
     },
     "comment": "评论",
     "started": "开始于",
-    "view-change": "查看变更",
     "status": {
       "running": "运行中",
       "available": "就绪",
@@ -349,7 +348,6 @@
     "type": {
       "database-create": "创建数据库",
       "migrate": "变更",
-      "database-sdl": "SDL",
       "database-export": "导出数据",
       "general": "通用"
     }
@@ -382,7 +380,8 @@
       "transaction": "事务",
       "prior-backup": "预备份",
       "retry": "重试",
-      "compute-diff": "计算差异"
+      "compute-diff": "计算差异",
+      "release-file-execute": "发布包文件"
     },
     "log-detail": {
       "dumping": "导出中...",

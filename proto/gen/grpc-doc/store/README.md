@@ -164,8 +164,6 @@
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
-    - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
-  
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
     - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
@@ -307,6 +305,7 @@
     - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
     - [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd)
     - [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart)
+    - [TaskRunLog.ReleaseFileExecute](#bytebase-store-TaskRunLog-ReleaseFileExecute)
     - [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
@@ -2800,7 +2799,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -2884,19 +2882,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 
 
  
-
-
-<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-Type"></a>
-
-### PlanConfig.ChangeDatabaseConfig.Type
-Type is the database change type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
-
 
  
 
@@ -3003,7 +2988,6 @@ Type is the database change type.
 | sheet_sha256 | [string](#string) |  |  |
 | enable_prior_backup | [bool](#bool) |  |  |
 | enable_ghost | [bool](#bool) |  |  |
-| enable_sdl | [bool](#bool) |  |  |
 | ghost_flags | [PlanCheckRunConfig.CheckTarget.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry) | repeated |  |
 | types | [PlanCheckType](#bytebase-store-PlanCheckType) | repeated |  |
 
@@ -3609,6 +3593,7 @@ Activity type enumeration.
 | title | [string](#string) |  |  |
 | files | [ReleasePayload.File](#bytebase-store-ReleasePayload-File) | repeated |  |
 | vcs_source | [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource) |  |  |
+| type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 
 
 
@@ -3626,7 +3611,6 @@ Activity type enumeration.
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
-| type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 | version | [string](#string) |  |  |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
@@ -4712,9 +4696,8 @@ Type represents the type of database operation to perform.
 | ---- | ------ | ----------- |
 | TASK_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CREATE | 1 | Create a new database. |
-| DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
+| DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. Execution strategy is determined by release type (VERSIONED/DECLARATIVE) or sheet content for non-release tasks. |
 | DATABASE_EXPORT | 3 | Export data from a database. |
-| DATABASE_SDL | 4 | Apply declarative schema changes (state-based migration). |
 
 
  
@@ -4836,7 +4819,6 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | detail | [string](#string) |  | Detailed execution information or error message. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
 | prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
-| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 
 
 
@@ -4901,6 +4883,7 @@ Status represents the current execution state of a task run.
 | retry_info | [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo) |  |  |
 | compute_diff_start | [TaskRunLog.ComputeDiffStart](#bytebase-store-TaskRunLog-ComputeDiffStart) |  |  |
 | compute_diff_end | [TaskRunLog.ComputeDiffEnd](#bytebase-store-TaskRunLog-ComputeDiffEnd) |  |  |
+| release_file_execute | [TaskRunLog.ReleaseFileExecute](#bytebase-store-TaskRunLog-ReleaseFileExecute) |  |  |
 
 
 
@@ -5010,6 +4993,22 @@ Status represents the current execution state of a task run.
 
 ### TaskRunLog.PriorBackupStart
 
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-ReleaseFileExecute"></a>
+
+### TaskRunLog.ReleaseFileExecute
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The version of the file being executed (e.g., &#34;0001&#34;). |
+| file_path | [string](#string) |  | The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). |
 
 
 
@@ -5139,6 +5138,7 @@ Status represents the current execution state of a task run.
 | RETRY_INFO | 11 |  |
 | COMPUTE_DIFF_START | 12 |  |
 | COMPUTE_DIFF_END | 13 |  |
+| RELEASE_FILE_EXECUTE | 14 |  |
 
 
  

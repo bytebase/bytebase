@@ -335,9 +335,6 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x.SchemaVersion != y.SchemaVersion {
 		return false
 	}
-	if x.DatabaseChangeType != y.DatabaseChangeType {
-		return false
-	}
 	return true
 }
 
@@ -536,9 +533,6 @@ func (x *TaskRun) Equal(y *TaskRun) bool {
 		return false
 	}
 	if x.Detail != y.Detail {
-		return false
-	}
-	if x.Changelog != y.Changelog {
 		return false
 	}
 	if p, q := x.StartTime, y.StartTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
@@ -759,6 +753,22 @@ func (x *TaskRunLogEntry_ComputeDiff) Equal(y *TaskRunLogEntry_ComputeDiff) bool
 	return true
 }
 
+func (x *TaskRunLogEntry_ReleaseFileExecute) Equal(y *TaskRunLogEntry_ReleaseFileExecute) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Version != y.Version {
+		return false
+	}
+	if x.FilePath != y.FilePath {
+		return false
+	}
+	return true
+}
+
 func (x *TaskRunLogEntry) Equal(y *TaskRunLogEntry) bool {
 	if x == y {
 		return true
@@ -797,6 +807,9 @@ func (x *TaskRunLogEntry) Equal(y *TaskRunLogEntry) bool {
 		return false
 	}
 	if !x.ComputeDiff.Equal(y.ComputeDiff) {
+		return false
+	}
+	if !x.ReleaseFileExecute.Equal(y.ReleaseFileExecute) {
 		return false
 	}
 	return true

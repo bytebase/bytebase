@@ -34,36 +34,36 @@ type DatabaseCreateExecutor struct {
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (*storepb.TaskRunResult, error) {
 	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get sheet: %s", task.Payload.GetSheetSha256())
+		return nil, errors.Wrapf(err, "failed to get sheet: %s", task.Payload.GetSheetSha256())
 	}
 	if sheet == nil {
-		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
+		return nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 	statement := sheet.Statement
 
 	statement = strings.TrimSpace(statement)
 	if statement == "" {
-		return true, nil, errors.Errorf("empty create database statement")
+		return nil, errors.Errorf("empty create database statement")
 	}
 
 	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 
 	if !common.EngineSupportCreateDatabase(instance.Metadata.GetEngine()) {
-		return true, nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
+		return nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
 	}
 
 	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
+		return nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
 	}
 	if plan == nil {
-		return true, nil, errors.Errorf("plan %v not found", task.PlanID)
+		return nil, errors.Errorf("plan %v not found", task.PlanID)
 	}
 
 	// Create database.
@@ -86,7 +86,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		Metadata:      &storepb.DatabaseMetadata{},
 	})
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 
 	var defaultDBDriver db.Driver
@@ -97,17 +97,17 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		// NOTE: we have to hack the database message.
 		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
-			return true, nil, err
+			return nil, err
 		}
 	default:
 		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 		if err != nil {
-			return true, nil, err
+			return nil, err
 		}
 	}
 	defer defaultDBDriver.Close(ctx)
 	if _, err := defaultDBDriver.Execute(driverCtx, statement, db.ExecuteOptions{CreateDatabase: true}); err != nil {
-		return true, nil, err
+		return nil, err
 	}
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
@@ -118,7 +118,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		)
 	}
 
-	return true, &storepb.TaskRunResult{
+	return &storepb.TaskRunResult{
 		Detail: fmt.Sprintf("Created database %q", task.Payload.GetDatabaseName()),
 	}, nil
 }

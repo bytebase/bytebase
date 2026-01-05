@@ -28,9 +28,9 @@ func TestGetListRolloutFilter(t *testing.T) {
 		},
 		{
 			name:     "task_type in filter",
-			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_SDL"]`,
+			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]`,
 			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)))",
-			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_SDL"}},
+			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_EXPORT"}},
 			wantErr:  false,
 		},
 		{

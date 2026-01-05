@@ -23,22 +23,17 @@ import (
 
 // Executor is the task executor.
 type Executor interface {
-	// RunOnce will be called periodically by the scheduler until terminated is true.
-	//
-	// NOTE
-	//
-	// 1. It's possible that err could be non-nil while terminated is false, which
-	// usually indicates a transient error and will make scheduler retry later.
-	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
+	// RunOnce will be called once by the scheduler to execute the task.
+	// If err is non-nil, the task will be marked as failed.
 	// driverCtx is used by the database driver so that we can cancel the query
-	// while have the ability to cleanup migration history etc.
-	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
+	// while having the ability to cleanup migration history etc.
+	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (result *storepb.TaskRunResult, err error)
 }
 
 type execFuncType func(context.Context, string, db.Driver, db.ExecuteOptions) error
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (result *storepb.TaskRunResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -46,7 +41,6 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 				panicErr = errors.Errorf("%v", r)
 			}
 			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
-			terminated = true
 			result = nil
 			err = errors.Errorf("TaskExecutor PANIC RECOVER, err: %v", panicErr)
 		}
@@ -80,9 +74,9 @@ type migrateContext struct {
 		file string
 	}
 
-	// mutable
-	// changelog uid
-	changelog int64
+	// releaseType is the schema change type from the release (if available).
+	// Set to SCHEMA_CHANGE_TYPE_UNSPECIFIED if not from a release.
+	releaseType storepb.SchemaChangeType
 
 	// needDump indicates whether schema dump is needed before/after migration.
 	// False for pure DML (INSERT, UPDATE, DELETE) since they don't change schema.
@@ -95,8 +89,8 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 	}
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string) (terminated bool, result *storepb.TaskRunResult, err error) {
-	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, syncer, profile, task, taskRunUID, sheet, schemaVersion, nil /* default */)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string, releaseType storepb.SchemaChangeType) (*storepb.TaskRunResult, error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, syncer, profile, task, taskRunUID, sheet, schemaVersion, releaseType, nil /* default */)
 }
 
 func runMigrationWithFunc(
@@ -110,12 +104,14 @@ func runMigrationWithFunc(
 	taskRunUID int,
 	sheet *store.SheetMessage,
 	schemaVersion string,
+	releaseType storepb.SchemaChangeType,
 	execFunc execFuncType,
-) (terminated bool, result *storepb.TaskRunResult, err error) {
+) (*storepb.TaskRunResult, error) {
 	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheet, taskRunUID, dbFactory)
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
+	mc.releaseType = releaseType
 
 	// Pre-compute whether schema dump is needed.
 	// Skip dump for pure DML statements (INSERT, UPDATE, DELETE) as they don't change schema.
@@ -123,7 +119,7 @@ func runMigrationWithFunc(
 
 	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, profile, sheet.Statement, mc, execFunc)
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	return postMigration(ctx, store, mc, skipped)
 }
@@ -167,8 +163,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		storepb.Task_DATABASE_EXPORT,
 		storepb.Task_DATABASE_CREATE:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
-	case storepb.Task_DATABASE_MIGRATE,
-		storepb.Task_DATABASE_SDL:
+	case storepb.Task_DATABASE_MIGRATE:
 		// Valid type for migration context
 	default:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
@@ -238,9 +233,9 @@ func doMigrationWithFunc(
 	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, driver, opts)
 }
 
-func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
+func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (*storepb.TaskRunResult, error) {
 	if skipped {
-		return true, &storepb.TaskRunResult{
+		return &storepb.TaskRunResult{
 			Detail: fmt.Sprintf("Task skipped because version %s has been applied", mc.version),
 		}, nil
 	}
@@ -261,7 +256,7 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 			md.Drifted = false
 		}},
 	}); err != nil {
-		return false, nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	var detail string
@@ -271,9 +266,8 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 		detail = fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
 	}
 
-	return true, &storepb.TaskRunResult{
-		Detail:    detail,
-		Changelog: common.FormatChangelog(instance.ResourceID, database.DatabaseName, mc.changelog),
+	return &storepb.TaskRunResult{
+		Detail: detail,
 	}, nil
 }
 
@@ -290,7 +284,7 @@ func executeMigrationWithFunc(
 ) (skipped bool, resErr error) {
 	// Phase 1 - Dump before migration.
 	// Check if versioned is already applied.
-	skipExecution, err := beginMigration(ctx, s, mc, opts)
+	skipExecution, changelogUID, err := beginMigration(ctx, s, mc, opts)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to begin migration")
 	}
@@ -301,7 +295,7 @@ func executeMigrationWithFunc(
 	defer func() {
 		// Phase 3 - Dump after migration.
 		// Insert revision for versioned.
-		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */, opts); err != nil {
+		if err := endMigration(ctx, s, mc, changelogUID, resErr == nil /* isDone */, opts); err != nil {
 			slog.Error("failed to end migration",
 				log.BBError(err),
 			)
@@ -317,7 +311,8 @@ func executeMigrationWithFunc(
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext, opts db.ExecuteOptions) (bool, error) {
+// Returns (skipExecution, changelogUID, error).
+func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext, opts db.ExecuteOptions) (bool, int64, error) {
 	// list revisions and see if it has been applied
 	// we can do this because
 	// versioned migrations are executed one by one
@@ -327,7 +322,8 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	// however we can warn users not to unless they know
 	// what they are doing
 	if mc.version != "" {
-		if mc.task.Type == storepb.Task_DATABASE_SDL {
+		// Determine revision type from release if available
+		if mc.releaseType == storepb.SchemaChangeType_DECLARATIVE {
 			// Declarative case
 			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &mc.database.InstanceID,
@@ -336,21 +332,21 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				Type:         common.NewP(storepb.SchemaChangeType_DECLARATIVE),
 			})
 			if err != nil {
-				return false, errors.Wrapf(err, "failed to list revisions")
+				return false, 0, errors.Wrapf(err, "failed to list revisions")
 			}
 			if len(list) > 0 {
 				// If the version is equal or higher than the current version, return error
 				latestRevision := list[0]
 				latestVersion, err := model.NewVersion(latestRevision.Version)
 				if err != nil {
-					return false, errors.Wrapf(err, "failed to parse latest revision version %q", latestRevision.Version)
+					return false, 0, errors.Wrapf(err, "failed to parse latest revision version %q", latestRevision.Version)
 				}
 				currentVersion, err := model.NewVersion(mc.version)
 				if err != nil {
-					return false, errors.Wrapf(err, "failed to parse current version %q", mc.version)
+					return false, 0, errors.Wrapf(err, "failed to parse current version %q", mc.version)
 				}
 				if currentVersion.LessThanOrEqual(latestVersion) {
-					return false, errors.Errorf("cannot apply SDL migration with version %s because an equal or newer version %s already exists", mc.version, latestRevision.Version)
+					return false, 0, errors.Errorf("cannot apply SDL migration with version %s because an equal or newer version %s already exists", mc.version, latestRevision.Version)
 				}
 			}
 		} else {
@@ -362,12 +358,12 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 				Type:         common.NewP(storepb.SchemaChangeType_VERSIONED),
 			})
 			if err != nil {
-				return false, errors.Wrapf(err, "failed to list revisions")
+				return false, 0, errors.Wrapf(err, "failed to list revisions")
 			}
 			if len(list) > 0 {
 				// This version has been executed.
 				// skip execution.
-				return true, nil
+				return true, 0, nil
 			}
 		}
 	}
@@ -379,14 +375,14 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
-			return false, errors.Wrapf(err, "failed to sync database metadata and schema")
+			return false, 0, errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
 		opts.LogDatabaseSyncEnd("")
 		syncHistoryPrevUID = &syncHistoryPrev
 	}
 
 	// create pending changelog
-	changelogType := convertTaskType(mc.task)
+	changelogType := convertTaskType(mc.task, mc.releaseType)
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:         mc.database.InstanceID,
 		DatabaseName:       mc.database.DatabaseName,
@@ -403,17 +399,16 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 			DumpVersion: schema.GetDumpFormatVersion(mc.instance.Metadata.GetEngine()),
 		}})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to create changelog")
+		return false, 0, errors.Wrapf(err, "failed to create changelog")
 	}
-	mc.changelog = changelogUID
 
-	return false, nil
+	return false, changelogUID, nil
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool, opts db.ExecuteOptions) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, changelogUID int64, isDone bool, opts db.ExecuteOptions) error {
 	update := &store.UpdateChangelogMessage{
-		UID: mc.changelog,
+		UID: changelogUID,
 	}
 
 	if mc.needDump {
@@ -430,6 +425,12 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	if isDone {
 		// if isDone, record in revision
 		if mc.version != "" {
+			// Determine revision type from release if available
+			revisionType := storepb.SchemaChangeType_VERSIONED
+			if mc.releaseType != storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED {
+				revisionType = mc.releaseType
+			}
+
 			r := &store.RevisionMessage{
 				InstanceID:   mc.database.InstanceID,
 				DatabaseName: mc.database.DatabaseName,
@@ -439,11 +440,8 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 					File:        mc.release.file,
 					SheetSha256: mc.sheet.Sha256,
 					TaskRun:     mc.taskRunName,
-					Type:        storepb.SchemaChangeType_VERSIONED,
+					Type:        revisionType,
 				},
-			}
-			if mc.task.Type == storepb.Task_DATABASE_SDL {
-				r.Payload.Type = storepb.SchemaChangeType_DECLARATIVE
 			}
 
 			revision, err := storeInstance.CreateRevision(ctx, r)
@@ -503,13 +501,16 @@ func shouldUpdateVersion(currentVersion, newVersion string) bool {
 	return current.LessThan(nv)
 }
 
-func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
+func convertTaskType(t *store.TaskMessage, releaseType storepb.SchemaChangeType) storepb.ChangelogPayload_Type {
 	//exhaustive:enforce
 	switch t.Type {
 	case storepb.Task_DATABASE_MIGRATE:
+		// For DATABASE_MIGRATE tasks, check if it's a DECLARATIVE release
+		// DECLARATIVE releases should create SDL type changelogs for SDL diff tracking
+		if releaseType == storepb.SchemaChangeType_DECLARATIVE {
+			return storepb.ChangelogPayload_SDL
+		}
 		return storepb.ChangelogPayload_MIGRATE
-	case storepb.Task_DATABASE_SDL:
-		return storepb.ChangelogPayload_SDL
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,
 		storepb.Task_DATABASE_CREATE,
@@ -524,8 +525,6 @@ func convertTaskType(t *store.TaskMessage) storepb.ChangelogPayload_Type {
 func isChangeDatabaseTask(task *store.TaskMessage) bool {
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		return true
-	case storepb.Task_DATABASE_SDL:
 		return true
 	case storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
@@ -543,8 +542,7 @@ func computeNeedDump(taskType storepb.Task_Type, engine storepb.Engine, statemen
 		// For DATABASE_MIGRATE, skip dump if all statements are DML
 		// (INSERT, UPDATE, DELETE) since they don't change schema.
 		return !base.IsAllDML(engine, statement)
-	case storepb.Task_DATABASE_SDL,
-		storepb.Task_DATABASE_CREATE:
+	case storepb.Task_DATABASE_CREATE:
 		return true
 	case
 		storepb.Task_TASK_TYPE_UNSPECIFIED,

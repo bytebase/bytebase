@@ -903,10 +903,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		updateMasks[path] = true
 		switch path {
 		case "title":
-			// Prevent updating title if plan exists.
-			if issue.PlanUID != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update issue title when plan exists"))
-			}
 			if req.Msg.Issue.Title == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
@@ -926,11 +922,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			})
 
 		case "description":
-			// Prevent updating description if plan exists
-			if issue.PlanUID != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update issue description when plan exists"))
-			}
-
 			patch.Description = &req.Msg.Issue.Description
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{

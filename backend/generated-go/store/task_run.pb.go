@@ -144,11 +144,8 @@ type TaskRunResult struct {
 	ExportArchiveUid int32 `protobuf:"varint,5,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
 	// Backup details that can be used to rollback changes.
 	PriorBackupDetail *PriorBackupDetail `protobuf:"bytes,6,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
-	// Resource name of the changelog entry created by this run.
-	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-	Changelog     string `protobuf:"bytes,7,opt,name=changelog,proto3" json:"changelog,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *TaskRunResult) Reset() {
@@ -200,13 +197,6 @@ func (x *TaskRunResult) GetPriorBackupDetail() *PriorBackupDetail {
 		return x.PriorBackupDetail
 	}
 	return nil
-}
-
-func (x *TaskRunResult) GetChangelog() string {
-	if x != nil {
-		return x.Changelog
-	}
-	return ""
 }
 
 // PriorBackupDetail contains information about automatic backups created before migration.
@@ -566,12 +556,11 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"\xc6\x01\n" +
+	"\tAVAILABLE\x10\b\"\xa8\x01\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12,\n" +
 	"\x12export_archive_uid\x18\x05 \x01(\x05R\x10exportArchiveUid\x12Q\n" +
-	"\x13prior_backup_detail\x18\x06 \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\x12\x1c\n" +
-	"\tchangelog\x18\a \x01(\tR\tchangelog\"\xcd\x03\n" +
+	"\x13prior_backup_detail\x18\x06 \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\"\xcd\x03\n" +
 	"\x11PriorBackupDetail\x12<\n" +
 	"\x05items\x18\x01 \x03(\v2&.bytebase.store.PriorBackupDetail.ItemR\x05items\x1a\xf9\x02\n" +
 	"\x04Item\x12O\n" +

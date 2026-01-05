@@ -28,11 +28,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - name: Biome check (format, lint, imports)
-        run: pnpm biome:ci
-        working-directory: frontend
-      - name: ESLint check (Vue-specific + i18n)
-        run: pnpm lint
+      - name: Check (ESLint + Biome)
+        run: pnpm check
         working-directory: frontend
       - name: TypeScript type check
         run: pnpm type-check

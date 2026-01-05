@@ -124,6 +124,13 @@
         {{ $t("common.no-data") }}
       </div>
     </div>
+
+    <!-- Release Info for release-based tasks -->
+    <ReleaseInfoCard
+      v-else
+      :release-name="releaseName"
+      class="w-full"
+    />
   </div>
 </template>
 
@@ -162,8 +169,10 @@ import {
   extractSchemaVersionFromTask,
   getSheetStatement,
   isReleaseBasedTask,
+  releaseNameOfTaskV1,
   sheetNameOfTaskV1,
 } from "@/utils";
+import ReleaseInfoCard from "./ReleaseInfoCard.vue";
 import TaskRollbackButton from "./TaskRollbackButton.vue";
 import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
@@ -214,6 +223,9 @@ const task = computed(() => {
 });
 
 const isReleaseTask = computed(() => isReleaseBasedTask(task.value));
+
+// Release name for release-based tasks
+const releaseName = computed(() => releaseNameOfTaskV1(task.value));
 
 const taskRuns = computed(() => {
   return allTaskRuns.value.filter((run) =>

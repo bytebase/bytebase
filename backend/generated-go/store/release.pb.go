@@ -26,6 +26,7 @@ type ReleasePayload struct {
 	Title         string                    `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Files         []*ReleasePayload_File    `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
 	VcsSource     *ReleasePayload_VCSSource `protobuf:"bytes,3,opt,name=vcs_source,json=vcsSource,proto3" json:"vcs_source,omitempty"`
+	Type          SchemaChangeType          `protobuf:"varint,4,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -81,6 +82,13 @@ func (x *ReleasePayload) GetVcsSource() *ReleasePayload_VCSSource {
 	return nil
 }
 
+func (x *ReleasePayload) GetType() SchemaChangeType {
+	if x != nil {
+		return x.Type
+	}
+	return SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED
+}
+
 type ReleasePayload_File struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The unique identifier for the file.
@@ -88,9 +96,8 @@ type ReleasePayload_File struct {
 	// The path of the file, e.g., `2.2/V0001_create_table.sql`.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// The SHA256 hash of the sheet content (hex-encoded).
-	SheetSha256 string           `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	Type        SchemaChangeType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
-	Version     string           `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	SheetSha256 string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	Version     string `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
 	// Whether to use gh-ost for online schema migration.
 	EnableGhost   bool `protobuf:"varint,7,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -146,13 +153,6 @@ func (x *ReleasePayload_File) GetSheetSha256() string {
 		return x.SheetSha256
 	}
 	return ""
-}
-
-func (x *ReleasePayload_File) GetType() SchemaChangeType {
-	if x != nil {
-		return x.Type
-	}
-	return SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED
 }
 
 func (x *ReleasePayload_File) GetVersion() string {
@@ -230,12 +230,12 @@ const file_store_release_proto_rawDesc = "" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
-	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xc6\x01\n" +
+	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x124\n" +
+	"\x04type\x18\x04 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x1a\x90\x01\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12!\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
-	"\x04type\x18\x05 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x12\x18\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
 	"\fenable_ghost\x18\a \x01(\bR\venableGhostJ\x04\b\x03\x10\x04\x1aQ\n" +
 	"\tVCSSource\x122\n" +
@@ -266,7 +266,7 @@ var file_store_release_proto_goTypes = []any{
 var file_store_release_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.ReleasePayload.files:type_name -> bytebase.store.ReleasePayload.File
 	2, // 1: bytebase.store.ReleasePayload.vcs_source:type_name -> bytebase.store.ReleasePayload.VCSSource
-	3, // 2: bytebase.store.ReleasePayload.File.type:type_name -> bytebase.store.SchemaChangeType
+	3, // 2: bytebase.store.ReleasePayload.type:type_name -> bytebase.store.SchemaChangeType
 	4, // 3: bytebase.store.ReleasePayload.VCSSource.vcs_type:type_name -> bytebase.store.VCSType
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type

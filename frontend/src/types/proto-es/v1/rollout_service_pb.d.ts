@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { DatabaseChangeType, ExportFormat, Position, Range } from "./common_pb";
+import type { ExportFormat, Position, Range } from "./common_pb";
 
 /**
  * Describes the file v1/rollout_service.proto.
@@ -626,13 +626,6 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
    * @generated from field: string schema_version = 2;
    */
   schemaVersion: string;
-
-  /**
-   * The type of database change (MIGRATE or SDL).
-   *
-   * @generated from field: bytebase.v1.DatabaseChangeType database_change_type = 3;
-   */
-  databaseChangeType: DatabaseChangeType;
 };
 
 /**
@@ -792,14 +785,6 @@ export enum Task_Type {
    * @generated from enum value: DATABASE_EXPORT = 4;
    */
   DATABASE_EXPORT = 4,
-
-  /**
-   * Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-   * Use payload DatabaseUpdate.
-   *
-   * @generated from enum value: DATABASE_SDL = 5;
-   */
-  DATABASE_SDL = 5,
 }
 
 /**
@@ -849,14 +834,6 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
    * @generated from field: string detail = 6;
    */
   detail: string;
-
-  /**
-   * The resource name of the changelog.
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-   *
-   * @generated from field: string changelog = 7;
-   */
-  changelog: string;
 
   /**
    * The time when the task run started execution.
@@ -1290,6 +1267,13 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
    * @generated from field: bytebase.v1.TaskRunLogEntry.ComputeDiff compute_diff = 11;
    */
   computeDiff?: TaskRunLogEntry_ComputeDiff;
+
+  /**
+   * Release file execution details (if type is RELEASE_FILE_EXECUTE).
+   *
+   * @generated from field: bytebase.v1.TaskRunLogEntry.ReleaseFileExecute release_file_execute = 12;
+   */
+  releaseFileExecute?: TaskRunLogEntry_ReleaseFileExecute;
 };
 
 /**
@@ -1681,6 +1665,33 @@ export declare type TaskRunLogEntry_ComputeDiff = Message<"bytebase.v1.TaskRunLo
 export declare const TaskRunLogEntry_ComputeDiffSchema: GenMessage<TaskRunLogEntry_ComputeDiff>;
 
 /**
+ * Release file execution details.
+ *
+ * @generated from message bytebase.v1.TaskRunLogEntry.ReleaseFileExecute
+ */
+export declare type TaskRunLogEntry_ReleaseFileExecute = Message<"bytebase.v1.TaskRunLogEntry.ReleaseFileExecute"> & {
+  /**
+   * The version of the file being executed (e.g., "0001").
+   *
+   * @generated from field: string version = 1;
+   */
+  version: string;
+
+  /**
+   * The file path within the release (e.g., "2.2/V0001_create_table.sql").
+   *
+   * @generated from field: string file_path = 2;
+   */
+  filePath: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.ReleaseFileExecute.
+ * Use `create(TaskRunLogEntry_ReleaseFileExecuteSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_ReleaseFileExecuteSchema: GenMessage<TaskRunLogEntry_ReleaseFileExecute>;
+
+/**
  * The type of log entry.
  *
  * @generated from enum bytebase.v1.TaskRunLogEntry.Type
@@ -1748,6 +1759,13 @@ export enum TaskRunLogEntry_Type {
    * @generated from enum value: COMPUTE_DIFF = 8;
    */
   COMPUTE_DIFF = 8,
+
+  /**
+   * Release file execution.
+   *
+   * @generated from enum value: RELEASE_FILE_EXECUTE = 9;
+   */
+  RELEASE_FILE_EXECUTE = 9,
 }
 
 /**

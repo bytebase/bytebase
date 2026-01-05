@@ -219,10 +219,6 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.DatabaseChangeType"><span class="badge">E</span>DatabaseChangeType</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
                 </li>
               
@@ -2159,7 +2155,7 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.Release.File.Type"><span class="badge">E</span>Release.File.Type</a>
+                  <a href="#bytebase.v1.Release.Type"><span class="badge">E</span>Release.Type</a>
                 </li>
               
               
@@ -2499,6 +2495,10 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup"><span class="badge">M</span>TaskRunLogEntry.PriorBackup</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.ReleaseFileExecute"><span class="badge">M</span>TaskRunLogEntry.ReleaseFileExecute</a>
                 </li>
               
                 <li>
@@ -2893,35 +2893,6 @@ Examples:
         
       
 
-      
-        <h3 id="bytebase.v1.DatabaseChangeType">DatabaseChangeType</h3>
-        <p>DatabaseChangeType is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DATABASE_CHANGE_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>1</td>
-                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
-                <td>2</td>
-                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.Engine">Engine</h3>
         <p>Database engine type.</p>
@@ -21295,13 +21266,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
-                  <td></td>
-                  <td><p>Type is the database change type. </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -23765,6 +23729,13 @@ Whether to provide digest and how to generate it is up to the user.
 If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. </p></td>
                 </tr>
               
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Release.Type">Release.Type</a></td>
+                  <td></td>
+                  <td><p>The type of schema change for all files in this release. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23794,13 +23765,6 @@ If the digest is not empty, it must be unique in the project. Otherwise, an ALRE
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The path of the file. e.g., `2.2/V0001_create_table.sql`. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.Release.File.Type">Release.File.Type</a></td>
-                  <td></td>
-                  <td><p>The type of the file. </p></td>
                 </tr>
               
                 <tr>
@@ -24029,8 +23993,8 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
-        <h3 id="bytebase.v1.Release.File.Type">Release.File.Type</h3>
-        <p>The type of migration file.</p>
+        <h3 id="bytebase.v1.Release.Type">Release.Type</h3>
+        <p>The type of schema change.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -24046,13 +24010,13 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>VERSIONED</td>
                 <td>1</td>
-                <td><p>Versioned migration file with sequential version numbers.</p></td>
+                <td><p>Versioned schema migration.</p></td>
               </tr>
             
               <tr>
                 <td>DECLARATIVE</td>
                 <td>2</td>
-                <td><p>Declarative schema definition file describing desired state.</p></td>
+                <td><p>Declarative schema definition.</p></td>
               </tr>
             
           </tbody>
@@ -27163,13 +27127,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><p>The target schema version after this update. </p></td>
                 </tr>
               
-                <tr>
-                  <td>database_change_type</td>
-                  <td><a href="#bytebase.v1.DatabaseChangeType">DatabaseChangeType</a></td>
-                  <td></td>
-                  <td><p>The type of database change (MIGRATE or SDL). </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -27228,14 +27185,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td></td>
                   <td><p>Below are the results of a task run.
 Detailed information about the task run result. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changelog</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the changelog.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
@@ -27607,6 +27556,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>Compute diff details (if type is COMPUTE_DIFF). </p></td>
                 </tr>
               
+                <tr>
+                  <td>release_file_execute</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.ReleaseFileExecute">TaskRunLogEntry.ReleaseFileExecute</a></td>
+                  <td></td>
+                  <td><p>Release file execution details (if type is RELEASE_FILE_EXECUTE). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -27819,6 +27775,37 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Error message if the backup failed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.ReleaseFileExecute">TaskRunLogEntry.ReleaseFileExecute</h3>
+        <p>Release file execution details.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The version of the file being executed (e.g., &#34;0001&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). </p></td>
                 </tr>
               
             </tbody>
@@ -28245,13 +28232,6 @@ Use payload DatabaseUpdate.</p></td>
 Use payload DatabaseDataExport.</p></td>
               </tr>
             
-              <tr>
-                <td>DATABASE_SDL</td>
-                <td>5</td>
-                <td><p>Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-Use payload DatabaseUpdate.</p></td>
-              </tr>
-            
           </tbody>
         </table>
       
@@ -28461,6 +28441,12 @@ Use payload DatabaseUpdate.</p></td>
                 <td>COMPUTE_DIFF</td>
                 <td>8</td>
                 <td><p>Schema diff computation.</p></td>
+              </tr>
+            
+              <tr>
+                <td>RELEASE_FILE_EXECUTE</td>
+                <td>9</td>
+                <td><p>Release file execution.</p></td>
               </tr>
             
           </tbody>

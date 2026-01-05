@@ -186,6 +186,22 @@ func (x *TaskRunLog_ComputeDiffEnd) Equal(y *TaskRunLog_ComputeDiffEnd) bool {
 	return true
 }
 
+func (x *TaskRunLog_ReleaseFileExecute) Equal(y *TaskRunLog_ReleaseFileExecute) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Version != y.Version {
+		return false
+	}
+	if x.FilePath != y.FilePath {
+		return false
+	}
+	return true
+}
+
 func (x *TaskRunLog) Equal(y *TaskRunLog) bool {
 	if x == y {
 		return true
@@ -236,6 +252,9 @@ func (x *TaskRunLog) Equal(y *TaskRunLog) bool {
 		return false
 	}
 	if !x.ComputeDiffEnd.Equal(y.ComputeDiffEnd) {
+		return false
+	}
+	if !x.ReleaseFileExecute.Equal(y.ReleaseFileExecute) {
 		return false
 	}
 	return true

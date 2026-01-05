@@ -180,9 +180,6 @@ func (x *Plan_ChangeDatabaseConfig) Equal(y *Plan_ChangeDatabaseConfig) bool {
 	if x.Release != y.Release {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
 	if len(x.GhostFlags) != len(y.GhostFlags) {
 		return false
 	}

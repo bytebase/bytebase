@@ -4,7 +4,7 @@ import { computed, inject, provide, ref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { DatabaseChangeType, Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -60,7 +60,7 @@ export const provideInstanceRoleSettingContext = (refs: {
     }
     const config = selectedSpec.value.config.value;
     // Show for MIGRATE type, but not SDL.
-    return config.type === DatabaseChangeType.MIGRATE;
+    return !config.release;
   });
 
   const allowChange = computed(() => {

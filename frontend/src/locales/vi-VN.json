@@ -280,7 +280,6 @@
     },
     "comment": "Bình luận",
     "started": "Bắt đầu",
-    "view-change": "Xem thay đổi",
     "status": {
       "running": "Đang chạy",
       "available": "Có sẵn",
@@ -349,7 +348,6 @@
     "type": {
       "database-create": "Tạo cơ sở dữ liệu",
       "migrate": "Di chuyển",
-      "database-sdl": "SDL",
       "database-export": "Xuất dữ liệu",
       "general": "Chung"
     }
@@ -382,7 +380,8 @@
       "transaction": "Giao dịch",
       "prior-backup": "Sao lưu trước",
       "retry": "Thử lại",
-      "compute-diff": "Tính toán chênh lệch"
+      "compute-diff": "Tính toán chênh lệch",
+      "release-file-execute": "Tệp phát hành"
     },
     "log-detail": {
       "dumping": "đổ rác...",

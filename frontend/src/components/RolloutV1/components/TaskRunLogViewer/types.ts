@@ -31,7 +31,15 @@ export interface EntryGroup {
   entries: import("@/types/proto-es/v1/rollout_service_pb").TaskRunLogEntry[];
 }
 
+export interface ReleaseFileGroup {
+  version: string;
+  filePath: string;
+  sections: Section[];
+}
+
 export interface DeployGroup {
   deployId: string;
+  releaseFileGroups: ReleaseFileGroup[];
+  // Sections not associated with any release file (e.g., logs before file execution)
   sections: Section[];
 }

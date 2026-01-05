@@ -15,7 +15,6 @@
     - [Position](#bytebase-v1-Position)
     - [Range](#bytebase-v1-Range)
   
-    - [DatabaseChangeType](#bytebase-v1-DatabaseChangeType)
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [RiskLevel](#bytebase-v1-RiskLevel)
@@ -519,7 +518,7 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
-    - [Release.File.Type](#bytebase-v1-Release-File-Type)
+    - [Release.Type](#bytebase-v1-Release-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
   
@@ -609,6 +608,7 @@
     - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
+    - [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute)
     - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
     - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
@@ -767,19 +767,6 @@ Check the documentation of the field using Range for specific semantics.
 
 
  
-
-
-<a name="bytebase-v1-DatabaseChangeType"></a>
-
-### DatabaseChangeType
-DatabaseChangeType is the database change type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATABASE_CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
-
 
 
 <a name="bytebase-v1-Engine"></a>
@@ -7546,7 +7533,6 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | Type is the database change type. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -8431,6 +8417,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the release. |
 | digest | [string](#string) |  | The digest of the release. The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease. Whether to provide digest and how to generate it is up to the user. If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. |
+| type | [Release.Type](#bytebase-v1-Release-Type) |  | The type of schema change for all files in this release. |
 
 
 
@@ -8447,7 +8434,6 @@ A SQL file in a release.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
-| type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  | The type of the file. |
 | version | [string](#string) |  | The version identifier for the file. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
@@ -8547,16 +8533,16 @@ When paginating, all other parameters provided to `ListReleases` must match the 
  
 
 
-<a name="bytebase-v1-Release-File-Type"></a>
+<a name="bytebase-v1-Release-Type"></a>
 
-### Release.File.Type
-The type of migration file.
+### Release.Type
+The type of schema change.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| VERSIONED | 1 | Versioned migration file with sequential version numbers. |
-| DECLARATIVE | 2 | Declarative schema definition file describing desired state. |
+| VERSIONED | 1 | Versioned schema migration. |
+| DECLARATIVE | 2 | Declarative schema definition. |
 
 
  
@@ -9677,7 +9663,6 @@ Payload for updating a database schema.
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} |
 | schema_version | [string](#string) |  | The target schema version after this update. |
-| database_change_type | [DatabaseChangeType](#bytebase-v1-DatabaseChangeType) |  | The type of database change (MIGRATE or SDL). |
 
 
 
@@ -9698,7 +9683,6 @@ Payload for updating a database schema.
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | status | [TaskRun.Status](#bytebase-v1-TaskRun-Status) |  | The current execution status of the task run. |
 | detail | [string](#string) |  | Below are the results of a task run. Detailed information about the task run result. |
-| changelog | [string](#string) |  | The resource name of the changelog. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the task run started execution. |
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  | The export archive status for data export tasks. |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
@@ -9844,6 +9828,7 @@ Information about a blocking task.
 | prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  | Prior backup details (if type is PRIOR_BACKUP). |
 | retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  | Retry information details (if type is RETRY_INFO). |
 | compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  | Compute diff details (if type is COMPUTE_DIFF). |
+| release_file_execute | [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute) |  | Release file execution details (if type is RELEASE_FILE_EXECUTE). |
 
 
 
@@ -9932,6 +9917,22 @@ Prior backup operation details.
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup ended. |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The backup details. |
 | error | [string](#string) |  | Error message if the backup failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-ReleaseFileExecute"></a>
+
+### TaskRunLogEntry.ReleaseFileExecute
+Release file execution details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The version of the file being executed (e.g., &#34;0001&#34;). |
+| file_path | [string](#string) |  | The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). |
 
 
 
@@ -10096,7 +10097,6 @@ PostgreSQL session information read from `pg_stat_activity`.
 | DATABASE_CREATE | 2 | Database creation task that creates a new database. Use payload DatabaseCreate. |
 | DATABASE_MIGRATE | 3 | Database migration task that applies versioned schema changes. Use payload DatabaseUpdate. |
 | DATABASE_EXPORT | 4 | Database export task that exports query results or table data. Use payload DatabaseDataExport. |
-| DATABASE_SDL | 5 | Database SDL (Schema Definition Language) task that synchronizes declarative schema. Use payload DatabaseUpdate. |
 
 
 
@@ -10173,6 +10173,7 @@ The type of log entry.
 | PRIOR_BACKUP | 6 | Prior backup operation. |
 | RETRY_INFO | 7 | Retry information. |
 | COMPUTE_DIFF | 8 | Schema diff computation. |
+| RELEASE_FILE_EXECUTE | 9 | Release file execution. |
 
 
  

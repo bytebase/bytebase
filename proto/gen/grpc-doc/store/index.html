@@ -814,10 +814,6 @@
                 </li>
               
               
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
-                </li>
-              
               
               
             </ul>
@@ -1394,6 +1390,10 @@
               
                 <li>
                   <a href="#bytebase.store.TaskRunLog.PriorBackupStart"><span class="badge">M</span>TaskRunLog.PriorBackupStart</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskRunLog.ReleaseFileExecute"><span class="badge">M</span>TaskRunLog.ReleaseFileExecute</a>
                 </li>
               
                 <li>
@@ -8195,13 +8195,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>ghost_flags</td>
                   <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
                   <td>repeated</td>
@@ -8431,35 +8424,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
       
 
       
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
-        <p>Type is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>1</td>
-                <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
-                <td>2</td>
-                <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
 
       
 
@@ -8646,13 +8610,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
               
                 <tr>
                   <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_sdl</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -9942,6 +9899,13 @@ IM integration setting should be set for this function to work. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.SchemaChangeType">SchemaChangeType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9978,13 +9942,6 @@ IM integration setting should be set for this function to work. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.SchemaChangeType">SchemaChangeType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -12846,19 +12803,15 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
               <tr>
                 <td>DATABASE_MIGRATE</td>
                 <td>2</td>
-                <td><p>Apply schema/data migrations to an existing database.</p></td>
+                <td><p>Apply schema/data migrations to an existing database.
+Execution strategy is determined by release type (VERSIONED/DECLARATIVE)
+or sheet content for non-release tasks.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_EXPORT</td>
                 <td>3</td>
                 <td><p>Export data from a database.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_SDL</td>
-                <td>4</td>
-                <td><p>Apply declarative schema changes (state-based migration).</p></td>
               </tr>
             
           </tbody>
@@ -13091,14 +13044,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>Backup details that can be used to rollback changes. </p></td>
                 </tr>
               
-                <tr>
-                  <td>changelog</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Resource name of the changelog entry created by this run.
-Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -13300,6 +13245,13 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>release_file_execute</td>
+                  <td><a href="#bytebase.store.TaskRunLog.ReleaseFileExecute">TaskRunLog.ReleaseFileExecute</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -13476,6 +13428,37 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
         <p></p>
 
         
+
+        
+      
+        <h3 id="bytebase.store.TaskRunLog.ReleaseFileExecute">TaskRunLog.ReleaseFileExecute</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The version of the file being executed (e.g., &#34;0001&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -13758,6 +13741,12 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
               <tr>
                 <td>COMPUTE_DIFF_END</td>
                 <td>13</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RELEASE_FILE_EXECUTE</td>
+                <td>14</td>
                 <td><p></p></td>
               </tr>
             
