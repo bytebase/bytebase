@@ -381,7 +381,8 @@
       "transaction": "Transaction",
       "prior-backup": "Prior Backup",
       "retry": "Retry",
-      "compute-diff": "Compute Diff"
+      "compute-diff": "Compute Diff",
+      "release-file-execute": "Release File"
     },
     "log-detail": {
       "dumping": "dumping...",
