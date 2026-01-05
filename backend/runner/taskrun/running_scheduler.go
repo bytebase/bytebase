@@ -108,18 +108,9 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 	defer cancel()
 	s.bus.RunningTaskRunsCancelFunc.Store(taskRunUID, cancel)
 
-	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
+	result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
 
-	switch {
-	case !done && err != nil:
-		slog.Debug("Encountered transient error running task, will retry",
-			slog.Int("id", task.ID),
-			slog.String("type", task.Type.String()),
-			log.BBError(err),
-		)
-		return
-
-	case done && err != nil && errors.Is(err, context.Canceled):
+	if err != nil && errors.Is(err, context.Canceled) {
 		slog.Warn("task run is canceled",
 			slog.Int("id", task.ID),
 			slog.String("type", task.Type.String()),
@@ -153,8 +144,9 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			return
 		}
 		return
+	}
 
-	case done && err != nil:
+	if err != nil {
 		slog.Warn("task run failed",
 			slog.Int("id", task.ID),
 			slog.String("type", task.Type.String()),
@@ -188,7 +180,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			)
 			return
 		}
-		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_FAILED, taskRunResult.Detail)
 
 		// Immediately try to send PIPELINE_FAILED webhook (HA-safe atomic claim)
 		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.PlanID)
@@ -216,52 +207,37 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			}
 		}
 		return
+	}
 
-	case done && err == nil:
-		resultBytes, marshalErr := protojson.Marshal(result)
-		if marshalErr != nil {
-			slog.Error("Failed to marshal task run result",
-				slog.Int("task_id", task.ID),
-				slog.String("type", task.Type.String()),
-				log.BBError(marshalErr),
-			)
-			return
-		}
-		code := common.Ok
-		result := string(resultBytes)
-		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRunUID,
-			Updater: common.SystemBotEmail,
-			Status:  storepb.TaskRun_DONE,
-			Code:    &code,
-			Result:  &result,
-		}
-		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
-			slog.Error("Failed to mark task as DONE",
-				slog.Int("id", task.ID),
-				log.BBError(err),
-			)
-			return
-		}
-		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
-
-		// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-		s.bus.PlanCompletionCheckChan <- task.PlanID
-		return
-	default:
-		// This case should not happen in normal flow, but adding for completeness
-		slog.Error("Unexpected task execution state",
-			slog.Int("id", task.ID),
+	// Success case
+	resultBytes, marshalErr := protojson.Marshal(result)
+	if marshalErr != nil {
+		slog.Error("Failed to marshal task run result",
+			slog.Int("task_id", task.ID),
 			slog.String("type", task.Type.String()),
-			slog.Bool("done", done),
-			slog.Bool("has_error", err != nil),
+			log.BBError(marshalErr),
 		)
 		return
 	}
-}
+	code := common.Ok
+	resultStr := string(resultBytes)
+	taskRunStatusPatch := &store.TaskRunStatusPatch{
+		ID:      taskRunUID,
+		Updater: common.SystemBotEmail,
+		Status:  storepb.TaskRun_DONE,
+		Code:    &code,
+		Result:  &resultStr,
+	}
+	if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
+		slog.Error("Failed to mark task as DONE",
+			slog.Int("id", task.ID),
+			log.BBError(err),
+		)
+		return
+	}
 
-func (*Scheduler) createActivityForTaskRunStatusUpdate(_ context.Context, _ *store.TaskMessage, _ storepb.TaskRun_Status, _ string) {
-	// No webhook events for task run status updates
+	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
+	s.bus.PlanCompletionCheckChan <- task.PlanID
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.
