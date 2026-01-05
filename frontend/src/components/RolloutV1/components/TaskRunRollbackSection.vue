@@ -60,7 +60,7 @@ const rollbackableTaskRuns = computed(() => {
         (run) =>
           run.name.startsWith(`${task.name}/${taskRunNamePrefix}`) &&
           run.status === TaskRun_Status.DONE &&
-          run.priorBackupDetail !== undefined
+          run.hasPriorBackup
       );
 
       if (rollbackableRun) {

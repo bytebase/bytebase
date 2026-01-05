@@ -239,7 +239,7 @@ const rollbackableTaskRun = computed(() => {
   if (
     latestTaskRun.value &&
     latestTaskRun.value.status === TaskRun_Status.DONE &&
-    latestTaskRun.value.priorBackupDetail !== undefined
+    latestTaskRun.value.hasPriorBackup
   ) {
     return latestTaskRun.value;
   }

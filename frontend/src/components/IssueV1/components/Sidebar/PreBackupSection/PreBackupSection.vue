@@ -61,7 +61,7 @@ const shouldShowTaskRollbackSection = computed((): boolean => {
   if (latestTaskRun.value.status !== TaskRun_Status.DONE) {
     return false;
   }
-  if (latestTaskRun.value.priorBackupDetail?.items.length === 0) {
+  if (!latestTaskRun.value.hasPriorBackup) {
     return false;
   }
   return true;

@@ -16105,10 +16105,13 @@ components:
           title: export_archive_status
           description: The export archive status for data export tasks.
           $ref: '#/components/schemas/bytebase.v1.TaskRun.ExportArchiveStatus'
-        priorBackupDetail:
-          title: prior_backup_detail
-          description: The prior backup detail that will be used to rollback the task run.
-          $ref: '#/components/schemas/bytebase.v1.TaskRun.PriorBackupDetail'
+        hasPriorBackup:
+          type: boolean
+          title: has_prior_backup
+          description: |-
+            Indicates whether a prior backup was created for this task run.
+             When true, rollback SQL can be generated via PreviewTaskRunRollback.
+             Backup details are available in the task run logs.
         schedulerInfo:
           title: scheduler_info
           description: Scheduling information about the task run.
@@ -16129,60 +16132,6 @@ components:
         - EXPORT_ARCHIVE_STATUS_UNSPECIFIED
         - READY
         - EXPORTED
-    bytebase.v1.TaskRun.PriorBackupDetail:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.TaskRun.PriorBackupDetail.Item'
-          title: items
-          description: The list of backed up tables.
-      title: PriorBackupDetail
-      additionalProperties: false
-      description: Prior backup detail for rollback purposes.
-    bytebase.v1.TaskRun.PriorBackupDetail.Item:
-      type: object
-      properties:
-        sourceTable:
-          title: source_table
-          description: The original table information.
-          $ref: '#/components/schemas/bytebase.v1.TaskRun.PriorBackupDetail.Item.Table'
-        targetTable:
-          title: target_table
-          description: The target backup table information.
-          $ref: '#/components/schemas/bytebase.v1.TaskRun.PriorBackupDetail.Item.Table'
-        startPosition:
-          title: start_position
-          description: The start position in the SQL statement.
-          $ref: '#/components/schemas/bytebase.v1.Position'
-        endPosition:
-          title: end_position
-          description: The end position in the SQL statement.
-          $ref: '#/components/schemas/bytebase.v1.Position'
-      title: Item
-      additionalProperties: false
-      description: A single backup table mapping.
-    bytebase.v1.TaskRun.PriorBackupDetail.Item.Table:
-      type: object
-      properties:
-        database:
-          type: string
-          title: database
-          description: |-
-            The database information.
-             Format: instances/{instance}/databases/{database}
-        schema:
-          type: string
-          title: schema
-          description: The schema name.
-        table:
-          type: string
-          title: table
-          description: The table name.
-      title: Table
-      additionalProperties: false
-      description: Table information.
     bytebase.v1.TaskRun.SchedulerInfo:
       type: object
       properties:
@@ -16397,7 +16346,7 @@ components:
         priorBackupDetail:
           title: prior_backup_detail
           description: The backup details.
-          $ref: '#/components/schemas/bytebase.v1.TaskRun.PriorBackupDetail'
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail'
         error:
           type: string
           title: error
@@ -16405,6 +16354,60 @@ components:
       title: PriorBackup
       additionalProperties: false
       description: Prior backup operation details.
+    bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item'
+          title: items
+          description: The list of backed up tables.
+      title: PriorBackupDetail
+      additionalProperties: false
+      description: Prior backup detail for rollback purposes.
+    bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item:
+      type: object
+      properties:
+        sourceTable:
+          title: source_table
+          description: The original table information.
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table'
+        targetTable:
+          title: target_table
+          description: The target backup table information.
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table'
+        startPosition:
+          title: start_position
+          description: The start position in the SQL statement.
+          $ref: '#/components/schemas/bytebase.v1.Position'
+        endPosition:
+          title: end_position
+          description: The end position in the SQL statement.
+          $ref: '#/components/schemas/bytebase.v1.Position'
+      title: Item
+      additionalProperties: false
+      description: A single backup table mapping.
+    bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table:
+      type: object
+      properties:
+        database:
+          type: string
+          title: database
+          description: |-
+            The database information.
+             Format: instances/{instance}/databases/{database}
+        schema:
+          type: string
+          title: schema
+          description: The schema name.
+        table:
+          type: string
+          title: table
+          description: The table name.
+      title: Table
+      additionalProperties: false
+      description: Table information.
     bytebase.v1.TaskRunLogEntry.ReleaseFileExecute:
       type: object
       properties:
