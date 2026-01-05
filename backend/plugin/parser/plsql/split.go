@@ -42,22 +42,23 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1))
 			}
 
-			// Include the full statement text with its delimiter.
-			// The parser treats semicolons as separators (not part of statements),
-			// so we need to explicitly include the trailing semicolon if present.
+			// The go-ora driver requires semicolon for anonymous blocks/procedures/functions,
+			// but does NOT support semicolon for other statements (CREATE TABLE, SELECT, etc.).
 			stopTokenIndex := stmt.GetStop().GetTokenIndex()
-			// Check if the next token is a semicolon and include it
-			if nextTokenIndex := stopTokenIndex + 1; nextTokenIndex < len(tokens.GetAllTokens()) {
-				nextToken := tokens.Get(nextTokenIndex)
-				if nextToken.GetTokenType() == parser.PlSqlParserSEMICOLON {
-					stopTokenIndex = nextTokenIndex
+			if needSemicolon(stmt) {
+				// For procedures/functions/anonymous blocks: include semicolon if present, add if missing
+				lastToken = tokens.Get(stopTokenIndex)
+				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
+					text += ";"
 				}
-			}
-			lastToken = tokens.Get(stopTokenIndex)
-			text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-			// For procedures/functions/anonymous blocks, ensure semicolon is present
-			if needSemicolon(stmt) && lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
-				text += ";"
+			} else {
+				// For regular statements: EXCLUDE the semicolon (go-ora doesn't support it)
+				if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
+					stopTokenIndex--
+				}
+				lastToken = tokens.Get(stopTokenIndex)
+				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 			}
 
 			// Calculate byte offsets using lastToken (which includes semicolon if present)
@@ -88,7 +89,15 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				},
 			})
 			byteOffsetStart = byteOffsetEnd
-			prevStopTokenIndex = stopTokenIndex
+			// Set prevStopTokenIndex to the last token we want to "consume" for this statement.
+			// For statements where the semicolon is a separator (not part of the statement parse tree),
+			// we need to skip past the semicolon so it's not included in the next statement's leadingContent.
+			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
+			if nextIdx := prevStopTokenIndex + 1; nextIdx < len(tokens.GetAllTokens()) {
+				if nextToken := tokens.Get(nextIdx); nextToken.GetTokenType() == parser.PlSqlParserSEMICOLON {
+					prevStopTokenIndex = nextIdx
+				}
+			}
 		}
 	}
 	return result, nil
