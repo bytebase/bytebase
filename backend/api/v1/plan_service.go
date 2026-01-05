@@ -494,11 +494,6 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running"))
 	}
 
-	// Cancel the plan check run.
-	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
-		cancelFunc.(context.CancelFunc)()
-	}
-
 	// Update the status to canceled.
 	if err := s.store.BatchCancelPlanCheckRuns(ctx, []int{planCheckRun.UID}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
