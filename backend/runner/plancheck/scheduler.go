@@ -68,112 +68,96 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 		}
 	}()
 
-	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		Status: &[]store.PlanCheckRunStatus{
-			store.PlanCheckRunStatusRunning,
-		},
-	})
+	claimed, err := s.store.ClaimAvailablePlanCheckRuns(ctx)
 	if err != nil {
-		slog.Error("failed to list running plan check runs", log.BBError(err))
+		slog.Error("failed to claim available plan check runs", log.BBError(err))
 		return
 	}
 
-	for _, planCheckRun := range planCheckRuns {
-		s.runPlanCheckRun(ctx, planCheckRun)
+	for _, c := range claimed {
+		go s.runPlanCheckRun(ctx, c.UID, c.PlanUID)
 	}
 }
 
-func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) {
-	// Skip the plan check run if it is already running.
-	if _, ok := s.bus.RunningPlanChecks.Load(planCheckRun.UID); ok {
+func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planUID int64) {
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+	defer cancel()
+	s.bus.RunningPlanCheckRunsCancelFunc.Store(uid, cancel)
+	defer s.bus.RunningPlanCheckRunsCancelFunc.Delete(uid)
+
+	// Fetch plan to derive check targets at runtime
+	plan, err := s.store.GetPlan(ctxWithCancel, &store.FindPlanMessage{UID: &planUID})
+	if err != nil {
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
+		return
+	}
+	if plan == nil {
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, "plan not found")
 		return
 	}
 
-	s.bus.RunningPlanChecks.Store(planCheckRun.UID, true)
-	go func() {
-		defer func() {
-			s.bus.RunningPlanChecks.Delete(planCheckRun.UID)
-			s.bus.RunningPlanCheckRunsCancelFunc.Delete(planCheckRun.UID)
-		}()
+	project, err := s.store.GetProject(ctxWithCancel, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	if err != nil {
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
+		return
+	}
+	if project == nil {
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, "project not found")
+		return
+	}
 
-		ctxWithCancel, cancel := context.WithCancel(ctx)
-		defer cancel()
-		s.bus.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
+	// Get database group if needed (for spec expansion)
+	databaseGroup, err := s.getDatabaseGroupForPlan(ctxWithCancel, plan)
+	if err != nil {
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
+		return
+	}
 
-		// Fetch plan to derive check targets at runtime
-		plan, err := s.store.GetPlan(ctxWithCancel, &store.FindPlanMessage{UID: &planCheckRun.PlanUID})
-		if err != nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-			return
-		}
-		if plan == nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, "plan not found")
-			return
-		}
+	// Derive check targets from plan
+	targets, err := DeriveCheckTargets(project, plan, databaseGroup)
+	if err != nil {
+		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
+		return
+	}
 
-		project, err := s.store.GetProject(ctxWithCancel, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-		if err != nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-			return
+	var results []*storepb.PlanCheckRunResult_Result
+	for _, target := range targets {
+		targetResults, targetErr := s.executor.RunForTarget(ctxWithCancel, target)
+		if targetErr != nil {
+			err = targetErr
+			break
 		}
-		if project == nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, "project not found")
-			return
-		}
-
-		// Get database group if needed (for spec expansion)
-		databaseGroup, err := s.getDatabaseGroupForPlan(ctxWithCancel, plan)
-		if err != nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-			return
-		}
-
-		// Derive check targets from plan
-		targets, err := DeriveCheckTargets(project, plan, databaseGroup)
-		if err != nil {
-			s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-			return
-		}
-
-		var results []*storepb.PlanCheckRunResult_Result
-		for _, target := range targets {
-			targetResults, targetErr := s.executor.RunForTarget(ctxWithCancel, target)
-			if targetErr != nil {
-				err = targetErr
-				break
-			}
-			results = append(results, targetResults...)
-		}
-		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				s.markPlanCheckRunCanceled(ctx, planCheckRun, err.Error())
-			} else {
-				s.markPlanCheckRunFailed(ctx, planCheckRun, err.Error())
-			}
+		results = append(results, targetResults...)
+	}
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			s.markPlanCheckRunCanceled(ctxWithCancel, uid, err.Error())
 		} else {
-			s.markPlanCheckRunDone(ctx, planCheckRun, results)
+			s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		}
-	}()
+	} else {
+		s.markPlanCheckRunDone(ctxWithCancel, uid, planUID, results)
+	}
 }
 
-func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, results []*storepb.PlanCheckRunResult_Result) {
+func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, uid int, planUID int64, results []*storepb.PlanCheckRunResult_Result) {
 	result := &storepb.PlanCheckRunResult{
 		Results: results,
 	}
 	if err := s.store.UpdatePlanCheckRun(ctx,
 		store.PlanCheckRunStatusDone,
 		result,
-		planCheckRun.UID,
+		uid,
 	); err != nil {
 		slog.Error("failed to mark plan check run done", log.BBError(err))
 		return
 	}
 
 	// Auto-create rollout if plan checks pass
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planCheckRun.PlanUID})
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planUID})
 	if err != nil {
 		slog.Error("failed to get issue for approval check after plan check",
-			slog.Int("plan_id", int(planCheckRun.PlanUID)),
+			slog.Int("plan_id", int(planUID)),
 			log.BBError(err))
 		return
 	}
@@ -181,31 +165,31 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 		// Trigger approval finding
 		s.bus.ApprovalCheckChan <- int64(issue.UID)
 		// Trigger rollout creation (existing behavior)
-		s.bus.RolloutCreationChan <- planCheckRun.PlanUID
+		s.bus.RolloutCreationChan <- planUID
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, reason string) {
+func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, uid int, reason string) {
 	result := &storepb.PlanCheckRunResult{
 		Error: reason,
 	}
 	if err := s.store.UpdatePlanCheckRun(ctx,
 		store.PlanCheckRunStatusFailed,
 		result,
-		planCheckRun.UID,
+		uid,
 	); err != nil {
 		slog.Error("failed to mark plan check run failed", log.BBError(err))
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, planCheckRun *store.PlanCheckRunMessage, reason string) {
+func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, uid int, reason string) {
 	result := &storepb.PlanCheckRunResult{
 		Error: reason,
 	}
 	if err := s.store.UpdatePlanCheckRun(ctx,
 		store.PlanCheckRunStatusCanceled,
 		result,
-		planCheckRun.UID,
+		uid,
 	); err != nil {
 		slog.Error("failed to mark plan check run canceled", log.BBError(err))
 	}
