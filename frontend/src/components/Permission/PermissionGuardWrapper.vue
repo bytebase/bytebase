@@ -4,16 +4,13 @@
       <slot :disabled="missedPermissions.length > 0" />
     </template>
     <div class="flex flex-col gap-1">
-        {{ project ? $t("common.missing-required-permission-for-resource", { resource: project.name }) : $t("common.missing-required-permission") }}
-        <div>
-          {{ $t("common.required-permission") }}
-          <ul class="list-disc pl-4">
-            <li v-for="permission in permissions" :key="permission">
-              {{ permission }}
-            </li>
-          </ul>
-        </div>
-      </div>
+      {{ project ? $t("common.missing-required-permission-for-resource", { resource: project.name }) : $t("common.missing-required-permission") }}
+      <ul class="list-disc pl-4">
+        <li v-for="permission in permissions" :key="permission">
+          {{ permission }}
+        </li>
+      </ul>
+    </div>
   </NTooltip>
 </template>
 
