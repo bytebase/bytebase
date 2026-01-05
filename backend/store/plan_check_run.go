@@ -189,3 +189,50 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs [
 	}
 	return nil
 }
+
+// ClaimedPlanCheckRun represents a plan check run that was atomically claimed.
+type ClaimedPlanCheckRun struct {
+	UID     int
+	PlanUID int64
+}
+
+// ClaimAvailablePlanCheckRuns atomically claims all AVAILABLE plan check runs by updating them to RUNNING
+// and returns the claimed UIDs. Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different runs.
+func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlanCheckRun, error) {
+	q := qb.Q().Space(`
+		UPDATE plan_check_run
+		SET status = ?, updated_at = now()
+		WHERE id IN (
+			SELECT id FROM plan_check_run
+			WHERE status = ?
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING id, plan_id
+	`, PlanCheckRunStatusRunning, PlanCheckRunStatusAvailable)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to claim plan check runs")
+	}
+	defer rows.Close()
+
+	var claimed []*ClaimedPlanCheckRun
+	for rows.Next() {
+		var c ClaimedPlanCheckRun
+		if err := rows.Scan(&c.UID, &c.PlanUID); err != nil {
+			return nil, err
+		}
+		claimed = append(claimed, &c)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return claimed, nil
+}
