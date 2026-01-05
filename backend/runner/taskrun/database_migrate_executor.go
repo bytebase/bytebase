@@ -595,14 +595,8 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		},
 	})
 
-	version := file.Version
-	releaseType := storepb.SchemaChangeType_DECLARATIVE
 	needDump := computeNeedDump(task.Type, database.Engine, sheet.Statement)
 	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
-
-	// For release-based tasks, store the release name
-	releaseRelease := task.Payload.GetRelease()
-	releaseFile := ""
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -639,18 +633,12 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	}
 	opts.LogComputeDiffEnd("")
 
-	sheetSha256 := sheet.Sha256
-
-	revisionType := storepb.SchemaChangeType_VERSIONED
-	if releaseType != storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED {
-		revisionType = releaseType
-	}
-
 	// Begin migration - dump before migration
+	// Note: For declarative releases, we pass empty version string (revisions are not version-tracked)
 	changelogUID, err := beginMigration(
 		ctx, exec.store, exec.schemaSyncer, database,
-		taskRunName, version, needDump, opts,
-		storepb.ChangelogPayload_SDL, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheetSha256,
+		taskRunName, "", needDump, opts,
+		storepb.ChangelogPayload_SDL, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin migration")
@@ -670,53 +658,16 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	}
 
 	if migrationErr != nil {
-		return nil, errors.Wrapf(migrationErr, "failed to execute declarative release (version %s)", file.Version)
+		return nil, errors.Wrap(migrationErr, "failed to execute declarative release")
 	}
 
-	// Post migration - create revision and update database
+	// Post migration - clean up drift
+	// Note: Declarative releases do NOT create revisions (they are version-tracked through the database schema itself)
 	slog.Debug("Post migration...",
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
 	)
 
-	r := &store.RevisionMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Version:      version,
-		Payload: &storepb.RevisionPayload{
-			Release:     releaseRelease,
-			File:        releaseFile,
-			SheetSha256: sheetSha256,
-			TaskRun:     taskRunName,
-			Type:        revisionType,
-		},
-	}
-
-	revision, err := exec.store.CreateRevision(ctx, r)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create revision")
-	}
-
-	// Update changelog with revision UID
-	if err := exec.store.UpdateChangelog(ctx, &store.UpdateChangelogMessage{
-		UID:         changelogUID,
-		RevisionUID: &revision.UID,
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update changelog with revision")
-	}
-
-	// Update database metadata with the version
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Version = version
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database metadata with version")
-	}
-
-	// Clean up drift
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
