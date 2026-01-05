@@ -16,6 +16,8 @@ import (
 type PlanCheckRunStatus string
 
 const (
+	// PlanCheckRunStatusAvailable is the plan check status for AVAILABLE.
+	PlanCheckRunStatusAvailable PlanCheckRunStatus = "AVAILABLE"
 	// PlanCheckRunStatusRunning is the plan check status for RUNNING.
 	PlanCheckRunStatusRunning PlanCheckRunStatus = "RUNNING"
 	// PlanCheckRunStatusDone is the plan check status for DONE.
