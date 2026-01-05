@@ -38,7 +38,7 @@ import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/connect";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {

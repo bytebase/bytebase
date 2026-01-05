@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   GetPlanRequestSchema,

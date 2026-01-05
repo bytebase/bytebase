@@ -2,9 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { instanceServiceClientConnect } from "@/grpcweb";
+import { instanceServiceClientConnect } from "@/connect";
 // Removed conversion imports - using proto-es types directly
-import { silentContextKey } from "@/grpcweb/context-key";
+import { silentContextKey } from "@/connect/context-key";
 import {
   isValidEnvironmentName,
   isValidInstanceName,

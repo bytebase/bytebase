@@ -3,7 +3,7 @@ import {
   issueServiceClientConnect,
   planServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import { useProjectV1Store } from "@/store";
 import {
   type ComposedIssue,

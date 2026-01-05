@@ -194,7 +194,7 @@ import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { createEmptyLocalSheet } from "@/components/Plan";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentProjectV1,

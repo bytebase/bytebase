@@ -30,7 +30,7 @@ import {
 import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
-} from "@/utils/grpcweb";
+} from "@/utils/connect";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Code.Aborted;

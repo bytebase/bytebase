@@ -68,7 +68,7 @@ import TaskRolloutActionPanel from "@/components/RolloutV1/components/TaskRollou
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";

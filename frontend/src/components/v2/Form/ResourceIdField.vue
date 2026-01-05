@@ -71,7 +71,7 @@ import { useI18n } from "vue-i18n";
 import { CopyButton } from "@/components/v2";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { randomString } from "@/utils";
-import { getErrorCode } from "@/utils/grpcweb";
+import { getErrorCode } from "@/utils/connect";
 
 // characters is the validated characters for resource id.
 const characters = "abcdefghijklmnopqrstuvwxyz1234567890-";

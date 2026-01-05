@@ -37,7 +37,7 @@ import { NDivider, NSpin } from "naive-ui";
 import { onMounted, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
-import { sheetServiceClientConnect } from "@/grpcweb";
+import { sheetServiceClientConnect } from "@/connect";
 import type {
   Release,
   Release_File,

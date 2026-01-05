@@ -55,7 +55,7 @@ import { computed, ref, toRef, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { databaseServiceClientConnect } from "@/grpcweb";
+import { databaseServiceClientConnect } from "@/connect";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
@@ -63,7 +63,7 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { minmax } from "@/utils";
-import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 import { useSchemaEditorContext } from "../context";
 
 const props = defineProps<{

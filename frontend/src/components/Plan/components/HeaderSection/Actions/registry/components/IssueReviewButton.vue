@@ -164,7 +164,7 @@ import { useRouter } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { ErrorList } from "@/components/Plan/components/common";
 import { usePlanContext } from "@/components/Plan/logic";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,

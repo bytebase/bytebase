@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
-import { groupServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { groupServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { isValidProjectName } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import {

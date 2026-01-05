@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { worksheetServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { worksheetServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import type {

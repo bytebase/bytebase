@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import type {
   IssueComment,
   ListIssueCommentsRequest,

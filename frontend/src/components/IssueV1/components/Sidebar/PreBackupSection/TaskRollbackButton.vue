@@ -20,7 +20,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/connect";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,

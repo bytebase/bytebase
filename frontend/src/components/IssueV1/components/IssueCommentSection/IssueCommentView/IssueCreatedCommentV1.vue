@@ -93,7 +93,7 @@ import { computed, reactive } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
 import { type ComposedIssue, getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";

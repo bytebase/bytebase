@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { sqlServiceClientConnect } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/connect";
 import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/sql_service_pb";

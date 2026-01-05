@@ -52,7 +52,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";

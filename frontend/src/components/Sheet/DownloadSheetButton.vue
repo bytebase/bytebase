@@ -8,7 +8,7 @@
 import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
 import { ref } from "vue";
-import { sheetServiceClientConnect } from "@/grpcweb";
+import { sheetServiceClientConnect } from "@/connect";
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
 const props = defineProps<{

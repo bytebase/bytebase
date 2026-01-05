@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, markRaw, reactive, ref, unref, watch } from "vue";
-import { databaseServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { databaseServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import type { ComposedDatabase, MaybeRef } from "@/types";
 import {
   isValidDatabaseName,

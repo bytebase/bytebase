@@ -232,7 +232,7 @@ import {
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentProjectV1,

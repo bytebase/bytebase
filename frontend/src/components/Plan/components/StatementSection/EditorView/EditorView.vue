@@ -210,7 +210,7 @@ import {
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentProjectV1,

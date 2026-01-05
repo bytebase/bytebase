@@ -1,13 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
-import { sqlServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { sqlServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 import { validateDatabaseMetadata } from "./utils";
 
 export type GenerateDiffDDLResult = {

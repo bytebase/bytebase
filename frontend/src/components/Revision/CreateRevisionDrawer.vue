@@ -413,7 +413,7 @@ import { useI18n } from "vue-i18n";
 import ReleaseDataTable from "@/components/Release/ReleaseDataTable.vue";
 import ReleaseFileTable from "@/components/Release/ReleaseDetail/ReleaseFileTable/ReleaseFileTable.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { revisionServiceClientConnect } from "@/grpcweb";
+import { revisionServiceClientConnect } from "@/connect";
 import {
   pushNotification,
   useCurrentProjectV1,

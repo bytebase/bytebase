@@ -15,7 +15,7 @@
 import { create } from "@bufbuild/protobuf";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";

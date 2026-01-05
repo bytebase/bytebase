@@ -73,7 +73,7 @@ import { targetsForSpec } from "@/components/Plan";
 import { GhostSection } from "@/components/Plan/components/Configuration";
 import { provideGhostSettingContext } from "@/components/Plan/components/Configuration/GhostSection/context";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
   IssueSchema,

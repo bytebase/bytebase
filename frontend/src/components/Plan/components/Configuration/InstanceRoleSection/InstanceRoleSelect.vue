@@ -23,7 +23,7 @@ import {
   updateSpecSheetWithStatement,
   usePlanContext,
 } from "@/components/Plan/logic";
-import { instanceRoleServiceClientConnect } from "@/grpcweb";
+import { instanceRoleServiceClientConnect } from "@/connect";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { setSheetStatement } from "@/utils";

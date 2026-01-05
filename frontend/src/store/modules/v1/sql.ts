@@ -1,16 +1,16 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
-import { sqlServiceClientConnect } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/connect";
 import {
   ignoredCodesContextKey,
   silentContextKey,
-} from "@/grpcweb/context-key";
+} from "@/connect/context-key";
 import type { SQLResultSetV1 } from "@/types";
 import type {
   ExportRequest,
   QueryRequest,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 
 export const useSQLStore = defineStore("sql", () => {
   const query = async (

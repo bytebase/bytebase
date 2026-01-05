@@ -57,7 +57,7 @@ import { BBSpin } from "@/bbkit";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
-import { releaseServiceClientConnect } from "@/grpcweb";
+import { releaseServiceClientConnect } from "@/connect";
 import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
 import {
   CheckReleaseRequestSchema,

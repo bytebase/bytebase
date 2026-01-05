@@ -22,7 +22,7 @@ import { NInput } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import {
   IssueSchema,
