@@ -9,16 +9,22 @@
           class="flex-1"
           :scope-options="scopeOptions"
         />
-        <NButton
-          v-if="allowToCreatePlan"
-          type="primary"
-          @click="showAddSpecDrawer = true"
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="['bb.plans.create']"
         >
-          <template #icon>
-            <PlusIcon class="w-4 h-4" />
-          </template>
-          {{ $t("plan.new-plan") }}
-        </NButton>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click="showAddSpecDrawer = true"
+          >
+            <template #icon>
+              <PlusIcon class="w-4 h-4" />
+            </template>
+            {{ $t("plan.new-plan") }}
+          </NButton>
+        </PermissionGuardWrapper>
       </div>
     </div>
 
@@ -60,6 +66,7 @@ import type {
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { getLocalSheetByName, targetsForSpec } from "@/components/Plan";
 import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
 import PlanDataTable from "@/components/Plan/components/PlanDataTable";
@@ -85,7 +92,6 @@ import {
   extractProjectResourceName,
   generateIssueTitle,
   getDefaultPagination,
-  hasPermissionToCreatePlanInProject,
   type SearchParams,
   type SearchScope,
   type SearchScopeId,
@@ -277,11 +283,6 @@ watch(
   () => JSON.stringify(mergedPlanFind.value),
   () => planPagedTable.value?.refresh()
 );
-
-const allowToCreatePlan = computed(() => {
-  // Check if user has permission to create plan in specific project.
-  return hasPermissionToCreatePlanInProject(project.value);
-});
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
   const template = "bb.issue.database.update";

@@ -7,20 +7,25 @@
       />
     </div>
     <div class="w-full flex flex-row justify-end items-center">
-      <NButton
-        type="primary"
-        :disabled="!allowCreateSSO"
-        @click="handleCreateSSO"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.identityProviders.create']"
       >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-          <FeatureBadge
-            :feature="PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO"
-            class="text-white"
-          />
-        </template>
-        {{ $t("settings.sso.create") }}
-      </NButton>
+        <NButton
+          type="primary"
+          :disabled="slotProps.disabled"
+          @click="handleCreateSSO"
+        >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+            <FeatureBadge
+              :feature="PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO"
+              class="text-white"
+            />
+          </template>
+          {{ $t("settings.sso.create") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <IdentityProviderTable
       :identity-provider-list="identityProviderList"
@@ -53,12 +58,12 @@ import {
   IdentityProviderTable,
 } from "@/components/IdentityProvider";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, getIdentityProviderResourceId } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   isLoading: boolean;
@@ -77,10 +82,6 @@ const hasSSOFeature = featureToRef(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO);
 
 const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
-});
-
-const allowCreateSSO = computed(() => {
-  return hasWorkspacePermissionV2("bb.identityProviders.create");
 });
 
 onMounted(async () => {

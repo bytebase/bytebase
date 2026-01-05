@@ -1686,7 +1686,6 @@
     "mixed-values-for-label": "Nhãn đã chọn này có các giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "table-detail": "Chi tiết bảng",
-    "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
     "batch-action-disabled": "Không thể {action} đối với các cơ sở dữ liệu từ các dự án khác nhau",
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được gán",
     "successfully-transferred-databases": "Đã chuyển thành công cơ sở dữ liệu",
@@ -2796,8 +2795,7 @@
     "delete-group": "Xóa nhóm cơ sở dữ liệu {name}"
   },
   "export-center": {
-    "self": "Trung tâm xuất",
-    "permission-denied": "Quyền bị từ chối"
+    "self": "Trung tâm xuất"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."

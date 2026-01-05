@@ -19,37 +19,42 @@
         </span>
       </div>
 
-      <div class="flex items-center justify-end gap-x-2">
-        <BBButtonConfirm
-          :tertiary="true"
-          :text="false"
-          :type="'DELETE'"
-          :ok-text="$t('common.delete')"
-          :require-confirm="true"
-          :hide-icon="true"
-          :button-text="$t('common.clear')"
-          :disabled="!allowEdit || !hasClassificationFeature"
-          @confirm="clearSetting"
-        />
-        <NButton
-          type="primary"
-          :disabled="!allowEdit || !hasClassificationFeature"
-          @click="onUpload"
-        >
-          <template #icon>
-            <UploadIcon class="h-4 w-4" />
-          </template>
-          {{ $t("settings.sensitive-data.classification.upload") }}
-        </NButton>
-        <input
-          ref="uploader"
-          type="file"
-          accept=".json"
-          class="sr-only hidden"
-          :disabled="!allowEdit || !hasClassificationFeature"
-          @input="onFileChange"
-        />
-      </div>
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.settings.set']"
+      >
+        <div class="flex items-center justify-end gap-x-2">
+          <BBButtonConfirm
+            :tertiary="true"
+            :text="false"
+            :type="'DELETE'"
+            :ok-text="$t('common.delete')"
+            :require-confirm="true"
+            :hide-icon="true"
+            :button-text="$t('common.clear')"
+            :disabled="slotProps.disabled || !hasClassificationFeature"
+            @confirm="clearSetting"
+          />
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled || !hasClassificationFeature"
+            @click="onUpload"
+          >
+            <template #icon>
+              <UploadIcon class="h-4 w-4" />
+            </template>
+            {{ $t("settings.sensitive-data.classification.upload") }}
+          </NButton>
+          <input
+            ref="uploader"
+            type="file"
+            accept=".json"
+            class="sr-only hidden"
+            :disabled="slotProps.disabled || !hasClassificationFeature"
+            @input="onFileChange"
+          />
+        </div>
+      </PermissionGuardWrapper>
     </div>
 
     <div
@@ -87,6 +92,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,

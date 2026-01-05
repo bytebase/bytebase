@@ -18,21 +18,26 @@
 
     <NTabs :value="state.selectedTab" @update:value="onTabChange">
       <template #suffix>
-        <div class="flex items-center gap-x-2">
+        <div v-if="instance.state === State.ACTIVE" class="flex items-center gap-x-2">
           <InstanceSyncButton
-            v-if="instance.state === State.ACTIVE"
             @sync-schema="syncSchema"
           />
-          <NButton
+          <PermissionGuardWrapper
             v-if="allowCreateDatabase"
-            type="primary"
-            @click.prevent="createDatabase"
+            v-slot="slotProps"
+            :permissions="['bb.issues.create', 'bb.plans.create']"
           >
-            <template #icon>
-              <PlusIcon class="h-4 w-4" />
-            </template>
-            {{ $t("instance.new-database") }}
-          </NButton>
+            <NButton
+              type="primary"
+              :disabled="slotProps.disabled"
+              @click.prevent="createDatabase"
+            >
+              <template #icon>
+                <PlusIcon class="h-4 w-4" />
+              </template>
+              {{ $t("instance.new-database") }}
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
       <NTabPane name="overview" :tab="$t('common.overview')">
@@ -110,6 +115,7 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer, InstanceRoleTable } from "@/components/v2";
 import {
   DatabaseOperations,
@@ -273,10 +279,7 @@ const instanceRoleList = computed(() => {
 });
 
 const allowCreateDatabase = computed(() => {
-  return (
-    instance.value.state === State.ACTIVE &&
-    instanceV1HasCreateDatabase(instance.value)
-  );
+  return instanceV1HasCreateDatabase(instance.value);
 });
 
 const syncSchema = async (enableFullSync: boolean) => {

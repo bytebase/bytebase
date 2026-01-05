@@ -11,27 +11,33 @@
       }}</span>
       <div class="flex items-center">
         <template v-for="action in actions" :key="action.text">
-          <NTooltip
-            :disabled="!action.disabled || !action.tooltip(action.text)"
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="selectedProject"
+            :permissions="action.requiredPermissions"
           >
-            <template #trigger>
-              <NButton
-                quaternary
-                size="small"
-                type="primary"
-                :disabled="action.disabled"
-                @click="action.click"
-              >
-                <template #icon>
-                  <component :is="action.icon" class="h-4 w-4" />
-                </template>
-                <span class="text-sm">{{ action.text }}</span>
-              </NButton>
-            </template>
-            <span class="w-56 text-sm">
-              {{ action.tooltip(action.text.toLowerCase()) }}
-            </span>
-          </NTooltip>
+            <NTooltip
+              :disabled="slotProps.disabled || !action.disabled || !getDisabledTooltip(action.text)"
+            >
+              <template #trigger>
+                <NButton
+                  quaternary
+                  size="small"
+                  type="primary"
+                  :disabled="slotProps.disabled || action.disabled"
+                  @click="action.click"
+                >
+                  <template #icon>
+                    <component :is="action.icon" class="h-4 w-4" />
+                  </template>
+                  <span class="text-sm">{{ action.text }}</span>
+                </NButton>
+              </template>
+              <span class="w-56 text-sm">
+                {{ getDisabledTooltip(action.text) }}
+              </span>
+            </NTooltip>
+          </PermissionGuardWrapper>
         </template>
       </div>
     </div>
@@ -114,6 +120,7 @@ import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
@@ -131,27 +138,21 @@ import {
   useGracefulRequest,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import type { ComposedDatabase, Permission } from "@/types";
+import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  extractProjectResourceName,
-  generateIssueTitle,
-  hasPermissionToCreateChangeDatabaseIssue,
-  hasPermissionToCreateDataExportIssue,
-  hasProjectPermissionV2,
-} from "@/utils";
+import { extractProjectResourceName, generateIssueTitle } from "@/utils";
 
 interface DatabaseAction {
   icon: VNode;
   text: string;
   disabled: boolean;
   click: () => void;
-  tooltip: (action: string) => string;
+  requiredPermissions: Permission[];
 }
 
 interface LocalState {
@@ -201,12 +202,12 @@ const assignedDatabases = computed(() => {
 const getDisabledTooltip = (action: string) => {
   if (selectedProjectNames.value.size > 1) {
     return t("database.batch-action-disabled", {
-      action,
+      action: action.toLowerCase(),
     });
   }
   if (selectedProjectNames.value.has(DEFAULT_PROJECT_NAME)) {
     return t("database.batch-action-disabled-for-unassigned", {
-      action,
+      action: action.toLowerCase(),
     });
   }
   return "";
@@ -222,29 +223,11 @@ const selectedProjectName = computed(() => {
   return [...selectedProjectNames.value][0];
 });
 
-const allowTransferInProject = computed(() => {
-  const project = projectStore.getProjectByName(props.projectName);
-  return hasProjectPermissionV2(project, "bb.projects.update");
-});
-
-const allowExportData = computed(() => {
-  return props.databases.every((db) => {
-    return hasPermissionToCreateDataExportIssue(db);
-  });
-});
-
-const allowUpdateDatabase = computed(() => {
-  return props.databases.every((db) => {
-    const project = db.projectEntity;
-    return hasProjectPermissionV2(project, "bb.databases.update");
-  });
-});
-
-const allowSyncDatabases = computed(() => {
-  return props.databases.every((db) => {
-    const project = db.projectEntity;
-    return hasProjectPermissionV2(project, "bb.databases.sync");
-  });
+const selectedProject = computed(() => {
+  if (!isValidProjectName(selectedProjectName.value)) {
+    return;
+  }
+  return projectStore.getProjectByName(selectedProjectName.value);
 });
 
 const selectedDatabaseNameList = computed(() => {
@@ -416,12 +399,6 @@ const isInDefaultProject = computed(
   () => props.projectName === DEFAULT_PROJECT_NAME
 );
 
-const allowChangeDatabase = computed(() => {
-  return props.databases.every((db) =>
-    hasPermissionToCreateChangeDatabaseIssue(db)
-  );
-});
-
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   for (const operation of operations.value) {
@@ -432,7 +409,6 @@ const actions = computed((): DatabaseAction[] => {
             icon: h(PencilIcon),
             text: t("database.change-database"),
             disabled:
-              !allowChangeDatabase.value ||
               !selectedProjectName.value ||
               selectedDatabaseNameList.value.length < 1 ||
               selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
@@ -442,14 +418,11 @@ const actions = computed((): DatabaseAction[] => {
                 selectedDatabaseNameList.value
               );
             },
-            tooltip: (action) => {
-              if (!allowChangeDatabase.value) {
-                return t("database.batch-action-permission-denied", {
-                  action,
-                });
-              }
-              return getDisabledTooltip(action);
-            },
+            requiredPermissions: [
+              "bb.issues.create",
+              "bb.plans.create",
+              "bb.rollouts.create",
+            ],
           });
         }
         break;
@@ -459,19 +432,15 @@ const actions = computed((): DatabaseAction[] => {
             icon: h(DownloadIcon),
             text: t("custom-approval.risk-rule.risk.namespace.data_export"),
             disabled:
-              !allowExportData.value ||
               !selectedProjectName.value ||
               props.databases.length < 1 ||
               selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
             click: () => generateMultiDb("bb.issue.database.data.export"),
-            tooltip: (action) => {
-              if (!allowExportData.value) {
-                return t("database.batch-action-permission-denied", {
-                  action,
-                });
-              }
-              return "";
-            },
+            requiredPermissions: [
+              "bb.issues.create",
+              "bb.plans.create",
+              "bb.rollouts.create",
+            ],
           });
         }
         break;
@@ -479,41 +448,27 @@ const actions = computed((): DatabaseAction[] => {
         resp.push({
           icon: h(RefreshCcwIcon),
           text: t("database.sync-schema-button"),
-          disabled: !allowSyncDatabases.value || props.databases.length < 1,
+          disabled: props.databases.length < 1,
           click: syncSchema,
-          tooltip: (action) => getDisabledTooltip(action),
+          requiredPermissions: ["bb.databases.sync"],
         });
         break;
       case "EDIT-LABELS":
         resp.push({
           icon: h(TagIcon),
           text: t("database.edit-labels"),
-          disabled: !allowUpdateDatabase.value || props.databases.length < 1,
+          disabled: props.databases.length < 1,
           click: () => (state.showLabelEditorDrawer = true),
-          tooltip: (action) => {
-            if (!allowUpdateDatabase.value) {
-              return t("database.batch-action-permission-denied", {
-                action,
-              });
-            }
-            return getDisabledTooltip(action);
-          },
+          requiredPermissions: ["bb.databases.update"],
         });
         break;
       case "EDIT-ENVIRONMENT":
         resp.push({
           icon: h(SquareStackIcon),
           text: t("database.edit-environment"),
-          disabled: !allowUpdateDatabase.value || props.databases.length < 1,
+          disabled: props.databases.length < 1,
           click: () => (state.showEditEnvironmentDrawer = true),
-          tooltip: (action) => {
-            if (!allowUpdateDatabase.value) {
-              return t("database.batch-action-permission-denied", {
-                action,
-              });
-            }
-            return getDisabledTooltip(action);
-          },
+          requiredPermissions: ["bb.databases.update"],
         });
         break;
       case "TRANSFER-IN": {
@@ -521,16 +476,9 @@ const actions = computed((): DatabaseAction[] => {
           resp.push({
             icon: h(ChevronsDownIcon),
             text: t("quick-action.transfer-in-db"),
-            disabled: !allowTransferInProject.value,
+            disabled: false,
             click: () => (state.transferOutDatabaseType = "TRANSFER-IN"),
-            tooltip: (action) => {
-              if (!allowTransferInProject.value) {
-                return t("database.batch-action-permission-denied", {
-                  action,
-                });
-              }
-              return getDisabledTooltip(action);
-            },
+            requiredPermissions: ["bb.projects.update"],
           });
         }
         break;
@@ -542,24 +490,15 @@ const actions = computed((): DatabaseAction[] => {
             text: t("database.transfer-project"),
             disabled: props.databases.length < 1,
             click: () => (state.transferOutDatabaseType = "TRANSFER-OUT"),
-            tooltip: (action) => {
-              return getDisabledTooltip(action);
-            },
+            requiredPermissions: [],
           });
         } else if (!isInDefaultProject.value) {
           resp.push({
             icon: h(UnlinkIcon),
             text: t("database.unassign"),
-            disabled: !allowUpdateDatabase.value || props.databases.length < 1,
+            disabled: props.databases.length < 1,
             click: () => (state.showUnassignAlert = true),
-            tooltip: (action) => {
-              if (!allowUpdateDatabase.value) {
-                return t("database.batch-action-permission-denied", {
-                  action,
-                });
-              }
-              return getDisabledTooltip(action);
-            },
+            requiredPermissions: ["bb.databases.update"],
           });
         }
         break;

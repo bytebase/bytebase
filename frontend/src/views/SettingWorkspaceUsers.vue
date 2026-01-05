@@ -68,66 +68,81 @@
         <div class="flex items-center gap-x-2">
           <SearchBox v-model:value="state.activeUserFilterText" />
 
-          <NButton
-            v-if="allowGetSCIMSetting && allowCreateUser"
-            class="capitalize"
-            :disabled="!hasDirectorySyncFeature"
-            @click="
-              () => {
-                state.showAadSyncDrawer = true;
-              }
-            "
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="['bb.settings.get']"
           >
-            <template #icon>
-              <SettingsIcon class="h-5 w-5" />
-              <FeatureBadge :feature="PlanFeature.FEATURE_DIRECTORY_SYNC" />
-            </template>
-            {{ $t(`settings.members.entra-sync.self`) }}
-          </NButton>
+            <NButton
+              class="capitalize"
+              :disabled="!hasDirectorySyncFeature || slotProps.disabled"
+              @click="
+                () => {
+                  state.showAadSyncDrawer = true;
+                }
+              "
+            >
+              <template #icon>
+                <SettingsIcon class="h-5 w-5" />
+                <FeatureBadge :feature="PlanFeature.FEATURE_DIRECTORY_SYNC" />
+              </template>
+              {{ $t(`settings.members.entra-sync.self`) }}
+            </NButton>
+          </PermissionGuardWrapper>
 
-          <NPopover
-            v-if="allowCreateGroup"
-            :disabled="workspaceProfileSetting.domains.length > 0"
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="['bb.groups.create']"
           >
-            <template #trigger>
-              <NButton
-                :disabled="
-                  workspaceProfileSetting.domains.length === 0 ||
-                  !hasUserGroupFeature
-                "
-                @click="handleCreateGroup"
-              >
-                <template #icon>
-                  <PlusIcon class="h-5 w-5" />
-                  <FeatureBadge :feature="PlanFeature.FEATURE_USER_GROUPS" />
-                </template>
-                {{ $t(`settings.members.groups.add-group`) }}
-              </NButton>
-            </template>
-            <p>
-              {{ $t("settings.members.groups.workspace-domain-required") }}
-              <router-link
-                :to="{
-                  name: SETTING_ROUTE_WORKSPACE_GENERAL,
-                  hash: '#domain-restriction',
-                }"
-                class="normal-link"
-              >
-                {{ $t("common.configure") }}
-              </router-link>
-            </p>
-          </NPopover>
-          <NButton
-            v-if="allowCreateUser"
-            type="primary"
-            class="capitalize"
-            @click="handleCreateUser"
+            <NPopover
+              :disabled="slotProps.disabled || workspaceProfileSetting.domains.length > 0"
+            >
+              <template #trigger>
+                <NButton
+                  :disabled="
+                    slotProps.disabled ||
+                    workspaceProfileSetting.domains.length === 0 ||
+                    !hasUserGroupFeature
+                  "
+                  @click="handleCreateGroup"
+                >
+                  <template #icon>
+                    <PlusIcon class="h-5 w-5" />
+                    <FeatureBadge :feature="PlanFeature.FEATURE_USER_GROUPS" />
+                  </template>
+                  {{ $t(`settings.members.groups.add-group`) }}
+                </NButton>
+              </template>
+              <p>
+                {{ $t("settings.members.groups.workspace-domain-required") }}
+                <router-link
+                  :to="{
+                    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                    hash: '#domain-restriction',
+                  }"
+                  class="normal-link"
+                >
+                  {{ $t("common.configure") }}
+                </router-link>
+              </p>
+            </NPopover>
+          </PermissionGuardWrapper>
+
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="['bb.users.create']"
           >
-            <template #icon>
-              <PlusIcon class="h-5 w-5" />
-            </template>
-            {{ $t(`settings.members.add-user`) }}
-          </NButton>
+            <NButton
+              type="primary"
+              class="capitalize"
+              :disabled="slotProps.disabled"
+              @click="handleCreateUser"
+            >
+              <template #icon>
+                <PlusIcon class="h-5 w-5" />
+              </template>
+              {{ $t(`settings.members.add-user`) }}
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
     </NTabs>
@@ -205,6 +220,7 @@ import { useI18n } from "vue-i18n";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
@@ -229,7 +245,6 @@ import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { WorkspaceProfileSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -372,18 +387,6 @@ const hasDirectorySyncFeature = featureToRef(
 );
 
 const hasUserGroupFeature = featureToRef(PlanFeature.FEATURE_USER_GROUPS);
-
-const allowGetSCIMSetting = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.get")
-);
-
-const allowCreateGroup = computed(() =>
-  hasWorkspacePermissionV2("bb.groups.create")
-);
-
-const allowCreateUser = computed(() => {
-  return hasWorkspacePermissionV2("bb.users.create");
-});
 
 onMounted(async () => {
   if (!uiStateStore.getIntroStateByKey("member.visit")) {

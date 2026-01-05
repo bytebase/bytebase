@@ -11,14 +11,19 @@
       }}
     </span>
     <div class="flex items-center">
-      <template v-for="action in actions" :key="action.text">
+      <PermissionGuardWrapper
+        v-for="action in actions"
+        :key="action.text"
+        v-slot="slotProps"
+        :permissions="action.requiredPermissions"
+      >
         <component :is="action.render()" v-if="action.render" />
         <NButton
           v-else
           quaternary
           size="small"
           type="primary"
-          :disabled="action.disabled"
+          :disabled="slotProps.disabled || action.disabled"
           @click="action.click"
         >
           <template v-if="action.icon" #icon>
@@ -26,7 +31,7 @@
           </template>
           <span class="text-sm">{{ action.text }}</span>
         </NButton>
-      </template>
+      </PermissionGuardWrapper>
     </div>
   </div>
   <InstanceAssignment
@@ -53,15 +58,16 @@ import { useI18n } from "vue-i18n";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import {
   pushNotification,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
+import type { Permission } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {
   icon?: VNode;
@@ -69,6 +75,7 @@ interface Action {
   text: string;
   disabled?: boolean;
   click?: () => void;
+  requiredPermissions: Permission[];
 }
 
 interface LocalState {
@@ -113,25 +120,26 @@ const actions = computed((): Action[] => {
         />
       ),
       text: "",
+      requiredPermissions: ["bb.instances.sync"],
     },
-  ];
-
-  if (hasWorkspacePermissionV2("bb.instances.update")) {
-    list.push({
+    {
       icon: h(SquareStackIcon),
       text: t("database.edit-environment"),
       disabled: props.instanceList.length < 1,
       click: () => (state.showEditEnvironmentDrawer = true),
-    });
+      requiredPermissions: ["bb.instances.update"],
+    },
+  ];
 
-    if (canAssignLicense.value) {
-      list.push({
-        icon: h(GraduationCapIcon),
-        text: t("subscription.instance-assignment.assign-license"),
-        click: () => (state.showAssignLicenseDrawer = true),
-      });
-    }
+  if (canAssignLicense.value) {
+    list.push({
+      icon: h(GraduationCapIcon),
+      text: t("subscription.instance-assignment.assign-license"),
+      click: () => (state.showAssignLicenseDrawer = true),
+      requiredPermissions: ["bb.instances.update", "bb.settings.get"],
+    });
   }
+
   return list;
 });
 

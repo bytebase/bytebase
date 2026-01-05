@@ -1686,7 +1686,6 @@
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
     "table-detail": "Detalle de la tabla",
-    "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
@@ -2796,8 +2795,7 @@
     "delete-group": "Eliminar el grupo de bases de datos {name}"
   },
   "export-center": {
-    "self": "centro de exportacion",
-    "permission-denied": "Permiso denegado"
+    "self": "centro de exportacion"
   },
   "schema-designer": {
     "use-tips": "Selecciona las tablas a diseñar"

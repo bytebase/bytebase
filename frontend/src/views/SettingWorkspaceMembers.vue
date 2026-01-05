@@ -44,21 +44,30 @@
             v-model:value="state.searchText"
             :placeholder="$t('settings.members.search-member')"
           />
-          <div v-if="allowEdit" class="flex justify-end gap-x-2">
-            <NButton
-              v-if="state.selectedTab === 'MEMBERS'"
-              :disabled="state.selectedMembers.length === 0"
-              @click="handleRevokeSelectedMembers"
-            >
-              {{ $t("settings.members.revoke-access") }}
-            </NButton>
-            <NButton type="primary" @click="state.showAddMemberPanel = true">
-              <template #icon>
-                <heroicons-outline:user-add class="w-4 h-4" />
-              </template>
-              {{ $t("settings.members.grant-access") }}
-            </NButton>
-          </div>
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="['bb.workspaces.setIamPolicy']"
+          >
+            <div class="flex justify-end gap-x-2">
+              <NButton
+                v-if="state.selectedTab === 'MEMBERS'"
+                :disabled="slotProps.disabled || state.selectedMembers.length === 0"
+                @click="handleRevokeSelectedMembers"
+              >
+                {{ $t("settings.members.revoke-access") }}
+              </NButton>
+              <NButton
+                type="primary"
+                :disabled="slotProps.disabled"
+                @click="state.showAddMemberPanel = true"
+              >
+                <template #icon>
+                  <heroicons-outline:user-add class="w-4 h-4" />
+                </template>
+                {{ $t("settings.members.grant-access") }}
+              </NButton>
+            </div>
+          </PermissionGuardWrapper>
         </div>
       </template>
     </NTabs>
@@ -85,6 +94,7 @@ import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { SearchBox } from "@/components/v2";
 import {
   pushNotification,

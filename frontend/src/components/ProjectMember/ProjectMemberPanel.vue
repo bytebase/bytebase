@@ -14,25 +14,33 @@
             v-model:value="state.searchText"
             :placeholder="$t('settings.members.search-member')"
           />
-          <NButton
-            v-if="state.selectedTab === 'users' && allowEdit"
-            :disabled="state.selectedMembers.length === 0"
-            @click="handleRevokeSelectedMembers"
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="project"
+            :permissions="['bb.projects.setIamPolicy']"
           >
-            {{ $t("settings.members.revoke-access") }}
-          </NButton>
+            <div class="flex gap-x-2">
+              <NButton
+                v-if="state.selectedTab === 'users'"
+                :disabled="slotProps.disabled || state.selectedMembers.length === 0"
+                @click="handleRevokeSelectedMembers"
+              >
+                {{ $t("settings.members.revoke-access") }}
+              </NButton>
+              <NButton
+                type="primary"
+                :disabled="slotProps.disabled"
+                @click="state.showAddMemberPanel = true"
+              >
+                <template #icon>
+                  <heroicons-outline:user-add class="w-4 h-4" />
+                </template>
+                {{ $t("settings.members.grant-access") }}
+              </NButton>
+            </div>
+          </PermissionGuardWrapper>
           <NButton
-            v-if="allowEdit"
-            type="primary"
-            @click="state.showAddMemberPanel = true"
-          >
-            <template #icon>
-              <heroicons-outline:user-add class="w-4 h-4" />
-            </template>
-            {{ $t("settings.members.grant-access") }}
-          </NButton>
-          <NButton
-            v-else-if="shouldShowRequestRoleButton"
+            v-if="shouldShowRequestRoleButton"
             type="primary"
             @click="state.showRequestRolePanel = true"
           >
@@ -111,6 +119,7 @@ import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import {
   extractUserId,
   pushNotification,
@@ -147,7 +156,6 @@ interface LocalState {
 
 const props = defineProps<{
   project: Project;
-  allowEdit: boolean;
 }>();
 
 const { t } = useI18n();

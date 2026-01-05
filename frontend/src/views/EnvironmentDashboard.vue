@@ -23,31 +23,32 @@
         />
       </NTabPane>
       <template #suffix>
-        <div class="flex items-center justify-end gap-x-2 px-2 pb-1">
-          <NButton
-            v-if="
-              hasWorkspacePermissionV2('bb.settings.get') &&
-              hasWorkspacePermissionV2('bb.settings.set')
-            "
-            :disabled="environmentList.length <= 1"
-            @click="startReorder"
-          >
-            <template #icon>
-              <ListOrderedIcon class="h-4 w-4" />
-            </template>
-            {{ t("common.reorder") }}
-          </NButton>
-          <NButton
-            v-if="hasWorkspacePermissionV2('bb.settings.set')"
-            type="primary"
-            @click="createEnvironment"
-          >
-            <template #icon>
-              <PlusIcon class="h-4 w-4" />
-            </template>
-            {{ t("environment.create") }}
-          </NButton>
-        </div>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="['bb.settings.set']"
+        >
+          <div class="flex items-center justify-end gap-x-2 px-2 pb-1">
+            <NButton
+              :disabled="slotProps.disabled || environmentList.length <= 1"
+              @click="startReorder"
+            >
+              <template #icon>
+                <ListOrderedIcon class="h-4 w-4" />
+              </template>
+              {{ t("common.reorder") }}
+            </NButton>
+            <NButton
+              type="primary"
+              :disabled="slotProps.disabled"
+              @click="createEnvironment"
+            >
+              <template #icon>
+                <PlusIcon class="h-4 w-4" />
+              </template>
+              {{ t("environment.create") }}
+            </NButton>
+          </div>
+        </PermissionGuardWrapper>
       </template>
     </NTabs>
   </div>
@@ -120,6 +121,7 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer, DrawerContent, EnvironmentV1Name } from "@/components/v2";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import {
@@ -138,7 +140,7 @@ import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { hasWorkspacePermissionV2, type VueClass } from "@/utils";
+import { type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
