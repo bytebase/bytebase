@@ -23,12 +23,10 @@ This file provides guidance to AI coding assistants when working with code in th
 
 ### Frontend Code Changes
 
-1. **Format** — Run `pnpm --dir frontend biome:format` (formats all files) or `cd frontend && pnpm biome format --write <path>` for specific files
-2. **Lint** — Run `pnpm --dir frontend lint --fix` (ESLint for Vue-specific rules) and `pnpm --dir frontend biome:lint` (Biome linter)
+1. **Fix** — Run `pnpm --dir frontend fix` to auto-fix ESLint + Biome issues (format, lint, organize imports)
+2. **Check** — Run `pnpm --dir frontend check` to validate without modifying files (for CI)
 3. **Type check** — Run `pnpm --dir frontend type-check`
 4. **Test** — Run `pnpm --dir frontend test`
-
-**Recommended**: Use `pnpm --dir frontend biome:check` to format, lint, and organize imports in one command
 
 ### Proto Changes
 
@@ -66,17 +64,11 @@ pnpm --dir frontend i
 # Dev server
 pnpm --dir frontend dev
 
-# Format (Biome)
-pnpm --dir frontend biome:format
+# Fix (ESLint + Biome: format, lint, organize imports)
+pnpm --dir frontend fix
 
-# Lint (ESLint for Vue-specific rules)
-pnpm --dir frontend lint
-
-# Lint (Biome)
-pnpm --dir frontend biome:lint
-
-# Format + Lint + Organize imports (recommended)
-pnpm --dir frontend biome:check
+# Check (validate without modifying, for CI)
+pnpm --dir frontend check
 
 # Type check
 pnpm --dir frontend type-check
