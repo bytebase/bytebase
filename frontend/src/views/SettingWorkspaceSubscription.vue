@@ -102,7 +102,6 @@
     </div>
     <div
       v-if="
-        allowEdit &&
         subscriptionStore.isSelfHostLicense &&
         !actuatorStore.isSaaSMode
       "
@@ -119,7 +118,7 @@
         <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
         <div class="ml-1 inline-block">
           <RequireEnterpriseButton
-            v-if="subscriptionStore.showTrial"
+            v-if="subscriptionStore.showTrial && allowEdit"
             text
             type="primary"
             size="small"
@@ -132,13 +131,14 @@
       <NInput
         v-model:value="state.license"
         type="textarea"
+        :disabled="!allowEdit"
         :placeholder="$t('common.sensitive-placeholder')"
       />
       <div class="ml-auto mt-3">
         <NButton
           type="primary"
           class="capitalize"
-          :disabled="disabled"
+          :disabled="disabled || !allowEdit"
           @click="uploadLicense"
         >
           {{ $t("subscription.upload-license") }}

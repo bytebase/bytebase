@@ -10,14 +10,16 @@
       </BBAttention>
     </template>
 
-    <router-view
-      v-if="hasPermission"
-      :project-id="projectId"
-      :allow-edit="allowEdit"
-      v-bind="$attrs"
-    />
-
-    <NoPermissionPlaceholder v-else class="py-6" />
+    <RoutePermissionGuard
+      :project="project"
+      :routes="projectRoutes"
+    >
+      <router-view
+        :project-id="projectId"
+        :allow-edit="allowEdit"
+        v-bind="$attrs"
+      />
+    </RoutePermissionGuard>
   </template>
   <div
     v-else
@@ -30,16 +32,18 @@
 </template>
 
 <script lang="tsx" setup>
-import type { ConnectError } from "@connectrpc/connect";
+import { type ConnectError } from "@connectrpc/connect";
 import { NSpin } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
+import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import projectRoutes, {
+  PROJECT_V1_ROUTE_DETAIL,
+} from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
@@ -68,7 +72,8 @@ const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 watchEffect(async () => {
   try {
     const project = await projectStore.getOrFetchProjectByName(
-      projectName.value
+      projectName.value,
+      false
     );
     recentProjects.setRecentProject(project.name);
   } catch (err) {
@@ -103,20 +108,6 @@ const initialized = computed(
 
 const isDefaultProject = computed((): boolean => {
   return project.value.name === DEFAULT_PROJECT_NAME;
-});
-
-const requiredPermissions = computed(() => {
-  const getPermissionListFunc =
-    router.currentRoute.value.meta.requiredPermissionList;
-  const permissions = getPermissionListFunc ? getPermissionListFunc() : [];
-  permissions.push("bb.projects.get");
-  return permissions;
-});
-
-const hasPermission = computed(() => {
-  return requiredPermissions.value.every((permission) =>
-    hasProjectPermissionV2(project.value, permission)
-  );
 });
 
 const allowEdit = computed(() => {

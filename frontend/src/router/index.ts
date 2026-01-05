@@ -32,6 +32,8 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROOT_MODULE,
+  WORKSPACE_ROUTE_403,
+  WORKSPACE_ROUTE_404,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
 import setupRoutes, { SETUP_MODULE } from "./setup";
@@ -75,11 +77,7 @@ router.beforeEach((to, from, next) => {
   }
 
   // Error pages can be accessed directly
-  if (
-    to.name === "error.403" ||
-    to.name === "error.404" ||
-    to.name === "error.500"
-  ) {
+  if (to.name === WORKSPACE_ROUTE_403 || to.name === WORKSPACE_ROUTE_404) {
     next();
     return;
   }
@@ -262,7 +260,7 @@ router.beforeEach((to, from, next) => {
   });
 
   next({
-    name: "error.404",
+    name: WORKSPACE_ROUTE_404,
     replace: false,
   });
 });

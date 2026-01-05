@@ -13,7 +13,7 @@
 <script setup lang="tsx">
 import { CheckIcon, PencilIcon, Trash2Icon, XIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NCheckbox, NDataTable, NPopconfirm } from "naive-ui";
+import { NCheckbox, NDataTable, NPopconfirm, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
@@ -52,6 +52,7 @@ const columns = computed(
       {
         title: t("common.name"),
         key: "name",
+        width: 200,
         resizable: true,
         render: (review: SQLReviewPolicy) => {
           return <div innerHTML={highlight(review.name)}></div>;
@@ -61,18 +62,20 @@ const columns = computed(
         title: t("common.resource"),
         key: "resource",
         resizable: true,
+        width: 250,
         render: (review: SQLReviewPolicy) => {
           return (
-            <div>
+            <div class="flex flex-wrap gap-2">
               {review.resources.length === 0 && <span>-</span>}
               {review.resources.map((resource) => {
                 return (
-                  <Resource
-                    key={resource}
-                    resource={resource}
-                    showPrefix={true}
-                    link={true}
-                  />
+                  <NTag key={resource} size="small" type="primary">
+                    <Resource
+                      resource={resource}
+                      showPrefix={true}
+                      link={true}
+                    />
+                  </NTag>
                 );
               })}
             </div>
@@ -109,7 +112,7 @@ const columns = computed(
       {
         title: t("common.operations"),
         key: "operations",
-        width: "15rem",
+        width: "10rem",
         hide: !props.allowEdit,
         render: (review: SQLReviewPolicy) => {
           return (

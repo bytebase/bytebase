@@ -100,7 +100,7 @@
           </div>
           <StepsTable
             :flow="state.flow"
-            :editable="true"
+            :editable="allowAdmin"
             @update="handleUpdate"
           />
         </div>
@@ -114,7 +114,7 @@
         </NButton>
         <NButton
           type="primary"
-          :disabled="!allowSave"
+          :disabled="!allowSave || !allowAdmin"
           @click="handleSave"
         >
           {{ mode === "create" ? $t("common.create") : $t("common.update") }}

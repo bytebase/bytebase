@@ -1,6 +1,7 @@
 import { t } from "@/plugins/i18n";
 import { useRoleStore } from "@/store";
-import { type Permission, PresetRoleType } from "@/types";
+import type { Permission } from "@/types/iam";
+import { PresetRoleType } from "@/types/iam";
 
 export const checkRoleContainsAnyPermission = (
   roleName: string,

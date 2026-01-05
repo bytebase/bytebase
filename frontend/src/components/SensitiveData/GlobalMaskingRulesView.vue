@@ -21,32 +21,38 @@
           {{ $t("common.confirm") }}
         </NButton>
       </div>
-      <div v-else class="flex items-center gap-x-2">
-        <NButton
-          class="capitalize"
-          :disabled="
-            !hasPermission ||
-            !hasSensitiveDataFeature ||
-            state.maskingRuleItemList.length <= 1
-          "
-          @click="state.reorderRules = true"
-        >
-          <template #icon>
-            <ListOrderedIcon class="h-4 w-4" />
-          </template>
-          {{ $t("settings.sensitive-data.global-rules.re-order") }}
-        </NButton>
-        <NButton
-          type="primary"
-          :disabled="!hasPermission || !hasSensitiveDataFeature"
-          @click="addNewRule"
-        >
-          <template #icon>
-            <PlusIcon class="h-4 w-4" />
-          </template>
-          {{ $t("common.add") }}
-        </NButton>
-      </div>
+      <PermissionGuardWrapper
+        v-else
+        v-slot="slotProps"
+        :permissions="['bb.policies.update']"
+      >
+        <div class="flex items-center gap-x-2">
+          <NButton
+            class="capitalize"
+            :disabled="
+              slotProps.disabled ||
+              !hasSensitiveDataFeature ||
+              state.maskingRuleItemList.length <= 1
+            "
+            @click="state.reorderRules = true"
+          >
+            <template #icon>
+              <ListOrderedIcon class="h-4 w-4" />
+            </template>
+            {{ $t("settings.sensitive-data.global-rules.re-order") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled || !hasSensitiveDataFeature"
+            @click="addNewRule"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("common.add") }}
+          </NButton>
+        </div>
+      </PermissionGuardWrapper>
     </div>
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.global-rules.description") }}
@@ -125,6 +131,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { type OptionConfig } from "@/components/ExprEditor/context";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";

@@ -4,12 +4,17 @@
       <div class="font-medium text-base">
         {{ sourceDisplayText }}
       </div>
-      <NButton size="small" @click="handleAddRule">
-        <template #icon>
-          <PlusIcon class="w-4" />
-        </template>
-        {{ $t("custom-approval.approval-flow.add-rule") }}
-      </NButton>
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.settings.set']"
+      >
+        <NButton size="small" :disabled="slotProps.disabled" @click="handleAddRule">
+          <template #icon>
+            <PlusIcon class="w-4" />
+          </template>
+          {{ $t("custom-approval.approval-flow.add-rule") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
 
     <div class="rules-table border border-gray-200 rounded-sm text-sm">
@@ -57,6 +62,7 @@
                 <PencilIcon class="w-3" />
               </MiniActionButton>
               <NPopconfirm
+                v-if="allowAdmin"
                 :positive-text="$t('common.confirm')"
                 :negative-text="$t('common.cancel')"
                 @positive-click="handleDeleteRule(rule)"
@@ -104,6 +110,7 @@ import { NButton, NPopconfirm } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { MiniActionButton } from "@/components/v2";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
@@ -124,6 +131,7 @@ const isFallback = computed(
 const { t } = useI18n();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
+const { allowAdmin } = context;
 
 const showModal = ref(false);
 const modalMode = ref<"create" | "edit">("create");

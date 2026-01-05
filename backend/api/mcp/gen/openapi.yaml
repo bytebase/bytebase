@@ -12562,6 +12562,30 @@ components:
       title: PackageMetadata
       additionalProperties: false
       description: PackageMetadata is the metadata for packages.
+    bytebase.v1.PermissionDeniedDetail:
+      type: object
+      properties:
+        method:
+          type: string
+          title: method
+          description: The API method that was called.
+        requiredPermissions:
+          type: array
+          items:
+            type: string
+          title: required_permissions
+          description: The permissions required but not granted to the user.
+        resources:
+          type: array
+          items:
+            type: string
+          title: resources
+          description: The resources the user was trying to access.
+      title: PermissionDeniedDetail
+      additionalProperties: false
+      description: |-
+        PermissionDeniedDetail provides structured information about permission failures.
+         Used as error detail when returning CodePermissionDenied errors.
     bytebase.v1.Plan:
       type: object
       properties:

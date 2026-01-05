@@ -3,11 +3,7 @@
     <div class="w-96 mb-2 flex flex-col gap-y-2">
       <div>
         <p class="textlabel mb-1">{{ $t("role.select-role") }}</p>
-        <NSelect
-          v-model:value="state.selectedRole"
-          :options="availableRoleOptions"
-          :placeholder="$t('role.select-role')"
-        />
+        <RoleSelect v-model:value="state.selectedRole" :multiple="false" />
       </div>
       <template v-if="selectedRole">
         <p class="textinfolabel">
@@ -47,11 +43,12 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NSelect } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { BBModal } from "@/bbkit";
+import { RoleSelect } from "@/components/v2/Select";
 import { useRoleStore } from "@/store";
-import { displayRoleDescription, displayRoleTitle } from "@/utils";
+import { displayRoleDescription } from "@/utils";
 
 interface LocalState {
   selectedRole?: string;
@@ -64,14 +61,6 @@ const emit = defineEmits<{
 
 const roleStore = useRoleStore();
 const state = reactive<LocalState>({});
-
-const availableRoleOptions = computed(() => {
-  const roles = roleStore.roleList.map((role) => role.name);
-  return roles.map((role) => ({
-    label: displayRoleTitle(role),
-    value: role,
-  }));
-});
 
 const selectedRole = computed(() => {
   return roleStore.roleList.find((role) => role.name === state.selectedRole);

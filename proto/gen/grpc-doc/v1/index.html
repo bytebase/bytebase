@@ -210,6 +210,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.PermissionDeniedDetail"><span class="badge">M</span>PermissionDeniedDetail</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Position"><span class="badge">M</span>Position</a>
                 </li>
               
@@ -2815,6 +2819,44 @@
       </div>
       <p></p>
 
+      
+        <h3 id="bytebase.v1.PermissionDeniedDetail">PermissionDeniedDetail</h3>
+        <p>PermissionDeniedDetail provides structured information about permission failures.</p><p>Used as error detail when returning CodePermissionDenied errors.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The API method that was called. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_permissions</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The permissions required but not granted to the user. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>resources</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The resources the user was trying to access. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
       
         <h3 id="bytebase.v1.Position">Position</h3>
         <p>Position in a text expressed as one-based line and one-based column.</p><p>We use 1-based numbering to match the majority of industry standards:</p><p>- Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)</p><p>- GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)</p><p>- Most text editors display 1-based positions to users</p><p>Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),</p><p>but we follow the canonical user-facing standards.</p><p>Handling unknown positions:</p><p>- If the entire position is unknown, leave this field as nil/undefined</p><p>- If only line is known, set line and leave column as 0 (e.g., line=5, column=0)</p><p>- If only column is known (rare), set column and leave line as 0</p><p>Frontends should check for nil/undefined/zero values and handle them appropriately.</p>

@@ -13,16 +13,21 @@
         :placeholder="$t('instance.filter-instance-name')"
         :scope-options="scopeOptions"
       />
-      <NButton
-        v-if="hasWorkspacePermissionV2('bb.instances.create')"
-        type="primary"
-        @click="showCreateInstanceDrawer"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.instances.create']"
       >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        {{ $t("quick-action.add-instance") }}
-      </NButton>
+        <NButton
+          type="primary"
+          :disabled="slotProps.disabled"
+          @click="showCreateInstanceDrawer"
+        >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
+          {{ $t("quick-action.add-instance") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <div>
       <InstanceOperations
@@ -82,6 +87,7 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import {
   Drawer,
   DrawerContent,
@@ -101,7 +107,6 @@ import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import {
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  hasWorkspacePermissionV2,
   type SearchParams,
 } from "@/utils";
 

@@ -11,6 +11,7 @@ import {
   useRouter,
 } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { WORKSPACE_ROUTE_403 } from "@/router/dashboard/workspaceRoutes";
 import { useRoleStore, useWorkspaceV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import AuthFooter from "@/views/auth/AuthFooter.vue";
@@ -45,7 +46,7 @@ onMounted(async () => {
       if (!checkPermissions(route)) {
         ready.value = false;
         router.push({
-          name: "error.403",
+          name: WORKSPACE_ROUTE_403,
         });
         return;
       }

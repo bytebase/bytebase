@@ -20,7 +20,11 @@
           {{ $t("settings.general.workspace.maximum-role-expiration.days") }}
         </template>
       </NInputNumber>
-      <NCheckbox v-model:checked="state.neverExpire" style="margin-right: 12px">
+      <NCheckbox
+        :disabled="!allowEdit"
+        v-model:checked="state.neverExpire"
+        style="margin-right: 12px"
+      >
         {{
           $t("settings.general.workspace.maximum-role-expiration.never-expires")
         }}

@@ -1,10 +1,6 @@
 <template>
   <div class="w-full mx-auto flex flex-col gap-y-4 pb-4">
-    <NoPermissionPlaceholder
-      v-if="permissionStore.onlyWorkspaceMember"
-      class="py-6"
-    />
-    <NTabs v-else v-model:value="state.selectedTab" type="line" animated>
+    <NTabs v-model:value="state.selectedTab" type="line" animated>
       <NTabPane name="MEMBERS">
         <template #tab>
           <p class="text-base font-medium leading-7 text-main">
@@ -89,12 +85,10 @@ import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { SearchBox } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
-  usePermissionStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { userBindingPrefix } from "@/types";
@@ -119,7 +113,6 @@ const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
 const workspaceStore = useWorkspaceV1Store();
-const permissionStore = usePermissionStore();
 
 const state = reactive<LocalState>({
   searchText: "",

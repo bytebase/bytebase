@@ -103,7 +103,7 @@ const rawOptions = ref([]) as Ref<ResourceSelectOption<T>[]>;
 const appendDataToRawList = (data: ResourceSelectOption<T>[]) => {
   for (const item of data) {
     if (!rawOptions.value.find((raw) => raw.value === item.value)) {
-      rawOptions.value.push(item);
+      rawOptions.value.unshift(item);
     }
   }
 };

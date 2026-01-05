@@ -238,7 +238,6 @@ roles:
       - bb.groups.get
       - bb.groups.list
       - bb.users.get
-      - bb.users.list
       - bb.workspaces.getIamPolicy
   - name: roles/projectOwner
     title: Project owner

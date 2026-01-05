@@ -12,10 +12,9 @@ import {
 import { computed, h, type MaybeRef, unref } from "vue";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
-import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { t } from "@/plugins/i18n";
-import projectV1Routes, {
+import {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
@@ -32,7 +31,6 @@ import projectV1Routes, {
 } from "@/router/dashboard/projectV1";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
@@ -48,28 +46,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const isDefaultProject = computed((): boolean => {
     return unref(project).name === DEFAULT_PROJECT_NAME;
   });
-
-  const flattenProjectV1Routes = computed(() => {
-    return getFlattenRoutes(projectV1Routes);
-  });
-
-  const filterProjectSidebarByPermissions = (
-    sidebarList: ProjectSidebarItem[]
-  ): ProjectSidebarItem[] => {
-    return sidebarList
-      .filter((item) => {
-        const routeConfig = flattenProjectV1Routes.value.find(
-          (projectV1Route) => projectV1Route.name === item.path
-        );
-        return (routeConfig?.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(unref(project), permission)
-        );
-      })
-      .map((item) => ({
-        ...item,
-        children: filterProjectSidebarByPermissions(item.children ?? []),
-      }));
-  };
 
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     const cicdRoutes: ProjectSidebarItem[] = enabledNewLayout.value
@@ -205,7 +181,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
       },
     ];
 
-    return filterProjectSidebarByPermissions(sidebarList);
+    return sidebarList;
   });
 
   const flattenNavigationItems = computed(() => {

@@ -1,5 +1,5 @@
 import { t } from "@/plugins/i18n";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleTitle } from "@/utils/role";
 import { PresetRoleType } from "./iam";
 
 export type BuiltinApprovalFlow = {
