@@ -315,7 +315,7 @@ type IMSettingPayloadValue =
   | AppIMSetting_Teams
   | undefined;
 
-const props = defineProps<{
+defineProps<{
   allowEdit: boolean;
 }>();
 

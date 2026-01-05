@@ -35,10 +35,6 @@ const requiredPermissions = computed(() => {
   return routeConfig?.permissions ?? [];
 });
 
-// const missedPermissions = computed(() =>
-//   requiredPermissions.value.filter((p) => !hasWorkspacePermissionV2(p))
-// );
-
 const missedPermissions = computed(() => {
   if (props.project) {
     return requiredPermissions.value.filter(
