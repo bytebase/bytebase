@@ -35,7 +35,6 @@ type PlanCheckRunMessage struct {
 	PlanUID int64
 
 	Status PlanCheckRunStatus
-	Config *storepb.PlanCheckRunConfig
 	Result *storepb.PlanCheckRunResult
 }
 
@@ -49,25 +48,20 @@ type FindPlanCheckRunMessage struct {
 
 // CreatePlanCheckRun creates or replaces the plan check run for a plan.
 func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) error {
-	config, err := protojson.Marshal(create.Config)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal config")
-	}
 	result, err := protojson.Marshal(create.Result)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result")
 	}
 
 	query := `
-		INSERT INTO plan_check_run (plan_id, status, config, result)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO plan_check_run (plan_id, status, result)
+		VALUES ($1, $2, $3)
 		ON CONFLICT (plan_id) DO UPDATE SET
 			status = EXCLUDED.status,
-			config = EXCLUDED.config,
 			result = EXCLUDED.result,
 			updated_at = now()
 	`
-	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, create.Status, config, result); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, create.Status, result); err != nil {
 		return errors.Wrapf(err, "failed to upsert plan check run")
 	}
 	return nil
@@ -82,7 +76,6 @@ SELECT
 	plan_check_run.updated_at,
 	plan_check_run.plan_id,
 	plan_check_run.status,
-	plan_check_run.config,
 	plan_check_run.result
 FROM plan_check_run
 WHERE TRUE`)
@@ -116,22 +109,17 @@ WHERE TRUE`)
 	var planCheckRuns []*PlanCheckRunMessage
 	for rows.Next() {
 		planCheckRun := PlanCheckRunMessage{
-			Config: &storepb.PlanCheckRunConfig{},
 			Result: &storepb.PlanCheckRunResult{},
 		}
-		var config, result string
+		var result string
 		if err := rows.Scan(
 			&planCheckRun.UID,
 			&planCheckRun.CreatedAt,
 			&planCheckRun.UpdatedAt,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
-			&config,
 			&result,
 		); err != nil {
-			return nil, err
-		}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
 			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
