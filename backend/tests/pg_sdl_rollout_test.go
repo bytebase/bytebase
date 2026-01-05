@@ -116,6 +116,7 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 	t.Helper()
 
 	// Create a DECLARATIVE release with SDL content
+	// Empty SDL content is allowed for DECLARATIVE releases (represents dropping all objects)
 	releaseResp, err := stc.ctl.releaseServiceClient.CreateRelease(stc.ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: stc.ctl.project.Name,
 		Release: &v1pb.Release{
