@@ -32,6 +32,21 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	prevStopTokenIndex := -1
 	var result []base.Statement
 	for _, item := range tree.GetChildren() {
+		// Skip past sql_plus_command (like "/" block terminator) to prevent it from being
+		// included in the next statement's leadingContent.
+		if sqlPlusCmd, ok := item.(parser.ISql_plus_commandContext); ok {
+			// Calculate the leading whitespace/comments before this sql_plus_command
+			leadingContent := ""
+			if startTokenIndex := sqlPlusCmd.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
+				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(sqlPlusCmd.GetStart().GetTokenIndex()-1))
+			}
+			// Skip past both the leading content and the command itself
+			cmdText := tokens.GetTextFromTokens(sqlPlusCmd.GetStart(), sqlPlusCmd.GetStop())
+			byteOffsetStart += len(leadingContent) + len(cmdText)
+			prevStopTokenIndex = sqlPlusCmd.GetStop().GetTokenIndex()
+			continue
+		}
+
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
 			var lastToken antlr.Token

@@ -105,16 +105,16 @@
         start: 0
         end: 57
       empty: false
-    - text: "\n/\nCREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;"
-      baseline: 3
+    - text: "\nCREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;"
+      baseline: 4
       start:
-        line: 4
-        column: 5
+        line: 5
+        column: 2
       end:
         line: 9
         column: 5
       range:
-        start: 57
+        start: 59
         end: 117
       empty: false
 - description: SELECT statements separated by forward slash
@@ -135,16 +135,16 @@
         start: 0
         end: 16
       empty: false
-    - text: "\n/\nSELECT * FROM t2"
-      baseline: 0
+    - text: "\nSELECT * FROM t2"
+      baseline: 1
       start:
-        line: 1
-        column: 17
+        line: 2
+        column: 1
       end:
         line: 3
         column: 17
       range:
-        start: 16
+        start: 18
         end: 35
       empty: false
 - description: anonymous block with forward slash
