@@ -16,6 +16,9 @@ type Bus struct {
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
 
+	// RunningPlanCheckRunsCancelFunc is the cancelFunc of running plan checks.
+	RunningPlanCheckRunsCancelFunc sync.Map // map[planCheckRunUID]context.CancelFunc
+
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.

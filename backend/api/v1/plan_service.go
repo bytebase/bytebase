@@ -490,8 +490,13 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
 	}
 
-	if planCheckRun.Status != store.PlanCheckRunStatusRunning {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running"))
+	if planCheckRun.Status != store.PlanCheckRunStatusRunning && planCheckRun.Status != store.PlanCheckRunStatusAvailable {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running or available"))
+	}
+
+	// Cancel in-flight plan check run if running.
+	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
+		cancelFunc.(context.CancelFunc)()
 	}
 
 	// Update the status to canceled.
