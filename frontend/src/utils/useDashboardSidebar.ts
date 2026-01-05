@@ -40,7 +40,6 @@ import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
-import { usePermissionStore } from "@/store";
 
 export interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
@@ -51,7 +50,6 @@ export interface DashboardSidebarItem extends SidebarItem {
 
 export const useDashboardSidebar = () => {
   const route = useRoute();
-  const permissionStore = usePermissionStore();
 
   const getItemClass = (item: SidebarItem): string[] => {
     const { name: current } = route;
@@ -133,7 +131,6 @@ export const useDashboardSidebar = () => {
             title: t("settings.sidebar.members"),
             name: WORKSPACE_ROUTE_MEMBERS,
             type: "route",
-            hide: permissionStore.onlyWorkspaceMember,
           },
           {
             title: t("settings.sidebar.custom-roles"),
