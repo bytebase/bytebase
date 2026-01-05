@@ -16,6 +16,8 @@ import (
 type PlanCheckRunStatus string
 
 const (
+	// PlanCheckRunStatusAvailable is the plan check status for AVAILABLE.
+	PlanCheckRunStatusAvailable PlanCheckRunStatus = "AVAILABLE"
 	// PlanCheckRunStatusRunning is the plan check status for RUNNING.
 	PlanCheckRunStatusRunning PlanCheckRunStatus = "RUNNING"
 	// PlanCheckRunStatusDone is the plan check status for DONE.
@@ -35,7 +37,6 @@ type PlanCheckRunMessage struct {
 	PlanUID int64
 
 	Status PlanCheckRunStatus
-	Config *storepb.PlanCheckRunConfig
 	Result *storepb.PlanCheckRunResult
 }
 
@@ -48,26 +49,22 @@ type FindPlanCheckRunMessage struct {
 }
 
 // CreatePlanCheckRun creates or replaces the plan check run for a plan.
+// Always creates with AVAILABLE status for HA-safe scheduling.
 func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) error {
-	config, err := protojson.Marshal(create.Config)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal config")
-	}
 	result, err := protojson.Marshal(create.Result)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result")
 	}
 
 	query := `
-		INSERT INTO plan_check_run (plan_id, status, config, result)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO plan_check_run (plan_id, status, result)
+		VALUES ($1, $2, $3)
 		ON CONFLICT (plan_id) DO UPDATE SET
 			status = EXCLUDED.status,
-			config = EXCLUDED.config,
 			result = EXCLUDED.result,
 			updated_at = now()
 	`
-	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, create.Status, config, result); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
 		return errors.Wrapf(err, "failed to upsert plan check run")
 	}
 	return nil
@@ -82,7 +79,6 @@ SELECT
 	plan_check_run.updated_at,
 	plan_check_run.plan_id,
 	plan_check_run.status,
-	plan_check_run.config,
 	plan_check_run.result
 FROM plan_check_run
 WHERE TRUE`)
@@ -116,22 +112,17 @@ WHERE TRUE`)
 	var planCheckRuns []*PlanCheckRunMessage
 	for rows.Next() {
 		planCheckRun := PlanCheckRunMessage{
-			Config: &storepb.PlanCheckRunConfig{},
 			Result: &storepb.PlanCheckRunResult{},
 		}
-		var config, result string
+		var result string
 		if err := rows.Scan(
 			&planCheckRun.UID,
 			&planCheckRun.CreatedAt,
 			&planCheckRun.UpdatedAt,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
-			&config,
 			&result,
 		); err != nil {
-			return nil, err
-		}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
 			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
@@ -198,4 +189,51 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs [
 		return err
 	}
 	return nil
+}
+
+// ClaimedPlanCheckRun represents a plan check run that was atomically claimed.
+type ClaimedPlanCheckRun struct {
+	UID     int
+	PlanUID int64
+}
+
+// ClaimAvailablePlanCheckRuns atomically claims all AVAILABLE plan check runs by updating them to RUNNING
+// and returns the claimed UIDs. Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different runs.
+func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlanCheckRun, error) {
+	q := qb.Q().Space(`
+		UPDATE plan_check_run
+		SET status = ?, updated_at = now()
+		WHERE id IN (
+			SELECT id FROM plan_check_run
+			WHERE status = ?
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING id, plan_id
+	`, PlanCheckRunStatusRunning, PlanCheckRunStatusAvailable)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to claim plan check runs")
+	}
+	defer rows.Close()
+
+	var claimed []*ClaimedPlanCheckRun
+	for rows.Next() {
+		var c ClaimedPlanCheckRun
+		if err := rows.Scan(&c.UID, &c.PlanUID); err != nil {
+			return nil, err
+		}
+		claimed = append(claimed, &c)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return claimed, nil
 }

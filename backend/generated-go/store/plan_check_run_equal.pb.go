@@ -3,66 +3,6 @@
 
 package store
 
-func (x *PlanCheckRunConfig_CheckTarget) Equal(y *PlanCheckRunConfig_CheckTarget) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Target != y.Target {
-		return false
-	}
-	if x.SheetSha256 != y.SheetSha256 {
-		return false
-	}
-	if x.EnablePriorBackup != y.EnablePriorBackup {
-		return false
-	}
-	if x.EnableGhost != y.EnableGhost {
-		return false
-	}
-	if len(x.GhostFlags) != len(y.GhostFlags) {
-		return false
-	}
-	for k := range x.GhostFlags {
-		_, ok := y.GhostFlags[k]
-		if !ok {
-			return false
-		}
-		if x.GhostFlags[k] != y.GhostFlags[k] {
-			return false
-		}
-	}
-	if len(x.Types) != len(y.Types) {
-		return false
-	}
-	for i := 0; i < len(x.Types); i++ {
-		if x.Types[i] != y.Types[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Targets) != len(y.Targets) {
-		return false
-	}
-	for i := 0; i < len(x.Targets); i++ {
-		if !x.Targets[i].Equal(y.Targets[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) Equal(y *PlanCheckRunResult_Result_SqlSummaryReport) bool {
 	if x == y {
 		return true

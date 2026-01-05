@@ -841,18 +841,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig"><span class="badge">M</span>PlanCheckRunConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.CheckTarget"><span class="badge">M</span>PlanCheckRunConfig.CheckTarget</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry"><span class="badge">M</span>PlanCheckRunConfig.CheckTarget.GhostFlagsEntry</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanCheckRunResult"><span class="badge">M</span>PlanCheckRunResult</a>
                 </li>
               
@@ -8543,120 +8531,6 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                   <td>databases</td>
                   <td><a href="#bytebase.store.ChangedResourceDatabase">ChangedResourceDatabase</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig">PlanCheckRunConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>targets</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.CheckTarget">PlanCheckRunConfig.CheckTarget</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig.CheckTarget">PlanCheckRunConfig.CheckTarget</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_prior_backup</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry">PlanCheckRunConfig.CheckTarget.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>types</td>
-                  <td><a href="#bytebase.store.PlanCheckType">PlanCheckType</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry">PlanCheckRunConfig.CheckTarget.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

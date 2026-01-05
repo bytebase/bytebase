@@ -31,7 +31,7 @@ func NewCombinedExecutor(
 }
 
 // RunForTarget runs all checks for the given target.
-func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	var allResults []*storepb.PlanCheckRunResult_Result
 
 	for _, checkType := range target.Types {
@@ -59,7 +59,7 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *storepb.Pla
 	return allResults, nil
 }
 
-func (e *CombinedExecutor) runCheck(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	switch checkType {
 	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE:
 		return e.runStatementAdvise(ctx, target)
@@ -72,7 +72,7 @@ func (e *CombinedExecutor) runCheck(ctx context.Context, target *storepb.PlanChe
 	}
 }
 
-func (e *CombinedExecutor) runStatementAdvise(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *CombinedExecutor) runStatementAdvise(ctx context.Context, target *CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	executor := &StatementAdviseExecutor{
 		store:        e.store,
 		sheetManager: e.sheetManager,
@@ -81,7 +81,7 @@ func (e *CombinedExecutor) runStatementAdvise(ctx context.Context, target *store
 	return executor.RunForTarget(ctx, target)
 }
 
-func (e *CombinedExecutor) runStatementReport(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *CombinedExecutor) runStatementReport(ctx context.Context, target *CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	executor := &StatementReportExecutor{
 		store:        e.store,
 		sheetManager: e.sheetManager,
@@ -90,7 +90,7 @@ func (e *CombinedExecutor) runStatementReport(ctx context.Context, target *store
 	return executor.RunForTarget(ctx, target)
 }
 
-func (e *CombinedExecutor) runGhostSync(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *CombinedExecutor) runGhostSync(ctx context.Context, target *CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	executor := &GhostSyncExecutor{
 		store:     e.store,
 		dbFactory: e.dbFactory,

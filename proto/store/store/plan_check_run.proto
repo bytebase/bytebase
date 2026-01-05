@@ -14,20 +14,6 @@ enum PlanCheckType {
   PLAN_CHECK_TYPE_GHOST_SYNC = 3;
 }
 
-message PlanCheckRunConfig {
-  repeated CheckTarget targets = 1;
-
-  message CheckTarget {
-    // Format: instances/{instance}/databases/{database}
-    string target = 1;
-    string sheet_sha256 = 2;
-    bool enable_prior_backup = 3;
-    bool enable_ghost = 4;
-    map<string, string> ghost_flags = 6;
-    repeated PlanCheckType types = 7;
-  }
-}
-
 message PlanCheckRunResult {
   repeated Result results = 1;
   string error = 2;

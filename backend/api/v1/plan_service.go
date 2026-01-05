@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/runner/approval"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -489,11 +490,11 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
 	}
 
-	if planCheckRun.Status != store.PlanCheckRunStatusRunning {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running"))
+	if planCheckRun.Status != store.PlanCheckRunStatusRunning && planCheckRun.Status != store.PlanCheckRunStatusAvailable {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running or available"))
 	}
 
-	// Cancel the plan check run.
+	// Cancel in-flight plan check run if running.
 	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
 		cancelFunc.(context.CancelFunc)()
 	}
@@ -727,61 +728,9 @@ func storePlanConfigHasCreateDatabase(plan *storepb.PlanConfig) bool {
 
 // getPlanCheckRunFromPlan returns the plan check run for a plan.
 func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) (*store.PlanCheckRunMessage, error) {
-	var targets []*storepb.PlanCheckRunConfig_CheckTarget
-
-	for _, spec := range plan.Config.Specs {
-		switch config := spec.Config.(type) {
-		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-			// No checks for create database.
-		case *storepb.PlanConfig_Spec_ExportDataConfig:
-			// No checks for export data.
-		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			// Skip plan checks for releases.
-			if config.ChangeDatabaseConfig.Release != "" {
-				continue
-			}
-
-			var databases []string
-			if len(config.ChangeDatabaseConfig.Targets) == 1 && databaseGroup != nil && config.ChangeDatabaseConfig.Targets[0] == databaseGroup.Name {
-				for _, m := range databaseGroup.MatchedDatabases {
-					databases = append(databases, m.Name)
-				}
-			} else {
-				databases = config.ChangeDatabaseConfig.Targets
-			}
-
-			// Apply sampling upfront
-			if samplingSize := project.Setting.GetCiSamplingSize(); samplingSize > 0 {
-				if len(databases) > int(samplingSize) {
-					databases = databases[:samplingSize]
-				}
-			}
-
-			// Plan checks only run for sheet-based migrations (releases are skipped above).
-			// Sheet-based migrations are always imperative (MIGRATE), never declarative (SDL).
-			enableGhost := config.ChangeDatabaseConfig.EnableGhost
-
-			for _, target := range databases {
-				types := []storepb.PlanCheckType{
-					storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE,
-					storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
-				}
-				if enableGhost {
-					types = append(types, storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC)
-				}
-
-				targets = append(targets, &storepb.PlanCheckRunConfig_CheckTarget{
-					Target:            target,
-					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
-					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,
-					EnableGhost:       config.ChangeDatabaseConfig.EnableGhost,
-					GhostFlags:        config.ChangeDatabaseConfig.GhostFlags,
-					Types:             types,
-				})
-			}
-		default:
-			return nil, errors.Errorf("unknown spec config type %T", config)
-		}
+	targets, err := plancheck.DeriveCheckTargets(project, plan, databaseGroup)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(targets) == 0 {
@@ -791,7 +740,6 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 	return &store.PlanCheckRunMessage{
 		PlanUID: plan.UID,
 		Status:  store.PlanCheckRunStatusRunning,
-		Config:  &storepb.PlanCheckRunConfig{Targets: targets},
 	}, nil
 }
 
