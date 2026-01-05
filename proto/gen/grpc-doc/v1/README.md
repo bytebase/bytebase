@@ -4574,7 +4574,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | prev_schema_size | [int64](#int64) |  |  |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | version | [string](#string) |  | Could be empty |
-| revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 

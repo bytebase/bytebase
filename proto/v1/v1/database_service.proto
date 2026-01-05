@@ -1448,9 +1448,6 @@ message Changelog {
 
   // Could be empty
   string version = 12;
-  // Could be empty
-  // Or present but not found if deleted
-  string revision = 13;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;

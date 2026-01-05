@@ -509,19 +509,10 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			},
 		}
 
-		revision, err := exec.store.CreateRevision(ctx, r)
+		_, err = exec.store.CreateRevision(ctx, r)
 		if err != nil {
 			driver.Close(ctx)
 			return nil, errors.Wrapf(err, "failed to create revision")
-		}
-
-		// Update changelog with revision UID
-		if err := exec.store.UpdateChangelog(ctx, &store.UpdateChangelogMessage{
-			UID:         changelogUID,
-			RevisionUID: &revision.UID,
-		}); err != nil {
-			driver.Close(ctx)
-			return nil, errors.Wrapf(err, "failed to update changelog with revision")
 		}
 
 		// Update database metadata with the version only if the new version is greater
@@ -661,18 +652,21 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		return nil, errors.Wrap(migrationErr, "failed to execute declarative release")
 	}
 
-	// Post migration - clean up drift
+	// Post migration
 	// Note: Declarative releases do NOT create revisions (they are version-tracked through the database schema itself)
 	slog.Debug("Post migration...",
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
 	)
 
+	// Clean up drift
+	// Update database schema version.
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
 			md.Drifted = false
+			md.Version = file.Version
 		}},
 	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
@@ -1173,7 +1167,6 @@ func beginMigration(
 		SyncHistoryUID:     nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     taskRunName,
-			Revision:    0,
 			SheetSha256: sheetSha256,
 			Version:     version,
 			Type:        changelogType,
