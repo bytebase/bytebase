@@ -116,12 +116,10 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRunUID,
-			Updater: common.SystemBotEmail,
-			Status:  storepb.TaskRun_CANCELED,
-			ResultProto: &storepb.TaskRunResult{
-				Detail: "The task run is canceled",
-			},
+			ID:          taskRunUID,
+			Updater:     common.SystemBotEmail,
+			Status:      storepb.TaskRun_CANCELED,
+			ResultProto: &storepb.TaskRunResult{},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",

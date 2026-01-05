@@ -101,7 +101,6 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	return &storepb.TaskRunResult{
-		Detail:           "Data export succeeded",
 		ExportArchiveUid: int32(exportArchive.UID),
 	}, nil
 }
