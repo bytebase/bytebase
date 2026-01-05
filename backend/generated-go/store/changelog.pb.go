@@ -77,9 +77,6 @@ type ChangelogPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,1,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
-	// The revision uid.
-	// optional
-	Revision int64 `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
 	// The SHA256 hash of the sheet content (hex-encoded).
 	SheetSha256 string                `protobuf:"bytes,3,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	Version     string                `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
@@ -130,13 +127,6 @@ func (x *ChangelogPayload) GetTaskRun() string {
 	return ""
 }
 
-func (x *ChangelogPayload) GetRevision() int64 {
-	if x != nil {
-		return x.Revision
-	}
-	return 0
-}
-
 func (x *ChangelogPayload) GetSheetSha256() string {
 	if x != nil {
 		return x.SheetSha256
@@ -176,10 +166,9 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\"\xc5\x02\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\"\xa9\x02\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
-	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x1a\n" +
-	"\brevision\x18\x02 \x01(\x03R\brevision\x12!\n" +
+	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12!\n" +
 	"\fsheet_sha256\x18\x03 \x01(\tR\vsheetSha256\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\tR\aversion\x129\n" +
 	"\x04type\x18\x05 \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +

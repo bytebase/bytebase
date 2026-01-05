@@ -8,10 +8,6 @@ message ChangelogPayload {
   // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 1;
 
-  // The revision uid.
-  // optional
-  int64 revision = 2;
-
   // The SHA256 hash of the sheet content (hex-encoded).
   string sheet_sha256 = 3;
 
