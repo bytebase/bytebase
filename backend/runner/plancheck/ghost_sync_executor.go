@@ -38,7 +38,7 @@ type GhostSyncExecutor struct {
 }
 
 // RunForTarget runs the gh-ost sync check for a single target.
-func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) (results []*storepb.PlanCheckRunResult_Result, err error) {
+func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarget) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.
@@ -88,12 +88,12 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *storepb.Pl
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	sheet, err := e.store.GetSheetFull(ctx, target.SheetSha256)
+	sheet, err := e.store.GetSheetFull(ctx, target.SheetSHA256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %s", target.SheetSha256)
+		return nil, errors.Wrapf(err, "failed to get sheet %s", target.SheetSHA256)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %s not found", target.SheetSha256)
+		return nil, errors.Errorf("sheet %s not found", target.SheetSHA256)
 	}
 	statement := sheet.Statement
 
