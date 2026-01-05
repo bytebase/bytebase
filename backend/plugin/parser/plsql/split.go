@@ -82,7 +82,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			byteOffsetEnd := tokenByteOffset + len(tokens.GetTextFromTokens(stmt.GetStart(), lastToken))
 
 			// Calculate start position based on byteOffsetStart (including leading whitespace)
-			startLine, startColumn := calculateLineAndColumn(statement, byteOffsetStart)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffsetStart)
 
 			result = append(result, base.Statement{
 				Text: text,
@@ -116,24 +116,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		}
 	}
 	return result, nil
-}
-
-// calculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
-// for a given byte offset in the statement.
-func calculateLineAndColumn(statement string, byteOffset int) (line, column int) {
-	if byteOffset > len(statement) {
-		byteOffset = len(statement)
-	}
-	// Range over string iterates over runes (code points), not bytes
-	for _, r := range statement[:byteOffset] {
-		if r == '\n' {
-			line++
-			column = 0
-		} else {
-			column++
-		}
-	}
-	return line, column
 }
 
 func SplitSQLForCompletion(statement string) ([]base.Statement, error) {

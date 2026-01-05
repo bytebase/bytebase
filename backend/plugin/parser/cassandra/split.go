@@ -18,5 +18,5 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
 
-	return base.SplitSQLByLexer(stream, cql.CqlLexerSEMI, statement)
+	return base.SplitSQLByLexer(stream, cql.CqlLexerSEMI)
 }

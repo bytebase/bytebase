@@ -16,5 +16,5 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewGoogleSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
-	return base.SplitSQLByLexer(stream, parser.GoogleSQLLexerSEMI_SYMBOL, statement)
+	return base.SplitSQLByLexer(stream, parser.GoogleSQLLexerSEMI_SYMBOL)
 }

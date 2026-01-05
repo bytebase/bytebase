@@ -43,9 +43,9 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		text := statement[startPos:endPos]
 
 		// Calculate line and column for Start position
-		startLine, startColumn := calculateLineAndColumn(statement, startPos)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, startPos)
 		// Calculate line and column for End position
-		endLine, endColumn := calculateLineAndColumn(statement, endPos)
+		endLine, endColumn := base.CalculateLineAndColumn(statement, endPos)
 
 		list = append(list, base.Statement{
 			Text:     text,
@@ -68,24 +68,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		return nil
 	})
 	return list, err
-}
-
-// calculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
-// for a given byte offset in the statement.
-func calculateLineAndColumn(statement string, byteOffset int) (line, column int) {
-	if byteOffset > len(statement) {
-		byteOffset = len(statement)
-	}
-	// Range over string iterates over runes (code points), not bytes
-	for _, r := range statement[:byteOffset] {
-		if r == '\n' {
-			line++
-			column = 0
-		} else {
-			column++
-		}
-	}
-	return line, column
 }
 
 // isEmptySQL checks if the SQL contains only whitespace and comments.
