@@ -426,10 +426,6 @@ func CreateRolloutAndPendingTasks(
 			create := &store.TaskRunMessage{
 				TaskUID: task.ID,
 			}
-			if task.Payload.GetSheetSha256() != "" {
-				sheetSha256 := task.Payload.GetSheetSha256()
-				create.SheetSha256 = &sheetSha256
-			}
 
 			// Use SystemBot for auto-rollout
 			if err := s.CreatePendingTaskRuns(ctx, common.SystemBotEmail, create); err != nil {
@@ -735,10 +731,6 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		create := &store.TaskRunMessage{
 			TaskUID: task.ID,
 		}
-		if task.Payload.GetSheetSha256() != "" {
-			sheetSha256 := task.Payload.GetSheetSha256()
-			create.SheetSha256 = &sheetSha256
-		}
 		if request.GetRunTime() != nil {
 			t := request.GetRunTime().AsTime()
 			create.RunAt = &t
@@ -997,10 +989,11 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance"))
 	}
 
-	if taskRun.SheetSha256 == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no sheet", taskRun.ID))
+	sheetSha256 := task.Payload.GetSheetSha256()
+	if sheetSha256 == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task %v has no sheet", task.ID))
 	}
-	sheet, err := s.store.GetSheetFull(ctx, *taskRun.SheetSha256)
+	sheet, err := s.store.GetSheetFull(ctx, sheetSha256)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet statements"))
 	}

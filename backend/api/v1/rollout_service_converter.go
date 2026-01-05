@@ -45,17 +45,12 @@ func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun
 		UpdateTime: timestamppb.New(taskRun.UpdatedAt),
 		Status:     convertToTaskRunStatus(taskRun.Status),
 		Detail:     taskRun.ResultProto.Detail,
-		Sheet:      "",
 	}
 	if taskRun.StartedAt != nil {
 		t.StartTime = timestamppb.New(*taskRun.StartedAt)
 	}
 	if taskRun.RunAt != nil {
 		t.RunTime = timestamppb.New(*taskRun.RunAt)
-	}
-
-	if taskRun.SheetSha256 != nil && *taskRun.SheetSha256 != "" {
-		t.Sheet = common.FormatSheet(taskRun.ProjectID, *taskRun.SheetSha256)
 	}
 
 	if v, ok := bus.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
@@ -92,7 +87,7 @@ func convertToSchedulerInfo(ctx context.Context, s *store.Store, si *storepb.Sch
 		return nil, nil
 	}
 
-	cause, err := convertToSchedulerInfoWaitingCause(ctx, s, si.WaitingCause)
+	cause, err := convertToSchedulerInfoWaitingCause(si.WaitingCause)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert to scheduler info waiting cause")
 	}
@@ -103,43 +98,11 @@ func convertToSchedulerInfo(ctx context.Context, s *store.Store, si *storepb.Sch
 	}, nil
 }
 
-func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *storepb.SchedulerInfo_WaitingCause) (*v1pb.TaskRun_SchedulerInfo_WaitingCause, error) {
+func convertToSchedulerInfoWaitingCause(c *storepb.SchedulerInfo_WaitingCause) (*v1pb.TaskRun_SchedulerInfo_WaitingCause, error) {
 	if c == nil {
 		return nil, nil
 	}
 	switch cause := c.Cause.(type) {
-	case *storepb.SchedulerInfo_WaitingCause_ConnectionLimit:
-		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
-			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit{
-				ConnectionLimit: cause.ConnectionLimit,
-			},
-		}, nil
-	case *storepb.SchedulerInfo_WaitingCause_TaskUid:
-		taskUID := cause.TaskUid
-		task, err := s.GetTaskByID(ctx, int(taskUID))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get task %v", taskUID)
-		}
-		if task == nil {
-			return nil, errors.Errorf("task %v not found", taskUID)
-		}
-		plan, err := s.GetPlan(ctx, &store.FindPlanMessage{
-			UID: &task.PlanID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
-		}
-		if plan == nil {
-			return nil, errors.Errorf("plan %d not found", task.PlanID)
-		}
-		stageID := common.FormatStageID(task.Environment)
-		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
-			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
-				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
-					Task: common.FormatTask(plan.ProjectID, task.PlanID, stageID, task.ID),
-				},
-			},
-		}, nil
 	case *storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit:
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit{

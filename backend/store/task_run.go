@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -18,10 +19,7 @@ type TaskRunMessage struct {
 	Environment string // Refer to the task's environment.
 	PlanUID     int64
 	Status      storepb.TaskRun_Status
-	Code        common.Code
-	Result      string
 	ResultProto *storepb.TaskRunResult
-	SheetSha256 *string
 
 	// Output only.
 	ID           int
@@ -51,9 +49,8 @@ type TaskRunStatusPatch struct {
 	Updater string
 
 	// Domain specific fields
-	Status storepb.TaskRun_Status
-	Code   *common.Code
-	Result *string
+	Status      storepb.TaskRun_Status
+	ResultProto *storepb.TaskRunResult
 }
 
 // ListTaskRuns lists task runs.
@@ -68,9 +65,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task_run.status,
 			task_run.started_at,
 			task_run.run_at,
-			task_run.code,
 			task_run.result,
-			encode(task_run.sheet_sha256, 'hex'),
 			task.plan_id,
 			task.environment,
 			project.resource_id
@@ -122,7 +117,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		var taskRun TaskRunMessage
 		var startedAt, runAt sql.NullTime
 		var statusString string
-		var sheetSha256 sql.NullString
+		var resultJSON string
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorEmail,
@@ -132,17 +127,12 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			&statusString,
 			&startedAt,
 			&runAt,
-			&taskRun.Code,
-			&taskRun.Result,
-			&sheetSha256,
+			&resultJSON,
 			&taskRun.PlanUID,
 			&taskRun.Environment,
 			&taskRun.ProjectID,
 		); err != nil {
 			return nil, err
-		}
-		if sheetSha256.Valid {
-			taskRun.SheetSha256 = &sheetSha256.String
 		}
 		if statusValue, ok := storepb.TaskRun_Status_value[statusString]; ok {
 			taskRun.Status = storepb.TaskRun_Status(statusValue)
@@ -157,8 +147,8 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			taskRun.RunAt = &runAt.Time
 		}
 		var resultProto storepb.TaskRunResult
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", taskRun.Result)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resultJSON), &resultProto); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", resultJSON)
 		}
 		taskRun.ResultProto = &resultProto
 
@@ -299,11 +289,9 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	}
 
 	var taskUIDs []int
-	var sheetSha256s []*string
 	var runAts []*time.Time
 	for _, create := range creates {
 		taskUIDs = append(taskUIDs, create.TaskUID)
-		sheetSha256s = append(sheetSha256s, create.SheetSha256)
 		runAts = append(runAts, create.RunAt)
 	}
 
@@ -316,7 +304,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		INSERT INTO task_run (
 			creator,
 			task_id,
-			sheet_sha256,
 			run_at,
 			attempt,
 			status
@@ -324,21 +311,13 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		SELECT
 			?,
 			tasks.task_id,
-			tasks.sheet_sha256,
 			tasks.run_at,
 			COALESCE((SELECT MAX(attempt) + 1 FROM task_run WHERE task_run.task_id = tasks.task_id), 0) as attempt,
 			?
 		FROM (
 			SELECT
 				unnest(CAST(? AS INTEGER[])) AS task_id,
-				unnest(CAST(? AS TEXT[])) AS sheet_sha256_hex,
 				unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
-		) tasks_raw
-		CROSS JOIN LATERAL (
-			SELECT
-				tasks_raw.task_id,
-				CASE WHEN tasks_raw.sheet_sha256_hex IS NOT NULL THEN decode(tasks_raw.sheet_sha256_hex, 'hex') ELSE NULL END AS sheet_sha256,
-				tasks_raw.run_at
 		) tasks
 		WHERE NOT EXISTS (
 			SELECT 1 FROM task_run
@@ -346,7 +325,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			AND task_run.status IN (?, ?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
-	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, sheetSha256s, runAts,
+	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, runAts,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()
@@ -367,20 +346,21 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 
 	set.Comma("updated_at = ?, status = ?", time.Now(), patch.Status.String())
 
-	if v := patch.Code; v != nil {
-		set.Comma("code = ?", *v)
-	}
-	if v := patch.Result; v != nil {
-		result := "{}"
-		if *v != "" {
-			result = *v
+	if v := patch.ResultProto; v != nil {
+		resultBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal task run result")
+		}
+		result := string(resultBytes)
+		if result == "" {
+			result = "{}"
 		}
 		set.Comma("result = ?", result)
 	}
 
 	q := qb.Q().Space("UPDATE task_run SET ?", set).
 		Space("WHERE id = ?", patch.ID).
-		Space("RETURNING id, creator, created_at, updated_at, task_id, status, code, result")
+		Space("RETURNING id, creator, created_at, updated_at, task_id, status, result")
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -389,6 +369,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 
 	var taskRun TaskRunMessage
 	var statusString string
+	var resultJSON string
 	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&taskRun.ID,
 		&taskRun.CreatorEmail,
@@ -396,8 +377,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 		&taskRun.UpdatedAt,
 		&taskRun.TaskUID,
 		&statusString,
-		&taskRun.Code,
-		&taskRun.Result,
+		&resultJSON,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
@@ -409,6 +389,11 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	} else {
 		return nil, errors.Errorf("invalid task run status string: %s", statusString)
 	}
+	var resultProto storepb.TaskRunResult
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resultJSON), &resultProto); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", resultJSON)
+	}
+	taskRun.ResultProto = &resultProto
 	return &taskRun, nil
 }
 

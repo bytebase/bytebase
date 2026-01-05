@@ -73,11 +73,8 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	}
 
 	// Check 3: Database mutual exclusion (for sequential tasks)
-	canProceed, blockingTaskID := sc.checkDatabaseMutualExclusion(task)
+	canProceed, _ := sc.checkDatabaseMutualExclusion(task)
 	if !canProceed {
-		if blockingTaskID != nil {
-			s.storeWaitingCause(taskRun.ID, *blockingTaskID)
-		}
 		return nil
 	}
 
@@ -98,17 +95,6 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	sc.markPromoted(task)
 
 	return nil
-}
-
-func (s *Scheduler) storeWaitingCause(taskRunID int, blockingTaskID int) {
-	s.bus.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
-		ReportTime: timestamppb.Now(),
-		WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-			Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
-				TaskUid: int32(blockingTaskID),
-			},
-		},
-	})
 }
 
 func (s *Scheduler) storeParallelLimitCause(taskRunID int) {
