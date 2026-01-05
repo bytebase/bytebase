@@ -25,7 +25,7 @@ func ParseCosmosDBQuery(statement string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleCosmosDBQuery(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleCosmosDBQuery(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}

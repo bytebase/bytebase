@@ -78,8 +78,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 			// Calculate start position from byte offset (first character of Text)
 			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
-				Text:     stmtText,
-				BaseLine: tokens[start].GetLine() - 1,
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),
@@ -129,8 +128,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 				// Calculate start position from byte offset (first character of Text)
 				startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 				result = append(result, base.Statement{
-					Text:     stmtText,
-					BaseLine: tokens[start].GetLine() - 1,
+					Text: stmtText,
 					Range: &storepb.Range{
 						Start: int32(byteOffset),
 						End:   int32(byteOffset + stmtByteLength),
@@ -164,8 +162,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 			// Calculate start position from byte offset (first character of Text)
 			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
-				Text:     stmtText,
-				BaseLine: tokens[start].GetLine() - 1,
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),
@@ -201,8 +198,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			// Calculate start position from byte offset (first character of Text)
 			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
-				Text:     stmtText,
-				BaseLine: tokens[start].GetLine() - 1,
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),
@@ -228,8 +224,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		// Calculate start position from byte offset (first character of Text)
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -254,8 +249,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		// Calculate start position from byte offset (first character of Text)
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -280,8 +274,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			// Calculate start position from byte offset (first character of Text)
 			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
-				Text:     stmtText,
-				BaseLine: tokens[start].GetLine() - 1,
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),

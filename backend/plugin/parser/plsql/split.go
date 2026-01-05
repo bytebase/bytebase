@@ -86,8 +86,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 
 			result = append(result, base.Statement{
 				Text: text,
-				// BaseLine is 0-based line offset of this statement in the original SQL
-				BaseLine: startLine,
 				Start: &storepb.Position{
 					Line:   int32(startLine + 1),
 					Column: int32(startColumn + 1),

@@ -73,8 +73,7 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		// Calculate start position from byte offset (first character of Text)
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -102,8 +101,7 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		// Calculate start position from byte offset (first character of Text)
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -214,8 +212,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		// Calculate start position from byte offset (first character of Text)
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -243,8 +240,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		// Calculate start position from byte offset (first character of Text)
 		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),

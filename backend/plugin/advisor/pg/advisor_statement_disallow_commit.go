@@ -46,7 +46,7 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 			BaseRule: BaseRule{level: level, title: checkCtx.Rule.Type.String()},
 			tokens:   antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.BaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)

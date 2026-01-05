@@ -58,7 +58,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			if !ok {
 				continue
 			}
-			checker.baseLine = stmt.BaseLine
+			checker.baseLine = stmt.BaseLine()
 			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 			if checker.explainCount >= common.MaximumLintExplainSize {
 				break

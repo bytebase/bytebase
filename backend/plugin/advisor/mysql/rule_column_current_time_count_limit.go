@@ -51,8 +51,8 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.BaseLine())
+		checker.SetBaseLine(stmt.BaseLine())
 		if stmt.AST == nil {
 			continue
 		}

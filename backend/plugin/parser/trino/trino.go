@@ -27,7 +27,7 @@ func ParseTrino(sql string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleTrino(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleTrino(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}

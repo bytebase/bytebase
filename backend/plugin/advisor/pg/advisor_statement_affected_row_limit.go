@@ -66,7 +66,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			tenantMode: checkCtx.TenantMode,
 			tokens:     antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.BaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)

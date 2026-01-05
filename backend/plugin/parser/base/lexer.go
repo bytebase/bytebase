@@ -112,8 +112,7 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int) ([]Stat
 			lastToken := buf[len(buf)-1]
 			// Use buf[0]'s position directly since GetAllTokens() includes hidden channel tokens (whitespace/comments)
 			sqls = append(sqls, Statement{
-				Text:     stmtText,
-				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),

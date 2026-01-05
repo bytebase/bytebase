@@ -64,8 +64,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	// Start should point to the first character (position 1,1)
 	return []base.Statement{
 		{
-			Text:     statement,
-			BaseLine: 0,
+			Text: statement,
 			Range: &storepb.Range{
 				Start: 0,
 				End:   int32(len(statement)),

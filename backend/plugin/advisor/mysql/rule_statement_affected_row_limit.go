@@ -50,8 +50,8 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 	if checkCtx.Driver != nil {
 		for _, stmt := range checkCtx.ParsedStatements {
-			rule.SetBaseLine(stmt.BaseLine)
-			checker.SetBaseLine(stmt.BaseLine)
+			rule.SetBaseLine(stmt.BaseLine())
+			checker.SetBaseLine(stmt.BaseLine())
 			if stmt.AST == nil {
 				continue
 			}

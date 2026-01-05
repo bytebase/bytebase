@@ -75,7 +75,7 @@ func ParseCassandraSQL(statement string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleCassandraSQL(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleCassandraSQL(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}
