@@ -53,7 +53,7 @@ import { CopyButton } from "@/components/v2";
 import {
   rolloutServiceClientConnect,
   sheetServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import { useRevisionStore } from "@/store";
 import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";

@@ -78,7 +78,7 @@ import {
 } from "@/components/Plan/components/common";
 import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,

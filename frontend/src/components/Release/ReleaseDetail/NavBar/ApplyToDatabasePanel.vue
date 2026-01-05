@@ -62,7 +62,7 @@ import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import {

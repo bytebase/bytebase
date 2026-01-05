@@ -20,8 +20,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { rolloutServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import {
   GetTaskRunSessionRequestSchema,
   type TaskRun,

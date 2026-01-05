@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { sheetServiceClientConnect } from "@/grpcweb";
+import { sheetServiceClientConnect } from "@/connect";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";

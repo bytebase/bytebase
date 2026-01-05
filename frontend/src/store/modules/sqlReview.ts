@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { pullAt, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
-import { reviewConfigServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { reviewConfigServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type {
   ComposedDatabase,

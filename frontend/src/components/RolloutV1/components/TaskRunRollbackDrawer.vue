@@ -131,8 +131,8 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+} from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,

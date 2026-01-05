@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
-import { settingServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { settingServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import type { ResourceId } from "@/types";
 import {
   NULL_ENVIRONMENT_NAME,

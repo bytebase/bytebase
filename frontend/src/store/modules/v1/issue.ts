@@ -5,8 +5,8 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
-import { issueServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { issueServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { type IssueFilter, SYSTEM_BOT_EMAIL } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {

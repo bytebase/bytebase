@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { rolloutServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import type { MaybeRef } from "@/types";
 import { isValidRolloutName, unknownRollout } from "@/types";
 import {

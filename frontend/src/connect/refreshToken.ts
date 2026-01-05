@@ -1,4 +1,4 @@
-import { authServiceClientConnect } from "@/grpcweb";
+import { authServiceClientConnect } from "@/connect";
 
 const LOCK_NAME = "bb_token_refresh";
 const CHANNEL_NAME = "bb_token_refresh";

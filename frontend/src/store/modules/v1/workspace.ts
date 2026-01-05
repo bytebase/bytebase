@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { workspaceServiceClientConnect } from "@/grpcweb";
+import { workspaceServiceClientConnect } from "@/connect";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";

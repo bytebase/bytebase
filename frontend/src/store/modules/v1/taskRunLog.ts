@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import { rolloutServiceClientConnect } from "@/connect";
 import type { TaskRunLog } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   GetTaskRunLogRequestSchema,

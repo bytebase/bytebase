@@ -31,7 +31,7 @@ import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/Resourc
 import { pushNotification, useRoleStore, useWorkspaceV1Store } from "@/store";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
-import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
 import { useCustomRoleSettingContext } from "../../../context";
 
 const props = defineProps<{

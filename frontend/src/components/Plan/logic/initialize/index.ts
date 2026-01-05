@@ -5,7 +5,7 @@ import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import { projectNamePrefix, usePlanStore } from "@/store";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import {

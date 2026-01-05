@@ -76,7 +76,7 @@ import { NButton, NInput } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRenderMarkdown } from "@/components/MarkdownEditor";
-import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
   IssueSchema,

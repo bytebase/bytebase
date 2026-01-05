@@ -4,8 +4,8 @@ import { computedAsync } from "@vueuse/core";
 import { isEqual, isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { userServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
+import { userServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import {
   allUsersUser,
   isValidProjectName,

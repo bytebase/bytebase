@@ -78,7 +78,7 @@ import { usePlanContext } from "@/components/Plan/logic";
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
-} from "@/grpcweb";
+} from "@/connect";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import {

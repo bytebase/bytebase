@@ -18,7 +18,7 @@ import { ConnectError } from "@connectrpc/connect";
 import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseServiceClientConnect } from "@/grpcweb";
+import { databaseServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { isValidDatabaseName } from "@/types";

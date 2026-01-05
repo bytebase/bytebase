@@ -69,7 +69,7 @@ import {
   issueStatusActionButtonProps,
   issueStatusActionDisplayName,
 } from "@/components/IssueV1/logic";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";

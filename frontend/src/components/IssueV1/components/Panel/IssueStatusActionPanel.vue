@@ -101,7 +101,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";

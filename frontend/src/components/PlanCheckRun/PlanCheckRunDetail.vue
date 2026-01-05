@@ -240,7 +240,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import type { ComposedDatabase, RuleTemplateV2 } from "@/types";

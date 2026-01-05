@@ -21,7 +21,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
-import { issueServiceClientConnect } from "@/grpcweb";
+import { issueServiceClientConnect } from "@/connect";
 import {
   extractUserId,
   pushNotification,

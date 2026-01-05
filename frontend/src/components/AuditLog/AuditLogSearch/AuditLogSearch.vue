@@ -25,7 +25,7 @@ import type {
 } from "@/components/AdvancedSearch/types";
 import { ProjectV1Name } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
+import { ALL_METHODS_WITH_AUDIT } from "@/connect/methods";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";

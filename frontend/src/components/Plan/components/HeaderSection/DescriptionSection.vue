@@ -75,7 +75,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
-import { planServiceClientConnect } from "@/grpcweb";
+import { planServiceClientConnect } from "@/connect";
 import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import {
   PlanSchema,

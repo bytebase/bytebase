@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { defineStore } from "pinia";
 import type { Ref } from "vue";
 import { computed } from "vue";
-import { subscriptionServiceClientConnect } from "@/grpcweb";
+import { subscriptionServiceClientConnect } from "@/connect";
 import {
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
