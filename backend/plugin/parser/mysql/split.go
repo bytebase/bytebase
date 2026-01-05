@@ -71,8 +71,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.Statement{
-				Text:     stmtText,
-				BaseLine: tokens[start].GetLine() - 1,
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(stmtStartByte),
 					End:   int32(stmtEndByte),
@@ -113,8 +112,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			// So we should minus 1 for the line.
 			result = append(result, base.Statement{
 				// Use a single semicolon instead of the user defined delimiter.
-				Text:     stmtText,
-				BaseLine: tokens[start].GetLine() - 1,
+				Text: stmtText,
 				Range: &storepb.Range{
 					Start: int32(stmtStartByte),
 					End:   int32(stmtEndByte),
@@ -153,8 +151,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(stmtStartByte),
 				End:   int32(stmtEndByte),
@@ -258,8 +255,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -289,8 +285,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -462,8 +457,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -493,8 +487,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
-			BaseLine: tokens[start].GetLine() - 1,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),

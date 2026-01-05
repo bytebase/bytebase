@@ -51,8 +51,8 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
-		rule.SetBaseLine(stmtInfo.BaseLine)
-		checker.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.BaseLine())
+		checker.SetBaseLine(stmtInfo.BaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 
 		adviceList = append(adviceList, checker.GetAdviceList()...)

@@ -51,8 +51,8 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.BaseLine())
+		checker.SetBaseLine(stmt.BaseLine())
 		rule.tokens = antlrAST.Tokens
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
