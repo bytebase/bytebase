@@ -40,7 +40,7 @@ type StatementAdviseExecutor struct {
 }
 
 // RunForTarget runs the statement advise check for a single target.
-func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	fullSheet, err := e.store.GetSheetFull(ctx, target.SheetSha256)
 	if err != nil {
 		return nil, err

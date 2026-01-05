@@ -38,7 +38,7 @@ type GhostSyncExecutor struct {
 }
 
 // RunForTarget runs the gh-ost sync check for a single target.
-func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) (results []*storepb.PlanCheckRunResult_Result, err error) {
+func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarget) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	// gh-ost dry run could panic.
 	// It may be bytebase who panicked, but that's rare. So
 	// capture the error and send it into the result list.

@@ -169,9 +169,6 @@
     - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
     - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
     - [ChangedResources](#bytebase-store-ChangedResources)
-    - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
-    - [PlanCheckRunConfig.CheckTarget](#bytebase-store-PlanCheckRunConfig-CheckTarget)
-    - [PlanCheckRunConfig.CheckTarget.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
@@ -2955,57 +2952,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig"></a>
-
-### PlanCheckRunConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| targets | [PlanCheckRunConfig.CheckTarget](#bytebase-store-PlanCheckRunConfig-CheckTarget) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-CheckTarget"></a>
-
-### PlanCheckRunConfig.CheckTarget
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet_sha256 | [string](#string) |  |  |
-| enable_prior_backup | [bool](#bool) |  |  |
-| enable_ghost | [bool](#bool) |  |  |
-| ghost_flags | [PlanCheckRunConfig.CheckTarget.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry) | repeated |  |
-| types | [PlanCheckType](#bytebase-store-PlanCheckType) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry"></a>
-
-### PlanCheckRunConfig.CheckTarget.GhostFlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 

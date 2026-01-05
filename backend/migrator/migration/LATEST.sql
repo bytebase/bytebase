@@ -216,11 +216,8 @@ CREATE TABLE plan_check_run (
     updated_at timestamptz NOT NULL DEFAULT now(),
     plan_id bigint NOT NULL REFERENCES plan(id),
     status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    -- Stored as PlanCheckRunConfig (proto/store/store/plan_check_run.proto)
-    config jsonb NOT NULL DEFAULT '{}',
     -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
-    result jsonb NOT NULL DEFAULT '{}',
-    payload jsonb NOT NULL DEFAULT '{}'
+    result jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(plan_id);
