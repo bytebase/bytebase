@@ -458,7 +458,7 @@ export const useTaskRunLogSections = (
   // Get all release file IDs
   const getAllReleaseFileIds = (): string[] => {
     if (hasMultipleDeploys.value) {
-      return deployGroups.value.flatMap((group, deployIdx) =>
+      return deployGroups.value.flatMap((group) =>
         group.releaseFileGroups.map(
           (_, fileIdx) => `${group.deployId}-file-${fileIdx}`
         )
