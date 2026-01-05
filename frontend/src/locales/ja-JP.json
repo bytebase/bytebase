@@ -282,7 +282,6 @@
     },
     "comment": "コメント",
     "started": "から始まりました",
-    "view-change": "変更を表示する",
     "status": {
       "running": "ランニング",
       "available": "利用可能",
@@ -351,7 +350,6 @@
     "type": {
       "database-create": "データベース作成",
       "migrate": "マイグレーション",
-      "database-sdl": "SDL",
       "database-export": "データエクスポート",
       "general": "一般"
     }
@@ -384,7 +382,8 @@
       "transaction": "取引",
       "prior-backup": "事前のバックアップ",
       "retry": "リトライ",
-      "compute-diff": "差分計算"
+      "compute-diff": "差分計算",
+      "release-file-execute": "リリースファイル"
     },
     "log-detail": {
       "dumping": "ダンピング...",

@@ -143,3 +143,64 @@ export const groupEntriesByDeploy = (
 
   return result;
 };
+
+export interface ReleaseFileInfo {
+  version: string;
+  filePath: string;
+}
+
+export interface ReleaseFileEntriesGroup {
+  file: ReleaseFileInfo | null; // null for entries before any release file marker
+  entries: TaskRunLogEntry[];
+}
+
+// Check if entries contain any release file execute markers
+export const hasReleaseFileMarkers = (entries: TaskRunLogEntry[]): boolean => {
+  return entries.some(
+    (entry) => entry.type === TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE
+  );
+};
+
+// Group entries by release file markers
+// Entries are grouped as: [orphan entries], [file1 entries], [file2 entries], ...
+export const groupEntriesByReleaseFile = (
+  entries: TaskRunLogEntry[]
+): ReleaseFileEntriesGroup[] => {
+  if (!entries.length) return [];
+
+  // Sort entries by time first
+  const sortedEntries = [...entries].sort((a, b) => {
+    return getTimestampMs(a.logTime) - getTimestampMs(b.logTime);
+  });
+
+  const groups: ReleaseFileEntriesGroup[] = [];
+  let currentGroup: ReleaseFileEntriesGroup = { file: null, entries: [] };
+
+  for (const entry of sortedEntries) {
+    if (entry.type === TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE) {
+      // Start a new group for this file
+      // Push the current group if it has entries
+      if (currentGroup.entries.length > 0) {
+        groups.push(currentGroup);
+      }
+      // Create new group for this file
+      const rfe = entry.releaseFileExecute;
+      currentGroup = {
+        file: rfe
+          ? { version: rfe.version, filePath: rfe.filePath || "" }
+          : null,
+        entries: [],
+      };
+    } else {
+      // Add entry to current group
+      currentGroup.entries.push(entry);
+    }
+  }
+
+  // Push the last group if it has entries
+  if (currentGroup.entries.length > 0) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+};

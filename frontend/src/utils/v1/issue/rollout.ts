@@ -15,7 +15,6 @@ import {
   unknownStage,
   unknownTask,
 } from "@/types";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Rollout,
@@ -296,7 +295,6 @@ export const databaseForTask = (project: Project, task: Task) => {
       // extract database info from the task's and payload's properties.
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
     case Task_Type.DATABASE_MIGRATE:
-    case Task_Type.DATABASE_SDL:
     case Task_Type.DATABASE_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
@@ -314,16 +312,4 @@ export const isReleaseBasedTask = (task: Task): boolean => {
   }
 
   return false;
-};
-
-export const releaseNameOfPlan = (plan: Plan): string | undefined => {
-  for (const spec of plan.specs) {
-    if (spec.config.case === "changeDatabaseConfig") {
-      const release = spec.config.value.release;
-      if (release) {
-        return release;
-      }
-    }
-  }
-  return undefined;
 };

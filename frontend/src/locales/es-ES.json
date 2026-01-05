@@ -282,7 +282,6 @@
     },
     "comment": "Comentario",
     "started": "Iniciado",
-    "view-change": "Ver cambio",
     "status": {
       "running": "Ejecutándose",
       "available": "Disponible",
@@ -351,7 +350,6 @@
     "type": {
       "database-create": "Crear base de datos",
       "migrate": "Migrar",
-      "database-sdl": "SDL",
       "database-export": "Exportar datos",
       "general": "General"
     }
@@ -384,7 +382,8 @@
       "transaction": "Transacción",
       "prior-backup": "Copia de seguridad previa",
       "retry": "Rever",
-      "compute-diff": "Calcular diferencia"
+      "compute-diff": "Calcular diferencia",
+      "release-file-execute": "Archivo de lanzamiento"
     },
     "log-detail": {
       "dumping": "dumping...",

@@ -89,11 +89,16 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 				w.Logger.Info("found release by digest", "url", fmt.Sprintf("%s/%s", client.url, searchRelease.Name))
 				release = searchRelease.Name
 			} else {
+				releaseType := v1pb.Release_VERSIONED
+				if w.Declarative {
+					releaseType = v1pb.Release_DECLARATIVE
+				}
 				createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
 					Title:     w.ReleaseTitle,
 					Files:     releaseFiles,
 					VcsSource: getVCSSource(w),
 					Digest:    releaseDigest,
+					Type:      releaseType,
 				})
 				if err != nil {
 					return errors.Wrapf(err, "failed to create release")

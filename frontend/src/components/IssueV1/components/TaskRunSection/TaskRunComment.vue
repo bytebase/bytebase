@@ -37,18 +37,9 @@ import {
   unknownTask,
 } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  Task_Type,
-  TaskRun_Status,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isPostgresFamily } from "@/types/v1/instance";
-import {
-  databaseForTask,
-  databaseV1Url,
-  extractTaskUID,
-  flattenTaskV1List,
-} from "@/utils";
-import { extractChangelogUID } from "@/utils/v1/changelog";
+import { databaseForTask, extractTaskUID, flattenTaskV1List } from "@/utils";
 import { displayTaskRunLogEntryType } from "@/utils/v1/taskRunLog";
 import { useIssueContext } from "../../logic";
 
@@ -146,26 +137,6 @@ const commentLink = computed((): CommentLink => {
         title: t("common.blocking-task"),
         link: link,
       };
-    }
-  } else if (taskRun.status === TaskRun_Status.DONE) {
-    switch (task.type) {
-      case Task_Type.DATABASE_MIGRATE:
-      case Task_Type.DATABASE_SDL: {
-        if (taskRun.changelog === "") {
-          return {
-            title: "",
-            link: "",
-          };
-        }
-        const db = databaseForTask(project.value, task);
-        const link = `${databaseV1Url(
-          db
-        )}/changelogs/${extractChangelogUID(taskRun.changelog)}`;
-        return {
-          title: t("task.view-change"),
-          link,
-        };
-      }
     }
   } else if (taskRun.status === TaskRun_Status.FAILED) {
     const db = databaseForTask(project.value, task);

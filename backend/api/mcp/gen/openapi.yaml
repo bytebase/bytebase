@@ -8824,14 +8824,6 @@ components:
         - DATABASE_CHANGE_MODE_UNSPECIFIED
         - PIPELINE
         - EDITOR
-    bytebase.v1.DatabaseChangeType:
-      type: string
-      title: DatabaseChangeType
-      enum:
-        - DATABASE_CHANGE_TYPE_UNSPECIFIED
-        - MIGRATE
-        - SDL
-      description: DatabaseChangeType is the database change type.
     bytebase.v1.DatabaseGroup:
       type: object
       properties:
@@ -12685,10 +12677,6 @@ components:
           description: |-
             The resource name of the release.
              Format: projects/{project}/releases/{release}
-        type:
-          title: type
-          description: Type is the database change type.
-          $ref: '#/components/schemas/bytebase.v1.DatabaseChangeType'
         ghostFlags:
           type: object
           title: ghost_flags
@@ -13862,6 +13850,10 @@ components:
              The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
              Whether to provide digest and how to generate it is up to the user.
              If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
+        type:
+          title: type
+          description: The type of schema change for all files in this release.
+          $ref: '#/components/schemas/bytebase.v1.Release.Type'
       title: Release
       additionalProperties: false
     bytebase.v1.Release.File:
@@ -13875,10 +13867,6 @@ components:
           type: string
           title: path
           description: The path of the file. e.g., `2.2/V0001_create_table.sql`.
-        type:
-          title: type
-          description: The type of the file.
-          $ref: '#/components/schemas/bytebase.v1.Release.File.Type'
         version:
           type: string
           title: version
@@ -13908,14 +13896,14 @@ components:
       title: File
       additionalProperties: false
       description: A SQL file in a release.
-    bytebase.v1.Release.File.Type:
+    bytebase.v1.Release.Type:
       type: string
       title: Type
       enum:
         - TYPE_UNSPECIFIED
         - VERSIONED
         - DECLARATIVE
-      description: The type of migration file.
+      description: The type of schema change.
     bytebase.v1.Release.VCSSource:
       type: object
       properties:
@@ -15985,10 +15973,6 @@ components:
               type: string
               title: schema_version
               description: The target schema version after this update.
-            databaseChangeType:
-              title: database_change_type
-              description: The type of database change (MIGRATE or SDL).
-              $ref: '#/components/schemas/bytebase.v1.DatabaseChangeType'
         - oneOf:
             - properties:
                 release:
@@ -16030,7 +16014,6 @@ components:
         - DATABASE_CREATE
         - DATABASE_MIGRATE
         - DATABASE_EXPORT
-        - DATABASE_SDL
     bytebase.v1.TaskMetadata:
       type: object
       properties:
@@ -16114,16 +16097,6 @@ components:
           description: |-
             Below are the results of a task run.
              Detailed information about the task run result.
-        changelog:
-          type: string
-          title: changelog
-          description: |-
-            The resource name of the changelog.
-             Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-        schemaVersion:
-          type: string
-          title: schema_version
-          description: The schema version after this task run completes.
         startTime:
           title: start_time
           description: The time when the task run started execution.
@@ -16341,6 +16314,10 @@ components:
           title: compute_diff
           description: Compute diff details (if type is COMPUTE_DIFF).
           $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.ComputeDiff'
+        releaseFileExecute:
+          title: release_file_execute
+          description: Release file execution details (if type is RELEASE_FILE_EXECUTE).
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.ReleaseFileExecute'
       title: TaskRunLogEntry
       additionalProperties: false
     bytebase.v1.TaskRunLogEntry.CommandExecute:
@@ -16458,6 +16435,20 @@ components:
       title: PriorBackup
       additionalProperties: false
       description: Prior backup operation details.
+    bytebase.v1.TaskRunLogEntry.ReleaseFileExecute:
+      type: object
+      properties:
+        version:
+          type: string
+          title: version
+          description: The version of the file being executed (e.g., "0001").
+        filePath:
+          type: string
+          title: file_path
+          description: The file path within the release (e.g., "2.2/V0001_create_table.sql").
+      title: ReleaseFileExecute
+      additionalProperties: false
+      description: Release file execution details.
     bytebase.v1.TaskRunLogEntry.RetryInfo:
       type: object
       properties:
@@ -16550,6 +16541,7 @@ components:
         - PRIOR_BACKUP
         - RETRY_INFO
         - COMPUTE_DIFF
+        - RELEASE_FILE_EXECUTE
       description: The type of log entry.
     bytebase.v1.TaskRunSession:
       type: object

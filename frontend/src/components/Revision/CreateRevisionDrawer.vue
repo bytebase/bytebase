@@ -298,6 +298,7 @@
                 </div>
                 <ReleaseFileTable
                   :files="selectableFiles"
+                  :release-type="selectedRelease!.type"
                   :show-selection="true"
                   :selected-files="selectedFiles"
                   @update:selected-files="handleFileSelection"
@@ -326,6 +327,7 @@
                 </div>
                 <ReleaseFileTable
                   :files="filesWithExistingVersions"
+                  :release-type="selectedRelease!.type"
                   :show-selection="false"
                   :row-clickable="false"
                 />
@@ -422,7 +424,7 @@ import {
 import {
   type Release,
   type Release_File,
-  Release_File_Type,
+  Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import {
   BatchCreateRevisionsRequestSchema,
@@ -578,14 +580,14 @@ const isVersionDuplicate = (version: string): boolean => {
   return existingRevisionVersions.value.has(version);
 };
 
-// Map release file type to revision type
-const mapFileTypeToRevisionType = (
-  fileType: Release_File_Type
+// Map release type to revision type
+const mapReleaseTypeToRevisionType = (
+  releaseType: Release_Type
 ): Revision_Type => {
-  switch (fileType) {
-    case Release_File_Type.VERSIONED:
+  switch (releaseType) {
+    case Release_Type.VERSIONED:
       return Revision_Type.VERSIONED;
-    case Release_File_Type.DECLARATIVE:
+    case Release_Type.DECLARATIVE:
       return Revision_Type.DECLARATIVE;
     default:
       return Revision_Type.TYPE_UNSPECIFIED;
@@ -833,7 +835,7 @@ const handleConfirm = async () => {
             version: file.version,
             file: `${selectedRelease.value!.name}/files/${file.id}`,
             sheet: file.sheet,
-            type: mapFileTypeToRevisionType(file.type),
+            type: mapReleaseTypeToRevisionType(selectedRelease.value!.type),
           },
         })
       );

@@ -8,16 +8,13 @@
     "release": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run copy:all && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run copy:all && vite build --mode release",
     "release-aws": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run copy:all && vite build --mode release-aws",
-    "lint": "eslint --cache src",
+    "check": "eslint --cache src && biome ci .",
+    "fix": "eslint --cache --fix src && biome check --write .",
     "bundle-visualize": "export NODE_OPTIONS=--max_old_space_size=80000 && vite-bundle-visualizer -c vite.config.ts",
     "type-check": "export NODE_OPTIONS=--max_old_space_size=8000 && vue-tsc --build --force",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest --coverage",
-    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && pnpm biome:check",
-    "biome:format": "biome format --write .",
-    "biome:lint": "biome lint --write .",
-    "biome:check": "biome check --write .",
-    "biome:ci": "biome ci ."
+    "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && pnpm fix"
   },
   "dependencies": {
     "@buf/googleapis_googleapis.bufbuild_es": "2.9.0-20251009205305-72c8614f3bd0.1",

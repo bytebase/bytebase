@@ -109,7 +109,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate and sanitize release files.
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, false)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, request.Release.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
@@ -117,24 +117,24 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release files cannot be empty"))
 	}
 
-	releaseFileType := sanitizedFiles[0].Type
+	releaseType := request.Release.Type
 
 	var response *v1pb.CheckReleaseResponse
-	switch releaseFileType {
-	case v1pb.Release_File_DECLARATIVE:
+	switch releaseType {
+	case v1pb.Release_DECLARATIVE:
 		resp, err := s.checkReleaseDeclarative(ctx, sanitizedFiles, targetDatabases, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release declarative"))
 		}
 		response = resp
-	case v1pb.Release_File_VERSIONED:
+	case v1pb.Release_VERSIONED:
 		resp, err := s.checkReleaseVersioned(ctx, project, sanitizedFiles, targetDatabases, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release versioned"))
 		}
 		response = resp
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected release file type %q", releaseFileType.String()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected release type %q", releaseType.String()))
 	}
 
 	return connect.NewResponse(response), nil
@@ -280,7 +280,7 @@ loop:
 					resp.AffectedRows += summaryReport.AffectedRows
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, false /* enableSDL */, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -634,7 +634,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	finalMetadata *model.DatabaseMetadata,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
-	enableSDL bool,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
@@ -657,7 +656,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	connection := driver.GetDB()
 
 	context := advisor.Context{
-		EnableSDL:             enableSDL,
 		DBSchema:              dbMetadataProto,
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,

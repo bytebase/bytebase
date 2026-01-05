@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -114,19 +115,28 @@ func (stc *sdlTestContext) executeSDLRollout(t *testing.T, database *v1pb.Databa
 func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v1pb.Database, sdlContent string) (*sdlRolloutResult, error) {
 	t.Helper()
 
-	// Create sheet with SDL content
-	sheetResp, err := stc.ctl.sheetServiceClient.CreateSheet(stc.ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+	// Create a DECLARATIVE release with SDL content
+	// Empty SDL content is allowed for DECLARATIVE releases (represents dropping all objects)
+	releaseResp, err := stc.ctl.releaseServiceClient.CreateRelease(stc.ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: stc.ctl.project.Name,
-		Sheet: &v1pb.Sheet{
-			Content: []byte(sdlContent),
+		Release: &v1pb.Release{
+			Title: "SDL Rollout Release",
+			Type:  v1pb.Release_DECLARATIVE,
+			Files: []*v1pb.Release_File{
+				{
+					Path:      "schema.sql",
+					Version:   fmt.Sprintf("%d", time.Now().Unix()),
+					Statement: []byte(sdlContent),
+				},
+			},
 		},
 	}))
 	if err != nil {
 		return nil, err
 	}
-	sheet := sheetResp.Msg
+	release := releaseResp.Msg
 
-	// Create plan with SDL change type
+	// Create plan with the release
 	planResp, err := stc.ctl.planServiceClient.CreatePlan(stc.ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: stc.ctl.project.Name,
 		Plan: &v1pb.Plan{
@@ -136,9 +146,8 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Release: release.Name,
 							Targets: []string{database.Name},
-							Sheet:   sheet.Name,
-							Type:    v1pb.DatabaseChangeType_SDL,
 						},
 					},
 				},
@@ -150,22 +159,7 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 	}
 	plan := planResp.Msg
 
-	// Create issue
-	issueResp, err := stc.ctl.issueServiceClient.CreateIssue(stc.ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
-		Parent: stc.ctl.project.Name,
-		Issue: &v1pb.Issue{
-			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Title:       "SDL Rollout",
-			Description: "SDL schema change",
-			Plan:        plan.Name,
-		},
-	}))
-	if err != nil {
-		return nil, err
-	}
-	issue := issueResp.Msg
-
-	// Create rollout
+	// Create rollout (no issue needed)
 	rolloutResp, err := stc.ctl.rolloutServiceClient.CreateRollout(stc.ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 		Parent: plan.Name,
 	}))
@@ -174,8 +168,8 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 	}
 	rollout := rolloutResp.Msg
 
-	// Wait for rollout to complete
-	err = stc.ctl.waitRollout(stc.ctx, issue.Name, rollout.Name)
+	// Wait for rollout to complete (without issue approval flow)
+	err = stc.ctl.waitRolloutWithoutApproval(stc.ctx, rollout.Name)
 	if err != nil {
 		return nil, err
 	}

@@ -23,6 +23,7 @@ message TaskRunLog {
     RETRY_INFO = 11;
     COMPUTE_DIFF_START = 12;
     COMPUTE_DIFF_END = 13;
+    RELEASE_FILE_EXECUTE = 14;
   }
   Type type = 1;
   string deploy_id = 12;
@@ -39,6 +40,7 @@ message TaskRunLog {
   RetryInfo retry_info = 13;
   ComputeDiffStart compute_diff_start = 14;
   ComputeDiffEnd compute_diff_end = 15;
+  ReleaseFileExecute release_file_execute = 16;
 
   message SchemaDumpStart {}
   message SchemaDumpEnd {
@@ -97,5 +99,11 @@ message TaskRunLog {
   message ComputeDiffStart {}
   message ComputeDiffEnd {
     string error = 1;
+  }
+  message ReleaseFileExecute {
+    // The version of the file being executed (e.g., "0001").
+    string version = 1;
+    // The file path within the release (e.g., "2.2/V0001_create_table.sql").
+    string file_path = 2;
   }
 }

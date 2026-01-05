@@ -177,11 +177,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, nil, err.Error())
-			return 0, &db.ErrorWithPosition{
-				Err:   errors.Wrapf(err, "failed to execute context in a transaction"),
-				Start: singleSQL.Start,
-				End:   singleSQL.End,
-			}
+			return 0, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {

@@ -24,10 +24,7 @@ export const PrimaryTaskRolloutActionList: TaskRolloutAction[] = [
 // Secondary actions will be folded in the context menu.
 export const SecondaryTaskRolloutActionList: TaskRolloutAction[] = ["SKIP"];
 
-export const CancelableTaskTypeList: Task_Type[] = [
-  Task_Type.DATABASE_MIGRATE,
-  Task_Type.DATABASE_SDL,
-];
+export const CancelableTaskTypeList: Task_Type[] = [Task_Type.DATABASE_MIGRATE];
 
 export const TaskRolloutActionMap: Record<Task_Status, TaskRolloutAction[]> = {
   [Task_Status.NOT_STARTED]: ["ROLLOUT", "SKIP"],

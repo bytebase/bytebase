@@ -1,49 +1,38 @@
 <template>
-  <div class="h-full flex flex-col gap-y-2">
-    <NAlert type="info" :bordered="false">
-      <template #icon>
-        <heroicons-outline:information-circle class="w-5 h-5" />
-      </template>
-      <div class="text-sm">
-        {{ $t("release.change-tip") }}
-      </div>
-    </NAlert>
-
+  <div class="flex flex-col gap-y-2">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-x-4">
-        <div class="flex items-center gap-x-1 text-sm font-medium">
-          <PackageIcon class="w-4 h-4" />
-          <span class="text-base font-medium">
-            {{ releaseTitle }}
-          </span>
-        </div>
+      <div class="flex items-center gap-x-1 text-sm font-medium">
+        <PackageIcon class="w-4 h-4" />
+        <span :class="compact ? '' : 'text-base'">{{ releaseTitle }}</span>
       </div>
-      <div class="flex items-center justify-end gap-x-2">
-        <NButton
-          v-if="release && isValidReleaseName(release.name)"
-          size="small"
-          tag="a"
-          text
-          :href="`/${release.name}`"
-          target="_blank"
-          icon-placement="right"
-        >
-          {{ $t("common.view") }}
-          <template #icon>
-            <ExternalLinkIcon class="w-4 h-4" />
-          </template>
-        </NButton>
-      </div>
+      <NButton
+        v-if="release && isValidReleaseName(release.name)"
+        size="tiny"
+        tag="a"
+        text
+        :href="`/${release.name}`"
+        target="_blank"
+        icon-placement="right"
+      >
+        {{ $t("common.view") }}
+        <template #icon>
+          <ExternalLinkIcon class="w-3 h-3" />
+        </template>
+      </NButton>
     </div>
 
-    <div v-if="release" class="border rounded-md px-4 py-3 bg-gray-50">
-      <div class="flex flex-col gap-y-3">
+    <div
+      v-if="release && isValidReleaseName(release.name)"
+      class="border rounded-md bg-gray-50"
+      :class="compact ? 'px-3 py-2' : 'px-4 py-3'"
+    >
+      <div class="flex flex-col" :class="compact ? 'gap-y-2' : 'gap-y-3'">
         <div class="flex items-start justify-between">
           <div>
             <h3 class="text-sm font-medium text-gray-900">
               {{ release.title }}
             </h3>
-            <p v-if="release.name" class="text-xs text-gray-500 mt-1">
+            <p v-if="release.name" class="text-xs text-gray-500 mt-0.5">
               {{ release.name }}
             </p>
           </div>
@@ -51,15 +40,15 @@
 
         <div
           v-if="release.files && release.files.length > 0"
-          class="flex flex-col gap-y-2"
+          class="flex flex-col gap-y-1"
         >
           <div class="flex items-center justify-between">
-            <h4 class="text-sm font-medium text-gray-700">
+            <h4 class="text-xs font-medium text-gray-700">
               {{ $t("release.files") }} ({{ release.files.length }})
             </h4>
             <NButton
               v-if="release.files.length > maxDisplayedFiles"
-              size="small"
+              size="tiny"
               quaternary
               tag="a"
               :href="`/${release.name}`"
@@ -69,12 +58,14 @@
             </NButton>
           </div>
           <div
-            class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2"
+            class="w-full grid gap-1"
+            :class="compact ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2'"
           >
             <div
               v-for="file in displayedFiles"
               :key="file.id"
-              class="w-full flex items-center justify-between text-xs bg-white rounded-sm p-2"
+              class="w-full flex items-center justify-between text-xs bg-white rounded-sm"
+              :class="compact ? 'p-1.5' : 'p-2'"
             >
               <div class="flex-1 min-w-0 mr-2">
                 <div class="font-medium truncate">{{ file.path }}</div>
@@ -85,10 +76,8 @@
               </div>
               <div
                 v-if="release.type"
-                :class="[
-                  'inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs shrink-0',
-                  'bg-blue-100 text-blue-800 ',
-                ]"
+                class="inline-flex items-center rounded-sm text-xs shrink-0 bg-blue-100 text-blue-800"
+                :class="compact ? 'px-1 py-0.5' : 'px-1.5 py-0.5'"
               >
                 {{ getReleaseFileTypeText(release.type) }}
               </div>
@@ -106,14 +95,12 @@
           </div>
         </div>
 
-        <div v-if="release.vcsSource" class="flex flex-col gap-y-1">
-          <h4 class="text-sm font-medium text-gray-700">
+        <div v-if="release.vcsSource" class="flex flex-col gap-y-0.5">
+          <h4 class="text-xs font-medium text-gray-700">
             {{ $t("release.vcs-source") }}
           </h4>
           <div class="text-xs">
-            <span class="text-gray-500"
-              >{{ getVCSTypeText(release.vcsSource.vcsType) }}:</span
-            >
+            <span class="text-gray-500">{{ getVCSTypeText(release.vcsSource.vcsType) }}:</span>
             <a
               v-if="release.vcsSource.url"
               :href="release.vcsSource.url"
@@ -135,17 +122,17 @@
       </div>
     </div>
 
-    <div v-else-if="loading" class="border rounded-md p-4 bg-gray-50">
+    <div v-else-if="!releaseReady" class="border rounded-md p-2 bg-gray-50">
       <div class="flex items-center gap-x-2">
         <BBSpin />
-        <span class="text-sm text-gray-600">
+        <span class="text-xs text-gray-600">
           {{ $t("common.loading") }}
         </span>
       </div>
     </div>
 
-    <div v-else class="border rounded-md p-4 bg-red-50 /20">
-      <div class="text-sm text-red-600">
+    <div v-else class="border rounded-md p-2 bg-red-50">
+      <div class="text-xs text-red-600">
         {{ $t("release.not-found") }}
       </div>
     </div>
@@ -155,7 +142,7 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import { ExternalLinkIcon, PackageIcon } from "lucide-vue-next";
-import { NAlert, NButton } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -163,37 +150,38 @@ import { useReleaseByName } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidReleaseName } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
-import { useSelectedSpec } from "../../SpecDetailView/context";
+
+const props = withDefaults(
+  defineProps<{
+    releaseName: string;
+    compact?: boolean;
+  }>(),
+  {
+    compact: false,
+  }
+);
 
 const { t } = useI18n();
-const { selectedSpec } = useSelectedSpec();
+const { release, ready: releaseReady } = useReleaseByName(
+  computed(() => props.releaseName)
+);
 
-const releaseName = computed(() => {
-  if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {
-    return selectedSpec.value.config.value.release || "";
-  }
-  return "";
-});
-
-const { release, ready: loading } = useReleaseByName(releaseName);
-
-const maxDisplayedFiles = 4;
+const maxDisplayedFiles = computed(() => (props.compact ? 4 : 6));
 
 const releaseTitle = computed(() => {
   if (release.value && release.value.title) {
     return release.value.title;
   }
-  if (releaseName.value) {
-    // Extract release name from the full resource name
-    const parts = releaseName.value.split("/");
-    return parts[parts.length - 1] || releaseName.value;
+  if (props.releaseName) {
+    const parts = props.releaseName.split("/");
+    return parts[parts.length - 1] || props.releaseName;
   }
   return t("release.title");
 });
 
 const displayedFiles = computed(() => {
   if (!release.value?.files) return [];
-  return release.value.files.slice(0, maxDisplayedFiles);
+  return release.value.files.slice(0, maxDisplayedFiles.value);
 });
 
 const getChangeTypeText = (enableGhost: boolean) => {

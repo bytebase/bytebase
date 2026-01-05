@@ -377,7 +377,6 @@ type PlanCheckRunConfig_CheckTarget struct {
 	SheetSha256       string            `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	EnablePriorBackup bool              `protobuf:"varint,3,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	EnableGhost       bool              `protobuf:"varint,4,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
-	EnableSdl         bool              `protobuf:"varint,5,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
 	GhostFlags        map[string]string `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Types             []PlanCheckType   `protobuf:"varint,7,rep,packed,name=types,proto3,enum=bytebase.store.PlanCheckType" json:"types,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -438,13 +437,6 @@ func (x *PlanCheckRunConfig_CheckTarget) GetEnablePriorBackup() bool {
 func (x *PlanCheckRunConfig_CheckTarget) GetEnableGhost() bool {
 	if x != nil {
 		return x.EnableGhost
-	}
-	return false
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetEnableSdl() bool {
-	if x != nil {
-		return x.EnableSdl
 	}
 	return false
 }
@@ -713,16 +705,14 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xf0\x03\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xd1\x03\n" +
 	"\x12PlanCheckRunConfig\x12H\n" +
-	"\atargets\x18\x01 \x03(\v2..bytebase.store.PlanCheckRunConfig.CheckTargetR\atargets\x1a\x8f\x03\n" +
+	"\atargets\x18\x01 \x03(\v2..bytebase.store.PlanCheckRunConfig.CheckTargetR\atargets\x1a\xf0\x02\n" +
 	"\vCheckTarget\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12.\n" +
 	"\x13enable_prior_backup\x18\x03 \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\x04 \x01(\bR\venableGhost\x12\x1d\n" +
-	"\n" +
-	"enable_sdl\x18\x05 \x01(\bR\tenableSdl\x12_\n" +
+	"\fenable_ghost\x18\x04 \x01(\bR\venableGhost\x12_\n" +
 	"\vghost_flags\x18\x06 \x03(\v2>.bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntryR\n" +
 	"ghostFlags\x123\n" +
 	"\x05types\x18\a \x03(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x05types\x1a=\n" +

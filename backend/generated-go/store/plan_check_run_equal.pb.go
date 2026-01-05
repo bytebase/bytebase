@@ -22,9 +22,6 @@ func (x *PlanCheckRunConfig_CheckTarget) Equal(y *PlanCheckRunConfig_CheckTarget
 	if x.EnableGhost != y.EnableGhost {
 		return false
 	}
-	if x.EnableSdl != y.EnableSdl {
-		return false
-	}
 	if len(x.GhostFlags) != len(y.GhostFlags) {
 		return false
 	}

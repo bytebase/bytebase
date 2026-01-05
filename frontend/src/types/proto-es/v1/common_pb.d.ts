@@ -443,37 +443,6 @@ export enum ExportFormat {
 export declare const ExportFormatSchema: GenEnum<ExportFormat>;
 
 /**
- * DatabaseChangeType is the database change type.
- *
- * @generated from enum bytebase.v1.DatabaseChangeType
- */
-export enum DatabaseChangeType {
-  /**
-   * @generated from enum value: DATABASE_CHANGE_TYPE_UNSPECIFIED = 0;
-   */
-  DATABASE_CHANGE_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Used for imperative schema migration including CREATE DATABASE.
-   *
-   * @generated from enum value: MIGRATE = 1;
-   */
-  MIGRATE = 1,
-
-  /**
-   * Used for state-based declarative schema migration including CREATE DATABASE.
-   *
-   * @generated from enum value: SDL = 2;
-   */
-  SDL = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.DatabaseChangeType.
- */
-export declare const DatabaseChangeTypeSchema: GenEnum<DatabaseChangeType>;
-
-/**
  * RiskLevel is the risk level.
  *
  * @generated from enum bytebase.v1.RiskLevel

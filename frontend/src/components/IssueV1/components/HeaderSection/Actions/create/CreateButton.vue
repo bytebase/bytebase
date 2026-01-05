@@ -87,7 +87,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
-  Release_File_Type,
+  Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
@@ -311,11 +311,11 @@ const runSQLCheckForIssue = async () => {
     const request = create(CheckReleaseRequestSchema, {
       parent: issue.value.project,
       release: {
+        type: Release_Type.VERSIONED,
         files: [
           {
             // Use "0" for dummy version.
             version: "0",
-            type: Release_File_Type.VERSIONED,
             statement: new TextEncoder().encode(statement),
             enableGhost: getSpecChangeType(
               specForTask(issue.value.planEntity, selectedTask.value)

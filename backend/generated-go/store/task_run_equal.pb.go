@@ -23,22 +23,10 @@ func (x *TaskRunResult) Equal(y *TaskRunResult) bool {
 	if x.Detail != y.Detail {
 		return false
 	}
-	if x.Version != y.Version {
-		return false
-	}
-	if !x.StartPosition.Equal(y.StartPosition) {
-		return false
-	}
-	if !x.EndPosition.Equal(y.EndPosition) {
-		return false
-	}
 	if x.ExportArchiveUid != y.ExportArchiveUid {
 		return false
 	}
 	if !x.PriorBackupDetail.Equal(y.PriorBackupDetail) {
-		return false
-	}
-	if x.Changelog != y.Changelog {
 		return false
 	}
 	return true

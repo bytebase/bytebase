@@ -31,7 +31,6 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import {
-  Issue_Type,
   IssueSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -49,10 +48,6 @@ const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, issue, readonly } = usePlanContext();
 
-const isGrantRequest = computed(
-  () => issue.value?.type === Issue_Type.GRANT_REQUEST
-);
-
 const state = reactive({
   isEditing: false,
   isUpdating: false,
@@ -61,11 +56,9 @@ const state = reactive({
 
 // Watch for changes in issue/plan to update the title
 watch(
-  () => [plan.value, issue.value, isGrantRequest.value],
+  () => [plan.value, issue.value],
   () => {
-    state.title = isGrantRequest.value
-      ? issue.value?.title || ""
-      : plan.value.title;
+    state.title = issue.value ? issue.value.title : plan.value.title;
   },
   { immediate: true }
 );
@@ -99,9 +92,13 @@ const allowEdit = computed(() => {
   if (isCreating.value) {
     return true;
   }
+  // Plans with rollout should have readonly title
+  if (!issue.value && plan.value.hasRollout) {
+    return false;
+  }
 
-  // For grant requests, check issue permissions
-  if (isGrantRequest.value && issue.value) {
+  // If issue exists, check issue permissions
+  if (issue.value) {
     // Allowed if current user is the creator.
     if (extractUserId(issue.value.creator) === currentUser.value.email) {
       return true;
@@ -113,7 +110,7 @@ const allowEdit = computed(() => {
     return false;
   }
 
-  // For regular plans, check plan permissions
+  // For plans without issue, check plan permissions
   // Allowed if current user is the creator.
   if (extractUserId(plan.value.creator) === currentUser.value.email) {
     return true;
@@ -136,8 +133,8 @@ const onBlur = async () => {
     return;
   }
 
-  // For grant requests, update issue title
-  if (isGrantRequest.value && issue.value) {
+  // If issue exists, update issue title
+  if (issue.value) {
     if (state.title === issue.value.title) {
       cleanup();
       return;
@@ -221,8 +218,8 @@ const onUpdateValue = (value: string) => {
   if (!isCreating.value) {
     return;
   }
-  // When creating, update issue title for grant requests, plan title otherwise
-  if (isGrantRequest.value && issue.value) {
+  // When creating, update issue title if issue exists, plan title otherwise
+  if (issue.value) {
     issue.value.title = value;
   } else {
     plan.value.title = value;

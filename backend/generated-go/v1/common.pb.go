@@ -340,58 +340,6 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
-// DatabaseChangeType is the database change type.
-type DatabaseChangeType int32
-
-const (
-	DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED DatabaseChangeType = 0
-	// Used for imperative schema migration including CREATE DATABASE.
-	DatabaseChangeType_MIGRATE DatabaseChangeType = 1
-	// Used for state-based declarative schema migration including CREATE DATABASE.
-	DatabaseChangeType_SDL DatabaseChangeType = 2
-)
-
-// Enum value maps for DatabaseChangeType.
-var (
-	DatabaseChangeType_name = map[int32]string{
-		0: "DATABASE_CHANGE_TYPE_UNSPECIFIED",
-		1: "MIGRATE",
-		2: "SDL",
-	}
-	DatabaseChangeType_value = map[string]int32{
-		"DATABASE_CHANGE_TYPE_UNSPECIFIED": 0,
-		"MIGRATE":                          1,
-		"SDL":                              2,
-	}
-)
-
-func (x DatabaseChangeType) Enum() *DatabaseChangeType {
-	p := new(DatabaseChangeType)
-	*p = x
-	return p
-}
-
-func (x DatabaseChangeType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (DatabaseChangeType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[4].Descriptor()
-}
-
-func (DatabaseChangeType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[4]
-}
-
-func (x DatabaseChangeType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use DatabaseChangeType.Descriptor instead.
-func (DatabaseChangeType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{4}
-}
-
 // RiskLevel is the risk level.
 type RiskLevel int32
 
@@ -433,11 +381,11 @@ func (x RiskLevel) String() string {
 }
 
 func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[5].Descriptor()
+	return file_v1_common_proto_enumTypes[4].Descriptor()
 }
 
 func (RiskLevel) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[5]
+	return &file_v1_common_proto_enumTypes[4]
 }
 
 func (x RiskLevel) Number() protoreflect.EnumNumber {
@@ -446,7 +394,7 @@ func (x RiskLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RiskLevel.Descriptor instead.
 func (RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
 // Webhook integration type.
@@ -506,11 +454,11 @@ func (x WebhookType) String() string {
 }
 
 func (WebhookType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[6].Descriptor()
+	return file_v1_common_proto_enumTypes[5].Descriptor()
 }
 
 func (WebhookType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[6]
+	return &file_v1_common_proto_enumTypes[5]
 }
 
 func (x WebhookType) Number() protoreflect.EnumNumber {
@@ -519,7 +467,7 @@ func (x WebhookType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WebhookType.Descriptor instead.
 func (WebhookType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -656,71 +604,6 @@ func (x *Range) GetEnd() int32 {
 	return 0
 }
 
-// PermissionDeniedDetail provides structured information about permission failures.
-// Used as error detail when returning CodePermissionDenied errors.
-type PermissionDeniedDetail struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The API method that was called.
-	Method string `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
-	// The permissions required but not granted to the user.
-	RequiredPermissions []string `protobuf:"bytes,2,rep,name=required_permissions,json=requiredPermissions,proto3" json:"required_permissions,omitempty"`
-	// The resources the user was trying to access.
-	Resources     []string `protobuf:"bytes,3,rep,name=resources,proto3" json:"resources,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PermissionDeniedDetail) Reset() {
-	*x = PermissionDeniedDetail{}
-	mi := &file_v1_common_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PermissionDeniedDetail) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PermissionDeniedDetail) ProtoMessage() {}
-
-func (x *PermissionDeniedDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_common_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PermissionDeniedDetail.ProtoReflect.Descriptor instead.
-func (*PermissionDeniedDetail) Descriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *PermissionDeniedDetail) GetMethod() string {
-	if x != nil {
-		return x.Method
-	}
-	return ""
-}
-
-func (x *PermissionDeniedDetail) GetRequiredPermissions() []string {
-	if x != nil {
-		return x.RequiredPermissions
-	}
-	return nil
-}
-
-func (x *PermissionDeniedDetail) GetResources() []string {
-	if x != nil {
-		return x.Resources
-	}
-	return nil
-}
-
 var File_v1_common_proto protoreflect.FileDescriptor
 
 const file_v1_common_proto_rawDesc = "" +
@@ -731,11 +614,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\"/\n" +
 	"\x05Range\x12\x14\n" +
 	"\x05start\x18\x01 \x01(\x05R\x05start\x12\x10\n" +
-	"\x03end\x18\x02 \x01(\x05R\x03end\"\x81\x01\n" +
-	"\x16PermissionDeniedDetail\x12\x16\n" +
-	"\x06method\x18\x01 \x01(\tR\x06method\x121\n" +
-	"\x14required_permissions\x18\x02 \x03(\tR\x13requiredPermissions\x12\x1c\n" +
-	"\tresources\x18\x03 \x03(\tR\tresources*7\n" +
+	"\x03end\x18\x02 \x01(\x05R\x03end*7\n" +
 	"\x05State\x12\x15\n" +
 	"\x11STATE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -786,11 +665,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x03CSV\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03SQL\x10\x03\x12\b\n" +
-	"\x04XLSX\x10\x04*P\n" +
-	"\x12DatabaseChangeType\x12$\n" +
-	" DATABASE_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aMIGRATE\x10\x01\x12\a\n" +
-	"\x03SDL\x10\x02*H\n" +
+	"\x04XLSX\x10\x04*H\n" +
 	"\tRiskLevel\x12\x1a\n" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
@@ -820,19 +695,17 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_v1_common_proto_goTypes = []any{
-	(State)(0),                     // 0: bytebase.v1.State
-	(Engine)(0),                    // 1: bytebase.v1.Engine
-	(VCSType)(0),                   // 2: bytebase.v1.VCSType
-	(ExportFormat)(0),              // 3: bytebase.v1.ExportFormat
-	(DatabaseChangeType)(0),        // 4: bytebase.v1.DatabaseChangeType
-	(RiskLevel)(0),                 // 5: bytebase.v1.RiskLevel
-	(WebhookType)(0),               // 6: bytebase.v1.WebhookType
-	(*Position)(nil),               // 7: bytebase.v1.Position
-	(*Range)(nil),                  // 8: bytebase.v1.Range
-	(*PermissionDeniedDetail)(nil), // 9: bytebase.v1.PermissionDeniedDetail
+	(State)(0),        // 0: bytebase.v1.State
+	(Engine)(0),       // 1: bytebase.v1.Engine
+	(VCSType)(0),      // 2: bytebase.v1.VCSType
+	(ExportFormat)(0), // 3: bytebase.v1.ExportFormat
+	(RiskLevel)(0),    // 4: bytebase.v1.RiskLevel
+	(WebhookType)(0),  // 5: bytebase.v1.WebhookType
+	(*Position)(nil),  // 6: bytebase.v1.Position
+	(*Range)(nil),     // 7: bytebase.v1.Range
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -852,8 +725,8 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_common_proto_rawDesc), len(file_v1_common_proto_rawDesc)),
-			NumEnums:      7,
-			NumMessages:   3,
+			NumEnums:      6,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

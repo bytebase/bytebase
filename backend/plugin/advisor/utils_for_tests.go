@@ -149,7 +149,6 @@ var (
 // TestCase is the data struct for test.
 type TestCase struct {
 	Statement string            `yaml:"statement"`
-	EnableSDL bool              `yaml:"enableSDL"`
 	Want      []*storepb.Advice `yaml:"want,omitempty"`
 }
 
@@ -222,7 +221,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 			Driver:            nil,
 			CurrentDatabase:   curDB,
 			DBSchema:          schemaMetadata,
-			EnableSDL:         tc.EnableSDL,
 			EnablePriorBackup: true, // Enable backup for testing
 			NoAppendBuiltin:   true,
 			TenantMode:        true,

@@ -58,7 +58,6 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 				{
 					// use file pattern as the path
 					Path:        w.FilePattern,
-					Type:        v1pb.Release_File_DECLARATIVE,
 					Version:     w.CurrentTime.Format(versionFormat),
 					EnableGhost: false,
 					Statement:   contents,
@@ -80,7 +79,6 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			}
 			files = append(files, &v1pb.Release_File{
 				Path:        m,
-				Type:        v1pb.Release_File_DECLARATIVE,
 				Version:     w.CurrentTime.Format(versionFormat),
 				EnableGhost: false,
 				Statement:   content,
@@ -115,7 +113,6 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 		}
 		files = append(files, &v1pb.Release_File{
 			Path:        m,
-			Type:        v1pb.Release_File_VERSIONED,
 			Version:     version,
 			EnableGhost: t,
 			Statement:   content,

@@ -89,11 +89,6 @@ const shouldShowSidebar = computed(() => {
 });
 
 const shouldShowSpecList = computed(() => {
-  return (
-    (isCreating.value ||
-      plan.value.specs.length > 1 ||
-      !plan.value.hasRollout) &&
-    !isDataExportPlan.value
-  );
+  return !isDataExportPlan.value;
 });
 </script>

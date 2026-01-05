@@ -18,6 +18,14 @@ export const useSpecsValidation = (specs: Plan_Spec[] | Ref<Plan_Spec[]>) => {
       return false;
     }
 
+    // Released specs are not editable
+    if (
+      spec.config?.case === "changeDatabaseConfig" &&
+      spec.config.value.release
+    ) {
+      return false;
+    }
+
     const sheetName = sheetNameOfSpec(spec);
     // If there's no sheet reference, it's definitely empty
     if (!sheetName) {

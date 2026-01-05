@@ -9,8 +9,7 @@
       @update:value="handleTabChange"
     >
       <template #prefix>
-        <div class=""></div>
-        <div v-if="!plan.issue && !plan.hasRollout" class="pl-4 text-base font-medium">
+        <div class="pl-4 text-base font-medium">
           {{ $t("plan.navigator.changes") }}
         </div>
       </template>

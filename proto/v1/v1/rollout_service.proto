@@ -374,9 +374,6 @@ message Task {
     // Database export task that exports query results or table data.
     // Use payload DatabaseDataExport.
     DATABASE_EXPORT = 4;
-    // Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-    // Use payload DatabaseUpdate.
-    DATABASE_SDL = 5;
   }
   Type type = 5;
 
@@ -428,8 +425,6 @@ message Task {
     }
     // The target schema version after this update.
     string schema_version = 2;
-    // The type of database change (MIGRATE or SDL).
-    DatabaseChangeType database_change_type = 3;
   }
 
   // Payload for exporting database data.
@@ -484,11 +479,6 @@ message TaskRun {
   // Below are the results of a task run.
   // Detailed information about the task run result.
   string detail = 6;
-  // The resource name of the changelog.
-  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-  string changelog = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // The schema version after this task run completes.
-  string schema_version = 8;
 
   // The time when the task run started execution.
   google.protobuf.Timestamp start_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -605,6 +595,8 @@ message TaskRunLogEntry {
     RETRY_INFO = 7;
     // Schema diff computation.
     COMPUTE_DIFF = 8;
+    // Release file execution.
+    RELEASE_FILE_EXECUTE = 9;
   }
   // The type of this log entry.
   Type type = 1;
@@ -628,6 +620,8 @@ message TaskRunLogEntry {
   RetryInfo retry_info = 10;
   // Compute diff details (if type is COMPUTE_DIFF).
   ComputeDiff compute_diff = 11;
+  // Release file execution details (if type is RELEASE_FILE_EXECUTE).
+  ReleaseFileExecute release_file_execute = 12;
 
   // Schema dump operation details.
   message SchemaDump {
@@ -743,6 +737,14 @@ message TaskRunLogEntry {
     google.protobuf.Timestamp end_time = 2;
     // Error message if computation failed.
     string error = 3;
+  }
+
+  // Release file execution details.
+  message ReleaseFileExecute {
+    // The version of the file being executed (e.g., "0001").
+    string version = 1;
+    // The file path within the release (e.g., "2.2/V0001_create_table.sql").
+    string file_path = 2;
   }
 }
 

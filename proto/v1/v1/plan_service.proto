@@ -276,9 +276,6 @@ message Plan {
     // Format: projects/{project}/releases/{release}
     string release = 3 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
 
-    // Type is the database change type.
-    DatabaseChangeType type = 4;
-
     map<string, string> ghost_flags = 5;
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.

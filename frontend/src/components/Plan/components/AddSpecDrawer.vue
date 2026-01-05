@@ -58,7 +58,6 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
   type Plan_Spec,
@@ -162,7 +161,7 @@ const handleConfirm = async () => {
         case: "changeDatabaseConfig",
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
           targets,
-          type: DatabaseChangeType.MIGRATE,
+
           sheet: localSheet.name,
         }),
       },
