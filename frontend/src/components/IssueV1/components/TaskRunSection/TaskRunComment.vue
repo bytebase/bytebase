@@ -71,34 +71,10 @@ const comment = computed(() => {
         time: new Date(earliestAllowedTime.value).toLocaleString(),
       });
     }
-    if (taskRun.schedulerInfo) {
-      const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.cause?.case === "task") {
-        return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
-        });
-      }
-    }
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.schedulerInfo) {
       const cause = taskRun.schedulerInfo.waitingCause;
-      if (cause?.cause?.case === "connectionLimit") {
-        return t("task-run.status.waiting-connection", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
-        });
-      }
-      if (cause?.cause?.case === "task") {
-        return t("task-run.status.waiting-task", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
-        });
-      }
       if (cause?.cause?.case === "parallelTasksLimit") {
         return t("task-run.status.waiting-max-tasks-per-rollout", {
           time: getDateForPbTimestampProtoEs(
@@ -124,21 +100,7 @@ const commentLink = computed((): CommentLink => {
     flattenTaskV1List(issue.value.rolloutEntity).find(
       (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
-  if (
-    taskRun.status === TaskRun_Status.PENDING ||
-    taskRun.status === TaskRun_Status.RUNNING
-  ) {
-    const waitingCause = taskRun.schedulerInfo?.waitingCause;
-    if (waitingCause?.cause?.case === "task") {
-      const task = waitingCause.cause.value;
-
-      const link = `/${task.task}`;
-      return {
-        title: t("common.blocking-task"),
-        link: link,
-      };
-    }
-  } else if (taskRun.status === TaskRun_Status.FAILED) {
+  if (taskRun.status === TaskRun_Status.FAILED) {
     const db = databaseForTask(project.value, task);
     // Cast a wide net to catch migration version error
     if (comment.value.includes("version")) {

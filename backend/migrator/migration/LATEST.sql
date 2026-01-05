@@ -262,12 +262,10 @@ CREATE TABLE task_run (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     task_id integer NOT NULL REFERENCES task(id),
-    sheet_sha256 bytea REFERENCES sheet_blob(sha256),
     attempt integer NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
     run_at timestamptz,
-    code integer NOT NULL DEFAULT 0,
     -- result saves the task run result in json format
     -- Stored as TaskRunResult (proto/store/store/task_run.proto)
     result jsonb NOT NULL DEFAULT '{}'

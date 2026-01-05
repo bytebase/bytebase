@@ -462,31 +462,12 @@ func (x *TaskRun_PriorBackupDetail) Equal(y *TaskRun_PriorBackupDetail) bool {
 	return true
 }
 
-func (x *TaskRun_SchedulerInfo_WaitingCause_Task) Equal(y *TaskRun_SchedulerInfo_WaitingCause_Task) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Task != y.Task {
-		return false
-	}
-	return true
-}
-
 func (x *TaskRun_SchedulerInfo_WaitingCause) Equal(y *TaskRun_SchedulerInfo_WaitingCause) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if x.GetConnectionLimit() != y.GetConnectionLimit() {
-		return false
-	}
-	if !x.GetTask().Equal(y.GetTask()) {
-		return false
 	}
 	if x.GetParallelTasksLimit() != y.GetParallelTasksLimit() {
 		return false
@@ -545,9 +526,6 @@ func (x *TaskRun) Equal(y *TaskRun) bool {
 		return false
 	}
 	if !x.SchedulerInfo.Equal(y.SchedulerInfo) {
-		return false
-	}
-	if x.Sheet != y.Sheet {
 		return false
 	}
 	if p, q := x.RunTime, y.RunTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {

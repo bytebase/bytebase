@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -116,25 +115,13 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
-		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
-			Detail: "The task run is canceled",
-		})
-		if marshalErr != nil {
-			slog.Error("Failed to marshal task run result",
-				slog.Int("task_id", task.ID),
-				slog.String("type", task.Type.String()),
-				log.BBError(marshalErr),
-			)
-			return
-		}
-		code := common.Ok
-		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:      taskRunUID,
 			Updater: common.SystemBotEmail,
 			Status:  storepb.TaskRun_CANCELED,
-			Code:    &code,
-			Result:  &result,
+			ResultProto: &storepb.TaskRunResult{
+				Detail: "The task run is canceled",
+			},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",
@@ -152,26 +139,13 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
-		taskRunResult := &storepb.TaskRunResult{
-			Detail: err.Error(),
-		}
-		resultBytes, marshalErr := protojson.Marshal(taskRunResult)
-		if marshalErr != nil {
-			slog.Error("Failed to marshal task run result",
-				slog.Int("task_id", task.ID),
-				slog.String("type", task.Type.String()),
-				log.BBError(marshalErr),
-			)
-			return
-		}
-		code := common.ErrorCode(err)
-		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:      taskRunUID,
 			Updater: common.SystemBotEmail,
 			Status:  storepb.TaskRun_FAILED,
-			Code:    &code,
-			Result:  &result,
+			ResultProto: &storepb.TaskRunResult{
+				Detail: err.Error(),
+			},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as FAILED",
@@ -210,23 +184,11 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 	}
 
 	// Success case
-	resultBytes, marshalErr := protojson.Marshal(result)
-	if marshalErr != nil {
-		slog.Error("Failed to marshal task run result",
-			slog.Int("task_id", task.ID),
-			slog.String("type", task.Type.String()),
-			log.BBError(marshalErr),
-		)
-		return
-	}
-	code := common.Ok
-	resultStr := string(resultBytes)
 	taskRunStatusPatch := &store.TaskRunStatusPatch{
-		ID:      taskRunUID,
-		Updater: common.SystemBotEmail,
-		Status:  storepb.TaskRun_DONE,
-		Code:    &code,
-		Result:  &resultStr,
+		ID:          taskRunUID,
+		Updater:     common.SystemBotEmail,
+		Status:      storepb.TaskRun_DONE,
+		ResultProto: result,
 	}
 	if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 		slog.Error("Failed to mark task as DONE",

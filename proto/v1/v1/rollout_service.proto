@@ -534,17 +534,8 @@ message TaskRun {
     message WaitingCause {
       // The reason the task run is waiting.
       oneof cause {
-        // Waiting due to connection limit reached.
-        bool connection_limit = 1;
-        // Waiting for another task to complete.
-        Task task = 2;
         // Waiting due to parallel tasks limit.
         bool parallel_tasks_limit = 3;
-      }
-      // Information about a blocking task.
-      message Task {
-        // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
-        string task = 1;
       }
     }
     // The cause for the task run waiting.
@@ -552,9 +543,6 @@ message TaskRun {
   }
   // Scheduling information about the task run.
   SchedulerInfo scheduler_info = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The task run should run after run_time.
   // This can only be set when creating the task run calling BatchRunTasks.
