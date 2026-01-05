@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -118,7 +117,5 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		)
 	}
 
-	return &storepb.TaskRunResult{
-		Detail: fmt.Sprintf("Created database %q", task.Payload.GetDatabaseName()),
-	}, nil
+	return &storepb.TaskRunResult{}, nil
 }

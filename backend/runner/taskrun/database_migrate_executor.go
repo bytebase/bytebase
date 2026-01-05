@@ -320,9 +320,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		}
 	}
 
-	return &storepb.TaskRunResult{
-		Detail: "Versioned release executed successfully",
-	}, nil
+	return &storepb.TaskRunResult{}, nil
 }
 
 func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, release *store.ReleaseMessage) (*storepb.TaskRunResult, error) {
@@ -395,9 +393,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		return nil, errors.Wrapf(err, "failed to execute declarative release (version %s)", file.Version)
 	}
 
-	return &storepb.TaskRunResult{
-		Detail: "Declarative release executed successfully",
-	}, nil
+	return &storepb.TaskRunResult{}, nil
 }
 
 func (exec *DatabaseMigrateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {

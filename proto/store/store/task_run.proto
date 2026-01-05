@@ -33,7 +33,7 @@ message TaskRun {
 
 // TaskRunResult contains the outcome and metadata from a task run execution.
 message TaskRunResult {
-  // Detailed execution information or error message.
+  // Error message for failed task runs. Empty for successful or canceled runs.
   string detail = 1;
 
   // UID of the export archive generated for export tasks.

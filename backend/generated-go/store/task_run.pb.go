@@ -138,7 +138,7 @@ func (*TaskRun) Descriptor() ([]byte, []int) {
 // TaskRunResult contains the outcome and metadata from a task run execution.
 type TaskRunResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Detailed execution information or error message.
+	// Error message for failed task runs. Empty for successful or canceled runs.
 	Detail string `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
 	// UID of the export archive generated for export tasks.
 	ExportArchiveUid int32 `protobuf:"varint,5,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
