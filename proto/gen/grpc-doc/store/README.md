@@ -285,9 +285,6 @@
     - [Task.Type](#bytebase-store-Task-Type)
   
 - [store/task_run.proto](#store_task_run-proto)
-    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
-    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
-    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
     - [SchedulerInfo](#bytebase-store-SchedulerInfo)
     - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
     - [TaskRun](#bytebase-store-TaskRun)
@@ -296,6 +293,9 @@
     - [TaskRun.Status](#bytebase-store-TaskRun-Status)
   
 - [store/task_run_log.proto](#store_task_run_log-proto)
+    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
+    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
+    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
     - [TaskRunLog](#bytebase-store-TaskRunLog)
     - [TaskRunLog.CommandExecute](#bytebase-store-TaskRunLog-CommandExecute)
     - [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse)
@@ -4715,56 +4715,6 @@ Type represents the type of database operation to perform.
 
 
 
-<a name="bytebase-store-PriorBackupDetail"></a>
-
-### PriorBackupDetail
-PriorBackupDetail contains information about automatic backups created before migration.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
-
-
-
-
-
-
-<a name="bytebase-store-PriorBackupDetail-Item"></a>
-
-### PriorBackupDetail.Item
-Item represents a single backup operation for a table.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
-| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
-| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
-| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
-
-
-
-
-
-
-<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
-
-### PriorBackupDetail.Item.Table
-Table identifies a database table.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
-| schema | [string](#string) |  | Schema name (for databases that support schemas). |
-| table | [string](#string) |  | Table name. |
-
-
-
-
-
-
 <a name="bytebase-store-SchedulerInfo"></a>
 
 ### SchedulerInfo
@@ -4818,7 +4768,7 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Error message for failed task runs. Empty for successful or canceled runs. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
-| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
+| has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, the task run can be rolled back using the backup tables. Backup details are available in the task run logs (PRIOR_BACKUP log entries). |
 
 
 
@@ -4857,6 +4807,56 @@ Status represents the current execution state of a task run.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/task_run_log.proto
+
+
+
+<a name="bytebase-store-PriorBackupDetail"></a>
+
+### PriorBackupDetail
+PriorBackupDetail contains information about automatic backups created before migration.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item"></a>
+
+### PriorBackupDetail.Item
+Item represents a single backup operation for a table.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
+| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
+
+### PriorBackupDetail.Item.Table
+Table identifies a database table.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | Schema name (for databases that support schemas). |
+| table | [string](#string) |  | Table name. |
+
+
+
 
 
 

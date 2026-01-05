@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/protobuf/timestamp.proto";
-import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -39,37 +38,10 @@ message TaskRunResult {
   // UID of the export archive generated for export tasks.
   int32 export_archive_uid = 5;
 
-  // Backup details that can be used to rollback changes.
-  PriorBackupDetail prior_backup_detail = 6;
-}
-
-// PriorBackupDetail contains information about automatic backups created before migration.
-message PriorBackupDetail {
-  // Item represents a single backup operation for a table.
-  message Item {
-    // Table identifies a database table.
-    message Table {
-      // The database containing the table.
-      // Format: instances/{instance}/databases/{database}
-      string database = 1;
-      // Schema name (for databases that support schemas).
-      string schema = 2;
-      // Table name.
-      string table = 3;
-    }
-
-    // The original table that was backed up.
-    Table source_table = 1;
-    // The backup table where data was copied.
-    Table target_table = 2;
-    // Starting position in SQL for this backup operation.
-    Position start_position = 3;
-    // Ending position in SQL for this backup operation.
-    Position end_position = 4;
-  }
-
-  // List of backup operations performed.
-  repeated Item items = 1;
+  // Indicates whether a prior backup was created for this task run.
+  // When true, the task run can be rolled back using the backup tables.
+  // Backup details are available in the task run logs (PRIOR_BACKUP log entries).
+  bool has_prior_backup = 6;
 }
 
 // SchedulerInfo contains information about task scheduling and execution delays.

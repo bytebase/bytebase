@@ -2450,18 +2450,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.TaskRun.PriorBackupDetail"><span class="badge">M</span>TaskRun.PriorBackupDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item"><span class="badge">M</span>TaskRun.PriorBackupDetail.Item</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item.Table"><span class="badge">M</span>TaskRun.PriorBackupDetail.Item.Table</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TaskRun.SchedulerInfo"><span class="badge">M</span>TaskRun.SchedulerInfo</a>
                 </li>
               
@@ -2495,6 +2483,18 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup"><span class="badge">M</span>TaskRunLogEntry.PriorBackup</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail"><span class="badge">M</span>TaskRunLogEntry.PriorBackup.PriorBackupDetail</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item"><span class="badge">M</span>TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table"><span class="badge">M</span>TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table</a>
                 </li>
               
                 <li>
@@ -27240,10 +27240,12 @@ Detailed information about the task run result. </p></td>
                 </tr>
               
                 <tr>
-                  <td>prior_backup_detail</td>
-                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail">TaskRun.PriorBackupDetail</a></td>
+                  <td>has_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
+                  <td><p>Indicates whether a prior backup was created for this task run.
+When true, rollback SQL can be generated via PreviewTaskRunRollback.
+Backup details are available in the task run logs. </p></td>
                 </tr>
               
                 <tr>
@@ -27259,114 +27261,6 @@ Detailed information about the task run result. </p></td>
                   <td>optional</td>
                   <td><p>The task run should run after run_time.
 This can only be set when creating the task run calling BatchRunTasks. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.TaskRun.PriorBackupDetail">TaskRun.PriorBackupDetail</h3>
-        <p>Prior backup detail for rollback purposes.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>items</td>
-                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item">TaskRun.PriorBackupDetail.Item</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of backed up tables. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.TaskRun.PriorBackupDetail.Item">TaskRun.PriorBackupDetail.Item</h3>
-        <p>A single backup table mapping.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>source_table</td>
-                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item.Table">TaskRun.PriorBackupDetail.Item.Table</a></td>
-                  <td></td>
-                  <td><p>The original table information. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target_table</td>
-                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail.Item.Table">TaskRun.PriorBackupDetail.Item.Table</a></td>
-                  <td></td>
-                  <td><p>The target backup table information. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>start_position</td>
-                  <td><a href="#bytebase.v1.Position">Position</a></td>
-                  <td></td>
-                  <td><p>The start position in the SQL statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end_position</td>
-                  <td><a href="#bytebase.v1.Position">Position</a></td>
-                  <td></td>
-                  <td><p>The end position in the SQL statement. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.TaskRun.PriorBackupDetail.Item.Table">TaskRun.PriorBackupDetail.Item.Table</h3>
-        <p>Table information.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database information.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The table name. </p></td>
                 </tr>
               
             </tbody>
@@ -27758,7 +27652,7 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
               
                 <tr>
                   <td>prior_backup_detail</td>
-                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail">TaskRun.PriorBackupDetail</a></td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail">TaskRunLogEntry.PriorBackup.PriorBackupDetail</a></td>
                   <td></td>
                   <td><p>The backup details. </p></td>
                 </tr>
@@ -27768,6 +27662,114 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Error message if the backup failed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail">TaskRunLogEntry.PriorBackup.PriorBackupDetail</h3>
+        <p>Prior backup detail for rollback purposes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>items</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item">TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of backed up tables. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item">TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item</h3>
+        <p>A single backup table mapping.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source_table</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table">TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The original table information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_table</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table">TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table</a></td>
+                  <td></td>
+                  <td><p>The target backup table information. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>The start position in the SQL statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>The end position in the SQL statement. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table">TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table</h3>
+        <p>Table information.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The database information.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table name. </p></td>
                 </tr>
               
             </tbody>

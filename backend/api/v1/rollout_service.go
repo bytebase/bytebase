@@ -974,9 +974,24 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no result", taskRun.ID))
 	}
 
-	backupDetail := taskRun.ResultProto.PriorBackupDetail
-	if backupDetail == nil {
+	if !taskRun.ResultProto.HasPriorBackup {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no rollback", taskRun.ID))
+	}
+
+	// Get backup detail from task run logs.
+	logs, err := s.store.ListTaskRunLogs(ctx, taskRunUID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task run logs"))
+	}
+	var backupDetail *storepb.PriorBackupDetail
+	for _, log := range logs {
+		if log.Payload.Type == storepb.TaskRunLog_PRIOR_BACKUP_END && log.Payload.PriorBackupEnd != nil {
+			backupDetail = log.Payload.PriorBackupEnd.PriorBackupDetail
+			break
+		}
+	}
+	if backupDetail == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no backup detail in logs", taskRun.ID))
 	}
 
 	task, err := s.store.GetTaskByID(ctx, taskUID)

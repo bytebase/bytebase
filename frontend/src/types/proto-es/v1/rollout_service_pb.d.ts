@@ -850,11 +850,13 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
 
   /**
-   * The prior backup detail that will be used to rollback the task run.
+   * Indicates whether a prior backup was created for this task run.
+   * When true, rollback SQL can be generated via PreviewTaskRunRollback.
+   * Backup details are available in the task run logs.
    *
-   * @generated from field: bytebase.v1.TaskRun.PriorBackupDetail prior_backup_detail = 11;
+   * @generated from field: bool has_prior_backup = 11;
    */
-  priorBackupDetail?: TaskRun_PriorBackupDetail;
+  hasPriorBackup: boolean;
 
   /**
    * Scheduling information about the task run.
@@ -877,102 +879,6 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
  * Use `create(TaskRunSchema)` to create a new message.
  */
 export declare const TaskRunSchema: GenMessage<TaskRun>;
-
-/**
- * Prior backup detail for rollback purposes.
- *
- * @generated from message bytebase.v1.TaskRun.PriorBackupDetail
- */
-export declare type TaskRun_PriorBackupDetail = Message<"bytebase.v1.TaskRun.PriorBackupDetail"> & {
-  /**
-   * The list of backed up tables.
-   *
-   * @generated from field: repeated bytebase.v1.TaskRun.PriorBackupDetail.Item items = 1;
-   */
-  items: TaskRun_PriorBackupDetail_Item[];
-};
-
-/**
- * Describes the message bytebase.v1.TaskRun.PriorBackupDetail.
- * Use `create(TaskRun_PriorBackupDetailSchema)` to create a new message.
- */
-export declare const TaskRun_PriorBackupDetailSchema: GenMessage<TaskRun_PriorBackupDetail>;
-
-/**
- * A single backup table mapping.
- *
- * @generated from message bytebase.v1.TaskRun.PriorBackupDetail.Item
- */
-export declare type TaskRun_PriorBackupDetail_Item = Message<"bytebase.v1.TaskRun.PriorBackupDetail.Item"> & {
-  /**
-   * The original table information.
-   *
-   * @generated from field: bytebase.v1.TaskRun.PriorBackupDetail.Item.Table source_table = 1;
-   */
-  sourceTable?: TaskRun_PriorBackupDetail_Item_Table;
-
-  /**
-   * The target backup table information.
-   *
-   * @generated from field: bytebase.v1.TaskRun.PriorBackupDetail.Item.Table target_table = 2;
-   */
-  targetTable?: TaskRun_PriorBackupDetail_Item_Table;
-
-  /**
-   * The start position in the SQL statement.
-   *
-   * @generated from field: bytebase.v1.Position start_position = 3;
-   */
-  startPosition?: Position;
-
-  /**
-   * The end position in the SQL statement.
-   *
-   * @generated from field: bytebase.v1.Position end_position = 4;
-   */
-  endPosition?: Position;
-};
-
-/**
- * Describes the message bytebase.v1.TaskRun.PriorBackupDetail.Item.
- * Use `create(TaskRun_PriorBackupDetail_ItemSchema)` to create a new message.
- */
-export declare const TaskRun_PriorBackupDetail_ItemSchema: GenMessage<TaskRun_PriorBackupDetail_Item>;
-
-/**
- * Table information.
- *
- * @generated from message bytebase.v1.TaskRun.PriorBackupDetail.Item.Table
- */
-export declare type TaskRun_PriorBackupDetail_Item_Table = Message<"bytebase.v1.TaskRun.PriorBackupDetail.Item.Table"> & {
-  /**
-   * The database information.
-   * Format: instances/{instance}/databases/{database}
-   *
-   * @generated from field: string database = 1;
-   */
-  database: string;
-
-  /**
-   * The schema name.
-   *
-   * @generated from field: string schema = 2;
-   */
-  schema: string;
-
-  /**
-   * The table name.
-   *
-   * @generated from field: string table = 3;
-   */
-  table: string;
-};
-
-/**
- * Describes the message bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.
- * Use `create(TaskRun_PriorBackupDetail_Item_TableSchema)` to create a new message.
- */
-export declare const TaskRun_PriorBackupDetail_Item_TableSchema: GenMessage<TaskRun_PriorBackupDetail_Item_Table>;
 
 /**
  * Information about task run scheduling.
@@ -1535,9 +1441,9 @@ export declare type TaskRunLogEntry_PriorBackup = Message<"bytebase.v1.TaskRunLo
   /**
    * The backup details.
    *
-   * @generated from field: bytebase.v1.TaskRun.PriorBackupDetail prior_backup_detail = 3;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail prior_backup_detail = 3;
    */
-  priorBackupDetail?: TaskRun_PriorBackupDetail;
+  priorBackupDetail?: TaskRunLogEntry_PriorBackup_PriorBackupDetail;
 
   /**
    * Error message if the backup failed.
@@ -1552,6 +1458,102 @@ export declare type TaskRunLogEntry_PriorBackup = Message<"bytebase.v1.TaskRunLo
  * Use `create(TaskRunLogEntry_PriorBackupSchema)` to create a new message.
  */
 export declare const TaskRunLogEntry_PriorBackupSchema: GenMessage<TaskRunLogEntry_PriorBackup>;
+
+/**
+ * Prior backup detail for rollback purposes.
+ *
+ * @generated from message bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail
+ */
+export declare type TaskRunLogEntry_PriorBackup_PriorBackupDetail = Message<"bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail"> & {
+  /**
+   * The list of backed up tables.
+   *
+   * @generated from field: repeated bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item items = 1;
+   */
+  items: TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item[];
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.
+ * Use `create(TaskRunLogEntry_PriorBackup_PriorBackupDetailSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_PriorBackup_PriorBackupDetailSchema: GenMessage<TaskRunLogEntry_PriorBackup_PriorBackupDetail>;
+
+/**
+ * A single backup table mapping.
+ *
+ * @generated from message bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item
+ */
+export declare type TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item = Message<"bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item"> & {
+  /**
+   * The original table information.
+   *
+   * @generated from field: bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table source_table = 1;
+   */
+  sourceTable?: TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table;
+
+  /**
+   * The target backup table information.
+   *
+   * @generated from field: bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table target_table = 2;
+   */
+  targetTable?: TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table;
+
+  /**
+   * The start position in the SQL statement.
+   *
+   * @generated from field: bytebase.v1.Position start_position = 3;
+   */
+  startPosition?: Position;
+
+  /**
+   * The end position in the SQL statement.
+   *
+   * @generated from field: bytebase.v1.Position end_position = 4;
+   */
+  endPosition?: Position;
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.
+ * Use `create(TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema: GenMessage<TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item>;
+
+/**
+ * Table information.
+ *
+ * @generated from message bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table
+ */
+export declare type TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table = Message<"bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table"> & {
+  /**
+   * The database information.
+   * Format: instances/{instance}/databases/{database}
+   *
+   * @generated from field: string database = 1;
+   */
+  database: string;
+
+  /**
+   * The schema name.
+   *
+   * @generated from field: string schema = 2;
+   */
+  schema: string;
+
+  /**
+   * The table name.
+   *
+   * @generated from field: string table = 3;
+   */
+  table: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table.
+ * Use `create(TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_TableSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_TableSchema: GenMessage<TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table>;
 
 /**
  * Retry information for failed operations.
