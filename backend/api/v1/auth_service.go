@@ -216,16 +216,16 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate access token"))
 	}
 
-	refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService)
 	newRefreshToken, err := auth.GenerateOpaqueToken()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
 	}
 
+	// Inherit expiration from the original token (absolute session lifetime)
 	if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
 		TokenHash: auth.HashToken(newRefreshToken),
 		UserEmail: user.Email,
-		ExpiresAt: time.Now().Add(refreshTokenDuration),
+		ExpiresAt: stored.ExpiresAt,
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
 	}
@@ -234,7 +234,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	resp := connect.NewResponse(&v1pb.RefreshResponse{})
 	origin := req.Header().Get("Origin")
 	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, accessToken).String())
-	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, newRefreshToken, refreshTokenDuration).String())
+	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, newRefreshToken, time.Until(stored.ExpiresAt)).String())
 
 	return resp, nil
 }
