@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -95,7 +94,7 @@ func DealWithDelimiter(statement string) (string, error) {
 		return "", err
 	}
 	if has {
-		var result []string
+		var result strings.Builder
 		delimiter := `;`
 		for _, sql := range list {
 			if IsDelimiter(sql.Text) {
@@ -103,97 +102,28 @@ func DealWithDelimiter(statement string) (string, error) {
 				if err != nil {
 					return "", err
 				}
-				result = append(result, "-- "+sql.Text)
+				// Comment out only the DELIMITER line, preserving all other lines for correct line numbers
+				lines := strings.Split(sql.Text, "\n")
+				for i, line := range lines {
+					if IsDelimiter(line) {
+						lines[i] = "-- " + strings.TrimLeft(line, " \t")
+						break
+					}
+				}
+				result.WriteString(strings.Join(lines, "\n"))
 				continue
 			}
-			// TODO(rebelice): after deal with delimiter, we may cannot get the right line number, fix it.
 			if delimiter != ";" && !sql.Empty {
-				result = append(result, fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)))
+				result.WriteString(strings.TrimSuffix(sql.Text, delimiter))
+				result.WriteString(";")
 			} else {
-				result = append(result, sql.Text)
+				result.WriteString(sql.Text)
 			}
 		}
 
-		statement = strings.Join(result, "\n")
+		statement = result.String()
 	}
 	return statement, nil
-}
-
-// RestoreDelimiter tries to restore the delimiter statement which is commented by DealWithDelimiter,
-//
-// Assumes the delimiter comment takes up a single line and matches the syntax `-- DELIMITER ?`,
-// also, one delimiter comment MUST only affect one statement, in the other words, the following statement cause UB:
-// -- DELIMITER ;
-// SELECT 1;
-// SELECT 2;
-// -- DELIMITER ;.
-// If the current delimiter is `;`, and meet `-- DELIMITER ;`, we would skip this delimiter comment.
-func RestoreDelimiter(statement string) (string, error) {
-	delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
-	lines := strings.Split(statement, "\n")
-	var result strings.Builder
-	var buf strings.Builder
-	previousDelimiter := ";"
-
-	flushBuf := func(delimiter string) error {
-		bufStmt := buf.String()
-		buf.Reset()
-		// Lookup reversely to modify the last delimiter.
-		for i := len(bufStmt) - 1; i >= 0; i-- {
-			if bufStmt[i] == ';' {
-				bufStmt = bufStmt[:i] + delimiter + bufStmt[i+1:]
-				break
-			}
-		}
-		if _, err := result.WriteString(bufStmt); err != nil {
-			return errors.Wrapf(err, "failed to write string %q into builder", bufStmt)
-		}
-		return nil
-	}
-
-	for i, line := range lines {
-		matchList := delimiterRegexp.FindStringSubmatch(line)
-		if matchList == nil {
-			target := &result
-			if previousDelimiter != ";" {
-				target = &buf
-			}
-			// Like strings.Join.
-			s := line
-			if i != len(lines)-1 {
-				s = fmt.Sprintf("%s\n", line)
-			}
-			if _, err := target.WriteString(s); err != nil {
-				return "", errors.Wrapf(err, "failed to write string %q into builder", line)
-			}
-			continue
-		}
-		if len(matchList) != 2 {
-			return "", errors.Errorf("invalid delimiter comment %q", line)
-		}
-
-		// If meet delimiter again, we should convert the delimiter in buf to previous delimiter.
-		if previousDelimiter != ";" {
-			if err := flushBuf(previousDelimiter); err != nil {
-				return "", err
-			}
-		}
-
-		if matchList[1] != previousDelimiter {
-			if _, err := result.WriteString(fmt.Sprintf("DELIMITER %s\n", matchList[1])); err != nil {
-				return "", errors.Wrapf(err, "failed to write string %q into builder", line)
-			}
-		}
-		previousDelimiter = matchList[1]
-	}
-
-	if previousDelimiter != ";" {
-		if err := flushBuf(previousDelimiter); err != nil {
-			return "", err
-		}
-	}
-
-	return result.String(), nil
 }
 
 func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {

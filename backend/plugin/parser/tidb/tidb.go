@@ -57,13 +57,13 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 		}
 
 		node := nodes[0]
-		// Don't override node.SetText() - the native TiDB parser already extracts
-		// the correct text (stripping leading newlines for clean error messages).
+		// node.Text() includes leading whitespace from singleSQL.Text.
+		// This maintains consistency: Statement.Start points to first char of Statement.Text,
+		// and AST position matches Statement position.
+		// Trim only at display points (e.g., error messages) where needed.
 
-		// Calculate the actual start line where the first token is.
-		// The native parser strips leading newlines from Text(), so we count how many
-		// newlines were stripped to find where the actual content starts.
-		// Formula: BaseLine (0-based) + leadingNewlinesStripped + 1 (for 1-based)
+		// Calculate the start line. The native TiDB parser may strip leading newlines
+		// from its internal Text(), so we count how many were stripped.
 		nativeText := node.Text()
 		leadingNewlinesStripped := strings.Count(singleSQL.Text, "\n") - strings.Count(nativeText, "\n")
 		actualStartLine := singleSQL.BaseLine + leadingNewlinesStripped + 1

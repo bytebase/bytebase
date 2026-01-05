@@ -11,7 +11,7 @@ import (
 )
 
 type setLineTestData struct {
-	statement          string
+	statement string
 	// firstLine is the 1-based line number where the CREATE TABLE statement starts.
 	// This is used to set OriginTextPosition, which the tokenizer uses to calculate
 	// absolute line numbers for columns and constraints.
