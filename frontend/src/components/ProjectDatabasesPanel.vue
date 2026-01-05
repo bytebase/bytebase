@@ -57,6 +57,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer } from "@/components/v2";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { useDatabaseV1Store } from "@/store";
@@ -77,7 +78,6 @@ import {
 import AdvancedSearch from "./AdvancedSearch";
 import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseOperations } from "./v2";
-import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 
 interface LocalState {
   selectedDatabaseNames: string[];

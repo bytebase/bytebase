@@ -115,6 +115,7 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer, InstanceRoleTable } from "@/components/v2";
 import {
   DatabaseOperations,
@@ -147,7 +148,6 @@ import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
 } from "@/utils";
-import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 
 const instanceHashList = ["overview", "databases", "users"] as const;
 export type InstanceHash = (typeof instanceHashList)[number];
@@ -279,9 +279,7 @@ const instanceRoleList = computed(() => {
 });
 
 const allowCreateDatabase = computed(() => {
-  return (
-    instanceV1HasCreateDatabase(instance.value)
-  );
+  return instanceV1HasCreateDatabase(instance.value);
 });
 
 const syncSchema = async (enableFullSync: boolean) => {

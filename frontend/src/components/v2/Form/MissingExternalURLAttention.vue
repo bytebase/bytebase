@@ -29,7 +29,7 @@ import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useActuatorV1Store } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils"
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const router = useRouter();
 const externalUrl = computed(

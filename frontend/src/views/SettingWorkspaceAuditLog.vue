@@ -44,7 +44,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { type AuditLogFilter } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { type SearchParams, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, type SearchParams } from "@/utils";
 
 interface LocalState {
   params: SearchParams;
