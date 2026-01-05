@@ -44,50 +44,50 @@ type DataExportExecutor struct {
 }
 
 // RunOnce will run the data export task executor once.
-func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (*storepb.TaskRunResult, error) {
 	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get issue")
+		return nil, errors.Wrapf(err, "failed to get issue")
 	}
 
 	database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get database")
+		return nil, errors.Wrapf(err, "failed to get database")
 	}
 	if database == nil {
-		return true, nil, errors.Errorf("database not found")
+		return nil, errors.Errorf("database not found")
 	}
 	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID, ShowDeleted: true})
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get instance")
+		return nil, errors.Wrapf(err, "failed to get instance")
 	}
 	if instance == nil {
-		return true, nil, errors.Errorf("instance not found")
+		return nil, errors.Errorf("instance not found")
 	}
 
 	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	if sheet == nil {
-		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
+		return nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 	statement := sheet.Statement
 
 	dataSource := apiv1.GetQueriableDataSource(instance)
 	creatorUser, err := exec.store.GetUserByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
+		return nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
 	}
 	if creatorUser == nil {
-		return true, nil, errors.Errorf("creator user not found for issue %d", issue.UID)
+		return nil, errors.Errorf("creator user not found for issue %d", issue.UID)
 	}
 
 	// Execute the export without masking.
 	// For approved DATABASE_EXPORT tasks, the approval itself authorizes access to the data.
 	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, task.Payload.GetFormat(), creatorUser)
 	if exportErr != nil {
-		return true, nil, errors.Wrap(exportErr, "failed to export data")
+		return nil, errors.Wrap(exportErr, "failed to export data")
 	}
 
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
@@ -97,10 +97,10 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		},
 	})
 	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to create export archive")
+		return nil, errors.Wrap(err, "failed to create export archive")
 	}
 
-	return true, &storepb.TaskRunResult{
+	return &storepb.TaskRunResult{
 		Detail:           "Data export succeeded",
 		ExportArchiveUid: int32(exportArchive.UID),
 	}, nil

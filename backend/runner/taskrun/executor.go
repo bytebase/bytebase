@@ -23,22 +23,17 @@ import (
 
 // Executor is the task executor.
 type Executor interface {
-	// RunOnce will be called periodically by the scheduler until terminated is true.
-	//
-	// NOTE
-	//
-	// 1. It's possible that err could be non-nil while terminated is false, which
-	// usually indicates a transient error and will make scheduler retry later.
-	// 2. If err is non-nil, then the detail field will be ignored since info is provided in the err.
+	// RunOnce will be called once by the scheduler to execute the task.
+	// If err is non-nil, the task will be marked as failed.
 	// driverCtx is used by the database driver so that we can cancel the query
-	// while have the ability to cleanup migration history etc.
-	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
+	// while having the ability to cleanup migration history etc.
+	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (result *storepb.TaskRunResult, err error)
 }
 
 type execFuncType func(context.Context, string, db.Driver, db.ExecuteOptions) error
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (result *storepb.TaskRunResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -46,7 +41,6 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 				panicErr = errors.Errorf("%v", r)
 			}
 			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
-			terminated = true
 			result = nil
 			err = errors.Errorf("TaskExecutor PANIC RECOVER, err: %v", panicErr)
 		}
@@ -95,7 +89,7 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 	}
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string, releaseType storepb.SchemaChangeType) (terminated bool, result *storepb.TaskRunResult, err error) {
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string, releaseType storepb.SchemaChangeType) (*storepb.TaskRunResult, error) {
 	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, syncer, profile, task, taskRunUID, sheet, schemaVersion, releaseType, nil /* default */)
 }
 
@@ -112,10 +106,10 @@ func runMigrationWithFunc(
 	schemaVersion string,
 	releaseType storepb.SchemaChangeType,
 	execFunc execFuncType,
-) (terminated bool, result *storepb.TaskRunResult, err error) {
+) (*storepb.TaskRunResult, error) {
 	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheet, taskRunUID, dbFactory)
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	mc.releaseType = releaseType
 
@@ -125,7 +119,7 @@ func runMigrationWithFunc(
 
 	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, profile, sheet.Statement, mc, execFunc)
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	return postMigration(ctx, store, mc, skipped)
 }
@@ -239,9 +233,9 @@ func doMigrationWithFunc(
 	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, driver, opts)
 }
 
-func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
+func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (*storepb.TaskRunResult, error) {
 	if skipped {
-		return true, &storepb.TaskRunResult{
+		return &storepb.TaskRunResult{
 			Detail: fmt.Sprintf("Task skipped because version %s has been applied", mc.version),
 		}, nil
 	}
@@ -262,7 +256,7 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 			md.Drifted = false
 		}},
 	}); err != nil {
-		return false, nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	var detail string
@@ -272,7 +266,7 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 		detail = fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
 	}
 
-	return true, &storepb.TaskRunResult{
+	return &storepb.TaskRunResult{
 		Detail: detail,
 	}, nil
 }
