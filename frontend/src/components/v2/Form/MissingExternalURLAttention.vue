@@ -11,7 +11,11 @@
     "
   >
     <template #action>
-      <NButton type="primary" @click="configureSetting">
+      <NButton
+        v-if="hasWorkspacePermissionV2('bb.settings.set')"
+        type="primary"
+        @click="configureSetting"
+      >
         {{ $t("common.configure-now") }}
       </NButton>
     </template>
@@ -25,6 +29,7 @@ import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useActuatorV1Store } from "@/store";
+import { hasWorkspacePermissionV2 } from "@/utils"
 
 const router = useRouter();
 const externalUrl = computed(

@@ -10,16 +10,22 @@
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
       />
-      <NButton
-        v-if="allowToCreateDB"
-        type="primary"
-        @click="state.showCreateDrawer = true"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="['bb.instances.list', 'bb.issues.create', 'bb.plans.create']"
       >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        {{ $t("quick-action.new-db") }}
-      </NButton>
+        <NButton
+          type="primary"
+          :disabled="slotProps.disabled"
+          @click="state.showCreateDrawer = true"
+        >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
+          {{ $t("quick-action.new-db") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <DatabaseOperations
       :project-name="project.name"
@@ -67,12 +73,11 @@ import {
   extractProjectResourceName,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
 } from "@/utils";
 import AdvancedSearch from "./AdvancedSearch";
 import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchScopeOptions";
 import { DatabaseOperations } from "./v2";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 
 interface LocalState {
   selectedDatabaseNames: string[];
@@ -115,13 +120,6 @@ watch(
 );
 
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
-
-const allowToCreateDB = computed(() => {
-  return (
-    hasWorkspacePermissionV2("bb.instances.list") &&
-    hasProjectPermissionV2(props.project, "bb.issues.create")
-  );
-});
 
 const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,

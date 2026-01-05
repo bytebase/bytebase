@@ -1,22 +1,29 @@
 <template>
   <div class="w-full flex flex-col gap-y-4">
-    <div class="flex items-center justify-end gap-x-2">
-      <NButton
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="state.showTemplateDrawer = true"
+    <div class="flex justify-end">
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.policies.update']"
       >
-        {{ $t("settings.sensitive-data.semantic-types.use-predefined-type") }}
-      </NButton>
-      <NButton
-        type="primary"
-        :disabled="!hasPermission || !hasSensitiveDataFeature"
-        @click="onAdd"
-      >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        {{ $t("common.add") }}
-      </NButton>
+        <div class="flex items-center gap-x-2">
+          <NButton
+            :disabled="slotProps.disabled || !hasSensitiveDataFeature"
+            @click="state.showTemplateDrawer = true"
+          >
+            {{ $t("settings.sensitive-data.semantic-types.use-predefined-type") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled || !hasSensitiveDataFeature"
+            @click="onAdd"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("common.add") }}
+          </NButton>
+        </div>
+      </PermissionGuardWrapper>
     </div>
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.semantic-types.label") }}
@@ -43,6 +50,7 @@ import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 import {

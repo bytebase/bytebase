@@ -1686,7 +1686,6 @@
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "table-detail": "テーブルの詳細",
-    "batch-action-permission-denied": "データベース {action} に対する権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
     "successfully-transferred-databases": "データベースの移行が完了しました",
@@ -2796,8 +2795,7 @@
     "delete-group": "データベースグループを削除する"
   },
   "export-center": {
-    "self": "エクスポートセンター",
-    "permission-denied": "この操作を実行する権限がありません"
+    "self": "エクスポートセンター"
   },
   "schema-designer": {
     "use-tips": "デザインするテーブルを選択してください"

@@ -3,27 +3,32 @@
     :trigger="'click'"
     :options="syncInstnceOptions"
     :render-label="renderDropdownLabel"
-    :disabled="!allowSyncInstance || disabled || syncingSchema"
+    :disabled="disabled || syncingSchema"
     @select="syncSchema"
   >
-    <NButton
-      icon-placement="right"
-      :loading="syncingSchema"
-      :quaternary="quaternary"
-      :disabled="!allowSyncInstance || disabled"
-      :size="size"
-      :type="type"
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="['bb.instances.sync']"
     >
-      <template #icon>
-        <ChevronDownIcon class="w-4" />
-      </template>
-      <template v-if="syncingSchema">
-        {{ $t("instance.syncing") }}
-      </template>
-      <template v-else>
-        {{ $t("instance.sync.self") }}
-      </template>
-    </NButton>
+      <NButton
+        icon-placement="right"
+        :loading="syncingSchema"
+        :quaternary="quaternary"
+        :disabled="slotProps.disabled || disabled"
+        :size="size"
+        :type="type"
+      >
+        <template #icon>
+          <ChevronDownIcon class="w-4" />
+        </template>
+        <template v-if="syncingSchema">
+          {{ $t("instance.syncing") }}
+        </template>
+        <template v-else>
+          {{ $t("instance.sync.self") }}
+        </template>
+      </NButton>
+    </PermissionGuardWrapper>
   </NDropdown>
 </template>
 
@@ -34,8 +39,8 @@ import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { pushNotification } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 withDefaults(
   defineProps<{
@@ -90,10 +95,6 @@ const syncInstnceOptions = computed((): DropdownOption[] => {
       label: t("instance.sync.sync-new"),
     },
   ];
-});
-
-const allowSyncInstance = computed(() => {
-  return hasWorkspacePermissionV2("bb.instances.sync");
 });
 
 const syncSchema = async (option: SyncInstanceOption) => {

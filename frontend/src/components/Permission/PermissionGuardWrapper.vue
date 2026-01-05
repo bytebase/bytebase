@@ -6,7 +6,7 @@
     <div class="flex flex-col gap-1">
       {{ project ? $t("common.missing-required-permission-for-resource", { resource: project.name }) : $t("common.missing-required-permission") }}
       <ul class="list-disc pl-4">
-        <li v-for="permission in permissions" :key="permission">
+        <li v-for="permission in missedPermissions" :key="permission">
           {{ permission }}
         </li>
       </ul>

@@ -10,21 +10,22 @@
           :override-scope-id-list="overrideSearchScopeIdList"
         >
           <template #searchbox-suffix>
-            <NTooltip :disabled="allowExportData">
-              <template #trigger>
-                <NButton
-                  type="primary"
-                  :disabled="!allowExportData"
-                  @click="state.showRequestExportPanel = true"
-                >
-                  <template #icon>
-                    <DownloadIcon class="h-4 w-4" />
-                  </template>
-                  {{ $t("quick-action.request-export-data") }}
-                </NButton>
-              </template>
-              {{ $t("export-center.permission-denied") }}
-            </NTooltip>
+            <PermissionGuardWrapper
+              v-slot="slotProps"
+              :project="specificProject"
+              :permissions="['bb.issues.create', 'bb.plans.create', 'bb.rollouts.create']"
+            >
+              <NButton
+                type="primary"
+                :disabled="slotProps.disabled"
+                @click="state.showRequestExportPanel = true"
+              >
+                <template #icon>
+                  <DownloadIcon class="h-4 w-4" />
+                </template>
+                {{ $t("quick-action.request-export-data") }}
+              </NButton>
+            </PermissionGuardWrapper>
           </template>
         </IssueSearch>
       </div>
@@ -61,12 +62,13 @@
 
 <script lang="ts" setup>
 import { DownloadIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
 import IssueSearch from "@/components/IssueV1/components/IssueSearch/IssueSearch.vue";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
@@ -80,7 +82,6 @@ import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   extractProjectResourceName,
-  hasPermissionToCreateDataExportIssueInProject,
   type SearchParams,
   type SearchScope,
   type SearchScopeId,
@@ -191,8 +192,4 @@ watch(
   () => issuePagedTable.value?.refresh()
 );
 useRefreshIssueList(() => issuePagedTable.value?.refresh());
-
-const allowExportData = computed(() => {
-  return hasPermissionToCreateDataExportIssueInProject(specificProject.value);
-});
 </script>

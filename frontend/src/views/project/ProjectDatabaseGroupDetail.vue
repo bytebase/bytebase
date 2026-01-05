@@ -13,28 +13,46 @@
       v-if="hasDatabaseGroupFeature && !state.editing"
       class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
     >
-      <NTooltip
-        v-if="hasPermissionToCreateIssue"
-        :disabled="hasMatchedDatabases"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.issues.create',
+          'bb.plans.create',
+          'bb.rollouts.create',
+        ]"
       >
-        <template #trigger>
-          <NButton
-            :disabled="!hasMatchedDatabases"
-            @click="() => {
-              preCreateIssue(project.name, [databaseGroupResourceName])
-            }"
-          >
-            {{ $t("database.change-database") }}
-          </NButton>
-        </template>
-        {{ $t("database-group.no-matched-databases") }}
-      </NTooltip>
-      <NButton v-if="allowEdit" type="primary" @click="state.editing = true">
-        <template #icon>
-          <EditIcon class="w-4 h-4" />
-        </template>
-        {{ $t("common.configure") }}
-      </NButton>
+        <NTooltip
+          :disabled="slotProps.disabled || hasMatchedDatabases"
+        >
+          <template #trigger>
+            <NButton
+              :disabled="slotProps.disabled || !hasMatchedDatabases"
+              @click="() => {
+                preCreateIssue(project.name, [databaseGroupResourceName])
+              }"
+            >
+              {{ $t("database.change-database") }}
+            </NButton>
+          </template>
+          {{ $t("database-group.no-matched-databases") }}
+        </NTooltip>
+      </PermissionGuardWrapper>
+
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.databaseGroups.update',
+        ]"
+      >
+        <NButton type="primary" :disabled="slotProps.disabled" @click="state.editing = true">
+          <template #icon>
+            <EditIcon class="w-4 h-4" />
+          </template>
+          {{ $t("common.configure") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
 
     <DatabaseGroupForm
@@ -52,6 +70,7 @@ import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { featureToRef, useDBGroupStore, useProjectByName } from "@/store";
@@ -61,7 +80,6 @@ import {
 } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
 interface LocalState {
   editing: boolean;
@@ -87,10 +105,6 @@ const databaseGroupResourceName = computed(() => {
 
 const databaseGroup = computed(() => {
   return dbGroupStore.getDBGroupByName(databaseGroupResourceName.value);
-});
-
-const hasPermissionToCreateIssue = computed(() => {
-  return hasPermissionToCreateChangeDatabaseIssueInProject(project.value);
 });
 
 const hasMatchedDatabases = computed(

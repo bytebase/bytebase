@@ -11,7 +11,7 @@
       />
       <PermissionGuardWrapper
         v-slot="slotProps"
-        :permissions="['bb.instances.list', 'bb.issues.create', 'bb.settings.get']"
+        :permissions="['bb.instances.list', 'bb.issues.create', 'bb.plans.create']"
       >
         <NButton
           type="primary"
