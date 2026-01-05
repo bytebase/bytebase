@@ -41,12 +41,12 @@ type StatementAdviseExecutor struct {
 
 // RunForTarget runs the statement advise check for a single target.
 func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
-	fullSheet, err := e.store.GetSheetFull(ctx, target.SheetSHA256)
+	fullSheet, err := e.store.GetSheetFull(ctx, target.SheetSha256)
 	if err != nil {
 		return nil, err
 	}
 	if fullSheet == nil {
-		return nil, errors.Errorf("sheet full %s not found", target.SheetSHA256)
+		return nil, errors.Errorf("sheet full %s not found", target.SheetSha256)
 	}
 	if fullSheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{

@@ -54,7 +54,7 @@ func DeriveCheckTargets(project *store.ProjectMessage, plan *store.PlanMessage, 
 
 				targets = append(targets, &CheckTarget{
 					Target:            target,
-					SheetSHA256:       config.ChangeDatabaseConfig.SheetSha256,
+					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
 					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,
 					EnableGhost:       config.ChangeDatabaseConfig.EnableGhost,
 					GhostFlags:        config.ChangeDatabaseConfig.GhostFlags,

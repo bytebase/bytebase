@@ -7,8 +7,8 @@ import storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 type CheckTarget struct {
 	// Target is the database resource name: instances/{instance}/databases/{database}
 	Target string
-	// SheetSHA256 is the content hash of the SQL sheet
-	SheetSHA256 string
+	// SheetSha256 is the content hash of the SQL sheet
+	SheetSha256 string
 	// EnablePriorBackup indicates if backup before migration is enabled
 	EnablePriorBackup bool
 	// EnableGhost indicates if gh-ost online migration is enabled

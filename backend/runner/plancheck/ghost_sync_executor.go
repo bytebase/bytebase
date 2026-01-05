@@ -88,12 +88,12 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	sheet, err := e.store.GetSheetFull(ctx, target.SheetSHA256)
+	sheet, err := e.store.GetSheetFull(ctx, target.SheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %s", target.SheetSHA256)
+		return nil, errors.Wrapf(err, "failed to get sheet %s", target.SheetSha256)
 	}
 	if sheet == nil {
-		return nil, errors.Errorf("sheet %s not found", target.SheetSHA256)
+		return nil, errors.Errorf("sheet %s not found", target.SheetSha256)
 	}
 	statement := sheet.Statement
 
