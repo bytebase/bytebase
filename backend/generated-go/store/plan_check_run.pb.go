@@ -73,50 +73,6 @@ func (PlanCheckType) EnumDescriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0}
 }
 
-type PlanCheckRunConfig struct {
-	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Targets       []*PlanCheckRunConfig_CheckTarget `protobuf:"bytes,1,rep,name=targets,proto3" json:"targets,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PlanCheckRunConfig) Reset() {
-	*x = PlanCheckRunConfig{}
-	mi := &file_store_plan_check_run_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanCheckRunConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanCheckRunConfig) ProtoMessage() {}
-
-func (x *PlanCheckRunConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanCheckRunConfig.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunConfig) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *PlanCheckRunConfig) GetTargets() []*PlanCheckRunConfig_CheckTarget {
-	if x != nil {
-		return x.Targets
-	}
-	return nil
-}
-
 type PlanCheckRunResult struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Results       []*PlanCheckRunResult_Result `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
@@ -127,7 +83,7 @@ type PlanCheckRunResult struct {
 
 func (x *PlanCheckRunResult) Reset() {
 	*x = PlanCheckRunResult{}
-	mi := &file_store_plan_check_run_proto_msgTypes[1]
+	mi := &file_store_plan_check_run_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -139,7 +95,7 @@ func (x *PlanCheckRunResult) String() string {
 func (*PlanCheckRunResult) ProtoMessage() {}
 
 func (x *PlanCheckRunResult) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[1]
+	mi := &file_store_plan_check_run_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -152,7 +108,7 @@ func (x *PlanCheckRunResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanCheckRunResult.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *PlanCheckRunResult) GetResults() []*PlanCheckRunResult_Result {
@@ -178,7 +134,7 @@ type ChangedResources struct {
 
 func (x *ChangedResources) Reset() {
 	*x = ChangedResources{}
-	mi := &file_store_plan_check_run_proto_msgTypes[2]
+	mi := &file_store_plan_check_run_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -190,7 +146,7 @@ func (x *ChangedResources) String() string {
 func (*ChangedResources) ProtoMessage() {}
 
 func (x *ChangedResources) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[2]
+	mi := &file_store_plan_check_run_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -203,7 +159,7 @@ func (x *ChangedResources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResources.ProtoReflect.Descriptor instead.
 func (*ChangedResources) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ChangedResources) GetDatabases() []*ChangedResourceDatabase {
@@ -223,7 +179,7 @@ type ChangedResourceDatabase struct {
 
 func (x *ChangedResourceDatabase) Reset() {
 	*x = ChangedResourceDatabase{}
-	mi := &file_store_plan_check_run_proto_msgTypes[3]
+	mi := &file_store_plan_check_run_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -235,7 +191,7 @@ func (x *ChangedResourceDatabase) String() string {
 func (*ChangedResourceDatabase) ProtoMessage() {}
 
 func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[3]
+	mi := &file_store_plan_check_run_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -248,7 +204,7 @@ func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceDatabase.ProtoReflect.Descriptor instead.
 func (*ChangedResourceDatabase) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{3}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ChangedResourceDatabase) GetName() string {
@@ -275,7 +231,7 @@ type ChangedResourceSchema struct {
 
 func (x *ChangedResourceSchema) Reset() {
 	*x = ChangedResourceSchema{}
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -287,7 +243,7 @@ func (x *ChangedResourceSchema) String() string {
 func (*ChangedResourceSchema) ProtoMessage() {}
 
 func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -300,7 +256,7 @@ func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceSchema.ProtoReflect.Descriptor instead.
 func (*ChangedResourceSchema) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{4}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ChangedResourceSchema) GetName() string {
@@ -328,7 +284,7 @@ type ChangedResourceTable struct {
 
 func (x *ChangedResourceTable) Reset() {
 	*x = ChangedResourceTable{}
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -340,7 +296,7 @@ func (x *ChangedResourceTable) String() string {
 func (*ChangedResourceTable) ProtoMessage() {}
 
 func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -353,7 +309,7 @@ func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceTable.ProtoReflect.Descriptor instead.
 func (*ChangedResourceTable) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{5}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ChangedResourceTable) GetName() string {
@@ -368,91 +324,6 @@ func (x *ChangedResourceTable) GetTableRows() int64 {
 		return x.TableRows
 	}
 	return 0
-}
-
-type PlanCheckRunConfig_CheckTarget struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: instances/{instance}/databases/{database}
-	Target            string            `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
-	SheetSha256       string            `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	EnablePriorBackup bool              `protobuf:"varint,3,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	EnableGhost       bool              `protobuf:"varint,4,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
-	GhostFlags        map[string]string `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Types             []PlanCheckType   `protobuf:"varint,7,rep,packed,name=types,proto3,enum=bytebase.store.PlanCheckType" json:"types,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) Reset() {
-	*x = PlanCheckRunConfig_CheckTarget{}
-	mi := &file_store_plan_check_run_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanCheckRunConfig_CheckTarget) ProtoMessage() {}
-
-func (x *PlanCheckRunConfig_CheckTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanCheckRunConfig_CheckTarget.ProtoReflect.Descriptor instead.
-func (*PlanCheckRunConfig_CheckTarget) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0}
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetTarget() string {
-	if x != nil {
-		return x.Target
-	}
-	return ""
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetSheetSha256() string {
-	if x != nil {
-		return x.SheetSha256
-	}
-	return ""
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetEnablePriorBackup() bool {
-	if x != nil {
-		return x.EnablePriorBackup
-	}
-	return false
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetEnableGhost() bool {
-	if x != nil {
-		return x.EnableGhost
-	}
-	return false
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetGhostFlags() map[string]string {
-	if x != nil {
-		return x.GhostFlags
-	}
-	return nil
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetTypes() []PlanCheckType {
-	if x != nil {
-		return x.Types
-	}
-	return nil
 }
 
 type PlanCheckRunResult_Result struct {
@@ -476,7 +347,7 @@ type PlanCheckRunResult_Result struct {
 
 func (x *PlanCheckRunResult_Result) Reset() {
 	*x = PlanCheckRunResult_Result{}
-	mi := &file_store_plan_check_run_proto_msgTypes[8]
+	mi := &file_store_plan_check_run_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -488,7 +359,7 @@ func (x *PlanCheckRunResult_Result) String() string {
 func (*PlanCheckRunResult_Result) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[8]
+	mi := &file_store_plan_check_run_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -501,7 +372,7 @@ func (x *PlanCheckRunResult_Result) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanCheckRunResult_Result.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0}
 }
 
 func (x *PlanCheckRunResult_Result) GetStatus() Advice_Status {
@@ -599,7 +470,7 @@ type PlanCheckRunResult_Result_SqlSummaryReport struct {
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) Reset() {
 	*x = PlanCheckRunResult_Result_SqlSummaryReport{}
-	mi := &file_store_plan_check_run_proto_msgTypes[9]
+	mi := &file_store_plan_check_run_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -611,7 +482,7 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) String() string {
 func (*PlanCheckRunResult_Result_SqlSummaryReport) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[9]
+	mi := &file_store_plan_check_run_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -624,7 +495,7 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) ProtoReflect() protoreflect
 
 // Deprecated: Use PlanCheckRunResult_Result_SqlSummaryReport.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result_SqlSummaryReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 0}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetStatementTypes() []string {
@@ -659,7 +530,7 @@ type PlanCheckRunResult_Result_SqlReviewReport struct {
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) Reset() {
 	*x = PlanCheckRunResult_Result_SqlReviewReport{}
-	mi := &file_store_plan_check_run_proto_msgTypes[10]
+	mi := &file_store_plan_check_run_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +542,7 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) String() string {
 func (*PlanCheckRunResult_Result_SqlReviewReport) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[10]
+	mi := &file_store_plan_check_run_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +555,7 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.
 
 // Deprecated: Use PlanCheckRunResult_Result_SqlReviewReport.ProtoReflect.Descriptor instead.
 func (*PlanCheckRunResult_Result_SqlReviewReport) Descriptor() ([]byte, []int) {
-	return file_store_plan_check_run_proto_rawDescGZIP(), []int{1, 0, 1}
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0, 1}
 }
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) GetStartPosition() *Position {
@@ -705,20 +576,7 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xd1\x03\n" +
-	"\x12PlanCheckRunConfig\x12H\n" +
-	"\atargets\x18\x01 \x03(\v2..bytebase.store.PlanCheckRunConfig.CheckTargetR\atargets\x1a\xf0\x02\n" +
-	"\vCheckTarget\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12!\n" +
-	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12.\n" +
-	"\x13enable_prior_backup\x18\x03 \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\x04 \x01(\bR\venableGhost\x12_\n" +
-	"\vghost_flags\x18\x06 \x03(\v2>.bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntryR\n" +
-	"ghostFlags\x123\n" +
-	"\x05types\x18\a \x03(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x05types\x1a=\n" +
-	"\x0fGhostFlagsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe3\x06\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xe3\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xf1\x05\n" +
@@ -771,43 +629,37 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 }
 
 var file_store_plan_check_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_store_plan_check_run_proto_goTypes = []any{
 	(PlanCheckType)(0),                                 // 0: bytebase.store.PlanCheckType
-	(*PlanCheckRunConfig)(nil),                         // 1: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),                         // 2: bytebase.store.PlanCheckRunResult
-	(*ChangedResources)(nil),                           // 3: bytebase.store.ChangedResources
-	(*ChangedResourceDatabase)(nil),                    // 4: bytebase.store.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),                      // 5: bytebase.store.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),                       // 6: bytebase.store.ChangedResourceTable
-	(*PlanCheckRunConfig_CheckTarget)(nil),             // 7: bytebase.store.PlanCheckRunConfig.CheckTarget
-	nil,                                                // 8: bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry
-	(*PlanCheckRunResult_Result)(nil),                  // 9: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 10: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 11: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	(Advice_Status)(0),                                 // 12: bytebase.store.Advice.Status
-	(*Position)(nil),                                   // 13: bytebase.store.Position
+	(*PlanCheckRunResult)(nil),                         // 1: bytebase.store.PlanCheckRunResult
+	(*ChangedResources)(nil),                           // 2: bytebase.store.ChangedResources
+	(*ChangedResourceDatabase)(nil),                    // 3: bytebase.store.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),                      // 4: bytebase.store.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),                       // 5: bytebase.store.ChangedResourceTable
+	(*PlanCheckRunResult_Result)(nil),                  // 6: bytebase.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 7: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	(Advice_Status)(0),                                 // 9: bytebase.store.Advice.Status
+	(*Position)(nil),                                   // 10: bytebase.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
-	7,  // 0: bytebase.store.PlanCheckRunConfig.targets:type_name -> bytebase.store.PlanCheckRunConfig.CheckTarget
-	9,  // 1: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	4,  // 2: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
-	5,  // 3: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
-	6,  // 4: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
-	8,  // 5: bytebase.store.PlanCheckRunConfig.CheckTarget.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry
-	0,  // 6: bytebase.store.PlanCheckRunConfig.CheckTarget.types:type_name -> bytebase.store.PlanCheckType
-	12, // 7: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
-	0,  // 8: bytebase.store.PlanCheckRunResult.Result.type:type_name -> bytebase.store.PlanCheckType
-	10, // 9: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	11, // 10: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	3,  // 11: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
-	13, // 12: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
-	13, // 13: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 0: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
+	3,  // 1: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
+	4,  // 2: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
+	5,  // 3: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
+	9,  // 4: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
+	0,  // 5: bytebase.store.PlanCheckRunResult.Result.type:type_name -> bytebase.store.PlanCheckType
+	7,  // 6: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	8,  // 7: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	2,  // 8: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
+	10, // 9: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
+	10, // 10: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_check_run_proto_init() }
@@ -817,7 +669,7 @@ func file_store_plan_check_run_proto_init() {
 	}
 	file_store_advice_proto_init()
 	file_store_common_proto_init()
-	file_store_plan_check_run_proto_msgTypes[8].OneofWrappers = []any{
+	file_store_plan_check_run_proto_msgTypes[5].OneofWrappers = []any{
 		(*PlanCheckRunResult_Result_SqlSummaryReport_)(nil),
 		(*PlanCheckRunResult_Result_SqlReviewReport_)(nil),
 	}
@@ -827,7 +679,7 @@ func file_store_plan_check_run_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_check_run_proto_rawDesc), len(file_store_plan_check_run_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
