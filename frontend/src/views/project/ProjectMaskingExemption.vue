@@ -1,9 +1,10 @@
 <template>
   <div class="flex flex-col gap-y-4">
     <div
-      class="flex flex-col lg:flex-row gap-y-4 justify-between items-end lg:items-center gap-x-2"
+      class="flex flex-row justify-between items-center gap-x-2"
     >
       <DatabaseSelect
+        class="hidden sm:block"
         style="max-width: max-content"
         :placeholder="$t('database.select')"
         :project-name="project.name"
@@ -18,30 +19,36 @@
           style="max-width: 100%"
           :placeholder="$t('settings.members.search-member')"
         />
-        <NButton
-          v-if="allowCreate"
-          type="primary"
-          @click="
-            () => {
-              if (!hasSensitiveDataFeature) {
-                state.showFeatureModal = true;
-                return;
-              }
-              router.push({
-                name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
-              });
-            }
-          "
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="['bb.policies.create', 'bb.databases.list']"
         >
-          <template #icon>
-            <ShieldCheckIcon class="w-4" />
-            <FeatureBadge
-              :feature="PlanFeature.FEATURE_DATA_MASKING"
-              class="text-white"
-            />
-          </template>
-          {{ $t("project.masking-exemption.grant-exemption") }}
-        </NButton>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click="
+              () => {
+                if (!hasSensitiveDataFeature) {
+                  state.showFeatureModal = true;
+                  return;
+                }
+                router.push({
+                  name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
+                });
+              }
+            "
+          >
+            <template #icon>
+              <ShieldCheckIcon class="w-4" />
+              <FeatureBadge
+                :feature="PlanFeature.FEATURE_DATA_MASKING"
+                class="text-white"
+              />
+            </template>
+            {{ $t("project.masking-exemption.grant-exemption") }}
+          </NButton>
+        </PermissionGuardWrapper>
       </div>
     </div>
     <MaskingExceptionUserTable
@@ -66,6 +73,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
 import { type AccessUser } from "@/components/SensitiveData/types";
 import { DatabaseSelect, SearchBox } from "@/components/v2";
@@ -73,7 +81,6 @@ import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/pr
 import { hasFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
   searchText: string;
@@ -97,13 +104,6 @@ const { project } = useProjectByName(
 
 const hasSensitiveDataFeature = computed(() => {
   return hasFeature(PlanFeature.FEATURE_DATA_MASKING);
-});
-
-const allowCreate = computed(() => {
-  return (
-    hasProjectPermissionV2(project.value, "bb.databases.list") &&
-    hasProjectPermissionV2(project.value, "bb.policies.create")
-  );
 });
 
 const filterAccessUser = (user: AccessUser): boolean => {

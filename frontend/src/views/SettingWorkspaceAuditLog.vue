@@ -3,18 +3,23 @@
     <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
     <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
-        <DataExportButton
-          size="medium"
-          :support-formats="[
-            ExportFormat.CSV,
-            ExportFormat.JSON,
-            ExportFormat.XLSX,
-          ]"
-          :tooltip="disableExportTip"
-          :view-mode="'DROPDOWN'"
-          :disabled="!hasAuditLogFeature || !!disableExportTip"
-          @export="(params) => pagedAuditLogDataTableRef?.handleExport(params)"
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="['bb.auditLogs.export']"
+        >
+          <DataExportButton
+            size="medium"
+            :support-formats="[
+              ExportFormat.CSV,
+              ExportFormat.JSON,
+              ExportFormat.XLSX,
+            ]"
+            :tooltip="disableExportTip"
+            :view-mode="'DROPDOWN'"
+            :disabled="slotProps.disabled || !hasAuditLogFeature || !!disableExportTip"
+            @export="(params) => pagedAuditLogDataTableRef?.handleExport(params)"
+          />
+        </PermissionGuardWrapper>
       </template>
     </AuditLogSearch>
 
@@ -38,6 +43,7 @@ import { buildAuditLogFilter } from "@/components/AuditLog/AuditLogSearch/utils"
 import PagedAuditLogDataTable from "@/components/AuditLog/PagedAuditLogDataTable.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { type AuditLogFilter } from "@/types";

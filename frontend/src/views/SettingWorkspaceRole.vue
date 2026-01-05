@@ -5,5 +5,5 @@
 </template>
 
 <script lang="ts" setup>
-import { RoleSetting } from "@/components/Role";
+import RoleSetting from "@/components/Role/RoleSetting.vue";
 </script>

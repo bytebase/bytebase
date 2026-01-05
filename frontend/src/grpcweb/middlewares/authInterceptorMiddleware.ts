@@ -1,20 +1,20 @@
 import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import { t } from "@/plugins/i18n";
 import { router } from "@/router";
+import { WORKSPACE_ROUTE_403 } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useAuthStore } from "@/store";
+import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 import { refreshTokens } from "../refreshToken";
 
-export type IgnoreErrorsOptions = {
-  /**
-   * If set to true, will NOT show redirect to other pages(e.g., 403, sign in page).
-   */
-  silent?: boolean;
-
-  /**
-   * If set, will NOT handle specified status codes is this array.
-   */
-  ignoredCodes?: Code[];
+const extractPermissionDeniedDetail = (error: unknown) => {
+  if (error instanceof ConnectError) {
+    const details = error.findDetails(PermissionDeniedDetailSchema);
+    if (details.length > 0) {
+      return details[0];
+    }
+  }
+  return undefined;
 };
 
 export const authInterceptor: Interceptor = (next) => async (req) => {
@@ -79,7 +79,17 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
             throw retryError;
           }
         } else if (code === Code.PermissionDenied) {
-          router.push({ name: "error.403" });
+          const errorDetail = extractPermissionDeniedDetail(error);
+          router.push({
+            name: WORKSPACE_ROUTE_403,
+            query: errorDetail
+              ? {
+                  method: errorDetail.method,
+                  permissions: errorDetail.requiredPermissions.join(","),
+                  resources: errorDetail.resources.join(","),
+                }
+              : undefined,
+          });
         }
       }
     }

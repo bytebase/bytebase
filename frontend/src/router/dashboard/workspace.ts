@@ -7,6 +7,8 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROOT_MODULE,
+  WORKSPACE_ROUTE_403,
+  WORKSPACE_ROUTE_404,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
@@ -88,7 +90,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
-      requiredPermissionList: () => ["bb.settings.get"],
+      requiredPermissionList: () => ["bb.settings.get", "bb.policies.get"],
     },
     components: {
       content: () => import("@/views/EnvironmentDashboard.vue"),
@@ -107,7 +109,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: "403",
-    name: "error.403",
+    name: WORKSPACE_ROUTE_403,
     components: {
       content: () => import("@/views/Page403.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
@@ -119,7 +121,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: "404",
-    name: "error.404",
+    name: WORKSPACE_ROUTE_404,
     components: {
       content: () => import("@/views/Page404.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
@@ -180,6 +182,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "idps",
     meta: {
       title: () => t("settings.sidebar.sso"),
+      requiredPermissionList: () => ["bb.identityProviders.get"],
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
@@ -193,17 +196,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
       {
         path: "",
         name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-        meta: {
-          requiredPermissionList: () => ["bb.settings.get"],
-        },
         component: () => import("@/views/SettingWorkspaceSSO.vue"),
       },
       {
         path: ":idpId",
         name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
-        meta: {
-          requiredPermissionList: () => ["bb.identityProviders.get"],
-        },
         component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
         props: true,
       },
@@ -222,7 +219,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_RISK_CENTER,
         meta: {
           title: () => t("custom-approval.risk.self"),
-          requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
         props: true,
@@ -273,10 +269,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_AUDIT_LOG,
         meta: {
           title: () => t("settings.sidebar.audit-log"),
-          requiredPermissionList: () => [
-            "bb.settings.get",
-            "bb.auditLogs.search",
-          ],
+          requiredPermissionList: () => ["bb.auditLogs.search"],
         },
         component: () => import("@/views/SettingWorkspaceAuditLog.vue"),
         props: true,
@@ -286,6 +279,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_USERS,
         meta: {
           title: () => t("settings.sidebar.users-and-groups"),
+          requiredPermissionList: () => ["bb.users.list", "bb.groups.list"],
         },
         component: () => import("@/views/SettingWorkspaceUsers.vue"),
         props: true,
@@ -295,7 +289,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_MEMBERS,
         meta: {
           title: () => t("settings.sidebar.members"),
-          requiredPermissionList: () => ["bb.policies.get"],
+          requiredPermissionList: () => [
+            "bb.workspaces.getIamPolicy",
+            "bb.users.list",
+            "bb.groups.list",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceMembers.vue"),
         props: true,
@@ -315,7 +313,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_IM,
         meta: {
           title: () => t("settings.sidebar.im-integration"),
-          requiredPermissionList: () => ["bb.settings.get", "bb.settings.set"],
+          requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceIM.vue"),
         props: true,
@@ -325,6 +323,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_MCP,
         meta: {
           title: () => t("settings.sidebar.mcp"),
+          requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceMCP.vue"),
         props: true,

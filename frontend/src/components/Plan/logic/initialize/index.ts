@@ -19,6 +19,10 @@ import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutFromPlan, extractPlanNameFromRolloutName } from "@/utils";
 import { emptyPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";
+import {
+  WORKSPACE_ROUTE_403,
+  WORKSPACE_ROUTE_404,
+} from "@/router/dashboard/workspaceRoutes";
 
 export * from "./create";
 
@@ -207,7 +211,7 @@ export function useInitializePlan(
     [uid, () => unref(projectId)],
     async ([uid, projectId]) => {
       if (uid === String(UNKNOWN_ID)) {
-        router.push({ name: "error.404" });
+        router.push({ name: WORKSPACE_ROUTE_404 });
         return;
       }
       const url = route.fullPath;
@@ -227,9 +231,9 @@ export function useInitializePlan(
         // Check Connect error type and handle accordingly
         if (error instanceof ConnectError) {
           if (error.code === Code.NotFound) {
-            router.push({ name: "error.404" });
+            router.push({ name: WORKSPACE_ROUTE_404 });
           } else if (error.code === Code.PermissionDenied) {
-            router.push({ name: "error.403" });
+            router.push({ name: WORKSPACE_ROUTE_403 });
           }
           isInitializing.value = false;
           return;

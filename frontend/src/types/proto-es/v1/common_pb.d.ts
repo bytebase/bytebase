@@ -89,6 +89,41 @@ export declare type Range = Message<"bytebase.v1.Range"> & {
 export declare const RangeSchema: GenMessage<Range>;
 
 /**
+ * PermissionDeniedDetail provides structured information about permission failures.
+ * Used as error detail when returning CodePermissionDenied errors.
+ *
+ * @generated from message bytebase.v1.PermissionDeniedDetail
+ */
+export declare type PermissionDeniedDetail = Message<"bytebase.v1.PermissionDeniedDetail"> & {
+  /**
+   * The API method that was called.
+   *
+   * @generated from field: string method = 1;
+   */
+  method: string;
+
+  /**
+   * The permissions required but not granted to the user.
+   *
+   * @generated from field: repeated string required_permissions = 2;
+   */
+  requiredPermissions: string[];
+
+  /**
+   * The resources the user was trying to access.
+   *
+   * @generated from field: repeated string resources = 3;
+   */
+  resources: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.PermissionDeniedDetail.
+ * Use `create(PermissionDeniedDetailSchema)` to create a new message.
+ */
+export declare const PermissionDeniedDetailSchema: GenMessage<PermissionDeniedDetail>;
+
+/**
  * Resource lifecycle state.
  *
  * @generated from enum bytebase.v1.State

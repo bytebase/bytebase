@@ -177,3 +177,14 @@ enum WebhookType {
   // Lark integration.
   LARK = 7;
 }
+
+// PermissionDeniedDetail provides structured information about permission failures.
+// Used as error detail when returning CodePermissionDenied errors.
+message PermissionDeniedDetail {
+  // The API method that was called.
+  string method = 1;
+  // The permissions required but not granted to the user.
+  repeated string required_permissions = 2;
+  // The resources the user was trying to access.
+  repeated string resources = 3;
+}

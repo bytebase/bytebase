@@ -28,6 +28,7 @@
           :require-confirm="true"
           :hide-icon="true"
           :button-text="$t('common.clear')"
+          :disabled="!allowEdit || !hasClassificationFeature"
           @confirm="clearSetting"
         />
         <NButton

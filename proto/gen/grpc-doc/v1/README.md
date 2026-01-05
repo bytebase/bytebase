@@ -12,6 +12,7 @@
     - [File-level Extensions](#v1_annotation-proto-extensions)
   
 - [v1/common.proto](#v1_common-proto)
+    - [PermissionDeniedDetail](#bytebase-v1-PermissionDeniedDetail)
     - [Position](#bytebase-v1-Position)
     - [Range](#bytebase-v1-Range)
   
@@ -716,6 +717,24 @@ Authorization method for RPC calls.
 <p align="right"><a href="#top">Top</a></p>
 
 ## v1/common.proto
+
+
+
+<a name="bytebase-v1-PermissionDeniedDetail"></a>
+
+### PermissionDeniedDetail
+PermissionDeniedDetail provides structured information about permission failures.
+Used as error detail when returning CodePermissionDenied errors.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| method | [string](#string) |  | The API method that was called. |
+| required_permissions | [string](#string) | repeated | The permissions required but not granted to the user. |
+| resources | [string](#string) | repeated | The resources the user was trying to access. |
+
+
+
 
 
 

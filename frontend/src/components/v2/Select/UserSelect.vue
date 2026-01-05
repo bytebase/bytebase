@@ -84,7 +84,7 @@ const getOption = (user: User): ResourceSelectOption<User> => ({
 const additionalOptions = computedAsync(async () => {
   const options: ResourceSelectOption<User>[] = [];
   if (props.includeAllUsers) {
-    options.unshift(getOption(allUsersUser()));
+    options.push(getOption(allUsersUser()));
   }
 
   let userEmails: string[] = [];

@@ -1,6 +1,5 @@
 <template>
   <div class="focus:outline-hidden" tabindex="0" v-bind="$attrs">
-    <NoPermissionPlaceholder v-if="!hasPermission" class="py-6" />
     <div
       v-if="state.loading"
       class="flex items-center justify-center py-2 text-gray-400 text-sm"
@@ -114,13 +113,8 @@ import {
   Changelog_Type,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  getStatementSize,
-  hasProjectPermissionV2,
-  wrapRefAsPromise,
-} from "@/utils";
+import { getStatementSize, wrapRefAsPromise } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
-import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
 interface LocalState {
@@ -142,10 +136,6 @@ const state = reactive<LocalState>({
 });
 
 const { database, ready } = useDatabaseV1ByName(props.database);
-
-const hasPermission = computed(() =>
-  hasProjectPermissionV2(database.value.projectEntity, "bb.changelogs.get")
-);
 
 const changelogName = computed(() => {
   return `${props.database}/changelogs/${props.changelogId}`;

@@ -12,6 +12,7 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { uidFromSlug, hasProjectPermissionV2 } from "@/utils";
 import { createIssueSkeleton } from "./create";
+import { WORKSPACE_ROUTE_404 } from "@/router/dashboard/workspaceRoutes";
 
 export * from "./create";
 
@@ -59,7 +60,7 @@ export function useInitializeIssue(
     [uid],
     ([uid]) => {
       if (uid === String(UNKNOWN_ID) && redirectNotFound) {
-        router.push({ name: "error.404" });
+        router.push({ name: WORKSPACE_ROUTE_404 });
         return;
       }
       const url = route.fullPath;

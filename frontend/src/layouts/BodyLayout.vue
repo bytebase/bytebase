@@ -111,9 +111,19 @@
           class="md:min-w-0 flex-1 overflow-y-auto py-4"
           :class="mainContainerClasses"
         >
-          <!-- Start main area-->
-          <router-view name="content" />
-          <!-- End main area -->
+          <RoutePermissionGuard
+            class="mx-4"
+            :routes="[
+              ...workspaceRoutes,
+              ...workspaceSettingRoutes,
+              ...environmentV1Routes,
+              ...instanceRoutes,
+            ]"
+          >
+            <!-- Start main area-->
+            <router-view name="content" />
+            <!-- End main area -->
+          </RoutePermissionGuard>
         </div>
       </div>
     </div>
@@ -131,9 +141,14 @@
 import { useMounted, useWindowSize } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import { t } from "@/plugins/i18n";
+import environmentV1Routes from "@/router/dashboard/environmentV1";
+import instanceRoutes from "@/router/dashboard/instance";
+import workspaceRoutes from "@/router/dashboard/workspace";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
+import workspaceSettingRoutes from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useActuatorV1Store,

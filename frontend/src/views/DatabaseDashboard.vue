@@ -9,16 +9,21 @@
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
       />
-      <NButton
-        v-if="allowToCreateDB"
-        type="primary"
-        @click="state.showCreateDrawer = true"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.instances.list', 'bb.issues.create', 'bb.settings.get']"
       >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        {{ $t("quick-action.new-db") }}
-      </NButton>
+        <NButton
+          type="primary"
+          :disabled="slotProps.disabled"
+          @click="state.showCreateDrawer = true"
+        >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
+          {{ $t("quick-action.new-db") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
 
     <div>
@@ -57,6 +62,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer } from "@/components/v2";
 import {
   DatabaseOperations,
@@ -77,7 +83,6 @@ import {
   extractProjectResourceName,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  hasWorkspacePermissionV2,
 } from "@/utils";
 
 interface LocalState {
@@ -112,13 +117,6 @@ const state = reactive<LocalState>({
   selectedDatabaseNameList: [],
   showCreateDrawer: false,
   params: defaultSearchParams(),
-});
-
-const allowToCreateDB = computed(() => {
-  return (
-    hasWorkspacePermissionV2("bb.instances.list") &&
-    hasWorkspacePermissionV2("bb.issues.create")
-  );
 });
 
 const scopeOptions = useCommonSearchScopeOptions([

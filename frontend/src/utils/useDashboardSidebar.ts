@@ -13,9 +13,7 @@ import {
 import { computed, h } from "vue";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
-import { getFlattenRoutes } from "@/components/v2/Sidebar/utils.ts";
 import { t } from "@/plugins/i18n";
-import workspaceRoutes from "@/router/dashboard/workspace";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -43,7 +41,6 @@ import {
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
 import { usePermissionStore } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 export interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
@@ -75,36 +72,6 @@ export const useDashboardSidebar = () => {
     }
     return classes;
   };
-
-  const filterSidebarByPermissions = (
-    sidebarList: DashboardSidebarItem[]
-  ): DashboardSidebarItem[] => {
-    return sidebarList
-      .filter((item) => {
-        const routeConfig = flattenRoutes.value.find(
-          (workspaceRoute) => workspaceRoute.name === item.name
-        );
-        return (routeConfig?.permissions ?? []).every((permission) =>
-          hasWorkspacePermissionV2(permission)
-        );
-      })
-      .map((item) => ({
-        ...item,
-        expand:
-          item.expand ||
-          (item.children ?? [])
-            .reduce((classList, child) => {
-              classList.push(...getItemClass(child));
-              return classList;
-            }, [] as string[])
-            .includes("router-link-active"),
-        children: filterSidebarByPermissions(item.children ?? []),
-      }));
-  };
-
-  const flattenRoutes = computed(() => {
-    return getFlattenRoutes(workspaceRoutes);
-  });
 
   const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
     const sidebarList: DashboardSidebarItem[] = [
@@ -250,7 +217,6 @@ export const useDashboardSidebar = () => {
         title: t("common.settings"),
         icon: () => h(SettingsIcon),
         type: "div",
-        hide: !hasWorkspacePermissionV2("bb.settings.get"),
         children: [
           {
             title: t("settings.sidebar.general"),
@@ -271,7 +237,7 @@ export const useDashboardSidebar = () => {
       },
     ];
 
-    return filterSidebarByPermissions(sidebarList);
+    return sidebarList;
   });
 
   return {

@@ -11,19 +11,21 @@
     </div>
 
     <div
-      class="flex flex-col lg:hidden border px-2 pb-4 divide-y divide-block-border"
+      class="flex flex-col lg:hidden border px-2 divide-y divide-block-border"
     >
       <div
         v-for="(review, i) in reviewList"
         :key="`${i}-${review.id}`"
-        class="pt-4"
+        class="py-4"
       >
         <div class="text-md">
           {{ review.name }}
         </div>
-        <div class="flex flex-wrap gap-y-2 gap-x-2">
+        <div class="flex flex-wrap mt-2 gap-2">
           <NTag
             v-for="resource in review.resources"
+            size="small"
+            type="primary"
             :key="resource"
           >
             <Resource :show-prefix="true" :resource="resource" />

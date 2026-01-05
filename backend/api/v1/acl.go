@@ -148,7 +148,15 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err))
 	}
 	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
+		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied for method %q, user does not have permission %q, extra %v", fullMethod, authContext.Permission, extra))
+		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
+			Method:              fullMethod,
+			RequiredPermissions: []string{string(authContext.Permission)},
+			Resources:           extra,
+		}); detailErr == nil {
+			err.AddDetail(detail)
+		}
+		return err
 	}
 
 	// Check allow_missing secondary permission if applicable
@@ -170,7 +178,15 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check create permission %q, extra %v, err: %v", createPerm, extra, err))
 		}
 		if !ok {
-			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: allow_missing=true requires both %s and %s, extra %v", authContext.Permission, createPerm, extra))
+			err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: allow_missing=true requires both %s and %s, extra %v", authContext.Permission, createPerm, extra))
+			if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
+				Method:              fullMethod,
+				RequiredPermissions: []string{string(authContext.Permission), createPerm},
+				Resources:           extra,
+			}); detailErr == nil {
+				err.AddDetail(detail)
+			}
+			return err
 		}
 	}
 
@@ -213,11 +229,16 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	if len(projectIDs) > 0 {
 		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
 		if err != nil {
-			return false, projectIDs, err
+			return false, nil, err
 		}
-		if !ok {
-			return false, projectIDs, nil
+		if ok {
+			return true, nil, nil
 		}
+		projectResources := []string{}
+		for _, id := range projectIDs {
+			projectResources = append(projectResources, common.FormatProject(id))
+		}
+		return false, projectResources, nil
 	}
 	return true, nil, nil
 }

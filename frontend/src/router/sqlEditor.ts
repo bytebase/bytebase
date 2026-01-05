@@ -12,6 +12,13 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
     path: "/sql-editor",
     name: "sql-editor",
     component: SQLEditorLayout,
+    meta: {
+      requiredPermissionList: () => [
+        "bb.projects.get",
+        "bb.databases.list",
+        "bb.projects.getIamPolicy",
+      ],
+    },
     children: [
       {
         path: "",

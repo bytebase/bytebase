@@ -12,16 +12,22 @@
       class="py-12 border rounded-sm"
     >
       <template #extra>
-        <NButton
+        <PermissionGuardWrapper
           v-if="availableImSettings.length > 0"
-          type="primary"
-          @click="() => onAddIM(availableImSettings[0].value)"
+          v-slot="slotProps"
+          :permissions="['bb.settings.set']"
         >
-          <template #icon>
-            <PlusIcon class="h-4 w-4" />
-          </template>
-          {{ $t("settings.im.add-im-integration") }}
-        </NButton>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click="() => onAddIM(availableImSettings[0].value)"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("settings.im.add-im-integration") }}
+          </NButton>
+        </PermissionGuardWrapper>
       </template>
     </NEmpty>
     <div v-else class="flex flex-col gap-y-4">
@@ -45,7 +51,7 @@
             <div class="textlabel">Token</div>
             <BBTextField
               class="mt-2"
-              :disabled="!props.allowEdit"
+              :disabled="!allowEdit"
               :placeholder="t('common.sensitive-placeholder')"
               v-model:value="(item.payload.value as AppIMSetting_Slack).token"
             />
@@ -58,7 +64,7 @@
               <div class="textlabel">App ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Feishu).appId"
               />
@@ -67,7 +73,7 @@
               <div class="textlabel">App Secret</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Feishu).appSecret"
               />
@@ -81,7 +87,7 @@
               <div class="textlabel">Corp ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Wecom).corpId"
               />
@@ -90,7 +96,7 @@
               <div class="textlabel">Agent ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Wecom).agentId"
               />
@@ -99,7 +105,7 @@
               <div class="textlabel">Secret</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Wecom).secret"
               />
@@ -113,7 +119,7 @@
               <div class="textlabel">App ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Lark).appId"
               />
@@ -122,7 +128,7 @@
               <div class="textlabel">App Secret</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Lark).appSecret"
               />
@@ -136,7 +142,7 @@
               <div class="textlabel">Client ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_DingTalk).clientId"
               />
@@ -145,7 +151,7 @@
               <div class="textlabel">Client Secret</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_DingTalk).clientSecret"
               />
@@ -154,7 +160,7 @@
               <div class="textlabel">Robot Code</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_DingTalk).robotCode"
               />
@@ -168,7 +174,7 @@
               <div class="textlabel">Tenant ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Teams).tenantId"
               />
@@ -177,7 +183,7 @@
               <div class="textlabel">Client ID</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Teams).clientId"
               />
@@ -186,7 +192,7 @@
               <div class="textlabel">Client Secret</div>
               <BBTextField
                 class="mt-2"
-                :disabled="!props.allowEdit"
+                :disabled="!allowEdit"
                 :placeholder="t('common.sensitive-placeholder')"
                 v-model:value="(item.payload.value as AppIMSetting_Teams).clientSecret"
               />
@@ -197,7 +203,7 @@
         <div class="flex items-center justify-between mt-4 gap-x-2">
           <div>
             <NPopconfirm
-              v-if="isConfigured(item.type)"
+              v-if="isConfigured(item.type) && allowEdit"
               :positive-button-props="{
                 type: 'error',
               }"
@@ -228,7 +234,7 @@
             </NButton>
             <NButton
               type="primary"
-              :disabled="!!state.pendingSaveType"
+              :disabled="!!state.pendingSaveType || !allowEdit"
               :loading="state.pendingSaveType === item.type"
               @click="() => onSaveIM(i, item.type)"
             >
@@ -238,18 +244,23 @@
         </div>
       </div>
 
-      <div class="flex justify-end">
-        <NButton
-          v-if="availableImSettings.length > 0"
-          type="primary"
-          secondary
-          @click="() => onAddIM(availableImSettings[0].value)"
+      <div v-if="availableImSettings.length > 0" class="flex justify-end">
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="['bb.settings.set']"
         >
-          <template #icon>
-            <PlusIcon class="h-4 w-4" />
-          </template>
-          {{ $t("settings.im.add-another-im") }}
-        </NButton>
+          <NButton
+            type="primary"
+            secondary
+            :disabled="slotProps.disabled"
+            @click="() => onAddIM(availableImSettings[0].value)"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("settings.im.add-another-im") }}
+          </NButton>
+        </PermissionGuardWrapper>
       </div>
     </div>
   </div>
@@ -265,6 +276,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import BBTextField from "@/bbkit/BBTextField.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import { pushNotification, useSettingV1Store } from "@/store";
 import { WebhookType } from "@/types/proto-es/v1/common_pb";

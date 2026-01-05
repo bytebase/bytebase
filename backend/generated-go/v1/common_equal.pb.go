@@ -34,3 +34,32 @@ func (x *Range) Equal(y *Range) bool {
 	}
 	return true
 }
+
+func (x *PermissionDeniedDetail) Equal(y *PermissionDeniedDetail) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Method != y.Method {
+		return false
+	}
+	if len(x.RequiredPermissions) != len(y.RequiredPermissions) {
+		return false
+	}
+	for i := 0; i < len(x.RequiredPermissions); i++ {
+		if x.RequiredPermissions[i] != y.RequiredPermissions[i] {
+			return false
+		}
+	}
+	if len(x.Resources) != len(y.Resources) {
+		return false
+	}
+	for i := 0; i < len(x.Resources); i++ {
+		if x.Resources[i] != y.Resources[i] {
+			return false
+		}
+	}
+	return true
+}

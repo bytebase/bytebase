@@ -3,18 +3,24 @@
     <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
     <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
-        <DataExportButton
-          size="medium"
-          :support-formats="[
-            ExportFormat.CSV,
-            ExportFormat.JSON,
-            ExportFormat.XLSX,
-          ]"
-          :tooltip="disableExportTip"
-          :view-mode="'DROPDOWN'"
-          :disabled="!hasAuditLogFeature || !!disableExportTip"
-          @export="(params) => pagedAuditLogDataTableRef?.handleExport(params)"
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="['bb.auditLogs.export']"
+        >
+          <DataExportButton
+            size="medium"
+            :support-formats="[
+              ExportFormat.CSV,
+              ExportFormat.JSON,
+              ExportFormat.XLSX,
+            ]"
+            :tooltip="disableExportTip"
+            :view-mode="'DROPDOWN'"
+            :disabled="slotProps.disabled || !hasAuditLogFeature || !!disableExportTip"
+            @export="(params) => pagedAuditLogDataTableRef?.handleExport(params)"
+          />
+        </PermissionGuardWrapper>
       </template>
     </AuditLogSearch>
 
@@ -38,7 +44,8 @@ import { buildAuditLogFilter } from "@/components/AuditLog/AuditLogSearch/utils"
 import PagedAuditLogDataTable from "@/components/AuditLog/PagedAuditLogDataTable.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import { featureToRef } from "@/store";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
+import { featureToRef, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { AuditLogFilter } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
@@ -82,6 +89,10 @@ const state = reactive<LocalState>({
 watch(
   () => props.projectId,
   () => (state.params = defaultSearchParams())
+);
+
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
 const { t } = useI18n();

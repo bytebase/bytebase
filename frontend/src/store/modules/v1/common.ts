@@ -1,5 +1,5 @@
-import type { ResourceId } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types/const";
+import type { ResourceId } from "@/types/id";
 
 export const workspaceNamePrefix = "workspaces/";
 export const userNamePrefix = "users/";

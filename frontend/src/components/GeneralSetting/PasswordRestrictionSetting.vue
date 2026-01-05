@@ -10,7 +10,7 @@
       <div class="flex items-center">
         <NInputNumber
           :value="state.minLength"
-          :readonly="!allowEdit"
+          :disabled="!allowEdit"
           class="w-24 mr-2"
           :min="1"
           :placeholder="'Minimum length'"
@@ -34,7 +34,7 @@
       </div>
       <NCheckbox
         :checked="state.requireNumber"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireNumber: val });
@@ -47,7 +47,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireLetter"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireLetter: val });
@@ -60,7 +60,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireUppercaseLetter"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireUppercaseLetter: val });
@@ -75,7 +75,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireSpecialCharacter"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireSpecialCharacter: val });
@@ -90,7 +90,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="state.requireResetPasswordForFirstLogin"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireResetPasswordForFirstLogin: val });
@@ -105,7 +105,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="!!state.passwordRotation"
-        :readonly="!allowEdit"
+        :disabled="!allowEdit"
         class="flex! items-center!"
         @update:checked="
           (checked) => {
@@ -131,7 +131,7 @@
             <NInputNumber
               v-if="state.passwordRotation"
               :value="Number(state.passwordRotation.seconds) / (24 * 60 * 60)"
-              :readonly="!allowEdit"
+              :disabled="!allowEdit"
               :min="1"
               class="w-24 mx-2"
               :size="'small'"

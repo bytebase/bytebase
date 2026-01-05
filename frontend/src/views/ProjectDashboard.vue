@@ -7,16 +7,21 @@
         :autofocus="false"
         :placeholder="$t('project.filter-projects')"
       />
-      <NButton
-        v-if="hasWorkspacePermissionV2('bb.projects.create')"
-        type="primary"
-        @click="state.showCreateDrawer = true"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.projects.create']"
       >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        {{ $t("quick-action.new-project") }}
-      </NButton>
+        <NButton
+          type="primary"
+          :disabled="slotProps.disabled"
+          @click="state.showCreateDrawer = true"
+        >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
+          {{ $t("quick-action.new-project") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <div>
       <ProjectOperations
@@ -60,6 +65,7 @@ import { useRouter } from "vue-router";
 import AdvancedSearch, {
   useCommonSearchScopeOptions,
 } from "@/components/AdvancedSearch";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { Drawer, PagedProjectTable } from "@/components/v2";
 import ProjectOperations from "@/components/v2/Model/Project/ProjectOperations.vue";

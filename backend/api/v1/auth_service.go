@@ -820,7 +820,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 			errors.Errorf("email %q is not a workload identity", request.Email))
 	}
 	if user.MemberDeleted {
-		return nil, connect.NewError(connect.CodePermissionDenied,
+		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))
 	}
 

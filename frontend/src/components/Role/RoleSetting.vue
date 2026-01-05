@@ -7,21 +7,26 @@
       />
     </div>
     <div class="w-full flex flex-row justify-end items-center">
-      <NButton
-        type="primary"
-        class="capitalize"
-        :disabled="!allowCreateRole"
-        @click="addRole"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="['bb.roles.create']"
       >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-          <FeatureBadge
-            :feature="PlanFeature.FEATURE_CUSTOM_ROLES"
-            class="mr-1 text-white"
-          />
-        </template>
-        {{ $t("role.setting.add") }}
-      </NButton>
+        <NButton
+          type="primary"
+          class="capitalize"
+          :disabled="slotProps.disabled"
+          @click="addRole"
+        >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+            <FeatureBadge
+              :feature="PlanFeature.FEATURE_CUSTOM_ROLES"
+              class="mr-1 text-white"
+            />
+          </template>
+          {{ $t("role.setting.add") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <RoleDataTable
       :role-list="filteredRoleList"
@@ -59,14 +64,14 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { PRESET_ROLES } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
-import { RoleDataTable, RolePanel } from "./components";
-import { provideCustomRoleSettingContext } from "./context";
+import { RoleDataTable, RolePanel } from "./Setting/components";
+import { provideCustomRoleSettingContext } from "./Setting/context";
 
 type LocalState = {
   ready: boolean;
@@ -93,10 +98,6 @@ const state = reactive<LocalState>({
 
 const hasCustomRoleFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_ROLES);
 const showFeatureModal = ref(false);
-
-const allowCreateRole = computed(() => {
-  return hasWorkspacePermissionV2("bb.roles.create");
-});
 
 const filteredRoleList = computed(() => {
   const sortedRoles = sortBy(roleStore.roleList, (role) => {

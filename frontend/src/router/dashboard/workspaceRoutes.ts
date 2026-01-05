@@ -30,3 +30,6 @@ export const WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL = `${WORKSPACE_ROUTE_IDENT
 
 export const WORKSPACE_ROUTE_IM = "workspace.im";
 export const WORKSPACE_ROUTE_MCP = "workspace.mcp";
+
+export const WORKSPACE_ROUTE_403 = "error.403";
+export const WORKSPACE_ROUTE_404 = "error.404";

@@ -209,6 +209,8 @@
     "force-verb": "フォース{verb}",
     "untitled": "名前のない",
     "missing-required-permission": "必要な権限がありません",
+    "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
+    "required-permission": "必要な権限",
     "resource-not-found": "リソースが見つかりません",
     "continue-anyway": "まだ続けたい",
     "permissions": "権限",

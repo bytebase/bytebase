@@ -43,7 +43,11 @@ const issueRoutes: RouteRecordRaw[] = [
       {
         path: "plans/:planId",
         meta: {
-          requiredPermissionList: () => ["bb.plans.get"],
+          requiredPermissionList: () => [
+            "bb.plans.get",
+            "bb.planCheckRuns.get",
+            "bb.taskRuns.list",
+          ],
         },
         props: true,
         children: [
@@ -96,7 +100,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
           import("@/components/RolloutV1/components/RolloutView.vue"),
         props: true,
         meta: {
-          requiredPermissionList: () => ["bb.rollouts.get"],
+          requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
         },
       },
       {
@@ -106,7 +110,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
           import("@/components/RolloutV1/components/RolloutView.vue"),
         props: true,
         meta: {
-          requiredPermissionList: () => ["bb.rollouts.get"],
+          requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
         },
       },
       {
@@ -116,7 +120,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
           import("@/components/RolloutV1/components/TaskView.vue"),
         props: true,
         meta: {
-          requiredPermissionList: () => ["bb.rollouts.get"],
+          requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
         },
       },
     ],
@@ -195,12 +199,18 @@ const projectV1Routes: RouteRecordRaw[] = [
             component: () =>
               import("@/views/project/ProjectDatabaseGroupDashboard.vue"),
             props: true,
+            meta: {
+              requiredPermissionList: () => ["bb.databaseGroups.list"],
+            },
           },
           {
             path: "create",
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
             meta: {
-              requiredPermissionList: () => ["bb.databaseGroups.create"],
+              requiredPermissionList: () => [
+                "bb.databaseGroups.create",
+                "bb.databases.list",
+              ],
             },
             component: () =>
               import("@/views/project/ProjectDatabaseGroupCreate.vue"),
@@ -212,6 +222,12 @@ const projectV1Routes: RouteRecordRaw[] = [
             component: () =>
               import("@/views/project/ProjectDatabaseGroupDetail.vue"),
             props: true,
+            meta: {
+              requiredPermissionList: () => [
+                "bb.databaseGroups.get",
+                "bb.databases.list",
+              ],
+            },
           },
         ],
       },
@@ -268,7 +284,13 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
         meta: {
           title: () => t("database.sync-schema.title"),
-          requiredPermissionList: () => ["bb.databases.sync"],
+          requiredPermissionList: () => [
+            "bb.databases.sync",
+            "bb.databases.list",
+            "bb.databases.get",
+            "bb.databases.getSchema",
+            "bb.changelogs.get",
+          ],
         },
         component: () =>
           import("@/views/project/ProjectSyncDatabasePanelV1.vue"),
@@ -321,7 +343,11 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           title: () => t("common.members"),
-          requiredPermissionList: () => ["bb.projects.getIamPolicy"],
+          requiredPermissionList: () => [
+            "bb.projects.getIamPolicy",
+            "bb.users.list",
+            "bb.groups.list",
+          ],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
         props: true,
@@ -331,6 +357,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           title: () => t("common.settings"),
+          requiredPermissionList: () => ["bb.policies.list"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,

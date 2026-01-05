@@ -209,6 +209,8 @@
     "force-verb": "forzar {verbo}",
     "untitled": "Intitulado",
     "missing-required-permission": "Faltan permisos requeridos",
+    "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
+    "required-permission": "Permisos necesarios",
     "resource-not-found": "Recurso no encontrado",
     "continue-anyway": "De todas maneras, continúe",
     "permissions": "Permisos",
