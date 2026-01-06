@@ -6,7 +6,18 @@ export const ROLLOUT_CREATE: ActionDefinition = {
   id: "ROLLOUT_CREATE",
   label: () => t("issue.create-rollout"),
   buttonType: "default",
-  category: "primary",
+  category: (ctx) => {
+    // Show as primary only when issue approved and plan checks done without errors
+    if (
+      ctx.issueApproved &&
+      !ctx.validation.planChecksRunning &&
+      !ctx.validation.planChecksFailed
+    ) {
+      return "primary";
+    }
+    // For force creating rollout, show as secondary
+    return "secondary";
+  },
   priority: 55,
 
   isVisible: (ctx) => {
