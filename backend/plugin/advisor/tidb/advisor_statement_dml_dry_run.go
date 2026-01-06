@@ -91,9 +91,11 @@ func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 		// Step 1: Run TiDB's native BATCH DRY RUN to validate the batch splitting.
 		// This checks that the shard column exists, the LIMIT is valid, etc.
 		// We restore the NonTransactionalDMLStmt with DryRun=1 to generate "BATCH ... DRY RUN ..."
+		// Note: BATCH DRY RUN requires auto-commit mode, so we use QueryContext directly
+		// instead of advisor.Query which wraps in a transaction.
 		batchDryRunSQL, err := checker.restoreNonTransactionalDMLWithDryRun(node)
 		if err == nil && batchDryRunSQL != "" {
-			if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, batchDryRunSQL); err != nil {
+			if err := checker.queryInAutoCommit(batchDryRunSQL); err != nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:        checker.level,
 					Code:          code.StatementDMLDryRunFailed.Int32(),
@@ -166,7 +168,7 @@ func (*statementDmlDryRunChecker) restoreNode(node ast.Node) (string, error) {
 // from a NonTransactionalDMLStmt to validate the batch splitting logic.
 func (*statementDmlDryRunChecker) restoreNonTransactionalDMLWithDryRun(node *ast.NonTransactionalDMLStmt) (string, error) {
 	// Create a copy with DryRun enabled
-	// DryRun values: 0 = no dry run, 1 = dry run the query, 2 = dry run split DMLs
+	// DryRun values: 0 = no dry run, 1 = dry run the split DMLs, 2 = dry run the query
 	nodeCopy := *node
 	nodeCopy.DryRun = 1
 
@@ -176,6 +178,20 @@ func (*statementDmlDryRunChecker) restoreNonTransactionalDMLWithDryRun(node *ast
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// queryInAutoCommit runs a query in auto-commit mode (without wrapping in a transaction).
+// This is required for TiDB's BATCH DRY RUN which cannot run inside a transaction.
+func (checker *statementDmlDryRunChecker) queryInAutoCommit(statement string) error {
+	rows, err := checker.driver.QueryContext(checker.ctx, statement)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	// Drain the rows to ensure the query completes
+	for rows.Next() {
+	}
+	return rows.Err()
 }
 
 // Leave implements the ast.Visitor interface.
