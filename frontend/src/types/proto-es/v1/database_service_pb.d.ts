@@ -3041,26 +3041,6 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   status: Changelog_Status;
 
   /**
-   * The statement is used for preview purpose.
-   *
-   * @generated from field: string statement = 4;
-   */
-  statement: string;
-
-  /**
-   * @generated from field: int64 statement_size = 5;
-   */
-  statementSize: bigint;
-
-  /**
-   * The name of the sheet resource.
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: string statement_sheet = 6;
-   */
-  statementSheet: string;
-
-  /**
    * @generated from field: string schema = 7;
    */
   schema: string;
@@ -3078,11 +3058,12 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   taskRun: string;
 
   /**
-   * Could be empty
+   * The title of the plan associated with this changelog's task run.
+   * This field is populated by deriving the plan from task_run for display purposes.
    *
-   * @generated from field: string version = 12;
+   * @generated from field: string plan_title = 15;
    */
-  version: string;
+  planTitle: string;
 
   /**
    * @generated from field: bytebase.v1.Changelog.Type type = 14;

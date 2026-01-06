@@ -4565,13 +4565,10 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
-| statement | [string](#string) |  | The statement is used for preview purpose. |
-| statement_size | [int64](#int64) |  |  |
-| statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
 | schema | [string](#string) |  |  |
 | schema_size | [int64](#int64) |  |  |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| version | [string](#string) |  | Could be empty |
+| plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 

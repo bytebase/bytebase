@@ -63,7 +63,7 @@ const columnList = computed(() => {
     },
     {
       key: "status",
-      width: "2rem",
+      width: 48,
       render: (changelog) => {
         return (
           <ChangelogStatusIcon class="mx-auto" status={changelog.status} />
@@ -73,33 +73,25 @@ const columnList = computed(() => {
     {
       key: "type",
       title: t("changelog.change-type"),
-      width: 96,
+      width: 120,
       resizable: true,
       render: (changelog) => getChangelogChangeType(changelog.type),
     },
     {
-      key: "version",
-      title: t("common.version"),
-      width: 160,
+      key: "rollout",
+      title: t("common.rollout"),
       resizable: true,
-      render: (changelog) => changelog.version || "-",
-    },
-    {
-      key: "statement",
-      title: t("common.statement"),
-      resizable: true,
-      minWidth: "13rem",
-      ellipsis: true,
-      render: (changelog) => {
-        return <p class="truncate whitespace-nowrap">{changelog.statement}</p>;
+      minWidth: 200,
+      ellipsis: {
+        tooltip: true,
       },
+      render: (changelog) => changelog.planTitle || "-",
     },
     {
       key: "created",
       title: t("common.created-at"),
-      width: 128,
+      width: 180,
       resizable: true,
-      ellipsis: true,
       render: (changelog) => {
         return (
           <HumanizeDate

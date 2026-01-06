@@ -232,8 +232,8 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	// Begin migration - dump before migration
 	changelogUID, err := beginMigration(
 		ctx, exec.store, database,
-		taskRunName, "",
-		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
+		taskRunName,
+		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin migration")
@@ -336,8 +336,8 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	// Begin migration - dump before migration
 	changelogUID, err := beginMigration(
 		ctx, exec.store, database,
-		taskRunName, "",
-		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
+		taskRunName,
+		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin migration")
@@ -443,7 +443,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			continue
 		}
 
-		// Fetch and execute this file
 		sheet, err := exec.store.GetSheetFull(ctx, file.SheetSha256)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %s for version %s", file.SheetSha256, file.Version)
@@ -466,14 +465,8 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			},
 		})
 
-		version := file.Version
-		releaseType := storepb.SchemaChangeType_VERSIONED
 		needDump := computeNeedDump(task.Type, database.Engine, sheet.Statement)
 		taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
-
-		// For release-based tasks, store the release name
-		releaseRelease := task.Payload.GetRelease()
-		releaseFile := ""
 
 		// Get database driver
 		driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -488,7 +481,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
 			slog.String("type", task.Type.String()),
-			slog.String("sheetSha256", sheet.Sha256),
 		)
 
 		// Set up execute options
@@ -500,18 +492,11 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
 		}
 
-		sheetSha256 := sheet.Sha256
-
-		revisionType := storepb.SchemaChangeType_VERSIONED
-		if releaseType != storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED {
-			revisionType = releaseType
-		}
-
 		// Begin migration - dump before migration
 		changelogUID, err := beginMigration(
 			ctx, exec.store, database,
-			taskRunName, version,
-			storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheetSha256,
+			taskRunName,
+			storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit,
 		)
 		if err != nil {
 			driver.Close(ctx)
@@ -543,42 +528,37 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		r := &store.RevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
-			Version:      version,
+			Version:      file.Version,
 			Payload: &storepb.RevisionPayload{
-				Release:     releaseRelease,
-				File:        releaseFile,
-				SheetSha256: sheetSha256,
+				Release:     task.Payload.GetRelease(),
+				File:        file.Path,
+				SheetSha256: file.SheetSha256,
 				TaskRun:     taskRunName,
-				Type:        revisionType,
+				Type:        storepb.SchemaChangeType_VERSIONED,
 			},
 		}
 
 		_, err = exec.store.CreateRevision(ctx, r)
 		if err != nil {
 			driver.Close(ctx)
-			return nil, errors.Wrapf(err, "failed to create revision")
+			return nil, errors.Wrapf(err, "failed to create revision for version %s", file.Version)
 		}
 
 		// Update database metadata with the version only if the new version is greater
-		if shouldUpdateVersion(database.Metadata.Version, version) {
+		if shouldUpdateVersion(database.Metadata.Version, file.Version) {
 			if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 				InstanceID:   database.InstanceID,
 				DatabaseName: database.DatabaseName,
 				MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-					md.Version = version
+					md.Version = file.Version
 				}},
 			}); err != nil {
 				driver.Close(ctx)
-				return nil, errors.Wrapf(err, "failed to update database metadata with version")
+				return nil, errors.Wrapf(err, "failed to update database metadata with version %s", file.Version)
 			}
 		}
 
 		// Clean up drift
-		slog.Debug("Cleaning up drift...",
-			slog.String("instance", instance.ResourceID),
-			slog.String("database", database.DatabaseName),
-		)
-
 		if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
@@ -669,11 +649,10 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	opts.LogComputeDiffEnd("")
 
 	// Begin migration - dump before migration
-	// Note: For declarative releases, we pass empty version string (revisions are not version-tracked)
 	changelogUID, err := beginMigration(
 		ctx, exec.store, database,
-		taskRunName, "",
-		storepb.ChangelogPayload_SDL, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
+		taskRunName,
+		storepb.ChangelogPayload_SDL, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit,
 	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin migration")
@@ -1093,10 +1072,9 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 	return migrationSQL, nil
 }
 
-// getPreviousSuccessfulSDLText retrieves the SDL text from the most recent
-// successfully completed SDL changelog for the given database.
-// Returns empty string if no previous successful SDL changelog is found.
-// getPreviousSuccessfulSDLAndSchema gets both the SDL text and database schema from the most recent successful SDL changelog
+// getPreviousSuccessfulSDLAndSchema gets both the SDL text and database schema from the most recent successful SDL changelog.
+// It retrieves the SDL text by following the reference chain: changelog -> task_run -> task -> release -> file -> sheet.
+// Returns empty string for SDL text if no previous successful SDL changelog is found or if the reference chain is broken.
 func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, *model.DatabaseMetadata, error) {
 	// Find the most recent successful SDL changelog for this database
 	// We only want MIGRATE_SDL type changelogs that are completed (DONE status)
@@ -1109,7 +1087,7 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 		TypeList:     []string{storepb.ChangelogPayload_SDL.String()}, // Only SDL migrations
 		Status:       &doneStatus,
 		Limit:        &limit, // Get only the most recent one
-		ShowFull:     false,  // We only need the PrevSyncHistoryUID and sheet reference
+		ShowFull:     true,   // Get full schema
 	})
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to list previous SDL changelogs for database %s", databaseName)
@@ -1122,20 +1100,35 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 
 	mostRecentChangelog := changelogs[0] // ListChangelogs should return them in descending order by creation time
 
-	// Extract the sheet ID from the changelog payload
+	// Retrieve the previous SDL text by following the reference chain:
+	// changelog -> task_run -> task -> release -> file -> sheet
 	var previousUserSDLText string
-	if mostRecentChangelog.Payload != nil && mostRecentChangelog.Payload.SheetSha256 != "" {
-		sheetSha256 := mostRecentChangelog.Payload.SheetSha256
-
-		// Get the sheet content (original SDL text)
-		sheet, err := s.GetSheetFull(ctx, sheetSha256)
-		if err != nil {
-			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet %s", sheetSha256)
+	if taskRunName := mostRecentChangelog.Payload.GetTaskRun(); taskRunName != "" {
+		// Parse task run name to get task ID
+		_, _, _, taskID, _, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRunName)
+		if err == nil {
+			// Get the task
+			task, err := s.GetTaskByID(ctx, taskID)
+			if err == nil && task != nil {
+				// Get the release from the task
+				if releaseName := task.Payload.GetRelease(); releaseName != "" {
+					_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
+					if err == nil {
+						release, err := s.GetReleaseByUID(ctx, releaseUID)
+						if err == nil && release != nil {
+							// For SDL/declarative releases, there should be exactly one file
+							if len(release.Payload.Files) == 1 {
+								file := release.Payload.Files[0]
+								sheet, err := s.GetSheetFull(ctx, file.SheetSha256)
+								if err == nil && sheet != nil {
+									previousUserSDLText = sheet.Statement
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		if sheet == nil {
-			return "", nil, errors.Errorf("sheet %s not found", sheetSha256)
-		}
-		previousUserSDLText = sheet.Statement
 	}
 
 	// Get the previous schema from sync history
@@ -1180,11 +1173,9 @@ func beginMigration(
 	stores *store.Store,
 	database *store.DatabaseMessage,
 	taskRunName string,
-	version string,
 	changelogType storepb.ChangelogPayload_Type,
 	dumpVersion int32,
 	gitCommit string,
-	sheetSha256 string,
 ) (int64, error) {
 	// create pending changelog
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
@@ -1194,8 +1185,6 @@ func beginMigration(
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     taskRunName,
-			SheetSha256: sheetSha256,
-			Version:     version,
 			Type:        changelogType,
 			GitCommit:   gitCommit,
 			DumpVersion: dumpVersion,

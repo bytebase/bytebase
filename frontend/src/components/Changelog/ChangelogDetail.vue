@@ -8,68 +8,65 @@
     </div>
     <main v-else-if="changelog" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
-      <div
-        class="pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
-      >
-        <div class="flex-1 min-w-0 flex flex-col gap-y-3">
-          <!-- Summary -->
-          <div class="flex items-center gap-x-2">
-            <ChangelogStatusIcon :status="changelog.status" />
-            <NTag round>
-              {{ getChangelogChangeType(changelog.type) }}
-            </NTag>
-            <NTag v-if="changelog.version" round>
-              {{ $t("common.version") }} {{ changelog.version }}
-            </NTag>
-          </div>
+      <div class="pb-6 border-b border-block-border">
+        <div class="flex flex-col gap-y-4">
+          <!-- Rollout Title -->
+          <h2 v-if="changelog.planTitle && taskFullLink" class="text-2xl font-semibold">
+            <router-link :to="taskFullLink" class="text-main hover:text-accent transition-colors">
+              {{ changelog.planTitle }}
+            </router-link>
+          </h2>
+          <h2 v-else-if="changelog.planTitle" class="text-2xl font-semibold text-main">
+            {{ changelog.planTitle }}
+          </h2>
 
-          <dl v-if="taskFullLink" class="flex flex-col gap-y-1">
-            <dt class="sr-only">{{ $t("common.task") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <router-link :to="taskFullLink" class="normal-link">
-                {{ $t("changelog.task-at", { time: formattedCreateTime }) }}
-              </router-link>
-            </dd>
-          </dl>
+          <!-- Metadata Row -->
+          <div class="flex items-center gap-x-3 text-sm text-control-light">
+            <div class="flex items-center gap-x-2">
+              <ChangelogStatusIcon :status="changelog.status" />
+              <span>{{ getChangelogChangeType(changelog.type) }}</span>
+            </div>
+            <span v-if="formattedCreateTime">•</span>
+            <span v-if="formattedCreateTime">
+              {{ formattedCreateTime }}
+            </span>
+          </div>
         </div>
       </div>
 
       <div class="flex flex-col gap-y-6">
-        <div class="flex flex-col gap-y-2">
-          <p class="flex items-center text-lg text-main capitalize gap-x-2">
-            {{ $t("common.statement") }}
-            <CopyButton size="small" :content="changelogStatement" />
-          </p>
-          <MonacoEditor
-            class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-            :content="changelogStatement"
-            :readonly="true"
-            :auto-height="{ min: 120, max: 480 }"
-          />
-        </div>
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
           <p class="flex items-center text-lg text-main capitalize gap-x-2">
             Schema {{ $t("common.snapshot") }}
             <CopyButton size="small" :content="changelogSchema" />
           </p>
-          <div class="flex flex-row items-center gap-x-2">
-            <div v-if="allowShowDiff" class="flex gap-x-1 items-center">
-              <NSwitch
-                :value="state.showDiff"
-                size="small"
-                data-label="bb-changelog-diff-switch"
-                @update:value="state.showDiff = $event"
-              />
-              <span class="text-sm font-semibold">
-                {{ $t("changelog.show-diff") }}
-              </span>
+          <div class="flex flex-row items-center justify-between gap-x-2">
+            <div class="flex items-center gap-x-2">
+              <div v-if="allowShowDiff" class="flex gap-x-1 items-center">
+                <NSwitch
+                  :value="state.showDiff"
+                  size="small"
+                  data-label="bb-changelog-diff-switch"
+                  @update:value="state.showDiff = $event"
+                />
+                <span class="text-sm font-semibold">
+                  {{ $t("changelog.show-diff") }}
+                </span>
+              </div>
+              <div class="textinfolabel">
+                {{ $t("changelog.schema-snapshot-after-change") }}
+              </div>
+              <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
+                ({{ $t("changelog.no-schema-change") }})
+              </div>
             </div>
-            <div class="textinfolabel">
-              {{ $t("changelog.schema-snapshot-after-change") }}
-            </div>
-            <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
-              ({{ $t("changelog.no-schema-change") }})
-            </div>
+            <NButton
+              v-if="allowRollback && state.showDiff"
+              size="small"
+              @click="handleRollback"
+            >
+              {{ $t("common.rollback") }}
+            </NButton>
           </div>
 
           <DiffEditor
@@ -97,11 +94,14 @@
 </template>
 
 <script lang="ts" setup>
-import { NSwitch, NTag } from "naive-ui";
+import { NButton, NSwitch } from "naive-ui";
 import { computed, reactive, unref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
+import { PROJECT_V1_ROUTE_SYNC_SCHEMA } from "@/router/dashboard/projectV1";
 import {
   useChangelogStore,
   useDatabaseV1ByName,
@@ -110,10 +110,11 @@ import {
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
+  Changelog_Status,
   Changelog_Type,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
-import { getStatementSize, wrapRefAsPromise } from "@/utils";
+import { extractProjectResourceName, wrapRefAsPromise } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
@@ -129,6 +130,7 @@ const props = defineProps<{
   changelogId: string;
 }>();
 
+const router = useRouter();
 const dbSchemaStore = useDBSchemaV1Store();
 const changelogStore = useChangelogStore();
 const state = reactive<LocalState>({
@@ -138,6 +140,7 @@ const state = reactive<LocalState>({
 });
 
 const { database, ready } = useDatabaseV1ByName(props.database);
+const { allowAlterSchema } = useDatabaseDetailContext();
 
 const changelogName = computed(() => {
   return `${props.database}/changelogs/${props.changelogId}`;
@@ -174,19 +177,6 @@ const changelogSchema = computed(() => {
   return changelog.value.schema;
 });
 
-const changelogStatement = computed(() => {
-  if (!changelog.value) {
-    return "";
-  }
-  let statement = changelog.value.statement;
-  if (
-    getStatementSize(changelog.value.statement) < changelog.value.statementSize
-  ) {
-    statement = `${statement}${statement.endsWith("\n") ? "" : "\n"}...`;
-  }
-  return statement;
-});
-
 const showSchemaSnapshot = computed(() => {
   return true;
 });
@@ -206,6 +196,35 @@ const previousSchema = computed((): string => {
   }
   return state.previousChangelog.schema;
 });
+
+// Allow rollback for completed MIGRATE changelogs when user has alter schema permission
+const allowRollback = computed((): boolean => {
+  if (!changelog.value || !allowAlterSchema.value) {
+    return false;
+  }
+  return (
+    changelog.value.type === Changelog_Type.MIGRATE &&
+    changelog.value.status === Changelog_Status.DONE
+  );
+});
+
+const handleRollback = () => {
+  if (!changelog.value || !database.value) {
+    return;
+  }
+
+  router.push({
+    name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
+    params: {
+      projectId: extractProjectResourceName(database.value.project),
+    },
+    query: {
+      changelog: changelog.value.name,
+      target: database.value.name,
+      rollback: "true",
+    },
+  });
+};
 
 watch(
   [database.value.name, changelogName],

@@ -203,18 +203,40 @@ const handleChangelogSchemaVersionChanges = (
 
 onMounted(async () => {
   const changelogName = route.query.changelog as string;
+  const isRollback = route.query.rollback === "true";
+
   if (isValidChangelogName(changelogName)) {
     // Prepare source schema from the selected changelog.
     await changelogStore.getOrFetchChangelogByName(
       changelogName,
       ChangelogView.FULL
     );
+
+    const sourceChangelogName = changelogName;
+    let targetChangelogName: string | undefined = undefined;
+
+    // For rollback, we want to show the diff of ONLY this changelog's changes
+    // Source: the changelog being rolled back (after state)
+    // Target: the previous changelog (before state)
+    // This shows exactly what this changelog changed
+    if (isRollback) {
+      const previousChangelog =
+        await changelogStore.fetchPreviousChangelog(changelogName);
+      if (previousChangelog) {
+        // Source stays as current changelog (with the changes)
+        // Target becomes the previous changelog (without the changes)
+        targetChangelogName = previousChangelog.name;
+        // Keep sourceChangelogName = changelogName (don't swap)
+      }
+    }
+
     const { databaseName } = extractDatabaseNameAndChangelogUID(changelogName);
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
     handleChangelogSchemaVersionChanges({
       environmentName: database.effectiveEnvironment,
       databaseName: databaseName,
-      changelogName: changelogName,
+      changelogName: sourceChangelogName,
+      targetChangelogName: targetChangelogName,
     });
     nextTick(() => {
       state.currentStep = Step.SELECT_TARGET_DATABASE_LIST;

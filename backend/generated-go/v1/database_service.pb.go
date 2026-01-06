@@ -5360,18 +5360,13 @@ type Changelog struct {
 	Name       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	Status     Changelog_Status       `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.Changelog_Status" json:"status,omitempty"`
-	// The statement is used for preview purpose.
-	Statement     string `protobuf:"bytes,4,opt,name=statement,proto3" json:"statement,omitempty"`
-	StatementSize int64  `protobuf:"varint,5,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
-	// The name of the sheet resource.
-	// Format: projects/{project}/sheets/{sheet}
-	StatementSheet string `protobuf:"bytes,6,opt,name=statement_sheet,json=statementSheet,proto3" json:"statement_sheet,omitempty"`
-	Schema         string `protobuf:"bytes,7,opt,name=schema,proto3" json:"schema,omitempty"`
-	SchemaSize     int64  `protobuf:"varint,8,opt,name=schema_size,json=schemaSize,proto3" json:"schema_size,omitempty"`
+	Schema     string                 `protobuf:"bytes,7,opt,name=schema,proto3" json:"schema,omitempty"`
+	SchemaSize int64                  `protobuf:"varint,8,opt,name=schema_size,json=schemaSize,proto3" json:"schema_size,omitempty"`
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,11,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
-	// Could be empty
-	Version       string         `protobuf:"bytes,12,opt,name=version,proto3" json:"version,omitempty"`
+	// The title of the plan associated with this changelog's task run.
+	// This field is populated by deriving the plan from task_run for display purposes.
+	PlanTitle     string         `protobuf:"bytes,15,opt,name=plan_title,json=planTitle,proto3" json:"plan_title,omitempty"`
 	Type          Changelog_Type `protobuf:"varint,14,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5428,27 +5423,6 @@ func (x *Changelog) GetStatus() Changelog_Status {
 	return Changelog_STATUS_UNSPECIFIED
 }
 
-func (x *Changelog) GetStatement() string {
-	if x != nil {
-		return x.Statement
-	}
-	return ""
-}
-
-func (x *Changelog) GetStatementSize() int64 {
-	if x != nil {
-		return x.StatementSize
-	}
-	return 0
-}
-
-func (x *Changelog) GetStatementSheet() string {
-	if x != nil {
-		return x.StatementSheet
-	}
-	return ""
-}
-
 func (x *Changelog) GetSchema() string {
 	if x != nil {
 		return x.Schema
@@ -5470,9 +5444,9 @@ func (x *Changelog) GetTaskRun() string {
 	return ""
 }
 
-func (x *Changelog) GetVersion() string {
+func (x *Changelog) GetPlanTitle() string {
 	if x != nil {
-		return x.Version
+		return x.PlanTitle
 	}
 	return ""
 }
@@ -6079,20 +6053,18 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\x8e\x05\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xa5\x04\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"createTime\x125\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1d.bytebase.v1.Changelog.StatusR\x06status\x12\x1c\n" +
-	"\tstatement\x18\x04 \x01(\tR\tstatement\x12%\n" +
-	"\x0estatement_size\x18\x05 \x01(\x03R\rstatementSize\x12'\n" +
-	"\x0fstatement_sheet\x18\x06 \x01(\tR\x0estatementSheet\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1d.bytebase.v1.Changelog.StatusR\x06status\x12\x16\n" +
 	"\x06schema\x18\a \x01(\tR\x06schema\x12\x1f\n" +
 	"\vschema_size\x18\b \x01(\x03R\n" +
 	"schemaSize\x12\x19\n" +
-	"\btask_run\x18\v \x01(\tR\ataskRun\x12\x18\n" +
-	"\aversion\x18\f \x01(\tR\aversion\x12/\n" +
+	"\btask_run\x18\v \x01(\tR\ataskRun\x12\x1d\n" +
+	"\n" +
+	"plan_title\x18\x0f \x01(\tR\tplanTitle\x12/\n" +
 	"\x04type\x18\x0e \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +

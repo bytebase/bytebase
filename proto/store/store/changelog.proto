@@ -8,11 +8,6 @@ message ChangelogPayload {
   // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 1;
 
-  // The SHA256 hash of the sheet content (hex-encoded).
-  string sheet_sha256 = 3;
-
-  string version = 4;
-
   enum Type {
     TYPE_UNSPECIFIED = 0;
     BASELINE = 1;

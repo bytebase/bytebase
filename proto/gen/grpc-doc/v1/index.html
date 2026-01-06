@@ -12813,28 +12813,6 @@ A maximum of 1000 databases can be modified in a batch. </p></td>
                 </tr>
               
                 <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The statement is used for preview purpose. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the sheet resource.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
                   <td>schema</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -12856,10 +12834,11 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>version</td>
+                  <td>plan_title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Could be empty </p></td>
+                  <td><p>The title of the plan associated with this changelog&#39;s task run.
+This field is populated by deriving the plan from task_run for display purposes. </p></td>
                 </tr>
               
                 <tr>
