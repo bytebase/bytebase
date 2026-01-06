@@ -15,7 +15,6 @@ message TaskRunLog {
     COMMAND_RESPONSE = 4;
     DATABASE_SYNC_START = 5;
     DATABASE_SYNC_END = 6;
-    TASK_RUN_STATUS_UPDATE = 7;
     TRANSACTION_CONTROL = 8;
     PRIOR_BACKUP_START = 9;
     PRIOR_BACKUP_END = 10;
@@ -32,7 +31,6 @@ message TaskRunLog {
   CommandResponse command_response = 5;
   DatabaseSyncStart database_sync_start = 6;
   DatabaseSyncEnd database_sync_end = 7;
-  TaskRunStatusUpdate task_run_status_update = 8;
   TransactionControl transaction_control = 9;
   PriorBackupStart prior_backup_start = 10;
   PriorBackupEnd prior_backup_end = 11;
@@ -64,16 +62,6 @@ message TaskRunLog {
   message DatabaseSyncStart {}
   message DatabaseSyncEnd {
     string error = 1;
-  }
-  message TaskRunStatusUpdate {
-    Status status = 1;
-    enum Status {
-      STATUS_UNSPECIFIED = 0;
-      // The task run is ready to be executed by the scheduler.
-      RUNNING_WAITING = 1;
-      // The task run is being executed by the scheduler.
-      RUNNING_RUNNING = 2;
-    }
   }
   message TransactionControl {
     enum Type {

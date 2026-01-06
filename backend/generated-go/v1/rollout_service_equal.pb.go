@@ -583,19 +583,6 @@ func (x *TaskRunLogEntry_DatabaseSync) Equal(y *TaskRunLogEntry_DatabaseSync) bo
 	return true
 }
 
-func (x *TaskRunLogEntry_TaskRunStatusUpdate) Equal(y *TaskRunLogEntry_TaskRunStatusUpdate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Status != y.Status {
-		return false
-	}
-	return true
-}
-
 func (x *TaskRunLogEntry_TransactionControl) Equal(y *TaskRunLogEntry_TransactionControl) bool {
 	if x == y {
 		return true
@@ -770,9 +757,6 @@ func (x *TaskRunLogEntry) Equal(y *TaskRunLogEntry) bool {
 		return false
 	}
 	if !x.DatabaseSync.Equal(y.DatabaseSync) {
-		return false
-	}
-	if !x.TaskRunStatusUpdate.Equal(y.TaskRunStatusUpdate) {
 		return false
 	}
 	if !x.TransactionControl.Equal(y.TransactionControl) {

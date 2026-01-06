@@ -9,7 +9,6 @@ import { computed, ref, toValue, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  TaskRunLogEntry_TaskRunStatusUpdate_Status,
   TaskRunLogEntry_TransactionControl_Type,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -88,9 +87,6 @@ export const useTaskRunLogSections = (
       [TaskRunLogEntry_Type.DATABASE_SYNC]: t(
         "task-run.log-type.database-sync"
       ),
-      [TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE]: t(
-        "task-run.log-type.status-update"
-      ),
       [TaskRunLogEntry_Type.TRANSACTION_CONTROL]: t(
         "task-run.log-type.transaction"
       ),
@@ -154,18 +150,6 @@ export const useTaskRunLogSections = (
         if (sync.error) return sync.error;
         if (sync.startTime && sync.endTime) return "completed";
         return t("task-run.log-detail.syncing");
-      }
-      case TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE: {
-        const status = entry.taskRunStatusUpdate;
-        if (!status) return "";
-        switch (status.status) {
-          case TaskRunLogEntry_TaskRunStatusUpdate_Status.RUNNING_WAITING:
-            return t("task-run.log-detail.waiting-to-execute");
-          case TaskRunLogEntry_TaskRunStatusUpdate_Status.RUNNING_RUNNING:
-            return t("task-run.log-detail.executing");
-          default:
-            return t("task-run.log-detail.status-changed");
-        }
       }
       case TaskRunLogEntry_Type.PRIOR_BACKUP: {
         const backup = entry.priorBackup;

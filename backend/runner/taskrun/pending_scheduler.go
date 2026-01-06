@@ -139,13 +139,6 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 		return errors.Wrapf(err, "failed to update task run status to available")
 	}
 
-	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
-		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
-			Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING,
-		},
-	})
-
 	select {
 	case s.bus.TaskRunTickleChan <- 0:
 	default:

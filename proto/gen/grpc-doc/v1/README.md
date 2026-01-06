@@ -611,7 +611,6 @@
     - [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute)
     - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
     - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
-    - [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate)
     - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
     - [TaskRunSession](#bytebase-v1-TaskRunSession)
     - [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres)
@@ -621,7 +620,6 @@
     - [Task.Type](#bytebase-v1-Task-Type)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
-    - [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status)
     - [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type)
     - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
   
@@ -9770,7 +9768,6 @@ Information about why a task run is waiting.
 | schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  | Schema dump details (if type is SCHEMA_DUMP). |
 | command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  | Command execution details (if type is COMMAND_EXECUTE). |
 | database_sync | [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync) |  | Database sync details (if type is DATABASE_SYNC). |
-| task_run_status_update | [TaskRunLogEntry.TaskRunStatusUpdate](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate) |  | Task run status update details (if type is TASK_RUN_STATUS_UPDATE). |
 | transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  | Transaction control details (if type is TRANSACTION_CONTROL). |
 | prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  | Prior backup details (if type is PRIOR_BACKUP). |
 | retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  | Retry information details (if type is RETRY_INFO). |
@@ -9970,21 +9967,6 @@ Schema dump operation details.
 
 
 
-<a name="bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate"></a>
-
-### TaskRunLogEntry.TaskRunStatusUpdate
-Task run status update details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status) |  | The new status. |
-
-
-
-
-
-
 <a name="bytebase-v1-TaskRunLogEntry-TransactionControl"></a>
 
 ### TaskRunLogEntry.TransactionControl
@@ -10127,19 +10109,6 @@ PostgreSQL session information read from `pg_stat_activity`.
 
 
 
-<a name="bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status"></a>
-
-### TaskRunLogEntry.TaskRunStatusUpdate.Status
-Internal status for task run execution.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| RUNNING_WAITING | 1 | The task run is ready to be executed by the scheduler. |
-| RUNNING_RUNNING | 2 | The task run is being executed by the scheduler. |
-
-
-
 <a name="bytebase-v1-TaskRunLogEntry-TransactionControl-Type"></a>
 
 ### TaskRunLogEntry.TransactionControl.Type
@@ -10165,7 +10134,6 @@ The type of log entry.
 | SCHEMA_DUMP | 1 | Schema dump operation. |
 | COMMAND_EXECUTE | 2 | Command execution. |
 | DATABASE_SYNC | 3 | Database synchronization. |
-| TASK_RUN_STATUS_UPDATE | 4 | Task run status update. |
 | TRANSACTION_CONTROL | 5 | Transaction control (BEGIN, COMMIT, ROLLBACK). |
 | PRIOR_BACKUP | 6 | Prior backup operation. |
 | RETRY_INFO | 7 | Retry information. |

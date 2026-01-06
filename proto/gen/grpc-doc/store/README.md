@@ -311,10 +311,8 @@
     - [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
-    - [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate)
     - [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl)
   
-    - [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status)
     - [TaskRunLog.TransactionControl.Type](#bytebase-store-TaskRunLog-TransactionControl-Type)
     - [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type)
   
@@ -4871,7 +4869,6 @@ Table identifies a database table.
 | command_response | [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse) |  |  |
 | database_sync_start | [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart) |  |  |
 | database_sync_end | [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd) |  |  |
-| task_run_status_update | [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate) |  |  |
 | transaction_control | [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl) |  |  |
 | prior_backup_start | [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart) |  |  |
 | prior_backup_end | [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd) |  |  |
@@ -5052,21 +5049,6 @@ Table identifies a database table.
 
 
 
-<a name="bytebase-store-TaskRunLog-TaskRunStatusUpdate"></a>
-
-### TaskRunLog.TaskRunStatusUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-TaskRunLog-TransactionControl"></a>
 
 ### TaskRunLog.TransactionControl
@@ -5083,19 +5065,6 @@ Table identifies a database table.
 
 
  
-
-
-<a name="bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status"></a>
-
-### TaskRunLog.TaskRunStatusUpdate.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| RUNNING_WAITING | 1 | The task run is ready to be executed by the scheduler. |
-| RUNNING_RUNNING | 2 | The task run is being executed by the scheduler. |
-
 
 
 <a name="bytebase-store-TaskRunLog-TransactionControl-Type"></a>
@@ -5126,7 +5095,6 @@ Table identifies a database table.
 | COMMAND_RESPONSE | 4 |  |
 | DATABASE_SYNC_START | 5 |  |
 | DATABASE_SYNC_END | 6 |  |
-| TASK_RUN_STATUS_UPDATE | 7 |  |
 | TRANSACTION_CONTROL | 8 |  |
 | PRIOR_BACKUP_START | 9 |  |
 | PRIOR_BACKUP_END | 10 |  |
