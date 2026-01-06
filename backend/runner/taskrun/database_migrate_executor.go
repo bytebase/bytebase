@@ -495,6 +495,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	defer driver.Close(ctx)
 
 	var migrationErr error
+	var lastAppliedVersion string
 
 	// Execute unapplied files in order
 	for _, file := range release.Payload.Files {
@@ -561,19 +562,8 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			break
 		}
 
-		// Update database metadata with the version only if the new version is greater
-		if shouldUpdateVersion(database.Metadata.Version, file.Version) {
-			if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-				InstanceID:   database.InstanceID,
-				DatabaseName: database.DatabaseName,
-				MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-					md.Version = file.Version
-				}},
-			}); err != nil {
-				migrationErr = errors.Wrapf(err, "failed to update database metadata with version %s", file.Version)
-				break
-			}
-		}
+		// Track the last successfully applied version
+		lastAppliedVersion = file.Version
 	}
 
 	// Update changelog after all files are processed
@@ -602,6 +592,19 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 	if migrationErr != nil {
 		return nil, migrationErr
+	}
+
+	// Update database version to the last successfully applied version
+	if lastAppliedVersion != "" && shouldUpdateVersion(database.Metadata.Version, lastAppliedVersion) {
+		if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+			MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+				md.Version = lastAppliedVersion
+			}},
+		}); err != nil {
+			return nil, errors.Wrapf(err, "failed to update database version to %s", lastAppliedVersion)
+		}
 	}
 
 	return &storepb.TaskRunResult{}, nil
