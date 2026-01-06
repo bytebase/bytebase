@@ -275,6 +275,11 @@
     - [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel)
     - [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode)
   
+- [store/signal.proto](#store_signal-proto)
+    - [Signal](#bytebase-store-Signal)
+  
+    - [Signal.Type](#bytebase-store-Signal-Type)
+  
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
     - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
@@ -4568,6 +4573,51 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
 | PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
 | EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_signal-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/signal.proto
+
+
+
+<a name="bytebase-store-Signal"></a>
+
+### Signal
+Signal represents a notification payload sent via PostgreSQL NOTIFY for HA coordination.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [Signal.Type](#bytebase-store-Signal-Type) |  |  |
+| uid | [int32](#int32) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Signal-Type"></a>
+
+### Signal.Type
+Type represents the type of signal.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| CANCEL_PLAN_CHECK_RUN | 1 |  |
+| CANCEL_TASK_RUN | 2 |  |
 
 
  
