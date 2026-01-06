@@ -62,26 +62,12 @@
         />
       </div>
     </div>
-
-    <!-- SQL Statement Section -->
-    <div class="flex flex-col gap-y-3">
-      <h3 class="text-base font-medium">
-        {{ $t("common.statement") }}
-      </h3>
-      <MonacoEditor
-        :content="createStatement"
-        :readonly="true"
-        :language="'sql'"
-        class="w-full h-24 border rounded-[3px]"
-      />
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
 import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1/logic/utils";
-import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import {
@@ -98,7 +84,6 @@ import {
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidInstanceName } from "@/types/v1/instance";
-import { getSheetStatement } from "@/utils";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { usePlanContext } from "../..";
 
@@ -177,34 +162,6 @@ watchEffect(() => {
   if (target) {
     instanceStore.getOrFetchInstanceByName(target);
   }
-});
-
-// Get the sheet entity and its content
-const sheet = computed(() => {
-  if (!sheetName.value) return null;
-  return sheetStore.getSheetByName(sheetName.value);
-});
-
-const createStatement = computed(() => {
-  // Before rollout: show placeholder message
-  if (!rollout.value) {
-    return "-- Statement will be shown after rollout is created";
-  }
-
-  if (!createDatabaseTask.value) {
-    return "-- No task found for this create database spec";
-  }
-
-  if (!sheetName.value) {
-    return "-- No sheet reference found in task";
-  }
-
-  if (!sheet.value) {
-    return "-- Loading sheet content...";
-  }
-
-  // Return the actual sheet content
-  return getSheetStatement(sheet.value);
 });
 
 // Get task runs for this specific create database task
