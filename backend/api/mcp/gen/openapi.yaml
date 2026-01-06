@@ -7599,22 +7599,6 @@ components:
         status:
           title: status
           $ref: '#/components/schemas/bytebase.v1.Changelog.Status'
-        statement:
-          type: string
-          title: statement
-          description: The statement is used for preview purpose.
-        statementSize:
-          type:
-            - integer
-            - string
-          title: statement_size
-          format: int64
-        statementSheet:
-          type: string
-          title: statement_sheet
-          description: |-
-            The name of the sheet resource.
-             Format: projects/{project}/sheets/{sheet}
         schema:
           type: string
           title: schema
@@ -7628,10 +7612,12 @@ components:
           type: string
           title: task_run
           description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
-        version:
+        planTitle:
           type: string
-          title: version
-          description: Could be empty
+          title: plan_title
+          description: |-
+            The title of the plan associated with this changelog's task run.
+             This field is populated by deriving the plan from task_run for display purposes.
         type:
           title: type
           $ref: '#/components/schemas/bytebase.v1.Changelog.Type'

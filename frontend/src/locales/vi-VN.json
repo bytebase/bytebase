@@ -1654,11 +1654,7 @@
     "establish-baseline": "Thiết lập đường cơ sở mới",
     "refreshing": "Đang làm mới nhật ký thay đổi ...",
     "establish-baseline-description": "Bytebase sẽ sử dụng lược đồ hiện tại làm đường cơ sở mới. Điều này sẽ điều hòa trạng thái lược đồ thực tế với trạng thái lược đồ được ghi lại trong Bytebase và khắc phục độ lệch lược đồ được báo cáo. Bạn chỉ nên thực hiện việc này nếu lược đồ hiện tại phản ánh trạng thái mong muốn.",
-    "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
-    "export": "Xuất Nhật ký thay đổi",
-    "need-to-select-first": "Cần chọn nhật ký thay đổi trước",
-    "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác.",
-    "task-at": "Task at {time}"
+    "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\""
   },
   "database": {
     "labels": "Nhãn cơ sở dữ liệu",

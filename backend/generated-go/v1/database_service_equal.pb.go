@@ -1689,15 +1689,6 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.Status != y.Status {
 		return false
 	}
-	if x.Statement != y.Statement {
-		return false
-	}
-	if x.StatementSize != y.StatementSize {
-		return false
-	}
-	if x.StatementSheet != y.StatementSheet {
-		return false
-	}
 	if x.Schema != y.Schema {
 		return false
 	}
@@ -1707,7 +1698,7 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.TaskRun != y.TaskRun {
 		return false
 	}
-	if x.Version != y.Version {
+	if x.PlanTitle != y.PlanTitle {
 		return false
 	}
 	if x.Type != y.Type {

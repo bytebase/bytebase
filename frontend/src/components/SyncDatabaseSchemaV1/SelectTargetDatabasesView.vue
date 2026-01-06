@@ -164,10 +164,17 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useChangelogStore,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+} from "@/store";
 import { type ComposedDatabase, isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DiffSchemaRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  ChangelogView,
+  DiffSchemaRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { isValidChangelogName } from "@/utils/v1/changelog";
 import DiffViewPanel from "./DiffViewPanel.vue";
@@ -193,6 +200,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const route = useRoute();
+const changelogStore = useChangelogStore();
 const environmentV1Store = useEnvironmentV1Store();
 const databaseStore = useDatabaseV1Store();
 const diffViewerRef = ref<HTMLDivElement>();
@@ -213,7 +221,19 @@ const schemaDiffCache = ref<
   >
 >({});
 
-const sourceSchemaDisplayString = ref<string>(props.sourceSchemaString);
+const sourceSchemaDisplayString = computed(() => {
+  // For rollback, swap source and target for proper diff display
+  // In diff viewer: original (left) = target, modified (right) = source
+  // For rollback: we want left=#103 (current), right=#102 (previous)
+  const isRollback = isValidChangelogName(
+    props.changelogSourceSchema?.targetChangelogName
+  );
+  if (isRollback && state.selectedDatabaseName) {
+    // Return previous changelog schema as "source" (will show on RIGHT)
+    return databaseSchemaCache.value[state.selectedDatabaseName] || "";
+  }
+  return props.sourceSchemaString;
+});
 
 const targetDatabaseList = computed(() => {
   return state.selectedDatabaseNameList.map((name) => {
@@ -222,6 +242,14 @@ const targetDatabaseList = computed(() => {
 });
 
 const targetSchemaDisplayString = computed(() => {
+  // For rollback, swap source and target for proper diff display
+  const isRollback = isValidChangelogName(
+    props.changelogSourceSchema?.targetChangelogName
+  );
+  if (isRollback) {
+    // Return current changelog schema as "target" (will show on LEFT)
+    return props.sourceSchemaString;
+  }
   return state.selectedDatabaseName
     ? databaseSchemaCache.value[state.selectedDatabaseName]
     : "";
@@ -316,29 +344,57 @@ watch(
         continue;
       }
       const db = databaseStore.getDatabaseByName(name);
-      const schema = await databaseStore.fetchDatabaseSchema(db.name);
-      databaseSchemaCache.value[name] = schema.schema;
+      // For rollback, fetch the previous changelog's schema instead of current DB schema
+      const isRollback = isValidChangelogName(
+        props.changelogSourceSchema?.targetChangelogName
+      );
+      if (isRollback) {
+        // Fetch the previous changelog schema
+        const previousChangelog =
+          await changelogStore.getOrFetchChangelogByName(
+            props.changelogSourceSchema?.targetChangelogName ?? "",
+            ChangelogView.FULL
+          );
+        databaseSchemaCache.value[name] = previousChangelog?.schema ?? "";
+      } else {
+        // Normal sync: fetch current database schema
+        const schema = await databaseStore.fetchDatabaseSchema(db.name);
+        databaseSchemaCache.value[name] = schema.schema;
+      }
       if (schemaDiffCache.value[name]) {
         continue;
       } else {
-        // Use changelog name if source is from changelog, otherwise use schema string
-        const diffRequest = isValidChangelogName(
-          props.changelogSourceSchema?.changelogName
-        )
+        // For rollback: compare two changelogs (current vs previous)
+        // This shows what needs to be done to revert the current changelog
+        const isRollback = isValidChangelogName(
+          props.changelogSourceSchema?.targetChangelogName
+        );
+        const diffRequest = isRollback
           ? create(DiffSchemaRequestSchema, {
-              name: db.name,
+              // name = current changelog (the one being rolled back)
+              name: props.changelogSourceSchema?.changelogName ?? "",
               target: {
                 case: "changelog",
-                value: props.changelogSourceSchema?.changelogName ?? "",
+                // target = previous changelog (the state we want to achieve)
+                value: props.changelogSourceSchema?.targetChangelogName ?? "",
               },
             })
-          : create(DiffSchemaRequestSchema, {
-              name: db.name,
-              target: {
-                case: "schema",
-                value: props.sourceSchemaString,
-              },
-            });
+          : // Normal sync: compare database with source schema
+            isValidChangelogName(props.changelogSourceSchema?.changelogName)
+            ? create(DiffSchemaRequestSchema, {
+                name: db.name,
+                target: {
+                  case: "changelog",
+                  value: props.changelogSourceSchema?.changelogName ?? "",
+                },
+              })
+            : create(DiffSchemaRequestSchema, {
+                name: db.name,
+                target: {
+                  case: "schema",
+                  value: props.sourceSchemaString,
+                },
+              });
 
         const diffResp = await databaseStore.diffSchema(diffRequest);
         const schemaDiff = diffResp.diff ?? "";

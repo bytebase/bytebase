@@ -13,12 +13,6 @@ func (x *ChangelogPayload) Equal(y *ChangelogPayload) bool {
 	if x.TaskRun != y.TaskRun {
 		return false
 	}
-	if x.SheetSha256 != y.SheetSha256 {
-		return false
-	}
-	if x.Version != y.Version {
-		return false
-	}
 	if x.Type != y.Type {
 		return false
 	}

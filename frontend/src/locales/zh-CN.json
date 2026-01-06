@@ -1654,11 +1654,7 @@
     "establish-baseline": "建立新的基线",
     "refreshing": "刷新历史中...",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
-    "establish-database-baseline": "建立「{name}」基线",
-    "export": "导出变更历史",
-    "need-to-select-first": "需要先选择变更历史",
-    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。",
-    "task-at": "任务于 {time}"
+    "establish-database-baseline": "建立「{name}」基线"
   },
   "database": {
     "labels": "数据库标签",
