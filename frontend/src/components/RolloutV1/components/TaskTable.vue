@@ -38,7 +38,6 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractSchemaVersionFromTask,
   extractStageNameFromTaskName,
   humanizeTs,
 } from "@/utils";
@@ -200,19 +199,12 @@ const columnList = computed((): DataTableColumn<Task>[] => {
       title: t("common.database"),
       resizable: true,
       render: (task) => {
-        const schemaVersion = extractSchemaVersionFromTask(task);
-
         return (
           <div class="flex items-center gap-2">
             <DatabaseDisplay database={task.target} />
             <NTag round size="small">
               {semanticTaskType(task.type)}
             </NTag>
-            {schemaVersion && (
-              <NTag round size="small">
-                {schemaVersion}
-              </NTag>
-            )}
             {task.runTime && task.status === Task_Status.PENDING && (
               <NTooltip>
                 {{

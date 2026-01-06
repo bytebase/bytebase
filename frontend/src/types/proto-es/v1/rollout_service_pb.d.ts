@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ExportFormat, Position, Range } from "./common_pb";
+import type { Position, Range } from "./common_pb";
 
 /**
  * Describes the file v1/rollout_service.proto.
@@ -535,54 +535,11 @@ export declare const TaskSchema: GenMessage<Task>;
  */
 export declare type Task_DatabaseCreate = Message<"bytebase.v1.Task.DatabaseCreate"> & {
   /**
-   * The project owning the database.
-   * Format: projects/{project}
-   *
-   * @generated from field: string project = 1;
-   */
-  project: string;
-
-  /**
-   * Database name.
-   *
-   * @generated from field: string database = 2;
-   */
-  database: string;
-
-  /**
-   * Table name.
-   *
-   * @generated from field: string table = 3;
-   */
-  table: string;
-
-  /**
    * Format: projects/{project}/sheets/{sheet}
    *
    * @generated from field: string sheet = 4;
    */
   sheet: string;
-
-  /**
-   * The character set for the database.
-   *
-   * @generated from field: string character_set = 5;
-   */
-  characterSet: string;
-
-  /**
-   * The collation for the database.
-   *
-   * @generated from field: string collation = 6;
-   */
-  collation: string;
-
-  /**
-   * The environment the database belongs to.
-   *
-   * @generated from field: string environment = 7;
-   */
-  environment: string;
 };
 
 /**
@@ -619,13 +576,6 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
     value: string;
     case: "release";
   } | { case: undefined; value?: undefined };
-
-  /**
-   * The target schema version after this update.
-   *
-   * @generated from field: string schema_version = 2;
-   */
-  schemaVersion: string;
 };
 
 /**
@@ -641,35 +591,12 @@ export declare const Task_DatabaseUpdateSchema: GenMessage<Task_DatabaseUpdate>;
  */
 export declare type Task_DatabaseDataExport = Message<"bytebase.v1.Task.DatabaseDataExport"> & {
   /**
-   * The resource name of the target.
-   * Format: instances/{instance-id}/databases/{database-name}
-   *
-   * @generated from field: string target = 1;
-   */
-  target: string;
-
-  /**
    * The resource name of the sheet.
    * Format: projects/{project}/sheets/{sheet}
    *
    * @generated from field: string sheet = 2;
    */
   sheet: string;
-
-  /**
-   * The format of the exported file.
-   *
-   * @generated from field: bytebase.v1.ExportFormat format = 3;
-   */
-  format: ExportFormat;
-
-  /**
-   * The zip password provided by users.
-   * Leave it empty if no needs to encrypt the zip file.
-   *
-   * @generated from field: optional string password = 4;
-   */
-  password?: string;
 };
 
 /**

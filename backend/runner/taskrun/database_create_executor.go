@@ -65,22 +65,34 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return nil, errors.Errorf("plan %v not found", task.PlanID)
 	}
 
+	// For create database plans, there is always exactly one spec
+	if len(plan.Config.Specs) == 0 {
+		return nil, errors.Errorf("plan has no specs")
+	}
+	createConfig := plan.Config.Specs[0].GetCreateDatabaseConfig()
+	if createConfig == nil {
+		return nil, errors.Errorf("spec does not contain create database config")
+	}
+
 	// Create database.
 	slog.Debug("Start creating database...",
 		slog.String("instance", instance.Metadata.GetTitle()),
-		slog.String("database", task.Payload.GetDatabaseName()),
+		slog.String("database", createConfig.Database),
 		slog.String("statement", statement),
 	)
 
-	envID := task.Payload.GetEnvironmentId()
 	var environmentID *string
-	if envID != "" {
+	if createConfig.Environment != "" {
+		envID, err := common.GetEnvironmentID(createConfig.Environment)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse environment %s", createConfig.Environment)
+		}
 		environmentID = &envID
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:     plan.ProjectID,
 		InstanceID:    instance.ResourceID,
-		DatabaseName:  task.Payload.GetDatabaseName(),
+		DatabaseName:  createConfig.Database,
 		EnvironmentID: environmentID,
 		Metadata:      &storepb.DatabaseMetadata{},
 	})

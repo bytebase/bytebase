@@ -14,12 +14,6 @@
             <DatabaseDisplay :database="database.name" :size="'large'" />
           </div>
           <div class="flex flex-row gap-x-2 flex-wrap">
-            <NTooltip v-if="schemaVersion">
-              <template #trigger>
-                <NTag round>{{ schemaVersion }}</NTag>
-              </template>
-              {{ $t("common.version") }}
-            </NTooltip>
             <NTooltip v-if="task.runTime && task.status === Task_Status.PENDING">
               <template #trigger>
                 <NTag round>
@@ -166,7 +160,6 @@ import {
   databaseForTask,
   extractPlanUID,
   extractProjectResourceName,
-  extractSchemaVersionFromTask,
   getSheetStatement,
   isReleaseBasedTask,
   releaseNameOfTaskV1,
@@ -248,7 +241,6 @@ const rollbackableTaskRun = computed(() => {
 
 // Task basic info
 const database = computed(() => databaseForTask(project.value, task.value));
-const schemaVersion = computed(() => extractSchemaVersionFromTask(task.value));
 
 // Related spec
 const relatedSpec = computed(() => {

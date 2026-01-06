@@ -156,12 +156,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Environment:  effectiveEnvironmentID,
 			Type:         storepb.Task_DATABASE_CREATE,
 			Payload: &storepb.Task{
-				SpecId:        spec.Id,
-				CharacterSet:  c.CharacterSet,
-				TableName:     c.Table,
-				Collation:     c.Collation,
-				EnvironmentId: dbEnvironmentID,
-				DatabaseName:  databaseName,
+				SpecId: spec.Id,
 				Source: &storepb.Task_SheetSha256{
 					SheetSha256: sheet.Sha256,
 				},
@@ -303,10 +298,6 @@ func getTaskCreatesFromExportDataConfig(
 		Source: &storepb.Task_SheetSha256{
 			SheetSha256: c.SheetSha256,
 		},
-		Format: c.Format,
-	}
-	if c.Password != nil {
-		payload.Password = *c.Password
 	}
 
 	tasks := []*store.TaskMessage{}

@@ -88,16 +88,6 @@ type Task struct {
 	SkippedReason string `protobuf:"bytes,2,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
 	// UUID that identifies the spec this task implements.
 	SpecId string `protobuf:"bytes,3,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
-	// The environment where the database will be created.
-	EnvironmentId string `protobuf:"bytes,5,opt,name=environment_id,json=environmentId,proto3" json:"environment_id,omitempty"`
-	// Name of the database to create.
-	DatabaseName string `protobuf:"bytes,6,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	// Optional table name to create (required for some databases like MongoDB).
-	TableName string `protobuf:"bytes,7,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
-	// Character set for the new database.
-	CharacterSet string `protobuf:"bytes,8,opt,name=character_set,json=characterSet,proto3" json:"character_set,omitempty"`
-	// Collation for the new database.
-	Collation string `protobuf:"bytes,9,opt,name=collation,proto3" json:"collation,omitempty"`
 	// Source of the task's SQL content - either a single sheet or an entire release.
 	//
 	// Types that are valid to be assigned to Source:
@@ -109,10 +99,6 @@ type Task struct {
 	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Configuration flags for gh-ost migration tool.
 	Flags map[string]string `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Password to encrypt the exported data archive.
-	Password string `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
-	// Format of the exported data (SQL, CSV, JSON, etc).
-	Format ExportFormat `protobuf:"varint,15,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
 	// Whether to use gh-ost for online schema migration.
 	EnableGhost   bool `protobuf:"varint,16,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -170,41 +156,6 @@ func (x *Task) GetSpecId() string {
 	return ""
 }
 
-func (x *Task) GetEnvironmentId() string {
-	if x != nil {
-		return x.EnvironmentId
-	}
-	return ""
-}
-
-func (x *Task) GetDatabaseName() string {
-	if x != nil {
-		return x.DatabaseName
-	}
-	return ""
-}
-
-func (x *Task) GetTableName() string {
-	if x != nil {
-		return x.TableName
-	}
-	return ""
-}
-
-func (x *Task) GetCharacterSet() string {
-	if x != nil {
-		return x.CharacterSet
-	}
-	return ""
-}
-
-func (x *Task) GetCollation() string {
-	if x != nil {
-		return x.Collation
-	}
-	return ""
-}
-
 func (x *Task) GetSource() isTask_Source {
 	if x != nil {
 		return x.Source
@@ -244,20 +195,6 @@ func (x *Task) GetFlags() map[string]string {
 	return nil
 }
 
-func (x *Task) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
-}
-
-func (x *Task) GetFormat() ExportFormat {
-	if x != nil {
-		return x.Format
-	}
-	return ExportFormat_FORMAT_UNSPECIFIED
-}
-
 func (x *Task) GetEnableGhost() bool {
 	if x != nil {
 		return x.EnableGhost
@@ -289,24 +226,16 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xd2\x05\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\"\xd2\x03\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
-	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12%\n" +
-	"\x0eenvironment_id\x18\x05 \x01(\tR\renvironmentId\x12#\n" +
-	"\rdatabase_name\x18\x06 \x01(\tR\fdatabaseName\x12\x1d\n" +
-	"\n" +
-	"table_name\x18\a \x01(\tR\ttableName\x12#\n" +
-	"\rcharacter_set\x18\b \x01(\tR\fcharacterSet\x12\x1c\n" +
-	"\tcollation\x18\t \x01(\tR\tcollation\x12#\n" +
+	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12#\n" +
 	"\fsheet_sha256\x18\n" +
 	" \x01(\tH\x00R\vsheetSha256\x12\x1a\n" +
 	"\arelease\x18\r \x01(\tH\x00R\arelease\x12.\n" +
 	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
-	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12\x1a\n" +
-	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
-	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12!\n" +
+	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12!\n" +
 	"\fenable_ghost\x18\x10 \x01(\bR\venableGhost\x1a8\n" +
 	"\n" +
 	"FlagsEntry\x12\x10\n" +
@@ -335,19 +264,17 @@ func file_store_task_proto_rawDescGZIP() []byte {
 var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_task_proto_goTypes = []any{
-	(Task_Type)(0),    // 0: bytebase.store.Task.Type
-	(*Task)(nil),      // 1: bytebase.store.Task
-	nil,               // 2: bytebase.store.Task.FlagsEntry
-	(ExportFormat)(0), // 3: bytebase.store.ExportFormat
+	(Task_Type)(0), // 0: bytebase.store.Task.Type
+	(*Task)(nil),   // 1: bytebase.store.Task
+	nil,            // 2: bytebase.store.Task.FlagsEntry
 }
 var file_store_task_proto_depIdxs = []int32{
 	2, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
-	3, // 1: bytebase.store.Task.format:type_name -> bytebase.store.ExportFormat
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_task_proto_init() }
@@ -355,7 +282,6 @@ func file_store_task_proto_init() {
 	if File_store_task_proto != nil {
 		return
 	}
-	file_store_common_proto_init()
 	file_store_task_proto_msgTypes[0].OneofWrappers = []any{
 		(*Task_SheetSha256)(nil),
 		(*Task_Release)(nil),

@@ -185,7 +185,8 @@ const createdDatabase = computed(() => {
 
   return extractCoreDatabaseInfoFromDatabaseCreateTask(
     project.value,
-    createDatabaseTask.value
+    createDatabaseTask.value,
+    plan.value
   );
 });
 </script>

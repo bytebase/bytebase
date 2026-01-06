@@ -9630,13 +9630,7 @@ Payload for creating a new database.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The project owning the database. Format: projects/{project} |
-| database | [string](#string) |  | Database name. |
-| table | [string](#string) |  | Table name. |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
-| character_set | [string](#string) |  | The character set for the database. |
-| collation | [string](#string) |  | The collation for the database. |
-| environment | [string](#string) |  | The environment the database belongs to. |
 
 
 
@@ -9651,10 +9645,7 @@ Payload for exporting database data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
-| password | [string](#string) | optional | The zip password provided by users. Leave it empty if no needs to encrypt the zip file. |
 
 
 
@@ -9671,7 +9662,6 @@ Payload for updating a database schema.
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} |
-| schema_version | [string](#string) |  | The target schema version after this update. |
 
 
 

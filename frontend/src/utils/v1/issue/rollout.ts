@@ -15,6 +15,7 @@ import {
   unknownStage,
   unknownTask,
 } from "@/types";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   type Rollout,
@@ -184,16 +185,6 @@ export const findStageByName = (
   );
 };
 
-export const extractSchemaVersionFromTask = (task: Task): string => {
-  // The schema version is specified in the filename
-  // parsed and stored to the payload.schemaVersion
-  // fallback to empty if we can't read the field.
-  if (task.payload?.case === "databaseUpdate") {
-    return task.payload.value.schemaVersion ?? "";
-  }
-  return "";
-};
-
 export const sheetNameOfTaskV1 = (task: Task): string => {
   if (task.payload?.case === "databaseCreate") {
     return task.payload.value.sheet ?? "";
@@ -288,12 +279,12 @@ export const getRolloutStatus = (rollout: Rollout): Task_Status => {
   return Task_Status.NOT_STARTED;
 };
 
-export const databaseForTask = (project: Project, task: Task) => {
+export const databaseForTask = (project: Project, task: Task, plan?: Plan) => {
   switch (task.type) {
     case Task_Type.DATABASE_CREATE:
       // The database is not created yet.
       // extract database info from the task's and payload's properties.
-      return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task);
+      return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task, plan);
     case Task_Type.DATABASE_MIGRATE:
     case Task_Type.DATABASE_EXPORT:
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
