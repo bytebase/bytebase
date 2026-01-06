@@ -1716,9 +1716,6 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.Version != y.Version {
 		return false
 	}
-	if x.Revision != y.Revision {
-		return false
-	}
 	if x.Type != y.Type {
 		return false
 	}

@@ -5373,10 +5373,7 @@ type Changelog struct {
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,11,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// Could be empty
-	Version string `protobuf:"bytes,12,opt,name=version,proto3" json:"version,omitempty"`
-	// Could be empty
-	// Or present but not found if deleted
-	Revision      string         `protobuf:"bytes,13,opt,name=revision,proto3" json:"revision,omitempty"`
+	Version       string         `protobuf:"bytes,12,opt,name=version,proto3" json:"version,omitempty"`
 	Type          Changelog_Type `protobuf:"varint,14,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5492,13 +5489,6 @@ func (x *Changelog) GetTaskRun() string {
 func (x *Changelog) GetVersion() string {
 	if x != nil {
 		return x.Version
-	}
-	return ""
-}
-
-func (x *Changelog) GetRevision() string {
-	if x != nil {
-		return x.Revision
 	}
 	return ""
 }
@@ -6105,7 +6095,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xf5\x05\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xd9\x05\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -6122,8 +6112,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x10prev_schema_size\x18\n" +
 	" \x01(\x03R\x0eprevSchemaSize\x12\x19\n" +
 	"\btask_run\x18\v \x01(\tR\ataskRun\x12\x18\n" +
-	"\aversion\x18\f \x01(\tR\aversion\x12\x1a\n" +
-	"\brevision\x18\r \x01(\tR\brevision\x12/\n" +
+	"\aversion\x18\f \x01(\tR\aversion\x12/\n" +
 	"\x04type\x18\x0e \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +

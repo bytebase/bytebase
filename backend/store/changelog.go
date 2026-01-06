@@ -61,7 +61,6 @@ type UpdateChangelogMessage struct {
 	UID int64
 
 	SyncHistoryUID *int64
-	RevisionUID    *int64
 	Status         *ChangelogStatus
 	DumpVersion    *int32
 }
@@ -118,9 +117,6 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 	set := qb.Q()
 	if v := update.SyncHistoryUID; v != nil {
 		set.Comma("sync_history_id = ?", *v)
-	}
-	if v := update.RevisionUID; v != nil {
-		set.Comma("payload = payload || jsonb_build_object('revision', ?::BIGINT)", *v)
 	}
 	if v := update.Status; v != nil {
 		set.Comma("status = ?", *v)

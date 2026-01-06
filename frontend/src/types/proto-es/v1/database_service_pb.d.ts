@@ -3095,14 +3095,6 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   version: string;
 
   /**
-   * Could be empty
-   * Or present but not found if deleted
-   *
-   * @generated from field: string revision = 13;
-   */
-  revision: string;
-
-  /**
    * @generated from field: bytebase.v1.Changelog.Type type = 14;
    */
   type: Changelog_Type;

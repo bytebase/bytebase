@@ -218,7 +218,6 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		PrevSchemaSize: 0,
 		TaskRun:        c.Payload.GetTaskRun(),
 		Version:        c.Payload.GetVersion(),
-		Revision:       "",
 		Type:           changelogType,
 	}
 
@@ -226,10 +225,6 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		cl.StatementSheet = common.FormatSheet(d.ProjectID, sheetSha256)
 		cl.Statement = c.Statement
 		cl.StatementSize = c.StatementSize
-	}
-
-	if id := c.Payload.GetRevision(); id != 0 {
-		cl.Revision = common.FormatRevision(d.InstanceID, d.DatabaseName, id)
 	}
 
 	if v := c.PrevSyncHistoryUID; v != nil {
