@@ -901,6 +901,15 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", plan.UID))
 	}
 
+	// Get password from the plan spec
+	// For export data plans, there is always exactly one spec
+	var passwordStr string
+	if len(plan.Config.Specs) > 0 {
+		if exportConfig := plan.Config.Specs[0].GetExportDataConfig(); exportConfig != nil && exportConfig.Password != nil {
+			passwordStr = *exportConfig.Password
+		}
+	}
+
 	pendingEncrypts := []*encryptContent{}
 	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
@@ -954,7 +963,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		}
 	}
 
-	encryptedBytes, err := doEncrypt(pendingEncrypts, tasks[0].Payload.GetPassword())
+	encryptedBytes, err := doEncrypt(pendingEncrypts, passwordStr)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to encrypt data: %v", err))
 	}

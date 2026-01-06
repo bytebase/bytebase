@@ -93,7 +93,8 @@ export const mockDatabase = (projectEntity: Project, database: string) => {
 
 export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   project: Project,
-  task: Task
+  task: Task,
+  plan?: Plan
 ) => {
   const coreDatabaseInfo = (
     instanceName: string,
@@ -136,8 +137,14 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   };
 
   if (task.payload?.case === "databaseCreate") {
-    const databaseName = task.payload.value.database;
     const instance = task.target;
+    // Get database name from plan spec
+    const spec = plan?.specs?.find((s) => s.id === task.specId);
+    const createConfig =
+      spec?.config?.case === "createDatabaseConfig"
+        ? spec.config.value
+        : undefined;
+    const databaseName = createConfig?.database || "";
     return coreDatabaseInfo(instance, databaseName);
   }
 

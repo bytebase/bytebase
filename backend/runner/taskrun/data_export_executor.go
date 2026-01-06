@@ -50,6 +50,24 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return nil, errors.Wrapf(err, "failed to get issue")
 	}
 
+	// Get plan to retrieve export format from spec
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan")
+	}
+	if plan == nil {
+		return nil, errors.Errorf("plan not found")
+	}
+
+	// For export data plans, there is always exactly one spec
+	if len(plan.Config.Specs) == 0 {
+		return nil, errors.Errorf("plan has no specs")
+	}
+	exportConfig := plan.Config.Specs[0].GetExportDataConfig()
+	if exportConfig == nil {
+		return nil, errors.Errorf("spec does not contain export data config")
+	}
+
 	database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
@@ -85,7 +103,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 
 	// Execute the export without masking.
 	// For approved DATABASE_EXPORT tasks, the approval itself authorizes access to the data.
-	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, task.Payload.GetFormat(), creatorUser)
+	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, exportConfig.Format, creatorUser)
 	if exportErr != nil {
 		return nil, errors.Wrap(exportErr, "failed to export data")
 	}
@@ -93,7 +111,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
 		Bytes: bytes,
 		Payload: &storepb.ExportArchivePayload{
-			FileFormat: task.Payload.GetFormat(),
+			FileFormat: exportConfig.Format,
 		},
 	})
 	if err != nil {

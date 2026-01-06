@@ -36,9 +36,6 @@
             </template>
             <span>{{ $t("task.online-migration.self") }}</span>
           </NTooltip>
-          <NTag v-if="schemaVersion" size="small" round>
-            {{ schemaVersion }}
-          </NTag>
         </div>
         <TaskExtraActionsButton :task="task" />
       </div>
@@ -61,11 +58,7 @@ import { useCurrentProjectV1 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  databaseForTask,
-  databaseV1Url,
-  extractSchemaVersionFromTask,
-} from "@/utils";
+import { databaseForTask, databaseV1Url } from "@/utils";
 import { specForTask, useInstanceForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
@@ -77,24 +70,6 @@ const props = defineProps<{
 const { isCreating, issue, selectedTask, events } = useIssueContext();
 const { project } = useCurrentProjectV1();
 const selected = computed(() => props.task === selectedTask.value);
-
-const schemaVersion = computed(() => {
-  const v = extractSchemaVersionFromTask(props.task);
-  // Always show the schema version for tasks from a release source.
-  if (
-    (
-      issue.value.planEntity?.specs?.filter(
-        (spec) =>
-          spec.config?.case === "changeDatabaseConfig" &&
-          spec.config.value?.release
-      ) ?? []
-    ).length > 0
-  ) {
-    return v;
-  }
-  if (isCreating.value) return "";
-  return v;
-});
 
 const showGhostTag = computed(() => {
   const spec = specForTask(issue.value.planEntity, props.task);

@@ -15868,95 +15868,44 @@ components:
     bytebase.v1.Task.DatabaseCreate:
       type: object
       properties:
-        project:
-          type: string
-          title: project
-          description: |-
-            The project owning the database.
-             Format: projects/{project}
-        database:
-          type: string
-          title: database
-          description: Database name.
-        table:
-          type: string
-          title: table
-          description: Table name.
         sheet:
           type: string
           title: sheet
           description: 'Format: projects/{project}/sheets/{sheet}'
-        characterSet:
-          type: string
-          title: character_set
-          description: The character set for the database.
-        collation:
-          type: string
-          title: collation
-          description: The collation for the database.
-        environment:
-          type: string
-          title: environment
-          description: The environment the database belongs to.
       title: DatabaseCreate
       additionalProperties: false
       description: Payload for creating a new database.
     bytebase.v1.Task.DatabaseDataExport:
       type: object
       properties:
-        target:
-          type: string
-          title: target
-          description: |-
-            The resource name of the target.
-             Format: instances/{instance-id}/databases/{database-name}
         sheet:
           type: string
           title: sheet
           description: |-
             The resource name of the sheet.
              Format: projects/{project}/sheets/{sheet}
-        format:
-          title: format
-          description: The format of the exported file.
-          $ref: '#/components/schemas/bytebase.v1.ExportFormat'
-        password:
-          type:
-            - string
-            - "null"
-          title: password
-          description: |-
-            The zip password provided by users.
-             Leave it empty if no needs to encrypt the zip file.
-          nullable: true
       title: DatabaseDataExport
       additionalProperties: false
       description: Payload for exporting database data.
     bytebase.v1.Task.DatabaseUpdate:
       type: object
-      allOf:
+      oneOf:
         - properties:
-            schemaVersion:
+            release:
               type: string
-              title: schema_version
-              description: The target schema version after this update.
-        - oneOf:
-            - properties:
-                release:
-                  type: string
-                  title: release
-                  description: 'Format: projects/{project}/releases/{release}'
               title: release
-              required:
-                - release
-            - properties:
-                sheet:
-                  type: string
-                  title: sheet
-                  description: 'Format: projects/{project}/sheets/{sheet}'
+              description: 'Format: projects/{project}/releases/{release}'
+          title: release
+          required:
+            - release
+        - properties:
+            sheet:
+              type: string
               title: sheet
-              required:
-                - sheet
+              description: 'Format: projects/{project}/sheets/{sheet}'
+          title: sheet
+          required:
+            - sheet
       title: DatabaseUpdate
       additionalProperties: false
       description: Payload for updating a database schema.

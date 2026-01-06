@@ -231,7 +231,6 @@ function createTask(
           case: "sheet",
           value: taskCreate.sheet,
         },
-        schemaVersion: "",
       }),
     },
   });

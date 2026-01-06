@@ -295,25 +295,7 @@ func (x *Task_DatabaseCreate) Equal(y *Task_DatabaseCreate) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Project != y.Project {
-		return false
-	}
-	if x.Database != y.Database {
-		return false
-	}
-	if x.Table != y.Table {
-		return false
-	}
 	if x.Sheet != y.Sheet {
-		return false
-	}
-	if x.CharacterSet != y.CharacterSet {
-		return false
-	}
-	if x.Collation != y.Collation {
-		return false
-	}
-	if x.Environment != y.Environment {
 		return false
 	}
 	return true
@@ -332,9 +314,6 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	if x.GetRelease() != y.GetRelease() {
 		return false
 	}
-	if x.SchemaVersion != y.SchemaVersion {
-		return false
-	}
 	return true
 }
 
@@ -345,16 +324,7 @@ func (x *Task_DatabaseDataExport) Equal(y *Task_DatabaseDataExport) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Target != y.Target {
-		return false
-	}
 	if x.Sheet != y.Sheet {
-		return false
-	}
-	if x.Format != y.Format {
-		return false
-	}
-	if p, q := x.Password, y.Password; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
 	return true

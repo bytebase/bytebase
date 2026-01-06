@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "store/common.proto";
-
 option go_package = "generated-go/store";
 
 // Task is the metadata for database operation tasks.
@@ -28,17 +26,6 @@ message Task {
   // UUID that identifies the spec this task implements.
   string spec_id = 3;
 
-  // The environment where the database will be created.
-  string environment_id = 5;
-  // Name of the database to create.
-  string database_name = 6;
-  // Optional table name to create (required for some databases like MongoDB).
-  string table_name = 7;
-  // Character set for the new database.
-  string character_set = 8;
-  // Collation for the new database.
-  string collation = 9;
-
   // Source of the task's SQL content - either a single sheet or an entire release.
   oneof source {
     // The SHA256 hash of a single sheet content (hex-encoded).
@@ -54,10 +41,6 @@ message Task {
   // Configuration flags for gh-ost migration tool.
   map<string, string> flags = 12;
 
-  // Password to encrypt the exported data archive.
-  string password = 14;
-  // Format of the exported data (SQL, CSV, JSON, etc).
-  ExportFormat format = 15;
   // Whether to use gh-ost for online schema migration.
   bool enable_ghost = 16;
 }
