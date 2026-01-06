@@ -8,11 +8,13 @@
     @delete="doDelete"
     @update-policy="updatePolicy"
   >
-    <EnvironmentFormBody :features="features" class="w-full px-4" />
-    <EnvironmentFormButtons
-      class="sticky -bottom-4 bg-white py-4 px-2 border-t border-block-border"
-      :class="buttonsClass"
-    />
+    <div class="flex flex-col h-full w-full">
+      <EnvironmentFormBody :features="features" class="w-full flex-1 px-4" />
+      <EnvironmentFormButtons
+        class="sticky -bottom-4 bg-white py-4 px-2 border-t border-block-border"
+        :class="buttonsClass"
+      />
+    </div>
   </EnvironmentForm>
 </template>
 

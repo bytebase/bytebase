@@ -1,11 +1,12 @@
 <template>
-  <div class="w-full flex flex-col gap-4">
+  <div class="w-full h-full flex flex-col gap-4">
     <NTabs
       type="line"
       :bar-width="200"
       :value="state.selectedId"
       size="large"
       justify-content="start"
+      class="h-full"
       tab-style="margin: 0 1rem; padding-left: 2rem; padding: 0 2.5rem 0.5rem 2.5rem;"
       @update:value="onTabChange"
     >
@@ -14,6 +15,7 @@
         :key="item.id"
         :name="item.id"
         :tab="() => renderTab(item.data!, index)"
+        class="h-full"
       >
         <EnvironmentDetail
           ref="environmentDetailRefs"
@@ -256,6 +258,7 @@ const doCreate = async (params: {
     title: environment.title,
     order: environmentList.value.length,
     color: environment.color,
+    tags: environment.tags,
   });
   await environmentV1Store.fetchEnvironments();
 
