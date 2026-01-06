@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row items-center gap-x-2">
+  <div class="flex flex-row items-center" :class="gapClass">
     <UserAvatar :user="user" :size="avatarSize" />
 
     <div class="flex flex-row items-center">
@@ -151,5 +151,12 @@ const avatarSize = computed(() => {
     default:
       return "NORMAL";
   }
+});
+
+const gapClass = computed(() => {
+  if (props.size === "tiny") {
+    return "gap-x-1";
+  }
+  return "gap-x-2";
 });
 </script>
