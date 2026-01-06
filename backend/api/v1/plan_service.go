@@ -500,7 +500,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 	}
 
 	// Broadcast cancel signal to all replicas for HA.
-	if err := s.store.SendSignal(ctx, store.SignalTypeCancelPlanCheckRun, planCheckRun.UID); err != nil {
+	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, int32(planCheckRun.UID)); err != nil {
 		slog.Warn("failed to send cancel signal", log.BBError(err))
 	}
 
