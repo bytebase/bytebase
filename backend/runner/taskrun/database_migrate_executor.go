@@ -80,7 +80,18 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Wrap(err, "failed to ensure baseline changelog")
 	}
 
-	// Check if this is a release-based task
+	// Mark database as not drifted since we're about to sync it
+	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+			md.Drifted = false
+		}},
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+	}
+
+	// Execute migration based on task type
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
 		// Parse release name to get project ID and release UID
 		_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
@@ -278,22 +289,6 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		return nil, migrationErr
 	}
 
-	// Post migration - clean up drift
-	slog.Debug("Post migration...",
-		slog.String("instance", instance.ResourceID),
-		slog.String("database", database.DatabaseName),
-	)
-
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
-	}
-
 	return &storepb.TaskRunResult{
 		HasPriorBackup: priorBackupDetail != nil && len(priorBackupDetail.Items) > 0,
 	}, nil
@@ -438,22 +433,6 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 
 	if migrationErr != nil {
 		return nil, migrationErr
-	}
-
-	// Post migration - clean up drift
-	slog.Debug("Post migration...",
-		slog.String("instance", instance.ResourceID),
-		slog.String("database", database.DatabaseName),
-	)
-
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	return &storepb.TaskRunResult{}, nil
@@ -632,17 +611,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		return nil, migrationErr
 	}
 
-	// Clean up drift after successful migration
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
-	}
-
 	return &storepb.TaskRunResult{}, nil
 }
 
@@ -765,24 +733,16 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		return nil, errors.Wrap(migrationErr, "failed to execute declarative release")
 	}
 
-	// Post migration
+	// Post migration - update database schema version
 	// Note: Declarative releases do NOT create revisions (they are version-tracked through the database schema itself)
-	slog.Debug("Post migration...",
-		slog.String("instance", instance.ResourceID),
-		slog.String("database", database.DatabaseName),
-	)
-
-	// Clean up drift
-	// Update database schema version.
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
 			md.Version = file.Version
 		}},
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to update database version for %q", database.DatabaseName)
 	}
 
 	return &storepb.TaskRunResult{}, nil
