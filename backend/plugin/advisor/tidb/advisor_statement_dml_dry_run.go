@@ -79,17 +79,37 @@ func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.NonTransactionalDMLStmt:
 		// TiDB's BATCH syntax (e.g., "BATCH ON id LIMIT 5000 UPDATE ...")
-		// EXPLAIN doesn't support BATCH syntax, so we need to extract the inner DML
-		// and EXPLAIN that instead.
+		// We need to:
+		// 1. Run "BATCH ... DRY RUN" to validate the batch splitting logic
+		// 2. Run "EXPLAIN" on the inner DML to validate the DML itself
 		checker.explainCount++
 		innerDML := node.DMLStmt
 		if innerDML == nil {
 			return in, false
 		}
-		// Restore the inner DML to get its SQL text
+
+		// Step 1: Run TiDB's native BATCH DRY RUN to validate the batch splitting.
+		// This checks that the shard column exists, the LIMIT is valid, etc.
+		// We restore the NonTransactionalDMLStmt with DryRun=1 to generate "BATCH ... DRY RUN ..."
+		batchDryRunSQL, err := checker.restoreNonTransactionalDMLWithDryRun(node)
+		if err == nil && batchDryRunSQL != "" {
+			if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, batchDryRunSQL); err != nil {
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
+					Status:        checker.level,
+					Code:          code.StatementDMLDryRunFailed.Int32(),
+					Title:         checker.title,
+					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
+					StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+				})
+				// Don't continue to EXPLAIN if BATCH DRY RUN failed
+				return in, true
+			}
+		}
+
+		// Step 2: Run EXPLAIN on the inner DML to validate the DML execution plan.
+		// EXPLAIN doesn't support BATCH syntax, so we extract and EXPLAIN the inner DML.
 		innerSQL, err := checker.restoreNode(innerDML)
 		if err != nil {
-			// If we can't restore the inner DML, report the error with the original statement
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.StatementDMLDryRunFailed.Int32(),
@@ -97,9 +117,8 @@ func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 				Content:       fmt.Sprintf("\"%s\" dry runs failed: failed to extract inner DML: %s", checker.text, err.Error()),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
-			return in, false
+			return in, true
 		}
-		// EXPLAIN the inner DML
 		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", innerSQL)); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
@@ -138,6 +157,22 @@ func (*statementDmlDryRunChecker) restoreNode(node ast.Node) (string, error) {
 	var buf strings.Builder
 	ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
 	if err := node.Restore(ctx); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// restoreNonTransactionalDMLWithDryRun generates a "BATCH ... DRY RUN ..." statement
+// from a NonTransactionalDMLStmt to validate the batch splitting logic.
+func (*statementDmlDryRunChecker) restoreNonTransactionalDMLWithDryRun(node *ast.NonTransactionalDMLStmt) (string, error) {
+	// Create a copy with DryRun enabled
+	// DryRun values: 0 = no dry run, 1 = dry run the query, 2 = dry run split DMLs
+	nodeCopy := *node
+	nodeCopy.DryRun = 1
+
+	var buf strings.Builder
+	ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
+	if err := nodeCopy.Restore(ctx); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
