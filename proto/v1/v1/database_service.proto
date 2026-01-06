@@ -1440,8 +1440,6 @@ message Changelog {
   string statement_sheet = 6;
   string schema = 7;
   int64 schema_size = 8;
-  string prev_schema = 9;
-  int64 prev_schema_size = 10;
 
   // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 11;

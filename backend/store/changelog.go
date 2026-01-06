@@ -27,15 +27,13 @@ type ChangelogMessage struct {
 	DatabaseName string
 	Payload      *storepb.ChangelogPayload
 
-	PrevSyncHistoryUID *int64
-	SyncHistoryUID     *int64
-	Status             ChangelogStatus
+	SyncHistoryUID *int64
+	Status         ChangelogStatus
 
 	// output only
 	UID       int64
 	CreatedAt time.Time
 
-	PrevSchema    string
 	Schema        string
 	Statement     string
 	StatementSize int64
@@ -82,7 +80,6 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 			instance,
 			db_name,
 			status,
-			prev_sync_history_id,
 			sync_history_id,
 			payload
 		) VALUES (
@@ -90,11 +87,10 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 			?,
 			?,
 			?,
-			?,
 			?
 		)
 		RETURNING id
-	`, create.InstanceID, create.DatabaseName, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p)
+	`, create.InstanceID, create.DatabaseName, create.Status, create.SyncHistoryUID, p)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -156,10 +152,6 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	if common.IsDev() {
 		truncateSize = 4
 	}
-	shPreField := fmt.Sprintf("LEFT(sh_pre.raw_dump, %d)", truncateSize)
-	if find.ShowFull {
-		shPreField = "sh_pre.raw_dump"
-	}
 	shCurField := fmt.Sprintf("LEFT(sh_cur.raw_dump, %d)", truncateSize)
 	if find.ShowFull {
 		shCurField = "sh_cur.raw_dump"
@@ -176,21 +168,17 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.instance,
 			changelog.db_name,
 			changelog.status,
-			changelog.prev_sync_history_id,
 			changelog.sync_history_id,
-			COALESCE(%s, ''),
 			COALESCE(%s, ''),
 			COALESCE(%s, ''),
 			COALESCE(OCTET_LENGTH(sheet_blob.content), 0),
 			changelog.payload
 		FROM changelog
-		LEFT JOIN sync_history sh_pre ON sh_pre.id = changelog.prev_sync_history_id
 		LEFT JOIN sync_history sh_cur ON sh_cur.id = changelog.sync_history_id
 		LEFT JOIN sheet ON sheet.id::text = split_part(changelog.payload->>'sheet', '/', 4)
 		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
 		WHERE TRUE
 	`,
-		shPreField,
 		shCurField,
 		sheetField,
 	))
@@ -246,9 +234,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			&c.InstanceID,
 			&c.DatabaseName,
 			&c.Status,
-			&c.PrevSyncHistoryUID,
 			&c.SyncHistoryUID,
-			&c.PrevSchema,
 			&c.Schema,
 			&c.Statement,
 			&c.StatementSize,

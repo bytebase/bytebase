@@ -7624,15 +7624,6 @@ components:
             - string
           title: schema_size
           format: int64
-        prevSchema:
-          type: string
-          title: prev_schema
-        prevSchemaSize:
-          type:
-            - integer
-            - string
-          title: prev_schema_size
-          format: int64
         taskRun:
           type: string
           title: task_run
