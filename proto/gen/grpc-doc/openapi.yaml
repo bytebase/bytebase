@@ -14513,58 +14513,18 @@ components:
         Task_DatabaseCreate:
             type: object
             properties:
-                project:
-                    type: string
-                    description: |-
-                        The project owning the database.
-                         Format: projects/{project}
-                database:
-                    type: string
-                    description: Database name.
-                table:
-                    type: string
-                    description: Table name.
                 sheet:
                     type: string
                     description: 'Format: projects/{project}/sheets/{sheet}'
-                characterSet:
-                    type: string
-                    description: The character set for the database.
-                collation:
-                    type: string
-                    description: The collation for the database.
-                environment:
-                    type: string
-                    description: The environment the database belongs to.
             description: Payload for creating a new database.
         Task_DatabaseDataExport:
             type: object
             properties:
-                target:
-                    type: string
-                    description: |-
-                        The resource name of the target.
-                         Format: instances/{instance-id}/databases/{database-name}
                 sheet:
                     type: string
                     description: |-
                         The resource name of the sheet.
                          Format: projects/{project}/sheets/{sheet}
-                format:
-                    enum:
-                        - FORMAT_UNSPECIFIED
-                        - CSV
-                        - JSON
-                        - SQL
-                        - XLSX
-                    type: string
-                    description: The format of the exported file.
-                    format: enum
-                password:
-                    type: string
-                    description: |-
-                        The zip password provided by users.
-                         Leave it empty if no needs to encrypt the zip file.
             description: Payload for exporting database data.
         Task_DatabaseUpdate:
             type: object
@@ -14575,9 +14535,6 @@ components:
                 release:
                     type: string
                     description: 'Format: projects/{project}/releases/{release}'
-                schemaVersion:
-                    type: string
-                    description: The target schema version after this update.
             description: Payload for updating a database schema.
         TessellationConfig:
             type: object

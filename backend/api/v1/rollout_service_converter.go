@@ -247,13 +247,7 @@ func convertToTaskFromDatabaseCreate(project *store.ProjectMessage, task *store.
 		Target:        common.FormatInstance(task.InstanceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
-				Project:      "",
-				Database:     task.Payload.GetDatabaseName(),
-				Table:        task.Payload.GetTableName(),
-				Sheet:        common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
-				CharacterSet: task.Payload.GetCharacterSet(),
-				Collation:    task.Payload.GetCollation(),
-				Environment:  common.FormatEnvironment(task.Payload.GetEnvironmentId()),
+				Sheet: common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
 			},
 		},
 	}
@@ -316,10 +310,7 @@ func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *st
 	sheet := common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256())
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
-			Target:   targetDatabaseName,
-			Sheet:    sheet,
-			Format:   convertExportFormat(task.Payload.GetFormat()),
-			Password: &task.Payload.Password,
+			Sheet: sheet,
 		},
 	}
 	stageID := common.FormatStageID(task.Environment)

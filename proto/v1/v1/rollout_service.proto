@@ -397,21 +397,8 @@ message Task {
 
   // Payload for creating a new database.
   message DatabaseCreate {
-    // The project owning the database.
-    // Format: projects/{project}
-    string project = 1;
-    // Database name.
-    string database = 2;
-    // Table name.
-    string table = 3;
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
-    // The character set for the database.
-    string character_set = 5;
-    // The collation for the database.
-    string collation = 6;
-    // The environment the database belongs to.
-    string environment = 7;
   }
 
   // Payload for updating a database schema.
@@ -423,23 +410,13 @@ message Task {
       // Format: projects/{project}/releases/{release}
       string release = 4;
     }
-    // The target schema version after this update.
-    string schema_version = 2;
   }
 
   // Payload for exporting database data.
   message DatabaseDataExport {
-    // The resource name of the target.
-    // Format: instances/{instance-id}/databases/{database-name}
-    string target = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
-    // The format of the exported file.
-    ExportFormat format = 3;
-    // The zip password provided by users.
-    // Leave it empty if no needs to encrypt the zip file.
-    optional string password = 4;
   }
 }
 

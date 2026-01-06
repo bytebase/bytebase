@@ -19,21 +19,6 @@ func (x *Task) Equal(y *Task) bool {
 	if x.SpecId != y.SpecId {
 		return false
 	}
-	if x.EnvironmentId != y.EnvironmentId {
-		return false
-	}
-	if x.DatabaseName != y.DatabaseName {
-		return false
-	}
-	if x.TableName != y.TableName {
-		return false
-	}
-	if x.CharacterSet != y.CharacterSet {
-		return false
-	}
-	if x.Collation != y.Collation {
-		return false
-	}
 	if x.GetSheetSha256() != y.GetSheetSha256() {
 		return false
 	}
@@ -54,12 +39,6 @@ func (x *Task) Equal(y *Task) bool {
 		if x.Flags[k] != y.Flags[k] {
 			return false
 		}
-	}
-	if x.Password != y.Password {
-		return false
-	}
-	if x.Format != y.Format {
-		return false
 	}
 	if x.EnableGhost != y.EnableGhost {
 		return false
