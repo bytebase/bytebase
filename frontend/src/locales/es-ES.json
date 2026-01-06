@@ -1654,11 +1654,7 @@
     "establish-baseline": "Establecer nueva línea base",
     "refreshing": "Refrescando historial...",
     "establish-baseline-description": "Bytebase usará el esquema actual como la nueva línea base. Esto reconciliará el estado actual del esquema con el estado del esquema registrado en Bytebase y corregirá la deriva del esquema informado. Solo debe hacer esto si el esquema actual refleja el estado deseado.",
-    "establish-database-baseline": "Establecer línea base de \"{name}\"",
-    "export": "Exportar historial de cambios",
-    "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
-    "rollback-tip": "Seleccione un historial de DDL específico para revertir.",
-    "task-at": "Tarea el {time}"
+    "establish-database-baseline": "Establecer línea base de \"{name}\""
   },
   "database": {
     "labels": "Etiquetas de base de datos",

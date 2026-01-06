@@ -1654,11 +1654,7 @@
     "establish-baseline": "新しいベースラインを確立する",
     "refreshing": "履歴を更新中...",
     "establish-baseline-description": "Bytebase は、現在のスキーマを新しいベースラインとして使用します。これにより、データベースの現在のスキーマ状態が Bytebase によって記録されたスキーマ状態と同期され、スキーマの逸脱の問題が解決されます。これを行う前に、現在のベースラインが実際に望ましい状態を反映していることを確認する必要があります。",
-    "establish-database-baseline": "ベースライン「{name}」を作成します",
-    "export": "変更履歴のエクスポート",
-    "need-to-select-first": "最初に変更履歴を選択する必要があります",
-    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。",
-    "task-at": "タスク日時 {time}"
+    "establish-database-baseline": "ベースライン「{name}」を作成します"
   },
   "database": {
     "labels": "データベースラベル",
