@@ -5,6 +5,7 @@ node_modules
 components.d.ts
 src/types/plan.yaml
 src/types/iam/*.yaml
+src/types/iam/permission-generated.ts
 
 # local env files
 .env.i18n

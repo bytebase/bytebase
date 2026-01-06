@@ -125,16 +125,15 @@ const hasAnnouncementFeature = featureToRef(
   PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT
 );
 
-const rawAnnouncement = computed(() =>
-  cloneDeep(
+const rawAnnouncement = computed(
+  () =>
     settingV1Store.workspaceProfileSetting?.announcement ??
-      create(AnnouncementSchema, {
-        level: Announcement_AlertLevel.INFO,
-      })
-  )
+    create(AnnouncementSchema, {
+      level: Announcement_AlertLevel.INFO,
+    })
 );
 
-const state = reactive<Announcement>(rawAnnouncement.value);
+const state = reactive<Announcement>(cloneDeep(rawAnnouncement.value));
 
 const allowSave = computed((): boolean => {
   return !isEqual(rawAnnouncement.value, state);
@@ -156,7 +155,7 @@ defineExpose({
   title: props.title,
   update: updateAnnouncementSetting,
   revert: () => {
-    Object.assign(state, rawAnnouncement.value);
+    Object.assign(state, cloneDeep(rawAnnouncement.value));
   },
 });
 </script>
