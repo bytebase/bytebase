@@ -175,8 +175,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.payload
 		FROM changelog
 		LEFT JOIN sync_history sh_cur ON sh_cur.id = changelog.sync_history_id
-		LEFT JOIN sheet ON sheet.id::text = split_part(changelog.payload->>'sheet', '/', 4)
-		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
+		LEFT JOIN sheet_blob ON sheet_blob.sha256 = decode(changelog.payload->>'sheetSha256', 'hex')
 		WHERE TRUE
 	`,
 		shCurField,
