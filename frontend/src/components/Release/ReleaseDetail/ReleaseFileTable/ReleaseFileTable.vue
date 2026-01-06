@@ -5,7 +5,7 @@
     :data="files"
     :row-props="rowProps"
     :striped="true"
-    :row-key="(file) => file.id"
+    :row-key="(file) => file.path"
     :checked-row-keys="selectedFileIds"
     @update:checked-row-keys="(val) => onRowSelected(val as string[])"
   />
@@ -42,8 +42,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-// Track currently selected file IDs, initialize with prop values
-const selectedFileIds = ref<string[]>(props.selectedFiles.map((f) => f.id));
+// Track currently selected file paths, initialize with prop values
+const selectedFileIds = ref<string[]>(props.selectedFiles.map((f) => f.path));
 
 const columnList = computed(() => {
   const columns: (DataTableColumn<Release_File> & {
@@ -117,15 +117,15 @@ const rowProps = (file: Release_File) => {
         // Trigger selection through NDataTable's mechanism
         // We need to maintain the current selection and toggle this file
         const currentSelectedIds = selectedFileIds.value;
-        const fileId = file.id;
+        const filePath = file.path;
 
         let newSelectedIds: string[];
-        if (currentSelectedIds.includes(fileId)) {
+        if (currentSelectedIds.includes(filePath)) {
           // Deselect
-          newSelectedIds = currentSelectedIds.filter((id) => id !== fileId);
+          newSelectedIds = currentSelectedIds.filter((id) => id !== filePath);
         } else {
           // Select
-          newSelectedIds = [...currentSelectedIds, fileId];
+          newSelectedIds = [...currentSelectedIds, filePath];
         }
 
         onRowSelected(newSelectedIds);
@@ -141,7 +141,7 @@ const onRowSelected = (val: string[]) => {
   selectedFileIds.value = val;
   emit(
     "update:selected-files",
-    val.map((id) => props.files.find((f) => f.id === id)!)
+    val.map((path) => props.files.find((f) => f.path === path)!)
   );
 };
 
@@ -149,7 +149,7 @@ const onRowSelected = (val: string[]) => {
 watch(
   () => props.selectedFiles,
   (newFiles) => {
-    selectedFileIds.value = newFiles.map((f) => f.id);
+    selectedFileIds.value = newFiles.map((f) => f.path);
   }
 );
 </script>

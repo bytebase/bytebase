@@ -313,8 +313,6 @@ message Release {
 
   // A SQL file in a release.
   message File {
-    // The unique identifier for the file.
-    string id = 1;
     // The path of the file. e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
 

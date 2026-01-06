@@ -16,11 +16,8 @@ message ReleasePayload {
   SchemaChangeType type = 4;
 
   message File {
-    // The unique identifier for the file.
-    string id = 1;
     // The path of the file, e.g., `2.2/V0001_create_table.sql`.
     string path = 2;
-    reserved 3; // Previously: string sheet (resource name)
     // The SHA256 hash of the sheet content (hex-encoded).
     string sheet_sha256 = 4;
     string version = 6;

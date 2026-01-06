@@ -111,7 +111,7 @@ var File_store_revision_proto protoreflect.FileDescriptor
 
 const file_store_revision_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xef\x01\n" +
+	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xe9\x01\n" +
 	"\x0fRevisionPayload\x123\n" +
 	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12\x12\n" +
@@ -119,7 +119,7 @@ const file_store_revision_proto_rawDesc = "" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
 	"\btask_run\x18\x05 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x124\n" +
-	"\x04type\x18\x06 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04typeJ\x04\b\x03\x10\x04B\x90\x01\n" +
+	"\x04type\x18\x06 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04typeB\x90\x01\n" +
 	"\x12com.bytebase.storeB\rRevisionProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

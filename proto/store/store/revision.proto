@@ -16,7 +16,6 @@ message RevisionPayload {
   // Can be empty.
   string file = 2;
 
-  reserved 3; // Previously: string sheet (resource name)
   // The SHA256 hash of the sheet content (hex-encoded).
   string sheet_sha256 = 4;
 

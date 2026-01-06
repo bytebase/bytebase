@@ -236,7 +236,7 @@ func (s *RevisionService) createRevisions(
 			}
 			foundFile := false
 			for _, f := range release.Payload.Files {
-				if f.Id == fileID {
+				if f.Path == fileID {
 					foundFile = true
 					fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
 					if fileSheet != revision.Sheet {

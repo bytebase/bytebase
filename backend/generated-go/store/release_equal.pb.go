@@ -10,9 +10,6 @@ func (x *ReleasePayload_File) Equal(y *ReleasePayload_File) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Id != y.Id {
-		return false
-	}
 	if x.Path != y.Path {
 		return false
 	}

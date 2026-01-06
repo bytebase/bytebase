@@ -947,8 +947,6 @@ func (x *CheckReleaseResponse_CheckResult) GetRiskLevel() RiskLevel {
 // A SQL file in a release.
 type Release_File struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The unique identifier for the file.
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The path of the file. e.g., `2.2/V0001_create_table.sql`.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// The version identifier for the file.
@@ -997,13 +995,6 @@ func (x *Release_File) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Release_File.ProtoReflect.Descriptor instead.
 func (*Release_File) Descriptor() ([]byte, []int) {
 	return file_v1_release_service_proto_rawDescGZIP(), []int{11, 0}
-}
-
-func (x *Release_File) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
 }
 
 func (x *Release_File) GetPath() string {
@@ -1164,7 +1155,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
 	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xbd\x06\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xad\x06\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12/\n" +
@@ -1176,9 +1167,8 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
 	"\x06digest\x18\b \x01(\tR\x06digest\x12-\n" +
-	"\x04type\x18\t \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xe1\x01\n" +
-	"\x04File\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04type\x18\t \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xd1\x01\n" +
+	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
 	"\fenable_ghost\x18\t \x01(\bR\venableGhost\x12-\n" +
