@@ -484,6 +484,16 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
 	}
 
+	// Get database driver once for all files
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunUID: &taskRunUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
+	}
+	defer driver.Close(ctx)
+
 	var migrationErr error
 
 	// Execute unapplied files in order
@@ -518,16 +528,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			},
 		})
 
-		// Get database driver
-		driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-			TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-			TaskRunUID: &taskRunUID,
-		})
-		if err != nil {
-			migrationErr = errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
-			break
-		}
-
 		slog.Debug("Start migration...",
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
@@ -536,19 +536,12 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 		// Execute the SQL
 		_, err = driver.Execute(driverCtx, sheet.Statement, opts)
-		driver.Close(ctx)
-
 		if err != nil {
 			migrationErr = errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
 			break
 		}
 
 		// Create revision for this file
-		slog.Debug("Post migration...",
-			slog.String("instance", instance.ResourceID),
-			slog.String("database", database.DatabaseName),
-		)
-
 		r := &store.RevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
