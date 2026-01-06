@@ -74,10 +74,6 @@ roles:
       - bb.revisions.delete
       - bb.revisions.get
       - bb.revisions.list
-      - bb.risks.create
-      - bb.risks.delete
-      - bb.risks.list
-      - bb.risks.update
       - bb.roles.create
       - bb.roles.delete
       - bb.roles.list
@@ -187,10 +183,6 @@ roles:
       - bb.revisions.delete
       - bb.revisions.get
       - bb.revisions.list
-      - bb.risks.create
-      - bb.risks.delete
-      - bb.risks.list
-      - bb.risks.update
       - bb.roles.create
       - bb.roles.delete
       - bb.roles.list
@@ -229,7 +221,6 @@ roles:
       - bb.policies.list
       - bb.reviewConfigs.get
       - bb.reviewConfigs.list
-      - bb.risks.list
       - bb.roles.list
       - bb.roles.get
       - bb.settings.get

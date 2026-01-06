@@ -75,10 +75,6 @@ const (
 	PermissionRevisionsDelete         Permission = "bb.revisions.delete"
 	PermissionRevisionsGet            Permission = "bb.revisions.get"
 	PermissionRevisionsList           Permission = "bb.revisions.list"
-	PermissionRisksCreate             Permission = "bb.risks.create"
-	PermissionRisksDelete             Permission = "bb.risks.delete"
-	PermissionRisksList               Permission = "bb.risks.list"
-	PermissionRisksUpdate             Permission = "bb.risks.update"
 	PermissionRolesCreate             Permission = "bb.roles.create"
 	PermissionRolesDelete             Permission = "bb.roles.delete"
 	PermissionRolesList               Permission = "bb.roles.list"
@@ -192,10 +188,6 @@ var allPermissions = []Permission{
 	PermissionRevisionsDelete,
 	PermissionRevisionsGet,
 	PermissionRevisionsList,
-	PermissionRisksCreate,
-	PermissionRisksDelete,
-	PermissionRisksList,
-	PermissionRisksUpdate,
 	PermissionRolesCreate,
 	PermissionRolesDelete,
 	PermissionRolesList,
