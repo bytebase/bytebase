@@ -243,7 +243,8 @@ type LocalState = {
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, planCheckRuns, events, readonly } = usePlanContext();
+const { isCreating, plan, planCheckRuns, events, readonly, allowEdit } =
+  usePlanContext();
 const { selectedSpec, getDatabaseTargets, targets } = useSelectedSpec();
 const editorState = useEditorState();
 
@@ -339,7 +340,7 @@ const shouldShowEditButton = computed(() => {
   if (plan.value.hasRollout) {
     return false;
   }
-  return true;
+  return allowEdit.value;
 });
 
 const allowSaveSQL = computed((): boolean => {

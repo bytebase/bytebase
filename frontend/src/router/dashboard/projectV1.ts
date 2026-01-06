@@ -160,10 +160,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "masking-exemption",
         meta: {
           title: () => t("project.masking-exemption.self"),
-          requiredPermissionList: () => [
-            "bb.databases.list",
-            "bb.policies.get",
-          ],
+          requiredPermissionList: () => ["bb.databases.get", "bb.policies.get"],
         },
         props: true,
         children: [
@@ -181,7 +178,10 @@ const projectV1Routes: RouteRecordRaw[] = [
               import("@/views/project/ProjectMaskingExemptionCreate.vue"),
             props: true,
             meta: {
-              requiredPermissionList: () => ["bb.policies.create"],
+              requiredPermissionList: () => [
+                "bb.policies.create",
+                "bb.databases.list",
+              ],
             },
           },
         ],

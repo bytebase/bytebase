@@ -76,17 +76,21 @@ import { computed, reactive, watch } from "vue";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { planServiceClientConnect } from "@/connect";
-import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import {
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContext } from "../../logic";
 
-const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, readonly, issue } = usePlanContext();
+const {
+  isCreating,
+  plan,
+  readonly,
+  issue,
+  allowEdit: hasPermission,
+} = usePlanContext();
 const { refreshResources } = useResourcePoller();
 
 const state = reactive({
@@ -108,13 +112,7 @@ const allowEdit = computed(() => {
   if (!issue.value && plan.value.hasRollout) {
     return false;
   }
-  if (extractUserId(plan.value.creator) === currentUser.value.email) {
-    return true;
-  }
-  if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
-    return true;
-  }
-  return false;
+  return hasPermission.value;
 });
 
 const handleExpand = (event: MouseEvent) => {

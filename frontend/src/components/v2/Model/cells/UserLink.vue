@@ -15,7 +15,7 @@
 <script lang="tsx" setup>
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
-import { usePermissionStore } from "@/store";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -29,9 +29,7 @@ const props = withDefaults(
   }
 );
 
-const permissionStore = usePermissionStore();
-
 const isLink = computed(
-  () => props.link && !permissionStore.onlyWorkspaceMember
+  () => props.link && hasWorkspacePermissionV2("bb.users.get")
 );
 </script>

@@ -1,10 +1,13 @@
 import type Emittery from "emittery";
 import { v4 as uuidv4 } from "uuid";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
-import { inject, provide } from "vue";
+import { computed, inject, provide } from "vue";
+import { useCurrentProjectV1, useCurrentUserV1 } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import { type Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { hasProjectPermissionV2 } from "@/utils";
 import type {
   IssueReviewAction,
   IssueStatusAction,
@@ -32,10 +35,15 @@ export type PlanContext = {
   taskRuns: Ref<TaskRun[]>;
 
   readonly: ComputedRef<boolean>;
+  allowEdit: ComputedRef<boolean>;
+  project: ComputedRef<Project>;
+  isCreator: ComputedRef<boolean>;
 
   // UI events
   events: PlanEvents;
 };
+
+type InitPlanContext = Omit<PlanContext, "allowEdit" | "project" | "isCreator">;
 
 const KEY = Symbol(`bb.plan.context.${uuidv4()}`) as InjectionKey<PlanContext>;
 
@@ -76,7 +84,28 @@ export const usePlanContextWithRollout = () => {
   };
 };
 
-export const providePlanContext = (context: PlanContext) => {
-  provide(KEY, context as PlanContext);
-  return context as PlanContext;
+export const providePlanContext = (context: InitPlanContext) => {
+  const isCreator = computed(() => {
+    const currentUser = useCurrentUserV1();
+    return context.plan.value.creator === currentUser.value.name;
+  });
+
+  const { project } = useCurrentProjectV1();
+
+  const allowEdit = computed(() => {
+    if (isCreator.value) {
+      return true;
+    }
+    return hasProjectPermissionV2(project.value, "bb.plans.update");
+  });
+
+  const planContext = {
+    ...context,
+    isCreator,
+    project,
+    allowEdit,
+  } as PlanContext;
+
+  provide(KEY, planContext);
+  return planContext;
 };

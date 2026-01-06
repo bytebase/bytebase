@@ -95,7 +95,7 @@ import { useSelectedSpec } from "./context";
 const router = useRouter();
 const dialog = useDialog();
 const { t } = useI18n();
-const { plan, isCreating } = usePlanContext();
+const { plan, isCreating, allowEdit } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const { selectedSpec } = useSelectedSpec();
 const { project } = useCurrentProjectV1();
@@ -109,7 +109,10 @@ const showAddSpecDrawer = ref(false);
 // 2. Plan is being created (isCreating = true), OR plan has no rollout
 const canModifySpecs = computed(() => {
   if (plan.value.state === State.DELETED) return false;
-  return isCreating.value || !plan.value.hasRollout;
+  if (isCreating.value) {
+    return true;
+  }
+  return allowEdit.value && !plan.value.hasRollout;
 });
 
 const handleTabChange = (specId: string) => {

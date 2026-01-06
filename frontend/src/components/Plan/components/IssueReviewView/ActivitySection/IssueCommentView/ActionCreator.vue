@@ -1,24 +1,19 @@
 <template>
-  <component
-    :is="'router-link'"
-    v-if="userEmail !== userStore.systemBotUser?.email"
-    v-bind="bindings"
-    class="font-semibold text-gray-900 whitespace-nowrap hover:underline"
-  >
-    {{ user?.title }}
-  </component>
-  <div v-else class="inline-flex items-center gap-1">
+  <div v-if="userEmail === userStore.systemBotUser?.email" class="inline-flex items-center gap-1">
     <span class="font-medium text-main whitespace-nowrap">
       {{ user?.title }}
     </span>
     <SystemBotTag />
   </div>
+  <UserLink v-else-if="user" :title="user.title" :email="user.email" />
+  <span v-else class="font-medium text-main whitespace-nowrap">-</span>
 </template>
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
+import { UserLink } from "@/components/v2/Model/cells";
 import { extractUserId, useUserStore } from "@/store";
 
 const props = defineProps<{
@@ -34,16 +29,5 @@ const userEmail = computed(() => {
 
 const user = computedAsync(() => {
   return userStore.getOrFetchUserByIdentifier(props.creator);
-});
-
-const bindings = computed(() => {
-  return {
-    to: `/users/${userEmail.value}`,
-    activeClass: "",
-    exactActiveClass: "",
-    onClick: (e: MouseEvent) => {
-      e.stopPropagation();
-    },
-  };
 });
 </script>

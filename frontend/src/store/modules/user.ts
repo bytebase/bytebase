@@ -189,14 +189,21 @@ export const useUserStore = defineStore("user", () => {
       return validList.map(getUserByIdentifier);
     }
 
-    const request = create(BatchGetUsersRequestSchema, {
-      names: pendingFetch,
-    });
-    const response = await userServiceClientConnect.batchGetUsers(request);
-    for (const user of response.users) {
-      setUser(user);
+    try {
+      const request = create(BatchGetUsersRequestSchema, {
+        names: pendingFetch,
+      });
+      const response = await userServiceClientConnect.batchGetUsers(request, {
+        contextValues: createContextValues().set(silentContextKey, true),
+      });
+      for (const user of response.users) {
+        setUser(user);
+      }
+    } finally {
+      return validList.map(
+        (name) => getUserByIdentifier(name) ?? unknownUser(name)
+      );
     }
-    return validList.map((name) => getUserByIdentifier(name));
   };
 
   const getOrFetchUserByIdentifier = async (
@@ -214,7 +221,9 @@ export const useUserStore = defineStore("user", () => {
     }
     const cached = userRequestCache.get(fullname);
     if (cached) return cached;
-    const request = fetchUser(fullname, silent).then((user) => setUser(user));
+    const request = fetchUser(fullname, silent)
+      .then((user) => setUser(user))
+      .catch(() => unknownUser(fullname));
     userRequestCache.set(fullname, request);
     return request;
   };

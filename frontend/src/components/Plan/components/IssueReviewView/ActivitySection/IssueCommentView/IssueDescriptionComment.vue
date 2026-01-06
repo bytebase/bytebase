@@ -77,7 +77,7 @@ import { usePlanContext } from "@/components/Plan/logic";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { issueServiceClientConnect } from "@/connect";
 import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
-import { getTimeForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueSchema,
@@ -111,7 +111,10 @@ const createTime = computed((): Timestamp | undefined => {
 });
 
 const creator = computed(() => {
-  return userStore.getUserByIdentifier(creatorName.value);
+  return (
+    userStore.getUserByIdentifier(creatorName.value) ??
+    unknownUser(creatorName.value)
+  );
 });
 
 const description = computed(() => {

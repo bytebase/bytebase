@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
+import { extractUserId } from "@/store/modules/v1/common";
 import { SYSTEM_BOT_EMAIL } from "../common";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
@@ -19,12 +20,18 @@ export const emptyUser = (): User => {
   });
 };
 
-export const unknownUser = (): User => {
-  return {
-    ...emptyUser(),
-    name: UNKNOWN_USER_NAME,
-    title: "<<Unknown user>>",
-  };
+export const unknownUser = (name: string = ""): User => {
+  const empty = emptyUser();
+  if (name) {
+    empty.name = name;
+    const email = extractUserId(name);
+    empty.email = email;
+    empty.title = email;
+  } else {
+    empty.name = UNKNOWN_USER_NAME;
+    empty.title = "<<Unknown user>>";
+  }
+  return empty;
 };
 
 export const ALL_USERS_USER_EMAIL = "allUsers";

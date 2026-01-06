@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import Emittery from "emittery";
 import { cloneDeep } from "lodash-es";
 import {
+  type ComputedRef,
   computed,
   type InjectionKey,
   inject,
@@ -11,16 +12,14 @@ import {
 } from "vue";
 import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/connect";
-import { extractUserId, useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   type Plan,
   type Plan_Spec,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 
 const KEY = Symbol(
@@ -36,12 +35,10 @@ export const providePreBackupSettingContext = (refs: {
   project: Ref<Project>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
-  issue?: Ref<Issue | undefined>;
-  readonly?: Ref<boolean>;
+  allowChange: ComputedRef<boolean>;
 }) => {
-  const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
-  const { isCreating, project, plan, selectedSpec, issue, readonly } = refs;
+  const { isCreating, plan, selectedSpec, allowChange } = refs;
 
   const events = new Emittery<{
     update: never;
@@ -74,40 +71,6 @@ export const providePreBackupSettingContext = (refs: {
       }
     }
     return true;
-  });
-
-  const allowChange = computed((): boolean => {
-    // If readonly mode, disallow changes
-    if (readonly?.value) {
-      return false;
-    }
-
-    // Allow toggle pre-backup when creating.
-    if (isCreating.value) {
-      return true;
-    }
-
-    // Disallow changes if the plan has started rollout.
-    if (unref(plan).hasRollout) {
-      return false;
-    }
-
-    // If issue is not open, disallow.
-    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
-      return false;
-    }
-
-    // Allowed to the plan/issue creator.
-    if (currentUser.value.email === extractUserId(unref(plan).creator)) {
-      return true;
-    }
-
-    // Allowed to the permission holder.
-    if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
-      return true;
-    }
-
-    return false;
   });
 
   const enabled = computed((): boolean => {
