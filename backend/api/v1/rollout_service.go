@@ -932,6 +932,10 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 			if cancelFunc, ok := s.bus.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
 				cancelFunc.(context.CancelFunc)()
 			}
+			// Broadcast cancel signal to all replicas for HA.
+			if err := s.store.SendSignal(ctx, store.SignalTypeCancelTaskRun, taskRun.ID); err != nil {
+				slog.Warn("failed to send cancel signal", log.BBError(err))
+			}
 		}
 	}
 
