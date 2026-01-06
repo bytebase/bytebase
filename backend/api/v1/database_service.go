@@ -355,12 +355,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				return nil, errors.Errorf("instance %q not found", databaseMessage.InstanceID)
 			}
 			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
-				InstanceID:   databaseMessage.InstanceID,
-				DatabaseName: databaseMessage.DatabaseName,
-				Status:       store.ChangelogStatusDone,
-				// TODO(d): Revisit the previous sync history UID.
-				PrevSyncHistoryUID: &syncHistory,
-				SyncHistoryUID:     &syncHistory,
+				InstanceID:     databaseMessage.InstanceID,
+				DatabaseName:   databaseMessage.DatabaseName,
+				Status:         store.ChangelogStatusDone,
+				SyncHistoryUID: &syncHistory,
 				Payload: &storepb.ChangelogPayload{
 					Type:        storepb.ChangelogPayload_BASELINE,
 					GitCommit:   s.profile.GitCommit,

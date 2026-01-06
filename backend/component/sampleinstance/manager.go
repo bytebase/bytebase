@@ -293,11 +293,10 @@ func (m *Manager) generateInstance(
 	}
 
 	if _, err := m.store.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:         testDatabase.InstanceID,
-		DatabaseName:       dbName,
-		Status:             store.ChangelogStatusDone,
-		PrevSyncHistoryUID: &syncHistory,
-		SyncHistoryUID:     &syncHistory,
+		InstanceID:     testDatabase.InstanceID,
+		DatabaseName:   dbName,
+		Status:         store.ChangelogStatusDone,
+		SyncHistoryUID: &syncHistory,
 		Payload: &storepb.ChangelogPayload{
 			Type:        storepb.ChangelogPayload_BASELINE,
 			GitCommit:   m.profile.GitCommit,

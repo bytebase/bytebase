@@ -96,7 +96,12 @@ DROP SCHEMA IF EXISTS "schema_a";
 	}))
 	a.NoError(err)
 	changelogs := resp.Msg.Changelogs
-	a.Equal(1, len(changelogs))
+	// Expect 2 changelogs: baseline (auto-created on first migration) + migration
+	a.Equal(2, len(changelogs))
+	// First changelog should be the migration (most recent)
+	a.Equal(v1pb.Changelog_MIGRATE, changelogs[0].Type)
+	// Second changelog should be the baseline
+	a.Equal(v1pb.Changelog_BASELINE, changelogs[1].Type)
 
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase")
 	a.NoError(err)

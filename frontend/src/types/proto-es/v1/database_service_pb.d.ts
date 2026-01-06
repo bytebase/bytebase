@@ -3071,16 +3071,6 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   schemaSize: bigint;
 
   /**
-   * @generated from field: string prev_schema = 9;
-   */
-  prevSchema: string;
-
-  /**
-   * @generated from field: int64 prev_schema_size = 10;
-   */
-  prevSchemaSize: bigint;
-
-  /**
    * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string task_run = 11;

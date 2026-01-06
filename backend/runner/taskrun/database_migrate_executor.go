@@ -75,6 +75,11 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Wrapf(err, "failed to get project")
 	}
 
+	// Ensure baseline changelog exists before running any migration
+	if err := exec.ensureBaselineChangelog(ctx, database, instance); err != nil {
+		return nil, errors.Wrap(err, "failed to ensure baseline changelog")
+	}
+
 	// Check if this is a release-based task
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
 		// Parse release name to get project ID and release UID
@@ -116,6 +121,45 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID, sheet, instance, database, project)
 	}
 	return exec.runStandardMigration(ctx, driverCtx, task, taskRunUID, sheet, instance, database, project)
+}
+
+// ensureBaselineChangelog creates a baseline changelog if this is the first migration for the database.
+func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, instance *store.InstanceMessage) error {
+	// Check if this database has any existing changelogs
+	limit := 1
+	existingChangelogs, err := exec.store.ListChangelogs(ctx, &store.FindChangelogMessage{
+		InstanceID:   &database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		Limit:        &limit,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to check for existing changelogs")
+	}
+
+	// If no changelogs exist, create a baseline with the current schema
+	if len(existingChangelogs) == 0 {
+		baselineSyncHistoryUID, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+		if err != nil {
+			return errors.Wrapf(err, "failed to sync database schema for baseline")
+		}
+
+		_, err = exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+			InstanceID:     database.InstanceID,
+			DatabaseName:   database.DatabaseName,
+			Status:         store.ChangelogStatusDone,
+			SyncHistoryUID: &baselineSyncHistoryUID,
+			Payload: &storepb.ChangelogPayload{
+				Type:        storepb.ChangelogPayload_BASELINE,
+				GitCommit:   exec.profile.GitCommit,
+				DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+			},
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to create baseline changelog")
+		}
+	}
+
+	return nil
 }
 
 func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
@@ -187,8 +231,8 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 
 	// Begin migration - dump before migration
 	changelogUID, err := beginMigration(
-		ctx, exec.store, exec.schemaSyncer, database,
-		taskRunName, "", needDump, opts,
+		ctx, exec.store, database,
+		taskRunName, "",
 		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
 	)
 	if err != nil {
@@ -291,8 +335,8 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 
 	// Begin migration - dump before migration
 	changelogUID, err := beginMigration(
-		ctx, exec.store, exec.schemaSyncer, database,
-		taskRunName, "", needDump, opts,
+		ctx, exec.store, database,
+		taskRunName, "",
 		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
 	)
 	if err != nil {
@@ -465,8 +509,8 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 		// Begin migration - dump before migration
 		changelogUID, err := beginMigration(
-			ctx, exec.store, exec.schemaSyncer, database,
-			taskRunName, version, needDump, opts,
+			ctx, exec.store, database,
+			taskRunName, version,
 			storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheetSha256,
 		)
 		if err != nil {
@@ -627,8 +671,8 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	// Begin migration - dump before migration
 	// Note: For declarative releases, we pass empty version string (revisions are not version-tracked)
 	changelogUID, err := beginMigration(
-		ctx, exec.store, exec.schemaSyncer, database,
-		taskRunName, "", needDump, opts,
+		ctx, exec.store, database,
+		taskRunName, "",
 		storepb.ChangelogPayload_SDL, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
 	)
 	if err != nil {
@@ -1129,42 +1173,25 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 	return previousUserSDLText, previousSchema, nil
 }
 
-// beginMigration inserts a migration history record with pending status and optionally syncs schema before migration.
+// beginMigration inserts a migration history record with pending status.
 // Returns (changelogUID, error).
 func beginMigration(
 	ctx context.Context,
 	stores *store.Store,
-	syncer *schemasync.Syncer,
 	database *store.DatabaseMessage,
 	taskRunName string,
 	version string,
-	needDump bool,
-	opts db.ExecuteOptions,
 	changelogType storepb.ChangelogPayload_Type,
 	dumpVersion int32,
 	gitCommit string,
 	sheetSha256 string,
 ) (int64, error) {
-	// sync history
-	var syncHistoryPrevUID *int64
-	if needDump {
-		opts.LogDatabaseSyncStart()
-		syncHistoryPrev, err := syncer.SyncDatabaseSchemaToHistory(ctx, database)
-		if err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			return 0, errors.Wrapf(err, "failed to sync database metadata and schema")
-		}
-		opts.LogDatabaseSyncEnd("")
-		syncHistoryPrevUID = &syncHistoryPrev
-	}
-
 	// create pending changelog
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:         database.InstanceID,
-		DatabaseName:       database.DatabaseName,
-		Status:             store.ChangelogStatusPending,
-		PrevSyncHistoryUID: syncHistoryPrevUID,
-		SyncHistoryUID:     nil,
+		InstanceID:     database.InstanceID,
+		DatabaseName:   database.DatabaseName,
+		Status:         store.ChangelogStatusPending,
+		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     taskRunName,
 			SheetSha256: sheetSha256,
