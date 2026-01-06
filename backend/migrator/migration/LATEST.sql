@@ -526,8 +526,6 @@ ALTER SEQUENCE release_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_release_project ON release(project);
 
-CREATE UNIQUE INDEX idx_release_unique_project_digest ON release(project, digest) WHERE digest != '';
-
 -- OAuth2 tables
 CREATE TABLE oauth2_client (
     client_id text PRIMARY KEY,

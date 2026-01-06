@@ -103,77 +103,6 @@ export declare type ListReleasesResponse = Message<"bytebase.v1.ListReleasesResp
 export declare const ListReleasesResponseSchema: GenMessage<ListReleasesResponse>;
 
 /**
- * @generated from message bytebase.v1.SearchReleasesRequest
- */
-export declare type SearchReleasesRequest = Message<"bytebase.v1.SearchReleasesRequest"> & {
-  /**
-   * Format: projects/{project}
-   *
-   * @generated from field: string parent = 1;
-   */
-  parent: string;
-
-  /**
-   * The maximum number of releases to return. The service may return fewer than this value.
-   * If unspecified, at most 10 releases will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * A page token, received from a previous `ListReleases` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListReleases` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
-   * Search by the digest of the release.
-   *
-   * @generated from field: optional string digest = 4;
-   */
-  digest?: string;
-};
-
-/**
- * Describes the message bytebase.v1.SearchReleasesRequest.
- * Use `create(SearchReleasesRequestSchema)` to create a new message.
- */
-export declare const SearchReleasesRequestSchema: GenMessage<SearchReleasesRequest>;
-
-/**
- * @generated from message bytebase.v1.SearchReleasesResponse
- */
-export declare type SearchReleasesResponse = Message<"bytebase.v1.SearchReleasesResponse"> & {
-  /**
-   * The releases matching the search criteria.
-   *
-   * @generated from field: repeated bytebase.v1.Release releases = 1;
-   */
-  releases: Release[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message bytebase.v1.SearchReleasesResponse.
- * Use `create(SearchReleasesResponseSchema)` to create a new message.
- */
-export declare const SearchReleasesResponseSchema: GenMessage<SearchReleasesResponse>;
-
-/**
  * @generated from message bytebase.v1.CreateReleaseRequest
  */
 export declare type CreateReleaseRequest = Message<"bytebase.v1.CreateReleaseRequest"> & {
@@ -617,17 +546,6 @@ export declare const ReleaseService: GenService<{
     methodKind: "unary";
     input: typeof ListReleasesRequestSchema;
     output: typeof ListReleasesResponseSchema;
-  },
-  /**
-   * Searches releases by digest or other criteria.
-   * Permissions required: bb.releases.get
-   *
-   * @generated from rpc bytebase.v1.ReleaseService.SearchReleases
-   */
-  searchReleases: {
-    methodKind: "unary";
-    input: typeof SearchReleasesRequestSchema;
-    output: typeof SearchReleasesResponseSchema;
   },
   /**
    * Creates a new release with SQL files.

@@ -28,7 +28,6 @@ type ReleaseMessage struct {
 type FindReleaseMessage struct {
 	ProjectID   *string
 	UID         *int64
-	Digest      *string
 	Limit       *int
 	Offset      *int
 	ShowDeleted bool
@@ -126,9 +125,6 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	}
 	if v := find.UID; v != nil {
 		q.And("id = ?", *v)
-	}
-	if v := find.Digest; v != nil {
-		q.And("digest = ?", *v)
 	}
 	if !find.ShowDeleted {
 		q.And("deleted = ?", false)

@@ -36,15 +36,6 @@ service ReleaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Searches releases by digest or other criteria.
-  // Permissions required: bb.releases.get
-  rpc SearchReleases(SearchReleasesRequest) returns (SearchReleasesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/releases:search"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.releases.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   // Creates a new release with SQL files.
   // Permissions required: bb.releases.create
   rpc CreateRelease(CreateReleaseRequest) returns (Release) {
@@ -132,38 +123,6 @@ message ListReleasesRequest {
 
 message ListReleasesResponse {
   // The releases from the specified request.
-  repeated Release releases = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message SearchReleasesRequest {
-  // Format: projects/{project}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
-  ];
-
-  // The maximum number of releases to return. The service may return fewer than this value.
-  // If unspecified, at most 10 releases will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
-
-  // A page token, received from a previous `ListReleases` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListReleases` must match
-  // the call that provided the page token.
-  string page_token = 3;
-
-  // Search by the digest of the release.
-  optional string digest = 4;
-}
-
-message SearchReleasesResponse {
-  // The releases matching the search criteria.
   repeated Release releases = 1;
 
   // A token, which can be sent as `page_token` to retrieve the next page.
