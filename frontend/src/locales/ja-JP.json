@@ -375,7 +375,6 @@
       "schema-dump": "スキーマダンプ",
       "command-execute": "コマンド実行",
       "database-sync": "データベース同期",
-      "status-update": "ステータスアップデート",
       "transaction": "取引",
       "prior-backup": "事前のバックアップ",
       "retry": "リトライ",
@@ -385,9 +384,6 @@
     "log-detail": {
       "dumping": "ダンピング...",
       "syncing": "同期中...",
-      "waiting-to-execute": "実行待ち",
-      "executing": "実行中",
-      "status-changed": "ステータスが変更されました",
       "backup-completed": "完了しました（{count} テーブル）",
       "backing-up": "バックアップ中...",
       "retry-attempt": "試行 {current}/{max}",
@@ -1120,7 +1116,6 @@
         "entry-type": {
           "command-execute": "コマンド実行",
           "schema-dump": "スキーマダンプ",
-          "task-run-status-update": "ステータスアップデート",
           "transaction-control": "トランザクション制御",
           "database-sync": "データベースの同期",
           "prior-backup": "事前のバックアップ",

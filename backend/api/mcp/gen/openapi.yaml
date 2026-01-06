@@ -16184,10 +16184,6 @@ components:
           title: database_sync
           description: Database sync details (if type is DATABASE_SYNC).
           $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.DatabaseSync'
-        taskRunStatusUpdate:
-          title: task_run_status_update
-          description: Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
-          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate'
         transactionControl:
           title: transaction_control
           description: Transaction control details (if type is TRANSACTION_CONTROL).
@@ -16431,24 +16427,6 @@ components:
       title: SchemaDump
       additionalProperties: false
       description: Schema dump operation details.
-    bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate:
-      type: object
-      properties:
-        status:
-          title: status
-          description: The new status.
-          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status'
-      title: TaskRunStatusUpdate
-      additionalProperties: false
-      description: Task run status update details.
-    bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status:
-      type: string
-      title: Status
-      enum:
-        - STATUS_UNSPECIFIED
-        - RUNNING_WAITING
-        - RUNNING_RUNNING
-      description: Internal status for task run execution.
     bytebase.v1.TaskRunLogEntry.TransactionControl:
       type: object
       properties:
@@ -16480,7 +16458,6 @@ components:
         - SCHEMA_DUMP
         - COMMAND_EXECUTE
         - DATABASE_SYNC
-        - TASK_RUN_STATUS_UPDATE
         - TRANSACTION_CONTROL
         - PRIOR_BACKUP
         - RETRY_INFO

@@ -1416,17 +1416,9 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate"><span class="badge">M</span>TaskRunLog.TaskRunStatusUpdate</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.TaskRunLog.TransactionControl"><span class="badge">M</span>TaskRunLog.TransactionControl</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status"><span class="badge">E</span>TaskRunLog.TaskRunStatusUpdate.Status</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.store.TaskRunLog.TransactionControl.Type"><span class="badge">E</span>TaskRunLog.TransactionControl.Type</a>
@@ -13144,13 +13136,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>task_run_status_update</td>
-                  <td><a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate">TaskRunLog.TaskRunStatusUpdate</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>transaction_control</td>
                   <td><a href="#bytebase.store.TaskRunLog.TransactionControl">TaskRunLog.TransactionControl</a></td>
                   <td></td>
@@ -13478,30 +13463,6 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
 
         
       
-        <h3 id="bytebase.store.TaskRunLog.TaskRunStatusUpdate">TaskRunLog.TaskRunStatusUpdate</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status">TaskRunLog.TaskRunStatusUpdate.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.TaskRunLog.TransactionControl">TaskRunLog.TransactionControl</h3>
         <p></p>
 
@@ -13534,35 +13495,6 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
         
       
 
-      
-        <h3 id="bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status">TaskRunLog.TaskRunStatusUpdate.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING_WAITING</td>
-                <td>1</td>
-                <td><p>The task run is ready to be executed by the scheduler.</p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING_RUNNING</td>
-                <td>2</td>
-                <td><p>The task run is being executed by the scheduler.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.store.TaskRunLog.TransactionControl.Type">TaskRunLog.TransactionControl.Type</h3>
         <p></p>
@@ -13646,12 +13578,6 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
               <tr>
                 <td>DATABASE_SYNC_END</td>
                 <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TASK_RUN_STATUS_UPDATE</td>
-                <td>7</td>
                 <td><p></p></td>
               </tr>
             

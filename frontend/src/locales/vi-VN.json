@@ -375,7 +375,6 @@
       "schema-dump": "Sơ đồ đổ",
       "command-execute": "Lệnh thực thi",
       "database-sync": "Đồng bộ cơ sở dữ liệu",
-      "status-update": "Cập nhật trạng thái",
       "transaction": "Giao dịch",
       "prior-backup": "Sao lưu trước",
       "retry": "Thử lại",
@@ -385,9 +384,6 @@
     "log-detail": {
       "dumping": "đổ rác...",
       "syncing": "đang đồng bộ hóa...",
-      "waiting-to-execute": "chờ đợi để thực hiện",
-      "executing": "thực hiện",
-      "status-changed": "trạng thái đã thay đổi",
       "backup-completed": "đã hoàn thành ({count} bảng)",
       "backing-up": "đang sao lưu...",
       "retry-attempt": "nỗ lực {current}/{max}",
@@ -1120,7 +1116,6 @@
         "entry-type": {
           "command-execute": "Thực thi lệnh",
           "schema-dump": "Kết xuất lược đồ",
-          "task-run-status-update": "Cập nhật trạng thái",
           "transaction-control": "Kiểm soát giao dịch",
           "database-sync": "Đồng bộ cơ sở dữ liệu",
           "prior-backup": "Sao lưu trước",

@@ -78,13 +78,6 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int)
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
-	s.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
-		TaskRunStatusUpdate: &storepb.TaskRunLog_TaskRunStatusUpdate{
-			Status: storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING,
-		},
-	})
-
 	go s.runTaskRunOnce(ctx, taskRunUID, task, executor)
 	return nil
 }

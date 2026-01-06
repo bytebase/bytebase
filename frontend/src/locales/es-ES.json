@@ -375,7 +375,6 @@
       "schema-dump": "Volcado de esquema",
       "command-execute": "Comando Ejecutar",
       "database-sync": "Sincronización de bases de datos",
-      "status-update": "Actualización de estado",
       "transaction": "Transacción",
       "prior-backup": "Copia de seguridad previa",
       "retry": "Rever",
@@ -385,9 +384,6 @@
     "log-detail": {
       "dumping": "dumping...",
       "syncing": "sincronizando...",
-      "waiting-to-execute": "esperando para ejecutar",
-      "executing": "ejecutando",
-      "status-changed": "estado cambiado",
       "backup-completed": "completadas ({count} tablas)",
       "backing-up": "haciendo copia de seguridad...",
       "retry-attempt": "intento {current}/{max}",
@@ -1120,7 +1116,6 @@
         "entry-type": {
           "command-execute": "ejecutar comando",
           "schema-dump": "Volcado de esquema",
-          "task-run-status-update": "Actualización de estado",
           "transaction-control": "Control de transacciones",
           "database-sync": "Sincronización de base de datos",
           "prior-backup": "Copia de seguridad previa",

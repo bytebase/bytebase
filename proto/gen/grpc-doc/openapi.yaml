@@ -14299,7 +14299,6 @@ components:
                         - SCHEMA_DUMP
                         - COMMAND_EXECUTE
                         - DATABASE_SYNC
-                        - TASK_RUN_STATUS_UPDATE
                         - TRANSACTION_CONTROL
                         - PRIOR_BACKUP
                         - RETRY_INFO
@@ -14327,10 +14326,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunLogEntry_DatabaseSync'
                     description: Database sync details (if type is DATABASE_SYNC).
-                taskRunStatusUpdate:
-                    allOf:
-                        - $ref: '#/components/schemas/TaskRunLogEntry_TaskRunStatusUpdate'
-                    description: Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
                 transactionControl:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunLogEntry_TransactionControl'
@@ -14462,18 +14457,6 @@ components:
                     type: string
                     description: Error message if the schema dump failed.
             description: Schema dump operation details.
-        TaskRunLogEntry_TaskRunStatusUpdate:
-            type: object
-            properties:
-                status:
-                    enum:
-                        - STATUS_UNSPECIFIED
-                        - RUNNING_WAITING
-                        - RUNNING_RUNNING
-                    type: string
-                    description: The new status.
-                    format: enum
-            description: Task run status update details.
         TaskRunLogEntry_TransactionControl:
             type: object
             properties:
