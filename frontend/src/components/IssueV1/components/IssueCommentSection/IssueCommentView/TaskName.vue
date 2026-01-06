@@ -6,14 +6,6 @@
     @click="toTop"
   >
     <span>{{ databaseForTask(projectOfIssue(issue), task).databaseName }}</span>
-    <template v-if="schemaVersion">
-      <span class="ml-1 text-control-placeholder">(</span>
-      <span class="lowercase text-control-placeholder">{{
-        $t("common.schema-version")
-      }}</span>
-      <span class="ml-1 text-control-placeholder">{{ schemaVersion }}</span>
-      <span class="text-control-placeholder">)</span>
-    </template>
   </router-link>
 </template>
 
@@ -33,7 +25,6 @@ import {
   databaseForTask,
   extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractSchemaVersionFromTask,
   extractStageNameFromTaskName,
   extractStageUID,
   extractTaskUID,
@@ -46,10 +37,6 @@ const props = defineProps<{
 }>();
 
 const { enabledNewLayout } = useIssueLayoutVersion();
-
-const schemaVersion = computed(() => {
-  return extractSchemaVersionFromTask(props.task);
-});
 
 const link = computed(() => {
   const { issue, task } = props;
