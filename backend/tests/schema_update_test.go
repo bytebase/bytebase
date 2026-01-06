@@ -95,28 +95,25 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	changelogs := resp.Msg.Changelogs
 	wantChangelogs := []*v1pb.Changelog{
 		{
-			Type:       v1pb.Changelog_MIGRATE,
-			Status:     v1pb.Changelog_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: dumpedSchema,
-			Version:    "",
+			Type:    v1pb.Changelog_MIGRATE,
+			Status:  v1pb.Changelog_DONE,
+			Schema:  dumpedSchema,
+			Version: "",
 		},
 		{
-			Type:       v1pb.Changelog_MIGRATE,
-			Status:     v1pb.Changelog_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: "",
-			Version:    "",
+			Type:    v1pb.Changelog_MIGRATE,
+			Status:  v1pb.Changelog_DONE,
+			Schema:  dumpedSchema,
+			Version: "",
 		},
 	}
 	a.Equal(len(wantChangelogs), len(changelogs))
 	for i, changelog := range changelogs {
 		got := &v1pb.Changelog{
-			Type:       changelog.Type,
-			Status:     changelog.Status,
-			Schema:     changelog.Schema,
-			PrevSchema: changelog.PrevSchema,
-			Version:    changelog.Version,
+			Type:    changelog.Type,
+			Status:  changelog.Status,
+			Schema:  changelog.Schema,
+			Version: changelog.Version,
 		}
 		want := wantChangelogs[i]
 		a.Equal(want, got)
