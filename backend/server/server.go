@@ -37,6 +37,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/cleaner"
 	"github.com/bytebase/bytebase/backend/runner/monitor"
+	"github.com/bytebase/bytebase/backend/runner/notifylistener"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -59,6 +60,7 @@ type Server struct {
 	planCheckScheduler *plancheck.Scheduler
 	schemaSyncer       *schemasync.Syncer
 	approvalRunner     *approval.Runner
+	notifyListener     *notifylistener.Listener
 	dataCleaner        *cleaner.DataCleaner
 	runnerWG           sync.WaitGroup
 
@@ -194,6 +196,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory)
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor)
+	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)
@@ -234,6 +237,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.dataCleaner.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	go s.notifyListener.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)
