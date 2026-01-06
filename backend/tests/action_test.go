@@ -866,6 +866,42 @@ func TestActionRolloutCommand(t *testing.T) {
 		release := releases.Msg.Releases[0]
 		a.Equal("Multi-file Release", release.Title)
 
+		// Verify release files
+		a.Len(release.Files, 3, "Expected exactly 3 files in release")
+		// Verify each file has correct version and path
+		for _, f := range release.Files {
+			a.Contains(f.Path, f.Version, "File path %s should contain version %s", f.Path, f.Version)
+		}
+		// Verify specific files exist
+		fileVersions := make(map[string]string)
+		for _, f := range release.Files {
+			fileVersions[f.Version] = f.Path
+		}
+		a.Contains(fileVersions, "00001", "Should have file with version 00001")
+		a.Contains(fileVersions["00001"], "00001_create_users.sql", "File 00001 should be create_users")
+		a.Contains(fileVersions, "00002", "Should have file with version 00002")
+		a.Contains(fileVersions["00002"], "00002_add_email.sql", "File 00002 should be add_email")
+		a.Contains(fileVersions, "00003", "Should have file with version 00003")
+		a.Contains(fileVersions["00003"], "00003_create_index.sql", "File 00003 should be create_index")
+
+		// Verify release file contents match original files
+		expectedContents := map[string]string{
+			"00001": migrationContent1,
+			"00002": migrationContent2,
+			"00003": migrationContent3,
+		}
+		for _, f := range release.Files {
+			a.NotEmpty(f.Sheet, "File %s should have a sheet", f.Path)
+			sheet, err := ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+				Name: f.Sheet,
+				Raw:  true,
+			}))
+			a.NoError(err)
+			expectedContent, ok := expectedContents[f.Version]
+			a.True(ok, "Unexpected version %s", f.Version)
+			a.Equal(expectedContent, string(sheet.Msg.Content), "File %s content should match original", f.Path)
+		}
+
 		// 3. Verify rollout was created and completed
 		rollouts, err := ctl.rolloutServiceClient.ListRollouts(ctx, connect.NewRequest(&v1pb.ListRolloutsRequest{
 			Parent: ctl.project.Name,
@@ -956,6 +992,83 @@ func TestActionRolloutCommand(t *testing.T) {
 
 		// 8. Verify command output
 		a.NotContains(result.Stderr, "error", "Multi-file rollout should complete without errors")
+	})
+
+	t.Run("FileContentVersionMatch", func(t *testing.T) {
+		// This test verifies that file content matches the correct version
+		// when lexicographical order differs from version order
+		t.Parallel()
+		a := require.New(t)
+		ctx := context.Background()
+		ctl := &controller{}
+
+		ctx, err := ctl.StartServerWithExternalPg(ctx)
+		a.NoError(err)
+		defer ctl.Close(ctx)
+
+		// Create test database
+		database := ctl.createTestDatabase(ctx, t)
+
+		// Create test data directory with files where lex order != version order
+		testDataDir := t.TempDir()
+
+		// Lexicographical order: v1, v10, v2
+		// Version numeric order: 1, 2, 10
+		migrationContent1 := `CREATE TABLE first_table (id INTEGER);`
+		migrationContent2 := `CREATE TABLE second_table (id INTEGER);`
+		migrationContent10 := `CREATE TABLE tenth_table (id INTEGER);`
+
+		err = os.WriteFile(filepath.Join(testDataDir, "v1_first.sql"), []byte(migrationContent1), 0644)
+		a.NoError(err)
+		err = os.WriteFile(filepath.Join(testDataDir, "v2_second.sql"), []byte(migrationContent2), 0644)
+		a.NoError(err)
+		err = os.WriteFile(filepath.Join(testDataDir, "v10_tenth.sql"), []byte(migrationContent10), 0644)
+		a.NoError(err)
+
+		// Execute rollout
+		_, err = executeActionCommand(ctx,
+			"rollout",
+			"--url", ctl.rootURL,
+			"--service-account", "demo@example.com",
+			"--service-account-secret", "1024bytebase",
+			"--project", ctl.project.Name,
+			"--targets", database.Name,
+			"--file-pattern", filepath.Join(testDataDir, "v*.sql"),
+			"--release-title", "Version Order Test",
+			"--target-stage", "environments/prod",
+		)
+		a.NoError(err, "Rollout command should succeed")
+
+		// Verify release files have correct content for each version
+		releases, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+			Parent: ctl.project.Name,
+		}))
+		a.NoError(err)
+		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
+		release := releases.Msg.Releases[0]
+		a.Len(release.Files, 3, "Expected exactly 3 files in release")
+
+		// Build expected content map by version
+		expectedContents := map[string]string{
+			"1":  migrationContent1,
+			"2":  migrationContent2,
+			"10": migrationContent10,
+		}
+
+		// Verify each file's content matches its version
+		for _, f := range release.Files {
+			a.NotEmpty(f.Sheet, "File %s should have a sheet", f.Path)
+			sheet, err := ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+				Name: f.Sheet,
+				Raw:  true,
+			}))
+			a.NoError(err)
+			expectedContent, ok := expectedContents[f.Version]
+			a.True(ok, "Unexpected version %s", f.Version)
+			a.Equal(expectedContent, string(sheet.Msg.Content),
+				"File %s with version %s should contain '%s' but got '%s'",
+				f.Path, f.Version, expectedContent, string(sheet.Msg.Content))
+		}
 	})
 
 	t.Run("ReleaseDigestDeduplication", func(t *testing.T) {
