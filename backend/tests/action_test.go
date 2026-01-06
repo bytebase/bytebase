@@ -963,11 +963,23 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.Equal("00003", updatedDatabase.Msg.SchemaVersion)
 
 		// 6. Verify change history was recorded
+		// Note: Versioned releases create one MIGRATE changelog for the entire release (not per file)
+		// Plus a BASELINE changelog if this is the first migration for the database
 		changelogs, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 			Parent: database.Name,
 		}))
 		a.NoError(err)
-		a.GreaterOrEqual(len(changelogs.Msg.Changelogs), 3, "Expected at least 3 migration records in history")
+		// Expect at least 1 changelog (MIGRATE), possibly 2 if BASELINE was created
+		a.GreaterOrEqual(len(changelogs.Msg.Changelogs), 1, "Expected at least 1 changelog for the versioned release")
+		// Verify at least one MIGRATE changelog exists
+		foundMigrateChangelog := false
+		for _, changelog := range changelogs.Msg.Changelogs {
+			if changelog.Type == v1pb.Changelog_MIGRATE {
+				foundMigrateChangelog = true
+				break
+			}
+		}
+		a.True(foundMigrateChangelog, "Expected to find at least one MIGRATE changelog")
 
 		revisions, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
 			Parent: database.Name,
