@@ -6,8 +6,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -75,20 +77,70 @@ type statementDmlDryRunChecker struct {
 // Enter implements the ast.Visitor interface.
 func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+	case *ast.NonTransactionalDMLStmt:
+		// TiDB's BATCH syntax (e.g., "BATCH ON id LIMIT 5000 UPDATE ...")
+		// EXPLAIN doesn't support BATCH syntax, so we need to extract the inner DML
+		// and EXPLAIN that instead.
 		checker.explainCount++
-		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
+		innerDML := node.DMLStmt
+		if innerDML == nil {
+			return in, false
+		}
+		// Restore the inner DML to get its SQL text
+		innerSQL, err := checker.restoreNode(innerDML)
+		if err != nil {
+			// If we can't restore the inner DML, report the error with the original statement
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.StatementDMLDryRunFailed.Int32(),
 				Title:         checker.title,
-				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", node.Text(), err.Error()),
+				Content:       fmt.Sprintf("\"%s\" dry runs failed: failed to extract inner DML: %s", checker.text, err.Error()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			})
+			return in, false
+		}
+		// EXPLAIN the inner DML
+		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", innerSQL)); err != nil {
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
+				Status:        checker.level,
+				Code:          code.StatementDMLDryRunFailed.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
+				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
+			})
+		}
+		// Don't visit children since we've already handled the inner DML
+		return in, true
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+		checker.explainCount++
+		// Get the SQL text - use checker.text which contains the original statement text
+		// node.Text() may be empty for nested nodes (e.g., DML inside NonTransactionalDMLStmt)
+		sqlText := node.(ast.StmtNode).Text()
+		if sqlText == "" {
+			sqlText = checker.text
+		}
+		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", sqlText)); err != nil {
+			checker.adviceList = append(checker.adviceList, &storepb.Advice{
+				Status:        checker.level,
+				Code:          code.StatementDMLDryRunFailed.Int32(),
+				Title:         checker.title,
+				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
 	}
 
 	return in, false
+}
+
+// restoreNode converts an AST node back to SQL text.
+func (*statementDmlDryRunChecker) restoreNode(node ast.Node) (string, error) {
+	var buf strings.Builder
+	ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
+	if err := node.Restore(ctx); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 // Leave implements the ast.Visitor interface.
