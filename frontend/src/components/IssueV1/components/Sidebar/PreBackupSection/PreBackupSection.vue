@@ -12,15 +12,19 @@ import {
 } from "@/components/IssueV1/logic";
 import { PreBackupSection } from "@/components/Plan/components/Configuration";
 import { providePreBackupSettingContext } from "@/components/Plan/components/Configuration/PreBackupSection/context";
-import { useCurrentProjectV1 } from "@/store";
+import { extractUserId, useCurrentProjectV1, useCurrentUserV1 } from "@/store";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { databaseForTask } from "@/utils";
+import { databaseForTask, hasProjectPermissionV2 } from "@/utils";
 import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
 import TaskRollbackSection from "./TaskRollbackSection.vue";
 
 const { isCreating, issue, selectedTask, events } = useIssueContext();
 const { project } = useCurrentProjectV1();
+const plan = computed(() => issue.value.planEntity as Plan);
+const currentUser = useCurrentUserV1();
+
 const {
   shouldShow: shouldShowPreBackupSection,
   enabled: preBackupEnabled,
@@ -28,11 +32,33 @@ const {
 } = providePreBackupSettingContext({
   isCreating,
   project,
-  plan: computed(() => issue.value.planEntity as Plan),
+  plan,
   selectedSpec: computed(() =>
     specForTask(issue.value.planEntity as Plan, selectedTask.value)
   ),
-  issue,
+  allowChange: computed(() => {
+    // Allow changes when creating
+    if (isCreating.value) {
+      return true;
+    }
+
+    // Disallow changes if the plan has started rollout.
+    if (plan.value.hasRollout) {
+      return false;
+    }
+
+    // If issue is not open, disallow
+    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
+      return false;
+    }
+
+    // Allowed to the plan/issue creator.
+    if (currentUser.value.email === extractUserId(plan.value.creator)) {
+      return true;
+    }
+
+    return hasProjectPermissionV2(project.value, "bb.plans.update");
+  }),
 });
 
 const database = computed(() =>

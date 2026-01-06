@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCurrentProjectV1 } from "@/store";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { usePlanContext } from "../../../logic";
 import { provideGhostSettingContext } from "../../Configuration/GhostSection/context";
 import GhostSwitch from "../../Configuration/GhostSection/GhostSwitch.vue";
@@ -48,9 +48,33 @@ import { provideTransactionModeSettingContext } from "../../Configuration/Transa
 import TransactionModeSwitch from "../../Configuration/TransactionModeSection/TransactionModeSwitch.vue";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
-const { project } = useCurrentProjectV1();
-const { isCreating, plan, events, issue, readonly } = usePlanContext();
+const { isCreating, plan, events, issue, readonly, allowEdit, project } =
+  usePlanContext();
 const { selectedSpec } = useSelectedSpec();
+
+const allowChange = computed(() => {
+  // If readonly mode, disallow changes
+  if (readonly?.value) {
+    return false;
+  }
+
+  // Allow changes when creating
+  if (isCreating.value) {
+    return true;
+  }
+
+  // Disallow changes if the plan has started rollout.
+  if (plan.value.hasRollout) {
+    return false;
+  }
+
+  // If issue is not open, disallow
+  if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
+    return false;
+  }
+
+  return allowEdit.value;
+});
 
 const providerArgs = {
   project,
@@ -58,7 +82,7 @@ const providerArgs = {
   selectedSpec,
   isCreating,
   issue,
-  readonly,
+  allowChange,
 };
 
 const { shouldShow: shouldShowTransactionModeSection, events: txEvents } =
