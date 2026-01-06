@@ -8442,7 +8442,6 @@ A SQL file in a release.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
 | version | [string](#string) |  | The version identifier for the file. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |

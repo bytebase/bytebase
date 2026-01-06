@@ -13830,10 +13830,6 @@ components:
     bytebase.v1.Release.File:
       type: object
       properties:
-        id:
-          type: string
-          title: id
-          description: The unique identifier for the file.
         path:
           type: string
           title: path

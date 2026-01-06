@@ -73,7 +73,7 @@
           >
             <div
               v-for="file in displayedFiles"
-              :key="file.id"
+              :key="file.path"
               class="w-full flex items-center justify-between text-xs bg-white rounded-sm p-2"
             >
               <div class="flex-1 min-w-0 mr-2">

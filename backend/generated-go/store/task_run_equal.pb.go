@@ -39,12 +39,6 @@ func (x *SchedulerInfo_WaitingCause) Equal(y *SchedulerInfo_WaitingCause) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.GetConnectionLimit() != y.GetConnectionLimit() {
-		return false
-	}
-	if x.GetTaskUid() != y.GetTaskUid() {
-		return false
-	}
 	if x.GetParallelTasksLimit() != y.GetParallelTasksLimit() {
 		return false
 	}

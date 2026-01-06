@@ -260,9 +260,6 @@ func (x *Release_File) Equal(y *Release_File) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Id != y.Id {
-		return false
-	}
 	if x.Path != y.Path {
 		return false
 	}

@@ -3554,7 +3554,6 @@ Activity type enumeration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | version | [string](#string) |  |  |
@@ -4730,8 +4729,6 @@ WaitingCause indicates why a task run is waiting to execute.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
-| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
 | parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
 
 

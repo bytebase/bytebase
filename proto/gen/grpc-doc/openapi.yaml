@@ -12607,9 +12607,6 @@ components:
         Release_File:
             type: object
             properties:
-                id:
-                    type: string
-                    description: The unique identifier for the file.
                 path:
                     type: string
                     description: The path of the file. e.g., `2.2/V0001_create_table.sql`.
