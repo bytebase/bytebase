@@ -8696,6 +8696,7 @@ components:
                     type: string
                     description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
                 planTitle:
+                    readOnly: true
                     type: string
                     description: |-
                         The title of the plan associated with this changelog's task run.

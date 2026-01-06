@@ -6053,7 +6053,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xa5\x04\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xaa\x04\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -6062,9 +6062,9 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06schema\x18\a \x01(\tR\x06schema\x12\x1f\n" +
 	"\vschema_size\x18\b \x01(\x03R\n" +
 	"schemaSize\x12\x19\n" +
-	"\btask_run\x18\v \x01(\tR\ataskRun\x12\x1d\n" +
+	"\btask_run\x18\v \x01(\tR\ataskRun\x12\"\n" +
 	"\n" +
-	"plan_title\x18\x0f \x01(\tR\tplanTitle\x12/\n" +
+	"plan_title\x18\x0f \x01(\tB\x03\xe0A\x03R\tplanTitle\x12/\n" +
 	"\x04type\x18\x0e \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
