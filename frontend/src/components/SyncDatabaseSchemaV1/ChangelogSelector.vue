@@ -20,7 +20,6 @@ import { computed, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import RemoteResourceSelector from "@/components/v2/Select/RemoteResourceSelector/index.vue";
 import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
-import { t } from "@/plugins/i18n";
 import { useChangelogStore, useDatabaseV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
@@ -132,15 +131,10 @@ const renderSchemaVersionLabel = (
       <NTag round size="small">
         {Changelog_Type[resource.type]}
       </NTag>
-      {resource.version && (
+      {resource.planTitle && (
         <NTag round size="small">
-          {resource.version}
+          {resource.planTitle}
         </NTag>
-      )}
-      {resource.statement ? (
-        <span class="truncate">{resource.statement}</span>
-      ) : (
-        <span class="text-gray-400">{t("common.empty")}</span>
       )}
     </div>
   );

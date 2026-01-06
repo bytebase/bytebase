@@ -246,7 +246,7 @@ func GetUserRolesInIamPolicy(ctx context.Context, stores *store.Store, user *sto
 			roles = append(roles, binding.Role)
 		}
 	}
-	roles = Uniq(roles)
+	roles = common.Uniq(roles)
 
 	return roles
 }

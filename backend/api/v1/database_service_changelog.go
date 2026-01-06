@@ -150,7 +150,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 
 	// no subsequent pages
-	converted := s.convertToChangelogs(database, changelogs)
+	converted := s.convertToChangelogs(ctx, database, changelogs)
 	return connect.NewResponse(&v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
@@ -193,7 +193,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	return connect.NewResponse(converted), nil
 }
 
-func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
+func (s *DatabaseService) convertToChangelogs(_ context.Context, d *store.DatabaseMessage, cs []*store.ChangelogMessage) []*v1pb.Changelog {
 	var changelogs []*v1pb.Changelog
 	for _, c := range cs {
 		changelog := s.convertToChangelog(d, c)
@@ -206,23 +206,14 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 	changelogType := convertToChangelogType(c.Payload.GetType())
 
 	cl := &v1pb.Changelog{
-		Name:           common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
-		CreateTime:     timestamppb.New(c.CreatedAt),
-		Status:         convertToChangelogStatus(c.Status),
-		Statement:      "",
-		StatementSize:  0,
-		StatementSheet: "",
-		Schema:         "",
-		SchemaSize:     0,
-		TaskRun:        c.Payload.GetTaskRun(),
-		Version:        c.Payload.GetVersion(),
-		Type:           changelogType,
-	}
-
-	if sheetSha256 := c.Payload.GetSheetSha256(); sheetSha256 != "" {
-		cl.StatementSheet = common.FormatSheet(d.ProjectID, sheetSha256)
-		cl.Statement = c.Statement
-		cl.StatementSize = c.StatementSize
+		Name:       common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
+		CreateTime: timestamppb.New(c.CreatedAt),
+		Status:     convertToChangelogStatus(c.Status),
+		Schema:     "",
+		SchemaSize: 0,
+		TaskRun:    c.Payload.GetTaskRun(),
+		Type:       changelogType,
+		PlanTitle:  c.PlanTitle,
 	}
 
 	if v := c.SyncHistoryUID; v != nil {

@@ -80,7 +80,18 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Wrap(err, "failed to ensure baseline changelog")
 	}
 
-	// Check if this is a release-based task
+	// Mark database as not drifted since we're about to sync it
+	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+			md.Drifted = false
+		}},
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+	}
+
+	// Execute migration based on task type
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
 		// Parse release name to get project ID and release UID
 		_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
@@ -201,7 +212,6 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}
 
 	needDump := computeNeedDump(task.Type, database.Engine, sheet.Statement)
-	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -229,45 +239,54 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
 	}
 
-	// Begin migration - dump before migration
-	changelogUID, err := beginMigration(
-		ctx, exec.store, database,
-		taskRunName, "",
-		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
-	)
+	// Begin migration - create pending changelog
+	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:     database.InstanceID,
+		DatabaseName:   database.DatabaseName,
+		Status:         store.ChangelogStatusPending,
+		SyncHistoryUID: nil,
+		Payload: &storepb.ChangelogPayload{
+			TaskRun:     common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			Type:        storepb.ChangelogPayload_MIGRATE,
+			GitCommit:   exec.profile.GitCommit,
+			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+		},
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin migration")
+		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
 	// Execute the SQL
 	_, migrationErr := driver.Execute(driverCtx, sheet.Statement, opts)
 
 	// Dump after migration and update changelog
-	if err := endMigration(
-		ctx, exec.store, exec.schemaSyncer, database,
-		needDump, changelogUID, migrationErr == nil, opts,
-	); err != nil {
-		slog.Error("failed to end migration", log.BBError(err))
+	update := &store.UpdateChangelogMessage{
+		UID: changelogUID,
+	}
+	if needDump {
+		opts.LogDatabaseSyncStart()
+		syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+		if err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
+			slog.Error("failed to sync database schema", log.BBError(err))
+		} else {
+			opts.LogDatabaseSyncEnd("")
+			update.SyncHistoryUID = &syncHistory
+		}
+	}
+	if migrationErr == nil {
+		status := store.ChangelogStatusDone
+		update.Status = &status
+	} else {
+		status := store.ChangelogStatusFailed
+		update.Status = &status
+	}
+	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
+		slog.Error("failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {
 		return nil, migrationErr
-	}
-
-	// Post migration - clean up drift
-	slog.Debug("Post migration...",
-		slog.String("instance", instance.ResourceID),
-		slog.String("database", database.DatabaseName),
-	)
-
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	return &storepb.TaskRunResult{
@@ -277,9 +296,6 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	flags := task.Payload.GetFlags()
-
-	needDump := computeNeedDump(task.Type, database.Engine, sheet.Statement)
-	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -333,14 +349,21 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		gomysql.DeregisterTLSConfig(migrationContext.Uuid)
 	}()
 
-	// Begin migration - dump before migration
-	changelogUID, err := beginMigration(
-		ctx, exec.store, database,
-		taskRunName, "",
-		storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
-	)
+	// Begin migration - create pending changelog
+	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:     database.InstanceID,
+		DatabaseName:   database.DatabaseName,
+		Status:         store.ChangelogStatusPending,
+		SyncHistoryUID: nil,
+		Payload: &storepb.ChangelogPayload{
+			TaskRun:     common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			Type:        storepb.ChangelogPayload_MIGRATE,
+			GitCommit:   exec.profile.GitCommit,
+			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+		},
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin migration")
+		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
 	// Execute gh-ost migration
@@ -385,31 +408,31 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	}
 
 	// Dump after migration and update changelog
-	if err := endMigration(
-		ctx, exec.store, exec.schemaSyncer, database,
-		needDump, changelogUID, migrationErr == nil, opts,
-	); err != nil {
-		slog.Error("failed to end migration", log.BBError(err))
+	update := &store.UpdateChangelogMessage{
+		UID: changelogUID,
+	}
+	opts.LogDatabaseSyncStart()
+	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+	if err != nil {
+		opts.LogDatabaseSyncEnd(err.Error())
+		slog.Error("failed to sync database schema", log.BBError(err))
+	} else {
+		opts.LogDatabaseSyncEnd("")
+		update.SyncHistoryUID = &syncHistory
+	}
+	if migrationErr == nil {
+		status := store.ChangelogStatusDone
+		update.Status = &status
+	} else {
+		status := store.ChangelogStatusFailed
+		update.Status = &status
+	}
+	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
+		slog.Error("failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {
 		return nil, migrationErr
-	}
-
-	// Post migration - clean up drift
-	slog.Debug("Post migration...",
-		slog.String("instance", instance.ResourceID),
-		slog.String("database", database.DatabaseName),
-	)
-
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	return &storepb.TaskRunResult{}, nil
@@ -433,6 +456,47 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		}
 	}
 
+	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
+
+	// Create pending changelog for the entire release
+	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:     database.InstanceID,
+		DatabaseName:   database.DatabaseName,
+		Status:         store.ChangelogStatusPending,
+		SyncHistoryUID: nil,
+		Payload: &storepb.ChangelogPayload{
+			TaskRun:     taskRunName,
+			Type:        storepb.ChangelogPayload_MIGRATE,
+			GitCommit:   exec.profile.GitCommit,
+			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create changelog")
+	}
+
+	// Set up execute options
+	opts := db.ExecuteOptions{}
+	if project != nil && project.Setting != nil {
+		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
+	}
+	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
+		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
+	}
+
+	// Get database driver once for all files
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunUID: &taskRunUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
+	}
+	defer driver.Close(ctx)
+
+	var migrationErr error
+	var lastAppliedVersion string
+
 	// Execute unapplied files in order
 	for _, file := range release.Payload.Files {
 		// Skip if already applied
@@ -443,7 +507,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			continue
 		}
 
-		// Fetch and execute this file
 		sheet, err := exec.store.GetSheetFull(ctx, file.SheetSha256)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %s for version %s", file.SheetSha256, file.Version)
@@ -466,131 +529,82 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			},
 		})
 
-		version := file.Version
-		releaseType := storepb.SchemaChangeType_VERSIONED
-		needDump := computeNeedDump(task.Type, database.Engine, sheet.Statement)
-		taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
-
-		// For release-based tasks, store the release name
-		releaseRelease := task.Payload.GetRelease()
-		releaseFile := ""
-
-		// Get database driver
-		driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-			TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-			TaskRunUID: &taskRunUID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
-		}
-
 		slog.Debug("Start migration...",
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
 			slog.String("type", task.Type.String()),
-			slog.String("sheetSha256", sheet.Sha256),
 		)
-
-		// Set up execute options
-		opts := db.ExecuteOptions{}
-		if project != nil && project.Setting != nil {
-			opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
-		}
-		opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-			return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
-		}
-
-		sheetSha256 := sheet.Sha256
-
-		revisionType := storepb.SchemaChangeType_VERSIONED
-		if releaseType != storepb.SchemaChangeType_SCHEMA_CHANGE_TYPE_UNSPECIFIED {
-			revisionType = releaseType
-		}
-
-		// Begin migration - dump before migration
-		changelogUID, err := beginMigration(
-			ctx, exec.store, database,
-			taskRunName, version,
-			storepb.ChangelogPayload_MIGRATE, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheetSha256,
-		)
-		if err != nil {
-			driver.Close(ctx)
-			return nil, errors.Wrapf(err, "failed to begin migration for version %s", file.Version)
-		}
 
 		// Execute the SQL
-		_, migrationErr := driver.Execute(driverCtx, sheet.Statement, opts)
-
-		// Dump after migration and update changelog
-		if err := endMigration(
-			ctx, exec.store, exec.schemaSyncer, database,
-			needDump, changelogUID, migrationErr == nil, opts,
-		); err != nil {
-			slog.Error("failed to end migration", log.BBError(err))
+		_, err = driver.Execute(driverCtx, sheet.Statement, opts)
+		if err != nil {
+			migrationErr = errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
+			break
 		}
 
-		if migrationErr != nil {
-			driver.Close(ctx)
-			return nil, errors.Wrapf(migrationErr, "failed to execute release file %s (version %s)", file.Path, file.Version)
-		}
-
-		// Post migration - create revision and update database
-		slog.Debug("Post migration...",
-			slog.String("instance", instance.ResourceID),
-			slog.String("database", database.DatabaseName),
-		)
-
+		// Create revision for this file
 		r := &store.RevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
-			Version:      version,
+			Version:      file.Version,
 			Payload: &storepb.RevisionPayload{
-				Release:     releaseRelease,
-				File:        releaseFile,
-				SheetSha256: sheetSha256,
+				Release:     task.Payload.GetRelease(),
+				File:        file.Path,
+				SheetSha256: file.SheetSha256,
 				TaskRun:     taskRunName,
-				Type:        revisionType,
+				Type:        storepb.SchemaChangeType_VERSIONED,
 			},
 		}
 
 		_, err = exec.store.CreateRevision(ctx, r)
 		if err != nil {
-			driver.Close(ctx)
-			return nil, errors.Wrapf(err, "failed to create revision")
+			migrationErr = errors.Wrapf(err, "failed to create revision for version %s", file.Version)
+			break
 		}
 
-		// Update database metadata with the version only if the new version is greater
-		if shouldUpdateVersion(database.Metadata.Version, version) {
-			if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-				InstanceID:   database.InstanceID,
-				DatabaseName: database.DatabaseName,
-				MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-					md.Version = version
-				}},
-			}); err != nil {
-				driver.Close(ctx)
-				return nil, errors.Wrapf(err, "failed to update database metadata with version")
-			}
-		}
+		// Track the last successfully applied version
+		lastAppliedVersion = file.Version
+	}
 
-		// Clean up drift
-		slog.Debug("Cleaning up drift...",
-			slog.String("instance", instance.ResourceID),
-			slog.String("database", database.DatabaseName),
-		)
+	// Update changelog after all files are processed
+	update := &store.UpdateChangelogMessage{
+		UID: changelogUID,
+	}
+	opts.LogDatabaseSyncStart()
+	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+	if err != nil {
+		opts.LogDatabaseSyncEnd(err.Error())
+		slog.Error("failed to sync database schema", log.BBError(err))
+	} else {
+		opts.LogDatabaseSyncEnd("")
+		update.SyncHistoryUID = &syncHistory
+	}
+	if migrationErr == nil {
+		status := store.ChangelogStatusDone
+		update.Status = &status
+	} else {
+		status := store.ChangelogStatusFailed
+		update.Status = &status
+	}
+	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
+		slog.Error("failed to update changelog", log.BBError(err))
+	}
 
+	if migrationErr != nil {
+		return nil, migrationErr
+	}
+
+	// Update database version to the last successfully applied version
+	if lastAppliedVersion != "" && shouldUpdateVersion(database.Metadata.Version, lastAppliedVersion) {
 		if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 			MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-				md.Drifted = false
+				md.Version = lastAppliedVersion
 			}},
 		}); err != nil {
-			driver.Close(ctx)
-			return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+			return nil, errors.Wrapf(err, "failed to update database version to %s", lastAppliedVersion)
 		}
-
-		driver.Close(ctx)
 	}
 
 	return &storepb.TaskRunResult{}, nil
@@ -630,9 +644,6 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		},
 	})
 
-	needDump := computeNeedDump(task.Type, database.Engine, sheet.Statement)
-	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
-
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
@@ -668,15 +679,21 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	}
 	opts.LogComputeDiffEnd("")
 
-	// Begin migration - dump before migration
-	// Note: For declarative releases, we pass empty version string (revisions are not version-tracked)
-	changelogUID, err := beginMigration(
-		ctx, exec.store, database,
-		taskRunName, "",
-		storepb.ChangelogPayload_SDL, schema.GetDumpFormatVersion(instance.Metadata.GetEngine()), exec.profile.GitCommit, sheet.Sha256,
-	)
+	// Begin migration - create pending changelog
+	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:     database.InstanceID,
+		DatabaseName:   database.DatabaseName,
+		Status:         store.ChangelogStatusPending,
+		SyncHistoryUID: nil,
+		Payload: &storepb.ChangelogPayload{
+			TaskRun:     common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			Type:        storepb.ChangelogPayload_SDL,
+			GitCommit:   exec.profile.GitCommit,
+			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+		},
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin migration")
+		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
 	// Execute SDL migration
@@ -685,35 +702,43 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	_, migrationErr := driver.Execute(driverCtx, migrationSQL, opts)
 
 	// Dump after migration and update changelog
-	if err := endMigration(
-		ctx, exec.store, exec.schemaSyncer, database,
-		needDump, changelogUID, migrationErr == nil, opts,
-	); err != nil {
-		slog.Error("failed to end migration", log.BBError(err))
+	update := &store.UpdateChangelogMessage{
+		UID: changelogUID,
+	}
+	opts.LogDatabaseSyncStart()
+	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+	if err != nil {
+		opts.LogDatabaseSyncEnd(err.Error())
+		slog.Error("failed to sync database schema", log.BBError(err))
+	} else {
+		opts.LogDatabaseSyncEnd("")
+		update.SyncHistoryUID = &syncHistory
+	}
+	if migrationErr == nil {
+		status := store.ChangelogStatusDone
+		update.Status = &status
+	} else {
+		status := store.ChangelogStatusFailed
+		update.Status = &status
+	}
+	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
+		slog.Error("failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {
 		return nil, errors.Wrap(migrationErr, "failed to execute declarative release")
 	}
 
-	// Post migration
+	// Post migration - update database schema version
 	// Note: Declarative releases do NOT create revisions (they are version-tracked through the database schema itself)
-	slog.Debug("Post migration...",
-		slog.String("instance", instance.ResourceID),
-		slog.String("database", database.DatabaseName),
-	)
-
-	// Clean up drift
-	// Update database schema version.
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
 			md.Version = file.Version
 		}},
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return nil, errors.Wrapf(err, "failed to update database version for %q", database.DatabaseName)
 	}
 
 	return &storepb.TaskRunResult{}, nil
@@ -1093,10 +1118,9 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 	return migrationSQL, nil
 }
 
-// getPreviousSuccessfulSDLText retrieves the SDL text from the most recent
-// successfully completed SDL changelog for the given database.
-// Returns empty string if no previous successful SDL changelog is found.
-// getPreviousSuccessfulSDLAndSchema gets both the SDL text and database schema from the most recent successful SDL changelog
+// getPreviousSuccessfulSDLAndSchema gets both the SDL text and database schema from the most recent successful SDL changelog.
+// It retrieves the SDL text by following the reference chain: changelog -> task_run -> task -> release -> file -> sheet.
+// Returns empty string for SDL text if no previous successful SDL changelog is found or if the reference chain is broken.
 func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, *model.DatabaseMetadata, error) {
 	// Find the most recent successful SDL changelog for this database
 	// We only want MIGRATE_SDL type changelogs that are completed (DONE status)
@@ -1109,7 +1133,7 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 		TypeList:     []string{storepb.ChangelogPayload_SDL.String()}, // Only SDL migrations
 		Status:       &doneStatus,
 		Limit:        &limit, // Get only the most recent one
-		ShowFull:     false,  // We only need the PrevSyncHistoryUID and sheet reference
+		ShowFull:     true,   // Get full schema
 	})
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to list previous SDL changelogs for database %s", databaseName)
@@ -1122,20 +1146,35 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 
 	mostRecentChangelog := changelogs[0] // ListChangelogs should return them in descending order by creation time
 
-	// Extract the sheet ID from the changelog payload
+	// Retrieve the previous SDL text by following the reference chain:
+	// changelog -> task_run -> task -> release -> file -> sheet
 	var previousUserSDLText string
-	if mostRecentChangelog.Payload != nil && mostRecentChangelog.Payload.SheetSha256 != "" {
-		sheetSha256 := mostRecentChangelog.Payload.SheetSha256
-
-		// Get the sheet content (original SDL text)
-		sheet, err := s.GetSheetFull(ctx, sheetSha256)
-		if err != nil {
-			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet %s", sheetSha256)
+	if taskRunName := mostRecentChangelog.Payload.GetTaskRun(); taskRunName != "" {
+		// Parse task run name to get task ID
+		_, _, _, taskID, _, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRunName)
+		if err == nil {
+			// Get the task
+			task, err := s.GetTaskByID(ctx, taskID)
+			if err == nil && task != nil {
+				// Get the release from the task
+				if releaseName := task.Payload.GetRelease(); releaseName != "" {
+					_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
+					if err == nil {
+						release, err := s.GetReleaseByUID(ctx, releaseUID)
+						if err == nil && release != nil {
+							// For SDL/declarative releases, there should be exactly one file
+							if len(release.Payload.Files) == 1 {
+								file := release.Payload.Files[0]
+								sheet, err := s.GetSheetFull(ctx, file.SheetSha256)
+								if err == nil && sheet != nil {
+									previousUserSDLText = sheet.Statement
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		if sheet == nil {
-			return "", nil, errors.Errorf("sheet %s not found", sheetSha256)
-		}
-		previousUserSDLText = sheet.Statement
 	}
 
 	// Get the previous schema from sync history
@@ -1171,81 +1210,6 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 	}
 
 	return previousUserSDLText, previousSchema, nil
-}
-
-// beginMigration inserts a migration history record with pending status.
-// Returns (changelogUID, error).
-func beginMigration(
-	ctx context.Context,
-	stores *store.Store,
-	database *store.DatabaseMessage,
-	taskRunName string,
-	version string,
-	changelogType storepb.ChangelogPayload_Type,
-	dumpVersion int32,
-	gitCommit string,
-	sheetSha256 string,
-) (int64, error) {
-	// create pending changelog
-	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:     database.InstanceID,
-		DatabaseName:   database.DatabaseName,
-		Status:         store.ChangelogStatusPending,
-		SyncHistoryUID: nil,
-		Payload: &storepb.ChangelogPayload{
-			TaskRun:     taskRunName,
-			SheetSha256: sheetSha256,
-			Version:     version,
-			Type:        changelogType,
-			GitCommit:   gitCommit,
-			DumpVersion: dumpVersion,
-		}})
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to create changelog")
-	}
-
-	return changelogUID, nil
-}
-
-// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(
-	ctx context.Context,
-	storeInstance *store.Store,
-	syncer *schemasync.Syncer,
-	database *store.DatabaseMessage,
-	needDump bool,
-	changelogUID int64,
-	isDone bool,
-	opts db.ExecuteOptions,
-) error {
-	update := &store.UpdateChangelogMessage{
-		UID: changelogUID,
-	}
-
-	if needDump {
-		opts.LogDatabaseSyncStart()
-		syncHistory, err := syncer.SyncDatabaseSchemaToHistory(ctx, database)
-		if err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			return errors.Wrapf(err, "failed to sync database metadata and schema")
-		}
-		opts.LogDatabaseSyncEnd("")
-		update.SyncHistoryUID = &syncHistory
-	}
-
-	if isDone {
-		status := store.ChangelogStatusDone
-		update.Status = &status
-	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
-	}
-
-	if err := storeInstance.UpdateChangelog(ctx, update); err != nil {
-		return errors.Wrapf(err, "failed to update changelog")
-	}
-
-	return nil
 }
 
 // shouldUpdateVersion checks if newVersion is greater than currentVersion.

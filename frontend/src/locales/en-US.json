@@ -375,7 +375,6 @@
       "schema-dump": "Schema Dump",
       "command-execute": "Command Execute",
       "database-sync": "Database Sync",
-      "status-update": "Status Update",
       "transaction": "Transaction",
       "prior-backup": "Prior Backup",
       "retry": "Retry",
@@ -385,9 +384,6 @@
     "log-detail": {
       "dumping": "dumping...",
       "syncing": "syncing...",
-      "waiting-to-execute": "waiting to execute",
-      "executing": "executing",
-      "status-changed": "status changed",
       "backup-completed": "completed ({count} tables)",
       "backing-up": "backing up...",
       "retry-attempt": "attempt {current}/{max}",
@@ -1120,7 +1116,6 @@
         "entry-type": {
           "command-execute": "Command execute",
           "schema-dump": "Schema dump",
-          "task-run-status-update": "Status update",
           "transaction-control": "Transaction control",
           "database-sync": "Database sync",
           "prior-backup": "Prior backup",
@@ -1654,11 +1649,7 @@
     "establish-baseline": "Establish new baseline",
     "refreshing": "Refreshing changelog ...",
     "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
-    "establish-database-baseline": "Establish \"{name}\" baseline",
-    "export": "Export Changelog",
-    "need-to-select-first": "Need to select changelog first",
-    "rollback-tip": "Select a specific DDL changelog to rollback.",
-    "task-at": "Task at {time}"
+    "establish-database-baseline": "Establish \"{name}\" baseline"
   },
   "database": {
     "labels": "Database Labels",

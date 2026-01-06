@@ -9,6 +9,7 @@ export interface ChangelogSourceSchema {
   environmentName?: string;
   databaseName?: string;
   changelogName?: string;
+  targetChangelogName?: string; // For rollback: the previous changelog to compare against
 }
 
 export interface RawSQLState {

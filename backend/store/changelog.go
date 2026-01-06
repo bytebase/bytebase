@@ -34,9 +34,8 @@ type ChangelogMessage struct {
 	UID       int64
 	CreatedAt time.Time
 
-	Schema        string
-	Statement     string
-	StatementSize int64
+	Schema    string
+	PlanTitle string
 }
 
 type FindChangelogMessage struct {
@@ -156,10 +155,6 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	if find.ShowFull {
 		shCurField = "sh_cur.raw_dump"
 	}
-	sheetField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", truncateSize)
-	if find.ShowFull {
-		sheetField = "sheet_blob.content"
-	}
 
 	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
@@ -170,16 +165,19 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.status,
 			changelog.sync_history_id,
 			COALESCE(%s, ''),
-			COALESCE(%s, ''),
-			COALESCE(OCTET_LENGTH(sheet_blob.content), 0),
-			changelog.payload
+			changelog.payload,
+			COALESCE(plan.name, '')
 		FROM changelog
 		LEFT JOIN sync_history sh_cur ON sh_cur.id = changelog.sync_history_id
-		LEFT JOIN sheet_blob ON sheet_blob.sha256 = decode(changelog.payload->>'sheetSha256', 'hex')
+		LEFT JOIN LATERAL (
+			SELECT task.plan_id
+			FROM task
+			WHERE task.id = (regexp_match(changelog.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
+		) task_info ON TRUE
+		LEFT JOIN plan ON plan.id = task_info.plan_id
 		WHERE TRUE
 	`,
 		shCurField,
-		sheetField,
 	))
 
 	if v := find.UID; v != nil {
@@ -235,9 +233,8 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			&c.Status,
 			&c.SyncHistoryUID,
 			&c.Schema,
-			&c.Statement,
-			&c.StatementSize,
 			&payload,
+			&c.PlanTitle,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}

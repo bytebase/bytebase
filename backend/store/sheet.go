@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"slices"
 
 	"github.com/pkg/errors"
 
@@ -160,8 +159,7 @@ func (s *Store) HasSheets(ctx context.Context, sha256Hexes ...string) (bool, err
 	}
 
 	// Remove duplicates
-	slices.Sort(sha256Hexes)
-	sha256Hexes = slices.Compact(sha256Hexes)
+	sha256Hexes = common.Uniq(sha256Hexes)
 
 	q := qb.Q().Space(`
 		SELECT COUNT(*)

@@ -375,7 +375,6 @@
       "schema-dump": "结构导出",
       "command-execute": "命令执行",
       "database-sync": "数据库同步",
-      "status-update": "状态更新",
       "transaction": "事务",
       "prior-backup": "预备份",
       "retry": "重试",
@@ -385,9 +384,6 @@
     "log-detail": {
       "dumping": "导出中...",
       "syncing": "同步中...",
-      "waiting-to-execute": "等待执行",
-      "executing": "执行中",
-      "status-changed": "状态变更",
       "backup-completed": "已完成（{count} 个表）",
       "backing-up": "备份中...",
       "retry-attempt": "第 {current}/{max} 次尝试",
@@ -1120,7 +1116,6 @@
         "entry-type": {
           "command-execute": "执行指令",
           "schema-dump": "导出 schema",
-          "task-run-status-update": "状态更新",
           "transaction-control": "事务控制",
           "database-sync": "数据库同步",
           "prior-backup": "数据预备份",
@@ -1654,11 +1649,7 @@
     "establish-baseline": "建立新的基线",
     "refreshing": "刷新历史中...",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
-    "establish-database-baseline": "建立「{name}」基线",
-    "export": "导出变更历史",
-    "need-to-select-first": "需要先选择变更历史",
-    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。",
-    "task-at": "任务于 {time}"
+    "establish-database-baseline": "建立「{name}」基线"
   },
   "database": {
     "labels": "数据库标签",

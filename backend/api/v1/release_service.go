@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -127,7 +126,6 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	for i, f := range sanitizedFiles {
 		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
-			Id:          f.Id,
 			Path:        f.Path,
 			SheetSha256: sheetSha256s[i],
 			Version:     f.Version,
@@ -413,7 +411,6 @@ func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	for _, f := range release.Payload.Files {
 		// Sheets are now project-agnostic, no need to check projectID
 		r.Files = append(r.Files, &v1pb.Release_File{
-			Id:          f.Id,
 			Path:        f.Path,
 			Sheet:       common.FormatSheet(release.ProjectID, f.SheetSha256),
 			SheetSha256: f.SheetSha256,
@@ -459,8 +456,6 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 	versionSet := map[string]struct{}{}
 
 	for _, f := range files {
-		f.Id = uuid.NewString()
-
 		switch {
 		// Validate that either sheet or statement is provided
 		// For DECLARATIVE releases, empty content is allowed (represents dropping all objects)

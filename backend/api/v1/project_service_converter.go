@@ -14,7 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func convertToProtoAny(i any) (*anypb.Any, error) {
@@ -202,7 +201,7 @@ func convertToStoreIamPolicy(iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, err
 
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
-		for _, member := range utils.Uniq(binding.Members) {
+		for _, member := range common.Uniq(binding.Members) {
 			storeMember, err := convertToStoreIamPolicyMember(member)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert iam member with error"))

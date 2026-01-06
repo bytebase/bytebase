@@ -8688,16 +8688,6 @@ components:
                         - FAILED
                     type: string
                     format: enum
-                statement:
-                    type: string
-                    description: The statement is used for preview purpose.
-                statementSize:
-                    type: string
-                statementSheet:
-                    type: string
-                    description: |-
-                        The name of the sheet resource.
-                         Format: projects/{project}/sheets/{sheet}
                 schema:
                     type: string
                 schemaSize:
@@ -8705,9 +8695,12 @@ components:
                 taskRun:
                     type: string
                     description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
-                version:
+                planTitle:
+                    readOnly: true
                     type: string
-                    description: Could be empty
+                    description: |-
+                        The title of the plan associated with this changelog's task run.
+                         This field is populated by deriving the plan from task_run for display purposes.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -12614,9 +12607,6 @@ components:
         Release_File:
             type: object
             properties:
-                id:
-                    type: string
-                    description: The unique identifier for the file.
                 path:
                     type: string
                     description: The path of the file. e.g., `2.2/V0001_create_table.sql`.
@@ -14306,7 +14296,6 @@ components:
                         - SCHEMA_DUMP
                         - COMMAND_EXECUTE
                         - DATABASE_SYNC
-                        - TASK_RUN_STATUS_UPDATE
                         - TRANSACTION_CONTROL
                         - PRIOR_BACKUP
                         - RETRY_INFO
@@ -14334,10 +14323,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunLogEntry_DatabaseSync'
                     description: Database sync details (if type is DATABASE_SYNC).
-                taskRunStatusUpdate:
-                    allOf:
-                        - $ref: '#/components/schemas/TaskRunLogEntry_TaskRunStatusUpdate'
-                    description: Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
                 transactionControl:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunLogEntry_TransactionControl'
@@ -14469,18 +14454,6 @@ components:
                     type: string
                     description: Error message if the schema dump failed.
             description: Schema dump operation details.
-        TaskRunLogEntry_TaskRunStatusUpdate:
-            type: object
-            properties:
-                status:
-                    enum:
-                        - STATUS_UNSPECIFIED
-                        - RUNNING_WAITING
-                        - RUNNING_RUNNING
-                    type: string
-                    description: The new status.
-                    format: enum
-            description: Task run status update details.
         TaskRunLogEntry_TransactionControl:
             type: object
             properties:

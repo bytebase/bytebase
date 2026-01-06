@@ -4,15 +4,16 @@ package notifylistener
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -81,19 +82,19 @@ func (l *Listener) listen(ctx context.Context) error {
 }
 
 func (l *Listener) handleNotification(payload string) {
-	var signal store.Signal
-	if err := json.Unmarshal([]byte(payload), &signal); err != nil {
+	var signal storepb.Signal
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payload), &signal); err != nil {
 		slog.Warn("invalid signal payload", "payload", payload, log.BBError(err))
 		return
 	}
 
 	switch signal.Type {
-	case store.SignalTypeCancelPlanCheckRun:
-		if cancel, ok := l.bus.RunningPlanCheckRunsCancelFunc.Load(signal.UID); ok {
+	case storepb.Signal_CANCEL_PLAN_CHECK_RUN:
+		if cancel, ok := l.bus.RunningPlanCheckRunsCancelFunc.Load(int(signal.Uid)); ok {
 			cancel.(context.CancelFunc)()
 		}
-	case store.SignalTypeCancelTaskRun:
-		if cancel, ok := l.bus.RunningTaskRunsCancelFunc.Load(signal.UID); ok {
+	case storepb.Signal_CANCEL_TASK_RUN:
+		if cancel, ok := l.bus.RunningTaskRunsCancelFunc.Load(int(signal.Uid)); ok {
 			cancel.(context.CancelFunc)()
 		}
 	default:

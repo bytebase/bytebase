@@ -478,13 +478,6 @@ export declare const ReleaseSchema: GenMessage<Release>;
  */
 export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   /**
-   * The unique identifier for the file.
-   *
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
    * The path of the file. e.g., `2.2/V0001_create_table.sql`.
    *
    * @generated from field: string path = 2;

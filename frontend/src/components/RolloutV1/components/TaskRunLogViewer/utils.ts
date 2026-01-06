@@ -71,7 +71,6 @@ export const isComplete = (entry: TaskRunLogEntry): boolean => {
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
       return !!(entry.computeDiff?.startTime && entry.computeDiff?.endTime);
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-    case TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE:
     case TaskRunLogEntry_Type.RETRY_INFO:
       return true;
     default:

@@ -8,9 +8,6 @@ export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
   if (type === TaskRunLogEntry_Type.SCHEMA_DUMP) {
     return t("issue.task-run.task-run-log.entry-type.schema-dump");
   }
-  if (type === TaskRunLogEntry_Type.TASK_RUN_STATUS_UPDATE) {
-    return t("issue.task-run.task-run-log.entry-type.task-run-status-update");
-  }
   if (type === TaskRunLogEntry_Type.TRANSACTION_CONTROL) {
     return t("issue.task-run.task-run-log.entry-type.transaction-control");
   }

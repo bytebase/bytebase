@@ -275,6 +275,11 @@
     - [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel)
     - [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode)
   
+- [store/signal.proto](#store_signal-proto)
+    - [Signal](#bytebase-store-Signal)
+  
+    - [Signal.Type](#bytebase-store-Signal-Type)
+  
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
     - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
@@ -306,10 +311,8 @@
     - [TaskRunLog.RetryInfo](#bytebase-store-TaskRunLog-RetryInfo)
     - [TaskRunLog.SchemaDumpEnd](#bytebase-store-TaskRunLog-SchemaDumpEnd)
     - [TaskRunLog.SchemaDumpStart](#bytebase-store-TaskRunLog-SchemaDumpStart)
-    - [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate)
     - [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl)
   
-    - [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status)
     - [TaskRunLog.TransactionControl.Type](#bytebase-store-TaskRunLog-TransactionControl-Type)
     - [TaskRunLog.Type](#bytebase-store-TaskRunLog-Type)
   
@@ -756,8 +759,6 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
-| version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
 | dump_version | [int32](#int32) |  | Dump format version for drift detection reliability. Engine-specific version stored when baseline/migration is created. 0 = legacy changelog (pre-versioning). |
@@ -3553,7 +3554,6 @@ Activity type enumeration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | version | [string](#string) |  |  |
@@ -4578,6 +4578,51 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
+<a name="store_signal-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/signal.proto
+
+
+
+<a name="bytebase-store-Signal"></a>
+
+### Signal
+Signal represents a notification payload sent via PostgreSQL NOTIFY for HA coordination.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [Signal.Type](#bytebase-store-Signal-Type) |  |  |
+| uid | [int32](#int32) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-Signal-Type"></a>
+
+### Signal.Type
+Type represents the type of signal.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| CANCEL_PLAN_CHECK_RUN | 1 |  |
+| CANCEL_TASK_RUN | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_task-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4684,8 +4729,6 @@ WaitingCause indicates why a task run is waiting to execute.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
-| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
 | parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
 
 
@@ -4821,7 +4864,6 @@ Table identifies a database table.
 | command_response | [TaskRunLog.CommandResponse](#bytebase-store-TaskRunLog-CommandResponse) |  |  |
 | database_sync_start | [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart) |  |  |
 | database_sync_end | [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd) |  |  |
-| task_run_status_update | [TaskRunLog.TaskRunStatusUpdate](#bytebase-store-TaskRunLog-TaskRunStatusUpdate) |  |  |
 | transaction_control | [TaskRunLog.TransactionControl](#bytebase-store-TaskRunLog-TransactionControl) |  |  |
 | prior_backup_start | [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart) |  |  |
 | prior_backup_end | [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd) |  |  |
@@ -5002,21 +5044,6 @@ Table identifies a database table.
 
 
 
-<a name="bytebase-store-TaskRunLog-TaskRunStatusUpdate"></a>
-
-### TaskRunLog.TaskRunStatusUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [TaskRunLog.TaskRunStatusUpdate.Status](#bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-TaskRunLog-TransactionControl"></a>
 
 ### TaskRunLog.TransactionControl
@@ -5033,19 +5060,6 @@ Table identifies a database table.
 
 
  
-
-
-<a name="bytebase-store-TaskRunLog-TaskRunStatusUpdate-Status"></a>
-
-### TaskRunLog.TaskRunStatusUpdate.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| RUNNING_WAITING | 1 | The task run is ready to be executed by the scheduler. |
-| RUNNING_RUNNING | 2 | The task run is being executed by the scheduler. |
-
 
 
 <a name="bytebase-store-TaskRunLog-TransactionControl-Type"></a>
@@ -5076,7 +5090,6 @@ Table identifies a database table.
 | COMMAND_RESPONSE | 4 |  |
 | DATABASE_SYNC_START | 5 |  |
 | DATABASE_SYNC_END | 6 |  |
-| TASK_RUN_STATUS_UPDATE | 7 |  |
 | TRANSACTION_CONTROL | 8 |  |
 | PRIOR_BACKUP_START | 9 |  |
 | PRIOR_BACKUP_END | 10 |  |

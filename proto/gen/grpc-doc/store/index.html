@@ -1275,6 +1275,25 @@
         
           
           <li>
+            <a href="#store%2fsignal.proto">store/signal.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.Signal"><span class="badge">M</span>Signal</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.Signal.Type"><span class="badge">E</span>Signal.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2ftask.proto">store/task.proto</a>
             <ul>
               
@@ -1397,17 +1416,9 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate"><span class="badge">M</span>TaskRunLog.TaskRunStatusUpdate</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.TaskRunLog.TransactionControl"><span class="badge">M</span>TaskRunLog.TransactionControl</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status"><span class="badge">E</span>TaskRunLog.TaskRunStatusUpdate.Status</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.store.TaskRunLog.TransactionControl.Type"><span class="badge">E</span>TaskRunLog.TransactionControl.Type</a>
@@ -2485,20 +2496,6 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -9790,13 +9787,6 @@ IM integration setting should be set for this function to work. </p></td>
             <tbody>
               
                 <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The unique identifier for the file. </p></td>
-                </tr>
-              
-                <tr>
                   <td>path</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -12484,6 +12474,80 @@ Default to this mode.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/signal.proto">store/signal.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.Signal">Signal</h3>
+        <p>Signal represents a notification payload sent via PostgreSQL NOTIFY for HA coordination.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.Signal.Type">Signal.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>uid</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.Signal.Type">Signal.Type</h3>
+        <p>Type represents the type of signal.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCEL_PLAN_CHECK_RUN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCEL_TASK_RUN</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/task.proto">store/task.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -12735,20 +12799,6 @@ or sheet content for non-release tasks.</p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>connection_limit</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Task is waiting due to database connection limit. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_uid</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Task is waiting for another task to complete. </p></td>
-                </tr>
               
                 <tr>
                   <td>parallel_tasks_limit</td>
@@ -13060,13 +13110,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <tr>
                   <td>database_sync_end</td>
                   <td><a href="#bytebase.store.TaskRunLog.DatabaseSyncEnd">TaskRunLog.DatabaseSyncEnd</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_run_status_update</td>
-                  <td><a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate">TaskRunLog.TaskRunStatusUpdate</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -13399,30 +13442,6 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
 
         
       
-        <h3 id="bytebase.store.TaskRunLog.TaskRunStatusUpdate">TaskRunLog.TaskRunStatusUpdate</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status">TaskRunLog.TaskRunStatusUpdate.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.TaskRunLog.TransactionControl">TaskRunLog.TransactionControl</h3>
         <p></p>
 
@@ -13455,35 +13474,6 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
         
       
 
-      
-        <h3 id="bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status">TaskRunLog.TaskRunStatusUpdate.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING_WAITING</td>
-                <td>1</td>
-                <td><p>The task run is ready to be executed by the scheduler.</p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING_RUNNING</td>
-                <td>2</td>
-                <td><p>The task run is being executed by the scheduler.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.store.TaskRunLog.TransactionControl.Type">TaskRunLog.TransactionControl.Type</h3>
         <p></p>
@@ -13567,12 +13557,6 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
               <tr>
                 <td>DATABASE_SYNC_END</td>
                 <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TASK_RUN_STATUS_UPDATE</td>
-                <td>7</td>
                 <td><p></p></td>
               </tr>
             

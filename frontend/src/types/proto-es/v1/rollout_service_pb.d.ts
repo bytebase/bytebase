@@ -1097,13 +1097,6 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
   databaseSync?: TaskRunLogEntry_DatabaseSync;
 
   /**
-   * Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
-   *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate task_run_status_update = 7;
-   */
-  taskRunStatusUpdate?: TaskRunLogEntry_TaskRunStatusUpdate;
-
-  /**
    * Transaction control details (if type is TRANSACTION_CONTROL).
    *
    * @generated from field: bytebase.v1.TaskRunLogEntry.TransactionControl transaction_control = 8;
@@ -1297,59 +1290,6 @@ export declare type TaskRunLogEntry_DatabaseSync = Message<"bytebase.v1.TaskRunL
  * Use `create(TaskRunLogEntry_DatabaseSyncSchema)` to create a new message.
  */
 export declare const TaskRunLogEntry_DatabaseSyncSchema: GenMessage<TaskRunLogEntry_DatabaseSync>;
-
-/**
- * Task run status update details.
- *
- * @generated from message bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate
- */
-export declare type TaskRunLogEntry_TaskRunStatusUpdate = Message<"bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate"> & {
-  /**
-   * The new status.
-   *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status status = 1;
-   */
-  status: TaskRunLogEntry_TaskRunStatusUpdate_Status;
-};
-
-/**
- * Describes the message bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.
- * Use `create(TaskRunLogEntry_TaskRunStatusUpdateSchema)` to create a new message.
- */
-export declare const TaskRunLogEntry_TaskRunStatusUpdateSchema: GenMessage<TaskRunLogEntry_TaskRunStatusUpdate>;
-
-/**
- * Internal status for task run execution.
- *
- * @generated from enum bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status
- */
-export enum TaskRunLogEntry_TaskRunStatusUpdate_Status {
-  /**
-   * Unspecified status.
-   *
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
-   */
-  STATUS_UNSPECIFIED = 0,
-
-  /**
-   * The task run is ready to be executed by the scheduler.
-   *
-   * @generated from enum value: RUNNING_WAITING = 1;
-   */
-  RUNNING_WAITING = 1,
-
-  /**
-   * The task run is being executed by the scheduler.
-   *
-   * @generated from enum value: RUNNING_RUNNING = 2;
-   */
-  RUNNING_RUNNING = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.Status.
- */
-export declare const TaskRunLogEntry_TaskRunStatusUpdate_StatusSchema: GenEnum<TaskRunLogEntry_TaskRunStatusUpdate_Status>;
 
 /**
  * Transaction control operation details.
@@ -1683,13 +1623,6 @@ export enum TaskRunLogEntry_Type {
    * @generated from enum value: DATABASE_SYNC = 3;
    */
   DATABASE_SYNC = 3,
-
-  /**
-   * Task run status update.
-   *
-   * @generated from enum value: TASK_RUN_STATUS_UPDATE = 4;
-   */
-  TASK_RUN_STATUS_UPDATE = 4,
 
   /**
    * Transaction control (BEGIN, COMMIT, ROLLBACK).

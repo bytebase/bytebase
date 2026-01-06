@@ -461,17 +461,6 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.DatabaseSync.EndTime = timestamppb.New(l.T)
 			prev.DatabaseSync.Error = l.Payload.DatabaseSyncEnd.Error
 
-		case storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE:
-			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_TASK_RUN_STATUS_UPDATE,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
-				TaskRunStatusUpdate: &v1pb.TaskRunLogEntry_TaskRunStatusUpdate{
-					Status: convertTaskRunLogTaskRunStatus(l.Payload.TaskRunStatusUpdate.Status),
-				},
-			}
-			entries = append(entries, e)
-
 		case storepb.TaskRunLog_TRANSACTION_CONTROL:
 			e := &v1pb.TaskRunLogEntry{
 				Type:     v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
@@ -558,17 +547,6 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 	}
 
 	return entries
-}
-
-func convertTaskRunLogTaskRunStatus(s storepb.TaskRunLog_TaskRunStatusUpdate_Status) v1pb.TaskRunLogEntry_TaskRunStatusUpdate_Status {
-	switch s {
-	case storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_WAITING:
-		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_WAITING
-	case storepb.TaskRunLog_TaskRunStatusUpdate_RUNNING_RUNNING:
-		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_RUNNING_RUNNING
-	default:
-		return v1pb.TaskRunLogEntry_TaskRunStatusUpdate_STATUS_UNSPECIFIED
-	}
 }
 
 func convertTaskRunLogTransactionControlType(t storepb.TaskRunLog_TransactionControl_Type) v1pb.TaskRunLogEntry_TransactionControl_Type {

@@ -547,8 +547,6 @@ message TaskRunLogEntry {
     COMMAND_EXECUTE = 2;
     // Database synchronization.
     DATABASE_SYNC = 3;
-    // Task run status update.
-    TASK_RUN_STATUS_UPDATE = 4;
     // Transaction control (BEGIN, COMMIT, ROLLBACK).
     TRANSACTION_CONTROL = 5;
     // Prior backup operation.
@@ -572,8 +570,6 @@ message TaskRunLogEntry {
   CommandExecute command_execute = 5;
   // Database sync details (if type is DATABASE_SYNC).
   DatabaseSync database_sync = 6;
-  // Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
-  TaskRunStatusUpdate task_run_status_update = 7;
   // Transaction control details (if type is TRANSACTION_CONTROL).
   TransactionControl transaction_control = 8;
   // Prior backup details (if type is PRIOR_BACKUP).
@@ -633,21 +629,6 @@ message TaskRunLogEntry {
     google.protobuf.Timestamp end_time = 2;
     // Error message if sync failed.
     string error = 3;
-  }
-
-  // Task run status update details.
-  message TaskRunStatusUpdate {
-    // The new status.
-    Status status = 1;
-    // Internal status for task run execution.
-    enum Status {
-      // Unspecified status.
-      STATUS_UNSPECIFIED = 0;
-      // The task run is ready to be executed by the scheduler.
-      RUNNING_WAITING = 1;
-      // The task run is being executed by the scheduler.
-      RUNNING_RUNNING = 2;
-    }
   }
 
   // Transaction control operation details.
