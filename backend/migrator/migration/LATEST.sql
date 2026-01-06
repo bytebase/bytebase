@@ -501,7 +501,6 @@ CREATE TABLE changelog (
     instance text NOT NULL,
     db_name text NOT NULL,
     status text NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    prev_sync_history_id bigint REFERENCES sync_history(id),
     sync_history_id bigint REFERENCES sync_history(id),
     -- Stored as ChangelogPayload (proto/store/store/changelog.proto)
     payload jsonb NOT NULL DEFAULT '{}',

@@ -93,34 +93,19 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	}))
 	a.NoError(err)
 	changelogs := resp.Msg.Changelogs
-	wantChangelogs := []*v1pb.Changelog{
-		{
-			Type:       v1pb.Changelog_MIGRATE,
-			Status:     v1pb.Changelog_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: dumpedSchema,
-			Version:    "",
-		},
-		{
-			Type:       v1pb.Changelog_MIGRATE,
-			Status:     v1pb.Changelog_DONE,
-			Schema:     dumpedSchema,
-			PrevSchema: "",
-			Version:    "",
-		},
-	}
-	a.Equal(len(wantChangelogs), len(changelogs))
-	for i, changelog := range changelogs {
-		got := &v1pb.Changelog{
-			Type:       changelog.Type,
-			Status:     changelog.Status,
-			Schema:     changelog.Schema,
-			PrevSchema: changelog.PrevSchema,
-			Version:    changelog.Version,
-		}
-		want := wantChangelogs[i]
-		a.Equal(want, got)
-	}
+	// Expect 3 changelogs: 2 migrations + baseline (auto-created on first migration)
+	a.Equal(3, len(changelogs))
+	// First changelog should be the data update migration (most recent)
+	a.Equal(v1pb.Changelog_MIGRATE, changelogs[0].Type)
+	a.Equal(v1pb.Changelog_DONE, changelogs[0].Status)
+	a.Equal(dumpedSchema, changelogs[0].Schema)
+	// Second changelog should be the schema migration
+	a.Equal(v1pb.Changelog_MIGRATE, changelogs[1].Type)
+	a.Equal(v1pb.Changelog_DONE, changelogs[1].Status)
+	a.Equal(dumpedSchema, changelogs[1].Schema)
+	// Third changelog should be the baseline
+	a.Equal(v1pb.Changelog_BASELINE, changelogs[2].Type)
+	a.Equal(v1pb.Changelog_DONE, changelogs[2].Status)
 }
 
 func TestGetLatestSchema(t *testing.T) {

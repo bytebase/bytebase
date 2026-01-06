@@ -119,6 +119,54 @@ export const useChangelogStore = defineStore("changelog", () => {
     return cache.getEntity([name, view]);
   };
 
+  /**
+   * Fetches the previous changelog for a given changelog with FULL view.
+   * Returns the previous changelog's schema as the "before" state for diff comparison.
+   * @param changelogName - The name of the current changelog
+   * @returns The previous changelog with full schema, or undefined if this is the first changelog
+   */
+  const fetchPreviousChangelog = async (
+    changelogName: string
+  ): Promise<Changelog | undefined> => {
+    // Extract database name from changelog name
+    // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+    const parts = changelogName.split("/changelogs/");
+    if (parts.length !== 2) {
+      return undefined;
+    }
+    const databaseName = parts[0];
+    const currentChangelogUID = extractChangelogUID(changelogName);
+    if (!currentChangelogUID || currentChangelogUID === String(UNKNOWN_ID)) {
+      return undefined;
+    }
+
+    // Fetch changelogs with BASIC view to find the previous one efficiently
+    const { changelogs } = await fetchChangelogList({
+      parent: databaseName,
+      pageSize: 1000, // Fetch enough to find the previous one
+      view: ChangelogView.BASIC, // Use BASIC view for listing - much lighter
+    });
+
+    // Find the current changelog index
+    const currentIndex = changelogs.findIndex(
+      (cl) => extractChangelogUID(cl.name) === currentChangelogUID
+    );
+
+    // If not found or it's the last one (oldest), there's no previous
+    if (currentIndex === -1 || currentIndex === changelogs.length - 1) {
+      return undefined;
+    }
+
+    // Get the previous changelog name
+    const previousChangelogName = changelogs[currentIndex + 1].name;
+
+    // Fetch the previous changelog with FULL view to get the schema
+    return await getOrFetchChangelogByName(
+      previousChangelogName,
+      ChangelogView.FULL
+    );
+  };
+
   return {
     clearCache,
     fetchChangelogList,
@@ -127,5 +175,6 @@ export const useChangelogStore = defineStore("changelog", () => {
     fetchChangelog,
     getOrFetchChangelogByName,
     getChangelogByName,
+    fetchPreviousChangelog,
   };
 });

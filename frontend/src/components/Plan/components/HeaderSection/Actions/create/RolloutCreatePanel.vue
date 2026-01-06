@@ -33,6 +33,9 @@
             $t("plan.navigator.checks")
           }}</span>
           <PlanCheckStatusCount :plan="plan" />
+          <span v-if="!hasAnyChecks" class="text-sm text-control-placeholder">
+            {{ $t("plan.overview.no-checks") }}
+          </span>
         </div>
       </div>
     </template>
@@ -74,7 +77,7 @@ import { useRouter } from "vue-router";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
-import { usePlanContext } from "@/components/Plan/logic";
+import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
@@ -109,6 +112,7 @@ const { events } = usePlanContext();
 const plan = computed(() => props.context.plan);
 const issue = computed(() => props.context.issue);
 const project = computed(() => props.context.project);
+const { hasAnyStatus: hasAnyChecks } = usePlanCheckStatus(plan);
 
 const loading = ref(false);
 const bypassWarnings = ref(false);

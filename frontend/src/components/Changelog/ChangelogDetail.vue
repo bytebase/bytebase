@@ -75,7 +75,7 @@
           <DiffEditor
             v-if="state.showDiff"
             class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip"
-            :original="changelog.prevSchema"
+            :original="previousSchema"
             :modified="changelog.schema"
             :readonly="true"
             :auto-height="{ min: 120, max: 600 }"
@@ -120,6 +120,7 @@ import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 interface LocalState {
   loading: boolean;
   showDiff: boolean;
+  previousChangelog?: Changelog;
 }
 
 const props = defineProps<{
@@ -133,6 +134,7 @@ const changelogStore = useChangelogStore();
 const state = reactive<LocalState>({
   loading: false,
   showDiff: false,
+  previousChangelog: undefined,
 });
 
 const { database, ready } = useDatabaseV1ByName(props.database);
@@ -197,6 +199,14 @@ const allowShowDiff = computed((): boolean => {
   return changelog.value.type === Changelog_Type.MIGRATE;
 });
 
+// Get the previous changelog's schema as the "before" state for diff
+const previousSchema = computed((): string => {
+  if (!state.previousChangelog) {
+    return "";
+  }
+  return state.previousChangelog.schema;
+});
+
 watch(
   [database.value.name, changelogName],
   async () => {
@@ -212,6 +222,20 @@ watch(
         ChangelogView.FULL
       ),
     ]);
+
+    // Fetch the previous changelog to get the "before" schema for diff
+    if (changelog.value) {
+      try {
+        const prevChangelog = await changelogStore.fetchPreviousChangelog(
+          unref(changelogName)
+        );
+        state.previousChangelog = prevChangelog;
+      } catch (error) {
+        console.error("Failed to fetch previous changelog:", error);
+        state.previousChangelog = undefined;
+      }
+    }
+
     state.loading = false;
   },
   { immediate: true }

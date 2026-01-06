@@ -4570,8 +4570,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
 | schema | [string](#string) |  |  |
 | schema_size | [int64](#int64) |  |  |
-| prev_schema | [string](#string) |  |  |
-| prev_schema_size | [int64](#int64) |  |  |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | version | [string](#string) |  | Could be empty |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
