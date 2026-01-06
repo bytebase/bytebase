@@ -1,11 +1,9 @@
 import Emittery from "emittery";
-import type { InjectionKey, Ref } from "vue";
+import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { instanceV1SupportsTransactionMode } from "@/utils";
@@ -23,12 +21,11 @@ export const provideTransactionModeSettingContext = (refs: {
   project: Ref<Project>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
-  issue?: Ref<Issue | undefined>;
-  readonly?: Ref<boolean>;
+  allowChange: ComputedRef<boolean>;
 }) => {
   const databaseStore = useDatabaseV1Store();
 
-  const { isCreating, plan, selectedSpec, issue, readonly } = refs;
+  const { isCreating, plan, selectedSpec, allowChange } = refs;
 
   const events = new Emittery<{
     update: never;
@@ -62,30 +59,6 @@ export const provideTransactionModeSettingContext = (refs: {
     // Show for sheet-based migrations only (not release-based).
     // Release-based migrations don't support transaction mode configuration.
     return !config.release;
-  });
-
-  const allowChange = computed(() => {
-    // If readonly mode, disallow changes
-    if (readonly?.value) {
-      return false;
-    }
-
-    // Allow changes when creating
-    if (isCreating.value) {
-      return true;
-    }
-
-    // Disallow changes if the plan has started rollout.
-    if (plan.value.hasRollout) {
-      return false;
-    }
-
-    // If issue is not open, disallow
-    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
-      return false;
-    }
-
-    return true;
   });
 
   const context = {

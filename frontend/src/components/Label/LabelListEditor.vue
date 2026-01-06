@@ -16,8 +16,8 @@
       />
     </div>
 
-    <div v-if="!readonly">
-      <NButton size="small" :disabled="!allowAddLabel" @click="handleAdd">
+    <div>
+      <NButton size="small" :disabled="readonly || !allowAddLabel" @click="handleAdd">
         <template #icon>
           <heroicons:plus />
         </template>

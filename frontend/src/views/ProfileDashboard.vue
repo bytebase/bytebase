@@ -4,8 +4,9 @@
     tabindex="0"
   >
     <NoPermissionPlaceholder
-      v-if="permissionStore.onlyWorkspaceMember && !isSelf"
-      class="py-6"
+      v-if="!allowGet"
+      class="px-4"
+      :permissions="['bb.users.get']"
     />
     <div v-else>
       <!-- Profile header -->
@@ -245,7 +246,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
-  usePermissionStore,
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
@@ -284,7 +284,6 @@ const settingV1Store = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
-const permissionStore = usePermissionStore();
 
 const state = reactive<LocalState>({
   editing: false,
@@ -345,6 +344,10 @@ const userRoles = computed(() => {
 
 const isSelf = computed(() => currentUser.value.name === user.value.name);
 
+const allowGet = computed(
+  () => isSelf.value || hasWorkspacePermissionV2("bb.users.get")
+);
+
 // User can change her own info.
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
 const allowEdit = computed(() => {
@@ -358,7 +361,7 @@ const allowEdit = computed(() => {
   if (user.value.state !== State.ACTIVE) {
     return false;
   }
-  return isSelf.value || hasWorkspacePermissionV2("bb.policies.update");
+  return isSelf.value || hasWorkspacePermissionV2("bb.users.update");
 });
 
 // Only users with bb.users.updateEmail permission can change email.

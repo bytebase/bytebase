@@ -45,9 +45,9 @@ import { NDataTable, NPerformantEllipsis } from "naive-ui";
 import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAvatar } from "@/bbkit";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useUserStore } from "@/store";
@@ -234,12 +234,18 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       hide: !showExtendedColumns.value,
       render: (issue) => {
         const creator =
-          userStore.getUserByIdentifier(issue.creator) || unknownUser();
+          userStore.getUserByIdentifier(issue.creator) ||
+          unknownUser(issue.creator);
         return (
-          <div class="flex flex-row items-center overflow-hidden gap-x-2">
-            <BBAvatar size="SMALL" username={creator.title} />
-            <span class="truncate">{creator.title}</span>
-          </div>
+          <UserNameCell
+            user={creator}
+            size="small"
+            link={false}
+            allowEdit={false}
+            showMfaEnabled={false}
+            showSource={false}
+            showEmail={false}
+          />
         );
       },
     },

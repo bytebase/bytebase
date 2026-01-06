@@ -80,7 +80,12 @@ import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 
 const { t } = useI18n();
-const { plan, isCreating, readonly } = usePlanContext();
+const {
+  plan,
+  isCreating,
+  readonly,
+  allowEdit: hasPermission,
+} = usePlanContext();
 const { selectedSpec, targets, getDatabaseTargets } = useSelectedSpec();
 const dbGroupStore = useDBGroupStore();
 const projectStore = useProjectV1Store();
@@ -100,7 +105,12 @@ const project = computed(() => {
 // An empty string for `plan.value.hasRollout` indicates that the plan is in a draft or uninitialized state,
 // which allows edits to be made.
 const allowEdit = computed(() => {
-  if (readonly.value) return false;
+  if (readonly.value) {
+    return false;
+  }
+  if (!hasPermission.value) {
+    return false;
+  }
   return (isCreating.value || !plan.value.hasRollout) && selectedSpec.value;
 });
 

@@ -32,12 +32,15 @@
         </template>
       </NTooltip>
     </template>
-    <template v-else-if="currentApprover">
-      <BBAvatar :size="'SMALL'" :username="currentApprover.title" />
-      <span class="truncate">
-        {{ currentApprover.title }}
-      </span>
-    </template>
+    <UserNameCell v-else-if="currentApprover"
+      size="small"
+      :user="currentApprover"
+      :link="false"
+      :allow-edit="false"
+      :show-email="false"
+      :show-mfa-enabled="false"
+      :show-source="false"
+    />
     <template v-else>
       <span>-</span>
     </template>
@@ -48,7 +51,7 @@
 import { computedAsync } from "@vueuse/core";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { BBAvatar } from "@/bbkit";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import {
   candidatesOfApprovalStepV1,
   useCurrentUserV1,

@@ -159,7 +159,12 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import { type DatabaseResource, PRESET_ROLES, PresetRoleType } from "@/types";
+import {
+  type DatabaseResource,
+  PRESET_ROLES,
+  PresetRoleType,
+  unknownUser,
+} from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
@@ -641,10 +646,9 @@ const groupMembers = computedAsync(async () => {
 
   const resp = [];
   for (const member of members) {
-    const user = userStore.getUserByIdentifier(member.member);
-    if (!user) {
-      continue;
-    }
+    const user =
+      userStore.getUserByIdentifier(member.member) ??
+      unknownUser(member.member);
     resp.push({
       user,
       role: member.role,

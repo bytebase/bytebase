@@ -46,7 +46,13 @@ type ViewMode = "EDIT" | "VIEW";
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, issue, readonly } = usePlanContext();
+const {
+  isCreating,
+  plan,
+  issue,
+  readonly,
+  allowEdit: hasPermission,
+} = usePlanContext();
 
 const state = reactive({
   isEditing: false,
@@ -110,16 +116,7 @@ const allowEdit = computed(() => {
     return false;
   }
 
-  // For plans without issue, check plan permissions
-  // Allowed if current user is the creator.
-  if (extractUserId(plan.value.creator) === currentUser.value.email) {
-    return true;
-  }
-  // Allowed if current user has related permission.
-  if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
-    return true;
-  }
-  return false;
+  return hasPermission.value;
 });
 
 const onBlur = async () => {

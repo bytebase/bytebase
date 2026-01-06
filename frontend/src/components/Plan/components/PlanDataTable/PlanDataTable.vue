@@ -18,8 +18,8 @@ import { NDataTable, NPerformantEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAvatar } from "@/bbkit";
 import Timestamp from "@/components/misc/Timestamp.vue";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
@@ -100,12 +100,17 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       width: 128,
       render: (plan) => {
         const creator =
-          userStore.getUserByIdentifier(plan.creator) || unknownUser();
+          userStore.getUserByIdentifier(plan.creator) ||
+          unknownUser(plan.creator);
         return (
-          <div class="flex flex-row items-center overflow-hidden gap-x-2">
-            <BBAvatar size="SMALL" username={creator.title} />
-            <span class="truncate">{creator.title}</span>
-          </div>
+          <UserNameCell
+            user={creator}
+            size="small"
+            allowEdit={false}
+            showMfaEnabled={false}
+            showSource={false}
+            showEmail={false}
+          />
         );
       },
     },
