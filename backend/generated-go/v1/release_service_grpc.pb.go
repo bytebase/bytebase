@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ReleaseService_GetRelease_FullMethodName      = "/bytebase.v1.ReleaseService/GetRelease"
 	ReleaseService_ListReleases_FullMethodName    = "/bytebase.v1.ReleaseService/ListReleases"
-	ReleaseService_SearchReleases_FullMethodName  = "/bytebase.v1.ReleaseService/SearchReleases"
 	ReleaseService_CreateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/CreateRelease"
 	ReleaseService_UpdateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/UpdateRelease"
 	ReleaseService_DeleteRelease_FullMethodName   = "/bytebase.v1.ReleaseService/DeleteRelease"
@@ -42,9 +41,6 @@ type ReleaseServiceClient interface {
 	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(ctx context.Context, in *ListReleasesRequest, opts ...grpc.CallOption) (*ListReleasesResponse, error)
-	// Searches releases by digest or other criteria.
-	// Permissions required: bb.releases.get
-	SearchReleases(ctx context.Context, in *SearchReleasesRequest, opts ...grpc.CallOption) (*SearchReleasesResponse, error)
 	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(ctx context.Context, in *CreateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
@@ -85,16 +81,6 @@ func (c *releaseServiceClient) ListReleases(ctx context.Context, in *ListRelease
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListReleasesResponse)
 	err := c.cc.Invoke(ctx, ReleaseService_ListReleases_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *releaseServiceClient) SearchReleases(ctx context.Context, in *SearchReleasesRequest, opts ...grpc.CallOption) (*SearchReleasesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchReleasesResponse)
-	err := c.cc.Invoke(ctx, ReleaseService_SearchReleases_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +149,6 @@ type ReleaseServiceServer interface {
 	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *ListReleasesRequest) (*ListReleasesResponse, error)
-	// Searches releases by digest or other criteria.
-	// Permissions required: bb.releases.get
-	SearchReleases(context.Context, *SearchReleasesRequest) (*SearchReleasesResponse, error)
 	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *CreateReleaseRequest) (*Release, error)
@@ -197,9 +180,6 @@ func (UnimplementedReleaseServiceServer) GetRelease(context.Context, *GetRelease
 }
 func (UnimplementedReleaseServiceServer) ListReleases(context.Context, *ListReleasesRequest) (*ListReleasesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListReleases not implemented")
-}
-func (UnimplementedReleaseServiceServer) SearchReleases(context.Context, *SearchReleasesRequest) (*SearchReleasesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SearchReleases not implemented")
 }
 func (UnimplementedReleaseServiceServer) CreateRelease(context.Context, *CreateReleaseRequest) (*Release, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateRelease not implemented")
@@ -269,24 +249,6 @@ func _ReleaseService_ListReleases_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ReleaseServiceServer).ListReleases(ctx, req.(*ListReleasesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ReleaseService_SearchReleases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchReleasesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ReleaseServiceServer).SearchReleases(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ReleaseService_SearchReleases_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ReleaseServiceServer).SearchReleases(ctx, req.(*SearchReleasesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -395,10 +357,6 @@ var ReleaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListReleases",
 			Handler:    _ReleaseService_ListReleases_Handler,
-		},
-		{
-			MethodName: "SearchReleases",
-			Handler:    _ReleaseService_SearchReleases_Handler,
 		},
 		{
 			MethodName: "CreateRelease",

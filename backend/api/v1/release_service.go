@@ -215,63 +215,6 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
-func (s *ReleaseService) SearchReleases(ctx context.Context, req *connect.Request[v1pb.SearchReleasesRequest]) (*connect.Response[v1pb.SearchReleasesResponse], error) {
-	if req.Msg.PageSize < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size must be non-negative: %d", req.Msg.PageSize))
-	}
-
-	projectID, err := common.GetProjectID(req.Msg.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
-	}
-
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   req.Msg.PageToken,
-		limit:   int(req.Msg.PageSize),
-		maximum: 1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	limitPlusOne := offset.limit + 1
-
-	releaseFind := &store.FindReleaseMessage{
-		ProjectID: &project.ResourceID,
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
-	}
-
-	if req.Msg.Digest != nil {
-		releaseFind.Digest = req.Msg.Digest
-	}
-
-	releaseMessages, err := s.store.ListReleases(ctx, releaseFind)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list releases"))
-	}
-
-	var nextPageToken string
-	if len(releaseMessages) == limitPlusOne {
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
-		}
-		releaseMessages = releaseMessages[:offset.limit]
-	}
-
-	releases := convertToReleases(releaseMessages)
-	return connect.NewResponse(&v1pb.SearchReleasesResponse{
-		Releases:      releases,
-		NextPageToken: nextPageToken,
-	}), nil
-}
-
 func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
 	if req.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))

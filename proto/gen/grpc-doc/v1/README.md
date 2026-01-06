@@ -514,8 +514,6 @@
     - [Release](#bytebase-v1-Release)
     - [Release.File](#bytebase-v1-Release-File)
     - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
-    - [SearchReleasesRequest](#bytebase-v1-SearchReleasesRequest)
-    - [SearchReleasesResponse](#bytebase-v1-SearchReleasesResponse)
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
@@ -8472,42 +8470,6 @@ Version control system source information.
 
 
 
-<a name="bytebase-v1-SearchReleasesRequest"></a>
-
-### SearchReleasesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of releases to return. The service may return fewer than this value. If unspecified, at most 10 releases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListReleases` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListReleases` must match the call that provided the page token. |
-| digest | [string](#string) | optional | Search by the digest of the release. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchReleasesResponse"></a>
-
-### SearchReleasesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| releases | [Release](#bytebase-v1-Release) | repeated | The releases matching the search criteria. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-UndeleteReleaseRequest"></a>
 
 ### UndeleteReleaseRequest
@@ -8568,7 +8530,6 @@ ReleaseService manages releases for coordinating deployments.
 | ----------- | ------------ | ------------- | ------------|
 | GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) | Retrieves a release by name. Permissions required: bb.releases.get |
 | ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) | Lists releases in a project. Permissions required: bb.releases.list |
-| SearchReleases | [SearchReleasesRequest](#bytebase-v1-SearchReleasesRequest) | [SearchReleasesResponse](#bytebase-v1-SearchReleasesResponse) | Searches releases by digest or other criteria. Permissions required: bb.releases.get |
 | CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) | Creates a new release with SQL files. Permissions required: bb.releases.create |
 | UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) | Updates an existing release. Permissions required: bb.releases.update When allow_missing=true, also requires: bb.releases.create |
 | DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a release. Permissions required: bb.releases.delete |

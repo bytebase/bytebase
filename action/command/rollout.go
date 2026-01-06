@@ -80,32 +80,22 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}
-			// Search release by digest so that we don't create duplicate releases.
-			searchRelease, err := client.GetReleaseByDigest(ctx, w.Project, releaseDigest)
+			releaseType := v1pb.Release_VERSIONED
+			if w.Declarative {
+				releaseType = v1pb.Release_DECLARATIVE
+			}
+			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
+				Title:     w.ReleaseTitle,
+				Files:     releaseFiles,
+				VcsSource: getVCSSource(w),
+				Digest:    releaseDigest,
+				Type:      releaseType,
+			})
 			if err != nil {
-				return errors.Wrapf(err, "failed to get release by digest")
+				return errors.Wrapf(err, "failed to create release")
 			}
-			if searchRelease != nil {
-				w.Logger.Info("found release by digest", "url", fmt.Sprintf("%s/%s", client.url, searchRelease.Name))
-				release = searchRelease.Name
-			} else {
-				releaseType := v1pb.Release_VERSIONED
-				if w.Declarative {
-					releaseType = v1pb.Release_DECLARATIVE
-				}
-				createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
-					Title:     w.ReleaseTitle,
-					Files:     releaseFiles,
-					VcsSource: getVCSSource(w),
-					Digest:    releaseDigest,
-					Type:      releaseType,
-				})
-				if err != nil {
-					return errors.Wrapf(err, "failed to create release")
-				}
-				w.Logger.Info("release created", "url", fmt.Sprintf("%s/%s", client.url, createReleaseResponse.Name))
-				release = createReleaseResponse.Name
-			}
+			w.Logger.Info("release created", "url", fmt.Sprintf("%s/%s", client.url, createReleaseResponse.Name))
+			release = createReleaseResponse.Name
 			w.OutputMap.Release = release
 
 			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{

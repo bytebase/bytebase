@@ -40,9 +40,6 @@ const (
 	// ReleaseServiceListReleasesProcedure is the fully-qualified name of the ReleaseService's
 	// ListReleases RPC.
 	ReleaseServiceListReleasesProcedure = "/bytebase.v1.ReleaseService/ListReleases"
-	// ReleaseServiceSearchReleasesProcedure is the fully-qualified name of the ReleaseService's
-	// SearchReleases RPC.
-	ReleaseServiceSearchReleasesProcedure = "/bytebase.v1.ReleaseService/SearchReleases"
 	// ReleaseServiceCreateReleaseProcedure is the fully-qualified name of the ReleaseService's
 	// CreateRelease RPC.
 	ReleaseServiceCreateReleaseProcedure = "/bytebase.v1.ReleaseService/CreateRelease"
@@ -68,9 +65,6 @@ type ReleaseServiceClient interface {
 	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
-	// Searches releases by digest or other criteria.
-	// Permissions required: bb.releases.get
-	SearchReleases(context.Context, *connect.Request[v1.SearchReleasesRequest]) (*connect.Response[v1.SearchReleasesResponse], error)
 	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
@@ -112,12 +106,6 @@ func NewReleaseServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(releaseServiceMethods.ByName("ListReleases")),
 			connect.WithClientOptions(opts...),
 		),
-		searchReleases: connect.NewClient[v1.SearchReleasesRequest, v1.SearchReleasesResponse](
-			httpClient,
-			baseURL+ReleaseServiceSearchReleasesProcedure,
-			connect.WithSchema(releaseServiceMethods.ByName("SearchReleases")),
-			connect.WithClientOptions(opts...),
-		),
 		createRelease: connect.NewClient[v1.CreateReleaseRequest, v1.Release](
 			httpClient,
 			baseURL+ReleaseServiceCreateReleaseProcedure,
@@ -155,7 +143,6 @@ func NewReleaseServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 type releaseServiceClient struct {
 	getRelease      *connect.Client[v1.GetReleaseRequest, v1.Release]
 	listReleases    *connect.Client[v1.ListReleasesRequest, v1.ListReleasesResponse]
-	searchReleases  *connect.Client[v1.SearchReleasesRequest, v1.SearchReleasesResponse]
 	createRelease   *connect.Client[v1.CreateReleaseRequest, v1.Release]
 	updateRelease   *connect.Client[v1.UpdateReleaseRequest, v1.Release]
 	deleteRelease   *connect.Client[v1.DeleteReleaseRequest, emptypb.Empty]
@@ -171,11 +158,6 @@ func (c *releaseServiceClient) GetRelease(ctx context.Context, req *connect.Requ
 // ListReleases calls bytebase.v1.ReleaseService.ListReleases.
 func (c *releaseServiceClient) ListReleases(ctx context.Context, req *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error) {
 	return c.listReleases.CallUnary(ctx, req)
-}
-
-// SearchReleases calls bytebase.v1.ReleaseService.SearchReleases.
-func (c *releaseServiceClient) SearchReleases(ctx context.Context, req *connect.Request[v1.SearchReleasesRequest]) (*connect.Response[v1.SearchReleasesResponse], error) {
-	return c.searchReleases.CallUnary(ctx, req)
 }
 
 // CreateRelease calls bytebase.v1.ReleaseService.CreateRelease.
@@ -211,9 +193,6 @@ type ReleaseServiceHandler interface {
 	// Lists releases in a project.
 	// Permissions required: bb.releases.list
 	ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error)
-	// Searches releases by digest or other criteria.
-	// Permissions required: bb.releases.get
-	SearchReleases(context.Context, *connect.Request[v1.SearchReleasesRequest]) (*connect.Response[v1.SearchReleasesResponse], error)
 	// Creates a new release with SQL files.
 	// Permissions required: bb.releases.create
 	CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error)
@@ -249,12 +228,6 @@ func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect.Handler
 		ReleaseServiceListReleasesProcedure,
 		svc.ListReleases,
 		connect.WithSchema(releaseServiceMethods.ByName("ListReleases")),
-		connect.WithHandlerOptions(opts...),
-	)
-	releaseServiceSearchReleasesHandler := connect.NewUnaryHandler(
-		ReleaseServiceSearchReleasesProcedure,
-		svc.SearchReleases,
-		connect.WithSchema(releaseServiceMethods.ByName("SearchReleases")),
 		connect.WithHandlerOptions(opts...),
 	)
 	releaseServiceCreateReleaseHandler := connect.NewUnaryHandler(
@@ -293,8 +266,6 @@ func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect.Handler
 			releaseServiceGetReleaseHandler.ServeHTTP(w, r)
 		case ReleaseServiceListReleasesProcedure:
 			releaseServiceListReleasesHandler.ServeHTTP(w, r)
-		case ReleaseServiceSearchReleasesProcedure:
-			releaseServiceSearchReleasesHandler.ServeHTTP(w, r)
 		case ReleaseServiceCreateReleaseProcedure:
 			releaseServiceCreateReleaseHandler.ServeHTTP(w, r)
 		case ReleaseServiceUpdateReleaseProcedure:
@@ -320,10 +291,6 @@ func (UnimplementedReleaseServiceHandler) GetRelease(context.Context, *connect.R
 
 func (UnimplementedReleaseServiceHandler) ListReleases(context.Context, *connect.Request[v1.ListReleasesRequest]) (*connect.Response[v1.ListReleasesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.ListReleases is not implemented"))
-}
-
-func (UnimplementedReleaseServiceHandler) SearchReleases(context.Context, *connect.Request[v1.SearchReleasesRequest]) (*connect.Response[v1.SearchReleasesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.SearchReleases is not implemented"))
 }
 
 func (UnimplementedReleaseServiceHandler) CreateRelease(context.Context, *connect.Request[v1.CreateReleaseRequest]) (*connect.Response[v1.Release], error) {

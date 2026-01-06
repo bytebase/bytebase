@@ -64,49 +64,6 @@ func (x *ListReleasesResponse) Equal(y *ListReleasesResponse) bool {
 	return true
 }
 
-func (x *SearchReleasesRequest) Equal(y *SearchReleasesRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Parent != y.Parent {
-		return false
-	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
-	if p, q := x.Digest, y.Digest; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
-	return true
-}
-
-func (x *SearchReleasesResponse) Equal(y *SearchReleasesResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Releases) != len(y.Releases) {
-		return false
-	}
-	for i := 0; i < len(x.Releases); i++ {
-		if !x.Releases[i].Equal(y.Releases[i]) {
-			return false
-		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
-	}
-	return true
-}
-
 func (x *CreateReleaseRequest) Equal(y *CreateReleaseRequest) bool {
 	if x == y {
 		return true
