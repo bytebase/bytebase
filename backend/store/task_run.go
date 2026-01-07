@@ -432,12 +432,10 @@ func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.D
 		    updated_at = now()
 		WHERE status = ?
 		  AND replica_id IS NOT NULL
-		  AND (
-		    replica_id NOT IN (SELECT replica_id FROM replica_heartbeat)
-		    OR replica_id IN (
-		      SELECT replica_id FROM replica_heartbeat
-		      WHERE last_heartbeat < now() - ?::INTERVAL
-		    )
+		  AND NOT EXISTS (
+		    SELECT 1 FROM replica_heartbeat rh
+		    WHERE rh.replica_id = task_run.replica_id
+		      AND rh.last_heartbeat >= now() - ?::INTERVAL
 		  )
 	`, storepb.TaskRun_FAILED.String(), storepb.TaskRun_RUNNING.String(), stalenessThreshold.String())
 
