@@ -259,8 +259,6 @@ import {
 } from "naive-ui";
 import { computed, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { ErrorList } from "@/components/IssueV1/components/common";
-import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import {
   usePlanCheckStatus,
@@ -305,6 +303,8 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID, isNullOrUndefined } from "@/utils";
+import CommonDrawer from "./CommonDrawer.vue";
+import ErrorList from "./ErrorList.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { canRolloutTasks } from "./taskPermissions";
 

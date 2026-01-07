@@ -25,7 +25,6 @@ import { NDataTable, NTag, NTooltip } from "naive-ui";
 import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { semanticTaskType } from "@/components/IssueV1";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
@@ -41,6 +40,7 @@ import {
   extractStageNameFromTaskName,
   humanizeTs,
 } from "@/utils";
+import { semanticTaskType } from "../logic";
 
 const props = withDefaults(
   defineProps<{

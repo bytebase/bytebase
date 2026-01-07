@@ -74,10 +74,10 @@ import { NAlert, NButton, NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
+import CommonDrawer from "@/components/RolloutV1/components/CommonDrawer.vue";
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,

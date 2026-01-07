@@ -133,7 +133,6 @@ import { SquareChartGanttIcon } from "lucide-vue-next";
 import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
 import { computed, onUnmounted, ref, watch } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
-import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
@@ -154,6 +153,7 @@ import {
   mapTaskRunStatusToTaskStatus,
 } from "./composables/useTaskRunUtils";
 import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
+import TaskRunDetail from "./TaskRunDetail.vue";
 
 const props = withDefaults(
   defineProps<{

@@ -31,8 +31,6 @@ import type { DataTableColumn } from "naive-ui";
 import { NButton, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
-import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/TaskRunStatusIcon.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
@@ -46,6 +44,8 @@ import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask, extractTaskUID, humanizeDurationV1 } from "@/utils";
 import TaskRunComment from "./TaskRunComment.vue";
+import TaskRunDetail from "./TaskRunDetail.vue";
+import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 const props = defineProps<{
   taskRuns: TaskRun[];
