@@ -23,11 +23,12 @@ const policyStore = usePolicyV1Store();
 onMounted(async () => {
   await router.isReady();
 
-  // Prepare roles, workspace policies and settings first.
+  // Prepare workspace policies first.
+  await policyStore.fetchPolicies({
+    resourceType: PolicyResourceType.WORKSPACE,
+  });
+
   await Promise.all([
-    policyStore.fetchPolicies({
-      resourceType: PolicyResourceType.WORKSPACE,
-    }),
     useEnvironmentV1Store().fetchEnvironments(),
     useSettingV1Store().fetchSettingList(),
   ]);

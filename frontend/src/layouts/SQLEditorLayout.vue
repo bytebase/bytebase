@@ -50,8 +50,6 @@ const prepare = async () => {
   const policyV1Store = usePolicyV1Store();
   // Prepare roles, workspace policies and settings.
   await Promise.all([
-    useSettingV1Store().fetchSettingList(),
-    useEnvironmentV1Store().fetchEnvironments(),
     policyV1Store.fetchPolicies({
       resourceType: PolicyResourceType.WORKSPACE,
     }),
@@ -61,6 +59,10 @@ const prepare = async () => {
     policyV1Store.fetchPolicies({
       resourceType: PolicyResourceType.PROJECT,
     }),
+  ]);
+  await Promise.all([
+    useSettingV1Store().fetchSettingList(),
+    useEnvironmentV1Store().fetchEnvironments(),
   ]);
   ready.value = true;
 };
