@@ -51,7 +51,7 @@ import dayjs from "dayjs";
 import { NDatePicker, NSelect } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useSettingV1Store } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
 
 interface ExpirationOption {
@@ -74,7 +74,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
+const actuatorStore = useActuatorV1Store();
 
 // Remember the last selected expiration option
 const lastSelectedExpiration = useLocalStorage<number>(
@@ -105,11 +105,8 @@ const maximumRoleExpiration = computed(() => {
   if (props.role === PresetRoleType.PROJECT_OWNER) {
     return undefined;
   }
-  const seconds = settingV1Store.workspaceProfileSetting?.maximumRoleExpiration
-    ?.seconds
-    ? Number(
-        settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds
-      )
+  const seconds = actuatorStore.restriction.maximumRoleExpiration?.seconds
+    ? Number(actuatorStore.restriction.maximumRoleExpiration.seconds)
     : undefined;
   if (!seconds) {
     return undefined;

@@ -14,9 +14,9 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useActuatorV1Store } from "@/store";
 
 const customBrandingLogo = computed((): string | undefined => {
-  return useSettingV1Store().brandingLogo;
+  return useActuatorV1Store().brandingLogo;
 });
 </script>

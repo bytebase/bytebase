@@ -19,12 +19,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { hasFeature, useSettingV1Store } from "@/store";
+import { hasFeature, useActuatorV1Store } from "@/store";
 import { Announcement_AlertLevel } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { urlfy } from "@/utils";
 
-const settingV1Store = useSettingV1Store();
+const actuatorStore = useActuatorV1Store();
+
+const announcement = computed(() => actuatorStore.serverInfo?.announcement);
 
 const showBanner = computed(() => {
   return (
@@ -34,7 +36,7 @@ const showBanner = computed(() => {
 });
 
 const bgColor = computed(() => {
-  switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
+  switch (announcement.value?.level) {
     case Announcement_AlertLevel.INFO:
       return "bg-info";
     case Announcement_AlertLevel.WARNING:
@@ -47,7 +49,7 @@ const bgColor = computed(() => {
 });
 
 const bgColorHover = computed(() => {
-  switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
+  switch (announcement.value?.level) {
     case Announcement_AlertLevel.INFO:
       return "hover:bg-info-hover";
     case Announcement_AlertLevel.WARNING:
@@ -60,11 +62,11 @@ const bgColorHover = computed(() => {
 });
 
 const announcementText = computed(() => {
-  return settingV1Store.workspaceProfileSetting?.announcement?.text ?? "";
+  return announcement.value?.text ?? "";
 });
 
 const announcementLink = computed(() => {
-  const link = settingV1Store.workspaceProfileSetting?.announcement?.link ?? "";
+  const link = announcement.value?.link ?? "";
   if (link.length === 0) {
     return link;
   }

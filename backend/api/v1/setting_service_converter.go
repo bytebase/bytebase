@@ -278,6 +278,28 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 	return storeSetting
 }
 
+func convertToV1Announcement(announcement *storepb.WorkspaceProfileSetting_Announcement) *v1pb.Announcement {
+	if announcement != nil {
+		v1Announcement := &v1pb.Announcement{
+			Text: announcement.Text,
+			Link: announcement.Link,
+		}
+		switch announcement.Level {
+		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED:
+			v1Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
+		case storepb.WorkspaceProfileSetting_Announcement_INFO:
+			v1Announcement.Level = v1pb.Announcement_INFO
+		case storepb.WorkspaceProfileSetting_Announcement_WARNING:
+			v1Announcement.Level = v1pb.Announcement_WARNING
+		case storepb.WorkspaceProfileSetting_Announcement_CRITICAL:
+			v1Announcement.Level = v1pb.Announcement_CRITICAL
+		default:
+		}
+		return v1Announcement
+	}
+	return nil
+}
+
 func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSetting) *v1pb.WorkspaceProfileSetting {
 	if storeSetting == nil {
 		return nil
@@ -301,24 +323,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		DirectorySyncToken:     storeSetting.DirectorySyncToken,
 		BrandingLogo:           storeSetting.BrandingLogo,
 		PasswordRestriction:    convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
-	}
-
-	if storeSetting.Announcement != nil {
-		v1Setting.Announcement = &v1pb.Announcement{
-			Text: storeSetting.Announcement.Text,
-			Link: storeSetting.Announcement.Link,
-		}
-		switch storeSetting.Announcement.Level {
-		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED:
-			v1Setting.Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
-		case storepb.WorkspaceProfileSetting_Announcement_INFO:
-			v1Setting.Announcement.Level = v1pb.Announcement_INFO
-		case storepb.WorkspaceProfileSetting_Announcement_WARNING:
-			v1Setting.Announcement.Level = v1pb.Announcement_WARNING
-		case storepb.WorkspaceProfileSetting_Announcement_CRITICAL:
-			v1Setting.Announcement.Level = v1pb.Announcement_CRITICAL
-		default:
-		}
+		Announcement:           convertToV1Announcement(storeSetting.Announcement),
 	}
 
 	return v1Setting

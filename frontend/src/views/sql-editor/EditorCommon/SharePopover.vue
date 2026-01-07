@@ -94,8 +94,8 @@ import { CopyButton } from "@/components/v2";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
+  useActuatorV1Store,
   useCurrentUserV1,
-  useSettingV1Store,
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
@@ -119,7 +119,6 @@ const { t } = useI18n();
 const router = useRouter();
 const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
-const settingStore = useSettingV1Store();
 const me = useCurrentUserV1();
 
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
@@ -127,7 +126,7 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
 });
 
 const workspaceExternalURL = computed(
-  () => settingStore.workspaceProfileSetting?.externalUrl
+  () => useActuatorV1Store().serverInfo?.externalUrl
 );
 
 const accessOptions = computed<AccessOption[]>(() => {

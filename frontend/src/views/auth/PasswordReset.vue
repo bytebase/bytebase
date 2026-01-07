@@ -43,12 +43,11 @@ import { useRouter } from "vue-router";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import {
   pushNotification,
+  useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
-  useSettingV1Store,
   useUserStore,
 } from "@/store";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 
@@ -68,10 +67,9 @@ const userStore = useUserStore();
 const authStore = useAuthStore();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 const router = useRouter();
-const settingV1Store = useSettingV1Store();
 
 const passwordRestrictionSetting = computed(
-  () => settingV1Store.passwordRestriction
+  () => useActuatorV1Store().restriction.passwordRestriction
 );
 
 const redirectQuery = computed(() => {
@@ -84,9 +82,6 @@ onMounted(async () => {
     router.replace(redirectQuery.value);
     return;
   }
-  await settingV1Store.getOrFetchSettingByName(
-    Setting_SettingName.WORKSPACE_PROFILE
-  );
 });
 
 const allowConfirm = computed(() => {

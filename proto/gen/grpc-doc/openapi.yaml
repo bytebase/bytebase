@@ -7762,19 +7762,11 @@ components:
                     readOnly: true
                     type: boolean
                     description: Whether the Bytebase instance requires initial admin setup.
-                disallowSignup:
-                    readOnly: true
-                    type: boolean
-                    description: Whether self-service user signup is disabled.
                 lastActiveTime:
                     readOnly: true
                     type: string
                     description: The last time any API call was made, refreshed on each request.
                     format: date-time
-                require2fa:
-                    readOnly: true
-                    type: boolean
-                    description: Whether two-factor authentication is required for all users.
                 workspaceId:
                     readOnly: true
                     type: string
@@ -7788,15 +7780,6 @@ components:
                     items:
                         type: string
                     description: List of features that are not licensed.
-                disallowPasswordSignin:
-                    readOnly: true
-                    type: boolean
-                    description: Whether password-based signin is disabled (except for workspace admins).
-                passwordRestriction:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/WorkspaceProfileSetting_PasswordRestriction'
-                    description: Password complexity and restriction requirements.
                 docker:
                     readOnly: true
                     type: boolean
@@ -7825,6 +7808,19 @@ components:
                     readOnly: true
                     type: boolean
                     description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+                announcement:
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/Announcement'
+                    description: The setting of custom announcement
+                enableMetricCollection:
+                    readOnly: true
+                    type: boolean
+                    description: Whether to enable metric collection for the workspace.
+                restriction:
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/Restriction'
             description: |-
                 System information and configuration for the Bytebase instance.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -12658,6 +12654,59 @@ components:
                     description: The branding logo.
                     format: bytes
             description: Custom branding resources for the Bytebase instance.
+        Restriction:
+            type: object
+            properties:
+                disallowSignup:
+                    readOnly: true
+                    type: boolean
+                    description: Whether self-service user signup is disabled.
+                require2fa:
+                    readOnly: true
+                    type: boolean
+                    description: Whether two-factor authentication is required for all users.
+                disallowPasswordSignin:
+                    readOnly: true
+                    type: boolean
+                    description: Whether password-based signin is disabled (except for workspace admins).
+                passwordRestriction:
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/WorkspaceProfileSetting_PasswordRestriction'
+                    description: Password complexity and restriction requirements.
+                watermark:
+                    readOnly: true
+                    type: boolean
+                    description: Whether to display watermark on pages.
+                databaseChangeMode:
+                    readOnly: true
+                    enum:
+                        - DATABASE_CHANGE_MODE_UNSPECIFIED
+                        - PIPELINE
+                        - EDITOR
+                    type: string
+                    description: The workspace database change mode.
+                    format: enum
+                inactiveSessionTimeout:
+                    readOnly: true
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The session expiration time if not activity detected for the user. Value <= 0 means no limit.
+                domains:
+                    readOnly: true
+                    type: array
+                    items:
+                        type: string
+                    description: The workspace domain, e.g., bytebase.com.
+                enforceIdentityDomain:
+                    readOnly: true
+                    type: boolean
+                    description: Only user and group from the domains can be created and login.
+                maximumRoleExpiration:
+                    readOnly: true
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The max duration for role expired.
         Result_SqlReviewReport:
             type: object
             properties:

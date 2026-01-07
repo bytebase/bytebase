@@ -168,6 +168,18 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		externalURL = s.profile.ExternalURL
 	}
 
+	restriction := &v1pb.Restriction{
+		DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
+		Require_2Fa:            setting.Require_2Fa,
+		DisallowPasswordSignin: setting.DisallowPasswordSignin,
+		PasswordRestriction:    passwordSetting,
+		Watermark:              setting.GetWatermark(),
+		InactiveSessionTimeout: setting.GetInactiveSessionTimeout(),
+		DatabaseChangeMode:     v1pb.DatabaseChangeMode(setting.DatabaseChangeMode),
+		Domains:                setting.GetDomains(),
+		MaximumRoleExpiration:  setting.GetMaximumRoleExpiration(),
+	}
+
 	serverInfo := v1pb.ActuatorInfo{
 		Version:                s.profile.Version,
 		GitCommit:              s.profile.GitCommit,
@@ -175,17 +187,16 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		Demo:                   s.profile.Demo,
 		NeedAdminSetup:         activeEndUserCount == 0,
 		ExternalUrl:            externalURL,
-		DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
-		Require_2Fa:            setting.Require_2Fa,
 		LastActiveTime:         timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
 		WorkspaceId:            workspaceID,
 		Debug:                  s.profile.RuntimeDebug.Load(),
 		Docker:                 s.profile.IsDocker,
 		UnlicensedFeatures:     unlicensedFeaturesString,
-		DisallowPasswordSignin: setting.DisallowPasswordSignin,
-		PasswordRestriction:    passwordSetting,
 		EnableSample:           hasSampleInstances,
 		ExternalUrlFromFlag:    s.profile.ExternalURL != "",
+		Announcement:           convertToV1Announcement(setting.Announcement),
+		EnableMetricCollection: setting.GetEnableMetricCollection(),
+		Restriction:            restriction,
 	}
 
 	stats, err := s.store.StatUsers(ctx)

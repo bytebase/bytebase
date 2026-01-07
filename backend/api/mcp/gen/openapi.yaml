@@ -6336,18 +6336,10 @@ components:
           type: boolean
           title: need_admin_setup
           description: Whether the Bytebase instance requires initial admin setup.
-        disallowSignup:
-          type: boolean
-          title: disallow_signup
-          description: Whether self-service user signup is disabled.
         lastActiveTime:
           title: last_active_time
           description: The last time any API call was made, refreshed on each request.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        require2fa:
-          type: boolean
-          title: require_2fa
-          description: Whether two-factor authentication is required for all users.
         workspaceId:
           type: string
           title: workspace_id
@@ -6362,14 +6354,6 @@ components:
             type: string
           title: unlicensed_features
           description: List of features that are not licensed.
-        disallowPasswordSignin:
-          type: boolean
-          title: disallow_password_signin
-          description: Whether password-based signin is disabled (except for workspace admins).
-        passwordRestriction:
-          title: password_restriction
-          description: Password complexity and restriction requirements.
-          $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction'
         docker:
           type: boolean
           title: docker
@@ -6398,6 +6382,17 @@ components:
           type: boolean
           title: external_url_from_flag
           description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+        announcement:
+          title: announcement
+          description: The setting of custom announcement
+          $ref: '#/components/schemas/bytebase.v1.Announcement'
+        enableMetricCollection:
+          type: boolean
+          title: enable_metric_collection
+          description: Whether to enable metric collection for the workspace.
+        restriction:
+          title: restriction
+          $ref: '#/components/schemas/bytebase.v1.Restriction'
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -13915,6 +13910,53 @@ components:
       title: ResourcePackage
       additionalProperties: false
       description: Custom branding resources for the Bytebase instance.
+    bytebase.v1.Restriction:
+      type: object
+      properties:
+        disallowSignup:
+          type: boolean
+          title: disallow_signup
+          description: Whether self-service user signup is disabled.
+        require2fa:
+          type: boolean
+          title: require_2fa
+          description: Whether two-factor authentication is required for all users.
+        disallowPasswordSignin:
+          type: boolean
+          title: disallow_password_signin
+          description: Whether password-based signin is disabled (except for workspace admins).
+        passwordRestriction:
+          title: password_restriction
+          description: Password complexity and restriction requirements.
+          $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction'
+        watermark:
+          type: boolean
+          title: watermark
+          description: Whether to display watermark on pages.
+        databaseChangeMode:
+          title: database_change_mode
+          description: The workspace database change mode.
+          $ref: '#/components/schemas/bytebase.v1.DatabaseChangeMode'
+        inactiveSessionTimeout:
+          title: inactive_session_timeout
+          description: The session expiration time if not activity detected for the user. Value <= 0 means no limit.
+          $ref: '#/components/schemas/google.protobuf.Duration'
+        domains:
+          type: array
+          items:
+            type: string
+          title: domains
+          description: The workspace domain, e.g., bytebase.com.
+        enforceIdentityDomain:
+          type: boolean
+          title: enforce_identity_domain
+          description: Only user and group from the domains can be created and login.
+        maximumRoleExpiration:
+          title: maximum_role_expiration
+          description: The max duration for role expired.
+          $ref: '#/components/schemas/google.protobuf.Duration'
+      title: Restriction
+      additionalProperties: false
     bytebase.v1.ReviewConfig:
       type: object
       properties:

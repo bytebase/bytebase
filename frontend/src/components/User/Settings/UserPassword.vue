@@ -115,7 +115,7 @@ const props = withDefaults(
   defineProps<{
     password: string;
     passwordConfirm: string;
-    passwordRestriction: WorkspaceProfileSetting_PasswordRestriction;
+    passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
     showLearnMore?: boolean;
   }>(),
   {
@@ -133,35 +133,36 @@ const { t } = useI18n();
 const router = useRouter();
 
 const passwordCheck = computed(() => {
+  const minLength = props.passwordRestriction?.minLength ?? 8;
   const check: { text: string; matched: boolean }[] = [
     {
       text: t("settings.general.workspace.password-restriction.min-length", {
-        min: props.passwordRestriction.minLength,
+        min: minLength,
       }),
-      matched: props.password.length >= props.passwordRestriction.minLength,
+      matched: props.password.length >= minLength,
     },
   ];
 
-  if (props.passwordRestriction.requireNumber) {
+  if (props.passwordRestriction?.requireNumber) {
     check.push({
       text: t("settings.general.workspace.password-restriction.require-number"),
       matched: /[0-9]+/.test(props.password),
     });
   }
-  if (props.passwordRestriction.requireUppercaseLetter) {
+  if (props.passwordRestriction?.requireUppercaseLetter) {
     check.push({
       text: t(
         "settings.general.workspace.password-restriction.require-uppercase-letter"
       ),
       matched: /[A-Z]+/.test(props.password),
     });
-  } else if (props.passwordRestriction.requireLetter) {
+  } else if (props.passwordRestriction?.requireLetter) {
     check.push({
       text: t("settings.general.workspace.password-restriction.require-letter"),
       matched: /[a-zA-Z]+/.test(props.password),
     });
   }
-  if (props.passwordRestriction.requireSpecialCharacter) {
+  if (props.passwordRestriction?.requireSpecialCharacter) {
     check.push({
       text: t(
         "settings.general.workspace.password-restriction.require-special-character"

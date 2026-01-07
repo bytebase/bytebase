@@ -246,7 +246,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
-  useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
@@ -280,7 +279,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const actuatorStore = useActuatorV1Store();
-const settingV1Store = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
@@ -297,7 +295,7 @@ const editNameTextField = ref<InstanceType<typeof NInput>>();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const passwordRestrictionSetting = computed(
-  () => settingV1Store.passwordRestriction
+  () => actuatorStore.restriction.passwordRestriction
 );
 
 const keyboardHandler = (e: KeyboardEvent) => {
@@ -467,7 +465,7 @@ const enable2FA = () => {
 
 const disable2FA = () => {
   if (
-    actuatorStore.serverInfo?.require2fa &&
+    actuatorStore.restriction.require2fa &&
     !hasWorkspacePermissionV2("bb.policies.update")
   ) {
     pushNotification({

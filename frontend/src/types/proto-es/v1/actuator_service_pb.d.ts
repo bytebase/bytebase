@@ -4,8 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
+import type { Duration, EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Announcement, DatabaseChangeMode, WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { UserType } from "./user_service_pb";
 import type { State } from "./common_pb";
 
@@ -126,6 +126,87 @@ export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest
 export declare const DeleteCacheRequestSchema: GenMessage<DeleteCacheRequest>;
 
 /**
+ * @generated from message bytebase.v1.Restriction
+ */
+export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
+  /**
+   * Whether self-service user signup is disabled.
+   *
+   * @generated from field: bool disallow_signup = 1;
+   */
+  disallowSignup: boolean;
+
+  /**
+   * Whether two-factor authentication is required for all users.
+   *
+   * @generated from field: bool require_2fa = 2;
+   */
+  require2fa: boolean;
+
+  /**
+   * Whether password-based signin is disabled (except for workspace admins).
+   *
+   * @generated from field: bool disallow_password_signin = 3;
+   */
+  disallowPasswordSignin: boolean;
+
+  /**
+   * Password complexity and restriction requirements.
+   *
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 4;
+   */
+  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
+
+  /**
+   * Whether to display watermark on pages.
+   *
+   * @generated from field: bool watermark = 5;
+   */
+  watermark: boolean;
+
+  /**
+   * The workspace database change mode.
+   *
+   * @generated from field: bytebase.v1.DatabaseChangeMode database_change_mode = 6;
+   */
+  databaseChangeMode: DatabaseChangeMode;
+
+  /**
+   * The session expiration time if not activity detected for the user. Value <= 0 means no limit.
+   *
+   * @generated from field: google.protobuf.Duration inactive_session_timeout = 7;
+   */
+  inactiveSessionTimeout?: Duration;
+
+  /**
+   * The workspace domain, e.g., bytebase.com.
+   *
+   * @generated from field: repeated string domains = 8;
+   */
+  domains: string[];
+
+  /**
+   * Only user and group from the domains can be created and login.
+   *
+   * @generated from field: bool enforce_identity_domain = 9;
+   */
+  enforceIdentityDomain: boolean;
+
+  /**
+   * The max duration for role expired.
+   *
+   * @generated from field: google.protobuf.Duration maximum_role_expiration = 10;
+   */
+  maximumRoleExpiration?: Duration;
+};
+
+/**
+ * Describes the message bytebase.v1.Restriction.
+ * Use `create(RestrictionSchema)` to create a new message.
+ */
+export declare const RestrictionSchema: GenMessage<Restriction>;
+
+/**
  * System information and configuration for the Bytebase instance.
  * Actuator concept is similar to the Spring Boot Actuator.
  *
@@ -196,25 +277,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   needAdminSetup: boolean;
 
   /**
-   * Whether self-service user signup is disabled.
-   *
-   * @generated from field: bool disallow_signup = 10;
-   */
-  disallowSignup: boolean;
-
-  /**
    * The last time any API call was made, refreshed on each request.
    *
    * @generated from field: google.protobuf.Timestamp last_active_time = 11;
    */
   lastActiveTime?: Timestamp;
-
-  /**
-   * Whether two-factor authentication is required for all users.
-   *
-   * @generated from field: bool require_2fa = 12;
-   */
-  require2fa: boolean;
 
   /**
    * The unique identifier for the workspace.
@@ -236,20 +303,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: repeated string unlicensed_features = 15;
    */
   unlicensedFeatures: string[];
-
-  /**
-   * Whether password-based signin is disabled (except for workspace admins).
-   *
-   * @generated from field: bool disallow_password_signin = 16;
-   */
-  disallowPasswordSignin: boolean;
-
-  /**
-   * Password complexity and restriction requirements.
-   *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 17;
-   */
-  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
 
   /**
    * Whether the Bytebase instance is running in Docker.
@@ -292,6 +345,25 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bool external_url_from_flag = 23;
    */
   externalUrlFromFlag: boolean;
+
+  /**
+   * The setting of custom announcement
+   *
+   * @generated from field: bytebase.v1.Announcement announcement = 24;
+   */
+  announcement?: Announcement;
+
+  /**
+   * Whether to enable metric collection for the workspace.
+   *
+   * @generated from field: bool enable_metric_collection = 25;
+   */
+  enableMetricCollection: boolean;
+
+  /**
+   * @generated from field: bytebase.v1.Restriction restriction = 26;
+   */
+  restriction?: Restriction;
 };
 
 /**
