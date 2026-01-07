@@ -265,7 +265,8 @@ CREATE TABLE task_run (
     run_at timestamptz,
     -- result saves the task run result in json format
     -- Stored as TaskRunResult (proto/store/store/task_run.proto)
-    result jsonb NOT NULL DEFAULT '{}'
+    result jsonb NOT NULL DEFAULT '{}',
+    replica_id TEXT
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
@@ -278,6 +279,11 @@ CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'AVAILABLE', 'RUNNING');
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
+
+CREATE TABLE replica_heartbeat (
+    replica_id TEXT PRIMARY KEY,
+    last_heartbeat TIMESTAMPTZ NOT NULL
+);
 
 CREATE TABLE task_run_log (
     id bigserial PRIMARY KEY,
