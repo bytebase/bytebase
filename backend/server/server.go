@@ -36,6 +36,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/cleaner"
+	"github.com/bytebase/bytebase/backend/runner/heartbeat"
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/notifylistener"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -62,6 +63,7 @@ type Server struct {
 	approvalRunner     *approval.Runner
 	notifyListener     *notifylistener.Listener
 	dataCleaner        *cleaner.DataCleaner
+	heartbeatRunner    *heartbeat.Runner
 	runnerWG           sync.WaitGroup
 
 	webhookManager        *webhook.Manager
@@ -201,6 +203,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)
 
+	// Heartbeat runner
+	s.heartbeatRunner = heartbeat.NewRunner(stores, profile)
+
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.bus, s.iamManager, s.licenseService)
 
@@ -237,6 +242,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.dataCleaner.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	go s.heartbeatRunner.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	go s.notifyListener.Run(ctx, &s.runnerWG)
