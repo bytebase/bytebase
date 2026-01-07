@@ -32,12 +32,13 @@ import {
   errorNotificationInterceptor,
   activeInterceptor,
 } from "./middlewares";
+import { isDev } from "@/utils";
 
 const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 
 const transport = createConnectTransport({
   baseUrl: address,
-  useBinaryFormat: true,
+  useBinaryFormat: isDev() ? false : true,
   interceptors: [
     authInterceptor,
     activeInterceptor,
