@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/pkg/errors"
@@ -19,6 +18,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -42,13 +42,13 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a BigQuery driver. It must connect to a specific database.
+// Open opens a DynamoDB driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, conf db.ConnectionConfig) (db.Driver, error) {
 	d.config = conf
 	d.connCtx = conf.ConnectionContext
 
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := util.GetAWSConnectionConfig(ctx, conf)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load AWS config")
 	}
