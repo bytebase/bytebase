@@ -220,17 +220,17 @@ type ClaimedTaskRun struct {
 // ClaimAvailableTaskRuns atomically claims all AVAILABLE task runs by updating them to RUNNING
 // and returns the claimed task run and task UIDs. This combines list + claim into a single atomic operation.
 // Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different tasks.
-func (s *Store) ClaimAvailableTaskRuns(ctx context.Context) ([]*ClaimedTaskRun, error) {
+func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([]*ClaimedTaskRun, error) {
 	q := qb.Q().Space(`
 		UPDATE task_run
-		SET status = ?, updated_at = now()
+		SET status = ?, updated_at = now(), replica_id = ?
 		WHERE id IN (
 			SELECT task_run.id FROM task_run
 			WHERE task_run.status = ?
 			FOR UPDATE SKIP LOCKED
 		)
 		RETURNING id, task_id
-	`, storepb.TaskRun_RUNNING.String(), storepb.TaskRun_AVAILABLE.String())
+	`, storepb.TaskRun_RUNNING.String(), replicaID, storepb.TaskRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
