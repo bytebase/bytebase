@@ -23,7 +23,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Version:           version,
 		GitCommit:         gitcommit,
 		PgURL:             os.Getenv("PG_URL"),
-		DeployID:          uuid.NewString()[:8],
+		DeployID:          uuid.NewString(),
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())
