@@ -37,8 +37,8 @@ export interface ReleaseFileGroup {
   sections: Section[];
 }
 
-export interface DeployGroup {
-  deployId: string;
+export interface ReplicaGroup {
+  replicaId: string;
   releaseFileGroups: ReleaseFileGroup[];
   // Sections not associated with any release file (e.g., logs before file execution)
   sections: Section[];

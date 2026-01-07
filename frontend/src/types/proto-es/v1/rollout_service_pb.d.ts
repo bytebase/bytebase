@@ -996,11 +996,11 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
   logTime?: Timestamp;
 
   /**
-   * The deployment ID for this log entry.
+   * The replica ID for this log entry.
    *
-   * @generated from field: string deploy_id = 3;
+   * @generated from field: string replica_id = 3;
    */
-  deployId: string;
+  replicaId: string;
 
   /**
    * Schema dump details (if type is SCHEMA_DUMP).

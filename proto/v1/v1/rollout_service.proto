@@ -539,8 +539,8 @@ message TaskRunLogEntry {
   Type type = 1;
   // The time when the log was recorded.
   google.protobuf.Timestamp log_time = 2;
-  // The deployment ID for this log entry.
-  string deploy_id = 3;
+  // The replica ID for this log entry.
+  string replica_id = 3;
   // Schema dump details (if type is SCHEMA_DUMP).
   SchemaDump schema_dump = 4;
   // Command execution details (if type is COMMAND_EXECUTE).

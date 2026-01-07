@@ -19,14 +19,14 @@ type TaskRunLog struct {
 	Payload *storepb.TaskRunLog
 }
 
-func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, deployID string, e *storepb.TaskRunLog) {
-	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, deployID, e); err != nil {
+func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) {
+	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, replicaID, e); err != nil {
 		slog.Error("failed to create task run log", log.BBError(err))
 	}
 }
 
-func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, deployID string, e *storepb.TaskRunLog) error {
-	e.DeployId = deployID
+func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) error {
+	e.ReplicaId = replicaID
 	p, err := protojson.Marshal(e)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal task run log")

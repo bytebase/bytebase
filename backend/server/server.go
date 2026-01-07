@@ -101,7 +101,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
 	slog.Info(fmt.Sprintf("demo=%v", profile.Demo))
-	slog.Info(fmt.Sprintf("instanceRunUUID=%s", profile.DeployID))
+	slog.Info(fmt.Sprintf("replicaID=%s", profile.ReplicaID))
 	slog.Info("-----Config END-------")
 
 	serverStarted := false

@@ -1666,8 +1666,8 @@ type TaskRunLogEntry struct {
 	Type TaskRunLogEntry_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_Type" json:"type,omitempty"`
 	// The time when the log was recorded.
 	LogTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
-	// The deployment ID for this log entry.
-	DeployId string `protobuf:"bytes,3,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
+	// The replica ID for this log entry.
+	ReplicaId string `protobuf:"bytes,3,opt,name=replica_id,json=replicaId,proto3" json:"replica_id,omitempty"`
 	// Schema dump details (if type is SCHEMA_DUMP).
 	SchemaDump *TaskRunLogEntry_SchemaDump `protobuf:"bytes,4,opt,name=schema_dump,json=schemaDump,proto3" json:"schema_dump,omitempty"`
 	// Command execution details (if type is COMMAND_EXECUTE).
@@ -1732,9 +1732,9 @@ func (x *TaskRunLogEntry) GetLogTime() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *TaskRunLogEntry) GetDeployId() string {
+func (x *TaskRunLogEntry) GetReplicaId() string {
 	if x != nil {
-		return x.DeployId
+		return x.ReplicaId
 	}
 	return ""
 }
@@ -3464,11 +3464,12 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"TaskRunLog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
 	"\aentries\x18\x02 \x03(\v2\x1c.bytebase.v1.TaskRunLogEntryR\aentries:x\xeaAu\n" +
-	"\x17bytebase.com/TaskRunLog\x12Zprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log\"\xe3\x17\n" +
+	"\x17bytebase.com/TaskRunLog\x12Zprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log\"\xe5\x17\n" +
 	"\x0fTaskRunLogEntry\x125\n" +
 	"\x04type\x18\x01 \x01(\x0e2!.bytebase.v1.TaskRunLogEntry.TypeR\x04type\x125\n" +
-	"\blog_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\alogTime\x12\x1b\n" +
-	"\tdeploy_id\x18\x03 \x01(\tR\bdeployId\x12H\n" +
+	"\blog_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\alogTime\x12\x1d\n" +
+	"\n" +
+	"replica_id\x18\x03 \x01(\tR\treplicaId\x12H\n" +
 	"\vschema_dump\x18\x04 \x01(\v2'.bytebase.v1.TaskRunLogEntry.SchemaDumpR\n" +
 	"schemaDump\x12T\n" +
 	"\x0fcommand_execute\x18\x05 \x01(\v2+.bytebase.v1.TaskRunLogEntry.CommandExecuteR\x0ecommandExecute\x12N\n" +

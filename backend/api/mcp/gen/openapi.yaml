@@ -16067,10 +16067,10 @@ components:
           title: log_time
           description: The time when the log was recorded.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        deployId:
+        replicaId:
           type: string
-          title: deploy_id
-          description: The deployment ID for this log entry.
+          title: replica_id
+          description: The replica ID for this log entry.
         schemaDump:
           title: schema_dump
           description: Schema dump details (if type is SCHEMA_DUMP).
