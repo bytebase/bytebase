@@ -1,8 +1,10 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
-import { sqlServiceClientConnect } from "@/grpcweb";
+import { sqlServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,
@@ -49,7 +51,10 @@ export const useDynamicSuggestions = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
       const request = createProto(AICompletionRequestSchema, { messages });
-      const response = await sqlServiceClientConnect.aICompletion(request);
+      // Use silent mode to avoid showing error notifications for AI completion failures
+      const response = await sqlServiceClientConnect.aICompletion(request, {
+        contextValues: createContextValues().set(silentContextKey, true),
+      });
       const text =
         head(head(response.candidates)?.content?.parts)?.text?.trim() ?? "";
       const card = JSON.parse(text) as Record<string, string>;
@@ -66,7 +71,9 @@ export const useDynamicSuggestions = () => {
       suggestions: [],
       index: 0,
       state: "IDLE",
-      ready: false,
+      // Mark as ready without auto-fetching to avoid API calls on tab open.
+      // We will trigger the fetch when DynamicSuggestions mounted.
+      ready: true,
       used: new Set(),
       current() {
         const { suggestions } = suggestion;
@@ -143,12 +150,7 @@ export const useDynamicSuggestions = () => {
     });
     const stored = storage.load<string[]>(suggestion.key, []);
     if (stored && stored.length > 0) {
-      suggestion.ready = true;
       suggestion.suggestions = stored;
-    } else {
-      suggestion.fetch().then(() => {
-        suggestion.ready = true;
-      });
     }
     cache.value.set(metadata, suggestion);
     return suggestion;

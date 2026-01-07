@@ -53,7 +53,7 @@
 <script lang="ts" setup>
 import { RefreshCwIcon, XIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useCurrentUserV1 } from "@/store";
 import { useDynamicLocalStorage } from "@/utils";
@@ -65,6 +65,13 @@ const emit = defineEmits<{
 
 const dynamicSuggestions = useDynamicSuggestions();
 const currentUser = useCurrentUserV1();
+
+onMounted(() => {
+  const suggestion = dynamicSuggestions.value;
+  if (suggestion && suggestion.suggestions.length === 0) {
+    suggestion.fetch();
+  }
+});
 
 const ready = computed(() => dynamicSuggestions.value?.ready ?? false);
 const state = computed(() => dynamicSuggestions.value?.state ?? "IDLE");

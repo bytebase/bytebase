@@ -35,7 +35,10 @@
               </Suspense>
             </template>
             <template #2>
-              <div class="h-full overflow-hidden flex flex-col">
+              <div
+                v-if="showAIPanel"
+                class="h-full overflow-hidden flex flex-col"
+              >
                 <Suspense>
                   <AIChatToSQL key="ai-chat-to-sql" />
                   <template #fallback>
