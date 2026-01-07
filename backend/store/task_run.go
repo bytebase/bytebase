@@ -220,17 +220,17 @@ type ClaimedTaskRun struct {
 // ClaimAvailableTaskRuns atomically claims all AVAILABLE task runs by updating them to RUNNING
 // and returns the claimed task run and task UIDs. This combines list + claim into a single atomic operation.
 // Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different tasks.
-func (s *Store) ClaimAvailableTaskRuns(ctx context.Context) ([]*ClaimedTaskRun, error) {
+func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([]*ClaimedTaskRun, error) {
 	q := qb.Q().Space(`
 		UPDATE task_run
-		SET status = ?, updated_at = now()
+		SET status = ?, updated_at = now(), replica_id = ?
 		WHERE id IN (
 			SELECT task_run.id FROM task_run
 			WHERE task_run.status = ?
 			FOR UPDATE SKIP LOCKED
 		)
 		RETURNING id, task_id
-	`, storepb.TaskRun_RUNNING.String(), storepb.TaskRun_AVAILABLE.String())
+	`, storepb.TaskRun_RUNNING.String(), replicaID, storepb.TaskRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -417,4 +417,36 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 		return err
 	}
 	return nil
+}
+
+// FailStaleTaskRuns marks RUNNING task runs as FAILED if their replica is dead.
+// A replica is considered dead if:
+// 1. Its replica_id is not in the replica_heartbeat table, OR
+// 2. Its last_heartbeat is older than the staleness threshold
+// Returns the number of task runs marked as failed.
+func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.Duration) (int64, error) {
+	q := qb.Q().Space(`
+		UPDATE task_run
+		SET status = ?,
+		    result = '{"detail": "Task run abandoned: owning replica stopped responding"}',
+		    updated_at = now()
+		WHERE status = ?
+		  AND replica_id IS NOT NULL
+		  AND NOT EXISTS (
+		    SELECT 1 FROM replica_heartbeat rh
+		    WHERE rh.replica_id = task_run.replica_id
+		      AND rh.last_heartbeat >= now() - ?::INTERVAL
+		  )
+	`, storepb.TaskRun_FAILED.String(), storepb.TaskRun_RUNNING.String(), stalenessThreshold.String())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to fail stale task runs")
+	}
+	return result.RowsAffected()
 }

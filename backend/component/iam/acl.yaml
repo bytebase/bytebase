@@ -378,6 +378,7 @@ roles:
       - bb.releases.list
       - bb.revisions.get
       - bb.revisions.list
+      - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
       - bb.sheets.get

@@ -390,8 +390,8 @@
       "computing": "computing..."
     },
     "log-viewer": {
-      "multiple-deploys-notice": "Server restart detected during execution. Logs are grouped by deployment.",
-      "deployment-n": "Deployment #{n}",
+      "multiple-replicas-notice": "Server restart detected during execution. Logs are grouped by replica.",
+      "replica-n": "Replica #{n}",
       "expand-all": "Expand all",
       "collapse-all": "Collapse all",
       "summary": "{sections} sections · {entries} entries"

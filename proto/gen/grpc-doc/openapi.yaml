@@ -14292,9 +14292,9 @@ components:
                     type: string
                     description: The time when the log was recorded.
                     format: date-time
-                deployId:
+                replicaId:
                     type: string
-                    description: The deployment ID for this log entry.
+                    description: The replica ID for this log entry.
                 schemaDump:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunLogEntry_SchemaDump'

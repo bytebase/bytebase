@@ -15,9 +15,9 @@ import {
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { addToSet, deleteFromSet } from "../utils/reactivity";
 import type {
-  DeployGroup,
   DisplayItem,
   ReleaseFileGroup,
+  ReplicaGroup,
   Section,
   SectionStatus,
 } from "./types";
@@ -26,9 +26,9 @@ import {
   formatRelativeTime,
   formatTime,
   getTimestampMs,
-  getUniqueDeployIds,
-  groupEntriesByDeploy,
+  getUniqueReplicaIds,
   groupEntriesByReleaseFile,
+  groupEntriesByReplica,
   groupEntriesByType,
   hasError,
   hasReleaseFileMarkers,
@@ -45,18 +45,18 @@ const STATUS_CONFIG: Record<SectionStatus, { icon: Component; class: string }> =
 
 export interface UseTaskRunLogSectionsReturn {
   sections: ComputedRef<Section[]>;
-  hasMultipleDeploys: ComputedRef<boolean>;
+  hasMultipleReplicas: ComputedRef<boolean>;
   hasReleaseFiles: ComputedRef<boolean>;
   releaseFileGroups: ComputedRef<ReleaseFileGroup[]>;
-  deployGroups: ComputedRef<DeployGroup[]>;
+  replicaGroups: ComputedRef<ReplicaGroup[]>;
   expandedSections: Ref<Set<string>>;
-  expandedDeploys: Ref<Set<string>>;
+  expandedReplicas: Ref<Set<string>>;
   expandedReleaseFiles: Ref<Set<string>>;
   toggleSection: (sectionId: string) => void;
-  toggleDeploy: (deployId: string) => void;
+  toggleReplica: (replicaId: string) => void;
   toggleReleaseFile: (fileId: string) => void;
   isSectionExpanded: (sectionId: string) => boolean;
-  isDeployExpanded: (deployId: string) => boolean;
+  isReplicaExpanded: (replicaId: string) => boolean;
   isReleaseFileExpanded: (fileId: string) => boolean;
   expandAll: () => void;
   collapseAll: () => void;
@@ -73,8 +73,8 @@ export const useTaskRunLogSections = (
 
   const expandedSections = ref<Set<string>>(new Set());
   const userCollapsedSections = ref<Set<string>>(new Set());
-  const expandedDeploys = ref<Set<string>>(new Set());
-  const userCollapsedDeploys = ref<Set<string>>(new Set());
+  const expandedReplicas = ref<Set<string>>(new Set());
+  const userCollapsedReplicas = ref<Set<string>>(new Set());
   const expandedReleaseFiles = ref<Set<string>>(new Set());
   const userCollapsedReleaseFiles = ref<Set<string>>(new Set());
 
@@ -243,7 +243,7 @@ export const useTaskRunLogSections = (
     return groups.map((group, groupIdx) => {
       const { type, entries: groupEntries } = group;
 
-      // For interrupted deployments, treat "running" as "error"
+      // For interrupted replicas, treat "running" as "error"
       let status = calculateSectionStatus(groupEntries);
       if (forceError && status === "running") {
         status = "error";
@@ -280,10 +280,10 @@ export const useTaskRunLogSections = (
     return buildSectionsFromEntries(entriesValue);
   });
 
-  const hasMultipleDeploys = computed((): boolean => {
+  const hasMultipleReplicas = computed((): boolean => {
     const entriesValue = toValue(entries);
-    const deployIds = getUniqueDeployIds(entriesValue);
-    return deployIds.length > 1;
+    const replicaIds = getUniqueReplicaIds(entriesValue);
+    return replicaIds.length > 1;
   });
 
   const hasReleaseFiles = computed((): boolean => {
@@ -329,46 +329,50 @@ export const useTaskRunLogSections = (
     );
   };
 
-  // Release file groups for single-deploy view
+  // Release file groups for single-replica view
   const releaseFileGroups = computed((): ReleaseFileGroup[] => {
     const entriesValue = toValue(entries);
     if (!hasReleaseFileMarkers(entriesValue)) return [];
     return buildReleaseFileGroupsFromEntries(entriesValue);
   });
 
-  const deployGroups = computed((): DeployGroup[] => {
+  const replicaGroups = computed((): ReplicaGroup[] => {
     const entriesValue = toValue(entries);
     if (!entriesValue.length) return [];
 
-    const deployIds = getUniqueDeployIds(entriesValue);
-    if (deployIds.length <= 1) return [];
+    const replicaIds = getUniqueReplicaIds(entriesValue);
+    if (replicaIds.length <= 1) return [];
 
-    const entriesByDeploy = groupEntriesByDeploy(entriesValue);
+    const entriesByReplica = groupEntriesByReplica(entriesValue);
 
-    return deployIds.map((deployId, idx) => {
-      const deployEntries = entriesByDeploy.get(deployId) || [];
-      const isLatestDeploy = idx === deployIds.length - 1;
-      const forceError = !isLatestDeploy;
+    return replicaIds.map((replicaId, idx) => {
+      const replicaEntries = entriesByReplica.get(replicaId) || [];
+      const isLatestReplica = idx === replicaIds.length - 1;
+      const forceError = !isLatestReplica;
 
-      // Check if this deploy has release file markers
-      const hasFiles = hasReleaseFileMarkers(deployEntries);
+      // Check if this replica has release file markers
+      const hasFiles = hasReleaseFileMarkers(replicaEntries);
 
       if (hasFiles) {
         return {
-          deployId,
+          replicaId,
           releaseFileGroups: buildReleaseFileGroupsFromEntries(
-            deployEntries,
-            deployId,
+            replicaEntries,
+            replicaId,
             forceError
           ),
-          sections: getOrphanSections(deployEntries, deployId, forceError),
+          sections: getOrphanSections(replicaEntries, replicaId, forceError),
         };
       }
 
       return {
-        deployId,
+        replicaId,
         releaseFileGroups: [],
-        sections: buildSectionsFromEntries(deployEntries, deployId, forceError),
+        sections: buildSectionsFromEntries(
+          replicaEntries,
+          replicaId,
+          forceError
+        ),
       };
     });
   });
@@ -383,13 +387,13 @@ export const useTaskRunLogSections = (
     }
   };
 
-  const toggleDeploy = (deployId: string) => {
-    if (expandedDeploys.value.has(deployId)) {
-      deleteFromSet(expandedDeploys, deployId);
-      addToSet(userCollapsedDeploys, deployId);
+  const toggleReplica = (replicaId: string) => {
+    if (expandedReplicas.value.has(replicaId)) {
+      deleteFromSet(expandedReplicas, replicaId);
+      addToSet(userCollapsedReplicas, replicaId);
     } else {
-      addToSet(expandedDeploys, deployId);
-      deleteFromSet(userCollapsedDeploys, deployId);
+      addToSet(expandedReplicas, replicaId);
+      deleteFromSet(userCollapsedReplicas, replicaId);
     }
   };
 
@@ -397,8 +401,8 @@ export const useTaskRunLogSections = (
     return expandedSections.value.has(sectionId);
   };
 
-  const isDeployExpanded = (deployId: string): boolean => {
-    return expandedDeploys.value.has(deployId);
+  const isReplicaExpanded = (replicaId: string): boolean => {
+    return expandedReplicas.value.has(replicaId);
   };
 
   const toggleReleaseFile = (fileId: string) => {
@@ -415,10 +419,10 @@ export const useTaskRunLogSections = (
     return expandedReleaseFiles.value.has(fileId);
   };
 
-  // Get all section IDs (from flat sections, release file groups, and deploy groups)
+  // Get all section IDs (from flat sections, release file groups, and replica groups)
   const getAllSectionIds = (): string[] => {
-    if (hasMultipleDeploys.value) {
-      return deployGroups.value.flatMap((group) => {
+    if (hasMultipleReplicas.value) {
+      return replicaGroups.value.flatMap((group) => {
         const orphanSectionIds = group.sections.map((s) => s.id);
         const fileSectionIds = group.releaseFileGroups.flatMap((fg) =>
           fg.sections.map((s) => s.id)
@@ -434,17 +438,17 @@ export const useTaskRunLogSections = (
     return sections.value.map((section) => section.id);
   };
 
-  // Get all deploy IDs
-  const getAllDeployIds = (): string[] => {
-    return deployGroups.value.map((group) => group.deployId);
+  // Get all replica IDs
+  const getAllReplicaIds = (): string[] => {
+    return replicaGroups.value.map((group) => group.replicaId);
   };
 
   // Get all release file IDs
   const getAllReleaseFileIds = (): string[] => {
-    if (hasMultipleDeploys.value) {
-      return deployGroups.value.flatMap((group) =>
+    if (hasMultipleReplicas.value) {
+      return replicaGroups.value.flatMap((group) =>
         group.releaseFileGroups.map(
-          (_, fileIdx) => `${group.deployId}-file-${fileIdx}`
+          (_, fileIdx) => `${group.replicaId}-file-${fileIdx}`
         )
       );
     }
@@ -457,11 +461,11 @@ export const useTaskRunLogSections = (
       addToSet(expandedSections, sectionId);
       deleteFromSet(userCollapsedSections, sectionId);
     }
-    // Expand all deploy groups (for multi-deploy view)
-    if (hasMultipleDeploys.value) {
-      for (const deployId of getAllDeployIds()) {
-        addToSet(expandedDeploys, deployId);
-        deleteFromSet(userCollapsedDeploys, deployId);
+    // Expand all replica groups (for multi-replica view)
+    if (hasMultipleReplicas.value) {
+      for (const replicaId of getAllReplicaIds()) {
+        addToSet(expandedReplicas, replicaId);
+        deleteFromSet(userCollapsedReplicas, replicaId);
       }
     }
     // Expand all release file groups
@@ -477,11 +481,11 @@ export const useTaskRunLogSections = (
       deleteFromSet(expandedSections, sectionId);
       addToSet(userCollapsedSections, sectionId);
     }
-    // Collapse all deploy groups (for multi-deploy view)
-    if (hasMultipleDeploys.value) {
-      for (const deployId of getAllDeployIds()) {
-        deleteFromSet(expandedDeploys, deployId);
-        addToSet(userCollapsedDeploys, deployId);
+    // Collapse all replica groups (for multi-replica view)
+    if (hasMultipleReplicas.value) {
+      for (const replicaId of getAllReplicaIds()) {
+        deleteFromSet(expandedReplicas, replicaId);
+        addToSet(userCollapsedReplicas, replicaId);
       }
     }
     // Collapse all release file groups
@@ -505,14 +509,14 @@ export const useTaskRunLogSections = (
       allReleaseFileIds.length === 0 ||
       allReleaseFileIds.every((id) => expandedReleaseFiles.value.has(id));
 
-    // For multi-deploy view, also check deploy groups
-    if (hasMultipleDeploys.value) {
-      const allDeployIds = getAllDeployIds();
-      const allDeploysExpanded = allDeployIds.every((id) =>
-        expandedDeploys.value.has(id)
+    // For multi-replica view, also check replica groups
+    if (hasMultipleReplicas.value) {
+      const allReplicaIds = getAllReplicaIds();
+      const allReplicasExpanded = allReplicaIds.every((id) =>
+        expandedReplicas.value.has(id)
       );
       return (
-        allSectionsExpanded && allDeploysExpanded && allReleaseFilesExpanded
+        allSectionsExpanded && allReplicasExpanded && allReleaseFilesExpanded
       );
     }
 
@@ -520,8 +524,8 @@ export const useTaskRunLogSections = (
   });
 
   const totalSections = computed((): number => {
-    if (hasMultipleDeploys.value) {
-      return deployGroups.value.reduce((sum, group) => {
+    if (hasMultipleReplicas.value) {
+      return replicaGroups.value.reduce((sum, group) => {
         const orphanCount = group.sections.length;
         const fileCount = group.releaseFileGroups.reduce(
           (fSum, fg) => fSum + fg.sections.length,
@@ -540,8 +544,8 @@ export const useTaskRunLogSections = (
   });
 
   const totalEntries = computed((): number => {
-    if (hasMultipleDeploys.value) {
-      return deployGroups.value.reduce((sum, group) => {
+    if (hasMultipleReplicas.value) {
+      return replicaGroups.value.reduce((sum, group) => {
         const orphanEntries = group.sections.reduce(
           (sSum, section) => sSum + section.entryCount,
           0
@@ -580,17 +584,17 @@ export const useTaskRunLogSections = (
     { immediate: true }
   );
 
-  // Auto-expand all deploys and error sections in deploy groups
+  // Auto-expand all replicas and error sections in replica groups
   watch(
-    deployGroups,
-    (newDeployGroups) => {
-      for (const deployGroup of newDeployGroups) {
-        // Auto-expand all deploy groups by default
-        if (!userCollapsedDeploys.value.has(deployGroup.deployId)) {
-          addToSet(expandedDeploys, deployGroup.deployId);
+    replicaGroups,
+    (newReplicaGroups) => {
+      for (const replicaGroup of newReplicaGroups) {
+        // Auto-expand all replica groups by default
+        if (!userCollapsedReplicas.value.has(replicaGroup.replicaId)) {
+          addToSet(expandedReplicas, replicaGroup.replicaId);
         }
-        // Auto-expand error sections within deploy groups (orphan sections)
-        for (const section of deployGroup.sections) {
+        // Auto-expand error sections within replica groups (orphan sections)
+        for (const section of replicaGroup.sections) {
           if (
             section.status === "error" &&
             !userCollapsedSections.value.has(section.id)
@@ -599,8 +603,8 @@ export const useTaskRunLogSections = (
           }
         }
         // Auto-expand release file groups and their error sections
-        deployGroup.releaseFileGroups.forEach((fg, fileIdx) => {
-          const fileId = `${deployGroup.deployId}-file-${fileIdx}`;
+        replicaGroup.releaseFileGroups.forEach((fg, fileIdx) => {
+          const fileId = `${replicaGroup.replicaId}-file-${fileIdx}`;
           // Auto-expand all release file groups by default
           if (!userCollapsedReleaseFiles.value.has(fileId)) {
             addToSet(expandedReleaseFiles, fileId);
@@ -620,7 +624,7 @@ export const useTaskRunLogSections = (
     { immediate: true }
   );
 
-  // Auto-expand release file groups (single-deploy view)
+  // Auto-expand release file groups (single-replica view)
   watch(
     releaseFileGroups,
     (newReleaseFileGroups) => {
@@ -646,18 +650,18 @@ export const useTaskRunLogSections = (
 
   return {
     sections,
-    hasMultipleDeploys,
+    hasMultipleReplicas,
     hasReleaseFiles,
     releaseFileGroups,
-    deployGroups,
+    replicaGroups,
     expandedSections,
-    expandedDeploys,
+    expandedReplicas,
     expandedReleaseFiles,
     toggleSection,
-    toggleDeploy,
+    toggleReplica,
     toggleReleaseFile,
     isSectionExpanded,
-    isDeployExpanded,
+    isReplicaExpanded,
     isReleaseFileExpanded,
     expandAll,
     collapseAll,
