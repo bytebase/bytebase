@@ -158,7 +158,7 @@ func (TaskRunLog_TransactionControl_Type) EnumDescriptor() ([]byte, []int) {
 type TaskRunLog struct {
 	state              protoimpl.MessageState         `protogen:"open.v1"`
 	Type               TaskRunLog_Type                `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.TaskRunLog_Type" json:"type,omitempty"`
-	DeployId           string                         `protobuf:"bytes,12,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
+	ReplicaId          string                         `protobuf:"bytes,12,opt,name=replica_id,json=replicaId,proto3" json:"replica_id,omitempty"`
 	SchemaDumpStart    *TaskRunLog_SchemaDumpStart    `protobuf:"bytes,2,opt,name=schema_dump_start,json=schemaDumpStart,proto3" json:"schema_dump_start,omitempty"`
 	SchemaDumpEnd      *TaskRunLog_SchemaDumpEnd      `protobuf:"bytes,3,opt,name=schema_dump_end,json=schemaDumpEnd,proto3" json:"schema_dump_end,omitempty"`
 	CommandExecute     *TaskRunLog_CommandExecute     `protobuf:"bytes,4,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
@@ -213,9 +213,9 @@ func (x *TaskRunLog) GetType() TaskRunLog_Type {
 	return TaskRunLog_TYPE_UNSPECIFIED
 }
 
-func (x *TaskRunLog) GetDeployId() string {
+func (x *TaskRunLog) GetReplicaId() string {
 	if x != nil {
-		return x.DeployId
+		return x.ReplicaId
 	}
 	return ""
 }
@@ -1111,11 +1111,12 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xa0\x13\n" +
+	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xa2\x13\n" +
 	"\n" +
 	"TaskRunLog\x123\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1b\n" +
-	"\tdeploy_id\x18\f \x01(\tR\bdeployId\x12V\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1d\n" +
+	"\n" +
+	"replica_id\x18\f \x01(\tR\treplicaId\x12V\n" +
 	"\x11schema_dump_start\x18\x02 \x01(\v2*.bytebase.store.TaskRunLog.SchemaDumpStartR\x0fschemaDumpStart\x12P\n" +
 	"\x0fschema_dump_end\x18\x03 \x01(\v2(.bytebase.store.TaskRunLog.SchemaDumpEndR\rschemaDumpEnd\x12R\n" +
 	"\x0fcommand_execute\x18\x04 \x01(\v2).bytebase.store.TaskRunLog.CommandExecuteR\x0ecommandExecute\x12U\n" +

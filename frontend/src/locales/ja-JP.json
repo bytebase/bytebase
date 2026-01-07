@@ -390,8 +390,8 @@
       "computing": "コンピューティング..."
     },
     "log-viewer": {
-      "multiple-deploys-notice": "実行中にサーバーの再起動が検出されました。ログはデプロイごとにグループ化されています。",
-      "deployment-n": "デプロイ #{n}",
+      "multiple-replicas-notice": "実行中にサーバーの再起動が検出されました。ログはレプリカごとにグループ化されています。",
+      "replica-n": "レプリカ #{n}",
       "expand-all": "すべて展開",
       "collapse-all": "すべて折りたたむ",
       "summary": "{sections} セクション · {entries} エントリ"

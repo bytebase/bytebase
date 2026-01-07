@@ -9735,7 +9735,7 @@ Information about why a task run is waiting.
 | ----- | ---- | ----- | ----------- |
 | type | [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type) |  | The type of this log entry. |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the log was recorded. |
-| deploy_id | [string](#string) |  | The deployment ID for this log entry. |
+| replica_id | [string](#string) |  | The replica ID for this log entry. |
 | schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  | Schema dump details (if type is SCHEMA_DUMP). |
 | command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  | Command execution details (if type is COMMAND_EXECUTE). |
 | database_sync | [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync) |  | Database sync details (if type is DATABASE_SYNC). |

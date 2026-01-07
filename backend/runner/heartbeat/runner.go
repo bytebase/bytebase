@@ -36,7 +36,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(heartbeatInterval)
 	defer ticker.Stop()
 
-	slog.Debug("Heartbeat runner started", slog.String("replicaID", r.profile.DeployID))
+	slog.Debug("Heartbeat runner started", slog.String("replicaID", r.profile.ReplicaID))
 
 	// Send heartbeat immediately on startup
 	r.sendHeartbeat(ctx)
@@ -52,7 +52,7 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (r *Runner) sendHeartbeat(ctx context.Context) {
-	if err := r.store.UpsertReplicaHeartbeat(ctx, r.profile.DeployID); err != nil {
+	if err := r.store.UpsertReplicaHeartbeat(ctx, r.profile.ReplicaID); err != nil {
 		slog.Error("Failed to send heartbeat", log.BBError(err))
 	}
 }

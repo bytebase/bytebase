@@ -104,8 +104,8 @@ export const groupEntriesByType = (
   return groups;
 };
 
-// Get unique deploy IDs from entries, preserving order of first appearance
-export const getUniqueDeployIds = (entries: TaskRunLogEntry[]): string[] => {
+// Get unique replica IDs from entries, preserving order of first appearance
+export const getUniqueReplicaIds = (entries: TaskRunLogEntry[]): string[] => {
   if (!entries.length) return [];
 
   const sortedEntries = [...entries].sort((a, b) => {
@@ -113,31 +113,31 @@ export const getUniqueDeployIds = (entries: TaskRunLogEntry[]): string[] => {
   });
 
   const seen = new Set<string>();
-  const deployIds: string[] = [];
+  const replicaIds: string[] = [];
 
   for (const entry of sortedEntries) {
-    const deployId = entry.deployId || "";
-    if (deployId && !seen.has(deployId)) {
-      seen.add(deployId);
-      deployIds.push(deployId);
+    const replicaId = entry.replicaId || "";
+    if (replicaId && !seen.has(replicaId)) {
+      seen.add(replicaId);
+      replicaIds.push(replicaId);
     }
   }
 
-  return deployIds;
+  return replicaIds;
 };
 
-// Group entries by deploy ID, maintaining time order within each group
-export const groupEntriesByDeploy = (
+// Group entries by replica ID, maintaining time order within each group
+export const groupEntriesByReplica = (
   entries: TaskRunLogEntry[]
 ): Map<string, TaskRunLogEntry[]> => {
   const result = new Map<string, TaskRunLogEntry[]>();
 
   for (const entry of entries) {
-    const deployId = entry.deployId || "unknown";
-    if (!result.has(deployId)) {
-      result.set(deployId, []);
+    const replicaId = entry.replicaId || "unknown";
+    if (!result.has(replicaId)) {
+      result.set(replicaId, []);
     }
-    result.get(deployId)!.push(entry);
+    result.get(replicaId)!.push(entry);
   }
 
   return result;

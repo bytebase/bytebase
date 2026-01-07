@@ -199,7 +199,7 @@ func (x *TaskRunLog) Equal(y *TaskRunLog) bool {
 	if x.Type != y.Type {
 		return false
 	}
-	if x.DeployId != y.DeployId {
+	if x.ReplicaId != y.ReplicaId {
 		return false
 	}
 	if !x.SchemaDumpStart.Equal(y.SchemaDumpStart) {

@@ -44,7 +44,7 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 
 func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 	// Atomically claim all AVAILABLE task runs
-	claimed, err := s.store.ClaimAvailableTaskRuns(ctx, s.profile.DeployID)
+	claimed, err := s.store.ClaimAvailableTaskRuns(ctx, s.profile.ReplicaID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to claim available task runs")
 	}

@@ -717,7 +717,7 @@ func (x *TaskRunLogEntry) Equal(y *TaskRunLogEntry) bool {
 	if p, q := x.LogTime, y.LogTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.DeployId != y.DeployId {
+	if x.ReplicaId != y.ReplicaId {
 		return false
 	}
 	if !x.SchemaDump.Equal(y.SchemaDump) {

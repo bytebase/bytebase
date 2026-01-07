@@ -382,9 +382,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 		switch l.Payload.Type {
 		case storepb.TaskRunLog_SCHEMA_DUMP_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_SCHEMA_DUMP,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_SCHEMA_DUMP,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				SchemaDump: &v1pb.TaskRunLogEntry_SchemaDump{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -404,9 +404,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_COMMAND_EXECUTE:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
 					LogTime:   timestamppb.New(l.T),
 					Range:     convertToRange(l.Payload.CommandExecute.Range),
@@ -432,9 +432,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_DATABASE_SYNC_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_DATABASE_SYNC,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_DATABASE_SYNC,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				DatabaseSync: &v1pb.TaskRunLogEntry_DatabaseSync{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -454,9 +454,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_TRANSACTION_CONTROL:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				TransactionControl: &v1pb.TaskRunLogEntry_TransactionControl{
 					Type:  convertTaskRunLogTransactionControlType(l.Payload.TransactionControl.Type),
 					Error: l.Payload.TransactionControl.Error,
@@ -466,9 +466,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_PRIOR_BACKUP_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_PRIOR_BACKUP,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_PRIOR_BACKUP,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				PriorBackup: &v1pb.TaskRunLogEntry_PriorBackup{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -489,9 +489,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_START:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_COMPUTE_DIFF,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_COMPUTE_DIFF,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				ComputeDiff: &v1pb.TaskRunLogEntry_ComputeDiff{
 					StartTime: timestamppb.New(l.T),
 				},
@@ -511,9 +511,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_RETRY_INFO:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_RETRY_INFO,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_RETRY_INFO,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				RetryInfo: &v1pb.TaskRunLogEntry_RetryInfo{
 					RetryCount:     l.Payload.RetryInfo.RetryCount,
 					MaximumRetries: l.Payload.RetryInfo.MaximumRetries,
@@ -524,9 +524,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 
 		case storepb.TaskRunLog_RELEASE_FILE_EXECUTE:
 			e := &v1pb.TaskRunLogEntry{
-				Type:     v1pb.TaskRunLogEntry_RELEASE_FILE_EXECUTE,
-				LogTime:  timestamppb.New(l.T),
-				DeployId: l.Payload.DeployId,
+				Type:      v1pb.TaskRunLogEntry_RELEASE_FILE_EXECUTE,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
 				ReleaseFileExecute: &v1pb.TaskRunLogEntry_ReleaseFileExecute{
 					Version:  l.Payload.ReleaseFileExecute.Version,
 					FilePath: l.Payload.ReleaseFileExecute.FilePath,

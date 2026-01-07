@@ -179,7 +179,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	// so this works correctly for mixed DDL+DML statements.
 	var priorBackupDetail *storepb.PriorBackupDetail
 	if task.Payload.GetEnablePriorBackup() {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 			Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
 			PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
 		})
@@ -189,7 +189,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 			var backupErr error
 			priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, sheet.Statement, task.Payload, task, instance, database)
 			if backupErr != nil {
-				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
 					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
 						Error: backupErr.Error(),
@@ -201,7 +201,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 					return nil, backupErr
 				}
 			} else {
-				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
 					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
 						PriorBackupDetail: priorBackupDetail,
@@ -236,7 +236,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Begin migration - create pending changelog
@@ -320,7 +320,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Prepare gh-ost migration context before beginning migration
@@ -481,7 +481,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Get database driver once for all files
@@ -521,7 +521,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			slog.String("file", file.Path))
 
 		// Log release file execution
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 			Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
 			ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
 				Version:  file.Version,
@@ -636,7 +636,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		slog.String("file", file.Path))
 
 	// Log release file execution
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
 		ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
 			Version: file.Version,
@@ -667,7 +667,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.DeployID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Compute SDL diff before beginning migration

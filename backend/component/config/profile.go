@@ -40,8 +40,8 @@ type Profile struct {
 
 	// LastActiveTS is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTS atomic.Int64
-	// Unique ID per Bytebase instance run.
-	DeployID string
+	// Unique ID per Bytebase replica run.
+	ReplicaID string
 	// Whether the server is running in a docker container.
 	IsDocker bool
 
