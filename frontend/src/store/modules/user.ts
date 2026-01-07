@@ -201,7 +201,6 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const batchGetOrFetchUsers = async (userNameList: string[]) => {
-    console.log("batchGetOrFetchUsers")
     const validList = uniq(userNameList).filter(
       (name) =>
         Boolean(name) &&
@@ -212,8 +211,6 @@ export const useUserStore = defineStore("user", () => {
         return getUserByIdentifier(name) === undefined;
       })
       .map((name) => ensureUserFullName(name));
-
-        console.log("batchGetOrFetchUsers", pendingFetch)
 
     if (pendingFetch.length === 0) {
       return validList.map(getUserByIdentifier);
