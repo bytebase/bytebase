@@ -14,21 +14,13 @@ import {
 } from "@/router/auth";
 import { SETUP_MODULE } from "@/router/setup";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import {
-  useActuatorV1Store,
-  useAppFeature,
-  useSettingV1Store,
-  useUserStore,
-} from "@/store";
+import { useActuatorV1Store, useAppFeature, useUserStore } from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import {
-  DatabaseChangeMode,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   CreateUserRequestSchema,
@@ -120,15 +112,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
 
     setRequireResetPassword(resp.requireResetPassword);
-    await useSettingV1Store().getOrFetchSettingByName(
-      Setting_SettingName.WORKSPACE_PROFILE,
-      true // silent
-    );
+    await actuatorStore.fetchServerInfo();
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
     if (actuatorStore.needAdminSetup) {
-      await actuatorStore.fetchServerInfo();
       actuatorStore.onboardingState.isOnboarding = true;
       return router.replace({
         name: SETUP_MODULE,

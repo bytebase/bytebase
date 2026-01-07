@@ -16,8 +16,8 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
+import { RestrictionSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { WorkspaceProfileSetting_PasswordRestrictionSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
 
@@ -93,12 +93,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
   });
 
-  const disallowSignup = computed(
-    () => serverInfo.value?.disallowSignup || false
-  );
-
-  const disallowPasswordSignin = computed(
-    () => serverInfo.value?.disallowPasswordSignin || false
+  const restriction = computed(
+    () => serverInfo.value?.restriction ?? create(RestrictionSchema, {})
   );
 
   const hasNewRelease = computed(() => {
@@ -109,16 +105,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
         releaseInfo.value.latest?.tag_name ?? "",
         serverInfo.value?.version ?? ""
       )
-    );
-  });
-
-  const passwordRestriction = computed(() => {
-    return (
-      serverInfo.value?.passwordRestriction ??
-      create(WorkspaceProfileSetting_PasswordRestrictionSchema, {
-        minLength: 8,
-        requireLetter: true,
-      })
     );
   });
 
@@ -306,10 +292,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     isSaaSMode,
     needAdminSetup,
     needConfigureExternalUrl,
-    disallowSignup,
-    disallowPasswordSignin,
     hasNewRelease,
-    passwordRestriction,
+    restriction,
     activatedInstanceCount,
     totalInstanceCount,
     inactiveUserCount,

@@ -13,7 +13,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, toRef, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useActuatorV1Store, useSettingV1Store } from "@/store";
+import { useActuatorV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { FeatureModal } from "../FeatureGuard";
@@ -29,7 +29,6 @@ const emit = defineEmits<{
   (event: "dismiss"): void;
 }>();
 
-const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 
 const instance = toRef(props, "instance");
@@ -55,7 +54,6 @@ onMounted(async () => {
     adminDataSource.value.srv = false;
     adminDataSource.value.authenticationDatabase = "";
   }
-  await settingV1Store.fetchSettingList();
 });
 
 watch(

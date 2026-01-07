@@ -678,6 +678,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Restriction"><span class="badge">M</span>Restriction</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SetupSampleRequest"><span class="badge">M</span>SetupSampleRequest</a>
                 </li>
               
@@ -7587,24 +7591,10 @@ Permissions required: bb.users.updateEmail</p></td>
                 </tr>
               
                 <tr>
-                  <td>disallow_signup</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether self-service user signup is disabled. </p></td>
-                </tr>
-              
-                <tr>
                   <td>last_active_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>The last time any API call was made, refreshed on each request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_2fa</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether two-factor authentication is required for all users. </p></td>
                 </tr>
               
                 <tr>
@@ -7626,20 +7616,6 @@ Permissions required: bb.users.updateEmail</p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>List of features that are not licensed. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>disallow_password_signin</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether password-based signin is disabled (except for workspace admins). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password_restriction</td>
-                  <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
-                  <td></td>
-                  <td><p>Password complexity and restriction requirements. </p></td>
                 </tr>
               
                 <tr>
@@ -7682,6 +7658,27 @@ Permissions required: bb.users.updateEmail</p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether the external URL is set via command-line flag (and thus cannot be changed via UI). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>announcement</td>
+                  <td><a href="#bytebase.v1.Announcement">Announcement</a></td>
+                  <td></td>
+                  <td><p>The setting of custom announcement </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_metric_collection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to enable metric collection for the workspace. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>restriction</td>
+                  <td><a href="#bytebase.v1.Restriction">Restriction</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7765,6 +7762,93 @@ Permissions required: bb.users.updateEmail</p></td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>The branding logo. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Restriction">Restriction</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>disallow_signup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether self-service user signup is disabled. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_2fa</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether two-factor authentication is required for all users. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disallow_password_signin</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether password-based signin is disabled (except for workspace admins). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password_restriction</td>
+                  <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
+                  <td></td>
+                  <td><p>Password complexity and restriction requirements. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>watermark</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to display watermark on pages. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_change_mode</td>
+                  <td><a href="#bytebase.v1.DatabaseChangeMode">DatabaseChangeMode</a></td>
+                  <td></td>
+                  <td><p>The workspace database change mode. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>inactive_session_timeout</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>domains</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The workspace domain, e.g., bytebase.com. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enforce_identity_domain</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Only user and group from the domains can be created and login. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_role_expiration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The max duration for role expired. </p></td>
                 </tr>
               
             </tbody>

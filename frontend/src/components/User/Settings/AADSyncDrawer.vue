@@ -140,7 +140,7 @@ const workspaceId = computed(() => {
 });
 
 const externalUrl = computed(() => {
-  return settingV1Store.workspaceProfileSetting?.externalUrl;
+  return actuatorStore.serverInfo?.externalUrl;
 });
 
 const scimUrl = computed(() => {

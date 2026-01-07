@@ -229,7 +229,7 @@ defineExpose({
     });
   },
   revert: () => {
-    Object.assign(state, passwordRestrictionSetting.value);
+    Object.assign(state, cloneDeep(passwordRestrictionSetting.value));
   },
 });
 </script>

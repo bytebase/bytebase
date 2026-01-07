@@ -107,16 +107,14 @@ import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
+  useAppFeature,
   useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import {
-  DatabaseChangeMode,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import WorkspaceMode from "./WorkspaceMode.vue";
 
 interface LocalState {
@@ -224,16 +222,8 @@ const tryFinishSetup = async () => {
 
 onMounted(async () => {
   if (!actuatorV1Store.onboardingState.isOnboarding) {
-    const profileSetting = await settingStore.fetchSettingByName(
-      Setting_SettingName.WORKSPACE_PROFILE
-    );
-    return onCancel(
-      getHomePageByMode(
-        profileSetting?.value?.value?.case === "workspaceProfile"
-          ? profileSetting.value.value.value.databaseChangeMode
-          : undefined
-      )
-    );
+    const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+    return onCancel(getHomePageByMode(databaseChangeMode.value));
   }
 });
 </script>

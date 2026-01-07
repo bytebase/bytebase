@@ -1,23 +1,11 @@
 import { computed } from "vue";
 import { locale } from "./plugins/i18n";
-import { useActuatorV1Store, useSettingByName } from "./store";
+import { useActuatorV1Store } from "./store";
 import { defaultAppProfile } from "./types";
-import {
-  DatabaseChangeMode,
-  Setting_SettingName,
-} from "./types/proto-es/v1/setting_service_pb";
+import { DatabaseChangeMode } from "./types/proto-es/v1/setting_service_pb";
 
 export const overrideAppProfile = () => {
-  const setting = useSettingByName(Setting_SettingName.WORKSPACE_PROFILE);
-  const databaseChangeMode = computed(() => {
-    if (setting.value?.value?.value?.case === "workspaceProfile") {
-      const mode = setting.value.value.value.value.databaseChangeMode;
-      if (mode === DatabaseChangeMode.EDITOR) return DatabaseChangeMode.EDITOR;
-    }
-    return DatabaseChangeMode.PIPELINE;
-  });
-
-  overrideAppFeatures(databaseChangeMode.value);
+  overrideAppFeatures();
 
   // Override app language.
   const query = new URLSearchParams(window.location.search);
@@ -27,17 +15,21 @@ export const overrideAppProfile = () => {
   }
 };
 
-const overrideAppFeatures = (
-  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR
-) => {
+const overrideAppFeatures = () => {
   const actuatorStore = useActuatorV1Store();
+
+  const databaseChangeMode = computed(() => {
+    const mode = actuatorStore.restriction.databaseChangeMode;
+    if (mode === DatabaseChangeMode.EDITOR) return DatabaseChangeMode.EDITOR;
+    return DatabaseChangeMode.PIPELINE;
+  });
 
   actuatorStore.appProfile = defaultAppProfile();
   actuatorStore.overrideAppFeatures({
-    "bb.feature.database-change-mode": databaseChangeMode,
+    "bb.feature.database-change-mode": databaseChangeMode.value,
   });
 
-  if (databaseChangeMode === DatabaseChangeMode.EDITOR) {
+  if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
     actuatorStore.overrideAppFeatures({
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,

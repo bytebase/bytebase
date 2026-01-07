@@ -139,7 +139,7 @@ defineExpose({
     }
   },
   revert: () => {
-    Object.assign(state, initialState.value);
+    Object.assign(state, cloneDeep(initialState.value));
   },
 });
 </script>

@@ -94,13 +94,13 @@
             :permissions="['bb.groups.create']"
           >
             <NPopover
-              :disabled="slotProps.disabled || workspaceProfileSetting.domains.length > 0"
+              :disabled="slotProps.disabled || actuatorStore.restriction.domains.length > 0"
             >
               <template #trigger>
                 <NButton
                   :disabled="
                     slotProps.disabled ||
-                    workspaceProfileSetting.domains.length === 0 ||
+                    actuatorStore.restriction.domains.length === 0 ||
                     !hasUserGroupFeature
                   "
                   @click="handleCreateGroup"
@@ -211,7 +211,6 @@
 </template>
 
 <script setup lang="ts">
-import { create } from "@bufbuild/protobuf";
 import { PlusIcon, SettingsIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -234,7 +233,6 @@ import {
   featureToRef,
   useActuatorV1Store,
   useGroupStore,
-  useSettingV1Store,
   useSubscriptionV1Store,
   useUIStateStore,
   useUserStore,
@@ -242,7 +240,6 @@ import {
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
-import { WorkspaceProfileSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
 
@@ -284,7 +281,6 @@ const userStore = useUserStore();
 const groupStore = useGroupStore();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
-const settingV1Store = useSettingV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
 const userPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
 const groupPagedTable = ref<ComponentExposed<typeof PagedTable<Group>>>();
@@ -374,13 +370,6 @@ const fetchInactiveUserList = async ({
   });
   return { list: users, nextPageToken };
 };
-
-const workspaceProfileSetting = computed(() =>
-  create(
-    WorkspaceProfileSettingSchema,
-    settingV1Store.workspaceProfileSetting || {}
-  )
-);
 
 const hasDirectorySyncFeature = featureToRef(
   PlanFeature.FEATURE_DIRECTORY_SYNC

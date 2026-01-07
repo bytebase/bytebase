@@ -48,7 +48,7 @@
             v-model:password="state.password"
             v-model:password-confirm="state.passwordConfirm"
             :show-learn-more="false"
-            :password-restriction="passwordRestriction"
+            :password-restriction="restriction.passwordRestriction"
           />
 
           <div>
@@ -176,8 +176,7 @@ const state = reactive<LocalState>({
   isLoading: false,
 });
 
-const { needAdminSetup, disallowSignup, passwordRestriction } =
-  storeToRefs(actuatorStore);
+const { needAdminSetup, restriction } = storeToRefs(actuatorStore);
 
 const allowSignup = computed(() => {
   return (
@@ -187,7 +186,7 @@ const allowSignup = computed(() => {
     !userPasswordRef.value?.passwordHint &&
     !userPasswordRef.value?.passwordMismatch &&
     state.acceptTermsAndPolicy &&
-    !disallowSignup.value
+    !restriction.value.disallowSignup
   );
 });
 

@@ -344,7 +344,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
   pushNotification,
-  useSettingV1Store,
+  useActuatorV1Store,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
@@ -387,7 +387,6 @@ const emit = defineEmits<{
 const workspaceStore = useWorkspaceV1Store();
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
@@ -603,7 +602,7 @@ watch(
 );
 
 const passwordRestrictionSetting = computed(
-  () => settingV1Store.passwordRestriction
+  () => useActuatorV1Store().restriction.passwordRestriction
 );
 
 const allowConfirm = computed(() => {

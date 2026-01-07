@@ -84,6 +84,51 @@ func (x *DeleteCacheRequest) Equal(y *DeleteCacheRequest) bool {
 	return true
 }
 
+func (x *Restriction) Equal(y *Restriction) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.DisallowSignup != y.DisallowSignup {
+		return false
+	}
+	if x.Require_2Fa != y.Require_2Fa {
+		return false
+	}
+	if x.DisallowPasswordSignin != y.DisallowPasswordSignin {
+		return false
+	}
+	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
+		return false
+	}
+	if x.Watermark != y.Watermark {
+		return false
+	}
+	if x.DatabaseChangeMode != y.DatabaseChangeMode {
+		return false
+	}
+	if p, q := x.InactiveSessionTimeout, y.InactiveSessionTimeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if len(x.Domains) != len(y.Domains) {
+		return false
+	}
+	for i := 0; i < len(x.Domains); i++ {
+		if x.Domains[i] != y.Domains[i] {
+			return false
+		}
+	}
+	if x.EnforceIdentityDomain != y.EnforceIdentityDomain {
+		return false
+	}
+	if p, q := x.MaximumRoleExpiration, y.MaximumRoleExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
 func (x *ActuatorInfo_StatUser) Equal(y *ActuatorInfo_StatUser) bool {
 	if x == y {
 		return true
@@ -137,13 +182,7 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.NeedAdminSetup != y.NeedAdminSetup {
 		return false
 	}
-	if x.DisallowSignup != y.DisallowSignup {
-		return false
-	}
 	if p, q := x.LastActiveTime, y.LastActiveTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.Require_2Fa != y.Require_2Fa {
 		return false
 	}
 	if x.WorkspaceId != y.WorkspaceId {
@@ -159,12 +198,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		if x.UnlicensedFeatures[i] != y.UnlicensedFeatures[i] {
 			return false
 		}
-	}
-	if x.DisallowPasswordSignin != y.DisallowPasswordSignin {
-		return false
-	}
-	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
-		return false
 	}
 	if x.Docker != y.Docker {
 		return false
@@ -187,6 +220,15 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		return false
 	}
 	if x.ExternalUrlFromFlag != y.ExternalUrlFromFlag {
+		return false
+	}
+	if !x.Announcement.Equal(y.Announcement) {
+		return false
+	}
+	if x.EnableMetricCollection != y.EnableMetricCollection {
+		return false
+	}
+	if !x.Restriction.Equal(y.Restriction) {
 		return false
 	}
 	return true

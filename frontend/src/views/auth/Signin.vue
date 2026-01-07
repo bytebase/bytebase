@@ -13,7 +13,7 @@
             pane-style="padding: 12px 0 0 0"
           >
             <NTabPane
-              v-if="!disallowPasswordSignin"
+              v-if="!restriction.disallowPasswordSignin"
               name="standard"
               tab="Standard"
             >
@@ -237,10 +237,10 @@ const state = reactive<LocalState>({
   isLoading: false,
 });
 const initialized = ref(false);
-const { isDemo, disallowPasswordSignin } = storeToRefs(actuatorStore);
+const { isDemo, restriction } = storeToRefs(actuatorStore);
 
 const disallowSignup = computed(
-  () => !props.allowSignup || actuatorStore.disallowSignup
+  () => !props.allowSignup || restriction.value.disallowSignup
 );
 
 const separatedIdentityProviderList = computed(() =>
@@ -256,13 +256,13 @@ const groupedIdentityProviderList = computed(() =>
 
 const showSignInForm = computed(() => {
   return (
-    !disallowPasswordSignin.value ||
+    !restriction.value.disallowPasswordSignin ||
     groupedIdentityProviderList.value.length > 0
   );
 });
 
 const defaultTabValue = computed(() => {
-  if (!disallowPasswordSignin.value) {
+  if (!restriction.value.disallowPasswordSignin) {
     return "standard";
   }
   if (groupedIdentityProviderList.value.length > 0) {

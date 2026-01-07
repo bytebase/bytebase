@@ -72,7 +72,6 @@ import {
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { pushNotification } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 defineProps<{
   allowEdit: boolean;
@@ -111,7 +110,6 @@ const { overrideMainContainerClass } = useBodyLayoutContext();
 overrideMainContainerClass("!pb-0");
 
 onMounted(async () => {
-  await useSettingV1Store().fetchSettingList();
   // If the route has a hash, try to scroll to the element with the value.
   if (route.hash) {
     document.body.querySelector(route.hash)?.scrollIntoView();
