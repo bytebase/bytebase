@@ -136,7 +136,6 @@ import { CalendarClockIcon, LinkIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { RouterLink } from "vue-router";
-import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import {
@@ -167,6 +166,7 @@ import {
 } from "@/utils";
 import ReleaseInfoCard from "./ReleaseInfoCard.vue";
 import TaskRollbackButton from "./TaskRollbackButton.vue";
+import TaskRunDetail from "./TaskRunDetail.vue";
 import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
 

@@ -28,6 +28,8 @@ import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import TaskRunDetail from "@/components/RolloutV1/components/TaskRunDetail.vue";
+import TaskRunStatusIcon from "@/components/RolloutV1/components/TaskRunStatusIcon.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
 import {
@@ -41,8 +43,6 @@ import {
 import { databaseForTask, humanizeDurationV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
-import TaskRunDetail from "./TaskRunDetail.vue";
-import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 defineOptions({
   inheritAttrs: false,

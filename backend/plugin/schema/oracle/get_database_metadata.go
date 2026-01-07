@@ -62,10 +62,9 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	// Create single schema for Oracle (Oracle uses schemas, not separate databases)
+	// Keep schema name empty if not specified - this matches sync.go behavior
+	// and allows proper schema diff comparison
 	schemaName := extractor.currentSchema
-	if schemaName == "" {
-		schemaName = "PUBLIC"
-	}
 
 	schema := &storepb.SchemaMetadata{
 		Name:              schemaName,

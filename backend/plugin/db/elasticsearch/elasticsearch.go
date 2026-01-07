@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/elastic/go-elasticsearch/v7"
 	opensearch "github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -243,10 +242,8 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 			return nil, errors.New("region is required for AWS IAM authentication")
 		}
 
-		// Load AWS configuration
-		awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
-			awsconfig.WithRegion(config.DataSource.GetRegion()),
-		)
+		// Load AWS configuration (uses specific credentials from UI if provided, otherwise default chain)
+		awsCfg, err := util.GetAWSConnectionConfig(ctx, config)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to load AWS config")
 		}
