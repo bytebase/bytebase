@@ -2146,14 +2146,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SearchReleasesRequest"><span class="badge">M</span>SearchReleasesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchReleasesResponse"><span class="badge">M</span>SearchReleasesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UndeleteReleaseRequest"><span class="badge">M</span>UndeleteReleaseRequest</a>
                 </li>
               
@@ -23908,89 +23900,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
 
         
       
-        <h3 id="bytebase.v1.SearchReleasesRequest">SearchReleasesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of releases to return. The service may return fewer than this value.
-If unspecified, at most 10 releases will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListReleases` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListReleases` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>digest</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Search by the digest of the release. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchReleasesResponse">SearchReleasesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>releases</td>
-                  <td><a href="#bytebase.v1.Release">Release</a></td>
-                  <td>repeated</td>
-                  <td><p>The releases matching the search criteria. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.UndeleteReleaseRequest">UndeleteReleaseRequest</h3>
         <p></p>
 
@@ -24115,14 +24024,6 @@ Permissions required: bb.releases.list</p></td>
               </tr>
             
               <tr>
-                <td>SearchReleases</td>
-                <td><a href="#bytebase.v1.SearchReleasesRequest">SearchReleasesRequest</a></td>
-                <td><a href="#bytebase.v1.SearchReleasesResponse">SearchReleasesResponse</a></td>
-                <td><p>Searches releases by digest or other criteria.
-Permissions required: bb.releases.get</p></td>
-              </tr>
-            
-              <tr>
                 <td>CreateRelease</td>
                 <td><a href="#bytebase.v1.CreateReleaseRequest">CreateReleaseRequest</a></td>
                 <td><a href="#bytebase.v1.Release">Release</a></td>
@@ -24197,16 +24098,6 @@ Permissions required: bb.releases.check</p></td>
                 <td>ListReleases</td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*}/releases</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SearchReleases</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/releases:search</td>
                 <td></td>
               </tr>
               
