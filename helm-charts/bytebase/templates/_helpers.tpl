@@ -24,3 +24,14 @@ Selector labels
 {{- define "bytebase.selectorLabels" -}}
 app: bytebase
 {{- end }}
+
+{{/*
+Create the name of the general service account
+*/}}
+{{- define "bytebase.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+    {{ default ("bytebase") .Values.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
