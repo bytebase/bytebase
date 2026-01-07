@@ -1,6 +1,8 @@
 <template>
   <NoPermissionPlaceholder
     class="mx-6 my-2"
+    :path="fromPath"
+    :api="requestAPI"
     :resources="resources"
     :permissions="permissions"
   >
@@ -41,6 +43,14 @@ const resources = computed(() => {
     return resources.split(",").filter((r) => r);
   }
   return [];
+});
+
+const fromPath = computed(() => {
+  return route.query.from as string;
+});
+
+const requestAPI = computed(() => {
+  return route.query.api as string;
 });
 
 const goHome = () => {

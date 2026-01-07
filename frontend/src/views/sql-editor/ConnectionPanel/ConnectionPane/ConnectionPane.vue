@@ -225,7 +225,7 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
-  useEnvironmentV1List,
+  useEnvironmentV1Store,
   useInstanceResourceByName,
   useProjectV1Store,
   useSQLEditorStore,
@@ -292,9 +292,10 @@ const editorStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 const projectStore = useProjectV1Store();
-const environmentList = useEnvironmentV1List();
 const currentUser = useCurrentUserV1();
 const { t } = useI18n();
+
+const environmentList = computed(() => useEnvironmentV1Store().environmentList);
 
 const expandedState = useDynamicLocalStorage<{
   initialized: boolean;

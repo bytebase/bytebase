@@ -28,11 +28,9 @@ onMounted(async () => {
     policyStore.fetchPolicies({
       resourceType: PolicyResourceType.WORKSPACE,
     }),
+    useEnvironmentV1Store().fetchEnvironments(),
     useSettingV1Store().fetchSettingList(),
   ]);
-
-  // Then prepare the other resources.
-  await Promise.all([useEnvironmentV1Store().fetchEnvironments()]);
 
   useUIStateStore().restoreState();
 

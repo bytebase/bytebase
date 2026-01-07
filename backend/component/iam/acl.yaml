@@ -223,8 +223,6 @@ roles:
       - bb.reviewConfigs.list
       - bb.roles.list
       - bb.roles.get
-      - bb.settings.get
-      - bb.settings.list
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list

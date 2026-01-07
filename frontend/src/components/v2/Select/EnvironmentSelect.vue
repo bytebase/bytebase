@@ -5,7 +5,7 @@
     :virtual-scroll="true"
     :placeholder="t('environment.select')"
     :multiple="multiple"
-    :disabled="disabled"
+    :disabled="disabled || !hasPermission"
     :size="size"
     :value="value"
     :options="options"
@@ -27,6 +27,7 @@ import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { EnvironmentV1Name } from "../Model";
 import type {
   ResourceSelectOption,
@@ -61,9 +62,12 @@ defineEmits<{
 
 const environmentV1Store = useEnvironmentV1Store();
 
+const hasPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.get")
+);
+
 const rawEnvironmentList = computed(() => {
-  const list = environmentV1Store.getEnvironmentList();
-  return list;
+  return environmentV1Store.environmentList;
 });
 
 const combinedEnvironmentList = computed(() => {

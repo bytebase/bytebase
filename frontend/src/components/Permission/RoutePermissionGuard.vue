@@ -3,6 +3,7 @@
   <NoPermissionPlaceholder
     v-else
     v-bind="$attrs"
+    :path="requestPath"
     :resources="project ? [project.name] : []"
     :permissions="missedPermissions"
   />
@@ -26,6 +27,10 @@ const router = useRouter();
 
 const flattenRoutes = computed(() => {
   return getFlattenRoutes(props.routes);
+});
+
+const requestPath = computed(() => {
+  return router.currentRoute.value.fullPath;
 });
 
 const requiredPermissions = computed(() => {

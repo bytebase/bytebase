@@ -97,7 +97,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     {
       key: "creator",
       title: t("issue.table.creator"),
-      width: 128,
+      width: 140,
       render: (plan) => {
         const creator =
           userStore.getUserByIdentifier(plan.creator) ||

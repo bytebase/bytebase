@@ -84,7 +84,8 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
             name: WORKSPACE_ROUTE_403,
             query: errorDetail
               ? {
-                  method: errorDetail.method,
+                  from: router.currentRoute.value.fullPath,
+                  api: errorDetail.method,
                   permissions: errorDetail.requiredPermissions.join(","),
                   resources: errorDetail.resources.join(","),
                 }

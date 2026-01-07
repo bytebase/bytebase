@@ -3,7 +3,7 @@
     <div class="flex flex-col gap-y-6">
       <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
         <div for="name" class="flex item-center gap-x-2">
-          <div class="w-4 h-4 relative">
+          <div class="relative ml-1 mr-3">
             <component :is="renderColorPicker()" />
           </div>
           <span for="name" class="font-medium">
@@ -24,11 +24,7 @@
           :value="state.environment.id"
           :resource-title="state.environment.title"
           :fetch-resource="
-            (id) =>
-              environmentStore.getOrFetchEnvironmentByName(
-                `${environmentNamePrefix}${id}`,
-                true /* silent */
-              )
+            (id) => getEnvironmentById(id)
           "
         />
       </div>
@@ -159,11 +155,11 @@ import {
   hasFeature,
   pushNotification,
   useDatabaseV1Store,
-  useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { isValidEnvironmentName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
@@ -198,11 +194,9 @@ const {
   allowEdit,
   valueChanged,
   missingFeature,
-  hasPermission,
   events,
   resourceIdField,
 } = useEnvironmentFormContext();
-const environmentList = useEnvironmentV1List();
 const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
@@ -211,6 +205,17 @@ const accessControlConfigureRef =
   ref<InstanceType<typeof AccessControlConfigure>>();
 const sqlReviewForResourceRef =
   ref<InstanceType<typeof SQLReviewForResource>>();
+
+const getEnvironmentById = (id: string) => {
+  const environment = environmentStore.getEnvironmentByName(
+    `${environmentNamePrefix}${id}`,
+    false /* not fallback */
+  );
+  if (!isValidEnvironmentName(environment.name)) {
+    return Promise.resolve(undefined);
+  }
+  return Promise.resolve(environment);
+};
 
 watch(
   () => [
@@ -231,7 +236,7 @@ const hasEnvironmentPolicyFeature = computed(() =>
 );
 
 const allowArchive = computed(() => {
-  return hasPermission("bb.settings.set") && environmentList.value.length > 1;
+  return allowEdit.value && environmentStore.environmentList.length > 1;
 });
 
 const fetchInstances = async () => {

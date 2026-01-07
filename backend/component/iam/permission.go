@@ -1,5 +1,14 @@
 package iam
 
+import (
+	_ "embed"
+
+	"gopkg.in/yaml.v3"
+)
+
+//go:embed permission.yaml
+var permissionYAML []byte
+
 type Permission = string
 
 const (
@@ -115,118 +124,15 @@ const (
 	PermissionWorkspacesSetIamPolicy  Permission = "bb.workspaces.setIamPolicy"
 )
 
-var allPermissions = []Permission{
-	PermissionAuditLogsExport,
-	PermissionAuditLogsSearch,
-	PermissionChangelogsGet,
-	PermissionChangelogsList,
-	PermissionDatabaseCatalogsGet,
-	PermissionDatabaseCatalogsUpdate,
-	PermissionDatabaseGroupsCreate,
-	PermissionDatabaseGroupsDelete,
-	PermissionDatabaseGroupsGet,
-	PermissionDatabaseGroupsList,
-	PermissionDatabaseGroupsUpdate,
-	PermissionDatabasesCheck,
-	PermissionDatabasesGet,
-	PermissionDatabasesGetSchema,
-	PermissionDatabasesList,
-	PermissionDatabasesSync,
-	PermissionDatabasesUpdate,
-	PermissionIdentityProvidersCreate,
-	PermissionIdentityProvidersDelete,
-	PermissionIdentityProvidersGet,
-	PermissionIdentityProvidersUpdate,
-	PermissionInstancesCreate,
-	PermissionInstancesDelete,
-	PermissionInstancesGet,
-	PermissionInstancesList,
-	PermissionInstancesSync,
-	PermissionInstancesUndelete,
-	PermissionInstancesUpdate,
-	PermissionInstanceRolesGet,
-	PermissionInstanceRolesList,
-	PermissionIssueCommentsCreate,
-	PermissionIssueCommentsList,
-	PermissionIssueCommentsUpdate,
-	PermissionIssuesCreate,
-	PermissionIssuesGet,
-	PermissionIssuesList,
-	PermissionIssuesUpdate,
-	PermissionPlanCheckRunsGet,
-	PermissionPlanCheckRunsRun,
-	PermissionPlansCreate,
-	PermissionPlansGet,
-	PermissionPlansList,
-	PermissionPlansUpdate,
-	PermissionPoliciesCreate,
-	PermissionPoliciesDelete,
-	PermissionPoliciesGet,
-	PermissionPoliciesList,
-	PermissionPoliciesUpdate,
-	PermissionProjectsCreate,
-	PermissionProjectsDelete,
-	PermissionProjectsGet,
-	PermissionProjectsGetIAMPolicy,
-	PermissionProjectsList,
-	PermissionProjectsSetIAMPolicy,
-	PermissionProjectsUndelete,
-	PermissionProjectsUpdate,
-	PermissionReleasesCheck,
-	PermissionReleasesCreate,
-	PermissionReleasesDelete,
-	PermissionReleasesGet,
-	PermissionReleasesList,
-	PermissionReleasesUndelete,
-	PermissionReleasesUpdate,
-	PermissionReviewConfigsCreate,
-	PermissionReviewConfigsDelete,
-	PermissionReviewConfigsGet,
-	PermissionReviewConfigsList,
-	PermissionReviewConfigsUpdate,
-	PermissionRevisionsCreate,
-	PermissionRevisionsDelete,
-	PermissionRevisionsGet,
-	PermissionRevisionsList,
-	PermissionRolesCreate,
-	PermissionRolesDelete,
-	PermissionRolesList,
-	PermissionRolesGet,
-	PermissionRolesUpdate,
-	PermissionRolloutsCreate,
-	PermissionRolloutsGet,
-	PermissionRolloutsList,
-	PermissionSettingsGet,
-	PermissionSettingsList,
-	PermissionSettingsSet,
-	PermissionSheetsCreate,
-	PermissionSheetsGet,
-	PermissionSheetsUpdate,
-	PermissionSQLSelect,
-	PermissionSQLDdl,
-	PermissionSQLDml,
-	PermissionSQLExplain,
-	PermissionSQLInfo,
-	PermissionSQLAdmin,
-	PermissionTaskRunsCreate,
-	PermissionTaskRunsList,
-	PermissionGroupsCreate,
-	PermissionGroupsDelete,
-	PermissionGroupsGet,
-	PermissionGroupsList,
-	PermissionGroupsUpdate,
-	PermissionUsersCreate,
-	PermissionUsersDelete,
-	PermissionUsersGet,
-	PermissionUsersList,
-	PermissionUsersUndelete,
-	PermissionUsersUpdate,
-	PermissionUsersUpdateEmail,
-	PermissionWorksheetsGet,
-	PermissionWorksheetsManage,
-	PermissionWorkspacesGetIamPolicy,
-	PermissionWorkspacesSetIamPolicy,
-}
+var allPermissions = func() []Permission {
+	var data struct {
+		Permissions []Permission `yaml:"permissions"`
+	}
+	if err := yaml.Unmarshal(permissionYAML, &data); err != nil {
+		panic("failed to load permissions from YAML: " + err.Error())
+	}
+	return data.Permissions
+}()
 
 var allPermissionsMap = func() map[Permission]bool {
 	m := make(map[Permission]bool)
@@ -245,7 +151,7 @@ func PermissionsExist(permissions ...string) bool {
 	return true
 }
 
-// PermissionExist checks if a single permission exists
+// PermissionExist checks if a single permission exists in permission.yaml
 func PermissionExist(permission string) bool {
 	return allPermissionsMap[permission]
 }

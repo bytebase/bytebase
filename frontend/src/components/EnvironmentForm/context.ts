@@ -101,7 +101,6 @@ export const provideEnvironmentFormContext = (baseContext: {
     resourceIdField,
     allowCreate,
     allowEdit,
-    hasPermission: hasWorkspacePermissionV2,
     valueChanged,
   };
   provide(KEY, context);

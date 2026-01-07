@@ -17,10 +17,9 @@ import {
   SettingValueSchema,
   UpdateSettingRequestSchema,
   type WorkspaceProfileSetting,
-  type WorkspaceProfileSetting_PasswordRestriction,
-  WorkspaceProfileSetting_PasswordRestrictionSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./actuator";
 
 interface SettingState {
@@ -43,9 +42,6 @@ export const useSettingV1Store = defineStore("setting_v1", {
       }
       return undefined;
     },
-    brandingLogo(): string | undefined {
-      return this.workspaceProfileSetting?.brandingLogo;
-    },
     classification(): DataClassificationSetting_DataClassificationConfig[] {
       const setting = this.settingMapByName.get(
         `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.DATA_CLASSIFICATION]}`
@@ -56,15 +52,6 @@ export const useSettingV1Store = defineStore("setting_v1", {
         return value.value.configs;
       }
       return [];
-    },
-    passwordRestriction(): WorkspaceProfileSetting_PasswordRestriction {
-      return (
-        this.workspaceProfileSetting?.passwordRestriction ??
-        create(WorkspaceProfileSetting_PasswordRestrictionSchema, {
-          minLength: 8,
-          requireLetter: true,
-        })
-      );
     },
   },
   actions: {
@@ -87,6 +74,9 @@ export const useSettingV1Store = defineStore("setting_v1", {
       name: Setting_SettingName,
       silent = false
     ): Promise<Setting | undefined> {
+      if (!hasWorkspacePermissionV2("bb.settings.get")) {
+        return;
+      }
       try {
         const request = create(GetSettingRequestSchema, {
           name: `${settingNamePrefix}${Setting_SettingName[name]}`,
@@ -116,6 +106,9 @@ export const useSettingV1Store = defineStore("setting_v1", {
       );
     },
     async fetchSettingList() {
+      if (!hasWorkspacePermissionV2("bb.settings.list")) {
+        return;
+      }
       const request = create(ListSettingsRequestSchema, {});
       const response = await settingServiceClientConnect.listSettings(request);
       for (const setting of response.settings) {
@@ -175,7 +168,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
         }),
         updateMask: updateMask,
       });
-      // Fetch the latest server info to refresh the disallow signup flag.
+      // Refresh the latest server info.
       await useActuatorV1Store().fetchServerInfo();
     },
   },

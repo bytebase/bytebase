@@ -20,7 +20,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { computed, reactive, ref, watch, watchEffect } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import {
   EnvironmentForm,
   Form as EnvironmentFormBody,
@@ -62,16 +62,6 @@ const state = reactive<LocalState>({
 
 const stateEnvironmentName = computed(() => {
   return formatEnvironmentName(state.environment.id);
-});
-
-const prepareEnvironment = async () => {
-  await environmentV1Store.getOrFetchEnvironmentByName(
-    `${environmentNamePrefix}${props.environmentName}`
-  );
-};
-
-watch(() => props.environmentName, prepareEnvironment, {
-  immediate: true,
 });
 
 // Fetch rollout policy directly using getOrFetchPolicyByParentAndType
