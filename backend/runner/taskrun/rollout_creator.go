@@ -61,9 +61,23 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 		return
 	}
 
+	// Skip deleted (closed) plans
+	if plan.Deleted {
+		slog.Debug("plan is deleted, skipping rollout creation",
+			slog.Int("plan_id", int(planID)))
+		return
+	}
+
 	// Idempotency: skip if rollout already exists
 	if plan.Config != nil && plan.Config.HasRollout {
 		slog.Debug("rollout already exists, skipping creation",
+			slog.Int("plan_id", int(planID)))
+		return
+	}
+
+	// Only auto-create rollout for plans with change database specs
+	if !hasOnlyChangeDatabaseSpecs(plan) {
+		slog.Debug("plan has non-change-database specs, skipping auto-creation",
 			slog.Int("plan_id", int(planID)))
 		return
 	}
@@ -77,6 +91,13 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 	}
 	if issue == nil {
 		slog.Debug("issue not found for rollout creation", slog.Int("plan_id", int(planID)))
+		return
+	}
+
+	// Skip canceled issues
+	if issue.Status == storepb.Issue_CANCELED {
+		slog.Debug("issue is canceled, skipping rollout creation",
+			slog.Int("plan_id", int(planID)))
 		return
 	}
 
@@ -152,4 +173,21 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 	rc.bus.TaskRunTickleChan <- 0
 
 	slog.Info("successfully auto-created rollout", slog.Int("plan_id", int(planID)))
+}
+
+// hasOnlyChangeDatabaseSpecs checks if every spec in the plan is a change database spec.
+// Only plans with change database specs support auto-creation of rollouts.
+func hasOnlyChangeDatabaseSpecs(plan *store.PlanMessage) bool {
+	if plan.Config == nil {
+		return false
+	}
+	if len(plan.Config.Specs) == 0 {
+		return false
+	}
+	for _, spec := range plan.Config.Specs {
+		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); !ok {
+			return false
+		}
+	}
+	return true
 }
