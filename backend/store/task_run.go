@@ -418,3 +418,37 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	}
 	return nil
 }
+
+// FailStaleTaskRuns marks RUNNING task runs as FAILED if their replica is dead.
+// A replica is considered dead if:
+// 1. Its replica_id is not in the replica_heartbeat table, OR
+// 2. Its last_heartbeat is older than the staleness threshold
+// Returns the number of task runs marked as failed.
+func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.Duration) (int64, error) {
+	q := qb.Q().Space(`
+		UPDATE task_run
+		SET status = ?,
+		    result = '{"detail": "Task run abandoned: owning replica stopped responding"}',
+		    updated_at = now()
+		WHERE status = ?
+		  AND replica_id IS NOT NULL
+		  AND (
+		    replica_id NOT IN (SELECT replica_id FROM replica_heartbeat)
+		    OR replica_id IN (
+		      SELECT replica_id FROM replica_heartbeat
+		      WHERE last_heartbeat < now() - ?::INTERVAL
+		    )
+		  )
+	`, storepb.TaskRun_FAILED.String(), storepb.TaskRun_RUNNING.String(), stalenessThreshold.String())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to fail stale task runs")
+	}
+	return result.RowsAffected()
+}
