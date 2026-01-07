@@ -833,18 +833,6 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, err
 	}
 
-	// Check if data export is allowed.
-	queryDataPolicy := getEffectiveQueryDataPolicy(
-		ctx,
-		s.store,
-		s.licenseService,
-		request.Limit,
-		database.ProjectID,
-	)
-	if queryDataPolicy.DisableExport {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data export is not allowed"))
-	}
-
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
 	if database.Metadata.GetDatashare() {
