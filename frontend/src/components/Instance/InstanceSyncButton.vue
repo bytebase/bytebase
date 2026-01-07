@@ -1,14 +1,14 @@
 <template>
-  <NDropdown
-    :trigger="'click'"
-    :options="syncInstnceOptions"
-    :render-label="renderDropdownLabel"
-    :disabled="disabled || syncingSchema"
-    @select="syncSchema"
+  <PermissionGuardWrapper
+    v-slot="slotProps"
+    :permissions="['bb.instances.sync']"
   >
-    <PermissionGuardWrapper
-      v-slot="slotProps"
-      :permissions="['bb.instances.sync']"
+    <NDropdown
+      :trigger="'click'"
+      :options="syncInstnceOptions"
+      :render-label="renderDropdownLabel"
+      :disabled="slotProps.disabled || disabled || syncingSchema"
+      @select="syncSchema"
     >
       <NButton
         icon-placement="right"
@@ -28,8 +28,8 @@
           {{ $t("instance.sync.self") }}
         </template>
       </NButton>
-    </PermissionGuardWrapper>
-  </NDropdown>
+    </NDropdown>
+  </PermissionGuardWrapper>
 </template>
 
 <script lang="tsx" setup>
