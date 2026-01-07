@@ -2,9 +2,10 @@ package plancheck
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log/slog"
-	"math/rand"
+	"math/big"
 	"strings"
 	"time"
 
@@ -136,7 +137,12 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 		}, nil
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), statement, true, target.GhostFlags, 20000000)
+	// Generate secure random number for migration context
+	randomInt, err := rand.Int(rand.Reader, big.NewInt(10000000))
+	if err != nil {
+		return nil, common.Wrapf(err, common.Internal, "failed to generate secure random number")
+	}
+	migrationContext, err := ghost.NewMigrationContext(ctx, int(randomInt.Int64()), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), statement, true, target.GhostFlags, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

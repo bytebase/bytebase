@@ -239,8 +239,8 @@ type eventSchema struct {
 // getTables gets all tables of a database using the provided database instance.
 func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema, error) {
 	var tables []*TableSchema
-	query := fmt.Sprintf("SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = '%s';", dbName)
-	rows, err := db.Query(query)
+	query := "SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?"
+	rows, err := db.Query(query, dbName)
 	if err != nil {
 		return nil, err
 	}
