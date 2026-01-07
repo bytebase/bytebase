@@ -44,6 +44,8 @@ const (
 	UserServiceGetCurrentUserProcedure = "/bytebase.v1.UserService/GetCurrentUser"
 	// UserServiceListUsersProcedure is the fully-qualified name of the UserService's ListUsers RPC.
 	UserServiceListUsersProcedure = "/bytebase.v1.UserService/ListUsers"
+	// UserServiceSearchUsersProcedure is the fully-qualified name of the UserService's SearchUsers RPC.
+	UserServiceSearchUsersProcedure = "/bytebase.v1.UserService/SearchUsers"
 	// UserServiceCreateUserProcedure is the fully-qualified name of the UserService's CreateUser RPC.
 	UserServiceCreateUserProcedure = "/bytebase.v1.UserService/CreateUser"
 	// UserServiceUpdateUserProcedure is the fully-qualified name of the UserService's UpdateUser RPC.
@@ -74,6 +76,10 @@ type UserServiceClient interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
+	// Search users by keyword.
+	// Returns basic user info (email, title) for adding users to projects.
+	// Permissions required: bb.users.search
+	SearchUsers(context.Context, *connect.Request[v1.SearchUsersRequest]) (*connect.Response[v1.SearchUsersResponse], error)
 	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
@@ -127,6 +133,12 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("ListUsers")),
 			connect.WithClientOptions(opts...),
 		),
+		searchUsers: connect.NewClient[v1.SearchUsersRequest, v1.SearchUsersResponse](
+			httpClient,
+			baseURL+UserServiceSearchUsersProcedure,
+			connect.WithSchema(userServiceMethods.ByName("SearchUsers")),
+			connect.WithClientOptions(opts...),
+		),
 		createUser: connect.NewClient[v1.CreateUserRequest, v1.User](
 			httpClient,
 			baseURL+UserServiceCreateUserProcedure,
@@ -166,6 +178,7 @@ type userServiceClient struct {
 	batchGetUsers  *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
 	getCurrentUser *connect.Client[emptypb.Empty, v1.User]
 	listUsers      *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
+	searchUsers    *connect.Client[v1.SearchUsersRequest, v1.SearchUsersResponse]
 	createUser     *connect.Client[v1.CreateUserRequest, v1.User]
 	updateUser     *connect.Client[v1.UpdateUserRequest, v1.User]
 	deleteUser     *connect.Client[v1.DeleteUserRequest, emptypb.Empty]
@@ -191,6 +204,11 @@ func (c *userServiceClient) GetCurrentUser(ctx context.Context, req *connect.Req
 // ListUsers calls bytebase.v1.UserService.ListUsers.
 func (c *userServiceClient) ListUsers(ctx context.Context, req *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
 	return c.listUsers.CallUnary(ctx, req)
+}
+
+// SearchUsers calls bytebase.v1.UserService.SearchUsers.
+func (c *userServiceClient) SearchUsers(ctx context.Context, req *connect.Request[v1.SearchUsersRequest]) (*connect.Response[v1.SearchUsersResponse], error) {
+	return c.searchUsers.CallUnary(ctx, req)
 }
 
 // CreateUser calls bytebase.v1.UserService.CreateUser.
@@ -235,6 +253,10 @@ type UserServiceHandler interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
+	// Search users by keyword.
+	// Returns basic user info (email, title) for adding users to projects.
+	// Permissions required: bb.users.search
+	SearchUsers(context.Context, *connect.Request[v1.SearchUsersRequest]) (*connect.Response[v1.SearchUsersResponse], error)
 	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
@@ -284,6 +306,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("ListUsers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceSearchUsersHandler := connect.NewUnaryHandler(
+		UserServiceSearchUsersProcedure,
+		svc.SearchUsers,
+		connect.WithSchema(userServiceMethods.ByName("SearchUsers")),
+		connect.WithHandlerOptions(opts...),
+	)
 	userServiceCreateUserHandler := connect.NewUnaryHandler(
 		UserServiceCreateUserProcedure,
 		svc.CreateUser,
@@ -324,6 +352,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceGetCurrentUserHandler.ServeHTTP(w, r)
 		case UserServiceListUsersProcedure:
 			userServiceListUsersHandler.ServeHTTP(w, r)
+		case UserServiceSearchUsersProcedure:
+			userServiceSearchUsersHandler.ServeHTTP(w, r)
 		case UserServiceCreateUserProcedure:
 			userServiceCreateUserHandler.ServeHTTP(w, r)
 		case UserServiceUpdateUserProcedure:
@@ -357,6 +387,10 @@ func (UnimplementedUserServiceHandler) GetCurrentUser(context.Context, *connect.
 
 func (UnimplementedUserServiceHandler) ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.ListUsers is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) SearchUsers(context.Context, *connect.Request[v1.SearchUsersRequest]) (*connect.Response[v1.SearchUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.SearchUsers is not implemented"))
 }
 
 func (UnimplementedUserServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error) {

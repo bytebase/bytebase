@@ -25,6 +25,7 @@ import {
   DeleteUserRequestSchema,
   GetUserRequestSchema,
   ListUsersRequestSchema,
+  SearchUsersRequestSchema,
   UndeleteUserRequestSchema,
   UpdateUserRequestSchema,
   UserType,
@@ -107,6 +108,31 @@ export const useUserStore = defineStore("user", () => {
     };
   };
 
+  // SearchUsers is for users without bb.users.list permission.
+  // It requires a search query and returns only basic user info.
+  // Note: We don't cache the results since they contain only basic fields.
+  const searchUsers = async (params: {
+    query: string;
+    pageSize: number;
+    pageToken?: string;
+    filter?: UserFilter;
+  }): Promise<{
+    users: User[];
+    nextPageToken: string;
+  }> => {
+    const request = create(SearchUsersRequestSchema, {
+      query: params.query,
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      filter: getListUserFilter(params.filter ?? {}),
+    });
+    const response = await userServiceClientConnect.searchUsers(request);
+    return {
+      users: response.users,
+      nextPageToken: response.nextPageToken,
+    };
+  };
+
   const fetchUser = async (name: string, silent = false) => {
     const request = create(GetUserRequestSchema, {
       name,
@@ -175,6 +201,7 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const batchGetOrFetchUsers = async (userNameList: string[]) => {
+    console.log("batchGetOrFetchUsers")
     const validList = uniq(userNameList).filter(
       (name) =>
         Boolean(name) &&
@@ -185,6 +212,9 @@ export const useUserStore = defineStore("user", () => {
         return getUserByIdentifier(name) === undefined;
       })
       .map((name) => ensureUserFullName(name));
+
+        console.log("batchGetOrFetchUsers", pendingFetch)
+
     if (pendingFetch.length === 0) {
       return validList.map(getUserByIdentifier);
     }
@@ -250,6 +280,7 @@ export const useUserStore = defineStore("user", () => {
     systemBotUser,
     fetchCurrentUser,
     fetchUserList,
+    searchUsers,
     createUser,
     updateUser,
     updateEmail,

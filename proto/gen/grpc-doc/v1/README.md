@@ -114,6 +114,8 @@
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
+    - [SearchUsersRequest](#bytebase-v1-SearchUsersRequest)
+    - [SearchUsersResponse](#bytebase-v1-SearchUsersResponse)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
     - [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
@@ -2335,6 +2337,44 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 
 
 
+<a name="bytebase-v1-SearchUsersRequest"></a>
+
+### SearchUsersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| query | [string](#string) |  | The search keyword. Searches against email and title fields. Required: must be at least 1 character. |
+| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 20 users will be returned. The maximum value is 100; values above 100 will be coerced to 100. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchUsers` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | Filter is used to filter users returned in the search. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - user_type: the type, check UserType enum for values, support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example: user_type == &#34;USER&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] state == &#34;ACTIVE&#34; project == &#34;projects/sample-project&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchUsersResponse"></a>
+
+### SearchUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| users | [User](#bytebase-v1-User) | repeated | The users matching the search query. Only basic fields are returned: name, email, title, user_type, state. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-UndeleteUserRequest"></a>
 
 ### UndeleteUserRequest
@@ -2497,6 +2537,7 @@ UserService manages user accounts and authentication.
 | BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
+| SearchUsers | [SearchUsersRequest](#bytebase-v1-SearchUsersRequest) | [SearchUsersResponse](#bytebase-v1-SearchUsersResponse) | Search users by keyword. Returns basic user info (email, title) for adding users to projects. Permissions required: bb.users.search |
 | CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
 | UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Note: Email updates are not supported through this API. Use UpdateEmail instead. Permissions required: bb.users.update (or self) |
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |

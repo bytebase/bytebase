@@ -607,6 +607,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SearchUsersRequest"><span class="badge">M</span>SearchUsersRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchUsersResponse"><span class="badge">M</span>SearchUsersResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UndeleteUserRequest"><span class="badge">M</span>UndeleteUserRequest</a>
                 </li>
               
@@ -6899,6 +6907,102 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.SearchUsersRequest">SearchUsersRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>query</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The search keyword.
+Searches against email and title fields.
+Required: must be at least 1 character. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of users to return.
+The service may return fewer than this value.
+If unspecified, at most 20 users will be returned.
+The maximum value is 100; values above 100 will be coerced to 100. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `SearchUsers` call.
+Provide this to retrieve the subsequent page. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter users returned in the search.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- user_type: the type, check UserType enum for values, support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator.
+- state: check State enum for values, support &#34;==&#34; operator.
+- project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example:
+user_type == &#34;USER&#34;
+user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
+state == &#34;ACTIVE&#34;
+project == &#34;projects/sample-project&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchUsersResponse">SearchUsersResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>users</td>
+                  <td><a href="#bytebase.v1.User">User</a></td>
+                  <td>repeated</td>
+                  <td><p>The users matching the search query.
+Only basic fields are returned: name, email, title, user_type, state. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</h3>
         <p></p>
 
@@ -7349,6 +7453,15 @@ Permissions required: bb.users.list</p></td>
               </tr>
             
               <tr>
+                <td>SearchUsers</td>
+                <td><a href="#bytebase.v1.SearchUsersRequest">SearchUsersRequest</a></td>
+                <td><a href="#bytebase.v1.SearchUsersResponse">SearchUsersResponse</a></td>
+                <td><p>Search users by keyword.
+Returns basic user info (email, title) for adding users to projects.
+Permissions required: bb.users.search</p></td>
+              </tr>
+            
+              <tr>
                 <td>CreateUser</td>
                 <td><a href="#bytebase.v1.CreateUserRequest">CreateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
@@ -7443,6 +7556,16 @@ Permissions required: bb.users.updateEmail</p></td>
                 <td>ListUsers</td>
                 <td>GET</td>
                 <td>/v1/users</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SearchUsers</td>
+                <td>GET</td>
+                <td>/v1/users:search</td>
                 <td></td>
               </tr>
               

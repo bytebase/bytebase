@@ -105,6 +105,7 @@ roles:
       - bb.users.delete
       - bb.users.get
       - bb.users.list
+      - bb.users.search
       - bb.users.undelete
       - bb.users.update
       - bb.users.updateEmail
@@ -205,6 +206,7 @@ roles:
       - bb.sql.select
       - bb.users.get
       - bb.users.list
+      - bb.users.search
       - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.groups.get
@@ -228,6 +230,7 @@ roles:
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list
+      - bb.users.search
       - bb.workspaces.getIamPolicy
   - name: roles/projectOwner
     title: Project owner

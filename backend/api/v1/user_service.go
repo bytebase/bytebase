@@ -87,6 +87,65 @@ func (s *UserService) GetCurrentUser(ctx context.Context, _ *connect.Request[emp
 	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
 }
 
+// SearchUsers searches users by keyword (email or title).
+// Returns only basic user info for adding users to projects.
+func (s *UserService) SearchUsers(ctx context.Context, request *connect.Request[v1pb.SearchUsersRequest]) (*connect.Response[v1pb.SearchUsersResponse], error) {
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.Msg.PageToken,
+		limit:   int(request.Msg.PageSize),
+		maximum: 100,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	// Build a filter query that searches both email and name (case-insensitive).
+	query := strings.ToLower(request.Msg.Query)
+
+	// Parse the CEL filter.
+	filter := fmt.Sprintf(`(name.matches("%s") || email.matches("%s"))`, query, query)
+	if request.Msg.Filter != "" {
+		filter = fmt.Sprintf(`%s && %s`, filter, request.Msg.Filter)
+	}
+
+	filterResult, err := store.GetListUserFilter(filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	find := &store.FindUserMessage{
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
+		ShowDeleted: false,
+	}
+	if filterResult != nil {
+		find.FilterQ = filterResult.Query
+		find.ProjectID = filterResult.ProjectID
+	}
+
+	users, err := s.store.ListUsers(ctx, find)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to search users"))
+	}
+
+	nextPageToken := ""
+	if len(users) == limitPlusOne {
+		users = users[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
+		}
+	}
+
+	response := &v1pb.SearchUsersResponse{
+		NextPageToken: nextPageToken,
+	}
+	for _, user := range users {
+		response.Users = append(response.Users, convertToBasicUser(user))
+	}
+	return connect.NewResponse(response), nil
+}
+
 // ListUsers lists all users.
 func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1pb.ListUsersRequest]) (*connect.Response[v1pb.ListUsersResponse], error) {
 	offset, err := parseLimitAndOffset(&pageSize{
@@ -736,6 +795,18 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 		return v1pb.UserType_WORKLOAD_IDENTITY
 	default:
 		return v1pb.UserType_USER_TYPE_UNSPECIFIED
+	}
+}
+
+// convertToBasicUser returns a User with only basic public fields.
+// Used by SearchUsers to avoid exposing sensitive information.
+func convertToBasicUser(user *store.UserMessage) *v1pb.User {
+	return &v1pb.User{
+		Name:     common.FormatUserEmail(user.Email),
+		State:    convertDeletedToState(user.MemberDeleted),
+		Email:    user.Email,
+		Title:    user.Name,
+		UserType: convertToV1UserType(user.Type),
 	}
 }
 

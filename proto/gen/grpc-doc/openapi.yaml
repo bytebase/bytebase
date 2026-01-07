@@ -7208,6 +7208,72 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/users:search:
+        get:
+            tags:
+                - UserService
+            description: |-
+                Search users by keyword.
+                 Returns basic user info (email, title) for adding users to projects.
+                 Permissions required: bb.users.search
+            operationId: UserService_SearchUsers
+            parameters:
+                - name: query
+                  in: query
+                  description: |-
+                    The search keyword.
+                     Searches against email and title fields.
+                     Required: must be at least 1 character.
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of users to return.
+                     The service may return fewer than this value.
+                     If unspecified, at most 20 users will be returned.
+                     The maximum value is 100; values above 100 will be coerced to 100.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `SearchUsers` call.
+                     Provide this to retrieve the subsequent page.
+                  schema:
+                    type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter users returned in the search.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     - user_type: the type, check UserType enum for values, support "==", "in [xx]", "!(in [xx])" operator.
+                     - state: check State enum for values, support "==" operator.
+                     - project: the project full name in "projects/{id}" format, support "==" operator.
+
+                     For example:
+                     user_type == "USER"
+                     user_type in ["SERVICE_ACCOUNT", "USER"]
+                     state == "ACTIVE"
+                     project == "projects/sample-project"
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchUsersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/worksheets:
         post:
             tags:
@@ -13527,6 +13593,21 @@ components:
                         A token to retrieve next page of history.
                          Pass this value in the page_token field in the subsequent call to
                          `ListQueryHistory` method to retrieve the next page of history.
+        SearchUsersResponse:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/User'
+                    description: |-
+                        The users matching the search query.
+                         Only basic fields are returned: name, email, title, user_type, state.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         SearchWorksheetsRequest:
             type: object
             properties:

@@ -5716,6 +5716,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListUsersResponse'
+  /bytebase.v1.UserService/SearchUsers:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: 'Search users by keyword.  Returns basic user info (email, title) for adding users to projects.  Permissions required: bb.users.search'
+      description: |-
+        Search users by keyword.
+         Returns basic user info (email, title) for adding users to projects.
+         Permissions required: bb.users.search
+      operationId: bytebase.v1.UserService.SearchUsers
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SearchUsersRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.SearchUsersResponse'
   /bytebase.v1.UserService/UndeleteUser:
     post:
       tags:
@@ -14971,6 +15010,70 @@ components:
              Pass this value in the page_token field in the subsequent call to
              `ListQueryHistory` method to retrieve the next page of history.
       title: SearchQueryHistoriesResponse
+      additionalProperties: false
+    bytebase.v1.SearchUsersRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          title: query
+          minLength: 1
+          description: |-
+            The search keyword.
+             Searches against email and title fields.
+             Required: must be at least 1 character.
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of users to return.
+             The service may return fewer than this value.
+             If unspecified, at most 20 users will be returned.
+             The maximum value is 100; values above 100 will be coerced to 100.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `SearchUsers` call.
+             Provide this to retrieve the subsequent page.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter users returned in the search.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - user_type: the type, check UserType enum for values, support "==", "in [xx]", "!(in [xx])" operator.
+             - state: check State enum for values, support "==" operator.
+             - project: the project full name in "projects/{id}" format, support "==" operator.
+
+             For example:
+             user_type == "USER"
+             user_type in ["SERVICE_ACCOUNT", "USER"]
+             state == "ACTIVE"
+             project == "projects/sample-project"
+      title: SearchUsersRequest
+      additionalProperties: false
+    bytebase.v1.SearchUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.User'
+          title: users
+          description: |-
+            The users matching the search query.
+             Only basic fields are returned: name, email, title, user_type, state.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
+      title: SearchUsersResponse
       additionalProperties: false
     bytebase.v1.SearchWorksheetsRequest:
       type: object

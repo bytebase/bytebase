@@ -163,6 +163,90 @@ export declare type ListUsersResponse = Message<"bytebase.v1.ListUsersResponse">
 export declare const ListUsersResponseSchema: GenMessage<ListUsersResponse>;
 
 /**
+ * @generated from message bytebase.v1.SearchUsersRequest
+ */
+export declare type SearchUsersRequest = Message<"bytebase.v1.SearchUsersRequest"> & {
+  /**
+   * The search keyword.
+   * Searches against email and title fields.
+   * Required: must be at least 1 character.
+   *
+   * @generated from field: string query = 1;
+   */
+  query: string;
+
+  /**
+   * The maximum number of users to return.
+   * The service may return fewer than this value.
+   * If unspecified, at most 20 users will be returned.
+   * The maximum value is 100; values above 100 will be coerced to 100.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `SearchUsers` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
+
+  /**
+   * Filter is used to filter users returned in the search.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - user_type: the type, check UserType enum for values, support "==", "in [xx]", "!(in [xx])" operator.
+   * - state: check State enum for values, support "==" operator.
+   * - project: the project full name in "projects/{id}" format, support "==" operator.
+   *
+   * For example:
+   * user_type == "USER"
+   * user_type in ["SERVICE_ACCOUNT", "USER"]
+   * state == "ACTIVE"
+   * project == "projects/sample-project"
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchUsersRequest.
+ * Use `create(SearchUsersRequestSchema)` to create a new message.
+ */
+export declare const SearchUsersRequestSchema: GenMessage<SearchUsersRequest>;
+
+/**
+ * @generated from message bytebase.v1.SearchUsersResponse
+ */
+export declare type SearchUsersResponse = Message<"bytebase.v1.SearchUsersResponse"> & {
+  /**
+   * The users matching the search query.
+   * Only basic fields are returned: name, email, title, user_type, state.
+   *
+   * @generated from field: repeated bytebase.v1.User users = 1;
+   */
+  users: User[];
+
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchUsersResponse.
+ * Use `create(SearchUsersResponseSchema)` to create a new message.
+ */
+export declare const SearchUsersResponseSchema: GenMessage<SearchUsersResponse>;
+
+/**
  * @generated from message bytebase.v1.CreateUserRequest
  */
 export declare type CreateUserRequest = Message<"bytebase.v1.CreateUserRequest"> & {
@@ -619,6 +703,18 @@ export declare const UserService: GenService<{
     methodKind: "unary";
     input: typeof ListUsersRequestSchema;
     output: typeof ListUsersResponseSchema;
+  },
+  /**
+   * Search users by keyword.
+   * Returns basic user info (email, title) for adding users to projects.
+   * Permissions required: bb.users.search
+   *
+   * @generated from rpc bytebase.v1.UserService.SearchUsers
+   */
+  searchUsers: {
+    methodKind: "unary";
+    input: typeof SearchUsersRequestSchema;
+    output: typeof SearchUsersResponseSchema;
   },
   /**
    * Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
