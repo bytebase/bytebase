@@ -133,6 +133,18 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
   return formattedTimestamp;
 };
 
+const escapeMongoDBCollectionName = (name: string) => {
+  // The backend wraps --eval in single quotes for shell execution and escapes
+  // single quotes with '"'"'. To avoid conflicts, we:
+  // 1. Use double quotes for the collection name string
+  // 2. Escape backslashes and double quotes for JavaScript
+  // 3. Replace single quotes with Unicode escape \u0027 so the shell doesn't see them
+  return name
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/'/g, "\\u0027");
+};
+
 export const wrapSQLIdentifier = (id: string, engine: Engine) => {
   if (engine === Engine.MSSQL) {
     return `[${id}]`;
@@ -178,9 +190,9 @@ export const generateSimpleSelectAllStatement = (
 
   switch (engine) {
     case Engine.MONGODB:
-      return `db['${table}'].find().limit(${limit});`;
+      return `db["${escapeMongoDBCollectionName(table)}"].find().limit(${limit});`;
     case Engine.COSMOSDB:
-      return `SELECT * FROM ${table}`;
+      return `SELECT * FROM c`;
     case Engine.ELASTICSEARCH:
       return `GET ${table}/_search?size=${limit}
 {
@@ -207,7 +219,7 @@ export const generateSimpleInsertStatement = (
     const kvPairs = columns
       .map((column, i) => `"${column}": <value${i + 1}>`)
       .join(", ");
-    return `db['${table}'].insert({ ${kvPairs} });`;
+    return `db["${escapeMongoDBCollectionName(table)}"].insert({ ${kvPairs} });`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
@@ -230,7 +242,7 @@ export const generateSimpleUpdateStatement = (
     const kvPairs = columns
       .map((column, i) => `"${column}": <value${i + 1}>`)
       .join(", ");
-    return `db['${table}'].updateOne({ /* <query> */ }, { $set: { /* ${kvPairs} */} });`;
+    return `db["${escapeMongoDBCollectionName(table)}"].updateOne({ /* <query> */ }, { $set: { /* ${kvPairs} */} });`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
@@ -248,7 +260,7 @@ export const generateSimpleDeleteStatement = (
   table: string
 ) => {
   if (engine === Engine.MONGODB) {
-    return `db['${table}'].deleteOne({ /* query */ });`;
+    return `db["${escapeMongoDBCollectionName(table)}"].deleteOne({ /* query */ });`;
   }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
