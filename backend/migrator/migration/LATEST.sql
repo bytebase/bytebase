@@ -280,7 +280,7 @@ CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status 
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 
-CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING';
+CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
 
 -- replica_heartbeat tracks active replicas in HA deployments.
 -- Used to detect and clean up stale RUNNING task runs from crashed replicas.

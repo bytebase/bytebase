@@ -7,7 +7,7 @@ CREATE TABLE replica_heartbeat (
 -- Add replica_id column to task_run
 ALTER TABLE task_run ADD COLUMN replica_id TEXT;
 
-CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING';
+CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
 
 -- Mark existing RUNNING task runs as FAILED
 UPDATE task_run
