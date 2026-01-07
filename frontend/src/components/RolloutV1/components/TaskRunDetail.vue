@@ -37,7 +37,6 @@ import { uniqueId } from "lodash-es";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { rolloutServiceClientConnect } from "@/connect";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -47,6 +46,7 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { TaskRunLogViewer } from "./TaskRunLogViewer";
 import TaskRunSession from "./TaskRunSession";
 
 const TASK_RUN_SESSION_SUPPORTED_ENGINES = [Engine.POSTGRES];
