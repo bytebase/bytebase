@@ -39,6 +39,17 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 }
 
 func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
+	// Acquire cluster-wide mutex - only one replica runs at a time.
+	lock, acquired, err := s.store.TryAdvisoryLock(ctx, store.AdvisoryLockKeyPendingScheduler)
+	if err != nil {
+		return errors.Wrapf(err, "failed to acquire advisory lock")
+	}
+	if !acquired {
+		// Another replica is running, skip this cycle.
+		return nil
+	}
+	defer func() { _ = lock.Release() }()
+
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_PENDING},
 	})
