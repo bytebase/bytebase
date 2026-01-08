@@ -31,6 +31,7 @@
       <QueryDataPolicySetting
         ref="queryDataPolicySettingRef"
         resource=""
+        :allow-edit="hasPermission"
       />
       <MaximumRoleExpirationSetting
         ref="maximumRoleExpirationSettingRef"
@@ -51,6 +52,7 @@ import { computed, ref } from "vue";
 import { Switch } from "@/components/v2";
 import { featureToRef, useSettingV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
@@ -63,6 +65,9 @@ const props = defineProps<{
 
 const settingV1Store = useSettingV1Store();
 const hasWatermarkFeature = featureToRef(PlanFeature.FEATURE_WATERMARK);
+const hasPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.policies.update")
+);
 
 const domainRestrictionSettingRef =
   ref<InstanceType<typeof DomainRestrictionSetting>>();

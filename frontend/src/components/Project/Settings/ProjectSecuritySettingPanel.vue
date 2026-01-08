@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start gap-y-6">
+  <div v-if="allowGet" class="w-full flex flex-col justify-start items-start gap-y-6">
     <SQLReviewForResource
       ref="sqlReviewForResourceRef"
       :resource="project.name"
@@ -13,6 +13,7 @@
     <QueryDataPolicySetting
       ref="queryDataPolicySettingRef"
       :resource="project.name"
+      :allow-edit="allowEdit"
     />
   </div>
 </template>
@@ -23,10 +24,10 @@ import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlCo
 import QueryDataPolicySetting from "@/components/GeneralSetting/QueryDataPolicySetting.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { hasProjectPermissionV2 } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   project: Project;
-  allowEdit: boolean;
 }>();
 
 const accessControlConfigureRef =
@@ -41,6 +42,13 @@ const isDirty = computed(
     accessControlConfigureRef.value?.isDirty ||
     sqlReviewForResourceRef.value?.isDirty ||
     queryDataPolicySettingRef.value?.isDirty
+);
+
+const allowGet = computed(() =>
+  hasProjectPermissionV2(props.project, "bb.policies.get")
+);
+const allowEdit = computed(() =>
+  hasProjectPermissionV2(props.project, "bb.policies.update")
 );
 
 const onUpdate = async () => {

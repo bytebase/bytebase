@@ -187,6 +187,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     filter?: DatabaseFilter;
     skipCacheRemoval?: boolean;
     orderBy?: string;
+    silent?: boolean;
   }): Promise<{
     databases: ComposedDatabase[];
     nextPageToken: string;
@@ -206,7 +207,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       showDeleted: params.filter?.showDeleted,
       filter: getListDatabaseFilter(params.filter ?? {}),
     });
-    const response = await databaseServiceClientConnect.listDatabases(request);
+    const response = await databaseServiceClientConnect.listDatabases(request, {
+      contextValues: createContextValues().set(silentContextKey, params.silent),
+    });
     const databases = response.databases; // Work directly with proto-es types
     const { nextPageToken } = response;
     if (

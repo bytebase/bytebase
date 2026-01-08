@@ -137,6 +137,7 @@ const loadMoreUnmatched = async (token: string) => {
       pageToken,
       pageSize: pageSize.value,
       parent: props.project,
+      silent: true,
     });
     pageToken = nextPageToken;
     unmatched = databases.filter(

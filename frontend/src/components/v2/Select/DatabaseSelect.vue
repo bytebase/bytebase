@@ -96,6 +96,7 @@ const handleSearch = async (params: {
     },
     pageToken: params.pageToken,
     pageSize: params.pageSize,
+    silent: true,
   });
   return {
     nextPageToken,

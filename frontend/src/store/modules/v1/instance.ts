@@ -304,13 +304,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     pageToken?: string;
     orderBy?: string;
     filter?: InstanceFilter;
+    silent?: boolean;
   }) => {
-    if (!hasWorkspacePermissionV2("bb.instances.list")) {
-      return {
-        instances: [],
-        nextPageToken: "",
-      };
-    }
     const request = create(ListInstancesRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
@@ -318,7 +313,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       filter: getListInstanceFilter(params.filter ?? {}),
       showDeleted: params.filter?.state === State.DELETED ? true : false,
     });
-    const response = await instanceServiceClientConnect.listInstances(request);
+    const response = await instanceServiceClientConnect.listInstances(request, {
+      contextValues: createContextValues().set(silentContextKey, params.silent),
+    });
     const nextPageToken = response.nextPageToken;
 
     const instances = upsertInstances(response.instances);
