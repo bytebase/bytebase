@@ -966,8 +966,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 						}
 					}
 				} else if tableDiff.NewASTNode != nil {
-					// AST-only mode: extract SQL from AST node
-					if err := writeMigrationTableFromAST(buf, tableDiff.NewASTNode); err != nil {
+					// AST-only mode: extract SQL from AST node WITHOUT foreign keys
+					// FK constraints will be added separately after all tables are created
+					if err := writeMigrationTableFromASTWithoutFK(buf, tableDiff.NewASTNode); err != nil {
 						return err
 					}
 				} else {
@@ -1082,12 +1083,43 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 
 		// Add foreign keys (only for CREATE table operations)
+		// First handle metadata mode
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
 					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
 						return err
 					}
+				}
+			}
+		}
+		// Then handle FK constraints that were excluded from CREATE TABLE
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewASTNode != nil {
+				if len(tableDiff.ForeignKeyChanges) > 0 {
+					// FKs are in ForeignKeyChanges (metadata mode or mixed mode)
+					for _, fkDiff := range tableDiff.ForeignKeyChanges {
+						if fkDiff.Action == schema.MetadataDiffActionCreate {
+							if fkDiff.NewForeignKey != nil {
+								// Metadata mode FK
+								if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
+									return err
+								}
+							} else if fkDiff.NewASTNode != nil {
+								// AST mode FK
+								if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+									if err := writeAddForeignKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+										// Log error but continue - this is a best-effort operation
+										_, _ = fmt.Fprintf(buf, "-- Error adding foreign key constraint: %v\n", err)
+									}
+								}
+							}
+						}
+					}
+				} else {
+					// Pure AST mode - FKs are embedded in the AST node itself
+					// Extract FK constraints directly from the CREATE TABLE AST
+					writeAllForeignKeysFromTableAST(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewASTNode)
 				}
 			}
 		}
@@ -2004,6 +2036,89 @@ func writeMigrationTableFromAST(out *strings.Builder, astNode any) error {
 	if !strings.HasSuffix(strings.TrimSpace(tableSQL), ";") {
 		_, _ = out.WriteString(";")
 	}
+	_, _ = out.WriteString("\n\n")
+
+	return nil
+}
+
+// writeMigrationTableFromASTWithoutFK writes CREATE TABLE statement from AST node,
+// but excludes foreign key constraints. This is used when there are dependency cycles
+// and FK constraints need to be added separately after all tables are created.
+func writeMigrationTableFromASTWithoutFK(out *strings.Builder, astNode any) error {
+	if astNode == nil {
+		return errors.New("AST node is nil")
+	}
+
+	ctx, ok := astNode.(*pgparser.CreatestmtContext)
+	if !ok {
+		return errors.New("AST node is not a CreatestmtContext")
+	}
+
+	tokenStream := ctx.GetParser().GetTokenStream()
+	if tokenStream == nil {
+		return errors.New("could not get token stream from AST")
+	}
+
+	// Check if table has any elements
+	if ctx.Opttableelementlist() == nil {
+		// No elements, just write the full statement
+		return writeMigrationTableFromAST(out, astNode)
+	}
+
+	tableElementList := ctx.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return writeMigrationTableFromAST(out, astNode)
+	}
+
+	// Collect non-FK table elements
+	var nonFKElements []string
+	for _, element := range tableElementList.AllTableelement() {
+		// Check if this is a FK constraint
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				if elem.FOREIGN() != nil && elem.KEY() != nil {
+					// This is a foreign key constraint, skip it
+					continue
+				}
+			}
+		}
+		// Not a FK constraint, include it
+		elementText := tokenStream.GetTextFromRuleContext(element)
+		nonFKElements = append(nonFKElements, elementText)
+	}
+
+	// If all elements were FK constraints, we still need to create the table
+	// with at least the column definitions (which should always exist)
+	if len(nonFKElements) == 0 {
+		// This shouldn't happen in practice, but fall back to full statement
+		return writeMigrationTableFromAST(out, astNode)
+	}
+
+	// Build the CREATE TABLE statement without FK constraints
+	// Get the table name part (everything before the first '(')
+	fullText := tokenStream.GetTextFromTokens(ctx.GetStart(), ctx.GetStop())
+	parenIdx := strings.Index(fullText, "(")
+	if parenIdx == -1 {
+		return errors.New("could not find opening parenthesis in CREATE TABLE statement")
+	}
+
+	tablePrefix := fullText[:parenIdx+1]
+	_, _ = out.WriteString(tablePrefix)
+	_, _ = out.WriteString("\n")
+
+	// Write non-FK elements with proper formatting
+	for i, elem := range nonFKElements {
+		_, _ = out.WriteString("    ")
+		_, _ = out.WriteString(strings.TrimSpace(elem))
+		if i < len(nonFKElements)-1 {
+			_, _ = out.WriteString(",")
+		}
+		_, _ = out.WriteString("\n")
+	}
+
+	_, _ = out.WriteString(");")
 	_, _ = out.WriteString("\n\n")
 
 	return nil
@@ -4611,6 +4726,48 @@ func writeAddForeignKeyFromAST(out *strings.Builder, schema, table string, const
 	}
 
 	return errors.New("could not extract FOREIGN KEY constraint from AST node")
+}
+
+// writeAllForeignKeysFromTableAST extracts all FK constraints from a CREATE TABLE AST node
+// and writes ALTER TABLE ADD CONSTRAINT statements for each one.
+// This is used when tables are created without FK constraints due to cycles,
+// and the FK constraints need to be added separately afterwards.
+func writeAllForeignKeysFromTableAST(out *strings.Builder, schema, table string, astNode any) {
+	if astNode == nil {
+		return
+	}
+
+	ctx, ok := astNode.(*pgparser.CreatestmtContext)
+	if !ok {
+		return
+	}
+
+	// Check if table has any elements
+	if ctx.Opttableelementlist() == nil {
+		return
+	}
+
+	tableElementList := ctx.Opttableelementlist().Tableelementlist()
+	if tableElementList == nil {
+		return
+	}
+
+	// Find and process FK constraints
+	for _, element := range tableElementList.AllTableelement() {
+		if element.Tableconstraint() != nil {
+			constraint := element.Tableconstraint()
+			if constraint.Constraintelem() != nil {
+				elem := constraint.Constraintelem()
+				if elem.FOREIGN() != nil && elem.KEY() != nil {
+					// This is a foreign key constraint - add it
+					if err := writeAddForeignKeyFromAST(out, schema, table, constraint); err != nil {
+						// Log error but continue with other FK constraints
+						_, _ = fmt.Fprintf(out, "-- Error adding foreign key constraint: %v\n", err)
+					}
+				}
+			}
+		}
+	}
 }
 
 // writeAddUniqueConstraintFromAST adds a unique constraint using AST node
