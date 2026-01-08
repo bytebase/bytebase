@@ -27,7 +27,7 @@
       <template #suffix>
         <PermissionGuardWrapper
           v-slot="slotProps"
-          :permissions="['bb.settings.set']"
+          :permissions="['bb.settings.setEnvironment']"
         >
           <div class="flex items-center justify-end gap-x-2 px-2 pb-1">
             <NButton
@@ -129,7 +129,6 @@ import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import {
   environmentNamePrefix,
   pushNotification,
-  useEnvironmentV1List,
   useEnvironmentV1Store,
   useUIStateStore,
 } from "@/store";
@@ -166,8 +165,9 @@ const environmentV1Store = useEnvironmentV1Store();
 const uiStateStore = useUIStateStore();
 const policyV1Store = usePolicyV1Store();
 const router = useRouter();
-const environmentList = useEnvironmentV1List();
 const environmentDetailRefs = ref<InstanceType<typeof EnvironmentDetail>[]>([]);
+
+const environmentList = computed(() => environmentV1Store.environmentList);
 
 const state = reactive<LocalState>({
   selectedId: "",

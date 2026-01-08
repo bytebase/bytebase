@@ -20,6 +20,7 @@
           'bb.issues.create',
           'bb.plans.create',
           'bb.rollouts.create',
+          'bb.sheets.create',
         ]"
       >
         <NTooltip

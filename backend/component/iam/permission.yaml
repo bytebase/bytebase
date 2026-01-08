@@ -85,8 +85,10 @@ permissions:
   - bb.rollouts.get
   - bb.rollouts.list
   - bb.settings.get
+  - bb.settings.getEnvironment
   - bb.settings.list
   - bb.settings.set
+  - bb.settings.setEnvironment
   - bb.sheets.create
   - bb.sheets.get
   - bb.sheets.update

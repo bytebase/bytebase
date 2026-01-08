@@ -81,7 +81,7 @@ export const useResourceByName = ({
         return;
       case "environment":
         if (hasWorkspacePermissionV2("bb.settings.get")) {
-          await environmentV1Store.getOrFetchEnvironmentByName(resource.value);
+          environmentV1Store.getEnvironmentByName(resource.value);
         }
         return;
       case "project":

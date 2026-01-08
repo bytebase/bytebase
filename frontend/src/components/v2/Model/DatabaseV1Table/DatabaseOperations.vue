@@ -422,6 +422,7 @@ const actions = computed((): DatabaseAction[] => {
               "bb.issues.create",
               "bb.plans.create",
               "bb.rollouts.create",
+              "bb.sheets.create",
             ],
           });
         }
@@ -468,7 +469,7 @@ const actions = computed((): DatabaseAction[] => {
           text: t("database.edit-environment"),
           disabled: props.databases.length < 1,
           click: () => (state.showEditEnvironmentDrawer = true),
-          requiredPermissions: ["bb.databases.update"],
+          requiredPermissions: ["bb.databases.update", "bb.settings.get"],
         });
         break;
       case "TRANSFER-IN": {

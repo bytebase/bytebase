@@ -50,7 +50,7 @@ const getRenderOptionFunc = (resource: {
 };
 
 export const getEnvironmentIdOptions = () => {
-  const environmentList = useEnvironmentV1Store().getEnvironmentList();
+  const environmentList = useEnvironmentV1Store().environmentList;
   return environmentList.map<ResourceSelectOption<unknown>>((env) => {
     const environmentId = env.id;
     return {

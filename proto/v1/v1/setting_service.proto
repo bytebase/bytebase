@@ -32,7 +32,7 @@ service SettingService {
     option (google.api.http) = {get: "/v1/{name=settings/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Updates a workspace setting.
@@ -43,7 +43,7 @@ service SettingService {
       body: "setting"
     };
     option (bytebase.v1.permission) = "bb.settings.set";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
 }

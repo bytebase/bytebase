@@ -8,6 +8,12 @@
         <ShieldAlertIcon />
       </template>
       <div class="flex flex-col gap-2">
+        <div v-if="path">
+          Path: {{ path }}
+        </div>
+        <div v-if="api">
+          API: {{ api }}
+        </div>
         <div v-if="resources && resources.length > 0">
           {{ $t("common.resources") }}
           <ul class="list-disc pl-4">
@@ -37,6 +43,8 @@ import type { Permission } from "@/types";
 
 defineProps<{
   description?: string;
+  path?: string;
+  api?: string;
   resources?: string[];
   permissions?: Permission[];
 }>();

@@ -9,7 +9,6 @@ import {
 import { t } from "@/plugins/i18n";
 import {
   environmentNamePrefix,
-  useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -33,7 +32,6 @@ export const useCommonSearchScopeOptions = (
   const projectStore = useProjectV1Store();
   const instanceStore = useInstanceV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const environmentList = useEnvironmentV1List();
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
@@ -140,7 +138,10 @@ export const useCommonSearchScopeOptions = (
         id: "environment",
         title: t("issue.advanced-search.scope.environment.title"),
         description: t("issue.advanced-search.scope.environment.description"),
-        options: [unknownEnvironment(), ...environmentList.value].map((env) => {
+        options: [
+          unknownEnvironment(),
+          ...environmentStore.environmentList,
+        ].map((env) => {
           return {
             value: env.id,
             keywords: [`${environmentNamePrefix}${env.id}`, env.title],
