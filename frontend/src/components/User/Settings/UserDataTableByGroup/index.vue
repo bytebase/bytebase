@@ -21,13 +21,13 @@ import { NDataTable } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
+import { getUserEmailInBinding } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
 import GroupMemberNameCell from "./cells/GroupMemberNameCell.vue";
 import GroupNameCell from "./cells/GroupNameCell.vue";
 import GroupOperationsCell from "./cells/GroupOperationsCell.vue";
-import { getUserEmailInBinding } from "@/types"
 
 interface GroupRowData {
   type: "group";
@@ -83,7 +83,9 @@ const onGroupLoad = async (row: GroupRowData) => {
 
   const members: UserRowData[] = [];
   for (const user of users) {
-    const member = group.members.find((m) => m.member === getUserEmailInBinding(user.email))
+    const member = group.members.find(
+      (m) => m.member === getUserEmailInBinding(user.email)
+    );
     members.push({
       type: "user",
       name: `${group.name}-${user.name}`,

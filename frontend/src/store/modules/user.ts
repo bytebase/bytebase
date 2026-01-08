@@ -213,7 +213,9 @@ export const useUserStore = defineStore("user", () => {
       .map((name) => ensureUserFullName(name));
 
     if (pendingFetch.length === 0) {
-      return validList.map(name => getUserByIdentifier(name) ?? unknownUser(name));
+      return validList.map(
+        (name) => getUserByIdentifier(name) ?? unknownUser(name)
+      );
     }
 
     try {
