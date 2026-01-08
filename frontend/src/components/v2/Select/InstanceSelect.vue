@@ -99,6 +99,7 @@ const handleSearch = async (params: {
       environment: props.environmentName,
       project: props.projectName,
     },
+    silent: true,
   });
 
   return {

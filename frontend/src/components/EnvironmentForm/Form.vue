@@ -241,6 +241,7 @@ const fetchInstances = async () => {
       filter: {
         environment: environment.value.name,
       },
+      silent: true,
     });
     return resp.instances;
   } catch {
@@ -256,6 +257,7 @@ const fetchDatabases = async () => {
       filter: {
         environment: environment.value.name,
       },
+      silent: true,
     });
     return resp.databases;
   } catch {

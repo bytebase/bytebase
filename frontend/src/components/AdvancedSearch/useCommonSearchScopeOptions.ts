@@ -102,6 +102,7 @@ export const useCommonSearchScopeOptions = (
               filter: {
                 query: keyword,
               },
+              silent: true,
             })
             .then((resp) => ({
               nextPageToken: resp.nextPageToken,

@@ -5,7 +5,7 @@
           <Switch
             :value="!disableExport"
             :text="true"
-            :disabled="!allowEdit"
+            :disabled="disabled"
             @update:value="(val: boolean) => disableExport = !val"
           />
           <span class="font-medium">
@@ -26,7 +26,7 @@
       </div>
       <MaximumSQLResultSizeSetting
         ref="maximumSQLResultSizeSettingRef"
-        :allow-edit="allowEdit"
+        :allow-edit="!disabled"
         :resource="resource"
         :policy="policyPayload"
         :tooltip="scope ? $t('settings.general.workspace.query-data-policy.tooltip', { scope }) : ''"
@@ -57,7 +57,7 @@
     <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
       <NInputNumber
         :value="maxQueryTimeInseconds"
-        :disabled="!allowEdit"
+        :disabled="disabled"
         class="w-60"
         :min="0"
         :precision="0"
@@ -92,12 +92,12 @@ import {
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 
 const props = defineProps<{
   resource: string;
+  allowEdit: boolean;
 }>();
 
 const policyV1Store = usePolicyV1Store();
@@ -150,10 +150,8 @@ watch(
   }
 );
 
-const allowEdit = computed(
-  () =>
-    hasWorkspacePermissionV2("bb.policies.update") &&
-    hasQueryPolicyFeature.value
+const disabled = computed(
+  () => !props.allowEdit || !hasQueryPolicyFeature.value
 );
 
 const isDirty = computed(() => {

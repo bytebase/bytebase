@@ -357,7 +357,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           title: () => t("common.settings"),
-          requiredPermissionList: () => ["bb.policies.list"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
