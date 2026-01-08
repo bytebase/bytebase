@@ -421,6 +421,34 @@ func (stc *sdlTestContext) verifySequenceExists(t *testing.T, database *v1pb.Dat
 	return false
 }
 
+// verifyForeignKeyExists checks if a foreign key constraint exists on a table.
+//
+//nolint:unparam
+func (stc *sdlTestContext) verifyForeignKeyExists(t *testing.T, database *v1pb.Database, schemaName, tableName, constraintName string) bool {
+	t.Helper()
+	a := require.New(t)
+
+	metadata, err := stc.ctl.databaseServiceClient.GetDatabaseMetadata(stc.ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+		Name: database.Name + "/metadata",
+	}))
+	a.NoError(err)
+
+	for _, schema := range metadata.Msg.Schemas {
+		if schema.Name == schemaName {
+			for _, table := range schema.Tables {
+				if table.Name == tableName {
+					for _, fk := range table.ForeignKeys {
+						if fk.Name == constraintName {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 // directExecuteSQL executes SQL directly on the database (for drift tests).
 func (stc *sdlTestContext) directExecuteSQL(t *testing.T, database *v1pb.Database, sqlStmt string) {
 	t.Helper()
@@ -1642,19 +1670,20 @@ COMMENT ON TABLE "public"."users" IS 'User table';`
 
 				database := stc.createTestPgDatabase(t, "fk_create")
 
-				// Create two tables where B references A
-				sdl := `CREATE TABLE "public"."users" (
-    "id" serial NOT NULL,
-    "name" varchar(255) NOT NULL,
-    CONSTRAINT "pk_users" PRIMARY KEY ("id")
-);
-
-CREATE TABLE "public"."orders" (
+				// Create two tables where orders references users
+				// Intentionally put orders BEFORE users to test dependency ordering
+				sdl := `CREATE TABLE "public"."orders" (
     "id" serial NOT NULL,
     "user_id" integer NOT NULL,
     "amount" decimal(10,2) NOT NULL,
     CONSTRAINT "pk_orders" PRIMARY KEY ("id"),
     CONSTRAINT "fk_orders_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id")
+);
+
+CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "name" varchar(255) NOT NULL,
+    CONSTRAINT "pk_users" PRIMARY KEY ("id")
 );`
 
 				err := stc.executeSDLRollout(t, database, sdl)
@@ -1672,17 +1701,18 @@ CREATE TABLE "public"."orders" (
 				database := stc.createTestPgDatabase(t, "fk_drop")
 
 				// Create tables with FK
-				sdl1 := `CREATE TABLE "public"."users" (
-    "id" serial NOT NULL,
-    "name" varchar(255) NOT NULL,
-    CONSTRAINT "pk_users" PRIMARY KEY ("id")
-);
-
-CREATE TABLE "public"."orders" (
+				// Intentionally put orders BEFORE users to test dependency ordering
+				sdl1 := `CREATE TABLE "public"."orders" (
     "id" serial NOT NULL,
     "user_id" integer NOT NULL,
     CONSTRAINT "pk_orders" PRIMARY KEY ("id"),
     CONSTRAINT "fk_orders_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id")
+);
+
+CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "name" varchar(255) NOT NULL,
+    CONSTRAINT "pk_users" PRIMARY KEY ("id")
 );`
 
 				err := stc.executeSDLRollout(t, database, sdl1)
@@ -1706,38 +1736,216 @@ CREATE TABLE "public"."orders" (
 				database := stc.createTestPgDatabase(t, "fk_alter")
 
 				// Create tables with FK
-				sdl1 := `CREATE TABLE "public"."users" (
-    "id" serial NOT NULL,
-    "name" varchar(255) NOT NULL,
-    CONSTRAINT "pk_users" PRIMARY KEY ("id")
-);
-
-CREATE TABLE "public"."orders" (
+				// Intentionally put orders BEFORE users to test dependency ordering
+				sdl1 := `CREATE TABLE "public"."orders" (
     "id" serial NOT NULL,
     "user_id" integer NOT NULL,
     CONSTRAINT "pk_orders" PRIMARY KEY ("id"),
     CONSTRAINT "fk_orders_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id")
+);
+
+CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "name" varchar(255) NOT NULL,
+    CONSTRAINT "pk_users" PRIMARY KEY ("id")
 );`
 
 				err := stc.executeSDLRollout(t, database, sdl1)
 				a.NoError(err)
 
 				// Modify FK to add ON DELETE CASCADE
-				sdl2 := `CREATE TABLE "public"."users" (
-    "id" serial NOT NULL,
-    "name" varchar(255) NOT NULL,
-    CONSTRAINT "pk_users" PRIMARY KEY ("id")
-);
-
-CREATE TABLE "public"."orders" (
+				// Intentionally put orders BEFORE users to test dependency ordering
+				sdl2 := `CREATE TABLE "public"."orders" (
     "id" serial NOT NULL,
     "user_id" integer NOT NULL,
     CONSTRAINT "pk_orders" PRIMARY KEY ("id"),
     CONSTRAINT "fk_orders_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON DELETE CASCADE
+);
+
+CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "name" varchar(255) NOT NULL,
+    CONSTRAINT "pk_users" PRIMARY KEY ("id")
 );`
 
 				err = stc.executeSDLRollout(t, database, sdl2)
 				a.NoError(err)
+			})
+
+			t.Run("SelfReferencingFK", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_self_ref")
+
+				// Create a table with self-referencing FK (like categories with parent_id)
+				sdl := `CREATE TABLE "public"."categories" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "parent_id" bigint,
+    CONSTRAINT "categories_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_categories_parent" FOREIGN KEY ("parent_id") REFERENCES "public"."categories" ("id") ON DELETE SET NULL
+);`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "categories"))
+				// Verify the self-referencing FK constraint was created
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "categories", "fk_categories_parent"))
+			})
+
+			t.Run("BidirectionalFK", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_bidirectional")
+
+				// Create two tables with bidirectional FK references (like projects <-> namespaces)
+				// This creates a cycle: projects -> namespaces -> projects
+				sdl := `CREATE TABLE "public"."namespaces" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "file_template_project_id" bigint,
+    CONSTRAINT "namespaces_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_namespaces_project" FOREIGN KEY ("file_template_project_id") REFERENCES "public"."projects" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."projects" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "namespace_id" bigint NOT NULL,
+    CONSTRAINT "projects_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_projects_namespace" FOREIGN KEY ("namespace_id") REFERENCES "public"."namespaces" ("id") ON DELETE CASCADE
+);`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "namespaces"))
+				a.True(stc.verifyTableExists(t, database, "public", "projects"))
+				// Verify both FK constraints in the bidirectional cycle were created
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "namespaces", "fk_namespaces_project"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "projects", "fk_projects_namespace"))
+			})
+
+			t.Run("ThreeWayCyclicFK", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_three_way")
+
+				// Create three tables with cyclic FK: A -> B -> C -> A
+				sdl := `CREATE TABLE "public"."table_c" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "ref_a_id" bigint,
+    CONSTRAINT "table_c_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_c_to_a" FOREIGN KEY ("ref_a_id") REFERENCES "public"."table_a" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."table_a" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "ref_b_id" bigint,
+    CONSTRAINT "table_a_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_a_to_b" FOREIGN KEY ("ref_b_id") REFERENCES "public"."table_b" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."table_b" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "ref_c_id" bigint,
+    CONSTRAINT "table_b_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_b_to_c" FOREIGN KEY ("ref_c_id") REFERENCES "public"."table_c" ("id") ON DELETE SET NULL
+);`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "table_a"))
+				a.True(stc.verifyTableExists(t, database, "public", "table_b"))
+				a.True(stc.verifyTableExists(t, database, "public", "table_c"))
+				// Verify all three FK constraints in the cycle were created: A -> B -> C -> A
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "table_a", "fk_a_to_b"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "table_b", "fk_b_to_c"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "table_c", "fk_c_to_a"))
+			})
+
+			t.Run("ComplexCyclicWithMultipleFK", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_complex_cycle")
+
+				// Complex scenario: multiple FK constraints including cycles and self-references
+				// Similar to GitLab schema: projects, namespaces, issues, merge_requests
+				sdl := `CREATE TABLE "public"."issues" (
+    "id" bigserial,
+    "title" text NOT NULL,
+    "project_id" bigint,
+    "moved_to_id" bigint,
+    CONSTRAINT "issues_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_issues_project" FOREIGN KEY ("project_id") REFERENCES "public"."projects" ("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_issues_moved_to" FOREIGN KEY ("moved_to_id") REFERENCES "public"."issues" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."merge_requests" (
+    "id" bigserial,
+    "title" text NOT NULL,
+    "project_id" bigint,
+    "latest_merge_request_diff_id" bigint,
+    CONSTRAINT "merge_requests_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_mr_project" FOREIGN KEY ("project_id") REFERENCES "public"."projects" ("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_mr_latest_diff" FOREIGN KEY ("latest_merge_request_diff_id") REFERENCES "public"."merge_request_diffs" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."merge_request_diffs" (
+    "id" bigserial,
+    "merge_request_id" bigint NOT NULL,
+    CONSTRAINT "merge_request_diffs_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_diff_mr" FOREIGN KEY ("merge_request_id") REFERENCES "public"."merge_requests" ("id") ON DELETE CASCADE
+);
+
+CREATE TABLE "public"."projects" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "namespace_id" bigint NOT NULL,
+    CONSTRAINT "projects_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_projects_namespace" FOREIGN KEY ("namespace_id") REFERENCES "public"."namespaces" ("id") ON DELETE CASCADE
+);
+
+CREATE TABLE "public"."namespaces" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "file_template_project_id" bigint,
+    "parent_id" bigint,
+    CONSTRAINT "namespaces_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_namespaces_project" FOREIGN KEY ("file_template_project_id") REFERENCES "public"."projects" ("id") ON DELETE SET NULL,
+    CONSTRAINT "fk_namespaces_parent" FOREIGN KEY ("parent_id") REFERENCES "public"."namespaces" ("id") ON DELETE CASCADE
+);`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "issues"))
+				a.True(stc.verifyTableExists(t, database, "public", "merge_requests"))
+				a.True(stc.verifyTableExists(t, database, "public", "merge_request_diffs"))
+				a.True(stc.verifyTableExists(t, database, "public", "projects"))
+				a.True(stc.verifyTableExists(t, database, "public", "namespaces"))
+				// Verify all FK constraints were created including cycles and self-references
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "issues", "fk_issues_project"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "issues", "fk_issues_moved_to"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "merge_requests", "fk_mr_project"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "merge_requests", "fk_mr_latest_diff"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "merge_request_diffs", "fk_diff_mr"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "projects", "fk_projects_namespace"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "namespaces", "fk_namespaces_project"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "namespaces", "fk_namespaces_parent"))
 			})
 		})
 
@@ -4240,29 +4448,14 @@ CREATE TABLE "admin"."users" (
 
 				// Complex dependency: users -> orders -> order_items
 				//                    users -> comments
+				//                    products -> order_items
 				//                    views on multiple tables
-				sdl := `CREATE TABLE "public"."users" (
-    "id" serial NOT NULL,
-    "name" varchar(255),
-    CONSTRAINT "pk_users" PRIMARY KEY ("id")
-);
-
-CREATE TABLE "public"."products" (
-    "id" serial NOT NULL,
-    "name" varchar(255),
-    "price" decimal(10,2),
-    CONSTRAINT "pk_products" PRIMARY KEY ("id")
-);
-
-CREATE TABLE "public"."orders" (
-    "id" serial NOT NULL,
-    "user_id" integer,
-    "created_at" timestamp DEFAULT NOW(),
-    CONSTRAINT "pk_orders" PRIMARY KEY ("id"),
-    CONSTRAINT "fk_orders_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id")
-);
-
-CREATE TABLE "public"."order_items" (
+				// Intentionally scramble the order to test dependency sorting:
+				// order_items depends on orders and products, but defined first
+				// comments depends on users, but defined before users
+				// orders depends on users, but defined before users
+				// views depend on tables, but some defined before their dependencies
+				sdl := `CREATE TABLE "public"."order_items" (
     "id" serial NOT NULL,
     "order_id" integer,
     "product_id" integer,
@@ -4280,16 +4473,37 @@ CREATE TABLE "public"."comments" (
     CONSTRAINT "fk_comments_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id")
 );
 
+CREATE VIEW "public"."order_details" AS
+SELECT o.id, oi.quantity, p.name, p.price
+FROM "public"."orders" o
+JOIN "public"."order_items" oi ON o.id = oi.order_id
+JOIN "public"."products" p ON oi.product_id = p.id;
+
+CREATE TABLE "public"."orders" (
+    "id" serial NOT NULL,
+    "user_id" integer,
+    "created_at" timestamp DEFAULT NOW(),
+    CONSTRAINT "pk_orders" PRIMARY KEY ("id"),
+    CONSTRAINT "fk_orders_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id")
+);
+
 CREATE VIEW "public"."user_orders" AS
 SELECT u.name, o.id as order_id, o.created_at
 FROM "public"."users" u
 JOIN "public"."orders" o ON u.id = o.user_id;
 
-CREATE VIEW "public"."order_details" AS
-SELECT o.id, oi.quantity, p.name, p.price
-FROM "public"."orders" o
-JOIN "public"."order_items" oi ON o.id = oi.order_id
-JOIN "public"."products" p ON oi.product_id = p.id;`
+CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "name" varchar(255),
+    CONSTRAINT "pk_users" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "public"."products" (
+    "id" serial NOT NULL,
+    "name" varchar(255),
+    "price" decimal(10,2),
+    CONSTRAINT "pk_products" PRIMARY KEY ("id")
+);`
 
 				err := stc.executeSDLRollout(t, database, sdl)
 				a.NoError(err)
