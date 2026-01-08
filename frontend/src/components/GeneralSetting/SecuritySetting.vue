@@ -83,7 +83,7 @@ const settingRefList = computed(() => [
 ]);
 
 const initEnableWatermark = computed(() => {
-  return settingV1Store.workspaceProfileSetting?.watermark ?? false;
+  return settingV1Store.workspaceProfile.watermark;
 });
 
 const enableWatermark = ref(initEnableWatermark.value);

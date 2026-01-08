@@ -7808,19 +7808,6 @@ components:
                     readOnly: true
                     type: boolean
                     description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
-                announcement:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/Announcement'
-                    description: The setting of custom announcement
-                enableMetricCollection:
-                    readOnly: true
-                    type: boolean
-                    description: Whether to enable metric collection for the workspace.
-                restriction:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/Restriction'
             description: |-
                 System information and configuration for the Bytebase instance.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -8870,64 +8857,6 @@ components:
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
             description: Command execution response.
-        Constant:
-            type: object
-            properties:
-                nullValue:
-                    enum:
-                        - NULL_VALUE
-                    type: string
-                    description: null value.
-                    format: enum
-                boolValue:
-                    type: boolean
-                    description: boolean value.
-                int64Value:
-                    type: string
-                    description: int64 value.
-                uint64Value:
-                    type: string
-                    description: uint64 value.
-                doubleValue:
-                    type: number
-                    description: double value.
-                    format: double
-                stringValue:
-                    type: string
-                    description: string value.
-                bytesValue:
-                    type: string
-                    description: bytes value.
-                    format: bytes
-                durationValue:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: |-
-                        protobuf.Duration value.
-
-                         Deprecated: duration is no longer considered a builtin cel type.
-                timestampValue:
-                    type: string
-                    description: |-
-                        protobuf.Timestamp value.
-
-                         Deprecated: timestamp is no longer considered a builtin cel type.
-                    format: date-time
-            description: |-
-                Represents a primitive literal.
-
-                 Named 'Constant' here for backwards compatibility.
-
-                 This is similar as the primitives supported in the well-known type
-                 `google.protobuf.Value`, but richer so it can represent CEL's full range of
-                 primitives.
-
-                 Lists and structs are not included as constants as these aggregate types may
-                 contain [Expr][google.api.expr.v1alpha1.Expr] elements which require
-                 evaluation and are thus not constant.
-
-                 Examples of literals include: `"hello"`, `b'bytes'`, `1u`, `4.2`, `-2`,
-                 `true`, `null`.
         Content_Part:
             type: object
             properties:
@@ -8978,35 +8907,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Sheet'
                     description: The sheet to create.
-        CreateStruct_Entry:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: |-
-                        Required. An id assigned to this node by the parser which is unique
-                         in a given expression tree. This is used to associate type
-                         information and other attributes to the node.
-                fieldKey:
-                    type: string
-                    description: The field key for a message creator statement.
-                mapKey:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: The key expression for a map creation statement.
-                value:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: |-
-                        Required. The value assigned to the key.
-
-                         If the optional_entry field is true, the expression must resolve to an
-                         optional-typed value. If the optional value is present, the key will be
-                         set; however, if the optional value is absent, the key will be unset.
-                optionalEntry:
-                    type: boolean
-                    description: Whether the key-value pair is optional.
-            description: Represents an entry.
         DataClassificationConfig_DataClassification:
             type: object
             properties:
@@ -9894,266 +9794,59 @@ components:
         Expr:
             type: object
             properties:
-                id:
+                expression:
                     type: string
                     description: |-
-                        Required. An id assigned to this node by the parser which is unique in a
-                         given expression tree. This is used to associate type information and other
-                         attributes to a node in the parse tree.
-                constExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Constant'
-                    description: A literal expression.
-                identExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr_Ident'
-                    description: An identifier expression.
-                selectExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr_Select'
-                    description: A field selection expression, e.g. `request.auth`.
-                callExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr_Call'
-                    description: A call expression, including calls to predefined functions and operators.
-                listExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr_CreateList'
-                    description: A list creation expression.
-                structExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr_CreateStruct'
-                    description: A map or message creation expression.
-                comprehensionExpr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr_Comprehension'
-                    description: A comprehension expression.
+                        Textual representation of an expression in Common Expression Language
+                         syntax.
+                title:
+                    type: string
+                    description: |-
+                        Optional. Title for the expression, i.e. a short string describing
+                         its purpose. This can be used e.g. in UIs which allow to enter the
+                         expression.
+                description:
+                    type: string
+                    description: |-
+                        Optional. Description of the expression. This is a longer text which
+                         describes the expression, e.g. when hovered over it in a UI.
+                location:
+                    type: string
+                    description: |-
+                        Optional. String indicating the location of the expression for error
+                         reporting, e.g. a file name and a position in the file.
             description: |-
-                An abstract representation of a common expression.
+                Represents a textual expression in the Common Expression Language (CEL)
+                 syntax. CEL is a C-like expression language. The syntax and semantics of CEL
+                 are documented at https://github.com/google/cel-spec.
 
-                 Expressions are abstractly represented as a collection of identifiers,
-                 select statements, function calls, literals, and comprehensions. All
-                 operators with the exception of the '.' operator are modelled as function
-                 calls. This makes it easy to represent new operators into the existing AST.
+                 Example (Comparison):
 
-                 All references within expressions must resolve to a
-                 [Decl][google.api.expr.v1alpha1.Decl] provided at type-check for an
-                 expression to be valid. A reference may either be a bare identifier `name` or
-                 a qualified identifier `google.api.name`. References may either refer to a
-                 value or a function declaration.
+                     title: "Summary size limit"
+                     description: "Determines if a summary is less than 100 chars"
+                     expression: "document.summary.size() < 100"
 
-                 For example, the expression `google.api.name.startsWith('expr')` references
-                 the declaration `google.api.name` within a
-                 [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression, and the
-                 function declaration `startsWith`.
-        Expr_Call:
-            type: object
-            properties:
-                target:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: |-
-                        The target of an method call-style expression. For example, `x` in
-                         `x.f()`.
-                function:
-                    type: string
-                    description: Required. The name of the function or method being called.
-                args:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Expr'
-                    description: The arguments.
-            description: |-
-                A call expression, including calls to predefined functions and operators.
+                 Example (Equality):
 
-                 For example, `value == 10`, `size(map_value)`.
-        Expr_Comprehension:
-            type: object
-            properties:
-                iterVar:
-                    type: string
-                    description: |-
-                        The name of the first iteration variable.
-                         When the iter_range is a list, this variable is the list element.
-                         When the iter_range is a map, this variable is the map entry key.
-                iterVar2:
-                    type: string
-                    description: |-
-                        The name of the second iteration variable, empty if not set.
-                         When the iter_range is a list, this variable is the integer index.
-                         When the iter_range is a map, this variable is the map entry value.
-                         This field is only set for comprehension v2 macros.
-                iterRange:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: The range over which the comprehension iterates.
-                accuVar:
-                    type: string
-                    description: The name of the variable used for accumulation of the result.
-                accuInit:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: The initial value of the accumulator.
-                loopCondition:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: |-
-                        An expression which can contain iter_var, iter_var2, and accu_var.
+                     title: "Requestor is owner"
+                     description: "Determines if requestor is the document owner"
+                     expression: "document.owner == request.auth.claims.email"
 
-                         Returns false when the result has been computed and may be used as
-                         a hint to short-circuit the remainder of the comprehension.
-                loopStep:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: |-
-                        An expression which can contain iter_var, iter_var2, and accu_var.
+                 Example (Logic):
 
-                         Computes the next value of accu_var.
-                result:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: |-
-                        An expression which can contain accu_var.
+                     title: "Public documents"
+                     description: "Determine whether the document should be publicly visible"
+                     expression: "document.type != 'private' && document.type != 'internal'"
 
-                         Computes the result.
-            description: |-
-                A comprehension expression applied to a list or map.
+                 Example (Data Manipulation):
 
-                 Comprehensions are not part of the core syntax, but enabled with macros.
-                 A macro matches a specific call signature within a parsed AST and replaces
-                 the call with an alternate AST block. Macro expansion happens at parse
-                 time.
+                     title: "Notification string"
+                     description: "Create a notification string with a timestamp."
+                     expression: "'New message received at ' + string(document.create_time)"
 
-                 The following macros are supported within CEL:
-
-                 Aggregate type macros may be applied to all elements in a list or all keys
-                 in a map:
-
-                 *  `all`, `exists`, `exists_one` -  test a predicate expression against
-                    the inputs and return `true` if the predicate is satisfied for all,
-                    any, or only one value `list.all(x, x < 10)`.
-                 *  `filter` - test a predicate expression against the inputs and return
-                    the subset of elements which satisfy the predicate:
-                    `payments.filter(p, p > 1000)`.
-                 *  `map` - apply an expression to all elements in the input and return the
-                    output aggregate type: `[1, 2, 3].map(i, i * i)`.
-
-                 The `has(m.x)` macro tests whether the property `x` is present in struct
-                 `m`. The semantics of this macro depend on the type of `m`. For proto2
-                 messages `has(m.x)` is defined as 'defined, but not set`. For proto3, the
-                 macro tests whether the property is set to its default. For map and struct
-                 types, the macro tests whether the property `x` is defined on `m`.
-
-                 Comprehensions for the standard environment macros evaluation can be best
-                 visualized as the following pseudocode:
-
-                 ```
-                 let `accu_var` = `accu_init`
-                 for (let `iter_var` in `iter_range`) {
-                   if (!`loop_condition`) {
-                     break
-                   }
-                   `accu_var` = `loop_step`
-                 }
-                 return `result`
-                 ```
-
-                 Comprehensions for the optional V2 macros which support map-to-map
-                 translation differ slightly from the standard environment macros in that
-                 they expose both the key or index in addition to the value for each list
-                 or map entry:
-
-                 ```
-                 let `accu_var` = `accu_init`
-                 for (let `iter_var`, `iter_var2` in `iter_range`) {
-                   if (!`loop_condition`) {
-                     break
-                   }
-                   `accu_var` = `loop_step`
-                 }
-                 return `result`
-                 ```
-        Expr_CreateList:
-            type: object
-            properties:
-                elements:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Expr'
-                    description: The elements part of the list.
-                optionalIndices:
-                    type: array
-                    items:
-                        type: integer
-                        format: int32
-                    description: |-
-                        The indices within the elements list which are marked as optional
-                         elements.
-
-                         When an optional-typed value is present, the value it contains
-                         is included in the list. If the optional-typed value is absent, the list
-                         element is omitted from the CreateList result.
-            description: |-
-                A list creation expression.
-
-                 Lists may either be homogenous, e.g. `[1, 2, 3]`, or heterogeneous, e.g.
-                 `dyn([1, 'hello', 2.0])`
-        Expr_CreateStruct:
-            type: object
-            properties:
-                messageName:
-                    type: string
-                    description: |-
-                        The type name of the message to be created, empty when creating map
-                         literals.
-                entries:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/CreateStruct_Entry'
-                    description: The entries in the creation expression.
-            description: |-
-                A map or message creation expression.
-
-                 Maps are constructed as `{'key_name': 'value'}`. Message construction is
-                 similar, but prefixed with a type name and composed of field ids:
-                 `types.MyType{field_id: 'value'}`.
-        Expr_Ident:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        Required. Holds a single, unqualified identifier, possibly preceded by a
-                         '.'.
-
-                         Qualified names are represented by the
-                         [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression.
-            description: An identifier expression. e.g. `request`.
-        Expr_Select:
-            type: object
-            properties:
-                operand:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: |-
-                        Required. The target of the selection expression.
-
-                         For example, in the select expression `request.auth`, the `request`
-                         portion of the expression is the `operand`.
-                field:
-                    type: string
-                    description: |-
-                        Required. The name of the field to select.
-
-                         For example, in the select expression `request.auth`, the `auth` portion
-                         of the expression would be the `field`.
-                testOnly:
-                    type: boolean
-                    description: |-
-                        Whether the select is to be interpreted as a field presence test.
-
-                         This results from the macro `has(request.auth)`.
-            description: A field selection expression. e.g. `request.auth`.
+                 The exact variables and functions that may be referenced within an expression
+                 are determined by the service that evaluates it. See the service
+                 documentation for additional information.
         ExtensionMetadata:
             type: object
             properties:
@@ -12654,59 +12347,6 @@ components:
                     description: The branding logo.
                     format: bytes
             description: Custom branding resources for the Bytebase instance.
-        Restriction:
-            type: object
-            properties:
-                disallowSignup:
-                    readOnly: true
-                    type: boolean
-                    description: Whether self-service user signup is disabled.
-                require2fa:
-                    readOnly: true
-                    type: boolean
-                    description: Whether two-factor authentication is required for all users.
-                disallowPasswordSignin:
-                    readOnly: true
-                    type: boolean
-                    description: Whether password-based signin is disabled (except for workspace admins).
-                passwordRestriction:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/WorkspaceProfileSetting_PasswordRestriction'
-                    description: Password complexity and restriction requirements.
-                watermark:
-                    readOnly: true
-                    type: boolean
-                    description: Whether to display watermark on pages.
-                databaseChangeMode:
-                    readOnly: true
-                    enum:
-                        - DATABASE_CHANGE_MODE_UNSPECIFIED
-                        - PIPELINE
-                        - EDITOR
-                    type: string
-                    description: The workspace database change mode.
-                    format: enum
-                inactiveSessionTimeout:
-                    readOnly: true
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-                domains:
-                    readOnly: true
-                    type: array
-                    items:
-                        type: string
-                    description: The workspace domain, e.g., bytebase.com.
-                enforceIdentityDomain:
-                    readOnly: true
-                    type: boolean
-                    description: Only user and group from the domains can be created and login.
-                maximumRoleExpiration:
-                    readOnly: true
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The max duration for role expired.
         Result_SqlReviewReport:
             type: object
             properties:

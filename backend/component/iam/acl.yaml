@@ -84,9 +84,11 @@ roles:
       - bb.rollouts.list
       - bb.settings.get
       - bb.settings.getEnvironment
+      - bb.settings.getWorkspaceProfile
       - bb.settings.list
       - bb.settings.set
       - bb.settings.setEnvironment
+      - bb.settings.setWorkspaceProfile
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
@@ -195,9 +197,11 @@ roles:
       - bb.rollouts.list
       - bb.settings.get
       - bb.settings.getEnvironment
+      - bb.settings.getWorkspaceProfile
       - bb.settings.list
       - bb.settings.set
       - bb.settings.setEnvironment
+      - bb.settings.setWorkspaceProfile
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
@@ -228,6 +232,7 @@ roles:
       - bb.roles.list
       - bb.roles.get
       - bb.settings.getEnvironment
+      - bb.settings.getWorkspaceProfile
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list

@@ -50,8 +50,7 @@ const hasAuditLogFeature = featureToRef(PlanFeature.FEATURE_AUDIT_LOG);
 
 const getInitialState = (): LocalState => {
   return {
-    enableAuditLogStdout:
-      settingV1Store.workspaceProfileSetting?.enableAuditLogStdout ?? false,
+    enableAuditLogStdout: settingV1Store.workspaceProfile.enableAuditLogStdout,
   };
 };
 

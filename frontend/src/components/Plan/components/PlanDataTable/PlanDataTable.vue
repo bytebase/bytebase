@@ -48,6 +48,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       key: "title",
       title: t("issue.table.name"),
       ellipsis: true,
+      resizable: true,
       render: (plan) => {
         const showDraftTag =
           enabledNewLayout.value && plan.issue === "" && !plan.hasRollout;
@@ -97,7 +98,9 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     {
       key: "creator",
       title: t("issue.table.creator"),
-      width: 140,
+      width: 200,
+      resizable: true,
+      ellipsis: true,
       render: (plan) => {
         const creator =
           userStore.getUserByIdentifier(plan.creator) ||

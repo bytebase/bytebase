@@ -251,7 +251,8 @@ const providerOptions = computed(() =>
   })
 );
 
-watchEffect(() => {
+watchEffect(async () => {
+  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI);
   Object.assign(state, getInitialState());
 });
 

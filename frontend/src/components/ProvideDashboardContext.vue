@@ -13,6 +13,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import MaskSpinner from "./misc/MaskSpinner.vue";
 
 const router = useRouter();
@@ -30,7 +31,9 @@ onMounted(async () => {
 
   await Promise.all([
     useEnvironmentV1Store().fetchEnvironments(),
-    useSettingV1Store().fetchSettingList(),
+    useSettingV1Store().getOrFetchSettingByName(
+      Setting_SettingName.WORKSPACE_PROFILE
+    ),
   ]);
 
   useUIStateStore().restoreState();

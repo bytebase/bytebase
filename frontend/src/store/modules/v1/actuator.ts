@@ -1,4 +1,3 @@
-import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import semver from "semver";
@@ -16,7 +15,6 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
-import { RestrictionSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
@@ -92,10 +90,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     const url = serverInfo.value?.externalUrl ?? "";
     return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
   });
-
-  const restriction = computed(
-    () => serverInfo.value?.restriction ?? create(RestrictionSchema, {})
-  );
 
   const hasNewRelease = computed(() => {
     return (
@@ -293,7 +287,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     needAdminSetup,
     needConfigureExternalUrl,
     hasNewRelease,
-    restriction,
     activatedInstanceCount,
     totalInstanceCount,
     inactiveUserCount,

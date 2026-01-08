@@ -45,7 +45,7 @@ const settingV1Store = useSettingV1Store();
 const getInitialState = (): LocalState => {
   return {
     enableMetricCollection:
-      settingV1Store.workspaceProfileSetting?.enableMetricCollection ?? true,
+      settingV1Store.workspaceProfile.enableMetricCollection,
   };
 };
 

@@ -44,6 +44,6 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 const show = ref(true);
 
 const hasPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.set")
+  hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile")
 );
 </script>

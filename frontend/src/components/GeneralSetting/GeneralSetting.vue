@@ -101,16 +101,15 @@ interface LocalState {
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     databaseChangeMode: DatabaseChangeMode.PIPELINE,
-    externalUrl: settingV1Store.workspaceProfileSetting?.externalUrl ?? "",
+    externalUrl: settingV1Store.workspaceProfile.externalUrl,
   };
   if (
-    settingV1Store.workspaceProfileSetting &&
     [DatabaseChangeMode.PIPELINE, DatabaseChangeMode.EDITOR].includes(
-      settingV1Store.workspaceProfileSetting.databaseChangeMode
+      settingV1Store.workspaceProfile.databaseChangeMode
     )
   ) {
     defaultState.databaseChangeMode =
-      settingV1Store.workspaceProfileSetting.databaseChangeMode;
+      settingV1Store.workspaceProfile.databaseChangeMode;
   }
   return defaultState;
 };

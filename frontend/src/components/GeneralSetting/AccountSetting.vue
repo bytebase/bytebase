@@ -161,11 +161,10 @@ const tokenDurationSettingRef =
 
 const getInitialState = (): LocalState => {
   return {
-    disallowSignup:
-      settingV1Store.workspaceProfileSetting?.disallowSignup ?? false,
-    require2fa: settingV1Store.workspaceProfileSetting?.require2fa ?? false,
+    disallowSignup: settingV1Store.workspaceProfile.disallowSignup,
+    require2fa: settingV1Store.workspaceProfile.require2fa,
     disallowPasswordSignin:
-      settingV1Store.workspaceProfileSetting?.disallowPasswordSignin ?? false,
+      settingV1Store.workspaceProfile.disallowPasswordSignin,
   };
 };
 
@@ -212,18 +211,15 @@ const onUpdate = async () => {
     require2fa: state.require2fa,
     disallowPasswordSignin: state.disallowPasswordSignin,
   };
-  if (
-    state.disallowSignup !==
-    settingV1Store.workspaceProfileSetting?.disallowSignup
-  ) {
+  if (state.disallowSignup !== settingV1Store.workspaceProfile.disallowSignup) {
     updateMaskPaths.push("value.workspace_profile.disallow_signup");
   }
-  if (state.require2fa !== settingV1Store.workspaceProfileSetting?.require2fa) {
+  if (state.require2fa !== settingV1Store.workspaceProfile.require2fa) {
     updateMaskPaths.push("value.workspace_profile.require_2fa");
   }
   if (
     state.disallowPasswordSignin !==
-    settingV1Store.workspaceProfileSetting?.disallowPasswordSignin
+    settingV1Store.workspaceProfile.disallowPasswordSignin
   ) {
     updateMaskPaths.push("value.workspace_profile.disallow_password_signin");
   }

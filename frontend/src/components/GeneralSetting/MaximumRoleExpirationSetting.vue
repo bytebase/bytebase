@@ -53,11 +53,8 @@ const getInitialState = (): LocalState => {
     inputValue: DEFAULT_EXPIRATION_DAYS,
     neverExpire: true,
   };
-  const seconds = settingV1Store.workspaceProfileSetting?.maximumRoleExpiration
-    ?.seconds
-    ? Number(
-        settingV1Store.workspaceProfileSetting.maximumRoleExpiration.seconds
-      )
+  const seconds = settingV1Store.workspaceProfile.maximumRoleExpiration?.seconds
+    ? Number(settingV1Store.workspaceProfile.maximumRoleExpiration.seconds)
     : undefined;
   if (seconds && seconds > 0) {
     defaultState.inputValue =

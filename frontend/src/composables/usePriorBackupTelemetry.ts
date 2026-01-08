@@ -3,6 +3,7 @@ import {
   useActuatorV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useSettingV1Store,
 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -56,12 +57,13 @@ export async function trackPriorBackupOnTaskRun(
   }
 
   // Respect user's metric collection preference
-  const actuatorStore = useActuatorV1Store();
-  if (actuatorStore.serverInfo?.enableMetricCollection === false) {
+  const settingStore = useSettingV1Store();
+  if (!settingStore.workspaceProfile.enableMetricCollection) {
     return;
   }
 
   try {
+    const actuatorStore = useActuatorV1Store();
     const currentUser = useCurrentUserV1();
 
     const workspaceId = actuatorStore.info?.workspaceId;

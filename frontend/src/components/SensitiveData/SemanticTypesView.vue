@@ -93,6 +93,9 @@ const semanticTypeSettingValue = computed(() => {
 });
 
 onMounted(async () => {
+  await settingStore.getOrFetchSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES
+  );
   state.semanticItemList = semanticTypeSettingValue.value.map(
     (semanticType) => {
       return {

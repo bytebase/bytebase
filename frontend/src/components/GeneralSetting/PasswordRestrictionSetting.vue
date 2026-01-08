@@ -189,7 +189,7 @@ const hasPasswordFeature = featureToRef(
 
 const passwordRestrictionSetting = computed(() => {
   return (
-    settingV1Store.workspaceProfileSetting?.passwordRestriction ??
+    settingV1Store.workspaceProfile.passwordRestriction ??
     create(WorkspaceProfileSetting_PasswordRestrictionSchema, {})
   );
 });
@@ -211,9 +211,6 @@ const onUpdate = async (
 defineExpose({
   isDirty: computed(() => !isEqual(passwordRestrictionSetting.value, state)),
   update: async () => {
-    if (!settingV1Store.workspaceProfileSetting) {
-      return;
-    }
     await settingV1Store.updateWorkspaceProfile({
       payload: {
         passwordRestriction: create(
