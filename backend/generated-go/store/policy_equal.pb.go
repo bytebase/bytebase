@@ -185,22 +185,6 @@ func (x *IamPolicy) Equal(y *IamPolicy) bool {
 	return true
 }
 
-func (x *EnvironmentTierPolicy) Equal(y *EnvironmentTierPolicy) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.EnvironmentTier != y.EnvironmentTier {
-		return false
-	}
-	if x.Color != y.Color {
-		return false
-	}
-	return true
-}
-
 func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x == y {
 		return true
