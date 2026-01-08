@@ -1058,7 +1058,7 @@
       "reopened": "再開",
       "action-n-issues": "{action} {n} 個のイシュー",
       "closed": "閉まっている",
-      "close": "近い"
+      "close": "閉じる"
     },
     "approval-flow": {
       "self": "承認の流れ",
