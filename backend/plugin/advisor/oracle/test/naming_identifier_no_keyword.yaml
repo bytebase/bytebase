@@ -45,3 +45,11 @@
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
   changeType: 1
+- statement: GRANT SELECT ON my_table TO admin;
+  changeType: 1
+- statement: GRANT DELETE ON my_table TO admin;
+  changeType: 1
+- statement: REVOKE SELECT ON my_table FROM admin;
+  changeType: 1
+- statement: GRANT SELECT, INSERT, UPDATE, DELETE ON my_table TO admin;
+  changeType: 1
