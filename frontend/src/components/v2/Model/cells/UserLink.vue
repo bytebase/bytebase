@@ -1,7 +1,6 @@
 <template>
   <component
     :is="isLink ? 'router-link' : 'div'"
-    class="truncate max-w-[10em]"
     :class="isLink && 'normal-link'"
     :to="`/users/${email}`"
   >

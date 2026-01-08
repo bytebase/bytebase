@@ -102,18 +102,6 @@ message IamPolicy {
   repeated Binding bindings = 1;
 }
 
-// EnvironmentTierPolicy is the tier of an environment.
-message EnvironmentTierPolicy {
-  enum EnvironmentTier {
-    ENVIRONMENT_TIER_UNSPECIFIED = 0;
-    PROTECTED = 1;
-    UNPROTECTED = 2;
-  }
-
-  EnvironmentTier environment_tier = 1;
-  string color = 2;
-}
-
 // QueryDataPolicy is the policy configuration for querying data.
 message QueryDataPolicy {
   // The query timeout duration.

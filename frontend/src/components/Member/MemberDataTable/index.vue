@@ -86,16 +86,11 @@ const onGroupLoad = async (row: DataTableRowData) => {
     return;
   }
 
-  await userStore.batchGetOrFetchUsers(
+  const users = await userStore.batchGetOrFetchUsers(
     binding.group.members.map((m) => m.member)
   );
-
   const children: UserRoleData[] = [];
-  for (const member of binding.group.members) {
-    const user = userStore.getUserByIdentifier(member.member);
-    if (!user) {
-      continue;
-    }
+  for (const user of users) {
     children.push({
       data: user,
       key: `${binding.group?.name}-${user.name}`,

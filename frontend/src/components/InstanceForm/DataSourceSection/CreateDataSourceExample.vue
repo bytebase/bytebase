@@ -557,7 +557,7 @@ GRANT ALL PRIVILEGES ON PIPE {{PIPE_NAME}} IN DATABASE {{YOUR_DB_NAME}} TO ROLE 
         return `use admin;
 db.createUser({
   user: "${DATASOURCE_READONLY_USER_NAME}",
-  pwd: "YOUR_DB_PWD",
+  pwd: passwordPrompt(),
   roles: [
     {role: "readAnyDatabase", db: "admin"}
   ]

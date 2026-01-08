@@ -29,7 +29,7 @@ import {
   UpdateUserRequestSchema,
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
-import { ensureUserFullName } from "@/utils";
+import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
 import { extractUserId, userNamePrefix } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
@@ -91,6 +91,12 @@ export const useUserStore = defineStore("user", () => {
     users: User[];
     nextPageToken: string;
   }> => {
+    if (!hasWorkspacePermissionV2("bb.users.list")) {
+      return {
+        users: [],
+        nextPageToken: "",
+      };
+    }
     const request = create(ListUsersRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
@@ -185,8 +191,11 @@ export const useUserStore = defineStore("user", () => {
         return getUserByIdentifier(name) === undefined;
       })
       .map((name) => ensureUserFullName(name));
+
     if (pendingFetch.length === 0) {
-      return validList.map(getUserByIdentifier);
+      return validList.map(
+        (name) => getUserByIdentifier(name) ?? unknownUser(name)
+      );
     }
 
     try {

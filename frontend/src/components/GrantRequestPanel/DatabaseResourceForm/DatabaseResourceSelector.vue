@@ -248,6 +248,7 @@ const fetchDatabaseList = useDebounceFn(async () => {
       pageToken,
       parent: props.projectName,
       filter: databaseFilter.value,
+      silent: true,
     });
 
     if (pageToken) {

@@ -880,10 +880,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.EnvironmentTierPolicy"><span class="badge">M</span>EnvironmentTierPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.IamPolicy"><span class="badge">M</span>IamPolicy</a>
                 </li>
               
@@ -926,10 +922,6 @@
               
                 <li>
                   <a href="#bytebase.store.DataSourceQueryPolicy.Restriction"><span class="badge">E</span>DataSourceQueryPolicy.Restriction</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.EnvironmentTierPolicy.EnvironmentTier"><span class="badge">E</span>EnvironmentTierPolicy.EnvironmentTier</a>
                 </li>
               
                 <li>
@@ -8834,37 +8826,6 @@ If the condition evaluates to false, then this binding does not apply to the cur
 
         
       
-        <h3 id="bytebase.store.EnvironmentTierPolicy">EnvironmentTierPolicy</h3>
-        <p>EnvironmentTierPolicy is the tier of an environment.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>environment_tier</td>
-                  <td><a href="#bytebase.store.EnvironmentTierPolicy.EnvironmentTier">EnvironmentTierPolicy.EnvironmentTier</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>color</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.IamPolicy">IamPolicy</h3>
         <p></p>
 
@@ -9198,35 +9159,6 @@ For example, the environment resource can have the SQL review config tag, such a
                 <td>DISALLOW</td>
                 <td>2</td>
                 <td><p>Disallow to query admin data sources.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.EnvironmentTierPolicy.EnvironmentTier">EnvironmentTierPolicy.EnvironmentTier</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ENVIRONMENT_TIER_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROTECTED</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UNPROTECTED</td>
-                <td>2</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>

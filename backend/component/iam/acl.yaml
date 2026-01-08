@@ -226,6 +226,8 @@ roles:
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list
+      - bb.users.get
+      - bb.users.list
       - bb.workspaces.getIamPolicy
   - name: roles/projectOwner
     title: Project owner
@@ -291,6 +293,8 @@ roles:
       - bb.sql.explain
       - bb.sql.info
       - bb.sql.select
+      - bb.users.get
+      - bb.users.list
       - bb.taskRuns.list
       - bb.worksheets.get
   - name: roles/projectDeveloper

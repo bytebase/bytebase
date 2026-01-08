@@ -15,6 +15,9 @@ export const emptyProject = (): Project => {
     title: "",
     state: State.ACTIVE,
     enforceIssueTitle: true,
+    enforceSqlReview: true,
+    requireIssueApproval: true,
+    requirePlanCheckNoError: true,
   });
 };
 

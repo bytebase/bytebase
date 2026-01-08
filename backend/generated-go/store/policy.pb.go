@@ -139,55 +139,6 @@ func (Policy_Resource) EnumDescriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{0, 1}
 }
 
-type EnvironmentTierPolicy_EnvironmentTier int32
-
-const (
-	EnvironmentTierPolicy_ENVIRONMENT_TIER_UNSPECIFIED EnvironmentTierPolicy_EnvironmentTier = 0
-	EnvironmentTierPolicy_PROTECTED                    EnvironmentTierPolicy_EnvironmentTier = 1
-	EnvironmentTierPolicy_UNPROTECTED                  EnvironmentTierPolicy_EnvironmentTier = 2
-)
-
-// Enum value maps for EnvironmentTierPolicy_EnvironmentTier.
-var (
-	EnvironmentTierPolicy_EnvironmentTier_name = map[int32]string{
-		0: "ENVIRONMENT_TIER_UNSPECIFIED",
-		1: "PROTECTED",
-		2: "UNPROTECTED",
-	}
-	EnvironmentTierPolicy_EnvironmentTier_value = map[string]int32{
-		"ENVIRONMENT_TIER_UNSPECIFIED": 0,
-		"PROTECTED":                    1,
-		"UNPROTECTED":                  2,
-	}
-)
-
-func (x EnvironmentTierPolicy_EnvironmentTier) Enum() *EnvironmentTierPolicy_EnvironmentTier {
-	p := new(EnvironmentTierPolicy_EnvironmentTier)
-	*p = x
-	return p
-}
-
-func (x EnvironmentTierPolicy_EnvironmentTier) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (EnvironmentTierPolicy_EnvironmentTier) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[2].Descriptor()
-}
-
-func (EnvironmentTierPolicy_EnvironmentTier) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[2]
-}
-
-func (x EnvironmentTierPolicy_EnvironmentTier) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use EnvironmentTierPolicy_EnvironmentTier.Descriptor instead.
-func (EnvironmentTierPolicy_EnvironmentTier) EnumDescriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{7, 0}
-}
-
 type DataSourceQueryPolicy_Restriction int32
 
 const (
@@ -223,11 +174,11 @@ func (x DataSourceQueryPolicy_Restriction) String() string {
 }
 
 func (DataSourceQueryPolicy_Restriction) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[3].Descriptor()
+	return file_store_policy_proto_enumTypes[2].Descriptor()
 }
 
 func (DataSourceQueryPolicy_Restriction) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[3]
+	return &file_store_policy_proto_enumTypes[2]
 }
 
 func (x DataSourceQueryPolicy_Restriction) Number() protoreflect.EnumNumber {
@@ -236,7 +187,7 @@ func (x DataSourceQueryPolicy_Restriction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceQueryPolicy_Restriction.Descriptor instead.
 func (DataSourceQueryPolicy_Restriction) EnumDescriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{9, 0}
+	return file_store_policy_proto_rawDescGZIP(), []int{8, 0}
 }
 
 type Policy struct {
@@ -576,59 +527,6 @@ func (x *IamPolicy) GetBindings() []*Binding {
 	return nil
 }
 
-// EnvironmentTierPolicy is the tier of an environment.
-type EnvironmentTierPolicy struct {
-	state           protoimpl.MessageState                `protogen:"open.v1"`
-	EnvironmentTier EnvironmentTierPolicy_EnvironmentTier `protobuf:"varint,1,opt,name=environment_tier,json=environmentTier,proto3,enum=bytebase.store.EnvironmentTierPolicy_EnvironmentTier" json:"environment_tier,omitempty"`
-	Color           string                                `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *EnvironmentTierPolicy) Reset() {
-	*x = EnvironmentTierPolicy{}
-	mi := &file_store_policy_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EnvironmentTierPolicy) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EnvironmentTierPolicy) ProtoMessage() {}
-
-func (x *EnvironmentTierPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EnvironmentTierPolicy.ProtoReflect.Descriptor instead.
-func (*EnvironmentTierPolicy) Descriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *EnvironmentTierPolicy) GetEnvironmentTier() EnvironmentTierPolicy_EnvironmentTier {
-	if x != nil {
-		return x.EnvironmentTier
-	}
-	return EnvironmentTierPolicy_ENVIRONMENT_TIER_UNSPECIFIED
-}
-
-func (x *EnvironmentTierPolicy) GetColor() string {
-	if x != nil {
-		return x.Color
-	}
-	return ""
-}
-
 // QueryDataPolicy is the policy configuration for querying data.
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -650,7 +548,7 @@ type QueryDataPolicy struct {
 
 func (x *QueryDataPolicy) Reset() {
 	*x = QueryDataPolicy{}
-	mi := &file_store_policy_proto_msgTypes[8]
+	mi := &file_store_policy_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -662,7 +560,7 @@ func (x *QueryDataPolicy) String() string {
 func (*QueryDataPolicy) ProtoMessage() {}
 
 func (x *QueryDataPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[8]
+	mi := &file_store_policy_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -675,7 +573,7 @@ func (x *QueryDataPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryDataPolicy.ProtoReflect.Descriptor instead.
 func (*QueryDataPolicy) Descriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{8}
+	return file_store_policy_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *QueryDataPolicy) GetTimeout() *durationpb.Duration {
@@ -727,7 +625,7 @@ type DataSourceQueryPolicy struct {
 
 func (x *DataSourceQueryPolicy) Reset() {
 	*x = DataSourceQueryPolicy{}
-	mi := &file_store_policy_proto_msgTypes[9]
+	mi := &file_store_policy_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -739,7 +637,7 @@ func (x *DataSourceQueryPolicy) String() string {
 func (*DataSourceQueryPolicy) ProtoMessage() {}
 
 func (x *DataSourceQueryPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[9]
+	mi := &file_store_policy_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -752,7 +650,7 @@ func (x *DataSourceQueryPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSourceQueryPolicy.ProtoReflect.Descriptor instead.
 func (*DataSourceQueryPolicy) Descriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{9}
+	return file_store_policy_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DataSourceQueryPolicy) GetAdminDataSourceRestriction() DataSourceQueryPolicy_Restriction {
@@ -805,7 +703,7 @@ type MaskingExemptionPolicy_Exemption struct {
 
 func (x *MaskingExemptionPolicy_Exemption) Reset() {
 	*x = MaskingExemptionPolicy_Exemption{}
-	mi := &file_store_policy_proto_msgTypes[10]
+	mi := &file_store_policy_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -817,7 +715,7 @@ func (x *MaskingExemptionPolicy_Exemption) String() string {
 func (*MaskingExemptionPolicy_Exemption) ProtoMessage() {}
 
 func (x *MaskingExemptionPolicy_Exemption) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[10]
+	mi := &file_store_policy_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -859,7 +757,7 @@ type MaskingRulePolicy_MaskingRule struct {
 
 func (x *MaskingRulePolicy_MaskingRule) Reset() {
 	*x = MaskingRulePolicy_MaskingRule{}
-	mi := &file_store_policy_proto_msgTypes[11]
+	mi := &file_store_policy_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -871,7 +769,7 @@ func (x *MaskingRulePolicy_MaskingRule) String() string {
 func (*MaskingRulePolicy_MaskingRule) ProtoMessage() {}
 
 func (x *MaskingRulePolicy_MaskingRule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_policy_proto_msgTypes[11]
+	mi := &file_store_policy_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -955,14 +853,7 @@ const file_store_policy_proto_rawDesc = "" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"@\n" +
 	"\tIamPolicy\x123\n" +
-	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xe4\x01\n" +
-	"\x15EnvironmentTierPolicy\x12`\n" +
-	"\x10environment_tier\x18\x01 \x01(\x0e25.bytebase.store.EnvironmentTierPolicy.EnvironmentTierR\x0fenvironmentTier\x12\x14\n" +
-	"\x05color\x18\x02 \x01(\tR\x05color\"S\n" +
-	"\x0fEnvironmentTier\x12 \n" +
-	"\x1cENVIRONMENT_TIER_UNSPECIFIED\x10\x00\x12\r\n" +
-	"\tPROTECTED\x10\x01\x12\x0f\n" +
-	"\vUNPROTECTED\x10\x02\"\xf9\x01\n" +
+	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xf9\x01\n" +
 	"\x0fQueryDataPolicy\x123\n" +
 	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12%\n" +
 	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12.\n" +
@@ -991,45 +882,42 @@ func file_store_policy_proto_rawDescGZIP() []byte {
 	return file_store_policy_proto_rawDescData
 }
 
-var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_store_policy_proto_goTypes = []any{
-	(Policy_Type)(0),                           // 0: bytebase.store.Policy.Type
-	(Policy_Resource)(0),                       // 1: bytebase.store.Policy.Resource
-	(EnvironmentTierPolicy_EnvironmentTier)(0), // 2: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	(DataSourceQueryPolicy_Restriction)(0),     // 3: bytebase.store.DataSourceQueryPolicy.Restriction
-	(*Policy)(nil),                             // 4: bytebase.store.Policy
-	(*RolloutPolicy)(nil),                      // 5: bytebase.store.RolloutPolicy
-	(*MaskingExemptionPolicy)(nil),             // 6: bytebase.store.MaskingExemptionPolicy
-	(*MaskingRulePolicy)(nil),                  // 7: bytebase.store.MaskingRulePolicy
-	(*TagPolicy)(nil),                          // 8: bytebase.store.TagPolicy
-	(*Binding)(nil),                            // 9: bytebase.store.Binding
-	(*IamPolicy)(nil),                          // 10: bytebase.store.IamPolicy
-	(*EnvironmentTierPolicy)(nil),              // 11: bytebase.store.EnvironmentTierPolicy
-	(*QueryDataPolicy)(nil),                    // 12: bytebase.store.QueryDataPolicy
-	(*DataSourceQueryPolicy)(nil),              // 13: bytebase.store.DataSourceQueryPolicy
-	(*MaskingExemptionPolicy_Exemption)(nil),   // 14: bytebase.store.MaskingExemptionPolicy.Exemption
-	(*MaskingRulePolicy_MaskingRule)(nil),      // 15: bytebase.store.MaskingRulePolicy.MaskingRule
-	nil,                                        // 16: bytebase.store.TagPolicy.TagsEntry
-	(*expr.Expr)(nil),                          // 17: google.type.Expr
-	(*durationpb.Duration)(nil),                // 18: google.protobuf.Duration
+	(Policy_Type)(0),                         // 0: bytebase.store.Policy.Type
+	(Policy_Resource)(0),                     // 1: bytebase.store.Policy.Resource
+	(DataSourceQueryPolicy_Restriction)(0),   // 2: bytebase.store.DataSourceQueryPolicy.Restriction
+	(*Policy)(nil),                           // 3: bytebase.store.Policy
+	(*RolloutPolicy)(nil),                    // 4: bytebase.store.RolloutPolicy
+	(*MaskingExemptionPolicy)(nil),           // 5: bytebase.store.MaskingExemptionPolicy
+	(*MaskingRulePolicy)(nil),                // 6: bytebase.store.MaskingRulePolicy
+	(*TagPolicy)(nil),                        // 7: bytebase.store.TagPolicy
+	(*Binding)(nil),                          // 8: bytebase.store.Binding
+	(*IamPolicy)(nil),                        // 9: bytebase.store.IamPolicy
+	(*QueryDataPolicy)(nil),                  // 10: bytebase.store.QueryDataPolicy
+	(*DataSourceQueryPolicy)(nil),            // 11: bytebase.store.DataSourceQueryPolicy
+	(*MaskingExemptionPolicy_Exemption)(nil), // 12: bytebase.store.MaskingExemptionPolicy.Exemption
+	(*MaskingRulePolicy_MaskingRule)(nil),    // 13: bytebase.store.MaskingRulePolicy.MaskingRule
+	nil,                                      // 14: bytebase.store.TagPolicy.TagsEntry
+	(*expr.Expr)(nil),                        // 15: google.type.Expr
+	(*durationpb.Duration)(nil),              // 16: google.protobuf.Duration
 }
 var file_store_policy_proto_depIdxs = []int32{
-	14, // 0: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
-	15, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
-	16, // 2: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
-	17, // 3: bytebase.store.Binding.condition:type_name -> google.type.Expr
-	9,  // 4: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
-	2,  // 5: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	18, // 6: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	3,  // 7: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
-	17, // 8: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
-	17, // 9: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	12, // 0: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
+	13, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
+	14, // 2: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
+	15, // 3: bytebase.store.Binding.condition:type_name -> google.type.Expr
+	8,  // 4: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
+	16, // 5: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
+	2,  // 6: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
+	15, // 7: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
+	15, // 8: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	9,  // [9:9] is the sub-list for method output_type
+	9,  // [9:9] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_store_policy_proto_init() }
@@ -1042,8 +930,8 @@ func file_store_policy_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_policy_proto_rawDesc), len(file_store_policy_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   13,
+			NumEnums:      3,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
