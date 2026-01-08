@@ -739,18 +739,6 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 	}
 }
 
-// convertToBasicUser returns a User with only basic public fields.
-// Used by SearchUsers to avoid exposing sensitive information.
-func convertToBasicUser(user *store.UserMessage) *v1pb.User {
-	return &v1pb.User{
-		Name:     common.FormatUserEmail(user.Email),
-		State:    convertDeletedToState(user.MemberDeleted),
-		Email:    user.Email,
-		Title:    user.Name,
-		UserType: convertToV1UserType(user.Type),
-	}
-}
-
 func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) *v1pb.User {
 	convertedUser := &v1pb.User{
 		Name:     common.FormatUserEmail(user.Email),
