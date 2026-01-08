@@ -65,7 +65,6 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => [
             "bb.projects.list",
             "bb.instances.list",
-            "bb.settings.get",
           ],
         },
         component: () => import("@/views/Archive.vue"),

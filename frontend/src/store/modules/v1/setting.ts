@@ -74,9 +74,6 @@ export const useSettingV1Store = defineStore("setting_v1", {
       name: Setting_SettingName,
       silent = false
     ): Promise<Setting | undefined> {
-      if (!hasWorkspacePermissionV2("bb.settings.get")) {
-        return;
-      }
       try {
         const request = create(GetSettingRequestSchema, {
           name: `${settingNamePrefix}${Setting_SettingName[name]}`,

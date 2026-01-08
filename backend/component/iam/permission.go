@@ -95,6 +95,8 @@ const (
 	PermissionSettingsGet             Permission = "bb.settings.get"
 	PermissionSettingsList            Permission = "bb.settings.list"
 	PermissionSettingsSet             Permission = "bb.settings.set"
+	PermissionEnvironmentSettingsGet  Permission = "bb.settings.getEnvironment"
+	PermissionEnvironmentSettingsSet  Permission = "bb.settings.setEnvironment"
 	PermissionSheetsCreate            Permission = "bb.sheets.create"
 	PermissionSheetsGet               Permission = "bb.sheets.get"
 	PermissionSheetsUpdate            Permission = "bb.sheets.update"

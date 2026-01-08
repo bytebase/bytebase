@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -36,6 +37,7 @@ type SettingService struct {
 	store          *store.Store
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
+	iamManager     *iam.Manager
 }
 
 // NewSettingService creates a new setting service.
@@ -43,11 +45,13 @@ func NewSettingService(
 	store *store.Store,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
+	iamManager *iam.Manager,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
+		iamManager:     iamManager,
 	}
 }
 
@@ -61,6 +65,10 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 	response := &v1pb.ListSettingsResponse{}
 	for _, setting := range settings {
 		if isSettingDisallowed(setting.Name) {
+			continue
+		}
+		// environment setting is controlled by bb.settings.getEnvironment permission, not expose in the ListSettings API.
+		if setting.Name == storepb.SettingName_ENVIRONMENT {
 			continue
 		}
 		settingMessage, err := convertToSettingMessage(setting, s.profile)
@@ -81,15 +89,24 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 	if settingName == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
-	apiSettingName, err := convertStringToSettingName(settingName)
+
+	storeSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if isSettingDisallowed(apiSettingName) {
+	if isSettingDisallowed(storeSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
-	setting, err := s.store.GetSetting(ctx, apiSettingName)
+	permission := iam.PermissionSettingsGet
+	if storeSettingName == storepb.SettingName_ENVIRONMENT {
+		permission = iam.PermissionEnvironmentSettingsGet
+	}
+	if err := s.CheckSettingPermission(ctx, permission); err != nil {
+		return nil, err
+	}
+
+	setting, err := s.store.GetSetting(ctx, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
 	}
@@ -118,17 +135,26 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	if settingName == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
-	apiSettingName, err := convertStringToSettingName(settingName)
+	storeSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if isSettingDisallowed(apiSettingName) {
+	if isSettingDisallowed(storeSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
-	existedSetting, err := s.store.GetSetting(ctx, apiSettingName)
+
+	permission := iam.PermissionSettingsSet
+	if storeSettingName == storepb.SettingName_ENVIRONMENT {
+		permission = iam.PermissionEnvironmentSettingsSet
+	}
+	if err := s.CheckSettingPermission(ctx, permission); err != nil {
+		return nil, err
+	}
+
+	existedSetting, err := s.store.GetSetting(ctx, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
 	}
@@ -152,7 +178,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	var resetAuditLogStdout bool
 	var resetClassification bool
 
-	switch apiSettingName {
+	switch storeSettingName {
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
@@ -160,7 +186,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
 		oldSetting, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storeSettingName, err))
 		}
 
 		for _, path := range request.Msg.UpdateMask.Paths {
@@ -517,7 +543,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		storeSettingValue = environmentSetting
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", apiSettingName))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", storeSettingName))
 	}
 
 	if request.Msg.ValidateOnly {
@@ -528,7 +554,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	setting, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
-		Name:  apiSettingName,
+		Name:  storeSettingName,
 		Value: storeSettingValue,
 	})
 	if err != nil {
@@ -578,6 +604,22 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+func (s *SettingService) CheckSettingPermission(ctx context.Context, permission iam.Permission) error {
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	ok, err := s.iamManager.CheckPermission(ctx, permission, user)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+	}
+	if !ok {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionEnvironmentSettingsGet))
+	}
+	return nil
 }
 
 var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)

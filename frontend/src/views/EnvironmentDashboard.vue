@@ -27,7 +27,7 @@
       <template #suffix>
         <PermissionGuardWrapper
           v-slot="slotProps"
-          :permissions="['bb.settings.set']"
+          :permissions="['bb.settings.setEnvironment']"
         >
           <div class="flex items-center justify-end gap-x-2 px-2 pb-1">
             <NButton

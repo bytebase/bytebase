@@ -19,6 +19,7 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { environmentNamePrefix } from "./common";
 import { useSettingV1Store } from "./setting";
 
@@ -105,6 +106,9 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
   },
   actions: {
     async fetchEnvironments(silent = false) {
+      if (!hasWorkspacePermissionV2("bb.settings.getEnvironment")) {
+        return;
+      }
       const setting = await useSettingV1Store().fetchSettingByName(
         Setting_SettingName.ENVIRONMENT,
         silent

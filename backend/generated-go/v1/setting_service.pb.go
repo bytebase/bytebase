@@ -3023,8 +3023,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x0eSettingService\x12\x84\x01\n" +
 	"\fListSettings\x12 .bytebase.v1.ListSettingsRequest\x1a!.bytebase.v1.ListSettingsResponse\"/\xdaA\x00\x8a\xea0\x10bb.settings.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/settings\x12\x7f\n" +
 	"\n" +
-	"GetSetting\x12\x1e.bytebase.v1.GetSettingRequest\x1a\x14.bytebase.v1.Setting\";\xdaA\x04name\x8a\xea0\x0fbb.settings.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=settings/*}\x12\x93\x01\n" +
-	"\rUpdateSetting\x12!.bytebase.v1.UpdateSettingRequest\x1a\x14.bytebase.v1.Setting\"I\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\asetting2\x1d/v1/{setting.name=settings/*}B\xa9\x01\n" +
+	"GetSetting\x12\x1e.bytebase.v1.GetSettingRequest\x1a\x14.bytebase.v1.Setting\";\xdaA\x04name\x8a\xea0\x0fbb.settings.get\x90\xea0\x02\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=settings/*}\x12\x93\x01\n" +
+	"\rUpdateSetting\x12!.bytebase.v1.UpdateSettingRequest\x1a\x14.bytebase.v1.Setting\"I\x8a\xea0\x0fbb.settings.set\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\asetting2\x1d/v1/{setting.name=settings/*}B\xa9\x01\n" +
 	"\x0fcom.bytebase.v1B\x13SettingServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
