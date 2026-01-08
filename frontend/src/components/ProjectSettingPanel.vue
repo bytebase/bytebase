@@ -28,7 +28,6 @@
           <ProjectSecuritySettingPanel
             ref="projectSecuritySettingPanelRef"
             :project="project"
-            :allow-edit="allowEdit"
           />
         </div>
       </div>
