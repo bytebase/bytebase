@@ -95,7 +95,7 @@ export const useUserStore = defineStore("user", () => {
       return {
         users: [],
         nextPageToken: "",
-      }
+      };
     }
     const request = create(ListUsersRequestSchema, {
       pageSize: params.pageSize,

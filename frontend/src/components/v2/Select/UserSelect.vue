@@ -5,6 +5,8 @@
     :disabled="disabled"
     :size="size"
     :value="value"
+    :tag="!hasPermission"
+    :remote="hasPermission"
     :additional-options="additionalOptions"
     :render-label="renderLabel"
     :render-tag="renderTag"
@@ -22,6 +24,7 @@ import { UserNameCell } from "@/components/v2/Model/cells";
 import { type UserFilter, userNamePrefix, useUserStore } from "@/store";
 import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
@@ -51,6 +54,8 @@ defineEmits<{
 }>();
 
 const userStore = useUserStore();
+
+const hasPermission = computed(() => hasWorkspacePermissionV2("bb.users.list"));
 
 const getFilter = (search: string): UserFilter => {
   const filter = [];
