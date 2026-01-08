@@ -3,8 +3,8 @@ import { createContextValues } from "@connectrpc/connect";
 import { head, uniq, values } from "lodash-es";
 import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
-import { sqlServiceClientConnect } from "@/connect";
-import { silentContextKey } from "@/connect/context-key";
+import { sqlServiceClientConnect } from "@/grpcweb";
+import { silentContextKey } from "@/grpcweb/context-key";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,
