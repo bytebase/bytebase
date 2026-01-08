@@ -2,6 +2,11 @@ import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { engineNameV1 } from "@/utils";
 
+// Max characters for schema text to stay within token limits.
+// ~4 chars per token, leaving room for system prompt and response.
+// Targeting ~10k tokens = ~40k chars for the schema portion.
+const MAX_SCHEMA_CHARS = 40000;
+
 export const databaseMetadataToText = (
   databaseMetadata: DatabaseMetadata | undefined,
   engine?: Engine,
@@ -27,8 +32,10 @@ export const databaseMetadataToText = (
       : databaseMetadata.schemas;
 
     const schemaScoped = !!schema;
-    schemas.forEach((schema) => {
-      schema.tables.forEach((table) => {
+    let currentLength = prompts.join("\n").length;
+
+    for (const schema of schemas) {
+      for (const table of schema.tables) {
         const tableNameParts = [table.name];
         if (schema.name && !schemaScoped) {
           tableNameParts.unshift(schema.name);
@@ -42,9 +49,18 @@ export const databaseMetadataToText = (
             }
           })
           .join(", ");
-        prompts.push(`# ${tableNameParts.join(".")}(${columns})`);
-      });
-    });
+        const tableLine = `# ${tableNameParts.join(".")}(${columns})`;
+
+        // Check if adding this table would exceed the limit
+        if (currentLength + tableLine.length + 1 > MAX_SCHEMA_CHARS) {
+          prompts.push("# ... (schema truncated due to size)");
+          return prompts.join("\n");
+        }
+
+        prompts.push(tableLine);
+        currentLength += tableLine.length + 1; // +1 for newline
+      }
+    }
   }
   return prompts.join("\n");
 };

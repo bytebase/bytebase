@@ -1,11 +1,11 @@
 package standard
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -19,11 +19,17 @@ func TestStandardSplitSQL(t *testing.T) {
 }
 
 func generateOneMBInsert() string {
-	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	letterList := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]byte, 1024*1024)
 	for i := range b {
-		b[i] = letterList[rand.Intn(len(letterList))]
+		// Use crypto/rand for secure random generation
+		randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterList))))
+		if err != nil {
+			// Fallback to a simple pattern if crypto/rand fails
+			b[i] = letterList[i%26]
+		} else {
+			b[i] = letterList[randomIndex.Int64()]
+		}
 	}
 	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
 }
