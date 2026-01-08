@@ -133,7 +133,6 @@
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
-    - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
     - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
@@ -2542,9 +2541,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | total_instance_count | [int32](#int32) |  | The total number of database instances. |
 | enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
 | external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
-| announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
-| enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
-| restriction | [Restriction](#bytebase-v1-Restriction) |  |  |
 
 
 
@@ -2607,30 +2603,6 @@ Custom branding resources for the Bytebase instance.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | logo | [bytes](#bytes) |  | The branding logo. |
-
-
-
-
-
-
-<a name="bytebase-v1-Restriction"></a>
-
-### Restriction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| disallow_signup | [bool](#bool) |  | Whether self-service user signup is disabled. |
-| require_2fa | [bool](#bool) |  | Whether two-factor authentication is required for all users. |
-| disallow_password_signin | [bool](#bool) |  | Whether password-based signin is disabled (except for workspace admins). |
-| password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password complexity and restriction requirements. |
-| watermark | [bool](#bool) |  | Whether to display watermark on pages. |
-| database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
-| inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
-| domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
-| enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
-| maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 
 
 

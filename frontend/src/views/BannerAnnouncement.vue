@@ -19,14 +19,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { hasFeature, useActuatorV1Store } from "@/store";
+import { hasFeature, useSettingV1Store } from "@/store";
 import { Announcement_AlertLevel } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { urlfy } from "@/utils";
 
-const actuatorStore = useActuatorV1Store();
+const settingStore = useSettingV1Store();
 
-const announcement = computed(() => actuatorStore.serverInfo?.announcement);
+const announcement = computed(() => settingStore.workspaceProfile.announcement);
 
 const showBanner = computed(() => {
   return (

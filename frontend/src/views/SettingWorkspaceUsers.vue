@@ -94,13 +94,13 @@
             :permissions="['bb.groups.create']"
           >
             <NPopover
-              :disabled="slotProps.disabled || actuatorStore.restriction.domains.length > 0"
+              :disabled="slotProps.disabled || settingV1Store.workspaceProfile.domains.length > 0"
             >
               <template #trigger>
                 <NButton
                   :disabled="
                     slotProps.disabled ||
-                    actuatorStore.restriction.domains.length === 0 ||
+                    settingV1Store.workspaceProfile.domains.length === 0 ||
                     !hasUserGroupFeature
                   "
                   @click="handleCreateGroup"
@@ -233,6 +233,7 @@ import {
   featureToRef,
   useActuatorV1Store,
   useGroupStore,
+  useSettingV1Store,
   useSubscriptionV1Store,
   useUIStateStore,
   useUserStore,
@@ -281,6 +282,7 @@ const userStore = useUserStore();
 const groupStore = useGroupStore();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
+const settingV1Store = useSettingV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
 const userPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
 const groupPagedTable = ref<ComponentExposed<typeof PagedTable<Group>>>();

@@ -39,10 +39,10 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import { useCurrentTimestamp } from "@/composables/useCurrentTimestamp";
 import { useLastActivity } from "@/composables/useLastActivity";
-import { useActuatorV1Store, useAuthStore } from "@/store";
+import { useAuthStore, useSettingV1Store } from "@/store";
 
 const authStore = useAuthStore();
-const actuatorStore = useActuatorV1Store();
+const settingV1Store = useSettingV1Store();
 const timer = ref<NodeJS.Timeout | undefined>();
 
 // Show the modal 3min before the inactiveTimeout threshold.
@@ -53,7 +53,7 @@ const logout = () => {
 };
 
 const inactiveTimeoutInSeconds = computed(() =>
-  Number(actuatorStore.restriction.inactiveSessionTimeout?.seconds ?? 0)
+  Number(settingV1Store.workspaceProfile.inactiveSessionTimeout?.seconds ?? 0)
 );
 
 const { lastActivityTs } = useLastActivity();

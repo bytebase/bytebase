@@ -260,7 +260,6 @@ const doCreate = async (params: {
     color: environment.color,
     tags: environment.tags,
   });
-  await environmentV1Store.fetchEnvironments();
 
   // Only persist rollout policy if user customized it from the defaults
   // Otherwise, let the backend return defaults dynamically via GetPolicy API

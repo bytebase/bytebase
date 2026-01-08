@@ -164,9 +164,9 @@ const getInitialState = (): LocalState => {
   };
 
   // Access token duration
-  const accessTokenSeconds = settingV1Store.workspaceProfileSetting
-    ?.accessTokenDuration?.seconds
-    ? Number(settingV1Store.workspaceProfileSetting.accessTokenDuration.seconds)
+  const accessTokenSeconds = settingV1Store.workspaceProfile.accessTokenDuration
+    ?.seconds
+    ? Number(settingV1Store.workspaceProfile.accessTokenDuration.seconds)
     : undefined;
   if (accessTokenSeconds && accessTokenSeconds > 0) {
     if (accessTokenSeconds < 60 * 60) {
@@ -181,11 +181,9 @@ const getInitialState = (): LocalState => {
   }
 
   // Refresh token duration
-  const refreshTokenSeconds = settingV1Store.workspaceProfileSetting
-    ?.refreshTokenDuration?.seconds
-    ? Number(
-        settingV1Store.workspaceProfileSetting.refreshTokenDuration.seconds
-      )
+  const refreshTokenSeconds = settingV1Store.workspaceProfile
+    .refreshTokenDuration?.seconds
+    ? Number(settingV1Store.workspaceProfile.refreshTokenDuration.seconds)
     : undefined;
   if (refreshTokenSeconds && refreshTokenSeconds > 0) {
     if (refreshTokenSeconds < 60 * 60 * 24) {
@@ -201,7 +199,7 @@ const getInitialState = (): LocalState => {
 
   // Inactive timeout
   const inactiveTimeoutSeconds = Number(
-    settingV1Store.workspaceProfileSetting?.inactiveSessionTimeout?.seconds ?? 0
+    settingV1Store.workspaceProfile.inactiveSessionTimeout?.seconds ?? 0
   );
   if (inactiveTimeoutSeconds) {
     defaultState.inactiveTimeout =

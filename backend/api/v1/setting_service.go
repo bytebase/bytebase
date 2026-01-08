@@ -71,6 +71,10 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 		if setting.Name == storepb.SettingName_ENVIRONMENT {
 			continue
 		}
+		// workspace profile setting is controlled by bb.settings.getWorkspaceProfile permission, not expose in the ListSettings API.
+		if setting.Name == storepb.SettingName_WORKSPACE_PROFILE {
+			continue
+		}
 		settingMessage, err := convertToSettingMessage(setting, s.profile)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
@@ -98,9 +102,14 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
-	permission := iam.PermissionSettingsGet
-	if storeSettingName == storepb.SettingName_ENVIRONMENT {
+	var permission iam.Permission
+	switch storeSettingName {
+	case storepb.SettingName_ENVIRONMENT:
 		permission = iam.PermissionEnvironmentSettingsGet
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		permission = iam.PermissionWorkspaceProfileSettingsGet
+	default:
+		permission = iam.PermissionSettingsGet
 	}
 	if err := s.CheckSettingPermission(ctx, permission); err != nil {
 		return nil, err
@@ -146,9 +155,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
 
-	permission := iam.PermissionSettingsSet
-	if storeSettingName == storepb.SettingName_ENVIRONMENT {
+	var permission iam.Permission
+	switch storeSettingName {
+	case storepb.SettingName_ENVIRONMENT:
 		permission = iam.PermissionEnvironmentSettingsSet
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		permission = iam.PermissionWorkspaceProfileSettingsSet
+	default:
+		permission = iam.PermissionSettingsSet
 	}
 	if err := s.CheckSettingPermission(ctx, permission); err != nil {
 		return nil, err

@@ -27,6 +27,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { provideTabListContext } from "@/views/sql-editor/TabList/context";
@@ -61,7 +62,9 @@ const prepare = async () => {
     }),
   ]);
   await Promise.all([
-    useSettingV1Store().fetchSettingList(),
+    useSettingV1Store().getOrFetchSettingByName(
+      Setting_SettingName.WORKSPACE_PROFILE
+    ),
     useEnvironmentV1Store().fetchEnvironments(),
   ]);
   ready.value = true;

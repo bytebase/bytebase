@@ -156,7 +156,8 @@ const state = reactive<LocalState>({
 });
 
 // Initialize state with formerConfig
-watchEffect(() => {
+watchEffect(async () => {
+  await settingStore.getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION)
   const config = formerConfig.value;
   Object.assign(state.classification, {
     id: config.id,

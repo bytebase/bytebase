@@ -102,13 +102,13 @@ const convertFileToBase64 = (file: File) =>
 const settingV1Store = useSettingV1Store();
 
 const state = reactive<LocalState>({
-  logoUrl: settingV1Store.workspaceProfileSetting?.brandingLogo,
+  logoUrl: settingV1Store.workspaceProfile.brandingLogo,
   loading: false,
   showFeatureModal: false,
 });
 
 const allowSave = computed((): boolean => {
-  return state.logoUrl !== settingV1Store.workspaceProfileSetting?.brandingLogo;
+  return state.logoUrl !== settingV1Store.workspaceProfile.brandingLogo;
 });
 
 const hasBrandingFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_LOGO);
@@ -146,7 +146,6 @@ defineExpose({
   title: props.title,
   isDirty: allowSave,
   update: uploadLogo,
-  revert: () =>
-    (state.logoUrl = settingV1Store.workspaceProfileSetting?.brandingLogo),
+  revert: () => (state.logoUrl = settingV1Store.workspaceProfile.brandingLogo),
 });
 </script>

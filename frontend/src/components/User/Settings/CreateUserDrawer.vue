@@ -344,7 +344,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
   pushNotification,
-  useActuatorV1Store,
+  useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
@@ -602,7 +602,7 @@ watch(
 );
 
 const passwordRestrictionSetting = computed(
-  () => useActuatorV1Store().restriction.passwordRestriction
+  () => useSettingV1Store().workspaceProfile.passwordRestriction
 );
 
 const allowConfirm = computed(() => {

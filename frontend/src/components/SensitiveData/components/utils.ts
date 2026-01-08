@@ -5,30 +5,14 @@ import type { Factor, Operator } from "@/plugins/cel";
 import { CollectionOperatorList, EqualityOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  AlgorithmSchema,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { AlgorithmSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {
   const settingStore = useSettingV1Store();
-  const setting = settingStore.getSettingByName(
-    Setting_SettingName.DATA_CLASSIFICATION
-  );
-  if (!setting || !setting.value) {
-    return [];
-  }
-
-  const config =
-    setting.value.value.case === "dataClassification"
-      ? setting.value.value.value.configs
-      : [];
-  if (config.length === 0) {
-    return [];
-  }
-
-  return config[0].levels.map<ResourceSelectOption<unknown>>((level) => ({
+  return settingStore.classification[0].levels.map<
+    ResourceSelectOption<unknown>
+  >((level) => ({
     label: level.title,
     value: level.id,
   }));

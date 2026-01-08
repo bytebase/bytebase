@@ -12,7 +12,7 @@
   >
     <template #action>
       <NButton
-        v-if="hasWorkspacePermissionV2('bb.settings.set')"
+        v-if="hasWorkspacePermissionV2('bb.settings.setWorkspaceProfile')"
         type="primary"
         @click="configureSetting"
       >

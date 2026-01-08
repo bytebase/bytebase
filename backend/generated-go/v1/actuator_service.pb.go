@@ -10,7 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	_ "google.golang.org/protobuf/types/known/durationpb"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -285,132 +285,6 @@ func (*DeleteCacheRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5}
 }
 
-type Restriction struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Whether self-service user signup is disabled.
-	DisallowSignup bool `protobuf:"varint,1,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
-	// Whether two-factor authentication is required for all users.
-	Require_2Fa bool `protobuf:"varint,2,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
-	// Whether password-based signin is disabled (except for workspace admins).
-	DisallowPasswordSignin bool `protobuf:"varint,3,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
-	// Password complexity and restriction requirements.
-	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,4,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
-	// Whether to display watermark on pages.
-	Watermark bool `protobuf:"varint,5,opt,name=watermark,proto3" json:"watermark,omitempty"`
-	// The workspace database change mode.
-	DatabaseChangeMode DatabaseChangeMode `protobuf:"varint,6,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.v1.DatabaseChangeMode" json:"database_change_mode,omitempty"`
-	// The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-	InactiveSessionTimeout *durationpb.Duration `protobuf:"bytes,7,opt,name=inactive_session_timeout,json=inactiveSessionTimeout,proto3" json:"inactive_session_timeout,omitempty"`
-	// The workspace domain, e.g., bytebase.com.
-	Domains []string `protobuf:"bytes,8,rep,name=domains,proto3" json:"domains,omitempty"`
-	// Only user and group from the domains can be created and login.
-	EnforceIdentityDomain bool `protobuf:"varint,9,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
-	// The max duration for role expired.
-	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,10,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
-}
-
-func (x *Restriction) Reset() {
-	*x = Restriction{}
-	mi := &file_v1_actuator_service_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Restriction) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Restriction) ProtoMessage() {}
-
-func (x *Restriction) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Restriction.ProtoReflect.Descriptor instead.
-func (*Restriction) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *Restriction) GetDisallowSignup() bool {
-	if x != nil {
-		return x.DisallowSignup
-	}
-	return false
-}
-
-func (x *Restriction) GetRequire_2Fa() bool {
-	if x != nil {
-		return x.Require_2Fa
-	}
-	return false
-}
-
-func (x *Restriction) GetDisallowPasswordSignin() bool {
-	if x != nil {
-		return x.DisallowPasswordSignin
-	}
-	return false
-}
-
-func (x *Restriction) GetPasswordRestriction() *WorkspaceProfileSetting_PasswordRestriction {
-	if x != nil {
-		return x.PasswordRestriction
-	}
-	return nil
-}
-
-func (x *Restriction) GetWatermark() bool {
-	if x != nil {
-		return x.Watermark
-	}
-	return false
-}
-
-func (x *Restriction) GetDatabaseChangeMode() DatabaseChangeMode {
-	if x != nil {
-		return x.DatabaseChangeMode
-	}
-	return DatabaseChangeMode_DATABASE_CHANGE_MODE_UNSPECIFIED
-}
-
-func (x *Restriction) GetInactiveSessionTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.InactiveSessionTimeout
-	}
-	return nil
-}
-
-func (x *Restriction) GetDomains() []string {
-	if x != nil {
-		return x.Domains
-	}
-	return nil
-}
-
-func (x *Restriction) GetEnforceIdentityDomain() bool {
-	if x != nil {
-		return x.EnforceIdentityDomain
-	}
-	return false
-}
-
-func (x *Restriction) GetMaximumRoleExpiration() *durationpb.Duration {
-	if x != nil {
-		return x.MaximumRoleExpiration
-	}
-	return nil
-}
-
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 type ActuatorInfo struct {
@@ -453,18 +327,13 @@ type ActuatorInfo struct {
 	EnableSample bool `protobuf:"varint,22,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
 	// Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
 	ExternalUrlFromFlag bool `protobuf:"varint,23,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
-	// The setting of custom announcement
-	Announcement *Announcement `protobuf:"bytes,24,opt,name=announcement,proto3" json:"announcement,omitempty"`
-	// Whether to enable metric collection for the workspace.
-	EnableMetricCollection bool         `protobuf:"varint,25,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
-	Restriction            *Restriction `protobuf:"bytes,26,opt,name=restriction,proto3" json:"restriction,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
 	*x = ActuatorInfo{}
-	mi := &file_v1_actuator_service_proto_msgTypes[7]
+	mi := &file_v1_actuator_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -476,7 +345,7 @@ func (x *ActuatorInfo) String() string {
 func (*ActuatorInfo) ProtoMessage() {}
 
 func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[7]
+	mi := &file_v1_actuator_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +358,7 @@ func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ActuatorInfo) GetVersion() string {
@@ -625,27 +494,6 @@ func (x *ActuatorInfo) GetExternalUrlFromFlag() bool {
 	return false
 }
 
-func (x *ActuatorInfo) GetAnnouncement() *Announcement {
-	if x != nil {
-		return x.Announcement
-	}
-	return nil
-}
-
-func (x *ActuatorInfo) GetEnableMetricCollection() bool {
-	if x != nil {
-		return x.EnableMetricCollection
-	}
-	return false
-}
-
-func (x *ActuatorInfo) GetRestriction() *Restriction {
-	if x != nil {
-		return x.Restriction
-	}
-	return nil
-}
-
 // User statistics by type and state.
 type ActuatorInfo_StatUser struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -661,7 +509,7 @@ type ActuatorInfo_StatUser struct {
 
 func (x *ActuatorInfo_StatUser) Reset() {
 	*x = ActuatorInfo_StatUser{}
-	mi := &file_v1_actuator_service_proto_msgTypes[8]
+	mi := &file_v1_actuator_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -673,7 +521,7 @@ func (x *ActuatorInfo_StatUser) String() string {
 func (*ActuatorInfo_StatUser) ProtoMessage() {}
 
 func (x *ActuatorInfo_StatUser) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[8]
+	mi := &file_v1_actuator_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -686,7 +534,7 @@ func (x *ActuatorInfo_StatUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo_StatUser.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo_StatUser) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{7, 0}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{6, 0}
 }
 
 func (x *ActuatorInfo_StatUser) GetUserType() UserType {
@@ -725,20 +573,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x14\n" +
-	"\x12DeleteCacheRequest\"\x9b\x05\n" +
-	"\vRestriction\x12,\n" +
-	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12$\n" +
-	"\vrequire_2fa\x18\x02 \x01(\bB\x03\xe0A\x03R\n" +
-	"require2fa\x12=\n" +
-	"\x18disallow_password_signin\x18\x03 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
-	"\x14password_restriction\x18\x04 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12!\n" +
-	"\twatermark\x18\x05 \x01(\bB\x03\xe0A\x03R\twatermark\x12V\n" +
-	"\x14database_change_mode\x18\x06 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeB\x03\xe0A\x03R\x12databaseChangeMode\x12X\n" +
-	"\x18inactive_session_timeout\x18\a \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x03R\x16inactiveSessionTimeout\x12\x1d\n" +
-	"\adomains\x18\b \x03(\tB\x03\xe0A\x03R\adomains\x12;\n" +
-	"\x17enforce_identity_domain\x18\t \x01(\bB\x03\xe0A\x03R\x15enforceIdentityDomain\x12V\n" +
-	"\x17maximum_role_expiration\x18\n" +
-	" \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x03R\x15maximumRoleExpiration\"\x87\t\n" +
+	"\x12DeleteCacheRequest\"\xc3\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -760,10 +595,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x18activated_instance_count\x18\x14 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
 	"\x14total_instance_count\x18\x15 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
 	"\renable_sample\x18\x16 \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
-	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12B\n" +
-	"\fannouncement\x18\x18 \x01(\v2\x19.bytebase.v1.AnnouncementB\x03\xe0A\x03R\fannouncement\x12=\n" +
-	"\x18enable_metric_collection\x18\x19 \x01(\bB\x03\xe0A\x03R\x16enableMetricCollection\x12?\n" +
-	"\vrestriction\x18\x1a \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x1a~\n" +
+	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x1a~\n" +
 	"\bStatUser\x122\n" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -789,55 +621,44 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 	return file_v1_actuator_service_proto_rawDescData
 }
 
-var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_actuator_service_proto_goTypes = []any{
-	(*GetResourcePackageRequest)(nil),                   // 0: bytebase.v1.GetResourcePackageRequest
-	(*ResourcePackage)(nil),                             // 1: bytebase.v1.ResourcePackage
-	(*SetupSampleRequest)(nil),                          // 2: bytebase.v1.SetupSampleRequest
-	(*GetActuatorInfoRequest)(nil),                      // 3: bytebase.v1.GetActuatorInfoRequest
-	(*UpdateActuatorInfoRequest)(nil),                   // 4: bytebase.v1.UpdateActuatorInfoRequest
-	(*DeleteCacheRequest)(nil),                          // 5: bytebase.v1.DeleteCacheRequest
-	(*Restriction)(nil),                                 // 6: bytebase.v1.Restriction
-	(*ActuatorInfo)(nil),                                // 7: bytebase.v1.ActuatorInfo
-	(*ActuatorInfo_StatUser)(nil),                       // 8: bytebase.v1.ActuatorInfo.StatUser
-	(*fieldmaskpb.FieldMask)(nil),                       // 9: google.protobuf.FieldMask
-	(*WorkspaceProfileSetting_PasswordRestriction)(nil), // 10: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
-	(DatabaseChangeMode)(0),                             // 11: bytebase.v1.DatabaseChangeMode
-	(*durationpb.Duration)(nil),                         // 12: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                       // 13: google.protobuf.Timestamp
-	(*Announcement)(nil),                                // 14: bytebase.v1.Announcement
-	(UserType)(0),                                       // 15: bytebase.v1.UserType
-	(State)(0),                                          // 16: bytebase.v1.State
-	(*emptypb.Empty)(nil),                               // 17: google.protobuf.Empty
+	(*GetResourcePackageRequest)(nil), // 0: bytebase.v1.GetResourcePackageRequest
+	(*ResourcePackage)(nil),           // 1: bytebase.v1.ResourcePackage
+	(*SetupSampleRequest)(nil),        // 2: bytebase.v1.SetupSampleRequest
+	(*GetActuatorInfoRequest)(nil),    // 3: bytebase.v1.GetActuatorInfoRequest
+	(*UpdateActuatorInfoRequest)(nil), // 4: bytebase.v1.UpdateActuatorInfoRequest
+	(*DeleteCacheRequest)(nil),        // 5: bytebase.v1.DeleteCacheRequest
+	(*ActuatorInfo)(nil),              // 6: bytebase.v1.ActuatorInfo
+	(*ActuatorInfo_StatUser)(nil),     // 7: bytebase.v1.ActuatorInfo.StatUser
+	(*fieldmaskpb.FieldMask)(nil),     // 8: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),     // 9: google.protobuf.Timestamp
+	(UserType)(0),                     // 10: bytebase.v1.UserType
+	(State)(0),                        // 11: bytebase.v1.State
+	(*emptypb.Empty)(nil),             // 12: google.protobuf.Empty
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
-	7,  // 0: bytebase.v1.UpdateActuatorInfoRequest.actuator:type_name -> bytebase.v1.ActuatorInfo
-	9,  // 1: bytebase.v1.UpdateActuatorInfoRequest.update_mask:type_name -> google.protobuf.FieldMask
-	10, // 2: bytebase.v1.Restriction.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
-	11, // 3: bytebase.v1.Restriction.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
-	12, // 4: bytebase.v1.Restriction.inactive_session_timeout:type_name -> google.protobuf.Duration
-	12, // 5: bytebase.v1.Restriction.maximum_role_expiration:type_name -> google.protobuf.Duration
-	13, // 6: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
-	8,  // 7: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
-	14, // 8: bytebase.v1.ActuatorInfo.announcement:type_name -> bytebase.v1.Announcement
-	6,  // 9: bytebase.v1.ActuatorInfo.restriction:type_name -> bytebase.v1.Restriction
-	15, // 10: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
-	16, // 11: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State
-	3,  // 12: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	4,  // 13: bytebase.v1.ActuatorService.UpdateActuatorInfo:input_type -> bytebase.v1.UpdateActuatorInfoRequest
-	2,  // 14: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
-	5,  // 15: bytebase.v1.ActuatorService.DeleteCache:input_type -> bytebase.v1.DeleteCacheRequest
-	0,  // 16: bytebase.v1.ActuatorService.GetResourcePackage:input_type -> bytebase.v1.GetResourcePackageRequest
-	7,  // 17: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	7,  // 18: bytebase.v1.ActuatorService.UpdateActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	17, // 19: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
-	17, // 20: bytebase.v1.ActuatorService.DeleteCache:output_type -> google.protobuf.Empty
-	1,  // 21: bytebase.v1.ActuatorService.GetResourcePackage:output_type -> bytebase.v1.ResourcePackage
-	17, // [17:22] is the sub-list for method output_type
-	12, // [12:17] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	6,  // 0: bytebase.v1.UpdateActuatorInfoRequest.actuator:type_name -> bytebase.v1.ActuatorInfo
+	8,  // 1: bytebase.v1.UpdateActuatorInfoRequest.update_mask:type_name -> google.protobuf.FieldMask
+	9,  // 2: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
+	7,  // 3: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
+	10, // 4: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
+	11, // 5: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State
+	3,  // 6: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	4,  // 7: bytebase.v1.ActuatorService.UpdateActuatorInfo:input_type -> bytebase.v1.UpdateActuatorInfoRequest
+	2,  // 8: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
+	5,  // 9: bytebase.v1.ActuatorService.DeleteCache:input_type -> bytebase.v1.DeleteCacheRequest
+	0,  // 10: bytebase.v1.ActuatorService.GetResourcePackage:input_type -> bytebase.v1.GetResourcePackageRequest
+	6,  // 11: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	6,  // 12: bytebase.v1.ActuatorService.UpdateActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	12, // 13: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
+	12, // 14: bytebase.v1.ActuatorService.DeleteCache:output_type -> google.protobuf.Empty
+	1,  // 15: bytebase.v1.ActuatorService.GetResourcePackage:output_type -> bytebase.v1.ResourcePackage
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_actuator_service_proto_init() }
@@ -855,7 +676,7 @@ func file_v1_actuator_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_actuator_service_proto_rawDesc), len(file_v1_actuator_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

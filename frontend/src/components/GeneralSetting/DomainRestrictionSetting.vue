@@ -70,10 +70,10 @@ const initialState = computed((): LocalState => {
     domains: [],
     enableRestriction: false,
   };
-  if (Array.isArray(settingV1Store.workspaceProfileSetting?.domains)) {
-    defaultState.domains = [...settingV1Store.workspaceProfileSetting?.domains];
+  if (Array.isArray(settingV1Store.workspaceProfile.domains)) {
+    defaultState.domains = [...settingV1Store.workspaceProfile.domains];
     defaultState.enableRestriction =
-      settingV1Store.workspaceProfileSetting?.enforceIdentityDomain || false;
+      settingV1Store.workspaceProfile.enforceIdentityDomain || false;
   }
   return defaultState;
 });

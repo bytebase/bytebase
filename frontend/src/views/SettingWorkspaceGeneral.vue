@@ -3,43 +3,43 @@
     <GeneralSetting
       ref="generalSettingRef"
       :title="$t('common.general')"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
     <BrandingSetting
       ref="brandingSettingRef"
       :title="$t('settings.general.workspace.branding')"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
     <AccountSetting
       ref="accountSettingRef"
       :title="$t('settings.general.workspace.account')"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
     <SecuritySetting
       ref="securitySettingRef"
       :title="$t('settings.general.workspace.security')"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
     <AIAugmentationSetting
       ref="aiAugmentationSettingRef"
       :title="$t('settings.general.workspace.ai-assistant.self')"
-      :allow-edit="allowEdit"
+      :allow-edit="hasSettingPermission"
     />
     <AnnouncementSetting
       ref="announcementSettingRef"
       :title="$t('settings.general.workspace.announcement.self')"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
     <ProductImprovementSetting
       ref="productImprovementSettingRef"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
     <AuditLogStdoutSetting
       ref="auditLogStdoutSettingRef"
-      :allow-edit="allowEdit"
+      :allow-edit="hasWorkspaceProfilePermission"
     />
 
-    <div v-if="allowEdit && isDirty" class="sticky bottom-0 z-10">
+    <div v-if="isDirty" class="sticky bottom-0 z-10">
       <div
         class="flex justify-between w-full py-4 border-t border-block-border bg-white"
       >
@@ -72,10 +72,7 @@ import {
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { pushNotification } from "@/store";
-
-defineProps<{
-  allowEdit: boolean;
-}>();
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const route = useRoute();
 const { t } = useI18n();
@@ -91,6 +88,13 @@ const productImprovementSettingRef =
   ref<InstanceType<typeof ProductImprovementSetting>>();
 const auditLogStdoutSettingRef =
   ref<InstanceType<typeof AuditLogStdoutSetting>>();
+
+const hasWorkspaceProfilePermission = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile")
+);
+const hasSettingPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.set")
+);
 
 const settingRefList = computed(() => {
   return [

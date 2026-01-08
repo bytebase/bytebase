@@ -40,6 +40,7 @@ import {
   featureToRef,
   useActuatorV1Store,
   useCurrentUserV1,
+  useSettingV1Store,
 } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -50,6 +51,7 @@ const PADDING = 6;
 
 const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
+const settingV1Store = useSettingV1Store();
 const version = computed(
   () => actuatorStore.version + "-" + actuatorStore.gitCommitBE.substring(0, 7)
 );
@@ -60,7 +62,7 @@ const lines = computed(() => {
   const uid = extractUserId(user.name);
   if (user.name === UNKNOWN_USER_NAME) return [];
   if (!hasWatermarkFeature.value) return [];
-  if (!actuatorStore.restriction.watermark) return [];
+  if (!settingV1Store.workspaceProfile.watermark) return [];
 
   const lines: string[] = [];
   lines.push(`${user.title} (${uid})`);

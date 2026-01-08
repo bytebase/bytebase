@@ -127,7 +127,7 @@ const hasAnnouncementFeature = featureToRef(
 
 const rawAnnouncement = computed(
   () =>
-    settingV1Store.workspaceProfileSetting?.announcement ??
+    settingV1Store.workspaceProfile.announcement ??
     create(AnnouncementSchema, {
       level: Announcement_AlertLevel.INFO,
     })
