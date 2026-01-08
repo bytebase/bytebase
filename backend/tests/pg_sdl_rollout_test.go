@@ -377,6 +377,28 @@ func (stc *sdlTestContext) verifyViewExists(t *testing.T, database *v1pb.Databas
 	return false
 }
 
+// verifyMaterializedViewExists checks if a materialized view exists in the database schema.
+func (stc *sdlTestContext) verifyMaterializedViewExists(t *testing.T, database *v1pb.Database, mvName string) bool {
+	t.Helper()
+	a := require.New(t)
+
+	metadata, err := stc.ctl.databaseServiceClient.GetDatabaseMetadata(stc.ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
+		Name: database.Name + "/metadata",
+	}))
+	a.NoError(err)
+
+	for _, schema := range metadata.Msg.Schemas {
+		if schema.Name == "public" {
+			for _, mv := range schema.MaterializedViews {
+				if mv.Name == mvName {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // verifyFunctionExists checks if a function exists in the database schema.
 func (stc *sdlTestContext) verifyFunctionExists(t *testing.T, database *v1pb.Database, functionName string) bool {
 	t.Helper()
@@ -1946,6 +1968,205 @@ CREATE TABLE "public"."namespaces" (
 				a.True(stc.verifyForeignKeyExists(t, database, "public", "projects", "fk_projects_namespace"))
 				a.True(stc.verifyForeignKeyExists(t, database, "public", "namespaces", "fk_namespaces_project"))
 				a.True(stc.verifyForeignKeyExists(t, database, "public", "namespaces", "fk_namespaces_parent"))
+			})
+
+			t.Run("CyclicFKWithDependentViews", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_cycle_views")
+
+				// Create tables with cyclic FK and views that depend on each other
+				// The views are intentionally ordered wrong (v2 before v1)
+				// to test that topological sorting works correctly even when table FK cycle exists
+				sdl := `CREATE TABLE "public"."namespaces" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "project_id" bigint,
+    CONSTRAINT "namespaces_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_namespaces_project" FOREIGN KEY ("project_id") REFERENCES "public"."projects" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."projects" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "namespace_id" bigint NOT NULL,
+    CONSTRAINT "projects_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_projects_namespace" FOREIGN KEY ("namespace_id") REFERENCES "public"."namespaces" ("id") ON DELETE CASCADE
+);
+
+CREATE VIEW "public"."v2_project_summary" AS
+SELECT p.id, p.name, n.name as namespace_name
+FROM "public"."v1_active_projects" p
+JOIN "public"."namespaces" n ON p.namespace_id = n.id;
+
+CREATE VIEW "public"."v1_active_projects" AS
+SELECT id, name, namespace_id FROM "public"."projects" WHERE name IS NOT NULL;`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "namespaces"))
+				a.True(stc.verifyTableExists(t, database, "public", "projects"))
+				a.True(stc.verifyViewExists(t, database, "v1_active_projects"))
+				a.True(stc.verifyViewExists(t, database, "v2_project_summary"))
+				// Verify FK constraints were created
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "namespaces", "fk_namespaces_project"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "projects", "fk_projects_namespace"))
+			})
+
+			t.Run("CyclicFKWithMaterializedViewChain", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_cycle_mv")
+
+				// Create tables with cyclic FK and materialized views with dependencies
+				// mv2 depends on mv1, and both depend on tables with FK cycle
+				sdl := `CREATE TABLE "public"."orders" (
+    "id" bigserial,
+    "customer_id" bigint,
+    "total" numeric(10, 2),
+    CONSTRAINT "orders_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_orders_customer" FOREIGN KEY ("customer_id") REFERENCES "public"."customers" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."customers" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "last_order_id" bigint,
+    CONSTRAINT "customers_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_customers_last_order" FOREIGN KEY ("last_order_id") REFERENCES "public"."orders" ("id") ON DELETE SET NULL
+);
+
+CREATE MATERIALIZED VIEW "public"."mv2_customer_order_summary" AS
+SELECT c.id, c.name, o.order_count, o.total_amount
+FROM "public"."mv1_order_stats" o
+JOIN "public"."customers" c ON o.customer_id = c.id;
+
+CREATE MATERIALIZED VIEW "public"."mv1_order_stats" AS
+SELECT customer_id, COUNT(*) as order_count, SUM(total) as total_amount
+FROM "public"."orders"
+GROUP BY customer_id;`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "orders"))
+				a.True(stc.verifyTableExists(t, database, "public", "customers"))
+				a.True(stc.verifyMaterializedViewExists(t, database, "mv1_order_stats"))
+				a.True(stc.verifyMaterializedViewExists(t, database, "mv2_customer_order_summary"))
+				// Verify FK constraints were created
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "orders", "fk_orders_customer"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "customers", "fk_customers_last_order"))
+			})
+
+			t.Run("CyclicFKWithLongViewChain", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_cycle_view_chain")
+
+				// Create tables with cyclic FK and a long chain of views: v4 -> v3 -> v2 -> v1
+				// Views are intentionally defined in reverse order to test topological sorting
+				sdl := `CREATE TABLE "public"."departments" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "manager_id" bigint,
+    CONSTRAINT "departments_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_dept_manager" FOREIGN KEY ("manager_id") REFERENCES "public"."employees" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."employees" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "department_id" bigint,
+    "salary" numeric(10, 2),
+    CONSTRAINT "employees_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_emp_dept" FOREIGN KEY ("department_id") REFERENCES "public"."departments" ("id") ON DELETE SET NULL
+);
+
+CREATE VIEW "public"."v4_top_departments" AS
+SELECT department_name, avg_salary FROM "public"."v3_dept_summary" WHERE avg_salary > 50000;
+
+CREATE VIEW "public"."v3_dept_summary" AS
+SELECT department_name, AVG(salary) as avg_salary FROM "public"."v2_employee_details" GROUP BY department_name;
+
+CREATE VIEW "public"."v2_employee_details" AS
+SELECT e.id, e.name, e.salary, d.name as department_name
+FROM "public"."v1_active_employees" e
+JOIN "public"."departments" d ON e.department_id = d.id;
+
+CREATE VIEW "public"."v1_active_employees" AS
+SELECT id, name, department_id, salary FROM "public"."employees" WHERE salary > 0;`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "departments"))
+				a.True(stc.verifyTableExists(t, database, "public", "employees"))
+				a.True(stc.verifyViewExists(t, database, "v1_active_employees"))
+				a.True(stc.verifyViewExists(t, database, "v2_employee_details"))
+				a.True(stc.verifyViewExists(t, database, "v3_dept_summary"))
+				a.True(stc.verifyViewExists(t, database, "v4_top_departments"))
+				// Verify FK constraints were created
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "departments", "fk_dept_manager"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "employees", "fk_emp_dept"))
+			})
+
+			t.Run("CyclicFKWithMixedViewsAndMaterializedViews", func(t *testing.T) {
+				t.Parallel()
+				a := require.New(t)
+				stc := setupSDLTestContext(t)
+				defer stc.cleanup()
+
+				database := stc.createTestPgDatabase(t, "fk_cycle_mixed")
+
+				// Create tables with cyclic FK and mixed views/materialized views with dependencies
+				// mv depends on view, view depends on another view
+				sdl := `CREATE TABLE "public"."products" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "category_id" bigint,
+    "price" numeric(10, 2),
+    CONSTRAINT "products_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_prod_cat" FOREIGN KEY ("category_id") REFERENCES "public"."categories" ("id") ON DELETE SET NULL
+);
+
+CREATE TABLE "public"."categories" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "featured_product_id" bigint,
+    CONSTRAINT "categories_pkey" PRIMARY KEY (id),
+    CONSTRAINT "fk_cat_featured" FOREIGN KEY ("featured_product_id") REFERENCES "public"."products" ("id") ON DELETE SET NULL
+);
+
+CREATE MATERIALIZED VIEW "public"."mv_category_stats" AS
+SELECT category_name, product_count, avg_price
+FROM "public"."v2_category_products";
+
+CREATE VIEW "public"."v2_category_products" AS
+SELECT c.name as category_name, COUNT(*) as product_count, AVG(p.price) as avg_price
+FROM "public"."v1_available_products" p
+JOIN "public"."categories" c ON p.category_id = c.id
+GROUP BY c.name;
+
+CREATE VIEW "public"."v1_available_products" AS
+SELECT id, name, category_id, price FROM "public"."products" WHERE price > 0;`
+
+				err := stc.executeSDLRollout(t, database, sdl)
+				a.NoError(err)
+				a.True(stc.verifyTableExists(t, database, "public", "products"))
+				a.True(stc.verifyTableExists(t, database, "public", "categories"))
+				a.True(stc.verifyViewExists(t, database, "v1_available_products"))
+				a.True(stc.verifyViewExists(t, database, "v2_category_products"))
+				a.True(stc.verifyMaterializedViewExists(t, database, "mv_category_stats"))
+				// Verify FK constraints were created
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "products", "fk_prod_cat"))
+				a.True(stc.verifyForeignKeyExists(t, database, "public", "categories", "fk_cat_featured"))
 			})
 		})
 

@@ -754,12 +754,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		}
 	}
 
-	// Build dependency graph for all objects being created or altered
-	graph := base.NewGraph()
-
 	// Build temporary metadata for AST-only mode dependency extraction
-	// This metadata contains tables and views that are being created,
-	// allowing GetQuerySpan to find them when extracting view dependencies
 	tempMetadata := buildTempMetadataForCreate(diff)
 
 	// Maps to store different object types
@@ -768,610 +763,278 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 	tableMap := make(map[string]*schema.TableDiff)
 	functionMap := make(map[string]*schema.FunctionDiff)
 
-	// Track all object IDs for dependency resolution
-	allObjects := make(map[string]bool)
-
-	// Add tables to graph (both CREATE and ALTER for column additions)
+	// Build maps for all objects
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionCreate || tableDiff.Action == schema.MetadataDiffActionAlter {
 			tableID := getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)
-			graph.AddNode(tableID)
 			tableMap[tableID] = tableDiff
-			allObjects[tableID] = true
 		}
 	}
-
-	// Add views to graph
 	for _, viewDiff := range diff.ViewChanges {
 		if viewDiff.Action == schema.MetadataDiffActionCreate || viewDiff.Action == schema.MetadataDiffActionAlter {
 			viewID := getMigrationObjectID(viewDiff.SchemaName, viewDiff.ViewName)
-			graph.AddNode(viewID)
 			viewMap[viewID] = viewDiff
-			allObjects[viewID] = true
 		}
 	}
-
-	// Add materialized views to graph
 	for _, mvDiff := range diff.MaterializedViewChanges {
 		if mvDiff.Action == schema.MetadataDiffActionCreate || mvDiff.Action == schema.MetadataDiffActionAlter {
 			mvID := getMigrationObjectID(mvDiff.SchemaName, mvDiff.MaterializedViewName)
-			graph.AddNode(mvID)
 			materializedViewMap[mvID] = mvDiff
-			allObjects[mvID] = true
 		}
 	}
-
-	// Add functions to graph
 	for _, funcDiff := range diff.FunctionChanges {
 		if funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter {
 			funcID := getMigrationObjectID(funcDiff.SchemaName, funcDiff.FunctionName)
-			graph.AddNode(funcID)
 			functionMap[funcID] = funcDiff
-			allObjects[funcID] = true
 		}
 	}
 
-	// Add triggers to graph (only for CREATE table operations)
-	// Triggers on ALTER tables are handled separately via generateAlterTableTriggers
-	triggerMap := make(map[string]*schema.TriggerDiff)
-	for _, tableDiff := range diff.TableChanges {
-		// Only add triggers for CREATE table operations
-		// ALTER table triggers are handled in generateAlterTableTriggers to avoid duplicates
-		if tableDiff.Action == schema.MetadataDiffActionCreate {
-			for _, triggerDiff := range tableDiff.TriggerChanges {
-				if triggerDiff.Action == schema.MetadataDiffActionCreate {
-					triggerID := getTriggerObjectID(triggerDiff)
-					graph.AddNode(triggerID)
-					triggerMap[triggerID] = triggerDiff
-					allObjects[triggerID] = true
-				}
-			}
-		}
-	}
-
-	// Add dependency edges
-	// For tables with foreign keys depending on other tables (only for CREATE operations)
-	// Note: ALTER FK additions are handled after all tables are created, so they don't need topological sorting
+	// ========== Step 1: Detect FK cycle in CREATE tables ==========
+	tableGraph := base.NewGraph()
 	for tableID, tableDiff := range tableMap {
 		if tableDiff.Action == schema.MetadataDiffActionCreate {
-			// For CREATE: extract all FKs from the table
+			tableGraph.AddNode(tableID)
+			// Add FK edges
 			var foreignKeys []*storepb.ForeignKeyMetadata
-
 			if tableDiff.NewTable != nil {
-				// Metadata mode: use ForeignKeys from metadata
 				foreignKeys = tableDiff.NewTable.ForeignKeys
 			} else if tableDiff.NewASTNode != nil {
-				// AST-only mode: extract foreign keys from AST node
 				foreignKeys = extractForeignKeysFromAST(tableDiff.NewASTNode, tableDiff.SchemaName)
 			}
-
 			for _, fk := range foreignKeys {
 				depID := getMigrationObjectID(fk.ReferencedSchema, fk.ReferencedTable)
 				if depID != tableID {
-					// Edge from dependency to dependent (referenced table to table with FK)
-					graph.AddEdge(depID, tableID)
+					tableGraph.AddEdge(depID, tableID)
 				}
 			}
 		}
 	}
+	tableOrderedList, tableErr := tableGraph.TopologicalSort()
+	hasFKCycle := tableErr != nil
 
-	// For views depending on tables/views
-	for viewID, viewDiff := range viewMap {
-		var dependencies []*storepb.DependencyColumn
-
-		if viewDiff.NewView != nil {
-			// Use metadata if available
-			dependencies = viewDiff.NewView.DependencyColumns
-		} else if viewDiff.NewASTNode != nil {
-			// Extract dependencies from AST node for AST-only mode
-			// Use the temporary metadata containing objects being created
-			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, tempMetadata)
-		}
-
-		for _, dep := range dependencies {
-			depID := getMigrationObjectID(dep.Schema, dep.Table)
-			if allObjects[depID] {
-				// Edge from dependency to dependent (table/view to view)
-				graph.AddEdge(depID, viewID)
-			}
-		}
-	}
-
-	// For materialized views depending on tables/views
-	for mvID, mvDiff := range materializedViewMap {
-		var dependencies []*storepb.DependencyColumn
-
-		if mvDiff.NewMaterializedView != nil {
-			// Use metadata if available
-			dependencies = mvDiff.NewMaterializedView.DependencyColumns
-		} else if mvDiff.NewASTNode != nil {
-			// Extract dependencies from AST node for AST-only mode
-			// Use the temporary metadata containing objects being created
-			dependencies = getMaterializedViewDependenciesFromAST(mvDiff.NewASTNode, mvDiff.SchemaName, tempMetadata)
-		}
-
-		for _, dep := range dependencies {
-			depID := getMigrationObjectID(dep.Schema, dep.Table)
-			if allObjects[depID] {
-				// Edge from dependency to dependent (table/view to materialized view)
-				graph.AddEdge(depID, mvID)
-			}
-		}
-	}
-
-	// For functions depending on tables
-	for funcID, funcDiff := range functionMap {
-		if funcDiff.NewFunction != nil {
-			for _, dep := range funcDiff.NewFunction.DependencyTables {
-				depID := getMigrationObjectID(dep.Schema, dep.Table)
-				// Edge from table to function
-				graph.AddEdge(depID, funcID)
-			}
-		}
-	}
-
-	// For triggers depending on tables and functions
-	for triggerID, triggerDiff := range triggerMap {
-		// Trigger depends on table
-		tableID := getMigrationObjectID(triggerDiff.SchemaName, triggerDiff.TableName)
-		if allObjects[tableID] {
-			graph.AddEdge(tableID, triggerID)
-		}
-
-		// Trigger depends on trigger function
-		if triggerDiff.NewASTNode != nil {
-			functionName := extractTriggerFunctionName(triggerDiff.NewASTNode)
-			if functionName != "" {
-				parts := strings.Split(functionName, ".")
-				var functionSchemaName, functionNameOnly string
-				if len(parts) == 2 {
-					functionSchemaName, functionNameOnly = parts[0], parts[1]
-				} else {
-					functionSchemaName, functionNameOnly = triggerDiff.SchemaName, functionName
-				}
-				functionID := getMigrationObjectID(functionSchemaName, functionNameOnly)
-				if allObjects[functionID] {
-					graph.AddEdge(functionID, triggerID)
-				}
-			}
-		}
-	}
-
-	// Get topological order
-	orderedList, err := graph.TopologicalSort()
-	if err != nil {
-		// If there's a cycle, fall back to a safe order
-		// Create tables first (without foreign keys)
+	// ========== Step 2: Create tables ==========
+	if hasFKCycle {
+		// Has cycle: create tables without FK
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate {
-				// Support both metadata mode and AST-only mode
-				if tableDiff.NewTable != nil {
-					// Metadata mode: use generateCreateTable
-					createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-					if err != nil {
-						return err
-					}
-					_, _ = buf.WriteString(createTableSQL)
-					if createTableSQL != "" {
-						_, _ = buf.WriteString("\n")
-					}
-
-					// Add table and column comments for newly created tables
-					if tableDiff.NewTable.Comment != "" {
-						writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
-					}
-					for _, col := range tableDiff.NewTable.Columns {
-						if col.Comment != "" {
-							writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
-						}
-					}
-				} else if tableDiff.NewASTNode != nil {
-					// AST-only mode: extract SQL from AST node WITHOUT foreign keys
-					// FK constraints will be added separately after all tables are created
-					if err := writeMigrationTableFromASTWithoutFK(buf, tableDiff.NewASTNode); err != nil {
-						return err
-					}
-				} else {
-					return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
+				if err := writeCreateTableDiff(buf, tableDiff, false /* excludeFK */); err != nil {
+					return err
 				}
-
-				// Add indexes for newly created tables immediately after table creation
-				// This is necessary because later tables might have FK that reference indexed columns
-				for _, indexDiff := range tableDiff.IndexChanges {
-					if indexDiff.Action == schema.MetadataDiffActionCreate {
-						if indexDiff.NewIndex != nil {
-							// Metadata mode: use index metadata
-							if indexDiff.NewIndex.IsConstraint {
-								// Skip constraint-based indexes (primary key, unique, exclude)
-								// They are already included in CREATE TABLE statement
-								continue
-							}
-							writeMigrationIndex(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-						} else if indexDiff.NewASTNode != nil {
-							// AST-only mode: extract from AST node
-							if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
-								if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
-									// If AST extraction fails, log error but continue (non-fatal)
-									_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
-								}
-							}
-						}
-					}
-				}
+				writeTableIndexesForCreate(buf, tableDiff)
 			}
 		}
-
-		// Handle column additions for ALTER operations (only columns in topological order)
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionAlter {
-				for _, colDiff := range tableDiff.ColumnChanges {
-					if colDiff.Action == schema.MetadataDiffActionCreate {
-						writeAddColumn(buf, tableDiff.SchemaName, tableDiff.TableName, colDiff.NewColumn)
-					}
+	} else {
+		// No cycle: create tables with FK in topological order
+		for _, tableID := range tableOrderedList {
+			tableDiff := tableMap[tableID]
+			if tableDiff.Action == schema.MetadataDiffActionCreate {
+				if err := writeCreateTableDiff(buf, tableDiff, true /* includeFK */); err != nil {
+					return err
 				}
+				writeTableIndexesForCreate(buf, tableDiff)
 			}
 		}
+	}
 
-		// Create views
+	// ========== Step 3: Handle ALTER table (without FK) ==========
+	for _, tableDiff := range tableMap {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			alterTableSQL, err := generateAlterTableWithOptions(tableDiff, true /* includeColumnAdditions */)
+			if err != nil {
+				return err
+			}
+			_, _ = buf.WriteString(alterTableSQL)
+			if alterTableSQL != "" {
+				_, _ = buf.WriteString("\n")
+			}
+		}
+	}
+
+	// ========== Step 4: Build view/mv/function dependency graph ==========
+	nonTableGraph := base.NewGraph()
+	nonTableObjects := make(map[string]bool)
+	for viewID := range viewMap {
+		nonTableGraph.AddNode(viewID)
+		nonTableObjects[viewID] = true
+	}
+	for mvID := range materializedViewMap {
+		nonTableGraph.AddNode(mvID)
+		nonTableObjects[mvID] = true
+	}
+	for funcID := range functionMap {
+		nonTableGraph.AddNode(funcID)
+		nonTableObjects[funcID] = true
+	}
+
+	// Add edges between non-table objects
+	for viewID, viewDiff := range viewMap {
+		var dependencies []*storepb.DependencyColumn
+		if viewDiff.NewView != nil {
+			dependencies = viewDiff.NewView.DependencyColumns
+		} else if viewDiff.NewASTNode != nil {
+			dependencies = getViewDependenciesFromAST(viewDiff.NewASTNode, viewDiff.SchemaName, tempMetadata)
+		}
+		for _, dep := range dependencies {
+			depID := getMigrationObjectID(dep.Schema, dep.Table)
+			if nonTableObjects[depID] {
+				nonTableGraph.AddEdge(depID, viewID)
+			}
+		}
+	}
+	for mvID, mvDiff := range materializedViewMap {
+		var dependencies []*storepb.DependencyColumn
+		if mvDiff.NewMaterializedView != nil {
+			dependencies = mvDiff.NewMaterializedView.DependencyColumns
+		} else if mvDiff.NewASTNode != nil {
+			dependencies = getMaterializedViewDependenciesFromAST(mvDiff.NewASTNode, mvDiff.SchemaName, tempMetadata)
+		}
+		for _, dep := range dependencies {
+			depID := getMigrationObjectID(dep.Schema, dep.Table)
+			if nonTableObjects[depID] {
+				nonTableGraph.AddEdge(depID, mvID)
+			}
+		}
+	}
+
+	// ========== Step 5: Create views/mvs/functions in topological order ==========
+	nonTableOrderedList, nonTableErr := nonTableGraph.TopologicalSort()
+	if nonTableErr != nil {
+		// Fallback: create in map iteration order
 		for _, viewDiff := range viewMap {
-			switch viewDiff.Action {
-			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
-				// Support AST-only mode: if metadata is nil but AST node exists, use AST
-				if viewDiff.NewView != nil {
-					if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-						return err
-					}
-				} else if viewDiff.NewASTNode != nil {
-					if err := writeMigrationViewFromAST(buf, viewDiff.NewASTNode); err != nil {
-						return err
-					}
-				} else {
-					return errors.Errorf("view diff for %s.%s has neither metadata nor AST node", viewDiff.SchemaName, viewDiff.ViewName)
-				}
-			default:
-				// No action needed
-			}
-			// Add view comment for newly created views
-			if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
-				writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+			if err := writeViewDiff(buf, viewDiff); err != nil {
+				return err
 			}
 		}
-
-		// Create materialized views
 		for _, mvDiff := range materializedViewMap {
-			switch mvDiff.Action {
-			case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
-				// Support AST-only mode: if metadata is nil but AST node exists, use AST
-				if mvDiff.NewMaterializedView != nil {
-					if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-						return err
-					}
-				} else if mvDiff.NewASTNode != nil {
-					if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
-						return err
-					}
-				} else {
-					return errors.Errorf("materialized view diff for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
-				}
-			default:
-				// No action needed
-			}
-			// Add materialized view comment for newly created materialized views
-			if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
-				writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
+			if err := writeMaterializedViewDiff(buf, mvDiff); err != nil {
+				return err
 			}
 		}
-
-		// Create functions
 		for _, funcDiff := range functionMap {
 			if err := writeFunctionDiff(buf, funcDiff); err != nil {
 				return err
 			}
-			// Add function comment for newly created functions
 			if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
 				writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 			}
 		}
-
-		// Set sequence ownership after all tables are created
-		for _, seqDiff := range diff.SequenceChanges {
-			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence != nil && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
-				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
+	} else {
+		for _, objID := range nonTableOrderedList {
+			if viewDiff, ok := viewMap[objID]; ok {
+				if err := writeViewDiff(buf, viewDiff); err != nil {
 					return err
 				}
-			}
-		}
-
-		// Add foreign keys (only for CREATE table operations)
-		// First handle metadata mode
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
-				for _, fk := range tableDiff.NewTable.ForeignKeys {
-					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
-						return err
-					}
-				}
-			}
-		}
-		// Then handle FK constraints that were excluded from CREATE TABLE
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewASTNode != nil {
-				if len(tableDiff.ForeignKeyChanges) > 0 {
-					// FKs are in ForeignKeyChanges (metadata mode or mixed mode)
-					for _, fkDiff := range tableDiff.ForeignKeyChanges {
-						if fkDiff.Action == schema.MetadataDiffActionCreate {
-							if fkDiff.NewForeignKey != nil {
-								// Metadata mode FK
-								if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
-									return err
-								}
-							} else if fkDiff.NewASTNode != nil {
-								// AST mode FK
-								if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
-									if err := writeAddForeignKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
-										// Log error but continue - this is a best-effort operation
-										_, _ = fmt.Fprintf(buf, "-- Error adding foreign key constraint: %v\n", err)
-									}
-								}
-							}
-						}
-					}
-				} else {
-					// Pure AST mode - FKs are embedded in the AST node itself
-					// Extract FK constraints directly from the CREATE TABLE AST
-					writeAllForeignKeysFromTableAST(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewASTNode)
-				}
-			}
-		}
-	} else {
-		// Follow topological order completely - create objects in dependency order
-		for _, objID := range orderedList {
-			if tableDiff, ok := tableMap[objID]; ok {
-				switch tableDiff.Action {
-				case schema.MetadataDiffActionCreate:
-					// Support both metadata mode and AST-only mode
-					if tableDiff.NewTable != nil {
-						// Metadata mode: use generateCreateTable
-						createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, false)
-						if err != nil {
-							return err
-						}
-						_, _ = buf.WriteString(createTableSQL)
-						if createTableSQL != "" {
-							_, _ = buf.WriteString("\n")
-						}
-
-						// Add table and column comments for newly created tables
-						if tableDiff.NewTable.Comment != "" {
-							writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
-						}
-						for _, col := range tableDiff.NewTable.Columns {
-							if col.Comment != "" {
-								writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
-							}
-						}
-					} else if tableDiff.NewASTNode != nil {
-						// AST-only mode: extract SQL from AST node
-						if err := writeMigrationTableFromAST(buf, tableDiff.NewASTNode); err != nil {
-							return err
-						}
-					} else {
-						return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
-					}
-
-					// Add indexes for newly created tables immediately after table creation
-					// This is necessary because later tables might have FK that reference indexed columns
-					for _, indexDiff := range tableDiff.IndexChanges {
-						if indexDiff.Action == schema.MetadataDiffActionCreate {
-							if indexDiff.NewIndex != nil {
-								// Metadata mode: use index metadata
-								if indexDiff.NewIndex.IsConstraint {
-									// Skip constraint-based indexes (primary key, unique, exclude)
-									// They are already included in CREATE TABLE statement
-									continue
-								}
-								writeMigrationIndex(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
-							} else if indexDiff.NewASTNode != nil {
-								// AST-only mode: extract from AST node
-								if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
-									if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
-										// If AST extraction fails, log error but continue (non-fatal)
-										_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
-									}
-								}
-							}
-						}
-					}
-				case schema.MetadataDiffActionAlter:
-					// Handle ALTER table operations with generateAlterTableWithOptions
-					// Skip foreign keys in the first pass to avoid dependency issues
-					alterTableSQL, err := generateAlterTableWithOptions(tableDiff, true)
-					if err != nil {
-						return err
-					}
-					_, _ = buf.WriteString(alterTableSQL)
-					if alterTableSQL != "" {
-						_, _ = buf.WriteString("\n")
-					}
-				default:
-					// No action needed for other operations
-				}
-			} else if viewDiff, ok := viewMap[objID]; ok {
-				switch viewDiff.Action {
-				case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
-					// Support AST-only mode: if metadata is nil but AST node exists, use AST
-					if viewDiff.NewView != nil {
-						if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
-							return err
-						}
-					} else if viewDiff.NewASTNode != nil {
-						if err := writeMigrationViewFromAST(buf, viewDiff.NewASTNode); err != nil {
-							return err
-						}
-					} else {
-						return errors.Errorf("view diff for %s.%s has neither metadata nor AST node", viewDiff.SchemaName, viewDiff.ViewName)
-					}
-				default:
-					// No action needed for other operations
-				}
-				// Add view comment for newly created or altered views
-				if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
-					writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
-				}
 			} else if mvDiff, ok := materializedViewMap[objID]; ok {
-				switch mvDiff.Action {
-				case schema.MetadataDiffActionCreate:
-					// Support AST-only mode: if metadata is nil but AST node exists, use AST
-					if mvDiff.NewMaterializedView != nil {
-						if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-							return err
-						}
-					} else if mvDiff.NewASTNode != nil {
-						if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
-							return err
-						}
-					} else {
-						return errors.Errorf("materialized view diff for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
-					}
-				case schema.MetadataDiffActionAlter:
-					// Check if this is an index-only change (no MV definition change)
-					hasIndexOnlyChanges := len(mvDiff.IndexChanges) > 0 && mvDiff.NewMaterializedView == nil && mvDiff.NewASTNode == nil
-
-					// For index-only changes, don't alter the MV itself
-					// Index changes are processed separately later (see lines ~1107-1127)
-					if !hasIndexOnlyChanges {
-						// For PostgreSQL materialized views, we need to drop and recreate
-						// since ALTER MATERIALIZED VIEW doesn't support changing the definition
-						writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
-						// Support AST-only mode
-						if mvDiff.NewMaterializedView != nil {
-							if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
-								return err
-							}
-						} else if mvDiff.NewASTNode != nil {
-							if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
-								return err
-							}
-						} else {
-							return errors.Errorf("materialized view ALTER for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
-						}
-					}
-				default:
-					// No action needed for other operations
-				}
-				// Add materialized view comment for newly created or altered materialized views
-				if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
-					writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
+				if err := writeMaterializedViewDiff(buf, mvDiff); err != nil {
+					return err
 				}
 			} else if funcDiff, ok := functionMap[objID]; ok {
 				if err := writeFunctionDiff(buf, funcDiff); err != nil {
 					return err
 				}
-				// Add function comment for newly created or altered functions
-				if (funcDiff.Action == schema.MetadataDiffActionCreate || funcDiff.Action == schema.MetadataDiffActionAlter) && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
+				if funcDiff.Action == schema.MetadataDiffActionCreate && funcDiff.NewFunction != nil && funcDiff.NewFunction.Comment != "" {
 					writeCommentOnFunction(buf, funcDiff.SchemaName, funcDiff.NewFunction.Signature, funcDiff.NewFunction.Comment, funcDiff.NewASTNode, funcDiff.NewFunction.Definition)
 				}
-			} else if triggerDiff, ok := triggerMap[objID]; ok {
-				// Handle triggers (both CREATE and ALTER use CREATE OR REPLACE)
-				if triggerDiff.Action == schema.MetadataDiffActionCreate || triggerDiff.Action == schema.MetadataDiffActionAlter {
+			}
+		}
+	}
+
+	// ========== Step 6: Create triggers ==========
+	for _, tableDiff := range tableMap {
+		if tableDiff.Action == schema.MetadataDiffActionCreate {
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionCreate {
 					if err := writeCreateTrigger(buf, triggerDiff); err != nil {
 						return err
 					}
 				}
 			}
 		}
+	}
 
-		// Set sequence ownership after all tables are created
-		for _, seqDiff := range diff.SequenceChanges {
-			if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence != nil && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
-				if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
+	// ========== Step 7: Set sequence ownership ==========
+	for _, seqDiff := range diff.SequenceChanges {
+		if seqDiff.Action == schema.MetadataDiffActionCreate && seqDiff.NewSequence != nil && seqDiff.NewSequence.OwnerTable != "" && seqDiff.NewSequence.OwnerColumn != "" {
+			if err := writeMigrationSequenceOwnership(buf, seqDiff.SchemaName, seqDiff.NewSequence); err != nil {
+				return err
+			}
+		}
+	}
+
+	// ========== Step 8: Add FK ==========
+	if hasFKCycle {
+		// Has cycle: add CREATE table FKs (they were excluded earlier)
+		for _, tableDiff := range tableMap {
+			if tableDiff.Action == schema.MetadataDiffActionCreate {
+				if err := writeTableForeignKeysForCreate(buf, tableDiff); err != nil {
 					return err
 				}
 			}
 		}
+	}
+	// Always: add ALTER table FKs
+	for _, tableDiff := range tableMap {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			fkSQL, err := generateAlterTableForeignKeys(tableDiff)
+			if err != nil {
+				return err
+			}
+			_, _ = buf.WriteString(fkSQL)
+			if fkSQL != "" {
+				_, _ = buf.WriteString("\n")
+			}
+		}
+	}
 
-		// Add foreign keys after all tables are created (only for CREATE table operations)
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
-				for _, fk := range tableDiff.NewTable.ForeignKeys {
-					if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
-						return err
-					}
+	// ========== Step 9: Post-processing ==========
+	// ALTER triggers
+	for _, tableDiff := range tableMap {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			triggerSQL := generateAlterTableTriggers(tableDiff)
+			_, _ = buf.WriteString(triggerSQL)
+			if triggerSQL != "" {
+				_, _ = buf.WriteString("\n")
+			}
+		}
+	}
+
+	// CREATE triggers not in TriggerChanges (metadata mode)
+	for _, tableDiff := range tableMap {
+		if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
+			triggersInChanges := make(map[string]bool)
+			for _, triggerDiff := range tableDiff.TriggerChanges {
+				if triggerDiff.Action == schema.MetadataDiffActionCreate {
+					triggersInChanges[triggerDiff.TriggerName] = true
+				}
+			}
+			for _, trigger := range tableDiff.NewTable.Triggers {
+				if !triggersInChanges[trigger.Name] {
+					writeMigrationTrigger(buf, trigger)
 				}
 			}
 		}
+	}
 
-		// Add foreign keys for ALTER table operations after all tables are created
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionAlter {
-				// Only add foreign keys in this second pass
-				fkSQL, err := generateAlterTableForeignKeys(tableDiff)
-				if err != nil {
-					return err
-				}
-				_, _ = buf.WriteString(fkSQL)
-				if fkSQL != "" {
-					_, _ = buf.WriteString("\n")
-				}
+	// MV indexes for CREATE
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionCreate && mvDiff.NewMaterializedView != nil {
+			for _, index := range mvDiff.NewMaterializedView.Indexes {
+				writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView.Name, index)
 			}
 		}
+	}
 
-		// Add triggers for ALTER table operations after foreign keys
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionAlter {
-				triggerSQL := generateAlterTableTriggers(tableDiff)
-				_, _ = buf.WriteString(triggerSQL)
-				if triggerSQL != "" {
-					_, _ = buf.WriteString("\n")
-				}
-			}
-		}
-
-		// Create triggers for CREATE table operations that aren't in TriggerChanges
-		// This handles metadata mode where triggers are in NewTable.Triggers but not in TriggerChanges
-		for _, tableDiff := range tableMap {
-			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
-				// Only create triggers that weren't already created from TriggerChanges
-				triggersInChanges := make(map[string]bool)
-				for _, triggerDiff := range tableDiff.TriggerChanges {
-					if triggerDiff.Action == schema.MetadataDiffActionCreate {
-						triggersInChanges[triggerDiff.TriggerName] = true
-					}
-				}
-
-				for _, trigger := range tableDiff.NewTable.Triggers {
-					// Skip if already created from TriggerChanges
-					if !triggersInChanges[trigger.Name] {
-						writeMigrationTrigger(buf, trigger)
-					}
-				}
-			}
-		}
-
-		// Create indexes for materialized views after they are created
-		for _, mvDiff := range diff.MaterializedViewChanges {
-			if mvDiff.Action == schema.MetadataDiffActionCreate && mvDiff.NewMaterializedView != nil {
-				for _, index := range mvDiff.NewMaterializedView.Indexes {
-					writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView.Name, index)
-				}
-			}
-		}
-
-		// Add indexes for materialized view ALTER operations
-		for _, mvDiff := range diff.MaterializedViewChanges {
-			if mvDiff.Action == schema.MetadataDiffActionAlter {
-				for _, indexDiff := range mvDiff.IndexChanges {
-					if indexDiff.Action == schema.MetadataDiffActionCreate {
-						if indexDiff.NewIndex != nil {
-							// Metadata mode: use index metadata
-							writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, indexDiff.NewIndex)
-						} else if indexDiff.NewASTNode != nil {
-							// AST-only mode: extract from AST node
-							if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
-								if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
-									// If AST extraction fails, log error but continue (non-fatal)
-									_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
-								}
+	// MV indexes for ALTER
+	for _, mvDiff := range diff.MaterializedViewChanges {
+		if mvDiff.Action == schema.MetadataDiffActionAlter {
+			for _, indexDiff := range mvDiff.IndexChanges {
+				if indexDiff.Action == schema.MetadataDiffActionCreate {
+					if indexDiff.NewIndex != nil {
+						writeMigrationMaterializedViewIndex(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, indexDiff.NewIndex)
+					} else if indexDiff.NewASTNode != nil {
+						if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+							if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
+								_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
 							}
 						}
 					}
@@ -1379,7 +1042,6 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 			}
 		}
 	}
-
 	// ALTER table operations are now handled earlier in the topological order
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action == schema.MetadataDiffActionAlter {
@@ -4770,6 +4432,179 @@ func writeAllForeignKeysFromTableAST(out *strings.Builder, schema, table string,
 	}
 }
 
+// writeViewDiff writes a view creation/alteration based on the diff.
+func writeViewDiff(buf *strings.Builder, viewDiff *schema.ViewDiff) error {
+	switch viewDiff.Action {
+	case schema.MetadataDiffActionCreate, schema.MetadataDiffActionAlter:
+		if viewDiff.NewView != nil {
+			if err := writeMigrationView(buf, viewDiff.SchemaName, viewDiff.NewView); err != nil {
+				return err
+			}
+		} else if viewDiff.NewASTNode != nil {
+			if err := writeMigrationViewFromAST(buf, viewDiff.NewASTNode); err != nil {
+				return err
+			}
+		} else {
+			return errors.Errorf("view diff for %s.%s has neither metadata nor AST node", viewDiff.SchemaName, viewDiff.ViewName)
+		}
+	default:
+		// Other actions (like Delete) are handled elsewhere
+	}
+	// Add view comment for newly created views
+	if viewDiff.NewView != nil && viewDiff.NewView.Comment != "" {
+		writeCommentOnView(buf, viewDiff.SchemaName, viewDiff.ViewName, viewDiff.NewView.Comment)
+	}
+	return nil
+}
+
+// writeMaterializedViewDiff writes a materialized view creation/alteration based on the diff.
+func writeMaterializedViewDiff(buf *strings.Builder, mvDiff *schema.MaterializedViewDiff) error {
+	switch mvDiff.Action {
+	case schema.MetadataDiffActionCreate:
+		// Support AST-only mode: if metadata is nil but AST node exists, use AST
+		if mvDiff.NewMaterializedView != nil {
+			if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+				return err
+			}
+		} else if mvDiff.NewASTNode != nil {
+			if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
+				return err
+			}
+		} else {
+			return errors.Errorf("materialized view diff for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
+		}
+	case schema.MetadataDiffActionAlter:
+		// Check if this is an index-only change (no MV definition change)
+		hasIndexOnlyChanges := len(mvDiff.IndexChanges) > 0 && mvDiff.NewMaterializedView == nil && mvDiff.NewASTNode == nil
+
+		// For index-only changes, don't alter the MV itself
+		// Index changes are processed separately later
+		if !hasIndexOnlyChanges {
+			// For PostgreSQL materialized views, we need to drop and recreate
+			// since ALTER MATERIALIZED VIEW doesn't support changing the definition
+			writeDropMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName)
+			// Support AST-only mode
+			if mvDiff.NewMaterializedView != nil {
+				if err := writeMigrationMaterializedView(buf, mvDiff.SchemaName, mvDiff.NewMaterializedView); err != nil {
+					return err
+				}
+			} else if mvDiff.NewASTNode != nil {
+				if err := writeMigrationMaterializedViewFromAST(buf, mvDiff.NewASTNode); err != nil {
+					return err
+				}
+			} else {
+				return errors.Errorf("materialized view ALTER for %s.%s has neither metadata nor AST node", mvDiff.SchemaName, mvDiff.MaterializedViewName)
+			}
+		}
+	default:
+		// Other actions (like Delete) are handled elsewhere
+	}
+	// Add materialized view comment for newly created or altered materialized views
+	if mvDiff.NewMaterializedView != nil && mvDiff.NewMaterializedView.Comment != "" {
+		writeCommentOnMaterializedView(buf, mvDiff.SchemaName, mvDiff.MaterializedViewName, mvDiff.NewMaterializedView.Comment)
+	}
+	return nil
+}
+
+// writeCreateTableDiff creates a table based on the diff, optionally including FK.
+func writeCreateTableDiff(buf *strings.Builder, tableDiff *schema.TableDiff, includeFK bool) error {
+	if tableDiff.NewTable != nil {
+		// Metadata mode: use generateCreateTable
+		createTableSQL, err := generateCreateTable(tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable, includeFK)
+		if err != nil {
+			return err
+		}
+		_, _ = buf.WriteString(createTableSQL)
+		if createTableSQL != "" {
+			_, _ = buf.WriteString("\n")
+		}
+
+		// Add table and column comments for newly created tables
+		if tableDiff.NewTable.Comment != "" {
+			writeCommentOnTable(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.Comment)
+		}
+		for _, col := range tableDiff.NewTable.Columns {
+			if col.Comment != "" {
+				writeCommentOnColumn(buf, tableDiff.SchemaName, tableDiff.TableName, col.Name, col.Comment)
+			}
+		}
+	} else if tableDiff.NewASTNode != nil {
+		// AST-only mode
+		if includeFK {
+			if err := writeMigrationTableFromAST(buf, tableDiff.NewASTNode); err != nil {
+				return err
+			}
+		} else {
+			if err := writeMigrationTableFromASTWithoutFK(buf, tableDiff.NewASTNode); err != nil {
+				return err
+			}
+		}
+	} else {
+		return errors.Errorf("table CREATE action requires either NewTable metadata or NewASTNode for table %s.%s", tableDiff.SchemaName, tableDiff.TableName)
+	}
+	return nil
+}
+
+// writeTableIndexesForCreate writes indexes for a newly created table.
+func writeTableIndexesForCreate(buf *strings.Builder, tableDiff *schema.TableDiff) {
+	for _, indexDiff := range tableDiff.IndexChanges {
+		if indexDiff.Action == schema.MetadataDiffActionCreate {
+			if indexDiff.NewIndex != nil {
+				// Metadata mode: use index metadata
+				if indexDiff.NewIndex.IsConstraint {
+					// Skip constraint-based indexes (primary key, unique, exclude)
+					// They are already included in CREATE TABLE statement
+					continue
+				}
+				writeMigrationIndex(buf, tableDiff.SchemaName, tableDiff.TableName, indexDiff.NewIndex)
+			} else if indexDiff.NewASTNode != nil {
+				// AST-only mode: extract from AST node
+				if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
+					if err := writeCreateIndexFromAST(buf, indexAST); err != nil {
+						_, _ = fmt.Fprintf(buf, "-- Error creating index: %v\n", err)
+					}
+				}
+			}
+		}
+	}
+}
+
+// writeTableForeignKeysForCreate writes foreign keys for a CREATE table operation.
+func writeTableForeignKeysForCreate(buf *strings.Builder, tableDiff *schema.TableDiff) error {
+	if tableDiff.NewTable != nil {
+		// Metadata mode
+		for _, fk := range tableDiff.NewTable.ForeignKeys {
+			if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk); err != nil {
+				return err
+			}
+		}
+	} else if tableDiff.NewASTNode != nil {
+		// AST mode
+		if len(tableDiff.ForeignKeyChanges) > 0 {
+			// FKs are in ForeignKeyChanges
+			for _, fkDiff := range tableDiff.ForeignKeyChanges {
+				if fkDiff.Action == schema.MetadataDiffActionCreate {
+					if fkDiff.NewForeignKey != nil {
+						if err := writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fkDiff.NewForeignKey); err != nil {
+							return err
+						}
+					} else if fkDiff.NewASTNode != nil {
+						if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
+							if err := writeAddForeignKeyFromAST(buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
+								_, _ = fmt.Fprintf(buf, "-- Error adding foreign key constraint: %v\n", err)
+							}
+						}
+					}
+				}
+			}
+		} else {
+			// Pure AST mode - FKs are embedded in the AST node itself
+			writeAllForeignKeysFromTableAST(buf, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewASTNode)
+		}
+	}
+	return nil
+}
+
 // writeAddUniqueConstraintFromAST adds a unique constraint using AST node
 func writeAddUniqueConstraintFromAST(out *strings.Builder, schema, table string, constraintAST pgparser.ITableconstraintContext) error {
 	if constraintAST == nil {
@@ -4978,12 +4813,6 @@ func extractForeignKeysFromAST(createStmt *pgparser.CreatestmtContext, defaultSc
 	return foreignKeys
 }
 
-// getTriggerObjectID generates a unique identifier for trigger objects
-// Triggers are table-scoped in PostgreSQL, so identifier is schema.table.trigger_name
-func getTriggerObjectID(triggerDiff *schema.TriggerDiff) string {
-	return fmt.Sprintf("trigger:%s.%s.%s", triggerDiff.SchemaName, triggerDiff.TableName, triggerDiff.TriggerName)
-}
-
 // writeCreateTrigger writes a CREATE TRIGGER or CREATE OR REPLACE TRIGGER statement
 func writeCreateTrigger(buf *strings.Builder, triggerDiff *schema.TriggerDiff) error {
 	switch triggerDiff.Action {
@@ -5040,53 +4869,6 @@ func writeCreateTrigger(buf *strings.Builder, triggerDiff *schema.TriggerDiff) e
 	}
 
 	return nil
-}
-
-// extractTriggerFunctionName extracts the function name from EXECUTE FUNCTION clause
-func extractTriggerFunctionName(astNode any) string {
-	triggerStmt, ok := astNode.(*pgparser.CreatetrigstmtContext)
-	if !ok || triggerStmt == nil {
-		return ""
-	}
-
-	// Get text from token stream for more reliable parsing
-	var text string
-	if tokenStream := triggerStmt.GetParser().GetTokenStream(); tokenStream != nil {
-		start := triggerStmt.GetStart()
-		stop := triggerStmt.GetStop()
-		if start != nil && stop != nil {
-			text = tokenStream.GetTextFromTokens(start, stop)
-		}
-	}
-
-	if text == "" {
-		text = triggerStmt.GetText()
-	}
-
-	// Look for "EXECUTE FUNCTION function_name" or "EXECUTE PROCEDURE function_name"
-	upperText := strings.ToUpper(text)
-	idx := strings.Index(upperText, "EXECUTE FUNCTION")
-	if idx == -1 {
-		idx = strings.Index(upperText, "EXECUTE PROCEDURE")
-		if idx == -1 {
-			return ""
-		}
-		idx += len("EXECUTE PROCEDURE")
-	} else {
-		idx += len("EXECUTE FUNCTION")
-	}
-
-	remaining := strings.TrimSpace(text[idx:])
-	// Extract function name (first word, possibly schema-qualified)
-	endIdx := strings.IndexAny(remaining, "();")
-	if endIdx > 0 {
-		funcName := strings.TrimSpace(remaining[:endIdx])
-		// Remove quotes if present
-		funcName = strings.Trim(funcName, "\"")
-		return funcName
-	}
-
-	return ""
 }
 
 // convertTriggerToCreateOrReplace converts CREATE TRIGGER to CREATE OR REPLACE TRIGGER using ANTLR
