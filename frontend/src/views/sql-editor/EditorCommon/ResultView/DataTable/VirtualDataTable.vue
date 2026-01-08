@@ -350,19 +350,32 @@ watchDebounced(
   { debounce: DEBOUNCE_SEARCH_DELAY }
 );
 
-// Handle shift+wheel for horizontal scrolling
+// Handle horizontal scrolling for both:
+// 1. Shift+wheel for mouse users
+// 2. Native horizontal swipe (deltaX) for trackpad users
 // Use capture phase to intercept before NVirtualList handles it
 const handleWheel = (event: WheelEvent) => {
   const container = containerRef.value;
   if (!container) return;
 
-  // Only handle shift+wheel when there's horizontal overflow
   const hasHorizontalOverflow = container.scrollWidth > container.clientWidth;
-  if (!event.shiftKey || !hasHorizontalOverflow) return;
+  if (!hasHorizontalOverflow) return;
 
-  event.preventDefault();
-  event.stopPropagation();
-  container.scrollLeft += event.deltaY || event.deltaX;
+  // Handle shift+wheel (mouse with vertical scroll wheel)
+  if (event.shiftKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    container.scrollLeft += event.deltaY || event.deltaX;
+    return;
+  }
+
+  // Handle trackpad horizontal swipe (deltaX is dominant)
+  // When |deltaX| > |deltaY|, it's a horizontal swipe gesture
+  if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+    event.preventDefault();
+    event.stopPropagation();
+    container.scrollLeft += event.deltaX;
+  }
 };
 
 onMounted(() => {
