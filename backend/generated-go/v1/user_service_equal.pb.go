@@ -100,49 +100,6 @@ func (x *ListUsersResponse) Equal(y *ListUsersResponse) bool {
 	return true
 }
 
-func (x *SearchUsersRequest) Equal(y *SearchUsersRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Query != y.Query {
-		return false
-	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
-	if x.Filter != y.Filter {
-		return false
-	}
-	return true
-}
-
-func (x *SearchUsersResponse) Equal(y *SearchUsersResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Users) != len(y.Users) {
-		return false
-	}
-	for i := 0; i < len(x.Users); i++ {
-		if !x.Users[i].Equal(y.Users[i]) {
-			return false
-		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
-	}
-	return true
-}
-
 func (x *CreateUserRequest) Equal(y *CreateUserRequest) bool {
 	if x == y {
 		return true

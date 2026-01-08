@@ -24,7 +24,6 @@ const (
 	UserService_BatchGetUsers_FullMethodName  = "/bytebase.v1.UserService/BatchGetUsers"
 	UserService_GetCurrentUser_FullMethodName = "/bytebase.v1.UserService/GetCurrentUser"
 	UserService_ListUsers_FullMethodName      = "/bytebase.v1.UserService/ListUsers"
-	UserService_SearchUsers_FullMethodName    = "/bytebase.v1.UserService/SearchUsers"
 	UserService_CreateUser_FullMethodName     = "/bytebase.v1.UserService/CreateUser"
 	UserService_UpdateUser_FullMethodName     = "/bytebase.v1.UserService/UpdateUser"
 	UserService_DeleteUser_FullMethodName     = "/bytebase.v1.UserService/DeleteUser"
@@ -53,10 +52,6 @@ type UserServiceClient interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// Search users by keyword.
-	// Returns basic user info (email, title) for adding users to projects.
-	// Permissions required: bb.users.search
-	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
@@ -117,16 +112,6 @@ func (c *userServiceClient) ListUsers(ctx context.Context, in *ListUsersRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListUsersResponse)
 	err := c.cc.Invoke(ctx, UserService_ListUsers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchUsersResponse)
-	err := c.cc.Invoke(ctx, UserService_SearchUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,10 +189,6 @@ type UserServiceServer interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// Search users by keyword.
-	// Returns basic user info (email, title) for adding users to projects.
-	// Permissions required: bb.users.search
-	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
@@ -245,9 +226,6 @@ func (UnimplementedUserServiceServer) GetCurrentUser(context.Context, *emptypb.E
 }
 func (UnimplementedUserServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListUsers not implemented")
-}
-func (UnimplementedUserServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SearchUsers not implemented")
 }
 func (UnimplementedUserServiceServer) CreateUser(context.Context, *CreateUserRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
@@ -353,24 +331,6 @@ func _UserService_ListUsers_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).ListUsers(ctx, req.(*ListUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).SearchUsers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_SearchUsers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).SearchUsers(ctx, req.(*SearchUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -487,10 +447,6 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListUsers",
 			Handler:    _UserService_ListUsers_Handler,
-		},
-		{
-			MethodName: "SearchUsers",
-			Handler:    _UserService_SearchUsers_Handler,
 		},
 		{
 			MethodName: "CreateUser",

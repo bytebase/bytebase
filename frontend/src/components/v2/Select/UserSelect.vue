@@ -22,7 +22,6 @@ import { UserNameCell } from "@/components/v2/Model/cells";
 import { type UserFilter, userNamePrefix, useUserStore } from "@/store";
 import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
@@ -118,38 +117,15 @@ const handleSearch = async (params: {
 }) => {
   const filter = getFilter(params.search);
 
-  // Use fetchUserList if user has bb.users.list permission, otherwise use searchUsers.
-  if (hasWorkspacePermissionV2("bb.users.list")) {
-    const { users, nextPageToken } = await userStore.fetchUserList({
-      filter,
-      pageToken: params.pageToken,
-      pageSize: params.pageSize,
-    });
-    return {
-      nextPageToken,
-      options: users.map(getOption),
-    };
-  } else {
-    // SearchUsers requires a query string (min 1 char).
-    // If no search query, return empty results.
-    const query = params.search?.trim() || "";
-    if (!query) {
-      return {
-        nextPageToken: "",
-        options: [],
-      };
-    }
-    const { users, nextPageToken } = await userStore.searchUsers({
-      query,
-      filter,
-      pageToken: params.pageToken,
-      pageSize: params.pageSize,
-    });
-    return {
-      nextPageToken,
-      options: users.map(getOption),
-    };
-  }
+  const { users, nextPageToken } = await userStore.fetchUserList({
+    filter,
+    pageToken: params.pageToken,
+    pageSize: params.pageSize,
+  });
+  return {
+    nextPageToken,
+    options: users.map(getOption),
+  };
 };
 
 const customLabel = (user: User, keyword: string) => {

@@ -105,7 +105,6 @@ export type Permission =
   | "bb.users.delete"
   | "bb.users.get"
   | "bb.users.list"
-  | "bb.users.search"
   | "bb.users.undelete"
   | "bb.users.update"
   | "bb.users.updateEmail"

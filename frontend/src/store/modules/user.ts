@@ -25,12 +25,11 @@ import {
   DeleteUserRequestSchema,
   GetUserRequestSchema,
   ListUsersRequestSchema,
-  SearchUsersRequestSchema,
   UndeleteUserRequestSchema,
   UpdateUserRequestSchema,
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
-import { ensureUserFullName } from "@/utils";
+import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
 import { extractUserId, userNamePrefix } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
@@ -92,6 +91,12 @@ export const useUserStore = defineStore("user", () => {
     users: User[];
     nextPageToken: string;
   }> => {
+    if (!hasWorkspacePermissionV2("bb.users.list")) {
+      return {
+        users: [],
+        nextPageToken: "",
+      }
+    }
     const request = create(ListUsersRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
@@ -102,31 +107,6 @@ export const useUserStore = defineStore("user", () => {
     for (const user of response.users) {
       setUser(user);
     }
-    return {
-      users: response.users,
-      nextPageToken: response.nextPageToken,
-    };
-  };
-
-  // SearchUsers is for users without bb.users.list permission.
-  // It requires a search query and returns only basic user info.
-  // Note: We don't cache the results since they contain only basic fields.
-  const searchUsers = async (params: {
-    query: string;
-    pageSize: number;
-    pageToken?: string;
-    filter?: UserFilter;
-  }): Promise<{
-    users: User[];
-    nextPageToken: string;
-  }> => {
-    const request = create(SearchUsersRequestSchema, {
-      query: params.query,
-      pageSize: params.pageSize,
-      pageToken: params.pageToken,
-      filter: getListUserFilter(params.filter ?? {}),
-    });
-    const response = await userServiceClientConnect.searchUsers(request);
     return {
       users: response.users,
       nextPageToken: response.nextPageToken,
@@ -279,7 +259,6 @@ export const useUserStore = defineStore("user", () => {
     systemBotUser,
     fetchCurrentUser,
     fetchUserList,
-    searchUsers,
     createUser,
     updateUser,
     updateEmail,
