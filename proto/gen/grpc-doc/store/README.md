@@ -179,7 +179,6 @@
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
-    - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskingExemptionPolicy](#bytebase-store-MaskingExemptionPolicy)
     - [MaskingExemptionPolicy.Exemption](#bytebase-store-MaskingExemptionPolicy-Exemption)
@@ -192,7 +191,6 @@
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
     - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
-    - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
   
@@ -3093,22 +3091,6 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
-<a name="bytebase-store-EnvironmentTierPolicy"></a>
-
-### EnvironmentTierPolicy
-EnvironmentTierPolicy is the tier of an environment.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
-| color | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-IamPolicy"></a>
 
 ### IamPolicy
@@ -3281,19 +3263,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | RESTRICTION_UNSPECIFIED | 0 |  |
 | FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
 | DISALLOW | 2 | Disallow to query admin data sources. |
-
-
-
-<a name="bytebase-store-EnvironmentTierPolicy-EnvironmentTier"></a>
-
-### EnvironmentTierPolicy.EnvironmentTier
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
-| PROTECTED | 1 |  |
-| UNPROTECTED | 2 |  |
 
 
 
