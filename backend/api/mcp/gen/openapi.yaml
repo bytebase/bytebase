@@ -18777,10 +18777,6 @@ components:
          documentation for additional information.
 security: []
 tags:
-  - name: bytebase.v1.IssueService
-    description: IssueService manages issues for tracking database changes and tasks.
-  - name: bytebase.v1.SettingService
-    description: SettingService manages workspace-level settings and configurations.
   - name: bytebase.v1.UserService
     description: UserService manages user accounts and authentication.
   - name: bytebase.v1.ActuatorService
@@ -18805,6 +18801,8 @@ tags:
     description: GroupService manages user groups for organizing users and permissions.
   - name: bytebase.v1.IdentityProviderService
     description: IdentityProviderService manages external identity providers for SSO authentication.
+  - name: bytebase.v1.IssueService
+    description: IssueService manages issues for tracking database changes and tasks.
   - name: bytebase.v1.OrgPolicyService
     description: OrgPolicyService manages organizational policies at various resource levels.
   - name: bytebase.v1.SQLService
@@ -18823,6 +18821,8 @@ tags:
     description: RoleService manages workspace roles and permissions.
   - name: bytebase.v1.RolloutService
     description: RolloutService manages the execution of deployment plans.
+  - name: bytebase.v1.SettingService
+    description: SettingService manages workspace-level settings and configurations.
   - name: bytebase.v1.SheetService
     description: SheetService manages SQL scripts and saved queries.
   - name: bytebase.v1.SubscriptionService

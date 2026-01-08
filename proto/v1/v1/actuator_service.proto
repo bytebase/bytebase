@@ -5,13 +5,11 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/setting_service.proto";
 import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";

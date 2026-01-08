@@ -8,15 +8,13 @@
 
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
-import {
-  useRouter,
-} from "vue-router";
+import { useRouter } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
+import setupRoutes from "@/router/setup";
 import { useRoleStore, useWorkspaceV1Store } from "@/store";
 import AuthFooter from "@/views/auth/AuthFooter.vue";
 import AdminSetup from "./AdminSetup.vue";
-import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
-import setupRoutes from "@/router/setup"
 
 const router = useRouter();
 const ready = ref<boolean>(false);
