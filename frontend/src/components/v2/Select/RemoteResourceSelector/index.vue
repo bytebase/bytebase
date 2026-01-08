@@ -5,7 +5,7 @@
     :loading="isLoadingNextPage"
     :filterable="true"
     :clearable="true"
-    :remote="true"
+    :remote="remote"
     :virtual-scroll="true"
     :multiple="multiple"
     :value="value"
@@ -53,6 +53,7 @@ import type { ResourceSelectOption, SelectSize } from "./types";
 
 const props = withDefaults(
   defineProps<{
+    remote?: boolean;
     placeholder?: string;
     multiple?: boolean;
     disabled?: boolean;
@@ -82,6 +83,7 @@ const props = withDefaults(
     filterable?: boolean;
   }>(),
   {
+    remote: true,
     fallbackOption: false,
     consistentMenuWidth: true,
     filterable: true,

@@ -10,6 +10,7 @@ import {
   getGroupEmailInBinding,
   getUserEmailInBinding,
   groupBindingPrefix,
+  unknownUser,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
@@ -54,7 +55,7 @@ const getMemberBinding = (
       projectRoleBindings: [],
     };
   } else {
-    let user = userStore.getUserByIdentifier(member);
+    let user = userStore.getUserByIdentifier(member) ?? unknownUser(member);
     if (!user) {
       const email = extractUserId(member);
       user = create(UserSchema, {
