@@ -349,6 +349,7 @@ import {
   useWorkspaceV1Store,
 } from "@/store";
 import { emptyUser } from "@/types";
+import { PresetRoleType } from "@/types/iam";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   UserSchema,
@@ -393,7 +394,7 @@ const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 const state = reactive<LocalState>({
   isRequesting: false,
   user: emptyUser(),
-  roles: [],
+  roles: [PresetRoleType.WORKSPACE_MEMBER],
   passwordConfirm: "",
   wif: {
     emailPrefix: "",

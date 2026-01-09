@@ -9,6 +9,7 @@
     :max-tag-count="'responsive'"
     :filterable="true"
     :render-label="renderLabel"
+    :render-tag="renderTag"
     :placeholder="$t('settings.members.select-role', multiple ? 2 : 1)"
     to="body"
     @update:value="onValueUpdate"
@@ -23,7 +24,8 @@
 <script setup lang="tsx">
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, h, ref } from "vue";
+import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
+import { computed, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { t } from "@/plugins/i18n";
@@ -33,8 +35,13 @@ import {
   PRESET_ROLES,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleDescription, displayRoleTitle } from "@/utils";
+
+type RoleSelectOption = SelectOption & {
+  role: Role;
+};
 
 const props = withDefaults(
   defineProps<{
@@ -72,7 +79,7 @@ const filterRole = (role: string) => {
 };
 
 const availableRoleOptions = computed(
-  (): (SelectOption | SelectGroupOption)[] => {
+  (): (RoleSelectOption | SelectGroupOption)[] => {
     const roleGroups: SelectGroupOption[] = [];
 
     if (props.includeWorkspaceRoles) {
@@ -80,10 +87,13 @@ const availableRoleOptions = computed(
         type: "group",
         key: "workspace-roles",
         label: t("role.workspace-roles.self"),
-        children: PRESET_WORKSPACE_ROLES.filter(filterRole).map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
+        children: PRESET_WORKSPACE_ROLES.map(roleStore.getRoleByName)
+          .filter((role) => role && filterRole(role.name))
+          .map<RoleSelectOption>((role) => ({
+            label: displayRoleTitle(role!.name),
+            value: role!.name,
+            role: role!,
+          })),
       });
     }
 
@@ -91,23 +101,27 @@ const availableRoleOptions = computed(
       type: "group",
       key: "project-roles",
       label: t("role.project-roles.self") + props.suffix,
-      children: PRESET_PROJECT_ROLES.filter(filterRole).map((role) => ({
-        label: displayRoleTitle(role),
-        value: role,
-      })),
+      children: PRESET_PROJECT_ROLES.map(roleStore.getRoleByName)
+        .filter((role) => role && filterRole(role.name))
+        .map<RoleSelectOption>((role) => ({
+          label: displayRoleTitle(role!.name),
+          value: role!.name,
+          role: role!,
+        })),
     });
 
-    const customRoles = roleStore.roleList
-      .map((role) => role.name)
-      .filter((role) => !PRESET_ROLES.includes(role) && filterRole(role));
+    const customRoles = roleStore.roleList.filter(
+      (role) => !PRESET_ROLES.includes(role.name) && filterRole(role.name)
+    );
     if (customRoles.length > 0) {
       roleGroups.push({
         type: "group",
         key: "custom-roles",
         label: t("role.custom-roles.self") + props.suffix,
-        children: customRoles.map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
+        children: customRoles.map<RoleSelectOption>((role) => ({
+          label: displayRoleTitle(role.name),
+          value: role.name,
+          role,
         })),
       });
     }
@@ -116,25 +130,32 @@ const availableRoleOptions = computed(
   }
 );
 
-const renderLabel = (option: SelectOption) => {
-  const label = h("span", {}, option.label as string);
-  if (hasCustomRoleFeature.value || !option.value) {
-    return label;
-  }
-  if (PRESET_ROLES.includes(option.value as string)) {
-    return label;
+const renderTag = ({ option }: { option: SelectBaseOption }) => {
+  return option.label as string;
+};
+
+const renderLabel = (option: SelectBaseOption & SelectGroupOption) => {
+  if (option.type === "group") {
+    return option.label as string;
   }
 
-  const icon = h(FeatureBadge, {
-    feature: PlanFeature.FEATURE_CUSTOM_ROLES,
-    clickable: false,
-  });
-  return h(
-    "div",
-    {
-      class: "flex items-center gap-1",
-    },
-    [label, icon]
+  const { role, label } = option as SelectBaseOption as RoleSelectOption;
+  const isCustomRole = !PRESET_ROLES.includes(role.name);
+  const description = displayRoleDescription(role.name);
+
+  return (
+    <div class="py-1">
+      <div class="flex items-center gap-x-1">
+        {label}
+        {!hasCustomRoleFeature.value && isCustomRole ? (
+          <FeatureBadge
+            feature={PlanFeature.FEATURE_CUSTOM_ROLES}
+            clickable={false}
+          />
+        ) : null}
+      </div>
+      {description && <div class="textinfolabel text-xs!">{description}</div>}
+    </div>
   );
 };
 

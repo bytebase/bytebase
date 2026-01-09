@@ -6,13 +6,28 @@
 
     <div class="p-4 border rounded-sm flex flex-col gap-y-4">
       <!-- Requested Role -->
-      <div v-if="requestRole" class="flex flex-col gap-y-2">
+      <div v-if="requestRoleName" class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
           {{ $t("role.self") }}
         </span>
         <div class="text-base">
-          {{ displayRoleTitle(requestRole) }}
+          {{ displayRoleTitle(requestRoleName) }}
         </div>
+      </div>
+
+      <div v-if="requestRole" class="flex flex-col gap-y-2">
+        <span class="text-sm text-control-light">
+          {{ $t("common.permissions") }}
+        </span>
+        <div class="max-h-[10em] overflow-auto border rounded-sm p-2">
+        <p
+          v-for="permission in requestRole.permissions"
+          :key="permission"
+          class="text-sm leading-5"
+        >
+          {{ permission }}
+        </p>
+      </div>
       </div>
 
       <!-- Database Resources -->
@@ -54,15 +69,21 @@ import { computedAsync } from "@vueuse/core";
 import dayjs from "dayjs";
 import { computed } from "vue";
 import { DatabaseResourceTable } from "@/components/IssueV1/components";
+import { useRoleStore } from "@/store";
 import { displayRoleTitle } from "@/utils";
 import { convertFromCELString } from "@/utils/issue/cel";
 import { usePlanContextWithIssue } from "../../../logic";
 
 const { issue } = usePlanContextWithIssue();
+const roleStore = useRoleStore();
 
-const requestRole = computed(() => {
+const requestRoleName = computed(() => {
   return issue.value.grantRequest?.role;
 });
+
+const requestRole = computed(() =>
+  roleStore.getRoleByName(requestRoleName?.value ?? "")
+);
 
 const condition = computedAsync(
   async () => {

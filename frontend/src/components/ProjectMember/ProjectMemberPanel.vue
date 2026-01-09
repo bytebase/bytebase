@@ -42,10 +42,12 @@
           <NButton
             v-if="shouldShowRequestRoleButton"
             type="primary"
+            :disabled="!hasRequestRoleFeature"
             @click="state.showRequestRolePanel = true"
           >
             <template #icon>
-              <heroicons-outline:user-add class="w-4 h-4" />
+              <ShieldUserIcon v-if="hasRequestRoleFeature" class="w-4 h-4"  />
+              <FeatureBadge v-else :clickable="false" :feature="PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW" />
             </template>
             {{ $t("issue.title.request-role") }}
           </NButton>
@@ -111,9 +113,11 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
+import { ShieldUserIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
@@ -137,7 +141,11 @@ import {
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
+import {
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  isBindingPolicyExpired,
+} from "@/utils";
 import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -188,16 +196,16 @@ const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
-const shouldShowRequestRoleButton = computed(() => {
-  // Check if grant request feature is available (Enterprise plan only)
-  const hasRequestRoleFeature = subscriptionStore.hasFeature(
-    PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
-  );
+const hasRequestRoleFeature = computed(() =>
+  subscriptionStore.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+);
 
+const shouldShowRequestRoleButton = computed(() => {
   return (
-    hasRequestRoleFeature &&
     !isProjectOwner.value &&
-    hasProjectPermissionV2(props.project, "bb.issues.create")
+    props.project.allowSelfApproval &&
+    hasProjectPermissionV2(props.project, "bb.issues.create") &&
+    hasWorkspacePermissionV2("bb.roles.list")
   );
 });
 
