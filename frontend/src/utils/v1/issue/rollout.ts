@@ -79,6 +79,30 @@ export const extractTaskRunUID = (name: string) => {
   return matches?.[1] ?? "";
 };
 
+/**
+ * Extracts the rollout resource name from a task run resource name.
+ * Task run name format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+ * Returns: projects/{project}/plans/{plan}/rollout
+ */
+export const extractRolloutNameFromTaskRunName = (
+  taskRunName: string
+): string => {
+  const pattern = /^(projects\/[^/]+\/plans\/[^/]+\/rollout)\/stages\//;
+  const matches = taskRunName.match(pattern);
+  return matches?.[1] ?? "";
+};
+
+/**
+ * Extracts the task resource name from a task run resource name.
+ * Task run name format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+ * Returns: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+ */
+export const extractTaskNameFromTaskRunName = (taskRunName: string): string => {
+  const idx = taskRunName.lastIndexOf("/taskRuns/");
+  if (idx === -1) return "";
+  return taskRunName.substring(0, idx);
+};
+
 export const stageV1Slug = (stage: Stage): string => {
   // Stage UID is now the environment ID
   return extractStageUID(stage.name);

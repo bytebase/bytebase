@@ -50,9 +50,8 @@
 
     <!-- Line 2: Task run logs -->
     <TaskRunLogViewer
-      v-if="summary.entries.length > 0"
-      :entries="summary.entries"
-      :sheet="sheet"
+      v-if="taskRunName && summary.entries.length > 0"
+      :task-run-name="taskRunName"
     />
   </div>
 </template>
@@ -74,7 +73,6 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { TaskRunLogSummary } from "./composables/useTaskRunLogSummary";
 import { TaskRunLogViewer } from "./TaskRunLogViewer";
 
@@ -154,12 +152,11 @@ const STATUS_CONFIG: Record<Task_Status, StatusConfig> = {
 const props = defineProps<{
   status: Task_Status;
   updateTime?: TimestampType;
-  sheet?: Sheet;
+  taskRunName?: string;
   executorEmail?: string;
   duration?: string;
   affectedRowsDisplay?: string;
   summary: TaskRunLogSummary;
-  taskName?: string;
 }>();
 
 const { t } = useI18n();
