@@ -13,6 +13,9 @@ const (
 	// AdvisoryLockKeyPendingScheduler is used by the pending task run scheduler
 	// to ensure only one replica promotes PENDING → AVAILABLE at a time.
 	AdvisoryLockKeyPendingScheduler AdvisoryLockKey = 1001
+	// AdvisoryLockKeyMigration is used by the schema migrator to ensure only
+	// one replica runs database migrations at a time.
+	AdvisoryLockKeyMigration AdvisoryLockKey = 1002
 )
 
 // AdvisoryLock holds a dedicated connection for a session-level advisory lock.
@@ -52,4 +55,26 @@ func (l *AdvisoryLock) Release() error {
 	// Unlock then close; closing also releases but explicit unlock is cleaner
 	_, _ = l.conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", int64(l.key))
 	return l.conn.Close()
+}
+
+// AcquireAdvisoryLock acquires a session-level advisory lock, blocking until
+// the lock is available. Returns a release function that must be called when done.
+// This is useful for migrations where we want to wait rather than fail fast.
+func AcquireAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (func(), error) {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// pg_advisory_lock blocks until the lock is acquired
+	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", int64(key)); err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	release := func() {
+		_, _ = conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", int64(key))
+		conn.Close()
+	}
+	return release, nil
 }
