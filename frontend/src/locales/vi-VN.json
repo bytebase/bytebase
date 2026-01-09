@@ -1764,7 +1764,6 @@
     "engine-not-supported-for-backup": "Sao lưu trước đó không được hỗ trợ cho: {databases}",
     "revision": {
       "self": "Bản sửa đổi",
-      "applied-at": "Đã áp dụng vào",
       "filename": "Tên tệp",
       "import-revision": "Nhập bản sửa đổi",
       "select-source": "Chọn nguồn",

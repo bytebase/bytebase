@@ -1764,7 +1764,6 @@
     "engine-not-supported-for-backup": "以前のバックアップはサポートされていません: {databases}",
     "revision": {
       "self": "リビジョン",
-      "applied-at": "申請先",
       "filename": "ファイル名",
       "import-revision": "インポートリビジョン",
       "select-source": "ソースを選択",
