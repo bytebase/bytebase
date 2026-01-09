@@ -683,9 +683,7 @@ func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
 	if template.Flow == nil {
 		return errors.Errorf("approval template cannot be nil")
 	}
-	if len(template.Flow.Roles) == 0 {
-		return errors.Errorf("approval template cannot have 0 role")
-	}
+	// Empty roles means "no approval required" - issue will be auto-approved
 	return nil
 }
 
