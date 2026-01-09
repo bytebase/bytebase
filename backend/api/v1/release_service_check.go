@@ -741,7 +741,7 @@ type statementTypeWithPosition struct {
 // Currently only PostgreSQL is supported.
 func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.AST) ([]statementTypeWithPosition, error) {
 	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
+	case storepb.Engine_POSTGRES:
 		pgStmts, err := pg.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err
