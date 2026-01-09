@@ -18,6 +18,9 @@
             })
           }}
         </span>
+        <span v-if="totalDuration" class="text-blue-500 tabular-nums">
+          {{ totalDuration }}
+        </span>
       </div>
 
       <!-- Right: Expand/Collapse toggle button -->
@@ -246,6 +249,7 @@ const {
   areAllExpanded,
   totalSections,
   totalEntries,
+  totalDuration,
 } = useTaskRunLogSections(
   () => entries.value,
   () => sheet.value,
