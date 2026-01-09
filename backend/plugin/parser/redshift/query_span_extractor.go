@@ -343,13 +343,13 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
 	}
 
-	// Redshift uses Func_py_args_or_sql_args instead of PostgreSQL's Func_args_with_defaults.
-	// Redshift function parameters don't support default values or VARIADIC.
+	// Redshift uses Func_py_args_or_sql_args for both SQL and Python UDFs.
+	// Unlike PostgreSQL, Redshift function parameters don't support default values or VARIADIC.
+	// The parameter syntax is the same regardless of language (SQL or plpythonu).
 	funcArgs := createFuncStmt.Func_py_args_or_sql_args()
 	var nParam int
 	if funcArgs != nil {
 		if argList := funcArgs.Func_py_args_or_sql_args_list(); argList != nil {
-			// Count parameters by the number of Func_type entries
 			nParam = len(argList.AllFunc_type())
 		}
 	}
