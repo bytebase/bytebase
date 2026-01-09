@@ -281,7 +281,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		}
 	}
 
-	evaluation, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExemptionContainsCurrentPrincipal)
+	evaluation, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.Setting.DataClassificationConfigId, config, maskingExemptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}

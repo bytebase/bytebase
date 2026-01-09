@@ -3351,6 +3351,8 @@ Project contains settings and configuration for a Bytebase project.
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 | require_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
 | require_plan_check_no_error | [bool](#bool) |  | Whether to block rollout when plan check finds errors. |
+| allow_request_role | [bool](#bool) |  |  |
+| data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
 
 
 

@@ -272,7 +272,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		State:                      convertDeletedToState(projectMessage.Deleted),
 		Title:                      projectMessage.Title,
 		Webhooks:                   projectWebhooks,
-		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
+		DataClassificationConfigId: projectMessage.Setting.DataClassificationConfigId,
 		IssueLabels:                issueLabels,
 		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
 		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
@@ -287,6 +287,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Labels:                     projectMessage.Setting.Labels,
 		RequireIssueApproval:       projectMessage.Setting.RequireIssueApproval,
 		RequirePlanCheckNoError:    projectMessage.Setting.RequirePlanCheckNoError,
+		AllowRequestRole:           projectMessage.Setting.AllowRequestRole,
 	}
 }
 
@@ -325,6 +326,8 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.Pr
 		EnforceSqlReview:           project.EnforceSqlReview,
 		RequireIssueApproval:       project.RequireIssueApproval,
 		RequirePlanCheckNoError:    project.RequirePlanCheckNoError,
+		AllowRequestRole:           project.AllowRequestRole,
+		DataClassificationConfigId: project.DataClassificationConfigId,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,

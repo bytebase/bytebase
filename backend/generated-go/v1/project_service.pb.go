@@ -956,6 +956,7 @@ type Project struct {
 	RequireIssueApproval bool `protobuf:"varint,20,opt,name=require_issue_approval,json=requireIssueApproval,proto3" json:"require_issue_approval,omitempty"`
 	// Whether to require plan check to have no error before rollout.
 	RequirePlanCheckNoError bool `protobuf:"varint,21,opt,name=require_plan_check_no_error,json=requirePlanCheckNoError,proto3" json:"require_plan_check_no_error,omitempty"`
+	AllowRequestRole        bool `protobuf:"varint,22,opt,name=allow_request_role,json=allowRequestRole,proto3" json:"allow_request_role,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1119,6 +1120,13 @@ func (x *Project) GetRequireIssueApproval() bool {
 func (x *Project) GetRequirePlanCheckNoError() bool {
 	if x != nil {
 		return x.RequirePlanCheckNoError
+	}
+	return false
+}
+
+func (x *Project) GetAllowRequestRole() bool {
+	if x != nil {
+		return x.AllowRequestRole
 	}
 	return false
 }
@@ -1628,7 +1636,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\x8f\t\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xbd\t\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1649,7 +1657,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x06labels\x18\x12 \x03(\v2 .bytebase.v1.Project.LabelsEntryR\x06labels\x12,\n" +
 	"\x12enforce_sql_review\x18\x13 \x01(\bR\x10enforceSqlReview\x124\n" +
 	"\x16require_issue_approval\x18\x14 \x01(\bR\x14requireIssueApproval\x12<\n" +
-	"\x1brequire_plan_check_no_error\x18\x15 \x01(\bR\x17requirePlanCheckNoError\x1a?\n" +
+	"\x1brequire_plan_check_no_error\x18\x15 \x01(\bR\x17requirePlanCheckNoError\x12,\n" +
+	"\x12allow_request_role\x18\x16 \x01(\bR\x10allowRequestRole\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

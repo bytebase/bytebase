@@ -120,7 +120,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 			}
 		}
 
-		isSensitive, err := m.isSensitiveColumn(database, column, project.DataClassificationConfigID, config, maskingExemptionContainsCurrentPrincipal)
+		isSensitive, err := m.isSensitiveColumn(database, column, project.Setting.DataClassificationConfigId, config, maskingExemptionContainsCurrentPrincipal)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check if column is sensitive")
 		}

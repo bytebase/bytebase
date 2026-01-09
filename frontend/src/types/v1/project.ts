@@ -18,6 +18,7 @@ export const emptyProject = (): Project => {
     enforceSqlReview: true,
     requireIssueApproval: true,
     requirePlanCheckNoError: true,
+    allowRequestRole: true,
   });
 };
 
