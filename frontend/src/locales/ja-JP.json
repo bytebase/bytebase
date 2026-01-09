@@ -678,7 +678,6 @@
           "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。"
         },
         "enable-debug": {
-          "self": "デバッグを有効にする",
           "enable": "バックエンドサービスのデバッグレベルのログを有効にする"
         },
         "disallow-signup": {

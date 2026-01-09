@@ -678,7 +678,6 @@
           "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
         },
         "enable-debug": {
-          "self": "Enable debug",
           "enable": "Enable debug level log for the backend service"
         },
         "disallow-signup": {

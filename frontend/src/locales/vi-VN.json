@@ -678,7 +678,6 @@
           "description": "Xuất nhật ký kiểm toán JSON có cấu trúc vào đầu ra chuẩn để thu thập bởi các bộ tổng hợp nhật ký (Splunk, ELK, Datadog, Loki). Yêu cầu giấy phép TEAM hoặc ENTERPRISE."
         },
         "enable-debug": {
-          "self": "Bật gỡ lỗi",
           "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
         },
         "disallow-signup": {

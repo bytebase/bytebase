@@ -678,7 +678,6 @@
           "description": "Generar registros de auditoría JSON estructurados en la salida estándar para su ingesta por agregadores de registros (Splunk, ELK, Datadog, Loki). Requiere licencia TEAM o ENTERPRISE."
         },
         "enable-debug": {
-          "self": "Habilitar depuración",
           "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
         },
         "disallow-signup": {
