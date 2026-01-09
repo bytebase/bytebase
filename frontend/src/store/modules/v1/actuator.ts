@@ -75,8 +75,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const isDemo = computed(() => serverInfo.value?.demo);
 
-  const isDebug = computed(() => serverInfo.value?.debug || false);
-
   const isDocker = computed(() => serverInfo.value?.docker || false);
 
   const isSaaSMode = computed(() => serverInfo.value?.saas || false);
@@ -183,18 +181,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     return info;
   };
 
-  const patchDebug = async ({ debug }: { debug: boolean }) => {
-    const info = await actuatorServiceClientConnect.updateActuatorInfo({
-      actuator: {
-        debug,
-      },
-      updateMask: {
-        paths: ["debug"],
-      },
-    });
-    setServerInfo(info);
-  };
-
   const fetchLatestRelease = async (): Promise<Release | undefined> => {
     try {
       const releaseList = await useSilentRequest(async () => {
@@ -281,7 +267,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     gitCommitBE,
     gitCommitFE,
     isDemo,
-    isDebug,
     isDocker,
     isSaaSMode,
     needAdminSetup,
@@ -296,7 +281,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     setLogo,
     setServerInfo,
     fetchServerInfo,
-    patchDebug,
     fetchLatestRelease,
     tryToRemindRelease,
     tryToRemindRefresh,

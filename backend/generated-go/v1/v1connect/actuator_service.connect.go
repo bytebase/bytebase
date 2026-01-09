@@ -37,9 +37,6 @@ const (
 	// ActuatorServiceGetActuatorInfoProcedure is the fully-qualified name of the ActuatorService's
 	// GetActuatorInfo RPC.
 	ActuatorServiceGetActuatorInfoProcedure = "/bytebase.v1.ActuatorService/GetActuatorInfo"
-	// ActuatorServiceUpdateActuatorInfoProcedure is the fully-qualified name of the ActuatorService's
-	// UpdateActuatorInfo RPC.
-	ActuatorServiceUpdateActuatorInfoProcedure = "/bytebase.v1.ActuatorService/UpdateActuatorInfo"
 	// ActuatorServiceSetupSampleProcedure is the fully-qualified name of the ActuatorService's
 	// SetupSample RPC.
 	ActuatorServiceSetupSampleProcedure = "/bytebase.v1.ActuatorService/SetupSample"
@@ -56,9 +53,6 @@ type ActuatorServiceClient interface {
 	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Updates system configuration settings for the Bytebase instance.
-	// Permissions required: bb.settings.set
-	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
@@ -87,12 +81,6 @@ func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(actuatorServiceMethods.ByName("GetActuatorInfo")),
 			connect.WithClientOptions(opts...),
 		),
-		updateActuatorInfo: connect.NewClient[v1.UpdateActuatorInfoRequest, v1.ActuatorInfo](
-			httpClient,
-			baseURL+ActuatorServiceUpdateActuatorInfoProcedure,
-			connect.WithSchema(actuatorServiceMethods.ByName("UpdateActuatorInfo")),
-			connect.WithClientOptions(opts...),
-		),
 		setupSample: connect.NewClient[v1.SetupSampleRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ActuatorServiceSetupSampleProcedure,
@@ -117,7 +105,6 @@ func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 // actuatorServiceClient implements ActuatorServiceClient.
 type actuatorServiceClient struct {
 	getActuatorInfo    *connect.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
-	updateActuatorInfo *connect.Client[v1.UpdateActuatorInfoRequest, v1.ActuatorInfo]
 	setupSample        *connect.Client[v1.SetupSampleRequest, emptypb.Empty]
 	deleteCache        *connect.Client[v1.DeleteCacheRequest, emptypb.Empty]
 	getResourcePackage *connect.Client[v1.GetResourcePackageRequest, v1.ResourcePackage]
@@ -126,11 +113,6 @@ type actuatorServiceClient struct {
 // GetActuatorInfo calls bytebase.v1.ActuatorService.GetActuatorInfo.
 func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, req *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
 	return c.getActuatorInfo.CallUnary(ctx, req)
-}
-
-// UpdateActuatorInfo calls bytebase.v1.ActuatorService.UpdateActuatorInfo.
-func (c *actuatorServiceClient) UpdateActuatorInfo(ctx context.Context, req *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
-	return c.updateActuatorInfo.CallUnary(ctx, req)
 }
 
 // SetupSample calls bytebase.v1.ActuatorService.SetupSample.
@@ -153,9 +135,6 @@ type ActuatorServiceHandler interface {
 	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Updates system configuration settings for the Bytebase instance.
-	// Permissions required: bb.settings.set
-	UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
@@ -180,12 +159,6 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 		connect.WithSchema(actuatorServiceMethods.ByName("GetActuatorInfo")),
 		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceUpdateActuatorInfoHandler := connect.NewUnaryHandler(
-		ActuatorServiceUpdateActuatorInfoProcedure,
-		svc.UpdateActuatorInfo,
-		connect.WithSchema(actuatorServiceMethods.ByName("UpdateActuatorInfo")),
-		connect.WithHandlerOptions(opts...),
-	)
 	actuatorServiceSetupSampleHandler := connect.NewUnaryHandler(
 		ActuatorServiceSetupSampleProcedure,
 		svc.SetupSample,
@@ -208,8 +181,6 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 		switch r.URL.Path {
 		case ActuatorServiceGetActuatorInfoProcedure:
 			actuatorServiceGetActuatorInfoHandler.ServeHTTP(w, r)
-		case ActuatorServiceUpdateActuatorInfoProcedure:
-			actuatorServiceUpdateActuatorInfoHandler.ServeHTTP(w, r)
 		case ActuatorServiceSetupSampleProcedure:
 			actuatorServiceSetupSampleHandler.ServeHTTP(w, r)
 		case ActuatorServiceDeleteCacheProcedure:
@@ -227,10 +198,6 @@ type UnimplementedActuatorServiceHandler struct{}
 
 func (UnimplementedActuatorServiceHandler) GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetActuatorInfo is not implemented"))
-}
-
-func (UnimplementedActuatorServiceHandler) UpdateActuatorInfo(context.Context, *connect.Request[v1.UpdateActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.UpdateActuatorInfo is not implemented"))
 }
 
 func (UnimplementedActuatorServiceHandler) SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {

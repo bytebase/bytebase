@@ -659,6 +659,7 @@
         "logo-upload-tip": "{extension} hasta {size} MiB",
         "security": "Seguridad",
         "account": "Cuenta",
+        "log": "Registro",
         "watermark": {
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
           "enable": "Activar marca de agua"
@@ -673,9 +674,11 @@
           "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
         },
         "audit-log-stdout": {
-          "self": "Exportación de Registros de Auditoría",
           "enable": "Habilitar el registro de auditoría en la salida estándar",
           "description": "Generar registros de auditoría JSON estructurados en la salida estándar para su ingesta por agregadores de registros (Splunk, ELK, Datadog, Loki). Requiere licencia TEAM o ENTERPRISE."
+        },
+        "enable-debug": {
+          "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",

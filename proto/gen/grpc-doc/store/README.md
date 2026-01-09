@@ -4391,7 +4391,6 @@ The severity level for SQL review rules.
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
-| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | announcement | [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
@@ -4405,6 +4404,8 @@ The severity level for SQL review rules.
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
+| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
+| enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 
 
 

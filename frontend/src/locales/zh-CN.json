@@ -659,6 +659,7 @@
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "security": "安全",
         "account": "帐户",
+        "log": "日志",
         "watermark": {
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "enable": "开启水印"
@@ -673,9 +674,11 @@
           "description": "通过分享匿名使用数据帮助改进 Bytebase"
         },
         "audit-log-stdout": {
-          "self": "审计日志导出",
           "enable": "启用审计日志输出到标准输出",
           "description": "将结构化的 JSON 审计日志输出到标准输出，以便日志聚合器（Splunk、ELK、Datadog、Loki）摄取。需要 TEAM 或 ENTERPRISE 许可证。"
+        },
+        "enable-debug": {
+          "enable": "启用后端服务的调试级别日志"
         },
         "disallow-signup": {
           "enable": "禁用自助注册",

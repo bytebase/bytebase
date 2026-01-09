@@ -61,32 +61,6 @@ func (s *ActuatorService) GetActuatorInfo(
 	return connect.NewResponse(info), nil
 }
 
-// UpdateActuatorInfo updates the actuator info.
-func (s *ActuatorService) UpdateActuatorInfo(
-	ctx context.Context,
-	req *connect.Request[v1pb.UpdateActuatorInfoRequest],
-) (*connect.Response[v1pb.ActuatorInfo], error) {
-	request := req.Msg
-	for _, path := range request.UpdateMask.Paths {
-		if path == "debug" {
-			debug := request.GetActuator().GetDebug()
-
-			s.profile.RuntimeDebug.Store(debug)
-			level := slog.LevelInfo
-			if debug {
-				level = slog.LevelDebug
-			}
-			log.LogLevel.Set(level)
-		}
-	}
-
-	info, err := s.getServerInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(info), nil
-}
-
 // DeleteCache deletes the cache.
 func (s *ActuatorService) DeleteCache(
 	_ context.Context,
@@ -175,7 +149,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		ExternalUrl:         externalURL,
 		LastActiveTime:      timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
 		WorkspaceId:         workspaceID,
-		Debug:               s.profile.RuntimeDebug.Load(),
 		Docker:              s.profile.IsDocker,
 		UnlicensedFeatures:  unlicensedFeaturesString,
 		EnableSample:        hasSampleInstances,

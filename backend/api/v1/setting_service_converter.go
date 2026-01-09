@@ -253,6 +253,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		DirectorySyncToken:     v1Setting.DirectorySyncToken,
 		BrandingLogo:           v1Setting.BrandingLogo,
 		PasswordRestriction:    convertPasswordRestrictionSetting(v1Setting.PasswordRestriction),
+		EnableDebug:            v1Setting.EnableDebug,
 	}
 
 	// Convert announcement if present
@@ -305,7 +306,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		return nil
 	}
 
-	v1Setting := &v1pb.WorkspaceProfileSetting{
+	return &v1pb.WorkspaceProfileSetting{
 		ExternalUrl:            storeSetting.ExternalUrl,
 		DisallowSignup:         storeSetting.DisallowSignup,
 		Require_2Fa:            storeSetting.Require_2Fa,
@@ -324,9 +325,8 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		BrandingLogo:           storeSetting.BrandingLogo,
 		PasswordRestriction:    convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
 		Announcement:           convertToV1Announcement(storeSetting.Announcement),
+		EnableDebug:            storeSetting.EnableDebug,
 	}
-
-	return v1Setting
 }
 
 func convertApprovalFlow(v1Flow *v1pb.ApprovalFlow) *storepb.ApprovalFlow {

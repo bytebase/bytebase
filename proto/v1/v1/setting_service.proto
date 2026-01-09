@@ -182,9 +182,6 @@ message WorkspaceProfileSetting {
   // The duration for refresh token. Default is 7 days.
   google.protobuf.Duration refresh_token_duration = 4;
 
-  // The duration for access token. Default is 1 hour.
-  google.protobuf.Duration access_token_duration = 18;
-
   // The setting of custom announcement
   Announcement announcement = 5;
 
@@ -242,6 +239,12 @@ message WorkspaceProfileSetting {
 
   // Password restriction settings.
   PasswordRestriction password_restriction = 17;
+
+  // The duration for access token. Default is 1 hour.
+  google.protobuf.Duration access_token_duration = 18;
+
+  // Whether debug mode is enabled.
+  bool enable_debug = 19;
 }
 
 message Announcement {

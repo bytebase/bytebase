@@ -659,6 +659,7 @@
         "logo-upload-tip": "{extension} タイプのファイルをサポートします。{size} MiB より大きくすることはできません",
         "security": "セキュリティ",
         "account": "アカウント",
+        "log": "ログ",
         "watermark": {
           "description": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。",
           "enable": "ウォーターマークをオンにする"
@@ -673,9 +674,11 @@
           "description": "匿名の使用データを共有してBytebaseの改善に協力する"
         },
         "audit-log-stdout": {
-          "self": "監査ログエクスポート",
           "enable": "監査ログの標準出力への出力を有効にする",
           "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。"
+        },
+        "enable-debug": {
+          "enable": "バックエンドサービスのデバッグレベルのログを有効にする"
         },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",

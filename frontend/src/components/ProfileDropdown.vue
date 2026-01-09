@@ -34,7 +34,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2, isDev, isSQLEditorRoute } from "@/utils";
+import { isDev, isSQLEditorRoute } from "@/utils";
 import Version from "./misc/Version.vue";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
@@ -55,11 +55,6 @@ const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
-// For now, debug mode is a global setting and will affect all users.
-// So we only allow DBA and Owner to toggle it.
-const allowToggleDebug = computed(() => {
-  return hasWorkspacePermissionV2("bb.settings.set");
-});
 const { currentPlan } = storeToRefs(subscriptionStore);
 
 const logout = () => {
@@ -90,14 +85,6 @@ const resetQuickstart = () => {
     });
   });
   showDropdown.value = false;
-};
-
-const { isDebug } = storeToRefs(actuatorStore);
-
-const switchDebug = () => {
-  actuatorStore.patchDebug({
-    debug: !isDebug.value,
-  });
 };
 
 const { enabledNewLayout, toggleLayout } = useIssueLayoutVersion();
@@ -331,25 +318,6 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     render() {
       return <Version tooltipProps={{ placement: "left" }} />;
-    },
-  },
-  {
-    key: "debug",
-    type: "render",
-    show: allowToggleDebug.value,
-    render() {
-      return (
-        <div class="menu-item">
-          <div class="flex flex-row items-center gap-x-2 justify-between">
-            <span>Debug</span>
-            <NSwitch
-              size="small"
-              value={isDebug.value}
-              onUpdate:value={switchDebug}
-            />
-          </div>
-        </div>
-      );
     },
   },
   {

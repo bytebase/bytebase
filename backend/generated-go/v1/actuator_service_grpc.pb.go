@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ActuatorService_GetActuatorInfo_FullMethodName    = "/bytebase.v1.ActuatorService/GetActuatorInfo"
-	ActuatorService_UpdateActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/UpdateActuatorInfo"
 	ActuatorService_SetupSample_FullMethodName        = "/bytebase.v1.ActuatorService/SetupSample"
 	ActuatorService_DeleteCache_FullMethodName        = "/bytebase.v1.ActuatorService/DeleteCache"
 	ActuatorService_GetResourcePackage_FullMethodName = "/bytebase.v1.ActuatorService/GetResourcePackage"
@@ -36,9 +35,6 @@ type ActuatorServiceClient interface {
 	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
-	// Updates system configuration settings for the Bytebase instance.
-	// Permissions required: bb.settings.set
-	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -62,16 +58,6 @@ func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, in *GetActu
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ActuatorInfo)
 	err := c.cc.Invoke(ctx, ActuatorService_GetActuatorInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *actuatorServiceClient) UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ActuatorInfo)
-	err := c.cc.Invoke(ctx, ActuatorService_UpdateActuatorInfo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,9 +103,6 @@ type ActuatorServiceServer interface {
 	// Gets system information and health status of the Bytebase instance.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
-	// Updates system configuration settings for the Bytebase instance.
-	// Permissions required: bb.settings.set
-	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error)
@@ -141,9 +124,6 @@ type UnimplementedActuatorServiceServer struct{}
 
 func (UnimplementedActuatorServiceServer) GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActuatorInfo not implemented")
-}
-func (UnimplementedActuatorServiceServer) UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error) {
-	return nil, status.Error(codes.Unimplemented, "method UpdateActuatorInfo not implemented")
 }
 func (UnimplementedActuatorServiceServer) SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetupSample not implemented")
@@ -189,24 +169,6 @@ func _ActuatorService_GetActuatorInfo_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ActuatorServiceServer).GetActuatorInfo(ctx, req.(*GetActuatorInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ActuatorService_UpdateActuatorInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateActuatorInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ActuatorServiceServer).UpdateActuatorInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ActuatorService_UpdateActuatorInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ActuatorServiceServer).UpdateActuatorInfo(ctx, req.(*UpdateActuatorInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -275,10 +237,6 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActuatorInfo",
 			Handler:    _ActuatorService_GetActuatorInfo_Handler,
-		},
-		{
-			MethodName: "UpdateActuatorInfo",
-			Handler:    _ActuatorService_UpdateActuatorInfo_Handler,
 		},
 		{
 			MethodName: "SetupSample",
