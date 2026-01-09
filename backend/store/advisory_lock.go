@@ -16,6 +16,9 @@ const (
 	// AdvisoryLockKeyMigration is used by the schema migrator to ensure only
 	// one replica runs database migrations at a time.
 	AdvisoryLockKeyMigration AdvisoryLockKey = 1002
+	// AdvisoryLockKeySchemaSyncer is used by the schema syncer to ensure only
+	// one replica runs periodic schema sync at a time.
+	AdvisoryLockKeySchemaSyncer AdvisoryLockKey = 1003
 )
 
 // AdvisoryLock holds a dedicated connection for a session-level advisory lock.
@@ -27,8 +30,8 @@ type AdvisoryLock struct {
 // TryAdvisoryLock attempts to acquire a session-level advisory lock using a
 // dedicated connection. Returns (lock, true) if acquired, (nil, false) if
 // already held by another session. Caller must call lock.Release() when done.
-func (s *Store) TryAdvisoryLock(ctx context.Context, key AdvisoryLockKey) (*AdvisoryLock, bool, error) {
-	conn, err := s.dbConnManager.GetDB().Conn(ctx)
+func TryAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (*AdvisoryLock, bool, error) {
+	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, false, err
 	}
@@ -48,6 +51,7 @@ func (s *Store) TryAdvisoryLock(ctx context.Context, key AdvisoryLockKey) (*Advi
 }
 
 // Release releases the advisory lock and returns the connection to the pool.
+// Uses context.Background() to ensure cleanup completes even if parent ctx is cancelled.
 func (l *AdvisoryLock) Release() error {
 	if l.conn == nil {
 		return nil
@@ -58,9 +62,9 @@ func (l *AdvisoryLock) Release() error {
 }
 
 // AcquireAdvisoryLock acquires a session-level advisory lock, blocking until
-// the lock is available. Returns a release function that must be called when done.
+// the lock is available. Caller must call lock.Release() when done.
 // This is useful for migrations where we want to wait rather than fail fast.
-func AcquireAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (func(), error) {
+func AcquireAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (*AdvisoryLock, error) {
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return nil, err
@@ -72,9 +76,5 @@ func AcquireAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (
 		return nil, err
 	}
 
-	release := func() {
-		_, _ = conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", int64(key))
-		conn.Close()
-	}
-	return release, nil
+	return &AdvisoryLock{conn: conn, key: key}, nil
 }

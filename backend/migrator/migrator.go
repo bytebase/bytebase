@@ -16,6 +16,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -42,11 +43,15 @@ var goMigrations = map[string]GoMigrationFunc{
 func MigrateSchema(ctx context.Context, db *sql.DB) error {
 	// Acquire advisory lock to ensure only one replica runs migrations.
 	// This blocks until the lock is available.
-	release, err := store.AcquireAdvisoryLock(ctx, db, store.AdvisoryLockKeyMigration)
+	lock, err := store.AcquireAdvisoryLock(ctx, db, store.AdvisoryLockKeyMigration)
 	if err != nil {
 		return errors.Wrap(err, "failed to acquire migration lock")
 	}
-	defer release()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			slog.Error("Failed to release migration advisory lock", log.BBError(err))
+		}
+	}()
 
 	files, err := getSortedVersionedFiles()
 	if err != nil {

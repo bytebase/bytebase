@@ -127,6 +127,21 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		}
 	}()
 
+	lock, acquired, err := store.TryAdvisoryLock(ctx, s.store.GetDB(), store.AdvisoryLockKeySchemaSyncer)
+	if err != nil {
+		slog.Error("Failed to acquire schema syncer advisory lock", log.BBError(err))
+		return
+	}
+	if !acquired {
+		slog.Debug("Schema syncer advisory lock held by another replica, skipping")
+		return
+	}
+	defer func() {
+		if err := lock.Release(); err != nil {
+			slog.Error("Failed to release schema syncer advisory lock", log.BBError(err))
+		}
+	}()
+
 	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	instances, err := s.store.ListInstances(ctx, &store.FindInstanceMessage{})
 	if err != nil {
