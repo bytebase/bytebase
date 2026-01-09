@@ -30,8 +30,10 @@ func GetResources(
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return getResourcesForMySQL(ctx, storeInstance, engine, databaseName, statement, instance, getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)
-	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
+	case storepb.Engine_POSTGRES:
 		return getResourcesForPostgres(ctx, storeInstance, engine, databaseName, statement, instance, "public", getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)
+	case storepb.Engine_REDSHIFT:
+		return getResourcesForRedshift(ctx, storeInstance, engine, databaseName, statement, instance, "public", getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)
 	case storepb.Engine_ORACLE:
 		return getResourcesForOracle(ctx, storeInstance, engine, databaseName, statement, instance, getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)
 	case storepb.Engine_SNOWFLAKE:
@@ -145,6 +147,72 @@ func getResourcesForMySQL(
 }
 
 func getResourcesForPostgres(
+	ctx context.Context,
+	storeInstance *store.Store,
+	engine storepb.Engine,
+	databaseName string,
+	statement string,
+	instance *store.InstanceMessage,
+	defaultSchema string,
+	getDatabaseMetadataFunc base.GetDatabaseMetadataFunc,
+	listDatabaseNamesFunc base.ListDatabaseNamesFunc,
+	getLinkedDatabaseMetadataFunc base.GetLinkedDatabaseMetadataFunc,
+) ([]base.SchemaResource, error) {
+	spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
+		InstanceID:                    instance.ResourceID,
+		GetDatabaseMetadataFunc:       getDatabaseMetadataFunc,
+		ListDatabaseNamesFunc:         listDatabaseNamesFunc,
+		GetLinkedDatabaseMetadataFunc: getLinkedDatabaseMetadataFunc,
+	}, engine, statement, databaseName, defaultSchema, !store.IsObjectCaseSensitive(instance))
+	if err != nil {
+		return nil, err
+	}
+
+	database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
+	}
+	if database == nil {
+		return nil, nil
+	}
+
+	dbMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database schema"))
+	}
+
+	var result []base.SchemaResource
+	for _, span := range spans {
+		for sourceColumn := range span.SourceColumns {
+			sr := base.SchemaResource{
+				Database:     sourceColumn.Database,
+				Schema:       sourceColumn.Schema,
+				Table:        sourceColumn.Table,
+				LinkedServer: sourceColumn.Server,
+			}
+
+			if sourceColumn.Database != dbMetadata.GetProto().Name {
+				continue
+			}
+
+			if !resourceExists(dbMetadata, sr) {
+				continue
+			}
+
+			result = append(result, sr)
+		}
+	}
+
+	return result, nil
+}
+
+func getResourcesForRedshift(
 	ctx context.Context,
 	storeInstance *store.Store,
 	engine storepb.Engine,

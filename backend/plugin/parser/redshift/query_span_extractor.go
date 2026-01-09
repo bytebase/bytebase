@@ -1,4 +1,4 @@
-package pg
+package redshift
 
 import (
 	"context"
@@ -11,14 +11,14 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
-	"github.com/bytebase/parser/postgresql"
+	parser "github.com/bytebase/parser/redshift"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
-	pgUnknownFieldName     = "?column?"
+	rsUnknownFieldName     = "?column?"
 	generateSeries         = "generate_series"
 	generateSubscripts     = "generate_subscripts"
 	unnest                 = "unnest"
@@ -38,7 +38,7 @@ const (
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
 type querySpanExtractor struct {
-	*postgresql.BasePostgreSQLParserListener
+	*parser.BaseRedshiftParserListener
 	ctx             context.Context
 	defaultDatabase string
 	searchPath      []string
@@ -106,7 +106,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	q.ctx = ctx
 
 	// Parse the statement using ANTLR
-	parseResults, err := ParsePostgreSQL(stmt)
+	parseResults, err := ParseRedshift(stmt)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// The resultTableSource should have been populated by EnterStmtmulti
 	if q.resultTableSource == nil {
 		// If not populated, try to extract it now
-		root, ok := parseResult.Tree.(*postgresql.RootContext)
+		root, ok := parseResult.Tree.(*parser.RootContext)
 		if !ok {
 			return nil, errors.Errorf("failed to assert parse tree to RootContext")
 		}
@@ -307,7 +307,7 @@ type functionDefinitionDetail struct {
 func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefinitionDetail, error) {
 	function := funcDef.metadata
 	definition := function.GetDefinition()
-	parseResults, err := ParsePostgreSQL(definition)
+	parseResults, err := ParseRedshift(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
@@ -317,7 +317,7 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 	}
 
 	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
-	root, ok := parseResults[0].Tree.(*postgresql.RootContext)
+	root, ok := parseResults[0].Tree.(*parser.RootContext)
 	if !ok {
 		return nil, errors.Errorf("expecting RootContext but got %T", parseResults[0].Tree)
 	}
@@ -343,29 +343,21 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
 	}
 
-	funcArgsWithDefaults := createFuncStmt.Func_args_with_defaults()
-	var params []postgresql.IFunc_arg_with_defaultContext
-	if l := funcArgsWithDefaults.Func_args_with_defaults_list(); l != nil {
-		params = append(params, l.AllFunc_arg_with_default()...)
-	}
-
-	var nDefaultPram, nVariadicParam int
-	for _, param := range params {
-		if param.A_expr() != nil {
-			nDefaultPram++
-		}
-
-		if c := param.Func_arg().Arg_class(); c != nil {
-			if c.VARIADIC() != nil {
-				nVariadicParam++
-			}
+	// Redshift uses Func_py_args_or_sql_args for both SQL and Python UDFs.
+	// Unlike PostgreSQL, Redshift function parameters don't support default values or VARIADIC.
+	// The parameter syntax is the same regardless of language (SQL or plpythonu).
+	funcArgs := createFuncStmt.Func_py_args_or_sql_args()
+	var nParam int
+	if funcArgs != nil {
+		if argList := funcArgs.Func_py_args_or_sql_args_list(); argList != nil {
+			nParam = len(argList.AllFunc_type())
 		}
 	}
 
 	return &functionDefinitionDetail{
-		nDefaultParam:  nDefaultPram,
-		nVariadicParam: nVariadicParam,
-		nParam:         len(params),
+		nDefaultParam:  0,
+		nVariadicParam: 0,
+		nParam:         nParam,
 		function:       funcDef,
 	}, nil
 }
@@ -435,7 +427,7 @@ const (
 )
 
 func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]base.QuerySpanResult, error) {
-	parseResults, err := ParsePostgreSQL(definition)
+	parseResults, err := ParseRedshift(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
 	}
@@ -445,7 +437,7 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 	}
 
 	// Navigate: root -> stmtblock -> stmt -> createfunctionstmt
-	root, ok := parseResults[0].Tree.(*postgresql.RootContext)
+	root, ok := parseResults[0].Tree.(*parser.RootContext)
 	if !ok {
 		return nil, errors.Errorf("expecting RootContext but got %T", parseResults[0].Tree)
 	}
@@ -494,7 +486,7 @@ func (q *querySpanExtractor) getColumnsFromFunction(name, definition string) ([]
 	}
 }
 
-func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt parser.ICreatefunctionstmtContext, name string) ([]base.QuerySpanResult, error) {
 	asBody, err := q.extractAsBodyFromCreateFunction(createFuncStmt, name)
 	if err != nil {
 		return nil, err
@@ -523,7 +515,7 @@ func (q *querySpanExtractor) getColumnsFromSQLFunction(createFuncStmt postgresql
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) getColumnsFromPLPGSQLFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, name, definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromPLPGSQLFunction(createFuncStmt parser.ICreatefunctionstmtContext, name, definition string) ([]base.QuerySpanResult, error) {
 	// Extract OUT/TABLE parameter names
 	columnNames := q.extractParameterNamesFromCreateFunction(createFuncStmt)
 
@@ -602,7 +594,7 @@ func (q *querySpanExtractor) getColumnsFromSimplePLPGSQL(name, asBody string, co
 // extractReturnQueryStatements extracts all RETURN QUERY SELECT statements from PL/pgSQL body.
 func extractReturnQueryStatements(asBody string) ([]string, error) {
 	// Parse the PL/pgSQL body as a pl_block (BEGIN...END block)
-	res, err := ParsePostgreSQLPLBlock(asBody)
+	res, err := ParseRedshiftPLBlock(asBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PL/pgSQL body")
 	}
@@ -618,13 +610,13 @@ func extractReturnQueryStatements(asBody string) ([]string, error) {
 
 // returnQueryListener walks the AST to find all RETURN QUERY statements.
 type returnQueryListener struct {
-	*postgresql.BasePostgreSQLParserListener
+	*parser.BaseRedshiftParserListener
 	tokenStream antlr.TokenStream
 	sqlList     []string
 }
 
 // EnterStmt_return is called when entering a RETURN statement.
-func (l *returnQueryListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
+func (l *returnQueryListener) EnterStmt_return(ctx *parser.Stmt_returnContext) {
 	// Check if this is RETURN QUERY (not RETURN NEXT or plain RETURN)
 	if ctx.QUERY() == nil {
 		return
@@ -646,7 +638,7 @@ func (l *returnQueryListener) EnterStmt_return(ctx *postgresql.Stmt_returnContex
 }
 
 func (q *querySpanExtractor) getColumnsFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
-	parseResults, err := ParsePostgreSQL(definition)
+	parseResults, err := ParseRedshift(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PLpgSQL function body for function %s", name)
 	}
@@ -684,7 +676,7 @@ func (q *querySpanExtractor) getColumnsFromComplexPLPGSQL(name string, columnNam
 
 // extractLanguageFromCreateFunction extracts the LANGUAGE clause from a CREATE FUNCTION statement.
 // Returns languageTypeSQL (default) or languageTypePLPGSQL, or error if the language is unsupported.
-func (*querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (languageType, error) {
+func (*querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt parser.ICreatefunctionstmtContext, funcName string) (languageType, error) {
 	// Default language is SQL if not specified
 	language := languageTypeSQL
 
@@ -739,7 +731,7 @@ func (*querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt post
 
 // extractAsBodyFromCreateFunction extracts the AS body (function definition) from a CREATE FUNCTION statement.
 // Returns the function body SQL/PL/pgSQL code with quotes removed and escaped quotes unescaped.
-func (*querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext, funcName string) (string, error) {
+func (*querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt parser.ICreatefunctionstmtContext, funcName string) (string, error) {
 	createOptList := createFuncStmt.Createfunc_opt_list()
 	if createOptList == nil {
 		return "", errors.Errorf("no function options found for function: %s", funcName)
@@ -911,49 +903,12 @@ func unescapeUnicodeEscapeString(s string) string {
 	return result
 }
 
-// extractParameterNamesFromCreateFunction extracts OUT/TABLE parameter names from CREATE FUNCTION.
-// Returns column names from OUT parameters and RETURNS TABLE columns.
-func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncStmt postgresql.ICreatefunctionstmtContext) []string {
+// extractParameterNamesFromCreateFunction extracts column names from RETURNS TABLE clause.
+// Redshift doesn't support PostgreSQL-style OUT parameters, but does support RETURNS TABLE.
+func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncStmt parser.ICreatefunctionstmtContext) []string {
 	var columnNames []string
 
-	// Extract OUT parameters from func_args_with_defaults
-	funcArgs := createFuncStmt.Func_args_with_defaults()
-	if funcArgs != nil && funcArgs.Func_args_with_defaults_list() != nil {
-		for _, argWithDefault := range funcArgs.Func_args_with_defaults_list().AllFunc_arg_with_default() {
-			if argWithDefault == nil {
-				continue
-			}
-			funcArg := argWithDefault.Func_arg()
-			if funcArg == nil {
-				continue
-			}
-
-			// Check if this is an OUT or INOUT parameter
-			argClass := funcArg.Arg_class()
-			if argClass == nil {
-				continue
-			}
-
-			// Check for OUT_P (OUT mode) or INOUT
-			if argClass.OUT_P() == nil && argClass.INOUT() == nil {
-				continue
-			}
-
-			// Extract parameter name
-			// func_arg can be: arg_class param_name? func_type | param_name arg_class? func_type | func_type
-			var paramName string
-			if funcArg.Param_name() != nil {
-				paramName = q.extractParamName(funcArg.Param_name())
-			}
-
-			// If OUT parameter has a name, add it to column names
-			if paramName != "" {
-				columnNames = append(columnNames, paramName)
-			}
-		}
-	}
-
-	// Extract TABLE columns from RETURNS TABLE clause
+	// Extract TABLE columns from RETURNS TABLE clause if present
 	if createFuncStmt.TABLE() != nil && createFuncStmt.Table_func_column_list() != nil {
 		for _, tableCol := range createFuncStmt.Table_func_column_list().AllTable_func_column() {
 			if tableCol == nil || tableCol.Param_name() == nil {
@@ -971,14 +926,14 @@ func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncS
 
 // extractParamName extracts the parameter name from param_name context.
 // param_name can be: type_function_name | builtin_function_name | LEFT | RIGHT
-func (*querySpanExtractor) extractParamName(paramNameCtx postgresql.IParam_nameContext) string {
+func (*querySpanExtractor) extractParamName(paramNameCtx parser.IParam_nameContext) string {
 	if paramNameCtx == nil {
 		return ""
 	}
 
 	// Handle type_function_name (most common case)
 	if paramNameCtx.Type_function_name() != nil {
-		return normalizePostgreSQLTypeFunctionName(paramNameCtx.Type_function_name())
+		return normalizeRedshiftTypeFunctionName(paramNameCtx.Type_function_name())
 	}
 
 	// Handle builtin_function_name, LEFT, RIGHT
@@ -986,7 +941,7 @@ func (*querySpanExtractor) extractParamName(paramNameCtx postgresql.IParam_nameC
 }
 
 type plpgSQLListener struct {
-	*postgresql.BasePostgreSQLParserListener
+	*parser.BaseRedshiftParserListener
 	q *querySpanExtractor
 
 	variables map[string]*base.QuerySpanResult
@@ -995,19 +950,19 @@ type plpgSQLListener struct {
 	err  error
 }
 
-func (l *plpgSQLListener) EnterFunc_as(ctx *postgresql.Func_asContext) {
+func (l *plpgSQLListener) EnterFunc_as(ctx *parser.Func_asContext) {
 	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Definition)
 }
 
-func (l *plpgSQLListener) EnterDecl_statement(ctx *postgresql.Decl_statementContext) {
-	vName := normalizePostgreSQLAnyIdentifier(ctx.Decl_varname().Any_identifier())
+func (l *plpgSQLListener) EnterDecl_statement(ctx *parser.Decl_statementContext) {
+	vName := normalizeRedshiftAnyIdentifier(ctx.Decl_varname().Any_identifier())
 	l.variables[vName] = &base.QuerySpanResult{
 		SourceColumns: base.SourceColumnSet{},
 	}
 }
 
-func (l *plpgSQLListener) EnterStmt_assign(ctx *postgresql.Stmt_assignContext) {
-	names := NormalizePostgreSQLAnyName(ctx.Assign_var().Any_name())
+func (l *plpgSQLListener) EnterStmt_assign(ctx *parser.Stmt_assignContext) {
+	names := NormalizeRedshiftAnyName(ctx.Assign_var().Any_name())
 	if len(names) != 1 {
 		return
 	}
@@ -1041,7 +996,7 @@ func (l *plpgSQLListener) EnterStmt_assign(ctx *postgresql.Stmt_assignContext) {
 	}
 }
 
-func (l *plpgSQLListener) EnterStmt_return(ctx *postgresql.Stmt_returnContext) {
+func (l *plpgSQLListener) EnterStmt_return(ctx *parser.Stmt_returnContext) {
 	if ctx.QUERY() == nil {
 		return
 	}
@@ -1328,7 +1283,7 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) EnterStmtmulti(sm *postgresql.StmtmultiContext) {
+func (q *querySpanExtractor) EnterStmtmulti(sm *parser.StmtmultiContext) {
 	if len(sm.AllStmt()) != 1 {
 		q.err = errors.Errorf("malformed query, expected 1 query but got %d", len(sm.AllStmt()))
 		return
@@ -1346,7 +1301,7 @@ func (q *querySpanExtractor) EnterStmtmulti(sm *postgresql.StmtmultiContext) {
 	q.resultTableSource = tableSource
 }
 
-func (q *querySpanExtractor) extractTableSourceFromStmt(stmt postgresql.IStmtContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromStmt(stmt parser.IStmtContext) (base.TableSource, error) {
 	switch {
 	case stmt.Explainstmt() != nil:
 		// Handle EXPLAIN statement
@@ -1383,12 +1338,12 @@ func (q *querySpanExtractor) extractTableSourceFromStmt(stmt postgresql.IStmtCon
 	}
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSelectstmt(selectstmt postgresql.ISelectstmtContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelectstmt(selectstmt parser.ISelectstmtContext) (base.TableSource, error) {
 	selectNoParens := getSelectNoParensFromSelectStmt(selectstmt)
 	return q.extractTableSourceFromSelectNoParens(selectNoParens)
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSelectNoParens(selectNoParens postgresql.ISelect_no_parensContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelectNoParens(selectNoParens parser.ISelect_no_parensContext) (base.TableSource, error) {
 	// Reset the table sources from the FROM clause after exit the SELECT statement.
 	previousTableSourcesFromLength := len(q.tableSourcesFrom)
 	defer func() {
@@ -1434,15 +1389,15 @@ func (q *querySpanExtractor) extractTableSourceFromSelectNoParens(selectNoParens
 	return q.mergeSimpleSelectIntersectsWithOperators(allSimpleSelects, operators)
 }
 
-func (q *querySpanExtractor) recordCTEs(with postgresql.IWith_clauseContext) (restoreCTELength int, err error) {
+func (q *querySpanExtractor) recordCTEs(with parser.IWith_clauseContext) (restoreCTELength int, err error) {
 	previousCTELength := len(q.ctes)
 	recursive := with.RECURSIVE() != nil
 	for _, cte := range with.Cte_list().AllCommon_table_expr() {
-		cteName := normalizePostgreSQLName(cte.Name())
+		cteName := normalizeRedshiftName(cte.Name())
 		var colAliasNames []string
 		if cte.Opt_name_list() != nil {
 			for _, name := range cte.Opt_name_list().Name_list().AllName() {
-				colAliasNames = append(colAliasNames, normalizePostgreSQLName(name))
+				colAliasNames = append(colAliasNames, normalizeRedshiftName(name))
 			}
 		}
 
@@ -1472,7 +1427,7 @@ func (q *querySpanExtractor) recordCTEs(with postgresql.IWith_clauseContext) (re
 // then performs iterative closure computation to resolve all column dependencies.
 // A recursive CTE has the structure: base_case UNION [ALL] recursive_case
 // We use a simple strategy: the last part after UNION is the recursive part.
-func (q *querySpanExtractor) extractTableSourceFromRecursiveCTE(cte postgresql.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromRecursiveCTE(cte parser.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
 	selectStmt := cte.Preparablestmt().Selectstmt()
 	if selectStmt == nil {
 		return nil, errors.Errorf("malformed recursive CTE, expected SELECT statement in CTE but got others")
@@ -1558,7 +1513,7 @@ func (q *querySpanExtractor) extractTableSourceFromRecursiveCTE(cte postgresql.I
 	return cteTableSource, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte postgresql.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte parser.ICommon_table_exprContext, cteName string, colAliasNames []string) (*base.PseudoTable, error) {
 	selectStmt := cte.Preparablestmt().Selectstmt()
 	if selectStmt == nil {
 		return nil, errors.Errorf("malformed CTE, expected SELECT statement in CTE but got others")
@@ -1583,7 +1538,7 @@ func (q *querySpanExtractor) extractTableSourceFromNonRecursiveCTE(cte postgresq
 }
 
 // extractOperatorsFromSelectClause extracts set operators from a select_clause
-func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause postgresql.ISelect_clauseContext) ([]SetOperator, error) {
+func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause parser.ISelect_clauseContext) ([]SetOperator, error) {
 	if selectClause == nil {
 		return nil, errors.New("nil select_clause")
 	}
@@ -1603,16 +1558,16 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause postgre
 			var op SetOperator
 
 			switch tokenType {
-			case postgresql.PostgreSQLParserUNION:
+			case parser.RedshiftLexerUNION:
 				op.Type = "UNION"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
-						if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserALL {
+						if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1620,16 +1575,16 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause postgre
 				}
 				operators = append(operators, op)
 
-			case postgresql.PostgreSQLParserEXCEPT:
+			case parser.RedshiftLexerEXCEPT:
 				op.Type = "EXCEPT"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
-						if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserALL {
+						if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1637,16 +1592,16 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause postgre
 				}
 				operators = append(operators, op)
 
-			case postgresql.PostgreSQLParserINTERSECT:
+			case parser.RedshiftLexerINTERSECT:
 				op.Type = "INTERSECT"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
 				if i+1 < len(children) {
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
-						if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserALL {
+						if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == postgresql.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1679,10 +1634,10 @@ type SetOperator struct {
 // - recursivePart: The part after the last UNION/UNION ALL (the recursive query)
 // - recursiveOperator: The operator connecting the base to the recursive part (must be UNION [ALL])
 // Note: The recursive part must be connected with UNION [ALL], not EXCEPT or INTERSECT.
-func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) (
-	baseParts []postgresql.ISimple_select_intersectContext,
+func splitRecursiveCTEParts(selectNoParens parser.ISelect_no_parensContext) (
+	baseParts []parser.ISimple_select_intersectContext,
 	baseOperators []SetOperator,
-	recursivePart postgresql.ISimple_select_intersectContext,
+	recursivePart parser.ISimple_select_intersectContext,
 	recursiveOperator *SetOperator,
 	err error) {
 	if selectNoParens == nil || selectNoParens.Select_clause() == nil {
@@ -1714,7 +1669,7 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 			var op SetOperator
 
 			switch tokenType {
-			case postgresql.PostgreSQLParserUNION:
+			case parser.RedshiftLexerUNION:
 				op.Type = "UNION"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1722,10 +1677,10 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
 						switch nextType {
-						case postgresql.PostgreSQLParserALL:
+						case parser.RedshiftLexerALL:
 							op.IsDistinct = false
 							i++
-						case postgresql.PostgreSQLParserDISTINCT:
+						case parser.RedshiftLexerDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1736,7 +1691,7 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 				lastUnionIndex = partIndex
 				partIndex++
 
-			case postgresql.PostgreSQLParserEXCEPT:
+			case parser.RedshiftLexerEXCEPT:
 				op.Type = "EXCEPT"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1744,10 +1699,10 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
 						switch nextType {
-						case postgresql.PostgreSQLParserALL:
+						case parser.RedshiftLexerALL:
 							op.IsDistinct = false
 							i++
-						case postgresql.PostgreSQLParserDISTINCT:
+						case parser.RedshiftLexerDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1757,7 +1712,7 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 				allOperators = append(allOperators, op)
 				partIndex++
 
-			case postgresql.PostgreSQLParserINTERSECT:
+			case parser.RedshiftLexerINTERSECT:
 				op.Type = "INTERSECT"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1765,10 +1720,10 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 					if nextToken, ok := children[i+1].(antlr.TerminalNode); ok {
 						nextType := nextToken.GetSymbol().GetTokenType()
 						switch nextType {
-						case postgresql.PostgreSQLParserALL:
+						case parser.RedshiftLexerALL:
 							op.IsDistinct = false
 							i++
-						case postgresql.PostgreSQLParserDISTINCT:
+						case parser.RedshiftLexerDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1806,7 +1761,7 @@ func splitRecursiveCTEParts(selectNoParens postgresql.ISelect_no_parensContext) 
 
 // extractTableSourceFromSimpleSelectIntersect processes a simple_select_intersect node and returns its table source.
 // This handles the INTERSECT operations between multiple simple_select_pramary nodes.
-func (q *querySpanExtractor) extractTableSourceFromSimpleSelectIntersect(simpleSelect postgresql.ISimple_select_intersectContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSimpleSelectIntersect(simpleSelect parser.ISimple_select_intersectContext) (base.TableSource, error) {
 	if simpleSelect == nil {
 		return nil, errors.New("nil simple_select_intersect")
 	}
@@ -1866,7 +1821,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectIntersect(simpleS
 
 // extractTableSourceFromSimpleSelectPrimary processes a simple_select_pramary node and returns its table source.
 // This is the basic building block of SELECT statements, containing the SELECT list, FROM clause, etc.
-func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary postgresql.ISimple_select_pramaryContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary parser.ISimple_select_pramaryContext) (base.TableSource, error) {
 	if primary == nil {
 		return nil, errors.New("nil simple_select_pramary")
 	}
@@ -1925,7 +1880,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary p
 		}
 
 		// Process target list (SELECT items)
-		var targetListContext postgresql.ITarget_listContext
+		var targetListContext parser.ITarget_listContext
 		if primary.Opt_target_list() != nil {
 			targetListContext = primary.Opt_target_list().Target_list()
 		} else if primary.Target_list() != nil {
@@ -1967,7 +1922,7 @@ func (q *querySpanExtractor) extractTableSourceFromSimpleSelectPrimary(primary p
 }
 
 // extractTableSourceFromSelectWithParens handles SELECT statements wrapped in parentheses
-func (q *querySpanExtractor) extractTableSourceFromSelectWithParens(selectWithParens postgresql.ISelect_with_parensContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelectWithParens(selectWithParens parser.ISelect_with_parensContext) (base.TableSource, error) {
 	if selectWithParens == nil {
 		return nil, errors.New("nil select_with_parens")
 	}
@@ -1986,7 +1941,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelectWithParens(selectWithPa
 
 // mergeSimpleSelectIntersectsWithOperators combines multiple simple_select_intersect nodes with their respective operators.
 // This properly handles UNION, EXCEPT, INTERSECT with ALL/DISTINCT modifiers.
-func (q *querySpanExtractor) mergeSimpleSelectIntersectsWithOperators(parts []postgresql.ISimple_select_intersectContext, operators []SetOperator) (base.TableSource, error) {
+func (q *querySpanExtractor) mergeSimpleSelectIntersectsWithOperators(parts []parser.ISimple_select_intersectContext, operators []SetOperator) (base.TableSource, error) {
 	if len(parts) == 0 {
 		return nil, errors.New("no parts to merge")
 	}
@@ -2080,7 +2035,7 @@ func (*querySpanExtractor) applySetOperator(left, right base.TableSource, op Set
 }
 
 // extractTableSourceFromFromClause processes the FROM clause and returns all table sources
-func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause postgresql.IFrom_clauseContext) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) ([]base.TableSource, error) {
 	if fromClause == nil || fromClause.From_list() == nil {
 		return nil, nil
 	}
@@ -2099,7 +2054,7 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause postgre
 }
 
 // extractTableSourceFromTableRef extracts table source from a table reference in FROM clause
-func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef postgresql.ITable_refContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef parser.ITable_refContext) (base.TableSource, error) {
 	if tableRef == nil {
 		return nil, errors.New("nil table_ref")
 	}
@@ -2153,8 +2108,8 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef postgresql.
 		}
 	}
 
-	if tableRef.Table_ref() != nil {
-		anchor, err = q.extractTableSourceFromTableRef(tableRef.Table_ref())
+	if len(tableRef.AllTable_ref()) > 0 {
+		anchor, err = q.extractTableSourceFromTableRef(tableRef.Table_ref(0))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract nested table_ref")
 		}
@@ -2184,10 +2139,10 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef postgresql.
 			naturalJoin := join.NATURAL() != nil
 			var usingColumns []string
 			if join.Join_qual() != nil && join.Join_qual().USING() != nil {
-				usingColumns = normalizePostgreSQLNameList(join.Join_qual().Name_list())
+				usingColumns = normalizeRedshiftNameList(join.Join_qual().Name_list())
 			}
 			anchor = q.joinTableSources(anchor, tableSource, naturalJoin, usingColumns)
-			if i == 0 && tableRef.Opt_alias_clause() != nil && tableRef.Table_ref() != nil {
+			if i == 0 && tableRef.Opt_alias_clause() != nil && len(tableRef.AllTable_ref()) > 0 {
 				anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to apply alias to table source")
@@ -2249,7 +2204,7 @@ func (*querySpanExtractor) joinTableSources(left, right base.TableSource, natura
 }
 
 // extractTableSourceFromRelationExpr extracts table source from a relation expression (simple table)
-func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr postgresql.IRelation_exprContext, aliasClause postgresql.IOpt_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr parser.IRelation_exprContext, aliasClause parser.IOpt_alias_clauseContext) (base.TableSource, error) {
 	if relationExpr == nil {
 		return nil, errors.New("nil relation_expr")
 	}
@@ -2260,7 +2215,7 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pos
 	}
 
 	// Extract the table name parts
-	nameParts := NormalizePostgreSQLQualifiedName(qualifiedName)
+	nameParts := NormalizeRedshiftQualifiedName(qualifiedName)
 
 	var schemaName, tableName string
 	switch len(nameParts) {
@@ -2285,10 +2240,10 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pos
 	if aliasClause != nil && aliasClause.Table_alias_clause() != nil {
 		tableAlias := aliasClause.Table_alias_clause()
 		if tableAlias.Table_alias() != nil {
-			aliasName = normalizePostgreSQLTableAlias(tableAlias.Table_alias())
+			aliasName = normalizeRedshiftTableAlias(tableAlias.Table_alias())
 		}
 		if tableAlias.Name_list() != nil {
-			columnAliases = normalizePostgreSQLNameList(tableAlias.Name_list())
+			columnAliases = normalizeRedshiftNameList(tableAlias.Name_list())
 		}
 	}
 
@@ -2318,7 +2273,7 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pos
 	return tableSource, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromUDF(funcExprWindowless postgresql.IFunc_expr_windowlessContext, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromUDF(funcExprWindowless parser.IFunc_expr_windowlessContext, funcAlias parser.IFunc_alias_clauseContext) (base.TableSource, error) {
 	if funcExprWindowless == nil {
 		return nil, errors.New("nil func_expr_windowless")
 	}
@@ -2342,7 +2297,7 @@ func (q *querySpanExtractor) extractTableSourceFromUDF(funcExprWindowless postgr
 }
 
 // extractTableSourceFromFuncTable extracts table source from a function table
-func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable postgresql.IFunc_tableContext, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable parser.IFunc_tableContext, funcAlias parser.IFunc_alias_clauseContext) (base.TableSource, error) {
 	result := &base.PseudoTable{
 		Name:    "",
 		Columns: []base.QuerySpanResult{},
@@ -2461,26 +2416,26 @@ func applyAliasToTableSource(source base.TableSource, tableAliasName string, col
 	return pseudoTable, nil
 }
 
-func applyTableAliasClauseToTableSource(source base.TableSource, tableAlias postgresql.ITable_alias_clauseContext) (base.TableSource, error) {
+func applyTableAliasClauseToTableSource(source base.TableSource, tableAlias parser.ITable_alias_clauseContext) (base.TableSource, error) {
 	aliasName := ""
 	var colAliases []string
 
 	// Get table alias name
 	if tableAlias.Table_alias() != nil {
-		aliasName = normalizePostgreSQLTableAlias(tableAlias.Table_alias())
+		aliasName = normalizeRedshiftTableAlias(tableAlias.Table_alias())
 	}
 
 	// Get column aliases if present
 	if tableAlias.Name_list() != nil {
 		for _, name := range tableAlias.Name_list().AllName() {
-			colAliases = append(colAliases, normalizePostgreSQLName(name))
+			colAliases = append(colAliases, normalizeRedshiftName(name))
 		}
 	}
 
 	return applyAliasToTableSource(source, aliasName, colAliases)
 }
 
-func applyAliasClauseToTableSource(source base.TableSource, aliasClause postgresql.IAlias_clauseContext) (base.TableSource, error) {
+func applyAliasClauseToTableSource(source base.TableSource, aliasClause parser.IAlias_clauseContext) (base.TableSource, error) {
 	if aliasClause == nil {
 		return source, nil
 	}
@@ -2490,13 +2445,13 @@ func applyAliasClauseToTableSource(source base.TableSource, aliasClause postgres
 
 	// Get table alias name
 	if aliasClause.Colid() != nil {
-		aliasName = NormalizePostgreSQLColid(aliasClause.Colid())
+		aliasName = normalizeRedshiftColid(aliasClause.Colid())
 	}
 
 	// Get column aliases if present
 	if aliasClause.Name_list() != nil {
 		for _, name := range aliasClause.Name_list().AllName() {
-			colAliases = append(colAliases, normalizePostgreSQLName(name))
+			colAliases = append(colAliases, normalizeRedshiftName(name))
 		}
 	}
 
@@ -2504,7 +2459,7 @@ func applyAliasClauseToTableSource(source base.TableSource, aliasClause postgres
 }
 
 // applyAliasToTableSource applies an alias to a table source
-func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause postgresql.IOpt_alias_clauseContext) (base.TableSource, error) {
+func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause parser.IOpt_alias_clauseContext) (base.TableSource, error) {
 	if aliasClause == nil || aliasClause.Table_alias_clause() == nil {
 		return source, nil
 	}
@@ -2512,7 +2467,7 @@ func applyOptAliasClauseToTableSource(source base.TableSource, aliasClause postg
 	return applyTableAliasClauseToTableSource(source, aliasClause.Table_alias_clause())
 }
 
-func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
+func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias parser.IFunc_alias_clauseContext) (base.TableSource, error) {
 	if funcAlias == nil {
 		return source, nil
 	}
@@ -2523,14 +2478,14 @@ func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias postgr
 
 	aliasName := ""
 	if funcAlias.Colid() != nil {
-		aliasName = NormalizePostgreSQLColid(funcAlias.Colid())
+		aliasName = normalizeRedshiftColid(funcAlias.Colid())
 	}
 
 	var colAliases []string
 	if funcAlias.Tablefuncelementlist() != nil {
 		for _, name := range funcAlias.Tablefuncelementlist().AllTablefuncelement() {
 			if name.Colid() != nil {
-				colAliases = append(colAliases, NormalizePostgreSQLColid(name.Colid()))
+				colAliases = append(colAliases, normalizeRedshiftColid(name.Colid()))
 			}
 		}
 	}
@@ -2540,7 +2495,7 @@ func applyFuncAliasClauseToTableSource(source base.TableSource, funcAlias postgr
 
 // extractColumnsFromTargetList processes the SELECT target list and returns the result columns.
 // It handles *, table.*, column references, expressions, and aliases.
-func (q *querySpanExtractor) extractColumnsFromTargetList(targetList postgresql.ITarget_listContext, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractColumnsFromTargetList(targetList parser.ITarget_listContext, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
 	if targetList == nil {
 		return nil, nil
 	}
@@ -2549,24 +2504,15 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList postgresql.
 
 	for _, targetEl := range targetList.AllTarget_el() {
 		// Check if this is a star expansion
-		if _, ok := targetEl.(*postgresql.Target_starContext); ok {
+		if _, ok := targetEl.(*parser.Target_starContext); ok {
 			// Handle SELECT * or SELECT table.*
 			starColumns := q.handleStarExpansion(fromFieldList)
 			result = append(result, starColumns...)
 			continue
 		}
 
-		if _, ok := targetEl.(*postgresql.Target_columnrefContext); ok {
-			columns, err := q.getColumnsFromColumnRef(targetEl.(*postgresql.Target_columnrefContext).Columnref())
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to process column reference in target element")
-			}
-			result = append(result, columns...)
-			continue
-		}
-
 		// Check if this is a labeled target (expression with optional alias)
-		if labelCtx, ok := targetEl.(*postgresql.Target_labelContext); ok {
+		if labelCtx, ok := targetEl.(*parser.Target_labelContext); ok {
 			column, err := q.handleTargetLabel(labelCtx)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to process target element")
@@ -2590,7 +2536,7 @@ func (*querySpanExtractor) handleStarExpansion(fromFieldList []base.TableSource)
 }
 
 // handleTargetLabel handles a labeled target element (expression with optional alias)
-func (q *querySpanExtractor) handleTargetLabel(labelCtx *postgresql.Target_labelContext) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) handleTargetLabel(labelCtx *parser.Target_labelContext) (base.QuerySpanResult, error) {
 	// Get the expression
 	expr := labelCtx.A_expr()
 	if expr == nil {
@@ -2609,9 +2555,9 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *postgresql.Target_label
 		// Has an explicit alias
 		targetAlias := labelCtx.Target_alias()
 		if targetAlias.Collabel() != nil {
-			columnName = normalizePostgreSQLCollabel(targetAlias.Collabel())
-		} else if targetAlias.Bare_col_label() != nil {
-			columnName = normalizePostgreSQLBareColLabel(targetAlias.Bare_col_label())
+			columnName = normalizeRedshiftCollabel(targetAlias.Collabel())
+		} else if targetAlias.Identifier() != nil {
+			columnName = normalizeRedshiftIdentifier(targetAlias.Identifier())
 		}
 	}
 
@@ -2620,7 +2566,7 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *postgresql.Target_label
 		columnName = q.getFieldNameFromAExpr(expr)
 		if columnName == "" {
 			// Use default unknown column name
-			columnName = pgUnknownFieldName
+			columnName = rsUnknownFieldName
 		}
 	}
 
@@ -2632,9 +2578,9 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *postgresql.Target_label
 
 // getFieldNameFromAExpr attempts to extract a meaningful column name from an expression.
 // Returns "?column?" if no meaningful name can be derived.
-func (q *querySpanExtractor) getFieldNameFromAExpr(expr postgresql.IA_exprContext) string {
+func (q *querySpanExtractor) getFieldNameFromAExpr(expr parser.IA_exprContext) string {
 	if expr == nil {
-		return pgUnknownFieldName
+		return rsUnknownFieldName
 	}
 
 	// Try to find a column reference in the expression
@@ -2644,7 +2590,7 @@ func (q *querySpanExtractor) getFieldNameFromAExpr(expr postgresql.IA_exprContex
 	}
 
 	// Default to unknown column name for other expression types
-	return pgUnknownFieldName
+	return rsUnknownFieldName
 }
 
 // findColumnNameInExpression recursively searches for a column name in an expression
@@ -2654,14 +2600,14 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 	}
 
 	// Check if this is a column reference
-	if columnRef, ok := node.(postgresql.IColumnrefContext); ok {
+	if columnRef, ok := node.(parser.IColumnrefContext); ok {
 		// Get the column name from the columnref
 		if columnRef.Colid() != nil {
-			colName := NormalizePostgreSQLColid(columnRef.Colid())
+			colName := normalizeRedshiftColid(columnRef.Colid())
 
 			// Check if there's indirection (qualified name)
 			if columnRef.Indirection() != nil {
-				parts := normalizePostgreSQLIndirection(columnRef.Indirection())
+				parts := normalizeRedshiftIndirection(columnRef.Indirection())
 				if len(parts) > 0 && parts[len(parts)-1] != "*" {
 					// Return the last part as the column name
 					return parts[len(parts)-1]
@@ -2673,23 +2619,23 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 	}
 
 	switch ctx := node.(type) {
-	case postgresql.IColumnrefContext:
+	case parser.IColumnrefContext:
 		if ctx.Colid() != nil {
-			return NormalizePostgreSQLColid(ctx.Colid())
+			return normalizeRedshiftColid(ctx.Colid())
 		}
-	case postgresql.IFunc_exprContext:
+	case parser.IFunc_exprContext:
 		// return the function name as the column name
 		_, funcName, _, err := q.extractFunctionElementFromFuncExpr(ctx)
 		if err == nil && funcName != "" {
 			return funcName
 		}
-		return pgUnknownFieldName
-	case postgresql.IFunc_expr_windowlessContext:
+		return rsUnknownFieldName
+	case parser.IFunc_expr_windowlessContext:
 		_, funcName, _, err := q.extractFunctionElementFromFuncExprWindowless(ctx)
 		if err == nil && funcName != "" {
 			return funcName
 		}
-		return pgUnknownFieldName
+		return rsUnknownFieldName
 	}
 
 	// Recursively search children
@@ -2709,7 +2655,7 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 }
 
 // extractSourceColumnSetFromAExpr extracts source columns from an a_expr node
-func (q *querySpanExtractor) extractSourceColumnSetFromAExpr(expr postgresql.IA_exprContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromAExpr(expr parser.IA_exprContext) (base.SourceColumnSet, error) {
 	if expr == nil {
 		return base.SourceColumnSet{}, nil
 	}
@@ -2729,10 +2675,10 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 
 	// Handle specific node types (similar to pg_query_go's switch statement)
 	switch ctx := node.(type) {
-	case postgresql.IColumnrefContext:
+	case parser.IColumnrefContext:
 		// Handle column reference directly
 		return q.getSourceColumnSetFromColumnRef(ctx)
-	case postgresql.IFunc_exprContext:
+	case parser.IFunc_exprContext:
 		// Handle function calls
 		// Process function arguments recursively
 		argsResult, err := q.extractSourceColumnSetFromFuncExpr(ctx)
@@ -2743,7 +2689,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 			argsResult, _ = base.MergeSourceColumnSet(argsResult, udfResult)
 		}
 		return argsResult, nil
-	case postgresql.ISelect_with_parensContext:
+	case parser.ISelect_with_parensContext:
 		sourceColumnSet := make(base.SourceColumnSet)
 		// Subquery in SELECT fields is special.
 		// It can be the non-associated or associated subquery.
@@ -2791,7 +2737,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromNode(node antlr.ParseTree
 	return result, nil
 }
 
-func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefContext) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromColumnRef(ctx parser.IColumnrefContext) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
 		return nil, nil
 	}
@@ -2801,12 +2747,12 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefCo
 
 	// Get the base column name
 	if ctx.Colid() != nil {
-		columnName = NormalizePostgreSQLColid(ctx.Colid())
+		columnName = normalizeRedshiftColid(ctx.Colid())
 	}
 
 	// Handle indirection (qualified names like table.column or schema.table.column)
 	if ctx.Indirection() != nil {
-		parts := normalizePostgreSQLIndirection(ctx.Indirection())
+		parts := normalizeRedshiftIndirection(ctx.Indirection())
 
 		// Check for star expansion (should have been handled elsewhere, but check anyway)
 		if len(parts) > 0 && parts[len(parts)-1] == "*" {
@@ -2903,7 +2849,7 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefCo
 }
 
 // getSourceColumnSetFromColumnRef extracts source columns from a column reference.
-func (q *querySpanExtractor) getSourceColumnSetFromColumnRef(ctx postgresql.IColumnrefContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) getSourceColumnSetFromColumnRef(ctx parser.IColumnrefContext) (base.SourceColumnSet, error) {
 	if ctx == nil {
 		return base.SourceColumnSet{}, nil
 	}
@@ -2947,7 +2893,7 @@ func (q *querySpanExtractor) findTableInFromNew(tableName string) base.TableSour
 }
 
 // extractSourceColumnSetFromFuncExpr extracts source columns from a function expression
-func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr postgresql.IFunc_exprContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr parser.IFunc_exprContext) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 
 	// Handle function application
@@ -3000,7 +2946,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromFuncExpr(funcExpr postgre
 	return result, nil
 }
 
-func getSelectNoParensFromSelectStmt(selectstmt postgresql.ISelectstmtContext) postgresql.ISelect_no_parensContext {
+func getSelectNoParensFromSelectStmt(selectstmt parser.ISelectstmtContext) parser.ISelect_no_parensContext {
 	if selectstmt == nil {
 		return nil
 	}
@@ -3018,7 +2964,7 @@ func getSelectNoParensFromSelectStmt(selectstmt postgresql.ISelectstmtContext) p
 	return nil
 }
 
-func getSelectNoParensFromSelectWithParens(selectWithParens postgresql.ISelect_with_parensContext) postgresql.ISelect_no_parensContext {
+func getSelectNoParensFromSelectWithParens(selectWithParens parser.ISelect_with_parensContext) parser.ISelect_no_parensContext {
 	if selectWithParens == nil {
 		return nil
 	}
@@ -3036,7 +2982,7 @@ func getSelectNoParensFromSelectWithParens(selectWithParens postgresql.ISelect_w
 	return nil
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr postgresql.IFunc_exprContext) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr parser.IFunc_exprContext) (base.SourceColumnSet, error) {
 	schemaName, funcName, err := q.extractFunctionNameFromFuncExpr(funcExpr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract function name")
@@ -3057,12 +3003,12 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF2(funcExpr postgresql.
 	return result, nil
 }
 
-func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr postgresql.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
+func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr parser.IFunc_exprContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExpr(funcExpr)
 	switch {
 	case funcExpr.Func_application() != nil:
 		funcName := funcExpr.Func_application().Func_name()
-		names := NormalizePostgreSQLFuncName(funcName)
+		names := NormalizeRedshiftFuncName(funcName)
 		switch len(names) {
 		case 2:
 			return names[0], names[1], args, nil
@@ -3070,12 +3016,6 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr postgresq
 			return "", names[0], args, nil
 		default:
 			return "", "", nil, errors.New("invalid function name")
-		}
-	case funcExpr.Json_aggregate_func() != nil:
-		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
-			return "", "json_objectagg", args, nil
-		} else if funcExpr.Json_aggregate_func().JSON_ARRAYAGG() != nil {
-			return "", "json_arrayagg", args, nil
 		}
 	case funcExpr.Func_expr_common_subexpr() != nil:
 		// Builtin function, return the first token text as function name
@@ -3087,12 +3027,12 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr postgresq
 	return "", "", nil, errors.New("unable to extract function name")
 }
 
-func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless postgresql.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
+func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExprWindowless parser.IFunc_expr_windowlessContext) (string, string, []antlr.ParseTree, error) {
 	args := getArgumentsFromFunctionExprWindowless(funcExprWindowless)
 	switch {
 	case funcExprWindowless.Func_application() != nil:
 		funcName := funcExprWindowless.Func_application().Func_name()
-		names := NormalizePostgreSQLFuncName(funcName)
+		names := NormalizeRedshiftFuncName(funcName)
 		switch len(names) {
 		case 2:
 			return names[0], names[1], args, nil
@@ -3100,12 +3040,6 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExpr
 			return "", names[0], args, nil
 		default:
 			return "", "", nil, errors.New("invalid function name")
-		}
-	case funcExprWindowless.Json_aggregate_func() != nil:
-		if funcExprWindowless.Json_aggregate_func().JSON_OBJECTAGG() != nil {
-			return "", "json_objectagg", args, nil
-		} else if funcExprWindowless.Json_aggregate_func().JSON_ARRAYAGG() != nil {
-			return "", "json_arrayagg", args, nil
 		}
 	case funcExprWindowless.Func_expr_common_subexpr() != nil:
 		// Builtin function, return the first token text as function name
@@ -3117,12 +3051,12 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExpr
 	return "", "", nil, errors.New("unable to extract function name")
 }
 
-func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr postgresql.IFunc_exprContext) (string, string, error) {
+func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr parser.IFunc_exprContext) (string, string, error) {
 	switch {
 	case funcExpr.Func_application() != nil:
 		funcName := funcExpr.Func_application().Func_name()
 		if funcName.Colid() != nil {
-			names := NormalizePostgreSQLFuncName(funcName)
+			names := NormalizeRedshiftFuncName(funcName)
 			switch len(names) {
 			case 2:
 				return names[0], names[1], nil
@@ -3135,18 +3069,12 @@ func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr postgresql.I
 			// No indirection, just a simple function name
 			s := t.GetText()
 			if t.Identifier() != nil {
-				s = normalizePostgreSQLIdentifier(t.Identifier())
+				s = normalizeRedshiftIdentifier(t.Identifier())
 			}
 			return "", s, nil
 		} else {
 			// Builtin function without schema
 			return "", strings.ToLower(funcName.GetText()), nil
-		}
-	case funcExpr.Json_aggregate_func() != nil:
-		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
-			return "", "json_objectagg", nil
-		} else if funcExpr.Json_aggregate_func().JSON_ARRAYAGG() != nil {
-			return "", "json_arrayagg", nil
 		}
 	case funcExpr.Func_expr_common_subexpr() != nil:
 		// Builtin function, return the first token text as function name
@@ -3158,7 +3086,7 @@ func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr postgresql.I
 	return "", "", errors.New("unable to extract function name")
 }
 
-func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr postgresql.IFunc_exprContext) int {
+func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr parser.IFunc_exprContext) int {
 	if funcExpr == nil {
 		return 0
 	}
@@ -3173,13 +3101,6 @@ func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr postgresql.
 			return 1
 		}
 		return 0
-	}
-
-	// This handles JSON aggregate functions like JSON_AGG(expr).
-	if f := funcExpr.Json_aggregate_func(); f != nil {
-		// Based on Postgres grammar, these functions (JSON_AGG, JSONB_AGG, JSON_OBJECT_AGG, JSONB_OBJECT_AGG)
-		// typically take one or two main arguments. Returning 1 is a reasonable assumption for the primary expression argument.
-		return 1
 	}
 
 	// This handles a large set of built-in functions with special syntax.
@@ -3318,42 +3239,12 @@ func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr postgresql.
 		if f.XMLSERIALIZE() != nil {
 			return 2
 		} // XMLSERIALIZE(CONTENT value AS type)
-
-		// --- JSON Functions ---
-		if f.JSON_OBJECT() != nil {
-			if list := f.Func_arg_list(); list != nil {
-				return len(list.AllFunc_arg_expr())
-			}
-			if list := f.Json_name_and_value_list(); list != nil {
-				return len(list.AllJson_name_and_value())
-			}
-			return 0
-		}
-		if f.JSON_ARRAY() != nil {
-			if list := f.Json_value_expr_list(); list != nil {
-				return len(list.AllJson_value_expr())
-			}
-			if f.Select_no_parens() != nil {
-				return 1
-			} // subquery
-			return 0
-		}
-		if f.JSON() != nil || f.JSON_SCALAR() != nil || f.JSON_SERIALIZE() != nil {
-			return 1
-		}
-		if f.MERGE_ACTION() != nil {
-			return 0
-		}
-		if f.JSON_QUERY() != nil || f.JSON_EXISTS() != nil || f.JSON_VALUE() != nil {
-			count := 2 // json_value_expr, a_expr
-			return count
-		}
 	}
 
 	return 0
 }
 
-func getArgumentsFromFunctionExpr(funcExpr postgresql.IFunc_exprContext) []antlr.ParseTree {
+func getArgumentsFromFunctionExpr(funcExpr parser.IFunc_exprContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if funcExpr == nil {
 		return result
@@ -3392,7 +3283,7 @@ func getArgumentsFromFunctionExpr(funcExpr postgresql.IFunc_exprContext) []antlr
 		} else if f.POSITION() != nil {
 			if list := f.Position_list(); list != nil {
 				for _, child := range list.GetChildren() {
-					if expr, ok := child.(postgresql.IA_exprContext); ok {
+					if expr, ok := child.(parser.IA_exprContext); ok {
 						result = append(result, expr)
 					}
 				}
@@ -3450,44 +3341,14 @@ func getArgumentsFromFunctionExpr(funcExpr postgresql.IFunc_exprContext) []antlr
 			result = append(result, f.A_expr(0))
 		} else if f.XMLSERIALIZE() != nil {
 			result = append(result, f.A_expr(0))
-		} else if f.JSON_OBJECT() != nil {
-			if list := f.Func_arg_list(); list != nil {
-				result = append(result, getArgumentsFromFuncArgList(list)...)
-			}
-			if list := f.Json_name_and_value_list(); list != nil {
-				result = append(result, getArgumentsFromJSONNameAndValueList(list)...)
-			}
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-		} else if f.JSON_ARRAY() != nil {
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-			if list := f.Select_no_parens(); list != nil {
-				result = append(result, list)
-			}
-		} else if f.JSON() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_SCALAR() != nil {
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_SERIALIZE() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_QUERY() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_EXISTS() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_VALUE() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
 		}
+		// Note: Redshift doesn't support JSON_OBJECT, JSON_ARRAY, JSON_SCALAR,
+		// JSON_SERIALIZE, JSON_QUERY, JSON_EXISTS, JSON_VALUE SQL constructs
 	}
 	return result
 }
 
-func getArgumentsFromFunctionExprWindowless(funcExprWindowless postgresql.IFunc_expr_windowlessContext) []antlr.ParseTree {
+func getArgumentsFromFunctionExprWindowless(funcExprWindowless parser.IFunc_expr_windowlessContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if funcExprWindowless == nil {
 		return result
@@ -3526,7 +3387,7 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless postgresql.IFunc_
 		} else if f.POSITION() != nil {
 			if list := f.Position_list(); list != nil {
 				for _, child := range list.GetChildren() {
-					if expr, ok := child.(postgresql.IA_exprContext); ok {
+					if expr, ok := child.(parser.IA_exprContext); ok {
 						result = append(result, expr)
 					}
 				}
@@ -3584,44 +3445,14 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless postgresql.IFunc_
 			result = append(result, f.A_expr(0))
 		} else if f.XMLSERIALIZE() != nil {
 			result = append(result, f.A_expr(0))
-		} else if f.JSON_OBJECT() != nil {
-			if list := f.Func_arg_list(); list != nil {
-				result = append(result, getArgumentsFromFuncArgList(list)...)
-			}
-			if list := f.Json_name_and_value_list(); list != nil {
-				result = append(result, getArgumentsFromJSONNameAndValueList(list)...)
-			}
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-		} else if f.JSON_ARRAY() != nil {
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-			if list := f.Select_no_parens(); list != nil {
-				result = append(result, list)
-			}
-		} else if f.JSON() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_SCALAR() != nil {
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_SERIALIZE() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_QUERY() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_EXISTS() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_VALUE() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
 		}
+		// Note: Redshift doesn't support JSON_OBJECT, JSON_ARRAY, JSON_SCALAR,
+		// JSON_SERIALIZE, JSON_QUERY, JSON_EXISTS, JSON_VALUE SQL constructs
 	}
 	return result
 }
 
-func getArgumentsFromFuncArgList(funcArgList postgresql.IFunc_arg_listContext) []antlr.ParseTree {
+func getArgumentsFromFuncArgList(funcArgList parser.IFunc_arg_listContext) []antlr.ParseTree {
 	var result []antlr.ParseTree
 	if funcArgList == nil {
 		return result
@@ -3632,29 +3463,7 @@ func getArgumentsFromFuncArgList(funcArgList postgresql.IFunc_arg_listContext) [
 	return result
 }
 
-func getArgumentsFromJSONNameAndValueList(jsonNameAndValueList postgresql.IJson_name_and_value_listContext) []antlr.ParseTree {
-	var result []antlr.ParseTree
-	if jsonNameAndValueList == nil {
-		return result
-	}
-	for _, nameAndValue := range jsonNameAndValueList.AllJson_name_and_value() {
-		result = append(result, nameAndValue)
-	}
-	return result
-}
-
-func getArgumentsFromJSONValueExprList(jsonValueExprList postgresql.IJson_value_expr_listContext) []antlr.ParseTree {
-	var result []antlr.ParseTree
-	if jsonValueExprList == nil {
-		return result
-	}
-	for _, valueExpr := range jsonValueExprList.AllJson_value_expr() {
-		result = append(result, valueExpr)
-	}
-	return result
-}
-
-func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName string, args []antlr.ParseTree, alias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName string, args []antlr.ParseTree, alias parser.IFunc_alias_clauseContext) (base.TableSource, error) {
 	switch strings.ToLower(funcName) {
 	case generateSeries:
 		// https://neon.com/postgresql/postgresql-tutorial/postgresql-generate_series
@@ -3752,24 +3561,24 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName st
 		tableName := ""
 		var columnNames []string
 		if alias.Colid() != nil {
-			tableName = NormalizePostgreSQLColid(alias.Colid())
+			tableName = normalizeRedshiftColid(alias.Colid())
 			if alias.Tablefuncelementlist() != nil {
 				for _, name := range alias.Tablefuncelementlist().AllTablefuncelement() {
 					if name.Colid() != nil {
-						columnNames = append(columnNames, NormalizePostgreSQLColid(name.Colid()))
+						columnNames = append(columnNames, normalizeRedshiftColid(name.Colid()))
 					}
 				}
 			}
 		} else if a := alias.Alias_clause(); a != nil {
 			// Get table alias name
 			if a.Colid() != nil {
-				tableName = NormalizePostgreSQLColid(a.Colid())
+				tableName = normalizeRedshiftColid(a.Colid())
 			}
 
 			// Get column aliases if present
 			if a.Name_list() != nil {
 				for _, name := range a.Name_list().AllName() {
-					columnNames = append(columnNames, normalizePostgreSQLName(name))
+					columnNames = append(columnNames, normalizeRedshiftName(name))
 				}
 			}
 		}
@@ -3802,24 +3611,24 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName st
 		tableName := ""
 		var columnNames []string
 		if alias.Colid() != nil {
-			tableName = NormalizePostgreSQLColid(alias.Colid())
+			tableName = normalizeRedshiftColid(alias.Colid())
 			if alias.Tablefuncelementlist() != nil {
 				for _, name := range alias.Tablefuncelementlist().AllTablefuncelement() {
 					if name.Colid() != nil {
-						columnNames = append(columnNames, NormalizePostgreSQLColid(name.Colid()))
+						columnNames = append(columnNames, normalizeRedshiftColid(name.Colid()))
 					}
 				}
 			}
 		} else if a := alias.Alias_clause(); a != nil {
 			// Get table alias name
 			if a.Colid() != nil {
-				tableName = NormalizePostgreSQLColid(a.Colid())
+				tableName = normalizeRedshiftColid(a.Colid())
 			}
 
 			// Get column aliases if present
 			if a.Name_list() != nil {
 				for _, name := range a.Name_list().AllName() {
-					columnNames = append(columnNames, normalizePostgreSQLName(name))
+					columnNames = append(columnNames, normalizeRedshiftName(name))
 				}
 			}
 		}

@@ -24,7 +24,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	redshiftparser "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 )
 
 var (
@@ -179,7 +179,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	var commands []base.Statement
 	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := pgparser.SplitSQL(statement)
+		singleSQLs, err := redshiftparser.SplitSQL(statement)
 		if err != nil {
 			return 0, err
 		}
@@ -361,7 +361,7 @@ func (d *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := pgparser.SplitSQL(statement)
+	singleSQLs, err := redshiftparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
