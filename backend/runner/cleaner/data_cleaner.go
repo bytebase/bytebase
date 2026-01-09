@@ -14,6 +14,7 @@ const (
 	cleanupInterval              = 1 * time.Hour
 	staleDetectionInterval       = 30 * time.Second
 	stalenessThreshold           = 1 * time.Minute
+	planCheckRunTimeout          = 10 * time.Minute
 	heartbeatRetentionPeriod     = 1 * time.Hour
 	exportArchiveRetentionPeriod = 24 * time.Hour
 	oauth2ClientRetentionPeriod  = 30 * 24 * time.Hour // 30 days of inactivity
@@ -48,6 +49,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	// Run cleanup immediately on startup
 	c.cleanup(ctx)
 	c.detectStaleTaskRuns(ctx)
+	c.detectStalePlanCheckRuns(ctx)
 
 	for {
 		select {
@@ -55,6 +57,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			c.cleanup(ctx)
 		case <-staleTicker.C:
 			c.detectStaleTaskRuns(ctx)
+			c.detectStalePlanCheckRuns(ctx)
 		case <-ctx.Done():
 			return
 		}
@@ -76,6 +79,17 @@ func (c *DataCleaner) detectStaleTaskRuns(ctx context.Context) {
 	}
 	if rowsAffected > 0 {
 		slog.Info("Marked stale task runs as failed", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) detectStalePlanCheckRuns(ctx context.Context) {
+	rowsAffected, err := c.store.FailStalePlanCheckRuns(ctx, planCheckRunTimeout)
+	if err != nil {
+		slog.Error("Failed to detect stale plan check runs", log.BBError(err))
+		return
+	}
+	if rowsAffected > 0 {
+		slog.Info("Marked stale plan check runs as failed", slog.Int64("count", rowsAffected))
 	}
 }
 
