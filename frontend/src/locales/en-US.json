@@ -1764,7 +1764,6 @@
     "engine-not-supported-for-backup": "Prior backup is not supported for: {databases}",
     "revision": {
       "self": "Revision",
-      "applied-at": "Applied at",
       "filename": "Filename",
       "import-revision": "Import Revision",
       "select-source": "Select Source",

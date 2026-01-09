@@ -8,14 +8,15 @@
     :striped="true"
     :row-props="rowProps"
     :loading="loading"
+    :checked-row-keys="[...selectedRevisionNames]"
     @update:checked-row-keys="
-      (val) => (state.selectedRevisionNameList = new Set(val as string[]))
+      (keys) => (selectedRevisionNames = new Set(keys as string[]))
     "
   />
 
   <div
-    v-if="state.selectedRevisionNameList.size > 0"
-    class="sticky w-full flex items-center gap-x-2"
+    v-if="showSelection && selectedRevisionNames.size > 0"
+    class="sticky bottom-0 w-full flex items-center gap-x-2 bg-white py-2"
   >
     <NButton size="small" type="error" quaternary @click="onDelete">
       <template #icon>
@@ -29,16 +30,13 @@
 <script lang="tsx" setup>
 import { TrashIcon } from "lucide-vue-next";
 import { type DataTableColumn, NButton, NDataTable, useDialog } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRevisionStore } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
-import {
-  type Revision,
-  Revision_Type,
-} from "@/types/proto-es/v1/revision_service_pb";
-import { useDatabaseDetailContext } from "../Database/context";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
+import { getRevisionType, revisionLink } from "@/utils/v1/revision";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
 const props = defineProps<{
@@ -48,28 +46,24 @@ const props = defineProps<{
   loading?: boolean;
 }>();
 
-interface LocalState {
-  selectedRevisionNameList: Set<string>;
-}
-
 const emit = defineEmits<{
-  (event: "row-click", name: string): void;
+  (event: "row-click", revision: Revision): void;
+  (event: "delete"): void;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
 const revisionStore = useRevisionStore();
-const { pagedRevisionTableSessionKey, database } = useDatabaseDetailContext();
-const state = reactive<LocalState>({
-  selectedRevisionNameList: new Set(),
-});
+
+const selectedRevisionNames = ref<Set<string>>(new Set());
 
 const columnList = computed(() => {
   const columns: (DataTableColumn<Revision> & { hide?: boolean })[] = [
     {
       type: "selection",
-      width: 40,
+      hide: !props.showSelection,
+      width: "2rem",
       cellProps: () => {
         return {
           onClick: (e: MouseEvent) => {
@@ -77,12 +71,11 @@ const columnList = computed(() => {
           },
         };
       },
-      hide: !props.showSelection,
     },
     {
       key: "version",
       title: t("common.version"),
-      width: 160,
+      minWidth: 160,
       resizable: true,
       render: (revision) => revision.version,
     },
@@ -90,13 +83,12 @@ const columnList = computed(() => {
       key: "type",
       title: t("common.type"),
       width: 128,
-      resizable: true,
-      render: (revision) => Revision_Type[revision.type],
+      render: (revision) => getRevisionType(revision.type),
     },
     {
       key: "created-at",
       title: t("common.created-at"),
-      width: 128,
+      width: 180,
       render: (revision) => (
         <HumanizeDate
           date={getDateForPbTimestampProtoEs(revision.createTime)}
@@ -111,11 +103,11 @@ const rowProps = (revision: Revision) => {
   return {
     onClick: (e: MouseEvent) => {
       if (props.customClick) {
-        emit("row-click", revision.name);
+        emit("row-click", revision);
         return;
       }
 
-      const url = `/${database.value.project}/${revision.name}`;
+      const url = revisionLink(revision);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
@@ -132,10 +124,11 @@ const onDelete = () => {
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {
-      for (const name of state.selectedRevisionNameList) {
+      for (const name of selectedRevisionNames.value) {
         await revisionStore.deleteRevision(name);
       }
-      pagedRevisionTableSessionKey.value = `bb.paged-revision-table.${Date.now()}`;
+      selectedRevisionNames.value = new Set();
+      emit("delete");
     },
   });
 };
