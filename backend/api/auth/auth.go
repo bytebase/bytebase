@@ -91,7 +91,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 
 		user, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
-			if IsAuthenticationAllowed(req.Spec().Procedure, authContext) {
+			if IsAuthenticationSkipped(req.Spec().Procedure, authContext) {
 				return next(ctx, req)
 			}
 			return nil, err
@@ -125,7 +125,7 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 
 		user, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
-			if IsAuthenticationAllowed(conn.Spec().Procedure, authContext) {
+			if IsAuthenticationSkipped(conn.Spec().Procedure, authContext) {
 				return next(ctx, conn)
 			}
 			return err

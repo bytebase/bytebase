@@ -34,33 +34,23 @@
     </div>
   </div>
 
-  <div v-if="logEntries.length > 0" class="my-4">
+  <div v-if="revision?.taskRun" class="my-4">
     <p class="w-auto flex items-center text-base text-main mb-2">
       {{ $t("issue.task-run.logs") }}
     </p>
-    <TaskRunLogViewer :entries="logEntries" :sheet="fetchedSheet" />
+    <TaskRunLogViewer :task-run-name="revision.taskRun" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
-import { computedAsync } from "@vueuse/core";
 import { NSpin } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
-import {
-  rolloutServiceClientConnect,
-  sheetServiceClientConnect,
-} from "@/connect";
+import { sheetServiceClientConnect } from "@/connect";
 import { useRevisionStore } from "@/store";
 import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
-import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  GetTaskRunLogRequestSchema,
-  GetTaskRunRequestSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
 const props = defineProps<{
@@ -68,14 +58,10 @@ const props = defineProps<{
   revisionName: string;
 }>();
 
-import { type Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-
 const loading = ref(false);
 const fetchedStatement = ref("");
-const fetchedSheet = ref<Sheet | undefined>(undefined);
 
 const revisionStore = useRevisionStore();
-const taskRun = ref<TaskRun | undefined>(undefined);
 
 watch(
   () => props.revisionName,
@@ -86,30 +72,18 @@ watch(
 
     loading.value = true;
     fetchedStatement.value = "";
-    fetchedSheet.value = undefined;
 
     try {
       const revision =
         await revisionStore.getOrFetchRevisionByName(revisionName);
       if (revision) {
-        if (revision.taskRun) {
-          // Fetch the task run details.
-          const request = create(GetTaskRunRequestSchema, {
-            name: revision.taskRun,
-          });
-          const response =
-            await rolloutServiceClientConnect.getTaskRun(request);
-          taskRun.value = response;
-        }
-        // Prepare the sheet data from task run.
-        // We fetch raw content directly.
+        // Prepare the sheet data for statement display
         if (revision.sheet) {
           try {
             const sheet = await sheetServiceClientConnect.getSheet({
               name: revision.sheet,
               raw: true,
             });
-            fetchedSheet.value = sheet;
             if (sheet.content) {
               fetchedStatement.value = new TextDecoder().decode(sheet.content);
             }
@@ -126,17 +100,6 @@ watch(
   },
   { immediate: true }
 );
-
-// Fetch task run log
-const taskRunLog = computedAsync(async () => {
-  if (!taskRun.value?.name) return undefined;
-  const request = create(GetTaskRunLogRequestSchema, {
-    parent: taskRun.value.name,
-  });
-  return await rolloutServiceClientConnect.getTaskRunLog(request);
-}, undefined);
-
-const logEntries = computed(() => taskRunLog.value?.entries ?? []);
 
 const revision = computed(() =>
   revisionStore.getRevisionByName(props.revisionName)

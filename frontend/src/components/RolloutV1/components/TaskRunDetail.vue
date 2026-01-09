@@ -2,14 +2,10 @@
   <NTabs v-model:value="state.currentTab" type="line">
     <NTabPane name="LOG" :tab="$t('issue.task-run.logs')">
       <TaskRunLogViewer
-        v-if="logEntries.length > 0"
+        v-if="taskRun.name"
         :key="componentId"
-        :entries="logEntries"
-        :sheet="sheet"
+        :task-run-name="taskRun.name"
       />
-      <div v-else-if="isFetching" class="py-4 text-gray-500 text-sm">
-        {{ $t("common.loading") }}
-      </div>
     </NTabPane>
     <NTabPane
       v-if="showTaskRunSessionTab"
@@ -31,21 +27,16 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
-import { computedAsync } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { rolloutServiceClientConnect } from "@/connect";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  GetTaskRunLogRequestSchema,
   type TaskRun,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { TaskRunLogViewer } from "./TaskRunLogViewer";
 import TaskRunSession from "./TaskRunSession";
 
@@ -65,27 +56,6 @@ const state = reactive<LocalState>({
 });
 // Mainly using to force re-render of TaskRunSession component which will re-fetch the session data.
 const componentId = ref<string>(uniqueId());
-
-// Sheet is no longer available on TaskRun - it should be fetched from the parent Task
-// For now, we'll make it undefined. Components using this should get the sheet from
-// the task context if needed.
-const sheet = ref<Sheet | undefined>(undefined);
-
-// Fetch task run log
-const isFetching = ref(false);
-const taskRunLog = computedAsync(
-  async () => {
-    if (!props.taskRun.name) return undefined;
-    const request = create(GetTaskRunLogRequestSchema, {
-      parent: props.taskRun.name,
-    });
-    return await rolloutServiceClientConnect.getTaskRunLog(request);
-  },
-  undefined,
-  { evaluating: isFetching }
-);
-
-const logEntries = computed(() => taskRunLog.value?.entries ?? []);
 
 const refresh = () => {
   componentId.value = uniqueId();

@@ -12,6 +12,7 @@ export interface DisplayItem {
   detail: string;
   detailClass: string;
   affectedRows?: number;
+  duration?: string;
 }
 
 export interface Section {

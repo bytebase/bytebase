@@ -63,11 +63,13 @@ export interface UseTaskRunLogSectionsReturn {
   areAllExpanded: ComputedRef<boolean>;
   totalSections: ComputedRef<number>;
   totalEntries: ComputedRef<number>;
+  totalDuration: ComputedRef<string>;
 }
 
 export const useTaskRunLogSections = (
   entries: MaybeRefOrGetter<TaskRunLogEntry[]>,
-  sheet: MaybeRefOrGetter<Sheet | undefined>
+  sheet: MaybeRefOrGetter<Sheet | undefined>,
+  sheetsMap: MaybeRefOrGetter<Map<string, Sheet> | undefined> = () => undefined
 ): UseTaskRunLogSectionsReturn => {
   const { t } = useI18n();
 
@@ -100,7 +102,34 @@ export const useTaskRunLogSections = (
     return labelMap[type] ?? "Unknown";
   };
 
-  const getEntryDetail = (entry: TaskRunLogEntry): string => {
+  // Extract statement from sheet content using byte range
+  const extractStatementFromRange = (
+    range: { start: number; end: number },
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
+  ): string | undefined => {
+    // For release tasks, look up sheet by version from sheetsMap
+    // For non-release tasks, use the single sheet
+    let content = sheetContent;
+    if (fileVersion && sheetsMapValue) {
+      const fileSheet = sheetsMapValue.get(fileVersion);
+      if (fileSheet?.content) {
+        content = fileSheet.content;
+      }
+    }
+    if (!content) return undefined;
+
+    const subarray = content.subarray(range.start, range.end);
+    return new TextDecoder().decode(subarray);
+  };
+
+  const getEntryDetail = (
+    entry: TaskRunLogEntry,
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
+  ): string => {
     switch (entry.type) {
       case TaskRunLogEntry_Type.COMMAND_EXECUTE: {
         const cmd = entry.commandExecute;
@@ -111,14 +140,12 @@ export const useTaskRunLogSections = (
         if (cmd.statement) {
           statement = cmd.statement;
         } else if (cmd.range) {
-          const sheetValue = toValue(sheet);
-          if (sheetValue) {
-            const subarray = sheetValue.content.subarray(
-              cmd.range.start,
-              cmd.range.end
-            );
-            statement = new TextDecoder().decode(subarray);
-          }
+          statement = extractStatementFromRange(
+            cmd.range,
+            sheetContent,
+            sheetsMapValue,
+            fileVersion
+          );
         }
         if (statement) {
           const stmt = statement.trim().replace(/\s+/g, " ");
@@ -193,10 +220,24 @@ export const useTaskRunLogSections = (
     }
   };
 
+  const getCommandDuration = (entry: TaskRunLogEntry): string | undefined => {
+    if (entry.type !== TaskRunLogEntry_Type.COMMAND_EXECUTE) return undefined;
+    const cmd = entry.commandExecute;
+    if (!cmd?.logTime || !cmd.response?.logTime) return undefined;
+    const startMs = getTimestampMs(cmd.logTime);
+    const endMs = getTimestampMs(cmd.response.logTime);
+    if (startMs <= 0 || endMs <= 0) return undefined;
+    const durationMs = endMs - startMs;
+    return formatDuration(durationMs);
+  };
+
   const buildDisplayItems = (
     groupEntries: TaskRunLogEntry[],
     groupIdx: number,
-    startTime: number
+    startTime: number,
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
   ): DisplayItem[] => {
     return groupEntries.map((entry, idx) => {
       const entryTime = getTimestampMs(entry.logTime);
@@ -209,13 +250,19 @@ export const useTaskRunLogSections = (
         relativeTime: relativeMs > 0 ? formatRelativeTime(relativeMs) : "",
         levelIndicator: entryHasError ? "\u2717" : "\u2713",
         levelClass: entryHasError ? "text-red-600" : "text-green-600",
-        detail: getEntryDetail(entry),
+        detail: getEntryDetail(
+          entry,
+          sheetContent,
+          sheetsMapValue,
+          fileVersion
+        ),
         detailClass: entryHasError ? "text-red-700" : "text-gray-600",
         affectedRows:
           entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
             ? Number(entry.commandExecute?.response?.affectedRows ?? 0) ||
               undefined
             : undefined,
+        duration: getCommandDuration(entry),
       };
     });
   };
@@ -231,10 +278,59 @@ export const useTaskRunLogSections = (
     return "running";
   };
 
+  // Get the actual start and end times for an entry based on its type
+  const getEntryTimeRange = (
+    entry: TaskRunLogEntry
+  ): { start: number; end: number } => {
+    switch (entry.type) {
+      case TaskRunLogEntry_Type.COMMAND_EXECUTE: {
+        const cmd = entry.commandExecute;
+        const start = getTimestampMs(cmd?.logTime);
+        const end = getTimestampMs(cmd?.response?.logTime);
+        return { start: start || 0, end: end || start || 0 };
+      }
+      case TaskRunLogEntry_Type.SCHEMA_DUMP: {
+        const dump = entry.schemaDump;
+        return {
+          start: getTimestampMs(dump?.startTime),
+          end: getTimestampMs(dump?.endTime),
+        };
+      }
+      case TaskRunLogEntry_Type.DATABASE_SYNC: {
+        const sync = entry.databaseSync;
+        return {
+          start: getTimestampMs(sync?.startTime),
+          end: getTimestampMs(sync?.endTime),
+        };
+      }
+      case TaskRunLogEntry_Type.PRIOR_BACKUP: {
+        const backup = entry.priorBackup;
+        return {
+          start: getTimestampMs(backup?.startTime),
+          end: getTimestampMs(backup?.endTime),
+        };
+      }
+      case TaskRunLogEntry_Type.COMPUTE_DIFF: {
+        const diff = entry.computeDiff;
+        return {
+          start: getTimestampMs(diff?.startTime),
+          end: getTimestampMs(diff?.endTime),
+        };
+      }
+      default: {
+        const time = getTimestampMs(entry.logTime);
+        return { start: time, end: time };
+      }
+    }
+  };
+
   const buildSectionsFromEntries = (
     entriesList: TaskRunLogEntry[],
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
     idPrefix = "",
-    forceError = false
+    forceError = false,
+    fileVersion?: string
   ): Section[] => {
     if (!entriesList.length) return [];
 
@@ -249,14 +345,22 @@ export const useTaskRunLogSections = (
         status = "error";
       }
 
-      const timestamps = groupEntries
-        .map((e) => getTimestampMs(e.logTime))
-        .filter((t) => t > 0);
-      const startTime = timestamps.length ? Math.min(...timestamps) : 0;
-      const endTime = timestamps.length ? Math.max(...timestamps) : 0;
+      // Calculate duration using actual operation start/end times
+      const timeRanges = groupEntries.map(getEntryTimeRange);
+      const startTimes = timeRanges.map((r) => r.start).filter((t) => t > 0);
+      const endTimes = timeRanges.map((r) => r.end).filter((t) => t > 0);
+      const startTime = startTimes.length ? Math.min(...startTimes) : 0;
+      const endTime = endTimes.length ? Math.max(...endTimes) : 0;
       const durationMs = endTime - startTime;
 
-      const items = buildDisplayItems(groupEntries, groupIdx, startTime);
+      const items = buildDisplayItems(
+        groupEntries,
+        groupIdx,
+        startTime,
+        sheetContent,
+        sheetsMapValue,
+        fileVersion
+      );
       const statusCfg = STATUS_CONFIG[status];
 
       return {
@@ -268,7 +372,8 @@ export const useTaskRunLogSections = (
         status,
         statusIcon: statusCfg.icon,
         statusClass: statusCfg.class,
-        duration: durationMs > 0 ? formatDuration(durationMs) : "",
+        duration:
+          startTime > 0 && endTime > 0 ? formatDuration(durationMs) : "",
         entryCount: groupEntries.length,
         items,
       };
@@ -277,7 +382,9 @@ export const useTaskRunLogSections = (
 
   const sections = computed((): Section[] => {
     const entriesValue = toValue(entries);
-    return buildSectionsFromEntries(entriesValue);
+    const sheetContent = toValue(sheet)?.content;
+    const sheetsMapValue = toValue(sheetsMap);
+    return buildSectionsFromEntries(entriesValue, sheetContent, sheetsMapValue);
   });
 
   const hasMultipleReplicas = computed((): boolean => {
@@ -294,6 +401,8 @@ export const useTaskRunLogSections = (
   // Build release file groups from entries
   const buildReleaseFileGroupsFromEntries = (
     entriesList: TaskRunLogEntry[],
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
     idPrefix = "",
     forceError = false
   ): ReleaseFileGroup[] => {
@@ -303,10 +412,19 @@ export const useTaskRunLogSections = (
       .filter((group) => group.file !== null) // Only include groups with file markers
       .map((group, idx) => {
         const fileId = idPrefix ? `${idPrefix}-file-${idx}` : `file-${idx}`;
+        const version = group.file!.version;
         return {
-          version: group.file!.version,
+          version,
           filePath: group.file!.filePath,
-          sections: buildSectionsFromEntries(group.entries, fileId, forceError),
+          // Pass version so COMMAND_EXECUTE entries can look up the correct sheet
+          sections: buildSectionsFromEntries(
+            group.entries,
+            sheetContent,
+            sheetsMapValue,
+            fileId,
+            forceError,
+            version
+          ),
         };
       });
   };
@@ -314,6 +432,8 @@ export const useTaskRunLogSections = (
   // Get orphan sections (entries before any release file marker)
   const getOrphanSections = (
     entriesList: TaskRunLogEntry[],
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
     idPrefix = "",
     forceError = false
   ): Section[] => {
@@ -324,6 +444,8 @@ export const useTaskRunLogSections = (
     }
     return buildSectionsFromEntries(
       orphanGroup.entries,
+      sheetContent,
+      sheetsMapValue,
       idPrefix ? `${idPrefix}-orphan` : "orphan",
       forceError
     );
@@ -333,7 +455,13 @@ export const useTaskRunLogSections = (
   const releaseFileGroups = computed((): ReleaseFileGroup[] => {
     const entriesValue = toValue(entries);
     if (!hasReleaseFileMarkers(entriesValue)) return [];
-    return buildReleaseFileGroupsFromEntries(entriesValue);
+    const sheetContent = toValue(sheet)?.content;
+    const sheetsMapValue = toValue(sheetsMap);
+    return buildReleaseFileGroupsFromEntries(
+      entriesValue,
+      sheetContent,
+      sheetsMapValue
+    );
   });
 
   const replicaGroups = computed((): ReplicaGroup[] => {
@@ -343,6 +471,8 @@ export const useTaskRunLogSections = (
     const replicaIds = getUniqueReplicaIds(entriesValue);
     if (replicaIds.length <= 1) return [];
 
+    const sheetContent = toValue(sheet)?.content;
+    const sheetsMapValue = toValue(sheetsMap);
     const entriesByReplica = groupEntriesByReplica(entriesValue);
 
     return replicaIds.map((replicaId, idx) => {
@@ -358,10 +488,18 @@ export const useTaskRunLogSections = (
           replicaId,
           releaseFileGroups: buildReleaseFileGroupsFromEntries(
             replicaEntries,
+            sheetContent,
+            sheetsMapValue,
             replicaId,
             forceError
           ),
-          sections: getOrphanSections(replicaEntries, replicaId, forceError),
+          sections: getOrphanSections(
+            replicaEntries,
+            sheetContent,
+            sheetsMapValue,
+            replicaId,
+            forceError
+          ),
         };
       }
 
@@ -370,6 +508,8 @@ export const useTaskRunLogSections = (
         releaseFileGroups: [],
         sections: buildSectionsFromEntries(
           replicaEntries,
+          sheetContent,
+          sheetsMapValue,
           replicaId,
           forceError
         ),
@@ -568,6 +708,23 @@ export const useTaskRunLogSections = (
     return sections.value.reduce((sum, section) => sum + section.entryCount, 0);
   });
 
+  const totalDuration = computed((): string => {
+    const entriesValue = toValue(entries);
+    if (!entriesValue.length) return "";
+
+    const timeRanges = entriesValue.map(getEntryTimeRange);
+    const startTimes = timeRanges.map((r) => r.start).filter((t) => t > 0);
+    const endTimes = timeRanges.map((r) => r.end).filter((t) => t > 0);
+
+    if (!startTimes.length || !endTimes.length) return "";
+
+    const startTime = Math.min(...startTimes);
+    const endTime = Math.max(...endTimes);
+    const durationMs = endTime - startTime;
+
+    return formatDuration(durationMs);
+  });
+
   // Auto-expand error sections (respecting user's manual collapse)
   watch(
     sections,
@@ -668,5 +825,6 @@ export const useTaskRunLogSections = (
     areAllExpanded,
     totalSections,
     totalEntries,
+    totalDuration,
   };
 };
