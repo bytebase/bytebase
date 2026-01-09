@@ -29,11 +29,13 @@
         <span :class="item.detailClass" class="break-all">
           {{ item.detail }}
         </span>
-        <span
-          v-if="item.affectedRows !== undefined"
-          class="text-gray-400 shrink-0 ml-auto"
-        >
-          {{ item.affectedRows }} rows
+        <span class="shrink-0 ml-auto flex items-center gap-x-2">
+          <span v-if="item.duration" class="text-blue-500 tabular-nums">
+            {{ item.duration }}
+          </span>
+          <span v-if="item.affectedRows !== undefined" class="text-gray-400">
+            {{ item.affectedRows }} rows
+          </span>
         </span>
       </div>
     </template>

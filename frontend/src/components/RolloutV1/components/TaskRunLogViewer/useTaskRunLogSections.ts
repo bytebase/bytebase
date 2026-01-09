@@ -63,6 +63,7 @@ export interface UseTaskRunLogSectionsReturn {
   areAllExpanded: ComputedRef<boolean>;
   totalSections: ComputedRef<number>;
   totalEntries: ComputedRef<number>;
+  totalDuration: ComputedRef<string>;
 }
 
 export const useTaskRunLogSections = (
@@ -219,6 +220,17 @@ export const useTaskRunLogSections = (
     }
   };
 
+  const getCommandDuration = (entry: TaskRunLogEntry): string | undefined => {
+    if (entry.type !== TaskRunLogEntry_Type.COMMAND_EXECUTE) return undefined;
+    const cmd = entry.commandExecute;
+    if (!cmd?.logTime || !cmd.response?.logTime) return undefined;
+    const startMs = getTimestampMs(cmd.logTime);
+    const endMs = getTimestampMs(cmd.response.logTime);
+    if (startMs <= 0 || endMs <= 0) return undefined;
+    const durationMs = endMs - startMs;
+    return formatDuration(durationMs);
+  };
+
   const buildDisplayItems = (
     groupEntries: TaskRunLogEntry[],
     groupIdx: number,
@@ -250,6 +262,7 @@ export const useTaskRunLogSections = (
             ? Number(entry.commandExecute?.response?.affectedRows ?? 0) ||
               undefined
             : undefined,
+        duration: getCommandDuration(entry),
       };
     });
   };
@@ -263,6 +276,52 @@ export const useTaskRunLogSections = (
     if (hasAnyError) return "error";
     if (allComplete) return "success";
     return "running";
+  };
+
+  // Get the actual start and end times for an entry based on its type
+  const getEntryTimeRange = (
+    entry: TaskRunLogEntry
+  ): { start: number; end: number } => {
+    switch (entry.type) {
+      case TaskRunLogEntry_Type.COMMAND_EXECUTE: {
+        const cmd = entry.commandExecute;
+        const start = getTimestampMs(cmd?.logTime);
+        const end = getTimestampMs(cmd?.response?.logTime);
+        return { start: start || 0, end: end || start || 0 };
+      }
+      case TaskRunLogEntry_Type.SCHEMA_DUMP: {
+        const dump = entry.schemaDump;
+        return {
+          start: getTimestampMs(dump?.startTime),
+          end: getTimestampMs(dump?.endTime),
+        };
+      }
+      case TaskRunLogEntry_Type.DATABASE_SYNC: {
+        const sync = entry.databaseSync;
+        return {
+          start: getTimestampMs(sync?.startTime),
+          end: getTimestampMs(sync?.endTime),
+        };
+      }
+      case TaskRunLogEntry_Type.PRIOR_BACKUP: {
+        const backup = entry.priorBackup;
+        return {
+          start: getTimestampMs(backup?.startTime),
+          end: getTimestampMs(backup?.endTime),
+        };
+      }
+      case TaskRunLogEntry_Type.COMPUTE_DIFF: {
+        const diff = entry.computeDiff;
+        return {
+          start: getTimestampMs(diff?.startTime),
+          end: getTimestampMs(diff?.endTime),
+        };
+      }
+      default: {
+        const time = getTimestampMs(entry.logTime);
+        return { start: time, end: time };
+      }
+    }
   };
 
   const buildSectionsFromEntries = (
@@ -286,11 +345,12 @@ export const useTaskRunLogSections = (
         status = "error";
       }
 
-      const timestamps = groupEntries
-        .map((e) => getTimestampMs(e.logTime))
-        .filter((t) => t > 0);
-      const startTime = timestamps.length ? Math.min(...timestamps) : 0;
-      const endTime = timestamps.length ? Math.max(...timestamps) : 0;
+      // Calculate duration using actual operation start/end times
+      const timeRanges = groupEntries.map(getEntryTimeRange);
+      const startTimes = timeRanges.map((r) => r.start).filter((t) => t > 0);
+      const endTimes = timeRanges.map((r) => r.end).filter((t) => t > 0);
+      const startTime = startTimes.length ? Math.min(...startTimes) : 0;
+      const endTime = endTimes.length ? Math.max(...endTimes) : 0;
       const durationMs = endTime - startTime;
 
       const items = buildDisplayItems(
@@ -312,7 +372,8 @@ export const useTaskRunLogSections = (
         status,
         statusIcon: statusCfg.icon,
         statusClass: statusCfg.class,
-        duration: durationMs > 0 ? formatDuration(durationMs) : "",
+        duration:
+          startTime > 0 && endTime > 0 ? formatDuration(durationMs) : "",
         entryCount: groupEntries.length,
         items,
       };
@@ -647,6 +708,23 @@ export const useTaskRunLogSections = (
     return sections.value.reduce((sum, section) => sum + section.entryCount, 0);
   });
 
+  const totalDuration = computed((): string => {
+    const entriesValue = toValue(entries);
+    if (!entriesValue.length) return "";
+
+    const timeRanges = entriesValue.map(getEntryTimeRange);
+    const startTimes = timeRanges.map((r) => r.start).filter((t) => t > 0);
+    const endTimes = timeRanges.map((r) => r.end).filter((t) => t > 0);
+
+    if (!startTimes.length || !endTimes.length) return "";
+
+    const startTime = Math.min(...startTimes);
+    const endTime = Math.max(...endTimes);
+    const durationMs = endTime - startTime;
+
+    return formatDuration(durationMs);
+  });
+
   // Auto-expand error sections (respecting user's manual collapse)
   watch(
     sections,
@@ -747,5 +825,6 @@ export const useTaskRunLogSections = (
     areAllExpanded,
     totalSections,
     totalEntries,
+    totalDuration,
   };
 };
