@@ -130,7 +130,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 
-	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
 	}
 
@@ -206,7 +206,7 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 }
 
 func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
-	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return true, nil, nil
 	}
 	if authContext.AuthMethod != common.AuthMethodIAM {

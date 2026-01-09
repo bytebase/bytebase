@@ -1,4 +1,4 @@
-package pg
+package redshift
 
 import (
 	"context"
@@ -10,8 +10,7 @@ import (
 )
 
 func init() {
-	base.RegisterGetQuerySpan(storepb.Engine_POSTGRES, GetQuerySpan)
-	base.RegisterGetQuerySpan(storepb.Engine_COCKROACHDB, GetQuerySpan)
+	base.RegisterGetQuerySpan(storepb.Engine_REDSHIFT, GetQuerySpan)
 }
 
 // GetQuerySpan returns the query span for the given statement.

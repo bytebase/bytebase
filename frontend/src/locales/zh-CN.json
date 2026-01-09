@@ -1764,7 +1764,6 @@
     "engine-not-supported-for-backup": "引擎不支持预备份：{databases}",
     "revision": {
       "self": "版本",
-      "applied-at": "应用时间",
       "filename": "文件名",
       "import-revision": "导入版本",
       "select-source": "选择来源",

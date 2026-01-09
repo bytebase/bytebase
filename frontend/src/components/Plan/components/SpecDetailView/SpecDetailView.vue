@@ -5,11 +5,11 @@
       class="w-full flex-1 flex flex-col lg:flex-row px-4 gap-4 overflow-hidden"
     >
       <!-- Left: Targets + Statement -->
-      <div class="flex-1 flex flex-col min-w-0 overflow-y-auto py-3">
+      <div class="flex-1 flex flex-col min-w-0 overflow-y-auto gap-y-3 py-3">
         <TargetListSection />
         <DataExportOptionsSection v-if="isDataExportPlan" />
         <FailedTaskRunsSection v-if="!isCreating && rollout" />
-        <div class="flex-1 py-3 flex flex-col">
+        <div class="flex-1 flex flex-col">
           <StatementSection />
         </div>
       </div>

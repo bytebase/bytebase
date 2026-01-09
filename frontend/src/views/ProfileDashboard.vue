@@ -227,8 +227,8 @@ import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
+import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
@@ -431,6 +431,11 @@ const saveEdit = async () => {
           regenerateTempMfaSecret: false,
         })
       );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
     }
   } catch (error) {
     pushNotification({

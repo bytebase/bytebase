@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
+import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import { useSQLEditorTabStore } from "@/store";
 import Panels from "./Panels";
 import StandardPanel from "./StandardPanel";

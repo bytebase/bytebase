@@ -92,17 +92,33 @@
         </div>
 
         <div class="flex flex-col gap-y-2">
-          <h3 class="font-medium text-sm text-control">
-            {{ $t("custom-approval.approval-flow.node.nodes") }} <RequiredStar />
-          </h3>
-          <div class="text-sm text-control-light">
-            {{ $t("custom-approval.approval-flow.node.description") }}
+          <div class="flex items-center justify-between">
+            <h3 class="font-medium text-sm text-control">
+              {{ $t("custom-approval.approval-flow.node.nodes") }}
+              <RequiredStar v-if="!state.noApprovalRequired" />
+            </h3>
+            <div class="flex items-center gap-x-2">
+              <NSwitch
+                v-model:value="state.noApprovalRequired"
+                :disabled="!allowAdmin"
+                size="small"
+                @update:value="handleNoApprovalRequiredChange"
+              />
+              <span class="text-sm text-control-light">
+                {{ $t("custom-approval.approval-flow.skip") }}
+              </span>
+            </div>
           </div>
-          <StepsTable
-            :flow="state.flow"
-            :editable="allowAdmin"
-            @update="handleUpdate"
-          />
+          <template v-if="!state.noApprovalRequired">
+            <div class="text-sm text-control-light">
+              {{ $t("custom-approval.approval-flow.node.description") }}
+            </div>
+            <StepsTable
+              :flow="state.flow"
+              :editable="allowAdmin"
+              @update="handleUpdate"
+            />
+          </template>
         </div>
       </div>
 
@@ -127,7 +143,7 @@
 <script lang="ts" setup>
 import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, head } from "lodash-es";
-import { NButton, NInput, NModal, NTooltip } from "naive-ui";
+import { NButton, NInput, NModal, NSwitch, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -165,6 +181,7 @@ type LocalState = {
   description: string;
   conditionExpr: ConditionGroupExpr;
   flow: ApprovalFlow;
+  noApprovalRequired: boolean;
 };
 
 const props = defineProps<{
@@ -192,6 +209,7 @@ const state = reactive<LocalState>({
   description: "",
   conditionExpr: wrapAsGroup(emptySimpleExpr()),
   flow: createProto(ApprovalFlowSchema, { roles: [] }),
+  noApprovalRequired: false,
 });
 
 const factorList = computed(() => getApprovalFactorList(props.source));
@@ -203,7 +221,7 @@ const allowSave = computed(() => {
   if (!state.title.trim()) return false;
   if (!state.conditionExpr) return false;
   if (!validateSimpleExpr(state.conditionExpr)) return false;
-  if (state.flow.roles.length === 0) return false;
+  if (!state.noApprovalRequired && state.flow.roles.length === 0) return false;
   return true;
 });
 
@@ -215,6 +233,7 @@ const resolveLocalState = async () => {
   state.description = "";
   state.conditionExpr = wrapAsGroup(emptySimpleExpr());
   state.flow = createProto(ApprovalFlowSchema, { roles: [] });
+  state.noApprovalRequired = false;
 
   if (props.rule) {
     state.title = props.rule.title || "";
@@ -229,11 +248,19 @@ const resolveLocalState = async () => {
       }
     }
     state.flow = cloneDeep(props.rule.flow);
+    state.noApprovalRequired = props.rule.flow.roles.length === 0;
   }
 };
 
 const handleUpdate = () => {
   // Trigger reactivity
+};
+
+const handleNoApprovalRequiredChange = (value: boolean) => {
+  if (value) {
+    // Clear roles when "no approval required" is enabled
+    state.flow.roles = [];
+  }
 };
 
 const applyTemplate = (template: ApprovalRuleTemplate) => {

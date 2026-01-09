@@ -1764,7 +1764,6 @@
     "engine-not-supported-for-backup": "No se admite la copia de seguridad previa para: {databases}",
     "revision": {
       "self": "Revisión",
-      "applied-at": "Aplicado en",
       "filename": "Nombre del archivo",
       "import-revision": "Revisión de importación",
       "select-source": "Seleccionar fuente",

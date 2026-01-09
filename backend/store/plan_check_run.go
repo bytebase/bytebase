@@ -197,6 +197,32 @@ type ClaimedPlanCheckRun struct {
 	PlanUID int64
 }
 
+// FailStalePlanCheckRuns marks RUNNING plan check runs as FAILED if they have been running
+// longer than the timeout threshold. Unlike task runs, plan check runs don't use heartbeat
+// detection - they use a simple timeout since they have a bounded execution time.
+func (s *Store) FailStalePlanCheckRuns(ctx context.Context, timeout time.Duration) (int64, error) {
+	q := qb.Q().Space(`
+		UPDATE plan_check_run
+		SET status = ?,
+		    result = '{"results": [{"status": "ERROR", "title": "Plan check run timed out", "content": "The plan check run was abandoned because it exceeded the maximum execution time."}]}',
+		    updated_at = now()
+		WHERE status = ?
+		  AND updated_at < now() - ?::INTERVAL
+	`, PlanCheckRunStatusFailed, PlanCheckRunStatusRunning, timeout.String())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to mark stale plan check runs as failed")
+	}
+
+	return result.RowsAffected()
+}
+
 // ClaimAvailablePlanCheckRuns atomically claims all AVAILABLE plan check runs by updating them to RUNNING
 // and returns the claimed UIDs. Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different runs.
 func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlanCheckRun, error) {

@@ -4,10 +4,7 @@ import type {
 } from "@/types/proto-es/v1/issue_service_pb";
 
 const validateApprovalFlow = (flow: ApprovalFlow) => {
-  if (flow.roles.length === 0) {
-    return false;
-  }
-
+  // Empty roles means "no approval required" - issue will be auto-approved
   return flow.roles.every((role) => !!role);
 };
 

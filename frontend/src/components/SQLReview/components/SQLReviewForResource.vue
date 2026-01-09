@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div v-if="allowGetSQLReviewPolicy" class="flex flex-col gap-y-2">
     <div class="flex items-center gap-x-2">
       <label class="font-medium">
         {{ $t("sql-review.title") }}
@@ -116,6 +116,10 @@ const resetState = () => {
 };
 
 watchEffect(resetState);
+
+const allowGetSQLReviewPolicy = computed(() => {
+  return props.allowEdit && hasWorkspacePermissionV2("bb.reviewConfigs.get");
+});
 
 const allowEditSQLReviewPolicy = computed(() => {
   return props.allowEdit && hasWorkspacePermissionV2("bb.reviewConfigs.update");

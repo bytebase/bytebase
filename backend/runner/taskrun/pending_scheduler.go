@@ -40,7 +40,7 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 
 func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 	// Acquire cluster-wide mutex - only one replica runs at a time.
-	lock, acquired, err := s.store.TryAdvisoryLock(ctx, store.AdvisoryLockKeyPendingScheduler)
+	lock, acquired, err := store.TryAdvisoryLock(ctx, s.store.GetDB(), store.AdvisoryLockKeyPendingScheduler)
 	if err != nil {
 		return errors.Wrapf(err, "failed to acquire advisory lock")
 	}
@@ -48,7 +48,11 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 		// Another replica is running, skip this cycle.
 		return nil
 	}
-	defer func() { _ = lock.Release() }()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			slog.Error("Failed to release pending scheduler advisory lock", log.BBError(err))
+		}
+	}()
 
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_PENDING},
@@ -57,7 +61,7 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list pending task runs")
 	}
 
-	// Build context once per cycle
+	// Build context once per cycle.
 	sc, err := newSchedulingContext(ctx, s.store)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create scheduling context")

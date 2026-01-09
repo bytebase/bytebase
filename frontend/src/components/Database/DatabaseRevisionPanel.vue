@@ -17,8 +17,7 @@
           :loading="loading"
           :revisions="list"
           :show-selection="true"
-          :custom-click="true"
-          @row-click="(name) => (selectedRevisionName = name)"
+          @delete="refreshList"
         />
       </template>
     </PagedTable>
@@ -30,31 +29,14 @@
     :database="database.name"
     @created="handleRevisionCreated"
   />
-
-  <Drawer
-    :show="!!selectedRevisionName"
-    @close="selectedRevisionName = undefined"
-  >
-    <DrawerContent
-      style="width: 75vw; max-width: calc(100vw - 8rem)"
-      :title="$t('common.detail')"
-    >
-      <RevisionDetailPanel
-        v-if="selectedRevisionName"
-        :database="database"
-        :revision-name="selectedRevisionName"
-      />
-    </DrawerContent>
-  </Drawer>
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
 import { ref } from "vue";
-import { RevisionDataTable, RevisionDetailPanel } from "@/components/Revision";
+import { RevisionDataTable } from "@/components/Revision";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { revisionServiceClientConnect } from "@/connect";
 import type { ComposedDatabase } from "@/types";
@@ -67,7 +49,6 @@ const props = defineProps<{
 
 const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();
 const showCreateRevisionDrawer = ref(false);
-const selectedRevisionName = ref<string>();
 
 const fetchRevisionList = async ({
   pageToken,
@@ -91,9 +72,10 @@ const fetchRevisionList = async ({
 
 const handleRevisionCreated = () => {
   showCreateRevisionDrawer.value = false;
+  refreshList();
+};
 
-  // Refresh the revision list to show the newly created revision
-  // The PagedTable component will automatically refresh when we trigger it
-  pagedRevisionTableSessionKey.value = `${pagedRevisionTableSessionKey.value}-refresh-${Date.now()}`;
+const refreshList = () => {
+  pagedRevisionTableSessionKey.value = `bb.paged-revision-table.${Date.now()}`;
 };
 </script>

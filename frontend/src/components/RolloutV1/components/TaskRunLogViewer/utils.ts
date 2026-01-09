@@ -26,6 +26,7 @@ export const formatTime = (ts: PbTimestamp | undefined): string => {
 };
 
 export const formatDuration = (ms: number): string => {
+  if (ms < 1) return "<1ms";
   if (ms < 1000) return `${ms.toFixed(0)}ms`;
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
   const mins = Math.floor(ms / 60000);

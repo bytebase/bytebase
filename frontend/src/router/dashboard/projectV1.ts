@@ -9,6 +9,7 @@ export const PROJECT_V1_ROUTE_MASKING_EXEMPTION = `${PROJECT_V1_ROUTE_DASHBOARD}
 export const PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-exemption.create`;
 export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.changelog.detail`;
+export const PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.revision.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
@@ -343,11 +344,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           title: () => t("common.members"),
-          requiredPermissionList: () => [
-            "bb.projects.getIamPolicy",
-            "bb.users.list",
-            "bb.groups.list",
-          ],
+          requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
         props: true,
@@ -357,6 +354,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           title: () => t("common.settings"),
+          requiredPermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
@@ -393,6 +391,22 @@ const projectV1Routes: RouteRecordRaw[] = [
               instance: `instances/${route.params.instanceId}`,
               database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
               changelogId: route.params.changelogId,
+            }),
+          },
+          {
+            path: "revisions/:revisionId",
+            name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
+            meta: {
+              requiredPermissionList: () => ["bb.databases.get"],
+            },
+            component: () =>
+              import("@/views/DatabaseDetail/RevisionDetail.vue"),
+            props: (route) => ({
+              ...route.params,
+              project: `projects/${route.params.projectId}`,
+              instance: `instances/${route.params.instanceId}`,
+              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
+              revisionId: route.params.revisionId,
             }),
           },
         ],
