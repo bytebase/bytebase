@@ -2318,7 +2318,7 @@ func (q *querySpanExtractor) extractTableSourceFromRelationExpr(relationExpr pos
 	return tableSource, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromUDF2(funcExprWindowless postgresql.IFunc_expr_windowlessContext, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromUDF(funcExprWindowless postgresql.IFunc_expr_windowlessContext, funcAlias postgresql.IFunc_alias_clauseContext) (base.TableSource, error) {
 	if funcExprWindowless == nil {
 		return nil, errors.New("nil func_expr_windowless")
 	}
@@ -2364,7 +2364,7 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable postgresq
 			// If the schemaName is empty, we try to match the system function first.
 			return q.extractTableSourceFromSystemFunctionNew(funcName, args, funcAlias)
 		}
-		return q.extractTableSourceFromUDF2(funcTable.Func_expr_windowless(), funcAlias)
+		return q.extractTableSourceFromUDF(funcTable.Func_expr_windowless(), funcAlias)
 	}
 
 	// The actual column count and names will be determined by the alias
@@ -2397,7 +2397,7 @@ func (q *querySpanExtractor) extractTableSourceFromFuncTable(funcTable postgresq
 						return nil, errors.Wrapf(err, "failed to extract table source from system function %s", funcName)
 					}
 				} else {
-					t, err = q.extractTableSourceFromUDF2(item.Func_expr_windowless(), nil)
+					t, err = q.extractTableSourceFromUDF(item.Func_expr_windowless(), nil)
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to extract table source from UDF %s", funcName)
 					}
