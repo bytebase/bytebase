@@ -208,7 +208,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       }
       const id = name.replace(environmentNamePrefix, "");
       if (!id) {
-        return unknownEnvironment()
+        return unknownEnvironment();
       }
       const environment =
         this.environmentMapById.get(id) ?? unknownEnvironment();
