@@ -67,7 +67,8 @@ export interface UseTaskRunLogSectionsReturn {
 
 export const useTaskRunLogSections = (
   entries: MaybeRefOrGetter<TaskRunLogEntry[]>,
-  sheet: MaybeRefOrGetter<Sheet | undefined>
+  sheet: MaybeRefOrGetter<Sheet | undefined>,
+  sheetsMap: MaybeRefOrGetter<Map<string, Sheet> | undefined> = () => undefined
 ): UseTaskRunLogSectionsReturn => {
   const { t } = useI18n();
 
@@ -100,7 +101,34 @@ export const useTaskRunLogSections = (
     return labelMap[type] ?? "Unknown";
   };
 
-  const getEntryDetail = (entry: TaskRunLogEntry): string => {
+  // Extract statement from sheet content using byte range
+  const extractStatementFromRange = (
+    range: { start: number; end: number },
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
+  ): string | undefined => {
+    // For release tasks, look up sheet by version from sheetsMap
+    // For non-release tasks, use the single sheet
+    let content = sheetContent;
+    if (fileVersion && sheetsMapValue) {
+      const fileSheet = sheetsMapValue.get(fileVersion);
+      if (fileSheet?.content) {
+        content = fileSheet.content;
+      }
+    }
+    if (!content) return undefined;
+
+    const subarray = content.subarray(range.start, range.end);
+    return new TextDecoder().decode(subarray);
+  };
+
+  const getEntryDetail = (
+    entry: TaskRunLogEntry,
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
+  ): string => {
     switch (entry.type) {
       case TaskRunLogEntry_Type.COMMAND_EXECUTE: {
         const cmd = entry.commandExecute;
@@ -111,14 +139,12 @@ export const useTaskRunLogSections = (
         if (cmd.statement) {
           statement = cmd.statement;
         } else if (cmd.range) {
-          const sheetValue = toValue(sheet);
-          if (sheetValue) {
-            const subarray = sheetValue.content.subarray(
-              cmd.range.start,
-              cmd.range.end
-            );
-            statement = new TextDecoder().decode(subarray);
-          }
+          statement = extractStatementFromRange(
+            cmd.range,
+            sheetContent,
+            sheetsMapValue,
+            fileVersion
+          );
         }
         if (statement) {
           const stmt = statement.trim().replace(/\s+/g, " ");
@@ -196,7 +222,10 @@ export const useTaskRunLogSections = (
   const buildDisplayItems = (
     groupEntries: TaskRunLogEntry[],
     groupIdx: number,
-    startTime: number
+    startTime: number,
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
   ): DisplayItem[] => {
     return groupEntries.map((entry, idx) => {
       const entryTime = getTimestampMs(entry.logTime);
@@ -209,7 +238,12 @@ export const useTaskRunLogSections = (
         relativeTime: relativeMs > 0 ? formatRelativeTime(relativeMs) : "",
         levelIndicator: entryHasError ? "\u2717" : "\u2713",
         levelClass: entryHasError ? "text-red-600" : "text-green-600",
-        detail: getEntryDetail(entry),
+        detail: getEntryDetail(
+          entry,
+          sheetContent,
+          sheetsMapValue,
+          fileVersion
+        ),
         detailClass: entryHasError ? "text-red-700" : "text-gray-600",
         affectedRows:
           entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
@@ -233,8 +267,11 @@ export const useTaskRunLogSections = (
 
   const buildSectionsFromEntries = (
     entriesList: TaskRunLogEntry[],
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
     idPrefix = "",
-    forceError = false
+    forceError = false,
+    fileVersion?: string
   ): Section[] => {
     if (!entriesList.length) return [];
 
@@ -256,7 +293,14 @@ export const useTaskRunLogSections = (
       const endTime = timestamps.length ? Math.max(...timestamps) : 0;
       const durationMs = endTime - startTime;
 
-      const items = buildDisplayItems(groupEntries, groupIdx, startTime);
+      const items = buildDisplayItems(
+        groupEntries,
+        groupIdx,
+        startTime,
+        sheetContent,
+        sheetsMapValue,
+        fileVersion
+      );
       const statusCfg = STATUS_CONFIG[status];
 
       return {
@@ -277,7 +321,9 @@ export const useTaskRunLogSections = (
 
   const sections = computed((): Section[] => {
     const entriesValue = toValue(entries);
-    return buildSectionsFromEntries(entriesValue);
+    const sheetContent = toValue(sheet)?.content;
+    const sheetsMapValue = toValue(sheetsMap);
+    return buildSectionsFromEntries(entriesValue, sheetContent, sheetsMapValue);
   });
 
   const hasMultipleReplicas = computed((): boolean => {
@@ -294,6 +340,8 @@ export const useTaskRunLogSections = (
   // Build release file groups from entries
   const buildReleaseFileGroupsFromEntries = (
     entriesList: TaskRunLogEntry[],
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
     idPrefix = "",
     forceError = false
   ): ReleaseFileGroup[] => {
@@ -303,10 +351,19 @@ export const useTaskRunLogSections = (
       .filter((group) => group.file !== null) // Only include groups with file markers
       .map((group, idx) => {
         const fileId = idPrefix ? `${idPrefix}-file-${idx}` : `file-${idx}`;
+        const version = group.file!.version;
         return {
-          version: group.file!.version,
+          version,
           filePath: group.file!.filePath,
-          sections: buildSectionsFromEntries(group.entries, fileId, forceError),
+          // Pass version so COMMAND_EXECUTE entries can look up the correct sheet
+          sections: buildSectionsFromEntries(
+            group.entries,
+            sheetContent,
+            sheetsMapValue,
+            fileId,
+            forceError,
+            version
+          ),
         };
       });
   };
@@ -314,6 +371,8 @@ export const useTaskRunLogSections = (
   // Get orphan sections (entries before any release file marker)
   const getOrphanSections = (
     entriesList: TaskRunLogEntry[],
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
     idPrefix = "",
     forceError = false
   ): Section[] => {
@@ -324,6 +383,8 @@ export const useTaskRunLogSections = (
     }
     return buildSectionsFromEntries(
       orphanGroup.entries,
+      sheetContent,
+      sheetsMapValue,
       idPrefix ? `${idPrefix}-orphan` : "orphan",
       forceError
     );
@@ -333,7 +394,13 @@ export const useTaskRunLogSections = (
   const releaseFileGroups = computed((): ReleaseFileGroup[] => {
     const entriesValue = toValue(entries);
     if (!hasReleaseFileMarkers(entriesValue)) return [];
-    return buildReleaseFileGroupsFromEntries(entriesValue);
+    const sheetContent = toValue(sheet)?.content;
+    const sheetsMapValue = toValue(sheetsMap);
+    return buildReleaseFileGroupsFromEntries(
+      entriesValue,
+      sheetContent,
+      sheetsMapValue
+    );
   });
 
   const replicaGroups = computed((): ReplicaGroup[] => {
@@ -343,6 +410,8 @@ export const useTaskRunLogSections = (
     const replicaIds = getUniqueReplicaIds(entriesValue);
     if (replicaIds.length <= 1) return [];
 
+    const sheetContent = toValue(sheet)?.content;
+    const sheetsMapValue = toValue(sheetsMap);
     const entriesByReplica = groupEntriesByReplica(entriesValue);
 
     return replicaIds.map((replicaId, idx) => {
@@ -358,10 +427,18 @@ export const useTaskRunLogSections = (
           replicaId,
           releaseFileGroups: buildReleaseFileGroupsFromEntries(
             replicaEntries,
+            sheetContent,
+            sheetsMapValue,
             replicaId,
             forceError
           ),
-          sections: getOrphanSections(replicaEntries, replicaId, forceError),
+          sections: getOrphanSections(
+            replicaEntries,
+            sheetContent,
+            sheetsMapValue,
+            replicaId,
+            forceError
+          ),
         };
       }
 
@@ -370,6 +447,8 @@ export const useTaskRunLogSections = (
         releaseFileGroups: [],
         sections: buildSectionsFromEntries(
           replicaEntries,
+          sheetContent,
+          sheetsMapValue,
           replicaId,
           forceError
         ),

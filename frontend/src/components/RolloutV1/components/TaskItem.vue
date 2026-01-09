@@ -194,12 +194,11 @@
           v-if="latestTaskRun"
           :status="task.status"
           :update-time="latestTaskRun.updateTime"
-          :sheet="taskSheet"
+          :task-run-name="latestTaskRun.name"
           :executor-email="executorEmail"
           :duration="timingType !== 'scheduled' ? timingDisplay : undefined"
           :affected-rows-display="affectedRowsDisplay"
           :summary="taskRunLogSummary"
-          :task-name="task.name"
         />
       </div>
     </div>
@@ -238,7 +237,7 @@ import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
-import { taskRunNamePrefix, useSheetV1Store } from "@/store";
+import { taskRunNamePrefix } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -249,7 +248,6 @@ import {
   extractTaskUID,
   isReleaseBasedTask,
   releaseNameOfTaskV1,
-  sheetNameOfTaskV1,
 } from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
 import { useTaskDisplay } from "./composables/useTaskDisplay";
@@ -334,14 +332,6 @@ const { loading, displayedStatement, isStatementTruncated } = useTaskStatement(
   () => props.task,
   () => props.isExpanded
 );
-
-// Get sheet for extracting individual commands in log display
-const sheetStore = useSheetV1Store();
-const taskSheet = computed(() => {
-  const sheetName = sheetNameOfTaskV1(props.task);
-  if (!sheetName) return undefined;
-  return sheetStore.getSheetByName(sheetName);
-});
 
 const latestTaskRun = computed(() => {
   const taskRunsForTask = allTaskRuns.value.filter((run) =>

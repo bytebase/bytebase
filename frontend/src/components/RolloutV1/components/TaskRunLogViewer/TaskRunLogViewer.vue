@@ -215,16 +215,19 @@ import {
   ListIcon,
   ServerIcon,
 } from "lucide-vue-next";
-import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import SectionContent from "./SectionContent.vue";
 import SectionHeader from "./SectionHeader.vue";
+import { useTaskRunLogData } from "./useTaskRunLogData";
 import { useTaskRunLogSections } from "./useTaskRunLogSections";
 
 const props = defineProps<{
-  entries: TaskRunLogEntry[];
-  sheet?: Sheet;
+  taskRunName: string;
 }>();
+
+// Fetch task run log entries and sheets internally
+const { entries, sheet, sheetsMap } = useTaskRunLogData(
+  () => props.taskRunName
+);
 
 const {
   sections,
@@ -244,8 +247,9 @@ const {
   totalSections,
   totalEntries,
 } = useTaskRunLogSections(
-  () => props.entries,
-  () => props.sheet
+  () => entries.value,
+  () => sheet.value,
+  () => sheetsMap.value
 );
 
 const toggleExpandAll = () => {

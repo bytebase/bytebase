@@ -43,12 +43,9 @@
               <ArrowUpRightIcon class="w-4 h-4" />
             </router-link>
           </div>
-          <div v-if="isFetchingTaskRunLog" class="py-2 text-gray-500 text-sm">
-            {{ $t("common.loading") }}
-          </div>
           <TaskRunLogViewer
-            v-else-if="taskRunLogEntries.length > 0"
-            :entries="taskRunLogEntries"
+            v-if="changelog?.taskRun && showTaskRunLogs"
+            :task-run-name="changelog.taskRun"
           />
           <div v-else class="text-sm text-control-light">
             {{ $t("common.no-data") }}
@@ -118,18 +115,15 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
-import { computedAsync } from "@vueuse/core";
 import { ArrowUpRightIcon } from "lucide-vue-next";
 import { NButton, NSwitch } from "naive-ui";
-import { computed, reactive, ref, unref, watch } from "vue";
+import { computed, reactive, unref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
-import { rolloutServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_SYNC_SCHEMA } from "@/router/dashboard/projectV1";
 import {
   useChangelogStore,
@@ -143,7 +137,6 @@ import {
   Changelog_Type,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
-import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   bytesToString,
   extractProjectResourceName,
@@ -249,29 +242,14 @@ const allowRollback = computed((): boolean => {
   );
 });
 
-// Fetch task run log for completed/failed changelogs
-const isFetchingTaskRunLog = ref(false);
-const taskRunLog = computedAsync(
-  async () => {
-    const taskRunName = changelog.value?.taskRun;
-    if (!taskRunName) return undefined;
-    // Only fetch logs for completed or failed changelogs
-    if (
-      changelog.value?.status !== Changelog_Status.DONE &&
-      changelog.value?.status !== Changelog_Status.FAILED
-    ) {
-      return undefined;
-    }
-    const request = create(GetTaskRunLogRequestSchema, {
-      parent: taskRunName,
-    });
-    return await rolloutServiceClientConnect.getTaskRunLog(request);
-  },
-  undefined,
-  { evaluating: isFetchingTaskRunLog }
-);
-
-const taskRunLogEntries = computed(() => taskRunLog.value?.entries ?? []);
+// Only show task run logs for completed or failed changelogs
+const showTaskRunLogs = computed(() => {
+  if (!changelog.value?.taskRun) return false;
+  return (
+    changelog.value.status === Changelog_Status.DONE ||
+    changelog.value.status === Changelog_Status.FAILED
+  );
+});
 
 const handleRollback = () => {
   if (!changelog.value || !database.value) {
