@@ -135,15 +135,9 @@ const fetchIssueList = async ({
   };
 };
 
-// Skip the first watch trigger since PagedTable already fetches on mount
-let isFirstFilterWatch = true;
 watch(
   () => JSON.stringify(mergedIssueFilter.value),
   () => {
-    if (isFirstFilterWatch) {
-      isFirstFilterWatch = false;
-      return;
-    }
     issuePagedTable.value?.refresh();
   }
 );
