@@ -71,11 +71,17 @@ const columnList = computed(() => {
       },
     },
     {
-      key: "type",
-      title: t("changelog.change-type"),
-      width: 120,
+      key: "created",
+      title: t("common.created-at"),
+      width: 180,
       resizable: true,
-      render: (changelog) => getChangelogChangeType(changelog.type),
+      render: (changelog) => {
+        return (
+          <HumanizeDate
+            date={getDateForPbTimestampProtoEs(changelog.createTime)}
+          />
+        );
+      },
     },
     {
       key: "rollout",
@@ -88,17 +94,11 @@ const columnList = computed(() => {
       render: (changelog) => changelog.planTitle || "-",
     },
     {
-      key: "created",
-      title: t("common.created-at"),
-      width: 180,
+      key: "type",
+      title: t("changelog.change-type"),
+      width: 120,
       resizable: true,
-      render: (changelog) => {
-        return (
-          <HumanizeDate
-            date={getDateForPbTimestampProtoEs(changelog.createTime)}
-          />
-        );
-      },
+      render: (changelog) => getChangelogChangeType(changelog.type),
     },
   ];
   return columns.filter((col) => !col.hide);
