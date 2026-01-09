@@ -407,9 +407,6 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
-	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
-	}
 
 	switch req.Msg.Issue.Type {
 	case v1pb.Issue_GRANT_REQUEST:
@@ -418,6 +415,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 		return s.createIssueGrantRequest(ctx, project, req.Msg)
 	case v1pb.Issue_DATABASE_CHANGE:
+		if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
+		}
 		return s.createIssueDatabaseChange(ctx, project, req.Msg)
 	case v1pb.Issue_DATABASE_EXPORT:
 		return s.createIssueDatabaseDataExport(ctx, project, req.Msg)
