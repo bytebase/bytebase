@@ -43,7 +43,7 @@ export const nullEnvironment = (): Environment => {
 export const isValidEnvironmentName = (name: unknown): name is string => {
   return (
     typeof name === "string" &&
-    name.startsWith("environments/") &&
+    /^environments\/.+/.test(name) &&
     name !== EMPTY_ENVIRONMENT_NAME &&
     name !== UNKNOWN_ENVIRONMENT_NAME &&
     name !== NULL_ENVIRONMENT_NAME
