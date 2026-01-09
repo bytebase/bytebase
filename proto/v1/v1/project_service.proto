@@ -459,6 +459,8 @@ message Project {
 
   // Whether to require plan check to have no error before rollout.
   bool require_plan_check_no_error = 21;
+
+  bool allow_request_role = 22;
 }
 
 message AddWebhookRequest {

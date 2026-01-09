@@ -356,6 +356,9 @@ func (x *Project) Equal(y *Project) bool {
 	if x.RequirePlanCheckNoError != y.RequirePlanCheckNoError {
 		return false
 	}
+	if x.AllowRequestRole != y.AllowRequestRole {
+		return false
+	}
 	return true
 }
 

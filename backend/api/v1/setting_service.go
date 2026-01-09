@@ -609,9 +609,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		batchUpdate := []*store.UpdateProjectMessage{}
 		for _, project := range projects {
+			setting := proto.CloneOf(project.Setting)
+			setting.DataClassificationConfigId = classificationID
 			batchUpdate = append(batchUpdate, &store.UpdateProjectMessage{
-				ResourceID:                 project.ResourceID,
-				DataClassificationConfigID: &classificationID,
+				ResourceID: project.ResourceID,
+				Setting:    setting,
 			})
 		}
 		if _, err = s.store.UpdateProjects(ctx, batchUpdate...); err != nil {

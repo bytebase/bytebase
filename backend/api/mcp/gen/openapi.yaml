@@ -13231,6 +13231,9 @@ components:
           type: boolean
           title: require_plan_check_no_error
           description: Whether to require plan check to have no error before rollout.
+        allowRequestRole:
+          type: boolean
+          title: allow_request_role
       title: Project
       additionalProperties: false
     bytebase.v1.Project.ExecutionRetryPolicy:

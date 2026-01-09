@@ -222,7 +222,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 		slog.Error("failed to find classification setting", log.BBError(err))
 	}
 	if setting != nil && len(setting.Configs) != 0 {
-		projectMessage.DataClassificationConfigID = setting.Configs[0].Id
+		projectMessage.Setting.DataClassificationConfigId = setting.Configs[0].Id
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -275,6 +275,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		ResourceID: project.ResourceID,
 	}
 
+	projectSettings := proto.CloneOf(project.Setting)
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "title":
@@ -294,9 +295,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			if !existConfig {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data classification %s not exists", req.Msg.Project.DataClassificationConfigId))
 			}
-			patch.DataClassificationConfigID = &req.Msg.Project.DataClassificationConfigId
+			projectSettings.DataClassificationConfigId = req.Msg.Project.DataClassificationConfigId
+			patch.Setting = projectSettings
 		case "issue_labels":
-			projectSettings := project.Setting
 			var issueLabels []*storepb.Label
 			for _, label := range req.Msg.Project.IssueLabels {
 				issueLabels = append(issueLabels, &storepb.Label{
@@ -308,58 +309,48 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings.IssueLabels = issueLabels
 			patch.Setting = projectSettings
 		case "force_issue_labels":
-			projectSettings := project.Setting
 			projectSettings.ForceIssueLabels = req.Msg.Project.ForceIssueLabels
 			patch.Setting = projectSettings
 		case "enforce_issue_title":
-			projectSettings := project.Setting
 			projectSettings.EnforceIssueTitle = req.Msg.Project.EnforceIssueTitle
 			patch.Setting = projectSettings
 		case "enforce_sql_review":
-			projectSettings := project.Setting
 			projectSettings.EnforceSqlReview = req.Msg.Project.EnforceSqlReview
 			patch.Setting = projectSettings
 		case "auto_enable_backup":
-			projectSettings := project.Setting
 			projectSettings.AutoEnableBackup = req.Msg.Project.AutoEnableBackup
 			patch.Setting = projectSettings
 		case "skip_backup_errors":
-			projectSettings := project.Setting
 			projectSettings.SkipBackupErrors = req.Msg.Project.SkipBackupErrors
 			patch.Setting = projectSettings
 		case "postgres_database_tenant_mode":
-			projectSettings := project.Setting
 			projectSettings.PostgresDatabaseTenantMode = req.Msg.Project.PostgresDatabaseTenantMode
 			patch.Setting = projectSettings
 		case "allow_self_approval":
-			projectSettings := project.Setting
 			projectSettings.AllowSelfApproval = req.Msg.Project.AllowSelfApproval
 			patch.Setting = projectSettings
 		case "execution_retry_policy":
-			projectSettings := project.Setting
 			projectSettings.ExecutionRetryPolicy = convertToStoreExecutionRetryPolicy(req.Msg.Project.ExecutionRetryPolicy)
 			patch.Setting = projectSettings
 		case "ci_sampling_size":
-			projectSettings := project.Setting
 			projectSettings.CiSamplingSize = req.Msg.Project.CiSamplingSize
 			patch.Setting = projectSettings
 		case "parallel_tasks_per_rollout":
-			projectSettings := project.Setting
 			projectSettings.ParallelTasksPerRollout = req.Msg.Project.ParallelTasksPerRollout
 			patch.Setting = projectSettings
 		case "require_issue_approval":
-			projectSettings := project.Setting
 			projectSettings.RequireIssueApproval = req.Msg.Project.RequireIssueApproval
 			patch.Setting = projectSettings
 		case "require_plan_check_no_error":
-			projectSettings := project.Setting
 			projectSettings.RequirePlanCheckNoError = req.Msg.Project.RequirePlanCheckNoError
+			patch.Setting = projectSettings
+		case "allow_request_role":
+			projectSettings.AllowRequestRole = req.Msg.Project.AllowRequestRole
 			patch.Setting = projectSettings
 		case "labels":
 			if err := validateLabels(req.Msg.Project.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			projectSettings := project.Setting
 			projectSettings.Labels = req.Msg.Project.Labels
 			patch.Setting = projectSettings
 		default:

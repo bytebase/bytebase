@@ -99,7 +99,6 @@ CREATE TABLE project (
     deleted boolean NOT NULL DEFAULT FALSE,
     name text NOT NULL,
     resource_id text NOT NULL,
-    data_classification_config_id text NOT NULL DEFAULT '',
     -- Stored as Project (proto/store/store/project.proto)
     setting jsonb NOT NULL DEFAULT '{}'
 );

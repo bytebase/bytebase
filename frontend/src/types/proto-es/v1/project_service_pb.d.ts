@@ -589,6 +589,11 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: bool require_plan_check_no_error = 21;
    */
   requirePlanCheckNoError: boolean;
+
+  /**
+   * @generated from field: bool allow_request_role = 22;
+   */
+  allowRequestRole: boolean;
 };
 
 /**

@@ -7242,6 +7242,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 | require_issue_approval | [bool](#bool) |  | Whether to require issue approval before rollout. |
 | require_plan_check_no_error | [bool](#bool) |  | Whether to require plan check to have no error before rollout. |
+| allow_request_role | [bool](#bool) |  |  |
 
 
 

@@ -120,8 +120,11 @@ type Project struct {
 	RequireIssueApproval bool `protobuf:"varint,15,opt,name=require_issue_approval,json=requireIssueApproval,proto3" json:"require_issue_approval,omitempty"`
 	// Whether to block rollout when plan check finds errors.
 	RequirePlanCheckNoError bool `protobuf:"varint,16,opt,name=require_plan_check_no_error,json=requirePlanCheckNoError,proto3" json:"require_plan_check_no_error,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	AllowRequestRole        bool `protobuf:"varint,17,opt,name=allow_request_role,json=allowRequestRole,proto3" json:"allow_request_role,omitempty"`
+	// The data classification configuration ID for the project.
+	DataClassificationConfigId string `protobuf:"bytes,18,opt,name=data_classification_config_id,json=dataClassificationConfigId,proto3" json:"data_classification_config_id,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -252,6 +255,20 @@ func (x *Project) GetRequirePlanCheckNoError() bool {
 	return false
 }
 
+func (x *Project) GetAllowRequestRole() bool {
+	if x != nil {
+		return x.AllowRequestRole
+	}
+	return false
+}
+
+func (x *Project) GetDataClassificationConfigId() string {
+	if x != nil {
+		return x.DataClassificationConfigId
+	}
+	return ""
+}
+
 // ExecutionRetryPolicy defines retry behavior for failed task executions.
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -306,7 +323,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\x96\a\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\x87\b\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x01 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x02 \x01(\bR\x10forceIssueLabels\x12.\n" +
@@ -322,7 +339,9 @@ const file_store_project_proto_rawDesc = "" +
 	"\x06labels\x18\r \x03(\v2#.bytebase.store.Project.LabelsEntryR\x06labels\x12,\n" +
 	"\x12enforce_sql_review\x18\x0e \x01(\bR\x10enforceSqlReview\x124\n" +
 	"\x16require_issue_approval\x18\x0f \x01(\bR\x14requireIssueApproval\x12<\n" +
-	"\x1brequire_plan_check_no_error\x18\x10 \x01(\bR\x17requirePlanCheckNoError\x1a?\n" +
+	"\x1brequire_plan_check_no_error\x18\x10 \x01(\bR\x17requirePlanCheckNoError\x12,\n" +
+	"\x12allow_request_role\x18\x11 \x01(\bR\x10allowRequestRole\x12A\n" +
+	"\x1ddata_classification_config_id\x18\x12 \x01(\tR\x1adataClassificationConfigId\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

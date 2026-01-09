@@ -66,4 +66,9 @@ message Project {
 
   // Whether to block rollout when plan check finds errors.
   bool require_plan_check_no_error = 16;
+
+  bool allow_request_role = 17;
+
+  // The data classification configuration ID for the project.
+  string data_classification_config_id = 18;
 }
