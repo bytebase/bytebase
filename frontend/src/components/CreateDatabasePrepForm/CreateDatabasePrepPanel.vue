@@ -17,6 +17,12 @@
         />
       </div>
 
+      <IssueLabels
+        v-if="selectedProject"
+        :project="selectedProject"
+        v-model:value="state.labels"
+      />
+
       <div class="w-full">
         <label for="instance" class="textlabel">
           {{ $t("common.instance") }} <RequiredStar />
@@ -171,11 +177,12 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
+import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
   DrawerContent,
@@ -226,6 +233,7 @@ interface LocalState {
   collation: string;
   cluster: string;
   creating: boolean;
+  labels: string[];
 }
 
 const props = defineProps<{
@@ -255,6 +263,23 @@ const state = reactive<LocalState>({
   collation: "",
   cluster: "",
   creating: false,
+  labels: [],
+});
+
+watch(
+  () => state.projectName,
+  () => (state.labels = [])
+);
+
+const selectedProject = computed(() => {
+  if (!state.projectName) {
+    return;
+  }
+  const project = projectStore.getProjectByName(state.projectName);
+  if (!isValidProjectName(project.name)) {
+    return;
+  }
+  return project;
 });
 
 const isReservedName = computed(() => {
@@ -263,8 +288,19 @@ const isReservedName = computed(() => {
 
 const supportedEngines = computed(() => enginesSupportCreateDatabase());
 
+const haveValidIssueLabel = computed(() => {
+  if (!selectedProject.value) {
+    return false;
+  }
+  if (!selectedProject.value.forceIssueLabels) {
+    return true;
+  }
+  return state.labels.length > 0;
+});
+
 const allowCreate = computed(() => {
   return (
+    haveValidIssueLabel.value &&
     isValidProjectName(state.projectName) &&
     isValidInstanceName(state.instanceName) &&
     !isEmpty(state.databaseName) &&
@@ -362,6 +398,7 @@ const create = async () => {
     const issueCreate = createProto(IssueSchema, {
       type: Issue_Type.DATABASE_CHANGE,
       creator: `users/${currentUserV1.value.email}`,
+      labels: state.labels,
     });
     const project = await projectStore.getOrFetchProjectByName(
       state.projectName!
