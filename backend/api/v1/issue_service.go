@@ -361,9 +361,6 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
-	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
-	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -377,6 +374,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	issue, err = s.store.CreateIssue(ctx, issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+	}
+
+	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 && issue.Type == storepb.Issue_DATABASE_CHANGE {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
 	// Trigger ISSUE_CREATED webhook
