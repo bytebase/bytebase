@@ -134,3 +134,40 @@ func parseSingleRedshift(statement string, baseLine int) (*base.ANTLRAST, error)
 
 	return result, nil
 }
+
+// ParseRedshiftPLBlock parses a PL/pgSQL block (BEGIN...END) and returns the ANTLRAST.
+func ParseRedshiftPLBlock(plBlock string) (*base.ANTLRAST, error) {
+	lexer := parser.NewRedshiftLexer(antlr.NewInputStream(plBlock))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewRedshiftParser(stream)
+	lexerErrorListener := &base.ParseErrorListener{
+		Statement:     plBlock,
+		StartPosition: &storepb.Position{Line: 1},
+	}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &base.ParseErrorListener{
+		Statement:     plBlock,
+		StartPosition: &storepb.Position{Line: 1},
+	}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = true
+
+	// Parse starting from pl_block rule instead of root
+	tree := p.Pl_block()
+	if lexerErrorListener.Err != nil {
+		return nil, lexerErrorListener.Err
+	}
+	if parserErrorListener.Err != nil {
+		return nil, parserErrorListener.Err
+	}
+
+	return &base.ANTLRAST{
+		StartPosition: &storepb.Position{Line: 1},
+		Tree:          tree,
+		Tokens:        stream,
+	}, nil
+}
