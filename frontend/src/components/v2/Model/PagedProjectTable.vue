@@ -77,6 +77,7 @@ const fetchProjects = async ({
     pageSize,
     filter: props.filter,
     orderBy,
+    cache: true,
   });
   return {
     nextPageToken: nextPageToken ?? "",

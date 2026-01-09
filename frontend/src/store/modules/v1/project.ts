@@ -122,6 +122,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     silent?: boolean;
     filter?: ProjectFilter;
     orderBy?: string;
+    cache?: boolean;
   }): Promise<{
     projects: Project[];
     nextPageToken?: string;
@@ -177,7 +178,9 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       break;
     }
 
-    upsertProjectsCache(response.projects);
+    if (params.cache) {
+      upsertProjectsCache(response.projects);
+    }
 
     return {
       projects: response.projects,
