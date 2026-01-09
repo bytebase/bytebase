@@ -8,15 +8,9 @@
     </div>
     <main v-else-if="changelog" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
-      <div class="pb-6 border-b border-block-border">
         <div class="flex flex-col gap-y-4">
-          <!-- Rollout Title -->
-          <h2 v-if="changelog.planTitle && taskFullLink" class="text-2xl font-semibold">
-            <router-link :to="taskFullLink" class="text-main hover:text-accent transition-colors">
-              {{ changelog.planTitle }}
-            </router-link>
-          </h2>
-          <h2 v-else-if="changelog.planTitle" class="text-2xl font-semibold text-main">
+          <!-- Plan Title -->
+          <h2 v-if="changelog.planTitle" class="text-2xl font-semibold text-main">
             {{ changelog.planTitle }}
           </h2>
 
@@ -32,12 +26,42 @@
             </span>
           </div>
         </div>
-      </div>
 
       <div class="flex flex-col gap-y-6">
+        <!-- Task Run Logs Section -->
+        <div v-if="changelog.taskRun" class="flex flex-col gap-y-2">
+          <div class="flex items-center justify-between">
+            <p class="text-lg text-main">
+              {{ $t("issue.task-run.logs") }}
+            </p>
+            <router-link
+              v-if="taskFullLink"
+              :to="taskFullLink"
+              class="flex items-center gap-x-1 text-sm text-control-light hover:text-accent transition-colors"
+            >
+              {{ $t("common.show-more") }}
+              <ArrowUpRightIcon class="w-4 h-4" />
+            </router-link>
+          </div>
+          <div v-if="isFetchingTaskRunLog" class="py-2 text-gray-500 text-sm">
+            {{ $t("common.loading") }}
+          </div>
+          <TaskRunLogViewer
+            v-else-if="taskRunLogEntries.length > 0"
+            :entries="taskRunLogEntries"
+          />
+          <div v-else class="text-sm text-control-light">
+            {{ $t("common.no-data") }}
+          </div>
+        </div>
+
+        <!-- Schema Snapshot Section -->
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
           <p class="flex items-center text-lg text-main capitalize gap-x-2">
             Schema {{ $t("common.snapshot") }}
+            <span v-if="formattedSchemaSize" class="text-sm font-normal text-control-light">
+              ({{ formattedSchemaSize }})
+            </span>
             <CopyButton size="small" :content="changelogSchema" />
           </p>
           <div class="flex flex-row items-center justify-between gap-x-2">
@@ -61,7 +85,7 @@
               </div>
             </div>
             <NButton
-              v-if="allowRollback && state.showDiff"
+              v-if="allowRollback"
               size="small"
               @click="handleRollback"
             >
@@ -94,13 +118,18 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
+import { computedAsync } from "@vueuse/core";
+import { ArrowUpRightIcon } from "lucide-vue-next";
 import { NButton, NSwitch } from "naive-ui";
-import { computed, reactive, unref, watch } from "vue";
+import { computed, reactive, ref, unref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
+import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
+import { rolloutServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_SYNC_SCHEMA } from "@/router/dashboard/projectV1";
 import {
   useChangelogStore,
@@ -114,7 +143,12 @@ import {
   Changelog_Type,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
-import { extractProjectResourceName, wrapRefAsPromise } from "@/utils";
+import { GetTaskRunLogRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  bytesToString,
+  extractProjectResourceName,
+  wrapRefAsPromise,
+} from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
@@ -177,6 +211,13 @@ const changelogSchema = computed(() => {
   return changelog.value.schema;
 });
 
+const formattedSchemaSize = computed(() => {
+  if (!changelog.value || !changelog.value.schemaSize) {
+    return "";
+  }
+  return bytesToString(Number(changelog.value.schemaSize));
+});
+
 const showSchemaSnapshot = computed(() => {
   return true;
 });
@@ -207,6 +248,30 @@ const allowRollback = computed((): boolean => {
     changelog.value.status === Changelog_Status.DONE
   );
 });
+
+// Fetch task run log for completed/failed changelogs
+const isFetchingTaskRunLog = ref(false);
+const taskRunLog = computedAsync(
+  async () => {
+    const taskRunName = changelog.value?.taskRun;
+    if (!taskRunName) return undefined;
+    // Only fetch logs for completed or failed changelogs
+    if (
+      changelog.value?.status !== Changelog_Status.DONE &&
+      changelog.value?.status !== Changelog_Status.FAILED
+    ) {
+      return undefined;
+    }
+    const request = create(GetTaskRunLogRequestSchema, {
+      parent: taskRunName,
+    });
+    return await rolloutServiceClientConnect.getTaskRunLog(request);
+  },
+  undefined,
+  { evaluating: isFetchingTaskRunLog }
+);
+
+const taskRunLogEntries = computed(() => taskRunLog.value?.entries ?? []);
 
 const handleRollback = () => {
   if (!changelog.value || !database.value) {
@@ -252,6 +317,11 @@ watch(
       } catch (error) {
         console.error("Failed to fetch previous changelog:", error);
         state.previousChangelog = undefined;
+      }
+
+      // Show diff by default for MIGRATE changelogs
+      if (changelog.value.type === Changelog_Type.MIGRATE) {
+        state.showDiff = true;
       }
     }
 
