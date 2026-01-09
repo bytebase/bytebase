@@ -828,6 +828,10 @@ func createTables(buf *strings.Builder, maps *objectMaps) (bool, error) {
 	} else {
 		for _, tableID := range orderedList {
 			tableDiff := maps.tables[tableID]
+			if tableDiff == nil {
+				// Skip tables not in the map (e.g., existing referenced tables added via AddEdge)
+				continue
+			}
 			if tableDiff.Action == schema.MetadataDiffActionCreate {
 				if err := writeCreateTableDiff(buf, tableDiff, true); err != nil {
 					return hasCycle, err
