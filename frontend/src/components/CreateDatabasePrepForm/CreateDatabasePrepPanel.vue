@@ -13,8 +13,7 @@
           class="mt-1 w-full!"
           required
           :disabled="isValidProjectName(currentProject.name)"
-          :value="state.projectName"
-          @update:value="selectProject"
+          v-model:value="state.projectName"
         />
       </div>
 
@@ -178,7 +177,7 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -267,6 +266,11 @@ const state = reactive<LocalState>({
   labels: [],
 });
 
+watch(
+  () => state.projectName,
+  () => (state.labels = [])
+);
+
 const selectedProject = computed(() => {
   if (!state.projectName) {
     return;
@@ -329,11 +333,6 @@ const requireDatabaseOwnerName = computed(() => {
 const validDatabaseOwnerName = computed(
   () => !requireDatabaseOwnerName.value || state.instanceRole !== undefined
 );
-
-const selectProject = (projectName: string | undefined) => {
-  state.projectName = projectName;
-  state.labels = [];
-};
 
 const selectInstance = (instanceName: string | undefined) => {
   state.instanceName = instanceName;
