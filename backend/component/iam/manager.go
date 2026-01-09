@@ -3,16 +3,26 @@ package iam
 import (
 	"context"
 	_ "embed"
+	"log/slog"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
+)
+
+const (
+	// iamCacheReloadInterval is the interval for periodic IAM cache reload.
+	// This ensures HA replicas eventually get consistent cache.
+	iamCacheReloadInterval = 1 * time.Minute
 )
 
 //go:embed acl.yaml
@@ -124,6 +134,27 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 	m.groupMembers = groupMembers
 	m.memberGroups = memberGroups
 	return nil
+}
+
+// Run starts the periodic IAM cache reload runner.
+// This ensures all HA replicas eventually have consistent cache.
+func (m *Manager) Run(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	slog.Debug("IAM cache reloader started", slog.Duration("interval", iamCacheReloadInterval))
+	ticker := time.NewTicker(iamCacheReloadInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := m.ReloadCache(ctx); err != nil {
+				slog.Error("failed to reload IAM cache", log.BBError(err))
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // GetPermissions returns all permissions for the given role.

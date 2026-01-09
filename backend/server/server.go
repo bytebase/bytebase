@@ -262,6 +262,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
 
+	s.runnerWG.Add(1)
+	go s.iamManager.Run(ctx, &s.runnerWG)
+
 	// Check workspace setting and set audit logger runtime flag
 	workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
