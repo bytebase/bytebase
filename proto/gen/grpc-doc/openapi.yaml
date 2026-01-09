@@ -45,46 +45,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - ActuatorService
-            description: |-
-                Updates system configuration settings for the Bytebase instance.
-                 Permissions required: bb.settings.set
-            operationId: ActuatorService_UpdateActuatorInfo
-            parameters:
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
-                - name: allowMissing
-                  in: query
-                  description: |-
-                    If set to true, and the actuator is not found, a new actuator will be created.
-                     In this situation, `update_mask` is ignored.
-                  schema:
-                    type: boolean
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ActuatorInfo'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ActuatorInfo'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/actuator/resources:
         get:
             tags:
@@ -7771,9 +7731,6 @@ components:
                     readOnly: true
                     type: string
                     description: The unique identifier for the workspace.
-                debug:
-                    type: boolean
-                    description: Whether debug mode is enabled.
                 unlicensedFeatures:
                     readOnly: true
                     type: array
@@ -14736,10 +14693,6 @@ components:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                     description: The duration for refresh token. Default is 7 days.
-                accessTokenDuration:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The duration for access token. Default is 1 hour.
                 announcement:
                     allOf:
                         - $ref: '#/components/schemas/Announcement'
@@ -14794,6 +14747,13 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/WorkspaceProfileSetting_PasswordRestriction'
                     description: Password restriction settings.
+                accessTokenDuration:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The duration for access token. Default is 1 hour.
+                enableDebug:
+                    type: boolean
+                    description: Whether debug mode is enabled.
         WorkspaceProfileSetting_PasswordRestriction:
             type: object
             properties:

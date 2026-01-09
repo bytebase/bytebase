@@ -659,6 +659,7 @@
         "logo-upload-tip": "{extension} tối đa {size} MiB",
         "security": "Bảo mật",
         "account": "Tài khoản",
+        "log": "Nhật ký",
         "watermark": {
           "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
           "enable": "Bật hình mờ"
@@ -673,9 +674,12 @@
           "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
         },
         "audit-log-stdout": {
-          "self": "Xuất Nhật ký Kiểm toán",
           "enable": "Bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
           "description": "Xuất nhật ký kiểm toán JSON có cấu trúc vào đầu ra chuẩn để thu thập bởi các bộ tổng hợp nhật ký (Splunk, ELK, Datadog, Loki). Yêu cầu giấy phép TEAM hoặc ENTERPRISE."
+        },
+        "enable-debug": {
+          "self": "Bật gỡ lỗi",
+          "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
         },
         "disallow-signup": {
           "enable": "Không cho phép đăng ký tự phục vụ",

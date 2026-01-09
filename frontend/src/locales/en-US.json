@@ -659,6 +659,7 @@
         "logo-upload-tip": "{extension} up to {size} MiB",
         "security": "Security",
         "account": "Account",
+        "log": "Log",
         "watermark": {
           "description": "Display watermarks on pages, including username, ID and email.",
           "enable": "Enable watermark"
@@ -673,9 +674,12 @@
           "description": "Help improve Bytebase by sharing anonymous usage data"
         },
         "audit-log-stdout": {
-          "self": "Audit Log Export",
           "enable": "Enable audit logging to stdout",
           "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
+        },
+        "enable-debug": {
+          "self": "Enable debug",
+          "enable": "Enable debug level log for the backend service"
         },
         "disallow-signup": {
           "enable": "Disallow self-service signup",

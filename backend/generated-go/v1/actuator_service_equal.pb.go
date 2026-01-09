@@ -3,11 +3,6 @@
 
 package v1
 
-import (
-	proto "google.golang.org/protobuf/proto"
-	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
-)
-
 func (x *GetResourcePackageRequest) Equal(y *GetResourcePackageRequest) bool {
 	if x == y {
 		return true
@@ -47,29 +42,6 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	return true
-}
-
-func (x *UpdateActuatorInfoRequest) Equal(y *UpdateActuatorInfoRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.Actuator.Equal(y.Actuator) {
-		return false
-	}
-	if equal, ok := interface{}(x.UpdateMask).(interface {
-		Equal(*fieldmaskpb.FieldMask) bool
-	}); !ok || !equal.Equal(y.UpdateMask) {
-		return false
-	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
-		return false
-	}
-	if x.AllowMissing != y.AllowMissing {
-		return false
 	}
 	return true
 }
@@ -141,9 +113,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		return false
 	}
 	if x.WorkspaceId != y.WorkspaceId {
-		return false
-	}
-	if x.Debug != y.Debug {
 		return false
 	}
 	if len(x.UnlicensedFeatures) != len(y.UnlicensedFeatures) {

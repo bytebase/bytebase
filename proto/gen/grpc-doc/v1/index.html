@@ -359,10 +359,6 @@
                   <a href="#bytebase.v1.SetupSampleRequest"><span class="badge">M</span>SetupSampleRequest</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.UpdateActuatorInfoRequest"><span class="badge">M</span>UpdateActuatorInfoRequest</a>
-                </li>
-              
               
               
               
@@ -4227,13 +4223,6 @@ Permissions required: bb.users.updateEmail</p></td>
                 </tr>
               
                 <tr>
-                  <td>debug</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether debug mode is enabled. </p></td>
-                </tr>
-              
-                <tr>
                   <td>unlicensed_features</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
@@ -4379,45 +4368,6 @@ Permissions required: bb.users.updateEmail</p></td>
 
         
       
-        <h3 id="bytebase.v1.UpdateActuatorInfoRequest">UpdateActuatorInfoRequest</h3>
-        <p>Request message for updating actuator information.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>actuator</td>
-                  <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                  <td></td>
-                  <td><p>The actuator to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the actuator is not found, a new actuator will be created.
-In this situation, `update_mask` is ignored. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
 
@@ -4438,14 +4388,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
                 <td><p>Gets system information and health status of the Bytebase instance.
 Permissions required: None</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateActuatorInfo</td>
-                <td><a href="#bytebase.v1.UpdateActuatorInfoRequest">UpdateActuatorInfoRequest</a></td>
-                <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                <td><p>Updates system configuration settings for the Bytebase instance.
-Permissions required: bb.settings.set</p></td>
               </tr>
             
               <tr>
@@ -4497,16 +4439,6 @@ Permissions required: None</p></td>
                 <td>GET</td>
                 <td>/v1/actuator/info</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateActuatorInfo</td>
-                <td>PATCH</td>
-                <td>/v1/actuator/info</td>
-                <td>actuator</td>
               </tr>
               
             
@@ -27848,13 +27780,6 @@ resource.table_name.matches(&#34;sensitive_.*&#34;) &amp;&amp; resource.db_engin
                 </tr>
               
                 <tr>
-                  <td>access_token_duration</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The duration for access token. Default is 1 hour. </p></td>
-                </tr>
-              
-                <tr>
                   <td>announcement</td>
                   <td><a href="#bytebase.v1.Announcement">Announcement</a></td>
                   <td></td>
@@ -27945,6 +27870,20 @@ Requires ENTERPRISE license. </p></td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
                   <td><p>Password restriction settings. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_token_duration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The duration for access token. Default is 1 hour. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_debug</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether debug mode is enabled. </p></td>
                 </tr>
               
             </tbody>

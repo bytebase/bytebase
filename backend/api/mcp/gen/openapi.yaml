@@ -153,44 +153,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
-  /bytebase.v1.ActuatorService/UpdateActuatorInfo:
-    post:
-      tags:
-        - bytebase.v1.ActuatorService
-      summary: 'Updates system configuration settings for the Bytebase instance.  Permissions required: bb.settings.set'
-      description: |-
-        Updates system configuration settings for the Bytebase instance.
-         Permissions required: bb.settings.set
-      operationId: bytebase.v1.ActuatorService.UpdateActuatorInfo
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.UpdateActuatorInfoRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
   /bytebase.v1.AuditLogService/ExportAuditLogs:
     post:
       tags:
@@ -6344,10 +6306,6 @@ components:
           type: string
           title: workspace_id
           description: The unique identifier for the workspace.
-        debug:
-          type: boolean
-          title: debug
-          description: Whether debug mode is enabled.
         unlicensedFeatures:
           type: array
           items:
@@ -16636,26 +16594,6 @@ components:
              Format: users/{email}
       title: UndeleteUserRequest
       additionalProperties: false
-    bytebase.v1.UpdateActuatorInfoRequest:
-      type: object
-      properties:
-        actuator:
-          title: actuator
-          description: The actuator to update.
-          $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
-        updateMask:
-          title: update_mask
-          description: The list of fields to update.
-          $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the actuator is not found, a new actuator will be created.
-             In this situation, `update_mask` is ignored.
-      title: UpdateActuatorInfoRequest
-      additionalProperties: false
-      description: Request message for updating actuator information.
     bytebase.v1.UpdateDataSourceRequest:
       type: object
       properties:
@@ -17587,10 +17525,6 @@ components:
           title: refresh_token_duration
           description: The duration for refresh token. Default is 7 days.
           $ref: '#/components/schemas/google.protobuf.Duration'
-        accessTokenDuration:
-          title: access_token_duration
-          description: The duration for access token. Default is 1 hour.
-          $ref: '#/components/schemas/google.protobuf.Duration'
         announcement:
           title: announcement
           description: The setting of custom announcement
@@ -17649,6 +17583,14 @@ components:
           title: password_restriction
           description: Password restriction settings.
           $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction'
+        accessTokenDuration:
+          title: access_token_duration
+          description: The duration for access token. Default is 1 hour.
+          $ref: '#/components/schemas/google.protobuf.Duration'
+        enableDebug:
+          type: boolean
+          title: enable_debug
+          description: Whether debug mode is enabled.
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

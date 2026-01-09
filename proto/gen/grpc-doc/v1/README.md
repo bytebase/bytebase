@@ -51,7 +51,6 @@
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
-    - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -1222,7 +1221,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | need_admin_setup | [bool](#bool) |  | Whether the Bytebase instance requires initial admin setup. |
 | last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
 | workspace_id | [string](#string) |  | The unique identifier for the workspace. |
-| debug | [bool](#bool) |  | Whether debug mode is enabled. |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
 | user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated | Statistics about users in the system. |
@@ -1307,23 +1305,6 @@ Request message for setting up sample data.
 
 
 
-
-<a name="bytebase-v1-UpdateActuatorInfoRequest"></a>
-
-### UpdateActuatorInfoRequest
-Request message for updating actuator information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| actuator | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  | The actuator to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the actuator is not found, a new actuator will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
  
 
  
@@ -1339,7 +1320,6 @@ ActuatorService manages system health and operational information.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. Permissions required: None |
-| UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Updates system configuration settings for the Bytebase instance. Permissions required: bb.settings.set |
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 | GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
@@ -9962,7 +9942,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
-| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
@@ -9976,6 +9955,8 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
+| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
+| enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 
 
 

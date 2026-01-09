@@ -337,9 +337,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if p, q := x.RefreshTokenDuration, y.RefreshTokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if p, q := x.AccessTokenDuration, y.AccessTokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
 	if !x.Announcement.Equal(y.Announcement) {
 		return false
 	}
@@ -382,6 +379,12 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
+		return false
+	}
+	if p, q := x.AccessTokenDuration, y.AccessTokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.EnableDebug != y.EnableDebug {
 		return false
 	}
 	return true

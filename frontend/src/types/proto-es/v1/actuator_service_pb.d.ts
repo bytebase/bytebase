@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { UserType } from "./user_service_pb";
 import type { State } from "./common_pb";
 
@@ -74,41 +74,6 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
  * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
  */
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
-
-/**
- * Request message for updating actuator information.
- *
- * @generated from message bytebase.v1.UpdateActuatorInfoRequest
- */
-export declare type UpdateActuatorInfoRequest = Message<"bytebase.v1.UpdateActuatorInfoRequest"> & {
-  /**
-   * The actuator to update.
-   *
-   * @generated from field: bytebase.v1.ActuatorInfo actuator = 1;
-   */
-  actuator?: ActuatorInfo;
-
-  /**
-   * The list of fields to update.
-   *
-   * @generated from field: google.protobuf.FieldMask update_mask = 2;
-   */
-  updateMask?: FieldMask;
-
-  /**
-   * If set to true, and the actuator is not found, a new actuator will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 3;
-   */
-  allowMissing: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.UpdateActuatorInfoRequest.
- * Use `create(UpdateActuatorInfoRequestSchema)` to create a new message.
- */
-export declare const UpdateActuatorInfoRequestSchema: GenMessage<UpdateActuatorInfoRequest>;
 
 /**
  * Request message for deleting cache.
@@ -207,13 +172,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: string workspace_id = 13;
    */
   workspaceId: string;
-
-  /**
-   * Whether debug mode is enabled.
-   *
-   * @generated from field: bool debug = 14;
-   */
-  debug: boolean;
 
   /**
    * List of features that are not licensed.
@@ -320,17 +278,6 @@ export declare const ActuatorService: GenService<{
   getActuatorInfo: {
     methodKind: "unary";
     input: typeof GetActuatorInfoRequestSchema;
-    output: typeof ActuatorInfoSchema;
-  },
-  /**
-   * Updates system configuration settings for the Bytebase instance.
-   * Permissions required: bb.settings.set
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.UpdateActuatorInfo
-   */
-  updateActuatorInfo: {
-    methodKind: "unary";
-    input: typeof UpdateActuatorInfoRequestSchema;
     output: typeof ActuatorInfoSchema;
   },
   /**

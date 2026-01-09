@@ -205,6 +205,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
+			case "value.workspace_profile.enable_debug":
+				oldSetting.EnableDebug = payload.EnableDebug
+				level := slog.LevelInfo
+				if payload.EnableDebug {
+					level = slog.LevelDebug
+				}
+				log.LogLevel.Set(level)
 			case "value.workspace_profile.disallow_signup":
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))

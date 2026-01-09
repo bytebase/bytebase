@@ -871,8 +871,6 @@ type WorkspaceProfileSetting struct {
 	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
 	// The duration for refresh token. Default is 7 days.
 	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
-	// The duration for access token. Default is 1 hour.
-	AccessTokenDuration *durationpb.Duration `protobuf:"bytes,18,opt,name=access_token_duration,json=accessTokenDuration,proto3" json:"access_token_duration,omitempty"`
 	// The setting of custom announcement
 	Announcement *Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
@@ -901,8 +899,12 @@ type WorkspaceProfileSetting struct {
 	BrandingLogo string `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
 	// Password restriction settings.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// The duration for access token. Default is 1 hour.
+	AccessTokenDuration *durationpb.Duration `protobuf:"bytes,18,opt,name=access_token_duration,json=accessTokenDuration,proto3" json:"access_token_duration,omitempty"`
+	// Whether debug mode is enabled.
+	EnableDebug   bool `protobuf:"varint,19,opt,name=enable_debug,json=enableDebug,proto3" json:"enable_debug,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -959,13 +961,6 @@ func (x *WorkspaceProfileSetting) GetRequire_2Fa() bool {
 func (x *WorkspaceProfileSetting) GetRefreshTokenDuration() *durationpb.Duration {
 	if x != nil {
 		return x.RefreshTokenDuration
-	}
-	return nil
-}
-
-func (x *WorkspaceProfileSetting) GetAccessTokenDuration() *durationpb.Duration {
-	if x != nil {
-		return x.AccessTokenDuration
 	}
 	return nil
 }
@@ -1059,6 +1054,20 @@ func (x *WorkspaceProfileSetting) GetPasswordRestriction() *WorkspaceProfileSett
 		return x.PasswordRestriction
 	}
 	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetAccessTokenDuration() *durationpb.Duration {
+	if x != nil {
+		return x.AccessTokenDuration
+	}
+	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetEnableDebug() bool {
+	if x != nil {
+		return x.EnableDebug
+	}
+	return false
 }
 
 type Announcement struct {
@@ -2880,14 +2889,13 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xd5\v\n" +
+	"\apayload\"\xf8\v\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
 	"require2fa\x12O\n" +
-	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12M\n" +
-	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12=\n" +
+	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12=\n" +
 	"\fannouncement\x18\x05 \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12Q\n" +
 	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
 	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
@@ -2901,7 +2909,9 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
 	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12#\n" +
 	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12k\n" +
-	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x1a\x93\x03\n" +
+	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
+	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
+	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
@@ -3106,12 +3116,12 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	21, // 11: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
 	28, // 12: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
 	44, // 13: bytebase.v1.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
-	44, // 14: bytebase.v1.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
-	15, // 15: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
-	44, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
-	0,  // 17: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
-	44, // 18: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
-	29, // 19: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	15, // 14: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
+	44, // 15: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	0,  // 16: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
+	44, // 17: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	29, // 18: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	44, // 19: bytebase.v1.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
 	2,  // 20: bytebase.v1.Announcement.level:type_name -> bytebase.v1.Announcement.AlertLevel
 	30, // 21: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
 	31, // 22: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig

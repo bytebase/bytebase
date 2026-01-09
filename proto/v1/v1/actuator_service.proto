@@ -24,18 +24,6 @@ service ActuatorService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  // Updates system configuration settings for the Bytebase instance.
-  // Permissions required: bb.settings.set
-  rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
-    option (google.api.http) = {
-      patch: "/v1/actuator/info"
-      body: "actuator"
-    };
-    option (google.api.method_signature) = "actuator,update_mask";
-    option (bytebase.v1.permission) = "bb.settings.set";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   // Sets up sample data for demonstration and testing purposes.
   // Permissions required: bb.projects.create
   rpc SetupSample(SetupSampleRequest) returns (google.protobuf.Empty) {
@@ -78,26 +66,13 @@ message SetupSampleRequest {}
 // Request message for getting actuator information.
 message GetActuatorInfoRequest {}
 
-// Request message for updating actuator information.
-message UpdateActuatorInfoRequest {
-  // The actuator to update.
-  ActuatorInfo actuator = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // If set to true, and the actuator is not found, a new actuator will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 3;
-}
-
 // Request message for deleting cache.
 message DeleteCacheRequest {}
 
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  reserved 10, 12, 16, 17;
+  reserved 10, 12, 16, 17, 14;
 
   // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -131,9 +106,6 @@ message ActuatorInfo {
 
   // The unique identifier for the workspace.
   string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether debug mode is enabled.
-  bool debug = 14;
 
   // List of features that are not licensed.
   repeated string unlicensed_features = 15 [(google.api.field_behavior) = OUTPUT_ONLY];

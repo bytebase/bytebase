@@ -169,6 +169,15 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
+	workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace profile setting")
+	}
+	profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
+	if workspaceProfile.EnableDebug {
+		log.LogLevel.Set(slog.LevelDebug)
+	}
+
 	// Settings are now initialized in the database schema (LATEST.sql)
 	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
