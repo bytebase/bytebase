@@ -31,7 +31,12 @@
     </div>
     <div v-if="selectedRole" class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
-        <span>{{ $t("common.permissions") }}</span>
+        <span>
+          {{ $t("common.permissions") }}
+          ({{
+              selectedRole.permissions.length
+          }})
+        </span>
       </div>
       <div class="max-h-[10em] overflow-auto border rounded-sm p-2">
         <p

@@ -145,7 +145,12 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { extractProjectResourceName, generateIssueTitle } from "@/utils";
+import {
+  extractProjectResourceName,
+  generateIssueTitle,
+  PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
+  PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
+} from "@/utils";
 
 interface DatabaseAction {
   icon: VNode;
@@ -418,12 +423,7 @@ const actions = computed((): DatabaseAction[] => {
                 selectedDatabaseNameList.value
               );
             },
-            requiredPermissions: [
-              "bb.issues.create",
-              "bb.plans.create",
-              "bb.rollouts.create",
-              "bb.sheets.create",
-            ],
+            requiredPermissions: [...PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE],
           });
         }
         break;
@@ -437,11 +437,7 @@ const actions = computed((): DatabaseAction[] => {
               props.databases.length < 1 ||
               selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
             click: () => generateMultiDb("bb.issue.database.data.export"),
-            requiredPermissions: [
-              "bb.issues.create",
-              "bb.plans.create",
-              "bb.rollouts.create",
-            ],
+            requiredPermissions: [...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE],
           });
         }
         break;

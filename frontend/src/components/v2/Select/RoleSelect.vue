@@ -3,7 +3,7 @@
     v-bind="$attrs"
     :value="value"
     :multiple="multiple"
-    :disabled="disabled"
+    :disabled="disabled || !hasPermission"
     :clearable="clearable"
     :options="availableRoleOptions"
     :max-tag-count="'responsive'"
@@ -23,7 +23,7 @@
 
 <script setup lang="tsx">
 import type { SelectGroupOption, SelectOption } from "naive-ui";
-import { NSelect } from "naive-ui";
+import { NSelect, NTag } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
@@ -37,7 +37,11 @@ import {
 } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { displayRoleDescription, displayRoleTitle } from "@/utils";
+import {
+  displayRoleDescription,
+  displayRoleTitle,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 type RoleSelectOption = SelectOption & {
   role: Role;
@@ -70,6 +74,7 @@ const emit = defineEmits<{
 const roleStore = useRoleStore();
 const showFeatureModal = ref(false);
 const hasCustomRoleFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_ROLES);
+const hasPermission = computed(() => hasWorkspacePermissionV2("bb.roles.list"));
 
 const filterRole = (role: string) => {
   if (!props.filter) {
@@ -130,8 +135,18 @@ const availableRoleOptions = computed(
   }
 );
 
-const renderTag = ({ option }: { option: SelectBaseOption }) => {
-  return option.label as string;
+const renderTag = ({
+  option,
+  handleClose,
+}: {
+  option: SelectBaseOption;
+  handleClose: () => void;
+}) => {
+  return (
+    <NTag closable={!props.disabled} onClose={handleClose}>
+      {option.label as string}
+    </NTag>
+  );
 };
 
 const renderLabel = (option: SelectBaseOption & SelectGroupOption) => {
