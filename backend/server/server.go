@@ -111,6 +111,10 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 	}()
 
+	if profile.HA && profile.UseEmbedDB() {
+		return nil, errors.New("HA mode requires external PostgreSQL (set PG_URL environment variable)")
+	}
+
 	var pgURL string
 	if profile.UseEmbedDB() {
 		pgDataDir := path.Join(profile.DataDir, "pgdata")
