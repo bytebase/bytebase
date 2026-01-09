@@ -343,13 +343,21 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
 	}
 
-	// Redshift uses different function argument syntax (Func_py_args_or_sql_args)
-	// For now, return a simple detail without parsing arguments
-	// since Redshift functions have different semantics than PostgreSQL
+	// Redshift uses Func_py_args_or_sql_args instead of PostgreSQL's Func_args_with_defaults.
+	// Redshift function parameters don't support default values or VARIADIC.
+	funcArgs := createFuncStmt.Func_py_args_or_sql_args()
+	var nParam int
+	if funcArgs != nil {
+		if argList := funcArgs.Func_py_args_or_sql_args_list(); argList != nil {
+			// Count parameters by the number of Func_type entries
+			nParam = len(argList.AllFunc_type())
+		}
+	}
+
 	return &functionDefinitionDetail{
 		nDefaultParam:  0,
 		nVariadicParam: 0,
-		nParam:         0,
+		nParam:         nParam,
 		function:       funcDef,
 	}, nil
 }
@@ -895,10 +903,8 @@ func unescapeUnicodeEscapeString(s string) string {
 	return result
 }
 
-// extractParameterNamesFromCreateFunction extracts OUT/TABLE parameter names from CREATE FUNCTION.
-// Returns column names from OUT parameters and RETURNS TABLE columns.
-// Note: Redshift uses different function syntax (Func_py_args_or_sql_args), so this
-// returns empty for now as Redshift functions have different semantics than PostgreSQL.
+// extractParameterNamesFromCreateFunction extracts column names from RETURNS TABLE clause.
+// Redshift doesn't support PostgreSQL-style OUT parameters, but does support RETURNS TABLE.
 func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncStmt parser.ICreatefunctionstmtContext) []string {
 	var columnNames []string
 
