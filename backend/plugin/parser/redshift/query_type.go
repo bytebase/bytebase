@@ -180,8 +180,7 @@ func (q *queryTypeListener) getStatementType(stmt parser.IStmtContext) base.Quer
 
 	// Other DDL statements
 	if stmt.Truncatestmt() != nil || stmt.Commentstmt() != nil ||
-		stmt.Grantstmt() != nil || stmt.Grantrolestmt() != nil ||
-		stmt.Revokestmt() != nil || stmt.Revokerolestmt() != nil ||
+		stmt.Grantstmt() != nil || stmt.Revokestmt() != nil ||
 		stmt.Clusterstmt() != nil || stmt.Vacuumstmt() != nil ||
 		stmt.Analyzestmt() != nil || stmt.Lockstmt() != nil ||
 		stmt.Reindexstmt() != nil || stmt.Rulestmt() != nil ||

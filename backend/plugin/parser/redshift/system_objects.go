@@ -168,3 +168,26 @@ func isSystemView(view string) bool {
 	_, ok := systemViews[view]
 	return ok
 }
+
+// IsSystemFunction returns true if the function is a system/built-in function.
+// Note: This is a stub for Redshift - a complete list would need to be added.
+func IsSystemFunction(function string, _ string) bool {
+	// Common built-in functions
+	builtinFunctions := map[string]bool{
+		"count": true, "sum": true, "avg": true, "min": true, "max": true,
+		"coalesce": true, "nullif": true, "greatest": true, "least": true,
+		"now": true, "current_date": true, "current_timestamp": true,
+		"upper": true, "lower": true, "length": true, "trim": true,
+		"substring": true, "replace": true, "concat": true,
+		"abs": true, "round": true, "ceil": true, "floor": true,
+		"cast": true, "convert": true,
+		"json_extract_path_text": true, "json_extract_array_element_text": true,
+		"getdate": true, "dateadd": true, "datediff": true, "date_trunc": true,
+		"to_char": true, "to_date": true, "to_timestamp": true,
+		"row_number": true, "rank": true, "dense_rank": true, "ntile": true,
+		"lead": true, "lag": true, "first_value": true, "last_value": true,
+		"listagg": true, "median": true, "percentile_cont": true, "percentile_disc": true,
+	}
+	_, ok := builtinFunctions[strings.ToLower(function)]
+	return ok
+}

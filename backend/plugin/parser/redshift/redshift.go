@@ -171,3 +171,102 @@ func ParseRedshiftPLBlock(plBlock string) (*base.ANTLRAST, error) {
 		Tokens:        stream,
 	}, nil
 }
+
+// normalizeRedshiftTypeFunctionName normalizes a type_function_name context.
+func normalizeRedshiftTypeFunctionName(ctx parser.IType_function_nameContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	text := ctx.GetText()
+	if len(text) >= 2 && text[0] == '"' && text[len(text)-1] == '"' {
+		return text[1 : len(text)-1]
+	}
+	return strings.ToLower(text)
+}
+
+// normalizeRedshiftAnyIdentifier normalizes an any_identifier context.
+func normalizeRedshiftAnyIdentifier(ctx parser.IAny_identifierContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if ctx.Colid() != nil {
+		return normalizeRedshiftColid(ctx.Colid())
+	}
+	if ctx.Plsql_unreserved_keyword() != nil {
+		return strings.ToLower(ctx.Plsql_unreserved_keyword().GetText())
+	}
+	return ""
+}
+
+// NormalizeRedshiftAnyName normalizes an any_name context.
+func NormalizeRedshiftAnyName(ctx parser.IAny_nameContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var result []string
+	result = append(result, normalizeRedshiftColid(ctx.Colid()))
+	if ctx.Attrs() != nil {
+		for _, item := range ctx.Attrs().AllAttr_name() {
+			result = append(result, normalizeRedshiftAttrName(item))
+		}
+	}
+
+	return result
+}
+
+// normalizeRedshiftIndirection normalizes an indirection context.
+func normalizeRedshiftIndirection(ctx parser.IIndirectionContext) []string {
+	if ctx == nil {
+		return []string{}
+	}
+
+	var res []string
+	for _, child := range ctx.AllIndirection_el() {
+		res = append(res, normalizeRedshiftIndirectionEl(child))
+	}
+	return res
+}
+
+// normalizeRedshiftIndirectionEl normalizes an indirection element.
+func normalizeRedshiftIndirectionEl(ctx parser.IIndirection_elContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if ctx.DOT() != nil {
+		if ctx.STAR() != nil {
+			return "*"
+		}
+		return normalizeRedshiftAttrName(ctx.Attr_name())
+	}
+	return ctx.GetText()
+}
+
+// NormalizeRedshiftFuncName normalizes a func_name context and returns the name parts.
+func NormalizeRedshiftFuncName(ctx parser.IFunc_nameContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var result []string
+	if ctx.Type_function_name() != nil {
+		result = append(result, normalizeRedshiftTypeFunctionName(ctx.Type_function_name()))
+	}
+	if ctx.Colid() != nil {
+		result = append(result, normalizeRedshiftColid(ctx.Colid()))
+	}
+	if ctx.Indirection() != nil {
+		for _, el := range ctx.Indirection().AllIndirection_el() {
+			result = append(result, normalizeRedshiftIndirectionEl(el))
+		}
+	}
+
+	if len(result) == 0 && ctx.GetText() != "" {
+		result = append(result, strings.ToLower(ctx.GetText()))
+	}
+
+	return result
+}

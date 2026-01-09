@@ -343,29 +343,13 @@ func buildFunctionDefinitionDetail(funcDef *functionDefinition) (*functionDefini
 		return nil, errors.Errorf("expecting Createfunctionstmt but got nil")
 	}
 
-	funcArgsWithDefaults := createFuncStmt.Func_args_with_defaults()
-	var params []parser.IFunc_arg_with_defaultContext
-	if l := funcArgsWithDefaults.Func_args_with_defaults_list(); l != nil {
-		params = append(params, l.AllFunc_arg_with_default()...)
-	}
-
-	var nDefaultPram, nVariadicParam int
-	for _, param := range params {
-		if param.A_expr() != nil {
-			nDefaultPram++
-		}
-
-		if c := param.Func_arg().Arg_class(); c != nil {
-			if c.VARIADIC() != nil {
-				nVariadicParam++
-			}
-		}
-	}
-
+	// Redshift uses different function argument syntax (Func_py_args_or_sql_args)
+	// For now, return a simple detail without parsing arguments
+	// since Redshift functions have different semantics than PostgreSQL
 	return &functionDefinitionDetail{
-		nDefaultParam:  nDefaultPram,
-		nVariadicParam: nVariadicParam,
-		nParam:         len(params),
+		nDefaultParam:  0,
+		nVariadicParam: 0,
+		nParam:         0,
 		function:       funcDef,
 	}, nil
 }
@@ -913,47 +897,12 @@ func unescapeUnicodeEscapeString(s string) string {
 
 // extractParameterNamesFromCreateFunction extracts OUT/TABLE parameter names from CREATE FUNCTION.
 // Returns column names from OUT parameters and RETURNS TABLE columns.
+// Note: Redshift uses different function syntax (Func_py_args_or_sql_args), so this
+// returns empty for now as Redshift functions have different semantics than PostgreSQL.
 func (q *querySpanExtractor) extractParameterNamesFromCreateFunction(createFuncStmt parser.ICreatefunctionstmtContext) []string {
 	var columnNames []string
 
-	// Extract OUT parameters from func_args_with_defaults
-	funcArgs := createFuncStmt.Func_args_with_defaults()
-	if funcArgs != nil && funcArgs.Func_args_with_defaults_list() != nil {
-		for _, argWithDefault := range funcArgs.Func_args_with_defaults_list().AllFunc_arg_with_default() {
-			if argWithDefault == nil {
-				continue
-			}
-			funcArg := argWithDefault.Func_arg()
-			if funcArg == nil {
-				continue
-			}
-
-			// Check if this is an OUT or INOUT parameter
-			argClass := funcArg.Arg_class()
-			if argClass == nil {
-				continue
-			}
-
-			// Check for OUT_P (OUT mode) or INOUT
-			if argClass.OUT_P() == nil && argClass.INOUT() == nil {
-				continue
-			}
-
-			// Extract parameter name
-			// func_arg can be: arg_class param_name? func_type | param_name arg_class? func_type | func_type
-			var paramName string
-			if funcArg.Param_name() != nil {
-				paramName = q.extractParamName(funcArg.Param_name())
-			}
-
-			// If OUT parameter has a name, add it to column names
-			if paramName != "" {
-				columnNames = append(columnNames, paramName)
-			}
-		}
-	}
-
-	// Extract TABLE columns from RETURNS TABLE clause
+	// Extract TABLE columns from RETURNS TABLE clause if present
 	if createFuncStmt.TABLE() != nil && createFuncStmt.Table_func_column_list() != nil {
 		for _, tableCol := range createFuncStmt.Table_func_column_list().AllTable_func_column() {
 			if tableCol == nil || tableCol.Param_name() == nil {
@@ -1612,7 +1561,7 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause parser.
 						if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == parser.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1620,7 +1569,7 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause parser.
 				}
 				operators = append(operators, op)
 
-			case parser.PostgreSQLParserEXCEPT:
+			case parser.RedshiftLexerEXCEPT:
 				op.Type = "EXCEPT"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
@@ -1629,7 +1578,7 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause parser.
 						if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == parser.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1637,7 +1586,7 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause parser.
 				}
 				operators = append(operators, op)
 
-			case parser.PostgreSQLParserINTERSECT:
+			case parser.RedshiftLexerINTERSECT:
 				op.Type = "INTERSECT"
 				op.IsDistinct = true // Default to DISTINCT
 				// Check for ALL/DISTINCT modifier
@@ -1646,7 +1595,7 @@ func (*querySpanExtractor) extractOperatorsFromSelectClause(selectClause parser.
 						if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerALL {
 							op.IsDistinct = false
 							i++ // Skip ALL token
-						} else if nextToken.GetSymbol().GetTokenType() == parser.PostgreSQLParserDISTINCT {
+						} else if nextToken.GetSymbol().GetTokenType() == parser.RedshiftLexerDISTINCT {
 							op.IsDistinct = true
 							i++ // Skip DISTINCT token
 						}
@@ -1725,7 +1674,7 @@ func splitRecursiveCTEParts(selectNoParens parser.ISelect_no_parensContext) (
 						case parser.RedshiftLexerALL:
 							op.IsDistinct = false
 							i++
-						case parser.PostgreSQLParserDISTINCT:
+						case parser.RedshiftLexerDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1736,7 +1685,7 @@ func splitRecursiveCTEParts(selectNoParens parser.ISelect_no_parensContext) (
 				lastUnionIndex = partIndex
 				partIndex++
 
-			case parser.PostgreSQLParserEXCEPT:
+			case parser.RedshiftLexerEXCEPT:
 				op.Type = "EXCEPT"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1747,7 +1696,7 @@ func splitRecursiveCTEParts(selectNoParens parser.ISelect_no_parensContext) (
 						case parser.RedshiftLexerALL:
 							op.IsDistinct = false
 							i++
-						case parser.PostgreSQLParserDISTINCT:
+						case parser.RedshiftLexerDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -1757,7 +1706,7 @@ func splitRecursiveCTEParts(selectNoParens parser.ISelect_no_parensContext) (
 				allOperators = append(allOperators, op)
 				partIndex++
 
-			case parser.PostgreSQLParserINTERSECT:
+			case parser.RedshiftLexerINTERSECT:
 				op.Type = "INTERSECT"
 				// Check if next token is ALL or DISTINCT
 				op.IsDistinct = true // Default to DISTINCT
@@ -1768,7 +1717,7 @@ func splitRecursiveCTEParts(selectNoParens parser.ISelect_no_parensContext) (
 						case parser.RedshiftLexerALL:
 							op.IsDistinct = false
 							i++
-						case parser.PostgreSQLParserDISTINCT:
+						case parser.RedshiftLexerDISTINCT:
 							op.IsDistinct = true
 							i++
 						default:
@@ -2153,8 +2102,8 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef parser.ITab
 		}
 	}
 
-	if tableRef.Table_ref() != nil {
-		anchor, err = q.extractTableSourceFromTableRef(tableRef.Table_ref())
+	if len(tableRef.AllTable_ref()) > 0 {
+		anchor, err = q.extractTableSourceFromTableRef(tableRef.Table_ref(0))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract nested table_ref")
 		}
@@ -2187,7 +2136,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableRef(tableRef parser.ITab
 				usingColumns = normalizeRedshiftNameList(join.Join_qual().Name_list())
 			}
 			anchor = q.joinTableSources(anchor, tableSource, naturalJoin, usingColumns)
-			if i == 0 && tableRef.Opt_alias_clause() != nil && tableRef.Table_ref() != nil {
+			if i == 0 && tableRef.Opt_alias_clause() != nil && len(tableRef.AllTable_ref()) > 0 {
 				anchor, err = applyOptAliasClauseToTableSource(anchor, tableRef.Opt_alias_clause())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to apply alias to table source")
@@ -2556,15 +2505,6 @@ func (q *querySpanExtractor) extractColumnsFromTargetList(targetList parser.ITar
 			continue
 		}
 
-		if _, ok := targetEl.(*parser.Target_columnrefContext); ok {
-			columns, err := q.getColumnsFromColumnRef(targetEl.(*parser.Target_columnrefContext).Columnref())
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to process column reference in target element")
-			}
-			result = append(result, columns...)
-			continue
-		}
-
 		// Check if this is a labeled target (expression with optional alias)
 		if labelCtx, ok := targetEl.(*parser.Target_labelContext); ok {
 			column, err := q.handleTargetLabel(labelCtx)
@@ -2610,8 +2550,8 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *parser.Target_labelCont
 		targetAlias := labelCtx.Target_alias()
 		if targetAlias.Collabel() != nil {
 			columnName = normalizeRedshiftCollabel(targetAlias.Collabel())
-		} else if targetAlias.Bare_col_label() != nil {
-			columnName = normalizeRedshiftBareColLabel(targetAlias.Bare_col_label())
+		} else if targetAlias.Identifier() != nil {
+			columnName = normalizeRedshiftIdentifier(targetAlias.Identifier())
 		}
 	}
 
@@ -3071,12 +3011,6 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExpr(funcExpr parser.IF
 		default:
 			return "", "", nil, errors.New("invalid function name")
 		}
-	case funcExpr.Json_aggregate_func() != nil:
-		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
-			return "", "json_objectagg", args, nil
-		} else if funcExpr.Json_aggregate_func().JSON_ARRAYAGG() != nil {
-			return "", "json_arrayagg", args, nil
-		}
 	case funcExpr.Func_expr_common_subexpr() != nil:
 		// Builtin function, return the first token text as function name
 		if funcExpr.Func_expr_common_subexpr().GetStart() != nil {
@@ -3100,12 +3034,6 @@ func (*querySpanExtractor) extractFunctionElementFromFuncExprWindowless(funcExpr
 			return "", names[0], args, nil
 		default:
 			return "", "", nil, errors.New("invalid function name")
-		}
-	case funcExprWindowless.Json_aggregate_func() != nil:
-		if funcExprWindowless.Json_aggregate_func().JSON_OBJECTAGG() != nil {
-			return "", "json_objectagg", args, nil
-		} else if funcExprWindowless.Json_aggregate_func().JSON_ARRAYAGG() != nil {
-			return "", "json_arrayagg", args, nil
 		}
 	case funcExprWindowless.Func_expr_common_subexpr() != nil:
 		// Builtin function, return the first token text as function name
@@ -3142,12 +3070,6 @@ func (*querySpanExtractor) extractFunctionNameFromFuncExpr(funcExpr parser.IFunc
 			// Builtin function without schema
 			return "", strings.ToLower(funcName.GetText()), nil
 		}
-	case funcExpr.Json_aggregate_func() != nil:
-		if funcExpr.Json_aggregate_func().JSON_OBJECTAGG() != nil {
-			return "", "json_objectagg", nil
-		} else if funcExpr.Json_aggregate_func().JSON_ARRAYAGG() != nil {
-			return "", "json_arrayagg", nil
-		}
 	case funcExpr.Func_expr_common_subexpr() != nil:
 		// Builtin function, return the first token text as function name
 		if funcExpr.Func_expr_common_subexpr().GetStart() != nil {
@@ -3173,13 +3095,6 @@ func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr parser.IFun
 			return 1
 		}
 		return 0
-	}
-
-	// This handles JSON aggregate functions like JSON_AGG(expr).
-	if f := funcExpr.Json_aggregate_func(); f != nil {
-		// Based on Postgres grammar, these functions (JSON_AGG, JSONB_AGG, JSON_OBJECT_AGG, JSONB_OBJECT_AGG)
-		// typically take one or two main arguments. Returning 1 is a reasonable assumption for the primary expression argument.
-		return 1
 	}
 
 	// This handles a large set of built-in functions with special syntax.
@@ -3318,36 +3233,6 @@ func (*querySpanExtractor) extractNFunctionArgsFromFuncExpr(funcExpr parser.IFun
 		if f.XMLSERIALIZE() != nil {
 			return 2
 		} // XMLSERIALIZE(CONTENT value AS type)
-
-		// --- JSON Functions ---
-		if f.JSON_OBJECT() != nil {
-			if list := f.Func_arg_list(); list != nil {
-				return len(list.AllFunc_arg_expr())
-			}
-			if list := f.Json_name_and_value_list(); list != nil {
-				return len(list.AllJson_name_and_value())
-			}
-			return 0
-		}
-		if f.JSON_ARRAY() != nil {
-			if list := f.Json_value_expr_list(); list != nil {
-				return len(list.AllJson_value_expr())
-			}
-			if f.Select_no_parens() != nil {
-				return 1
-			} // subquery
-			return 0
-		}
-		if f.JSON() != nil || f.JSON_SCALAR() != nil || f.JSON_SERIALIZE() != nil {
-			return 1
-		}
-		if f.MERGE_ACTION() != nil {
-			return 0
-		}
-		if f.JSON_QUERY() != nil || f.JSON_EXISTS() != nil || f.JSON_VALUE() != nil {
-			count := 2 // json_value_expr, a_expr
-			return count
-		}
 	}
 
 	return 0
@@ -3450,39 +3335,9 @@ func getArgumentsFromFunctionExpr(funcExpr parser.IFunc_exprContext) []antlr.Par
 			result = append(result, f.A_expr(0))
 		} else if f.XMLSERIALIZE() != nil {
 			result = append(result, f.A_expr(0))
-		} else if f.JSON_OBJECT() != nil {
-			if list := f.Func_arg_list(); list != nil {
-				result = append(result, getArgumentsFromFuncArgList(list)...)
-			}
-			if list := f.Json_name_and_value_list(); list != nil {
-				result = append(result, getArgumentsFromJSONNameAndValueList(list)...)
-			}
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-		} else if f.JSON_ARRAY() != nil {
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-			if list := f.Select_no_parens(); list != nil {
-				result = append(result, list)
-			}
-		} else if f.JSON() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_SCALAR() != nil {
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_SERIALIZE() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_QUERY() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_EXISTS() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_VALUE() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
 		}
+		// Note: Redshift doesn't support JSON_OBJECT, JSON_ARRAY, JSON_SCALAR,
+		// JSON_SERIALIZE, JSON_QUERY, JSON_EXISTS, JSON_VALUE SQL constructs
 	}
 	return result
 }
@@ -3584,39 +3439,9 @@ func getArgumentsFromFunctionExprWindowless(funcExprWindowless parser.IFunc_expr
 			result = append(result, f.A_expr(0))
 		} else if f.XMLSERIALIZE() != nil {
 			result = append(result, f.A_expr(0))
-		} else if f.JSON_OBJECT() != nil {
-			if list := f.Func_arg_list(); list != nil {
-				result = append(result, getArgumentsFromFuncArgList(list)...)
-			}
-			if list := f.Json_name_and_value_list(); list != nil {
-				result = append(result, getArgumentsFromJSONNameAndValueList(list)...)
-			}
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-		} else if f.JSON_ARRAY() != nil {
-			if list := f.Json_value_expr_list(); list != nil {
-				result = append(result, getArgumentsFromJSONValueExprList(list)...)
-			}
-			if list := f.Select_no_parens(); list != nil {
-				result = append(result, list)
-			}
-		} else if f.JSON() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_SCALAR() != nil {
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_SERIALIZE() != nil {
-			result = append(result, f.Json_value_expr())
-		} else if f.JSON_QUERY() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_EXISTS() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
-		} else if f.JSON_VALUE() != nil {
-			result = append(result, f.Json_value_expr())
-			result = append(result, f.A_expr(0))
 		}
+		// Note: Redshift doesn't support JSON_OBJECT, JSON_ARRAY, JSON_SCALAR,
+		// JSON_SERIALIZE, JSON_QUERY, JSON_EXISTS, JSON_VALUE SQL constructs
 	}
 	return result
 }
@@ -3628,28 +3453,6 @@ func getArgumentsFromFuncArgList(funcArgList parser.IFunc_arg_listContext) []ant
 	}
 	for _, argExpr := range funcArgList.AllFunc_arg_expr() {
 		result = append(result, argExpr)
-	}
-	return result
-}
-
-func getArgumentsFromJSONNameAndValueList(jsonNameAndValueList parser.IJson_name_and_value_listContext) []antlr.ParseTree {
-	var result []antlr.ParseTree
-	if jsonNameAndValueList == nil {
-		return result
-	}
-	for _, nameAndValue := range jsonNameAndValueList.AllJson_name_and_value() {
-		result = append(result, nameAndValue)
-	}
-	return result
-}
-
-func getArgumentsFromJSONValueExprList(jsonValueExprList parser.IJson_value_expr_listContext) []antlr.ParseTree {
-	var result []antlr.ParseTree
-	if jsonValueExprList == nil {
-		return result
-	}
-	for _, valueExpr := range jsonValueExprList.AllJson_value_expr() {
-		result = append(result, valueExpr)
 	}
 	return result
 }
