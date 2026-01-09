@@ -88,13 +88,15 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   const updateProjectCache = (project: Project) => {
     projectMapByName.set(project.name, project);
   };
-  const upsertProjectMap = async (projectList: Project[]) => {
+  const upsertProjectMap = async (projectList: Project[], cache = true) => {
     await useProjectIamPolicyStore().batchGetOrFetchProjectIamPolicy(
       projectList.map((project) => project.name)
     );
-    projectList.forEach((project) => {
-      updateProjectCache(project);
-    });
+    if (cache) {
+      projectList.forEach((project) => {
+        updateProjectCache(project);
+      });
+    }
     return projectList;
   };
   const getProjectList = (showDeleted = false) => {
@@ -125,6 +127,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     pageToken?: string;
     silent?: boolean;
     filter?: ProjectFilter;
+    cache?: boolean;
   }): Promise<{
     projects: Project[];
     nextPageToken?: string;
@@ -178,8 +181,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       break;
     }
 
-    const composedProjects = await upsertProjectMap(response.projects);
-
+    const composedProjects = await upsertProjectMap(response.projects, params.cache ?? false);
     return {
       projects: composedProjects,
       nextPageToken: response.nextPageToken,
