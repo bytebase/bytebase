@@ -56,9 +56,9 @@ const available = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    database.value.projectEntity,
-    "bb.issues.create"
+  return (
+    database.value.projectEntity.allowRequestRole &&
+    hasProjectPermissionV2(database.value.projectEntity, "bb.issues.create")
   );
 });
 

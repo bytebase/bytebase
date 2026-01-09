@@ -22,7 +22,7 @@ import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
+import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import type { Permission } from "@/types";
 

@@ -250,7 +250,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
       return reviewPolicy;
     },
-    async getOrFetchReviewPolicyByName(name: string) {
+    async getOrFetchReviewPolicyByName(name: string, silent: boolean) {
       const policy = this.getReviewPolicyByName(name);
       if (policy) {
         return policy;
@@ -258,11 +258,13 @@ export const useSQLReviewStore = defineStore("sqlReview", {
 
       const reviewPolicy = await this.fetchReviewPolicyByName({
         name,
+        silent,
       });
       return reviewPolicy;
     },
     async getOrFetchReviewPolicyByResource(
-      resourcePath: string
+      resourcePath: string,
+      silent: boolean
     ): Promise<SQLReviewPolicy | undefined> {
       const cached = this.getReviewPolicyByResouce(resourcePath);
       if (cached) {
@@ -285,7 +287,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         return;
       }
 
-      return this.getOrFetchReviewPolicyByName(sqlReviewName);
+      return this.getOrFetchReviewPolicyByName(sqlReviewName, silent);
     },
   },
 });
@@ -306,7 +308,10 @@ export const useReviewPolicyByResource = (
   const store = useSQLReviewStore();
   watchEffect(() => {
     if (!unref(resourcePath)) return;
-    store.getOrFetchReviewPolicyByResource(unref(resourcePath)!);
+    store.getOrFetchReviewPolicyByResource(
+      unref(resourcePath)!,
+      true /* silent */
+    );
   });
 
   return computed(() => {
@@ -324,7 +329,8 @@ export const useReviewPolicyForDatabase = (
     if (!unref(database)) return;
 
     const reviewForProject = await store.getOrFetchReviewPolicyByResource(
-      unref(database)!.project
+      unref(database)!.project,
+      true /* silent */
     );
     if (reviewForProject) {
       return;
@@ -332,7 +338,10 @@ export const useReviewPolicyForDatabase = (
 
     const { effectiveEnvironment } = unref(database)!;
     if (effectiveEnvironment) {
-      await store.getOrFetchReviewPolicyByResource(effectiveEnvironment);
+      await store.getOrFetchReviewPolicyByResource(
+        effectiveEnvironment,
+        true /* silent */
+      );
     }
   });
 

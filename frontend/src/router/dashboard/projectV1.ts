@@ -343,11 +343,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           title: () => t("common.members"),
-          requiredPermissionList: () => [
-            "bb.projects.getIamPolicy",
-            "bb.users.list",
-            "bb.groups.list",
-          ],
+          requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
         props: true,
@@ -357,6 +353,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           title: () => t("common.settings"),
+          requiredPermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,

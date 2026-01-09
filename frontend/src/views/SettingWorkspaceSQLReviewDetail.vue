@@ -226,7 +226,10 @@ const sqlReviewName = computed(() =>
 );
 
 watchEffect(async () => {
-  await store.getOrFetchReviewPolicyByName(sqlReviewName.value);
+  await store.getOrFetchReviewPolicyByName(
+    sqlReviewName.value,
+    false /* not silent */
+  );
 });
 
 onMounted(() => {
