@@ -43,8 +43,10 @@ type FindChangelogMessage struct {
 	InstanceID   *string
 	DatabaseName *string
 
-	TypeList []string
-	Status   *ChangelogStatus
+	TypeList        []string
+	Status          *ChangelogStatus
+	CreatedAtBefore *time.Time
+	CreatedAtAfter  *time.Time
 
 	Limit  *int
 	Offset *int
@@ -197,6 +199,12 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	}
 	if len(find.TypeList) > 0 {
 		q.And("changelog.payload->>'type' = ANY(?)", find.TypeList)
+	}
+	if v := find.CreatedAtBefore; v != nil {
+		q.And("changelog.created_at <= ?", *v)
+	}
+	if v := find.CreatedAtAfter; v != nil {
+		q.And("changelog.created_at >= ?", *v)
 	}
 
 	q.Space("ORDER BY changelog.id DESC")
