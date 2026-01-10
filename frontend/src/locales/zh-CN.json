@@ -207,7 +207,7 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "untitled": "未命名",
-    "missing-required-permission": "缺少必需的权限",
+    "missing-required-permission": "缺少必需的权限 {permissions}",
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
     "required-permission": "所需权限",
     "resource-not-found": "未找到请求的资源",

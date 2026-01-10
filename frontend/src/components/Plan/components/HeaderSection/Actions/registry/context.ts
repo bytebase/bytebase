@@ -185,8 +185,6 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
         ? currentUserEmail === extractUserId(issue.creator)
         : hasProjectPermissionV2(project, "bb.taskRuns.create"),
     isApprovalCandidate,
-    canApprove: isApprovalCandidate,
-    canReject: isApprovalCandidate,
   };
 
   // Compute validation state

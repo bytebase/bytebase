@@ -207,7 +207,7 @@
     "view-details": "View details",
     "force-verb": "Force {verb}",
     "untitled": "Untitled",
-    "missing-required-permission": "Missing required permissions",
+    "missing-required-permission": "Missing required permissions {permissions}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
     "required-permission": "Required permissions",
     "resource-not-found": "Resource not found",

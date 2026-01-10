@@ -13,11 +13,20 @@ export const PLAN_CLOSE: ActionDefinition = {
     !ctx.isIssueOnly &&
     ctx.plan.issue === "" &&
     !ctx.plan.hasRollout &&
-    ctx.planState === State.ACTIVE &&
-    ctx.permissions.updatePlan,
+    ctx.planState === State.ACTIVE,
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updatePlan,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updatePlan) {
+      if (!ctx.isCreator) {
+        return t("common.missing-required-permission", {
+          permissions: "bb.plans.update",
+        });
+      }
+      return "Only the creator is allowed to take action.";
+    }
+    return undefined;
+  },
 
   executeType: "confirm-dialog",
   confirmTitle: () => t("common.close"),
@@ -35,11 +44,20 @@ export const PLAN_REOPEN: ActionDefinition = {
     !ctx.isIssueOnly &&
     ctx.plan.issue === "" &&
     !ctx.plan.hasRollout &&
-    ctx.planState === State.DELETED &&
-    ctx.permissions.updatePlan,
+    ctx.planState === State.DELETED,
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updatePlan,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updatePlan) {
+      if (!ctx.isCreator) {
+        return t("common.missing-required-permission", {
+          permissions: "bb.plans.update",
+        });
+      }
+      return "Only the creator is allowed to take action.";
+    }
+    return undefined;
+  },
 
   executeType: "confirm-dialog",
   confirmTitle: () => t("common.reopen"),

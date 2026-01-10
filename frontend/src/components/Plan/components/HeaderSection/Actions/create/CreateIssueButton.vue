@@ -12,7 +12,7 @@
             type="primary"
             size="medium"
             tag="div"
-            :disabled="errors.length > 0 || loading"
+            :disabled="disabled || errors.length > 0 || loading"
             :loading="loading"
           >
             {{ $t("plan.ready-for-review") }}
@@ -95,6 +95,11 @@ import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractIssueUID, extractProjectResourceName } from "@/utils";
 
+const props = defineProps<{
+  disabled: boolean;
+  disabledReason?: string;
+}>();
+
 const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
@@ -124,6 +129,10 @@ watch(showPopover, (show) => {
 // Errors that disable the main button
 const errors = computed(() => {
   const list: string[] = [];
+
+  if (props.disabledReason) {
+    list.push(props.disabledReason);
+  }
 
   // Check if all specs have valid statements
   if (plan.value.specs.some((spec) => isSpecEmpty(spec))) {

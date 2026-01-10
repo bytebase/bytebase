@@ -207,7 +207,7 @@
     "view-details": "Xem chi tiết",
     "force-verb": "Buộc {verb}",
     "untitled": "Không tiêu đề",
-    "missing-required-permission": "Thiếu quyền cần thiết",
+    "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
     "required-permission": "Quyền hạn cần thiết",
     "resource-not-found": "Không tìm thấy tài nguyên",
