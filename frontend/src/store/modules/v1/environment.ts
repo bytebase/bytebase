@@ -207,6 +207,9 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
         return nullEnvironment();
       }
       const id = name.replace(environmentNamePrefix, "");
+      if (!id) {
+        return unknownEnvironment();
+      }
       const environment =
         this.environmentMapById.get(id) ?? unknownEnvironment();
       if (!isValidEnvironmentName(environment.name) && fallback) {

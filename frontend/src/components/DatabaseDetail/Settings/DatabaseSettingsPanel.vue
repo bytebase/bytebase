@@ -68,7 +68,7 @@ const handleSelectEnvironment = async (name: string | undefined) => {
     return;
   }
   const databasePatch = cloneDeep(props.database);
-  databasePatch.environment = name;
+  databasePatch.environment = name ?? "";
 
   await databaseStore.updateDatabase(
     create(UpdateDatabaseRequestSchema, {
