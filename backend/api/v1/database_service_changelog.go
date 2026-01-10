@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -84,6 +85,24 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 					find.TypeList = []string{storeType.String()}
 				default:
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
+				}
+			case celoperators.GreaterEquals, celoperators.LessEquals:
+				variable, rawValue := getVariableAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue))
+				}
+				if variable != "create_time" {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`">=" and "<=" are only supported for "create_time"`))
+				}
+				t, err := time.Parse(time.RFC3339, value)
+				if err != nil {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse time %v, error: %v", value, err))
+				}
+				if functionName == celoperators.GreaterEquals {
+					find.CreatedAtAfter = &t
+				} else {
+					find.CreatedAtBefore = &t
 				}
 			default:
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
