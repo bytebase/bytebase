@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -127,7 +128,7 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	}), nil
 }
 
-func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission iam.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
+func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission permission.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
 	ok, err := iamManager.CheckPermission(ctx, permission, user)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check permission %q", permission)
@@ -241,12 +242,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 	if oldPlan == nil {
 		if req.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionPlansCreate, user, projectID)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.PlansCreate, user, projectID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionPlansCreate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.PlansCreate))
 			}
 			return s.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 				Parent: common.FormatProject(projectID),
@@ -269,7 +270,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		if oldPlan.Creator == user.Email {
 			return true, nil
 		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
+		return s.iamManager.CheckPermission(ctx, permission.PlansUpdate, user, oldPlan.ProjectID)
 	}()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))

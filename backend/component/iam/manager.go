@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -15,7 +16,7 @@ import (
 
 type Manager struct {
 	// rolePermissions is a map from role to permissions. Key is "roles/{role}".
-	rolePermissions map[string]map[Permission]bool
+	rolePermissions map[string]map[permission.Permission]bool
 	groupMembers    map[string]map[string]bool
 	// member - groups mapping
 	memberGroups   map[string][]string
@@ -34,7 +35,7 @@ func NewManager(store *store.Store, licenseService *enterprise.LicenseService) (
 // Check if the user has permission on the resource hierarchy.
 // CEL on the binding is not considered.
 // When multiple projects are specified, the user should have permission on every projects.
-func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
+func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
 	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return false, err
@@ -76,7 +77,7 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 		return err
 	}
 
-	rolePermissions := make(map[string]map[Permission]bool)
+	rolePermissions := make(map[string]map[permission.Permission]bool)
 	for _, role := range roles {
 		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
 	}
@@ -107,7 +108,7 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
-func (m *Manager) GetPermissions(role string) (map[Permission]bool, error) {
+func (m *Manager) GetPermissions(role string) (map[permission.Permission]bool, error) {
 	permissions, ok := m.rolePermissions[role]
 	if !ok {
 		return nil, nil
@@ -119,7 +120,7 @@ func (m *Manager) GetUserGroups(email string) []string {
 	return m.memberGroups[common.FormatUserEmail(email)]
 }
 
-func check(user *store.UserMessage, p Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[Permission]bool, groupMembers map[string]map[string]bool) bool {
+func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[permission.Permission]bool, groupMembers map[string]map[string]bool) bool {
 	userName := common.FormatUserEmail(user.Email)
 
 	for _, binding := range policy.GetBindings() {

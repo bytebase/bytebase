@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 
@@ -102,16 +103,16 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
-	var permission iam.Permission
+	var perm permission.Permission
 	switch storeSettingName {
 	case storepb.SettingName_ENVIRONMENT:
-		permission = iam.PermissionEnvironmentSettingsGet
+		perm = permission.EnvironmentSettingsGet
 	case storepb.SettingName_WORKSPACE_PROFILE:
-		permission = iam.PermissionWorkspaceProfileSettingsGet
+		perm = permission.WorkspaceProfileSettingsGet
 	default:
-		permission = iam.PermissionSettingsGet
+		perm = permission.SettingsGet
 	}
-	if err := s.CheckSettingPermission(ctx, permission); err != nil {
+	if err := s.CheckSettingPermission(ctx, perm); err != nil {
 		return nil, err
 	}
 
@@ -155,16 +156,16 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
 
-	var permission iam.Permission
+	var perm permission.Permission
 	switch storeSettingName {
 	case storepb.SettingName_ENVIRONMENT:
-		permission = iam.PermissionEnvironmentSettingsSet
+		perm = permission.EnvironmentSettingsSet
 	case storepb.SettingName_WORKSPACE_PROFILE:
-		permission = iam.PermissionWorkspaceProfileSettingsSet
+		perm = permission.WorkspaceProfileSettingsSet
 	default:
-		permission = iam.PermissionSettingsSet
+		perm = permission.SettingsSet
 	}
-	if err := s.CheckSettingPermission(ctx, permission); err != nil {
+	if err := s.CheckSettingPermission(ctx, perm); err != nil {
 		return nil, err
 	}
 
@@ -629,18 +630,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	return connect.NewResponse(settingMessage), nil
 }
 
-func (s *SettingService) CheckSettingPermission(ctx context.Context, permission iam.Permission) error {
+func (s *SettingService) CheckSettingPermission(ctx context.Context, perm permission.Permission) error {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	ok, err := s.iamManager.CheckPermission(ctx, permission, user)
+	ok, err := s.iamManager.CheckPermission(ctx, perm, user)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionEnvironmentSettingsGet))
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
 	}
 	return nil
 }

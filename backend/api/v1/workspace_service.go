@@ -56,7 +56,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
 	}
 
-	if _, err := validateIAMPolicy(ctx, s.store, s.iamManager, request.Policy, policyMessage); err != nil {
+	if _, err := validateIAMPolicy(ctx, s.store, request.Policy, policyMessage); err != nil {
 		return nil, err
 	}
 

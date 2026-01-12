@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -1431,12 +1432,12 @@ func (s *SQLService) accessCheck(
 		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
-	checkDatabaseAccess := func(permission iam.Permission) error {
+	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
 		ok, err := s.hasDatabaseAccessRights(
 			ctx,
 			user,
-			permission,
+			perm,
 			map[string]any{
 				common.CELAttributeRequestTime:      time.Now(),
 				common.CELAttributeResourceDatabase: databaseFullName,
@@ -1456,30 +1457,30 @@ func (s *SQLService) accessCheck(
 	// When spans is empty, it's an EXPLAIN query where GetQuerySpan is skipped (queryContext.Explain is true).
 	// Check at database level with EXPLAIN permission.
 	if len(spans) == 0 {
-		permission := iam.PermissionSQLSelect
+		perm := permission.SQLSelect
 		if isExplain {
-			permission = iam.PermissionSQLExplain
+			perm = permission.SQLExplain
 		}
-		return checkDatabaseAccess(permission)
+		return checkDatabaseAccess(perm)
 	}
 
 	for _, span := range spans {
-		var permission iam.Permission
+		var perm permission.Permission
 		// New query ACL experience.
 		if common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 			switch span.Type {
 			case parserbase.QueryTypeUnknown:
 				return connect.NewError(connect.CodePermissionDenied, errors.New("disallowed query type"))
 			case parserbase.DDL:
-				permission = iam.PermissionSQLDdl
+				perm = permission.SQLDdl
 			case parserbase.DML:
-				permission = iam.PermissionSQLDml
+				perm = permission.SQLDml
 			case parserbase.Explain:
-				permission = iam.PermissionSQLExplain
+				perm = permission.SQLExplain
 			case parserbase.SelectInfoSchema:
-				permission = iam.PermissionSQLInfo
+				perm = permission.SQLInfo
 			case parserbase.Select:
-				permission = iam.PermissionSQLSelect
+				perm = permission.SQLSelect
 			default:
 			}
 			if span.Type == parserbase.DDL || span.Type == parserbase.DML {
@@ -1488,18 +1489,18 @@ func (s *SQLService) accessCheck(
 				}
 			}
 		} else if span.Type == parserbase.Select {
-			permission = iam.PermissionSQLSelect
+			perm = permission.SQLSelect
 		}
 
-		if permission == "" {
+		if perm == "" {
 			// always fallback to bb.sql.select
-			permission = iam.PermissionSQLSelect
+			perm = permission.SQLSelect
 		}
 
 		// For non-SELECT queries or SELECT queries with no source columns (e.g., SELECT 1),
 		// check at database level and skip column-level checks
 		if span.Type != parserbase.Select || len(span.SourceColumns) == 0 {
-			if err := checkDatabaseAccess(permission); err != nil {
+			if err := checkDatabaseAccess(perm); err != nil {
 				return err
 			}
 			continue
@@ -1516,7 +1517,7 @@ func (s *SQLService) accessCheck(
 			ok, err := s.hasDatabaseAccessRights(
 				ctx,
 				user,
-				permission,
+				perm,
 				attributes,
 				workspacePolicy.Policy,
 				projectPolicy.Policy,
@@ -1635,7 +1636,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 func (s *SQLService) hasDatabaseAccessRights(
 	ctx context.Context,
 	user *store.UserMessage,
-	permission iam.Permission,
+	perm permission.Permission,
 	attributes map[string]any,
 	iamPolicies ...*storepb.IamPolicy,
 ) (bool, error) {
@@ -1645,7 +1646,7 @@ func (s *SQLService) hasDatabaseAccessRights(
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !permissions[permission] {
+		if !permissions[perm] {
 			continue
 		}
 

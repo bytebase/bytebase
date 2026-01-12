@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -232,7 +233,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 
 		// Check bb.databases.getSchema permission
-		ok, err := h.iamManager.CheckPermission(ctx, iam.PermissionDatabasesGetSchema, h.user, database.ProjectID)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.DatabasesGetSchema, h.user, database.ProjectID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}
@@ -241,7 +242,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 	} else if metadata.InstanceID != "" && metadata.DatabaseName == "" {
 		// If only instance is specified, check instance get permission
-		ok, err := h.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, h.user)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, h.user)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}
