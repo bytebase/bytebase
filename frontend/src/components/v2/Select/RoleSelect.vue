@@ -142,6 +142,9 @@ const renderTag = ({
   option: SelectBaseOption;
   handleClose: () => void;
 }) => {
+  if (!props.multiple) {
+    return option.label as string;
+  }
   return (
     <NTag closable={!props.disabled} onClose={handleClose}>
       {option.label as string}

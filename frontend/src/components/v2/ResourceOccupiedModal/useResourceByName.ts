@@ -80,7 +80,7 @@ export const useResourceByName = ({
         }
         return;
       case "environment":
-        if (hasWorkspacePermissionV2("bb.settings.get")) {
+        if (hasWorkspacePermissionV2("bb.settings.getEnvironment")) {
           environmentV1Store.getEnvironmentByName(resource.value);
         }
         return;
