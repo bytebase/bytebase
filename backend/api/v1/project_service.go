@@ -1063,7 +1063,7 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
-	iamManager *iam.Manager,
+	_ *iam.Manager,
 	policy *v1pb.IamPolicy,
 	oldPolicyMessage *store.IamPolicyMessage,
 ) (bool, error) {
@@ -1087,7 +1087,6 @@ func validateIAMPolicy(
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
-	roleMessages = append(roleMessages, iamManager.PredefinedRoles...)
 
 	existingBindings := make(map[string]bool)
 	for _, oldBinding := range oldPolicyMessage.Policy.Bindings {

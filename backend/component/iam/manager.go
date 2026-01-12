@@ -2,11 +2,9 @@ package iam
 
 import (
 	"context"
-	_ "embed"
 	"strings"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -15,38 +13,20 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-//go:embed acl.yaml
-var aclYaml []byte
-
-type acl struct {
-	Roles []struct {
-		Name        string   `yaml:"name"`
-		Title       string   `yaml:"title"`
-		Permissions []string `yaml:"permissions"`
-	} `yaml:"roles"`
-}
-
 type Manager struct {
 	// rolePermissions is a map from role to permissions. Key is "roles/{role}".
 	rolePermissions map[string]map[Permission]bool
 	groupMembers    map[string]map[string]bool
 	// member - groups mapping
-	memberGroups    map[string][]string
-	PredefinedRoles []*store.RoleMessage
-	store           *store.Store
-	licenseService  *enterprise.LicenseService
+	memberGroups   map[string][]string
+	store          *store.Store
+	licenseService *enterprise.LicenseService
 }
 
 func NewManager(store *store.Store, licenseService *enterprise.LicenseService) (*Manager, error) {
-	predefinedRoles, err := loadPredefinedRoles()
-	if err != nil {
-		return nil, err
-	}
-
 	m := &Manager{
-		PredefinedRoles: predefinedRoles,
-		store:           store,
-		licenseService:  licenseService,
+		store:          store,
+		licenseService: licenseService,
 	}
 	return m, nil
 }
@@ -95,7 +75,6 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	roles = append(roles, m.PredefinedRoles...)
 
 	rolePermissions := make(map[string]map[Permission]bool)
 	for _, role := range roles {
@@ -168,29 +147,4 @@ func check(user *store.UserMessage, p Permission, policy *storepb.IamPolicy, rol
 		}
 	}
 	return false
-}
-
-func loadPredefinedRoles() ([]*store.RoleMessage, error) {
-	predefinedACL := new(acl)
-	if err := yaml.Unmarshal(aclYaml, predefinedACL); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
-	}
-	var roles []*store.RoleMessage
-	for _, role := range predefinedACL.Roles {
-		resourceID, err := common.GetRoleID(role.Name)
-		if err != nil {
-			return nil, err
-		}
-		permissions := make(map[string]bool)
-		for _, p := range role.Permissions {
-			permissions[p] = true
-		}
-		roles = append(roles, &store.RoleMessage{
-			ResourceID:  resourceID,
-			Name:        role.Title,
-			Description: "",
-			Permissions: permissions,
-		})
-	}
-	return roles, nil
 }

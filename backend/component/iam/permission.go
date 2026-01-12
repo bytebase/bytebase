@@ -1,161 +1,130 @@
 package iam
 
-import (
-	_ "embed"
+import "github.com/bytebase/bytebase/backend/common/permission"
 
-	"gopkg.in/yaml.v3"
-)
+// Re-export Permission type from shared package.
+type Permission = permission.Permission
 
-//go:embed permission.yaml
-var permissionYAML []byte
-
-type Permission = string
-
+// Re-export all permission constants.
 const (
-	PermissionAuditLogsExport             Permission = "bb.auditLogs.export"
-	PermissionAuditLogsSearch             Permission = "bb.auditLogs.search"
-	PermissionChangelogsGet               Permission = "bb.changelogs.get"
-	PermissionChangelogsList              Permission = "bb.changelogs.list"
-	PermissionDatabaseCatalogsGet         Permission = "bb.databaseCatalogs.get"
-	PermissionDatabaseCatalogsUpdate      Permission = "bb.databaseCatalogs.update"
-	PermissionDatabaseGroupsCreate        Permission = "bb.databaseGroups.create"
-	PermissionDatabaseGroupsDelete        Permission = "bb.databaseGroups.delete"
-	PermissionDatabaseGroupsGet           Permission = "bb.databaseGroups.get"
-	PermissionDatabaseGroupsList          Permission = "bb.databaseGroups.list"
-	PermissionDatabaseGroupsUpdate        Permission = "bb.databaseGroups.update"
-	PermissionDatabasesCheck              Permission = "bb.databases.check"
-	PermissionDatabasesGet                Permission = "bb.databases.get"
-	PermissionDatabasesGetSchema          Permission = "bb.databases.getSchema"
-	PermissionDatabasesList               Permission = "bb.databases.list"
-	PermissionDatabasesSync               Permission = "bb.databases.sync"
-	PermissionDatabasesUpdate             Permission = "bb.databases.update"
-	PermissionIdentityProvidersCreate     Permission = "bb.identityProviders.create"
-	PermissionIdentityProvidersDelete     Permission = "bb.identityProviders.delete"
-	PermissionIdentityProvidersGet        Permission = "bb.identityProviders.get"
-	PermissionIdentityProvidersUpdate     Permission = "bb.identityProviders.update"
-	PermissionInstancesCreate             Permission = "bb.instances.create"
-	PermissionInstancesDelete             Permission = "bb.instances.delete"
-	PermissionInstancesGet                Permission = "bb.instances.get"
-	PermissionInstancesList               Permission = "bb.instances.list"
-	PermissionInstancesSync               Permission = "bb.instances.sync"
-	PermissionInstancesUndelete           Permission = "bb.instances.undelete"
-	PermissionInstancesUpdate             Permission = "bb.instances.update"
-	PermissionInstanceRolesGet            Permission = "bb.instanceRoles.get"
-	PermissionInstanceRolesList           Permission = "bb.instanceRoles.list"
-	PermissionIssueCommentsCreate         Permission = "bb.issueComments.create"
-	PermissionIssueCommentsList           Permission = "bb.issueComments.list"
-	PermissionIssueCommentsUpdate         Permission = "bb.issueComments.update"
-	PermissionIssuesCreate                Permission = "bb.issues.create"
-	PermissionIssuesGet                   Permission = "bb.issues.get"
-	PermissionIssuesList                  Permission = "bb.issues.list"
-	PermissionIssuesUpdate                Permission = "bb.issues.update"
-	PermissionPlanCheckRunsGet            Permission = "bb.planCheckRuns.get"
-	PermissionPlanCheckRunsRun            Permission = "bb.planCheckRuns.run"
-	PermissionPlansCreate                 Permission = "bb.plans.create"
-	PermissionPlansGet                    Permission = "bb.plans.get"
-	PermissionPlansList                   Permission = "bb.plans.list"
-	PermissionPlansUpdate                 Permission = "bb.plans.update"
-	PermissionPoliciesCreate              Permission = "bb.policies.create"
-	PermissionPoliciesDelete              Permission = "bb.policies.delete"
-	PermissionPoliciesGet                 Permission = "bb.policies.get"
-	PermissionPoliciesList                Permission = "bb.policies.list"
-	PermissionPoliciesUpdate              Permission = "bb.policies.update"
-	PermissionProjectsCreate              Permission = "bb.projects.create"
-	PermissionProjectsDelete              Permission = "bb.projects.delete"
-	PermissionProjectsGet                 Permission = "bb.projects.get"
-	PermissionProjectsGetIAMPolicy        Permission = "bb.projects.getIamPolicy"
-	PermissionProjectsList                Permission = "bb.projects.list"
-	PermissionProjectsSetIAMPolicy        Permission = "bb.projects.setIamPolicy"
-	PermissionProjectsUndelete            Permission = "bb.projects.undelete"
-	PermissionProjectsUpdate              Permission = "bb.projects.update"
-	PermissionReleasesCheck               Permission = "bb.releases.check"
-	PermissionReleasesCreate              Permission = "bb.releases.create"
-	PermissionReleasesDelete              Permission = "bb.releases.delete"
-	PermissionReleasesGet                 Permission = "bb.releases.get"
-	PermissionReleasesList                Permission = "bb.releases.list"
-	PermissionReleasesUndelete            Permission = "bb.releases.undelete"
-	PermissionReleasesUpdate              Permission = "bb.releases.update"
-	PermissionReviewConfigsCreate         Permission = "bb.reviewConfigs.create"
-	PermissionReviewConfigsDelete         Permission = "bb.reviewConfigs.delete"
-	PermissionReviewConfigsGet            Permission = "bb.reviewConfigs.get"
-	PermissionReviewConfigsList           Permission = "bb.reviewConfigs.list"
-	PermissionReviewConfigsUpdate         Permission = "bb.reviewConfigs.update"
-	PermissionRevisionsCreate             Permission = "bb.revisions.create"
-	PermissionRevisionsDelete             Permission = "bb.revisions.delete"
-	PermissionRevisionsGet                Permission = "bb.revisions.get"
-	PermissionRevisionsList               Permission = "bb.revisions.list"
-	PermissionRolesCreate                 Permission = "bb.roles.create"
-	PermissionRolesDelete                 Permission = "bb.roles.delete"
-	PermissionRolesList                   Permission = "bb.roles.list"
-	PermissionRolesGet                    Permission = "bb.roles.get"
-	PermissionRolesUpdate                 Permission = "bb.roles.update"
-	PermissionRolloutsCreate              Permission = "bb.rollouts.create"
-	PermissionRolloutsGet                 Permission = "bb.rollouts.get"
-	PermissionRolloutsList                Permission = "bb.rollouts.list"
-	PermissionSettingsGet                 Permission = "bb.settings.get"
-	PermissionSettingsList                Permission = "bb.settings.list"
-	PermissionSettingsSet                 Permission = "bb.settings.set"
-	PermissionEnvironmentSettingsGet      Permission = "bb.settings.getEnvironment"
-	PermissionEnvironmentSettingsSet      Permission = "bb.settings.setEnvironment"
-	PermissionWorkspaceProfileSettingsGet Permission = "bb.settings.getWorkspaceProfile"
-	PermissionWorkspaceProfileSettingsSet Permission = "bb.settings.setWorkspaceProfile"
-	PermissionSheetsCreate                Permission = "bb.sheets.create"
-	PermissionSheetsGet                   Permission = "bb.sheets.get"
-	PermissionSheetsUpdate                Permission = "bb.sheets.update"
-	PermissionSQLSelect                   Permission = "bb.sql.select"
-	PermissionSQLDdl                      Permission = "bb.sql.ddl"
-	PermissionSQLDml                      Permission = "bb.sql.dml"
-	PermissionSQLExplain                  Permission = "bb.sql.explain"
-	PermissionSQLInfo                     Permission = "bb.sql.info"
-	PermissionSQLAdmin                    Permission = "bb.sql.admin"
-	PermissionTaskRunsCreate              Permission = "bb.taskRuns.create"
-	PermissionTaskRunsList                Permission = "bb.taskRuns.list"
-	PermissionGroupsCreate                Permission = "bb.groups.create"
-	PermissionGroupsDelete                Permission = "bb.groups.delete"
-	PermissionGroupsGet                   Permission = "bb.groups.get"
-	PermissionGroupsList                  Permission = "bb.groups.list"
-	PermissionGroupsUpdate                Permission = "bb.groups.update"
-	PermissionUsersCreate                 Permission = "bb.users.create"
-	PermissionUsersDelete                 Permission = "bb.users.delete"
-	PermissionUsersGet                    Permission = "bb.users.get"
-	PermissionUsersList                   Permission = "bb.users.list"
-	PermissionUsersUndelete               Permission = "bb.users.undelete"
-	PermissionUsersUpdate                 Permission = "bb.users.update"
-	PermissionUsersUpdateEmail            Permission = "bb.users.updateEmail"
-	PermissionWorksheetsGet               Permission = "bb.worksheets.get"
-	PermissionWorksheetsManage            Permission = "bb.worksheets.manage"
-	PermissionWorkspacesGetIamPolicy      Permission = "bb.workspaces.getIamPolicy"
-	PermissionWorkspacesSetIamPolicy      Permission = "bb.workspaces.setIamPolicy"
+	PermissionAuditLogsExport             = permission.PermissionAuditLogsExport
+	PermissionAuditLogsSearch             = permission.PermissionAuditLogsSearch
+	PermissionChangelogsGet               = permission.PermissionChangelogsGet
+	PermissionChangelogsList              = permission.PermissionChangelogsList
+	PermissionDatabaseCatalogsGet         = permission.PermissionDatabaseCatalogsGet
+	PermissionDatabaseCatalogsUpdate      = permission.PermissionDatabaseCatalogsUpdate
+	PermissionDatabaseGroupsCreate        = permission.PermissionDatabaseGroupsCreate
+	PermissionDatabaseGroupsDelete        = permission.PermissionDatabaseGroupsDelete
+	PermissionDatabaseGroupsGet           = permission.PermissionDatabaseGroupsGet
+	PermissionDatabaseGroupsList          = permission.PermissionDatabaseGroupsList
+	PermissionDatabaseGroupsUpdate        = permission.PermissionDatabaseGroupsUpdate
+	PermissionDatabasesCheck              = permission.PermissionDatabasesCheck
+	PermissionDatabasesGet                = permission.PermissionDatabasesGet
+	PermissionDatabasesGetSchema          = permission.PermissionDatabasesGetSchema
+	PermissionDatabasesList               = permission.PermissionDatabasesList
+	PermissionDatabasesSync               = permission.PermissionDatabasesSync
+	PermissionDatabasesUpdate             = permission.PermissionDatabasesUpdate
+	PermissionIdentityProvidersCreate     = permission.PermissionIdentityProvidersCreate
+	PermissionIdentityProvidersDelete     = permission.PermissionIdentityProvidersDelete
+	PermissionIdentityProvidersGet        = permission.PermissionIdentityProvidersGet
+	PermissionIdentityProvidersUpdate     = permission.PermissionIdentityProvidersUpdate
+	PermissionInstancesCreate             = permission.PermissionInstancesCreate
+	PermissionInstancesDelete             = permission.PermissionInstancesDelete
+	PermissionInstancesGet                = permission.PermissionInstancesGet
+	PermissionInstancesList               = permission.PermissionInstancesList
+	PermissionInstancesSync               = permission.PermissionInstancesSync
+	PermissionInstancesUndelete           = permission.PermissionInstancesUndelete
+	PermissionInstancesUpdate             = permission.PermissionInstancesUpdate
+	PermissionInstanceRolesGet            = permission.PermissionInstanceRolesGet
+	PermissionInstanceRolesList           = permission.PermissionInstanceRolesList
+	PermissionIssueCommentsCreate         = permission.PermissionIssueCommentsCreate
+	PermissionIssueCommentsList           = permission.PermissionIssueCommentsList
+	PermissionIssueCommentsUpdate         = permission.PermissionIssueCommentsUpdate
+	PermissionIssuesCreate                = permission.PermissionIssuesCreate
+	PermissionIssuesGet                   = permission.PermissionIssuesGet
+	PermissionIssuesList                  = permission.PermissionIssuesList
+	PermissionIssuesUpdate                = permission.PermissionIssuesUpdate
+	PermissionPlanCheckRunsGet            = permission.PermissionPlanCheckRunsGet
+	PermissionPlanCheckRunsRun            = permission.PermissionPlanCheckRunsRun
+	PermissionPlansCreate                 = permission.PermissionPlansCreate
+	PermissionPlansGet                    = permission.PermissionPlansGet
+	PermissionPlansList                   = permission.PermissionPlansList
+	PermissionPlansUpdate                 = permission.PermissionPlansUpdate
+	PermissionPoliciesCreate              = permission.PermissionPoliciesCreate
+	PermissionPoliciesDelete              = permission.PermissionPoliciesDelete
+	PermissionPoliciesGet                 = permission.PermissionPoliciesGet
+	PermissionPoliciesList                = permission.PermissionPoliciesList
+	PermissionPoliciesUpdate              = permission.PermissionPoliciesUpdate
+	PermissionProjectsCreate              = permission.PermissionProjectsCreate
+	PermissionProjectsDelete              = permission.PermissionProjectsDelete
+	PermissionProjectsGet                 = permission.PermissionProjectsGet
+	PermissionProjectsGetIAMPolicy        = permission.PermissionProjectsGetIAMPolicy
+	PermissionProjectsList                = permission.PermissionProjectsList
+	PermissionProjectsSetIAMPolicy        = permission.PermissionProjectsSetIAMPolicy
+	PermissionProjectsUndelete            = permission.PermissionProjectsUndelete
+	PermissionProjectsUpdate              = permission.PermissionProjectsUpdate
+	PermissionReleasesCheck               = permission.PermissionReleasesCheck
+	PermissionReleasesCreate              = permission.PermissionReleasesCreate
+	PermissionReleasesDelete              = permission.PermissionReleasesDelete
+	PermissionReleasesGet                 = permission.PermissionReleasesGet
+	PermissionReleasesList                = permission.PermissionReleasesList
+	PermissionReleasesUndelete            = permission.PermissionReleasesUndelete
+	PermissionReleasesUpdate              = permission.PermissionReleasesUpdate
+	PermissionReviewConfigsCreate         = permission.PermissionReviewConfigsCreate
+	PermissionReviewConfigsDelete         = permission.PermissionReviewConfigsDelete
+	PermissionReviewConfigsGet            = permission.PermissionReviewConfigsGet
+	PermissionReviewConfigsList           = permission.PermissionReviewConfigsList
+	PermissionReviewConfigsUpdate         = permission.PermissionReviewConfigsUpdate
+	PermissionRevisionsCreate             = permission.PermissionRevisionsCreate
+	PermissionRevisionsDelete             = permission.PermissionRevisionsDelete
+	PermissionRevisionsGet                = permission.PermissionRevisionsGet
+	PermissionRevisionsList               = permission.PermissionRevisionsList
+	PermissionRolesCreate                 = permission.PermissionRolesCreate
+	PermissionRolesDelete                 = permission.PermissionRolesDelete
+	PermissionRolesList                   = permission.PermissionRolesList
+	PermissionRolesGet                    = permission.PermissionRolesGet
+	PermissionRolesUpdate                 = permission.PermissionRolesUpdate
+	PermissionRolloutsCreate              = permission.PermissionRolloutsCreate
+	PermissionRolloutsGet                 = permission.PermissionRolloutsGet
+	PermissionRolloutsList                = permission.PermissionRolloutsList
+	PermissionSettingsGet                 = permission.PermissionSettingsGet
+	PermissionSettingsList                = permission.PermissionSettingsList
+	PermissionSettingsSet                 = permission.PermissionSettingsSet
+	PermissionEnvironmentSettingsGet      = permission.PermissionEnvironmentSettingsGet
+	PermissionEnvironmentSettingsSet      = permission.PermissionEnvironmentSettingsSet
+	PermissionWorkspaceProfileSettingsGet = permission.PermissionWorkspaceProfileSettingsGet
+	PermissionWorkspaceProfileSettingsSet = permission.PermissionWorkspaceProfileSettingsSet
+	PermissionSheetsCreate                = permission.PermissionSheetsCreate
+	PermissionSheetsGet                   = permission.PermissionSheetsGet
+	PermissionSheetsUpdate                = permission.PermissionSheetsUpdate
+	PermissionSQLSelect                   = permission.PermissionSQLSelect
+	PermissionSQLDdl                      = permission.PermissionSQLDdl
+	PermissionSQLDml                      = permission.PermissionSQLDml
+	PermissionSQLExplain                  = permission.PermissionSQLExplain
+	PermissionSQLInfo                     = permission.PermissionSQLInfo
+	PermissionSQLAdmin                    = permission.PermissionSQLAdmin
+	PermissionTaskRunsCreate              = permission.PermissionTaskRunsCreate
+	PermissionTaskRunsList                = permission.PermissionTaskRunsList
+	PermissionGroupsCreate                = permission.PermissionGroupsCreate
+	PermissionGroupsDelete                = permission.PermissionGroupsDelete
+	PermissionGroupsGet                   = permission.PermissionGroupsGet
+	PermissionGroupsList                  = permission.PermissionGroupsList
+	PermissionGroupsUpdate                = permission.PermissionGroupsUpdate
+	PermissionUsersCreate                 = permission.PermissionUsersCreate
+	PermissionUsersDelete                 = permission.PermissionUsersDelete
+	PermissionUsersGet                    = permission.PermissionUsersGet
+	PermissionUsersList                   = permission.PermissionUsersList
+	PermissionUsersUndelete               = permission.PermissionUsersUndelete
+	PermissionUsersUpdate                 = permission.PermissionUsersUpdate
+	PermissionUsersUpdateEmail            = permission.PermissionUsersUpdateEmail
+	PermissionWorksheetsGet               = permission.PermissionWorksheetsGet
+	PermissionWorksheetsManage            = permission.PermissionWorksheetsManage
+	PermissionWorkspacesGetIamPolicy      = permission.PermissionWorkspacesGetIamPolicy
+	PermissionWorkspacesSetIamPolicy      = permission.PermissionWorkspacesSetIamPolicy
 )
 
-var allPermissions = func() []Permission {
-	var data struct {
-		Permissions []Permission `yaml:"permissions"`
-	}
-	if err := yaml.Unmarshal(permissionYAML, &data); err != nil {
-		panic("failed to load permissions from YAML: " + err.Error())
-	}
-	return data.Permissions
-}()
-
-var allPermissionsMap = func() map[Permission]bool {
-	m := make(map[Permission]bool)
-	for _, p := range allPermissions {
-		m[p] = true
-	}
-	return m
-}()
-
-func PermissionsExist(permissions ...string) bool {
-	for _, p := range permissions {
-		if !PermissionExist(p) {
-			return false
-		}
-	}
-	return true
-}
-
-// PermissionExist checks if a single permission exists in permission.yaml
-func PermissionExist(permission string) bool {
-	return allPermissionsMap[permission]
-}
+// Re-export functions. Note: shared package uses Exist/Exists (without Permission prefix).
+var (
+	PermissionsExist = permission.Exists
+	PermissionExist  = permission.Exist
+)
