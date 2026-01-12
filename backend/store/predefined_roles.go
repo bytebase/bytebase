@@ -28,6 +28,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: WorkspaceAdminRole,
 		Name:       "Workspace admin",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionAuditLogsExport,
 			permission.PermissionAuditLogsSearch,
@@ -148,6 +149,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: WorkspaceDBARole,
 		Name:       "Workspace DBA",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionAuditLogsExport,
 			permission.PermissionAuditLogsSearch,
@@ -255,6 +257,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: WorkspaceMemberRole,
 		Name:       "Workspace member",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionInstanceRolesGet,
 			permission.PermissionInstanceRolesList,
@@ -277,6 +280,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: ProjectOwnerRole,
 		Name:       "Project owner",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionAuditLogsExport,
 			permission.PermissionAuditLogsSearch,
@@ -348,6 +352,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: ProjectDeveloperRole,
 		Name:       "Project developer",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionAuditLogsSearch,
 			permission.PermissionChangelogsGet,
@@ -391,6 +396,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: SQLEditorUserRole,
 		Name:       "SQL Editor User",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionDatabaseCatalogsGet,
 			permission.PermissionDatabaseGroupsGet,
@@ -413,6 +419,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: ProjectReleaserRole,
 		Name:       "Project releaser",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionDatabaseCatalogsGet,
 			permission.PermissionChangelogsGet,
@@ -448,6 +455,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: GitOpsServiceAgentRole,
 		Name:       "GitOps Service Agent",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionPlansCreate,
 			permission.PermissionPlansGet,
@@ -464,6 +472,7 @@ var PredefinedRoles = []*RoleMessage{
 	{
 		ResourceID: ProjectViewerRole,
 		Name:       "Project viewer",
+		Predefined: true,
 		Permissions: permissionSet(
 			permission.PermissionDatabaseCatalogsGet,
 			permission.PermissionDatabaseGroupsGet,

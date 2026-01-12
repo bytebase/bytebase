@@ -42,9 +42,13 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *connect.Request[v1pb.Lis
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list roles"))
 	}
 
-	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
-	for _, predefinedRole := range store.PredefinedRoles {
-		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
+	var roles []*v1pb.Role
+	for _, roleMessage := range roleMessages {
+		roleType := v1pb.Role_CUSTOM
+		if roleMessage.Predefined {
+			roleType = v1pb.Role_BUILT_IN
+		}
+		roles = append(roles, convertToRole(roleMessage, roleType))
 	}
 
 	return connect.NewResponse(&v1pb.ListRolesResponse{
@@ -230,14 +234,6 @@ func (s *RoleService) DeleteRole(ctx context.Context, req *connect.Request[v1pb.
 		return nil, err
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
-func convertToRoles(roleMessages []*store.RoleMessage, roleType v1pb.Role_Type) []*v1pb.Role {
-	var roles []*v1pb.Role
-	for _, roleMessage := range roleMessages {
-		roles = append(roles, convertToRole(roleMessage, roleType))
-	}
-	return roles
 }
 
 func convertToRole(role *store.RoleMessage, roleType v1pb.Role_Type) *v1pb.Role {

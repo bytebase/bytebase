@@ -17,6 +17,7 @@ type RoleMessage struct {
 	Name        string
 	Description string
 	Permissions map[string]bool
+	Predefined  bool
 }
 
 // UpdateRoleMessage is the message for updating roles.
