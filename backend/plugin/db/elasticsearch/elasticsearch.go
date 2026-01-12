@@ -357,8 +357,13 @@ func (d *Driver) Ping(_ context.Context) error {
 
 	// Use Elasticsearch client
 	if d.typedClient != nil {
-		if _, err := d.typedClient.Ping(); err != nil {
+		res, err := d.typedClient.Ping()
+		if err != nil {
 			return errors.Wrapf(err, "failed to ping db")
+		}
+		defer res.Body.Close()
+		if res.IsError() {
+			return errors.Errorf("ping failed: %s", res.String())
 		}
 		return nil
 	}
