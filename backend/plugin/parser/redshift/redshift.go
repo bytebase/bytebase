@@ -13,23 +13,8 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_REDSHIFT, parseRedshiftForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_REDSHIFT, parseRedshiftStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_REDSHIFT, GetStatementTypes)
-}
-
-// parseRedshiftForRegistry is the ParseFunc for Redshift.
-// Returns []base.AST with *ANTLRAST instances.
-func parseRedshiftForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParseRedshift(statement)
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parseRedshiftStatements is the ParseStatementsFunc for Redshift.

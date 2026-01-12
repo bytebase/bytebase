@@ -15,23 +15,8 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_ORACLE, parsePLSQLForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_ORACLE, parsePLSQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_ORACLE, GetStatementTypes)
-}
-
-// parsePLSQLForRegistry is the ParseFunc for PL/SQL.
-// Returns []base.AST with *ANTLRAST instances.
-func parsePLSQLForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParsePLSQL(statement + ";")
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parsePLSQLStatements is the ParseStatementsFunc for Oracle (PL/SQL).

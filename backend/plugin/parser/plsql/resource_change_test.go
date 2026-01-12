@@ -29,8 +29,9 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount:      1,
 	}
 
-	asts, err := base.Parse(storepb.Engine_ORACLE, statement)
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
 	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
 	require.NotEmpty(t, asts)
 
 	// Pass the full asts array to extractChangedResources

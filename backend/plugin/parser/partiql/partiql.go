@@ -13,22 +13,7 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_DYNAMODB, parsePartiQLForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_DYNAMODB, parsePartiQLStatements)
-}
-
-// parsePartiQLForRegistry is the ParseFunc for PartiQL.
-// Returns []base.AST with *ANTLRAST instances.
-func parsePartiQLForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParsePartiQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parsePartiQLStatements is the ParseStatementsFunc for PartiQL (DynamoDB).

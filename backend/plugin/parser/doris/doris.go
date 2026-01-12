@@ -9,22 +9,7 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_DORIS, parseDorisForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_DORIS, parseDorisStatements)
-}
-
-// parseDorisForRegistry is the ParseFunc for Doris.
-// Returns []base.AST with *ANTLRAST instances.
-func parseDorisForRegistry(statement string) ([]base.AST, error) {
-	antlrASTs, err := ParseDorisSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	var asts []base.AST
-	for _, ast := range antlrASTs {
-		asts = append(asts, ast)
-	}
-	return asts, nil
 }
 
 // parseDorisStatements is the ParseStatementsFunc for Doris.

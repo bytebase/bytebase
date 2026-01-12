@@ -47,7 +47,7 @@ FRAM t1;`,
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := base.Parse(storepb.Engine_POSTGRES, test.statement)
+			_, err := base.ParseStatements(storepb.Engine_POSTGRES, test.statement)
 			require.Error(t, err)
 			syntaxErr, ok := err.(*base.SyntaxError)
 			require.True(t, ok, "expected *base.SyntaxError, got %T", err)
