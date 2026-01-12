@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -178,7 +179,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
-	if err := s.checkPermission(ctx, group, user, iam.PermissionGroupsUpdate); err != nil {
+	if err := s.checkPermission(ctx, group, user, permission.GroupsUpdate); err != nil {
 		return nil, err
 	}
 
@@ -240,7 +241,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
-	if err := s.checkPermission(ctx, group, user, iam.PermissionGroupsDelete); err != nil {
+	if err := s.checkPermission(ctx, group, user, permission.GroupsDelete); err != nil {
 		return nil, err
 	}
 

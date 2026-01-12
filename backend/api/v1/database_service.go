@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -106,7 +107,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			// Ignore database not in the specified project.
 			continue
 		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesGet, user, databaseMessage.ProjectID)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesGet, user, databaseMessage.ProjectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
@@ -205,29 +206,29 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q", req.Msg.Parent))
 		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, p)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, p)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", iam.PermissionProjectsGet, req.Msg.Parent))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
 		}
 		find.ProjectID = &p
 	case strings.HasPrefix(req.Msg.Parent, common.WorkspacePrefix):
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesList, user)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionDatabasesList))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList))
 		}
 	case strings.HasPrefix(req.Msg.Parent, common.InstanceNamePrefix):
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.InstancesGet, user)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionInstancesGet))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.InstancesGet))
 		}
 
 		instanceID, err := common.GetInstanceID(req.Msg.Parent)

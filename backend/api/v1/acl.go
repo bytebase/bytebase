@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -169,7 +170,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 
 		// Create a new auth context for create permission check
 		createAuthContext := &common.AuthContext{
-			Permission: iam.Permission(createPerm),
+			Permission: permission.Permission(createPerm),
 			AuthMethod: authContext.AuthMethod,
 			Resources:  authContext.Resources,
 		}

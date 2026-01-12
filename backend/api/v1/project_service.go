@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -176,14 +177,14 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 		}
 	}
 
-	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+	ok, err = s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
 		var ps []*store.ProjectMessage
 		for _, project := range projects {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, project.ResourceID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission for project %q", project.ResourceID))
 			}
@@ -611,7 +612,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
-	existProjectOwner, err := validateIAMPolicy(ctx, s.store, s.iamManager, req.Msg.Policy, oldIamPolicyMsg)
+	existProjectOwner, err := validateIAMPolicy(ctx, s.store, req.Msg.Policy, oldIamPolicyMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -1063,7 +1064,6 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
-	_ *iam.Manager,
 	policy *v1pb.IamPolicy,
 	oldPolicyMessage *store.IamPolicyMessage,
 ) (bool, error) {
