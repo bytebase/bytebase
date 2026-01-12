@@ -166,22 +166,18 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 		}
 
 		for _, m := range results {
-			// index size.
 			datasize, err := unitConversion(m.IndexSize)
 			if err != nil {
 				return nil, err
 			}
-
-			// document count.
-			docCount, err := strconv.Atoi(m.DocsCount)
+			docCount, err := parseDocCount(m.DocsCount)
 			if err != nil {
 				return nil, err
 			}
-
 			indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
 				Name:     m.Index,
 				DataSize: datasize,
-				RowCount: int64(docCount),
+				RowCount: docCount,
 			})
 		}
 		return indicesMetadata, nil
@@ -216,31 +212,46 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 	}
 
 	for _, m := range results {
-		// index size.
 		datasize, err := unitConversion(m.IndexSize)
 		if err != nil {
 			return nil, err
 		}
-
-		// document count.
-		docCount, err := strconv.Atoi(m.DocsCount)
+		docCount, err := parseDocCount(m.DocsCount)
 		if err != nil {
 			return nil, err
 		}
-
 		indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
 			Name:     m.Index,
 			DataSize: datasize,
-			RowCount: int64(docCount),
+			RowCount: docCount,
 		})
 	}
 	return indicesMetadata, nil
 }
 
+// parseDocCount parses document count string, returning 0 for empty values (e.g., closed indices).
+func parseDocCount(s string) (int64, error) {
+	if s == "" {
+		return 0, nil
+	}
+	count, err := strconv.Atoi(s)
+	return int64(count), err
+}
+
 func unitConversion(sizeWithUnit string) (int64, error) {
+	// Empty size is expected for closed indices (ES returns null → unmarshals to "")
+	if sizeWithUnit == "" {
+		return 0, nil
+	}
+
 	sizeWithUnit = strings.ToLower(sizeWithUnit)
 	sizeRe := regexp.MustCompile("([0-9.]+)([gmk]?b)")
 	match := sizeRe.FindSubmatch([]byte(sizeWithUnit))
+
+	// Non-empty string that doesn't match expected format is unexpected
+	if len(match) < 3 {
+		return 0, errors.Errorf("unexpected size format: %q", sizeWithUnit)
+	}
 
 	unit := string(match[2])
 
