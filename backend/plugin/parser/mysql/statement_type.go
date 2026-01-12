@@ -4,11 +4,12 @@ import (
 	"github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts []base.AST) ([]string, error) {
-	sqlTypeSet := make(map[string]bool)
+func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
+	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, ast := range asts {
 		antlrAST, ok := base.GetANTLRAST(ast)
 		if !ok {
@@ -17,7 +18,7 @@ func GetStatementTypes(asts []base.AST) ([]string, error) {
 		t := getStatementType(antlrAST)
 		sqlTypeSet[t] = true
 	}
-	var sqlTypes []string
+	var sqlTypes []storepb.StatementType
 	for sqlType := range sqlTypeSet {
 		sqlTypes = append(sqlTypes, sqlType)
 	}
@@ -25,7 +26,7 @@ func GetStatementTypes(asts []base.AST) ([]string, error) {
 }
 
 // GetStatementType return the type of statement.
-func getStatementType(stmt *base.ANTLRAST) string {
+func getStatementType(stmt *base.ANTLRAST) storepb.StatementType {
 	for _, child := range stmt.Tree.GetChildren() {
 		switch ctx := child.(type) {
 		case *mysql.QueryContext:
@@ -38,69 +39,69 @@ func getStatementType(stmt *base.ANTLRAST) string {
 							for _, child := range ctx.GetChildren() {
 								switch child.(type) {
 								case *mysql.CreateDatabaseContext:
-									return "CREATE_DATABASE"
+									return storepb.StatementType_CREATE_DATABASE
 								case *mysql.CreateIndexContext:
-									return "CREATE_INDEX"
+									return storepb.StatementType_CREATE_INDEX
 								case *mysql.CreateTableContext:
-									return "CREATE_TABLE"
+									return storepb.StatementType_CREATE_TABLE
 								case *mysql.CreateViewContext:
-									return "CREATE_VIEW"
+									return storepb.StatementType_CREATE_VIEW
 								case *mysql.CreateEventContext:
-									return "CREATE_EVENT"
+									return storepb.StatementType_CREATE_EVENT
 								case *mysql.CreateTriggerContext:
-									return "CREATE_TRIGGER"
+									return storepb.StatementType_CREATE_TRIGGER
 								case *mysql.CreateFunctionContext:
-									return "CREATE_FUNCTION"
+									return storepb.StatementType_CREATE_FUNCTION
 								case *mysql.CreateProcedureContext:
-									return "CREATE_PROCEDURE"
+									return storepb.StatementType_CREATE_PROCEDURE
 								}
 							}
 						case *mysql.DropStatementContext:
 							for _, child := range ctx.GetChildren() {
 								switch child.(type) {
 								case *mysql.DropIndexContext:
-									return "DROP_INDEX"
+									return storepb.StatementType_DROP_INDEX
 								case *mysql.DropTableContext:
-									return "DROP_TABLE"
+									return storepb.StatementType_DROP_TABLE
 								case *mysql.DropDatabaseContext:
-									return "DROP_DATABASE"
+									return storepb.StatementType_DROP_DATABASE
 								case *mysql.DropViewContext:
-									return "DROP_VIEW"
+									return storepb.StatementType_DROP_VIEW
 								case *mysql.DropTriggerContext:
-									return "DROP_TRIGGER"
+									return storepb.StatementType_DROP_TRIGGER
 								case *mysql.DropEventContext:
-									return "DROP_EVENT"
+									return storepb.StatementType_DROP_EVENT
 								case *mysql.DropFunctionContext:
-									return "DROP_FUNCTION"
+									return storepb.StatementType_DROP_FUNCTION
 								case *mysql.DropProcedureContext:
-									return "DROP_PROCEDURE"
+									return storepb.StatementType_DROP_PROCEDURE
 								}
 							}
 						case *mysql.AlterStatementContext:
 							for _, child := range ctx.GetChildren() {
 								switch child.(type) {
 								case *mysql.AlterTableContext:
-									return "ALTER_TABLE"
+									return storepb.StatementType_ALTER_TABLE
 								case *mysql.AlterDatabaseContext:
-									return "ALTER_DATABASE"
+									return storepb.StatementType_ALTER_DATABASE
 								case *mysql.AlterViewContext:
-									return "ALTER_VIEW"
+									return storepb.StatementType_ALTER_VIEW
 								case *mysql.AlterEventContext:
-									return "ALTER_EVENT"
+									return storepb.StatementType_ALTER_EVENT
 								}
 							}
 						case *mysql.TruncateTableStatementContext:
-							return "TRUNCATE"
+							return storepb.StatementType_TRUNCATE
 						case *mysql.RenameTableStatementContext:
-							return "RENAME"
+							return storepb.StatementType_RENAME
 
 						// dml.
 						case *mysql.DeleteStatementContext:
-							return "DELETE"
+							return storepb.StatementType_DELETE
 						case *mysql.InsertStatementContext:
-							return "INSERT"
+							return storepb.StatementType_INSERT
 						case *mysql.UpdateStatementContext:
-							return "UPDATE"
+							return storepb.StatementType_UPDATE
 						}
 					}
 				default:
@@ -109,5 +110,5 @@ func getStatementType(stmt *base.ANTLRAST) string {
 		default:
 		}
 	}
-	return "UNKNOWN"
+	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 }

@@ -75,7 +75,7 @@ type ParseStatementsFunc func(statement string) ([]ParsedStatement, error)
 
 // GetStatementTypesFunc returns the types of statements in the ASTs.
 // Statement types include: INSERT, UPDATE, DELETE (DML), CREATE_TABLE, ALTER_TABLE, DROP_TABLE, etc. (DDL).
-type GetStatementTypesFunc func([]AST) ([]string, error)
+type GetStatementTypesFunc func([]AST) ([]storepb.StatementType, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -309,7 +309,7 @@ func RegisterGetStatementTypes(engine storepb.Engine, f GetStatementTypesFunc) {
 }
 
 // GetStatementTypes returns the types of statements in the ASTs.
-func GetStatementTypes(engine storepb.Engine, asts []AST) ([]string, error) {
+func GetStatementTypes(engine storepb.Engine, asts []AST) ([]storepb.StatementType, error) {
 	f, ok := statementTypeGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -360,7 +360,7 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 	}
 	for _, t := range types {
 		switch t {
-		case "INSERT", "UPDATE", "DELETE":
+		case storepb.StatementType_INSERT, storepb.StatementType_UPDATE, storepb.StatementType_DELETE:
 			// DML statement, continue
 		default:
 			return false

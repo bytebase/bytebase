@@ -165,7 +165,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	asts := parserbase.ExtractASTs(stmts)
 
 	var explainCalculator getAffectedRowsFromExplain
-	var sqlTypes []string
+	var sqlTypes []storepb.StatementType
 	var defaultSchema string
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
@@ -191,7 +191,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		if err != nil {
 			return nil, err
 		}
-		sqlTypes = make([]string, len(stmtsWithPos))
+		sqlTypes = make([]storepb.StatementType, len(stmtsWithPos))
 		for i, stmt := range stmtsWithPos {
 			sqlTypes[i] = stmt.Type
 		}

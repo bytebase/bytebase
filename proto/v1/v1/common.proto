@@ -169,6 +169,61 @@ enum WebhookType {
   LARK = 7;
 }
 
+// StatementType represents the type of SQL statement.
+enum StatementType {
+  STATEMENT_TYPE_UNSPECIFIED = 0;
+
+  // DDL - CREATE statements
+  CREATE_DATABASE = 1;
+  CREATE_TABLE = 2;
+  CREATE_VIEW = 3;
+  CREATE_INDEX = 4;
+  CREATE_SEQUENCE = 5;
+  CREATE_SCHEMA = 6;
+  CREATE_FUNCTION = 7;
+  CREATE_TRIGGER = 8;
+  CREATE_PROCEDURE = 9;
+  CREATE_EVENT = 10;
+  CREATE_EXTENSION = 11;
+  CREATE_TYPE = 12;
+
+  // DDL - DROP statements
+  DROP_DATABASE = 20;
+  DROP_TABLE = 21;
+  DROP_VIEW = 22;
+  DROP_INDEX = 23;
+  DROP_SEQUENCE = 24;
+  DROP_SCHEMA = 25;
+  DROP_FUNCTION = 26;
+  DROP_TRIGGER = 27;
+  DROP_PROCEDURE = 28;
+  DROP_EVENT = 29;
+  DROP_EXTENSION = 30;
+  DROP_TYPE = 31;
+
+  // DDL - ALTER statements
+  ALTER_DATABASE = 40;
+  ALTER_TABLE = 41;
+  ALTER_VIEW = 42;
+  ALTER_SEQUENCE = 43;
+  ALTER_EVENT = 44;
+  ALTER_TYPE = 45;
+  ALTER_INDEX = 46;
+
+  // DDL - Other
+  TRUNCATE = 50;
+  RENAME = 51;
+  RENAME_INDEX = 52;
+  RENAME_SCHEMA = 53;
+  RENAME_SEQUENCE = 54;
+  COMMENT = 55;
+
+  // DML statements
+  INSERT = 60;
+  UPDATE = 61;
+  DELETE = 62;
+}
+
 // PermissionDeniedDetail provides structured information about permission failures.
 // Used as error detail when returning CodePermissionDenied errors.
 message PermissionDeniedDetail {

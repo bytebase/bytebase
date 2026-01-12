@@ -3,54 +3,8 @@ package pg
 import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
-)
 
-// Statement type constants.
-const (
-	// CREATE statements.
-	stmtTypeCreateTable     = "CREATE_TABLE"
-	stmtTypeCreateView      = "CREATE_VIEW"
-	stmtTypeCreateIndex     = "CREATE_INDEX"
-	stmtTypeCreateSequence  = "CREATE_SEQUENCE"
-	stmtTypeCreateSchema    = "CREATE_SCHEMA"
-	stmtTypeCreateFunction  = "CREATE_FUNCTION"
-	stmtTypeCreateTrigger   = "CREATE_TRIGGER"
-	stmtTypeCreateExtension = "CREATE_EXTENSION"
-	stmtTypeCreateDatabase  = "CREATE_DATABASE"
-	stmtTypeCreateType      = "CREATE_TYPE"
-
-	// DROP statements.
-	stmtTypeDropTable     = "DROP_TABLE"
-	stmtTypeDropIndex     = "DROP_INDEX"
-	stmtTypeDropSchema    = "DROP_SCHEMA"
-	stmtTypeDropSequence  = "DROP_SEQUENCE"
-	stmtTypeDropExtension = "DROP_EXTENSION"
-	stmtTypeDropDatabase  = "DROP_DATABASE"
-	stmtTypeDropType      = "DROP_TYPE"
-	stmtTypeDropTrigger   = "DROP_TRIGGER"
-	stmtTypeDropFunction  = "DROP_FUNCTION"
-
-	// ALTER statements.
-	stmtTypeAlterTable    = "ALTER_TABLE"
-	stmtTypeAlterView     = "ALTER_VIEW"
-	stmtTypeAlterSequence = "ALTER_SEQUENCE"
-	stmtTypeAlterType     = "ALTER_TYPE"
-
-	// RENAME statements.
-	stmtTypeRenameIndex    = "RENAME_INDEX"
-	stmtTypeRenameSchema   = "RENAME_SCHEMA"
-	stmtTypeRenameSequence = "RENAME_SEQUENCE"
-
-	// DML statements.
-	stmtTypeInsert = "INSERT"
-	stmtTypeUpdate = "UPDATE"
-	stmtTypeDelete = "DELETE"
-
-	// Other statements.
-	stmtTypeComment = "COMMENT"
-
-	// Special value for filtering.
-	stmtTypeUnknown = "UNKNOWN"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // statementTypeCollectorWithPosition collects statement types with positions.
@@ -62,8 +16,8 @@ type statementTypeCollectorWithPosition struct {
 }
 
 // Helper function to add statement with position.
-func (c *statementTypeCollectorWithPosition) addStatement(stmtType string, ctx antlr.ParserRuleContext) {
-	if stmtType == "" || stmtType == stmtTypeUnknown {
+func (c *statementTypeCollectorWithPosition) addStatement(stmtType storepb.StatementType, ctx antlr.ParserRuleContext) {
+	if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
 		return
 	}
 
@@ -94,7 +48,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreatestmt(ctx *parser.Creates
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateTable, ctx)
+	c.addStatement(storepb.StatementType_CREATE_TABLE, ctx)
 }
 
 // CREATE VIEW statements
@@ -102,7 +56,7 @@ func (c *statementTypeCollectorWithPosition) EnterViewstmt(ctx *parser.ViewstmtC
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateView, ctx)
+	c.addStatement(storepb.StatementType_CREATE_VIEW, ctx)
 }
 
 // CREATE INDEX statements
@@ -110,7 +64,7 @@ func (c *statementTypeCollectorWithPosition) EnterIndexstmt(ctx *parser.Indexstm
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateIndex, ctx)
+	c.addStatement(storepb.StatementType_CREATE_INDEX, ctx)
 }
 
 // CREATE SEQUENCE statements
@@ -118,7 +72,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreateseqstmt(ctx *parser.Crea
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateSequence, ctx)
+	c.addStatement(storepb.StatementType_CREATE_SEQUENCE, ctx)
 }
 
 // CREATE SCHEMA statements
@@ -126,7 +80,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreateschemastmt(ctx *parser.C
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateSchema, ctx)
+	c.addStatement(storepb.StatementType_CREATE_SCHEMA, ctx)
 }
 
 // CREATE FUNCTION statements
@@ -134,7 +88,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreatefunctionstmt(ctx *parser
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateFunction, ctx)
+	c.addStatement(storepb.StatementType_CREATE_FUNCTION, ctx)
 }
 
 // CREATE TRIGGER statements
@@ -142,7 +96,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreatetrigstmt(ctx *parser.Cre
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateTrigger, ctx)
+	c.addStatement(storepb.StatementType_CREATE_TRIGGER, ctx)
 }
 
 // CREATE EXTENSION statements
@@ -150,7 +104,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreateextensionstmt(ctx *parse
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateExtension, ctx)
+	c.addStatement(storepb.StatementType_CREATE_EXTENSION, ctx)
 }
 
 // CREATE DATABASE statements
@@ -158,7 +112,7 @@ func (c *statementTypeCollectorWithPosition) EnterCreatedbstmt(ctx *parser.Creat
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeCreateDatabase, ctx)
+	c.addStatement(storepb.StatementType_CREATE_DATABASE, ctx)
 }
 
 // DROP statements
@@ -177,28 +131,28 @@ func (c *statementTypeCollectorWithPosition) EnterAltertablestmt(ctx *parser.Alt
 
 	// Check if this is ALTER VIEW
 	if ctx.VIEW() != nil {
-		c.addStatement(stmtTypeAlterView, ctx)
+		c.addStatement(storepb.StatementType_ALTER_VIEW, ctx)
 		return
 	}
 
 	// Always return ALTER_TABLE for ALTER TABLE statements
 	// The sub-operations (ADD COLUMN, DROP COLUMN, etc.) are child nodes in the AST,
 	// not separate statements
-	c.addStatement(stmtTypeAlterTable, ctx)
+	c.addStatement(storepb.StatementType_ALTER_TABLE, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeAlterSequence, ctx)
+	c.addStatement(storepb.StatementType_ALTER_SEQUENCE, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterAlterenumstmt(ctx *parser.AlterenumstmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeAlterType, ctx)
+	c.addStatement(storepb.StatementType_ALTER_TYPE, ctx)
 }
 
 // RENAME statements
@@ -216,25 +170,25 @@ func (c *statementTypeCollectorWithPosition) EnterRenamestmt(ctx *parser.Renames
 
 	// Check for top-level RENAME operations that are NOT wrapped in AlterTableStmt
 	if ctx.INDEX() != nil {
-		c.addStatement(stmtTypeRenameIndex, ctx)
+		c.addStatement(storepb.StatementType_RENAME_INDEX, ctx)
 		return
 	}
 	if ctx.SCHEMA() != nil {
-		c.addStatement(stmtTypeRenameSchema, ctx)
+		c.addStatement(storepb.StatementType_RENAME_SCHEMA, ctx)
 		return
 	}
 	if ctx.SEQUENCE() != nil {
-		c.addStatement(stmtTypeRenameSequence, ctx)
+		c.addStatement(storepb.StatementType_RENAME_SEQUENCE, ctx)
 		return
 	}
 
 	// All other RENAME operations (TABLE, COLUMN, CONSTRAINT, VIEW) are wrapped in AlterTableStmt
 	// Check if it's a VIEW to return ALTER_VIEW, otherwise return ALTER_TABLE
 	if ctx.VIEW() != nil {
-		c.addStatement(stmtTypeAlterView, ctx)
+		c.addStatement(storepb.StatementType_ALTER_VIEW, ctx)
 	} else if ctx.TABLE() != nil {
 		// RENAME TABLE, RENAME COLUMN, RENAME CONSTRAINT all use TABLE keyword
-		c.addStatement(stmtTypeAlterTable, ctx)
+		c.addStatement(storepb.StatementType_ALTER_TABLE, ctx)
 	}
 }
 
@@ -243,7 +197,7 @@ func (c *statementTypeCollectorWithPosition) EnterCommentstmt(ctx *parser.Commen
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeComment, ctx)
+	c.addStatement(storepb.StatementType_COMMENT, ctx)
 }
 
 // CREATE TYPE statements
@@ -253,7 +207,7 @@ func (c *statementTypeCollectorWithPosition) EnterDefinestmt(ctx *parser.Defines
 	}
 	// Check if this is CREATE TYPE
 	if ctx.TYPE_P() != nil {
-		c.addStatement(stmtTypeCreateType, ctx)
+		c.addStatement(storepb.StatementType_CREATE_TYPE, ctx)
 	}
 }
 
@@ -262,7 +216,7 @@ func (c *statementTypeCollectorWithPosition) EnterRemovefuncstmt(ctx *parser.Rem
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeDropFunction, ctx)
+	c.addStatement(storepb.StatementType_DROP_FUNCTION, ctx)
 }
 
 // DROP DATABASE statements
@@ -270,7 +224,7 @@ func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.Dropdbs
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeDropDatabase, ctx)
+	c.addStatement(storepb.StatementType_DROP_DATABASE, ctx)
 }
 
 // DML statements
@@ -278,83 +232,85 @@ func (c *statementTypeCollectorWithPosition) EnterInsertstmt(ctx *parser.Inserts
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeInsert, ctx)
+	c.addStatement(storepb.StatementType_INSERT, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeUpdate, ctx)
+	c.addStatement(storepb.StatementType_UPDATE, ctx)
 }
 
 func (c *statementTypeCollectorWithPosition) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-	c.addStatement(stmtTypeDelete, ctx)
+	c.addStatement(storepb.StatementType_DELETE, ctx)
 }
 
 // getDropStatementType determines the specific DROP statement type.
-func getDropStatementType(ctx *parser.DropstmtContext) string {
+func getDropStatementType(ctx *parser.DropstmtContext) storepb.StatementType {
 	if ctx == nil {
-		return ""
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
 
 	// Check TYPE_P for DROP TYPE
 	if ctx.TYPE_P() != nil {
-		return stmtTypeDropType
+		return storepb.StatementType_DROP_TYPE
 	}
 
 	// Check DOMAIN_P for DROP DOMAIN (not in legacy, return UNKNOWN)
 	if ctx.DOMAIN_P() != nil {
-		return stmtTypeUnknown
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
 
 	// Check object_type_any_name (TABLE, SEQUENCE, VIEW, INDEX, etc.)
 	if ctx.Object_type_any_name() != nil {
 		objType := ctx.Object_type_any_name()
 		if objType.TABLE() != nil {
-			return stmtTypeDropTable
+			return storepb.StatementType_DROP_TABLE
 		}
 		if objType.VIEW() != nil {
-			// Check if MATERIALIZED VIEW or regular VIEW
-			// Both treated as DROP_TABLE in legacy
-			return stmtTypeDropTable
+			// Legacy compatibility: PostgreSQL treats both regular views and materialized views
+			// as DROP_TABLE instead of DROP_VIEW. This matches the behavior of the legacy
+			// pg_query_go parser to maintain consistency in statement type reporting.
+			// Note: Redshift follows the same pattern.
+			return storepb.StatementType_DROP_TABLE
 		}
 		if objType.INDEX() != nil {
-			return stmtTypeDropIndex
+			return storepb.StatementType_DROP_INDEX
 		}
 		if objType.SEQUENCE() != nil {
-			return stmtTypeDropSequence
+			return storepb.StatementType_DROP_SEQUENCE
 		}
 		// Other types like COLLATION, CONVERSION, STATISTICS not in legacy
-		return stmtTypeUnknown
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
 
 	// Check drop_type_name (SCHEMA, EXTENSION, etc.)
 	if ctx.Drop_type_name() != nil {
 		dropType := ctx.Drop_type_name()
 		if dropType.SCHEMA() != nil {
-			return stmtTypeDropSchema
+			return storepb.StatementType_DROP_SCHEMA
 		}
 		if dropType.EXTENSION() != nil {
-			return stmtTypeDropExtension
+			return storepb.StatementType_DROP_EXTENSION
 		}
 		// Other types like ACCESS METHOD, EVENT TRIGGER, PUBLICATION not in legacy
-		return stmtTypeUnknown
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
 
 	// Check object_type_name_on_any_name (TRIGGER, RULE, POLICY with "ON table" syntax)
 	if ctx.Object_type_name_on_any_name() != nil {
 		objTypeOn := ctx.Object_type_name_on_any_name()
 		if objTypeOn.TRIGGER() != nil {
-			return stmtTypeDropTrigger
+			return storepb.StatementType_DROP_TRIGGER
 		}
 		// RULE and POLICY not in legacy
-		return stmtTypeUnknown
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
 
 	// Default for unhandled cases
-	return stmtTypeUnknown
+	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 }

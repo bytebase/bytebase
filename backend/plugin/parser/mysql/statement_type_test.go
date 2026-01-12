@@ -45,10 +45,16 @@ func TestGetStatementType(t *testing.T) {
 		sqlType, err := GetStatementTypes(asts)
 		a.NoError(err)
 
+		// Convert enum to string for comparison
+		sqlTypeStrings := make([]string, len(sqlType))
+		for j, t := range sqlType {
+			sqlTypeStrings[j] = t.String()
+		}
+
 		if record {
-			tests[i].Want = sqlType
+			tests[i].Want = sqlTypeStrings
 		} else {
-			a.Equal(test.Want, sqlType)
+			a.Equal(test.Want, sqlTypeStrings)
 		}
 	}
 

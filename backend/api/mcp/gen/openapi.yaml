@@ -12780,7 +12780,7 @@ components:
         statementTypes:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/bytebase.v1.StatementType'
           title: statement_types
           description: statement_types are the types of statements that are found in the sql.
         affectedRows:
@@ -15195,6 +15195,52 @@ components:
         - ACTIVE
         - DELETED
       description: Resource lifecycle state.
+    bytebase.v1.StatementType:
+      type: string
+      title: StatementType
+      enum:
+        - STATEMENT_TYPE_UNSPECIFIED
+        - CREATE_DATABASE
+        - CREATE_TABLE
+        - CREATE_VIEW
+        - CREATE_INDEX
+        - CREATE_SEQUENCE
+        - CREATE_SCHEMA
+        - CREATE_FUNCTION
+        - CREATE_TRIGGER
+        - CREATE_PROCEDURE
+        - CREATE_EVENT
+        - CREATE_EXTENSION
+        - CREATE_TYPE
+        - DROP_DATABASE
+        - DROP_TABLE
+        - DROP_VIEW
+        - DROP_INDEX
+        - DROP_SEQUENCE
+        - DROP_SCHEMA
+        - DROP_FUNCTION
+        - DROP_TRIGGER
+        - DROP_PROCEDURE
+        - DROP_EVENT
+        - DROP_EXTENSION
+        - DROP_TYPE
+        - ALTER_DATABASE
+        - ALTER_TABLE
+        - ALTER_VIEW
+        - ALTER_SEQUENCE
+        - ALTER_EVENT
+        - ALTER_TYPE
+        - ALTER_INDEX
+        - TRUNCATE
+        - RENAME
+        - RENAME_INDEX
+        - RENAME_SCHEMA
+        - RENAME_SEQUENCE
+        - COMMENT
+        - INSERT
+        - UPDATE
+        - DELETE
+      description: StatementType represents the type of SQL statement.
     bytebase.v1.StorageConfig:
       type: object
       properties:
