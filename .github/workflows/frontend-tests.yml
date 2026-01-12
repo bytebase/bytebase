@@ -51,9 +51,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
       - name: Copy config files
-        run: |
-          cp ../backend/enterprise/plan.yaml ./src/types
-          cp ../backend/component/iam/permission.yaml ./src/types/iam
+        run: pnpm run copy:config-files
         working-directory: frontend
       - name: Run unit tests
         run: pnpm test
