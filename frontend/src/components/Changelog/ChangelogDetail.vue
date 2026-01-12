@@ -167,7 +167,7 @@ const state = reactive<LocalState>({
 });
 
 const { database, ready } = useDatabaseV1ByName(props.database);
-const { allowAlterSchema } = useDatabaseDetailContext();
+const { allowAlterSchema, isDefaultProject } = useDatabaseDetailContext();
 
 const changelogName = computed(() => {
   return `${props.database}/changelogs/${props.changelogId}`;
@@ -233,6 +233,9 @@ const previousSchema = computed((): string => {
 
 // Allow rollback for completed MIGRATE changelogs when user has alter schema permission
 const allowRollback = computed((): boolean => {
+  if (isDefaultProject.value) {
+    return false;
+  }
   if (!changelog.value || !allowAlterSchema.value) {
     return false;
   }

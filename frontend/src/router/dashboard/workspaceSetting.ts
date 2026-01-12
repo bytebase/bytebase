@@ -42,11 +42,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_GENERAL,
         meta: {
           title: () => t("settings.sidebar.general"),
-          requiredPermissionList: () => [
-            "bb.settings.get",
-            "bb.settings.getWorkspaceProfile",
-            "bb.policies.get",
-          ],
+          requiredPermissionList: () => ["bb.settings.getWorkspaceProfile"],
         },
         component: () => import("@/views/SettingWorkspaceGeneral.vue"),
         props: true,

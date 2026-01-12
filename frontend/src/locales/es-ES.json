@@ -653,7 +653,6 @@
         "id": "ID del espacio de trabajo",
         "id-description": "La identificación única del espacio de trabajo de solo lectura.",
         "branding": "Marca",
-        "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración.",
         "logo": "Logo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
@@ -798,8 +797,7 @@
           }
         },
         "announcement": {
-          "self": "Anuncio",
-          "admin-or-dba-can-edit": "Solo el administrador del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
+          "self": "Anuncio"
         },
         "announcement-alert-level": {
           "description": "Level"
@@ -1942,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "Requiere que las verificaciones del plan pasen antes del despliegue",
           "description": "Todas las verificaciones del plan deben pasar sin errores antes de crear un despliegue."
+        },
+        "allow-request-role": {
+          "self": "Permitir solicitar rol",
+          "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos"
         }
       },
       "project-labels": {
@@ -2398,7 +2400,6 @@
     "title": "Revisión de SQL",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
     "disabled": "La revisión de SQL está deshabilitada",
-    "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
     "select-review": "Seleccione revisión SQL",
     "select-review-rules": "Seleccionar reglas de revisión de SQL",
@@ -2774,7 +2775,7 @@
     },
     "project-viewer": {
       "self": "Espectador del proyecto",
-      "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+      "description": "Permisos de solo lectura para ver información básica del proyecto y la base de datos; los usuarios pueden iniciar tickets por su cuenta para solicitar consultas y exportaciones de datos."
     }
   },
   "database-group": {

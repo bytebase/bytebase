@@ -6,26 +6,34 @@
           :size="20"
           :title="$t('changelog.refreshing')"
         />
-        <TooltipButton
-          v-if="allowEstablishBaseline"
-          tooltip-mode="DISABLED-ONLY"
-          :disabled="false"
-          type="primary"
-          @click="state.showBaselineModal = true"
+        <PermissionGuardWrapper
+          v-if="allowAlterSchema"
+          v-slot="slotProps"
+          :project="database.projectEntity"
+          :permissions="[
+            ...PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE
+          ]"
         >
-          <template #default>
-            {{ $t("changelog.establish-baseline") }}
-          </template>
-          <template v-if="database.project === DEFAULT_PROJECT_NAME" #tooltip>
-            <div class="whitespace-pre-line">
-              {{
-                $t("issue.not-allowed-to-operate-unassigned-database", {
-                  operation: $t("changelog.establish-baseline").toLowerCase(),
-                })
-              }}
-            </div>
-          </template>
-        </TooltipButton>
+          <TooltipButton
+            tooltip-mode="DISABLED-ONLY"
+            :disabled="slotProps.disabled"
+            type="primary"
+            @click="state.showBaselineModal = true"
+          >
+            <template #default>
+              {{ $t("changelog.establish-baseline") }}
+            </template>
+            <template v-if="database.project === DEFAULT_PROJECT_NAME && !slotProps.disabled" #tooltip>
+              <div class="whitespace-pre-line">
+                {{
+                  $t("issue.not-allowed-to-operate-unassigned-database", {
+                    operation: $t("changelog.establish-baseline").toLowerCase(),
+                  })
+                }}
+              </div>
+            </template>
+          </TooltipButton>
+        </PermissionGuardWrapper>
       </div>
 
 
@@ -65,12 +73,13 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { computed, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { BBAlert, BBSpin } from "@/bbkit";
 import { ChangelogDataTable } from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { TooltipButton } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
@@ -85,6 +94,7 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE } from "@/utils";
 
 interface LocalState {
   showBaselineModal: boolean;
@@ -127,10 +137,6 @@ const fetchChangelogList = async ({
 };
 
 const { allowAlterSchema } = useDatabaseDetailContext();
-
-const allowEstablishBaseline = computed(() => {
-  return allowAlterSchema.value;
-});
 
 const updateDatabaseDrift = async () => {
   const updatedDatabase = create(DatabaseSchema$, {

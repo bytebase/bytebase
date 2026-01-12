@@ -3,41 +3,49 @@
     <GeneralSetting
       ref="generalSettingRef"
       :title="$t('common.general')"
-      :allow-edit="hasWorkspaceProfilePermission"
     />
     <BrandingSetting
       ref="brandingSettingRef"
       :title="$t('settings.general.workspace.branding')"
-      :allow-edit="hasWorkspaceProfilePermission"
     />
     <AccountSetting
       ref="accountSettingRef"
       :title="$t('settings.general.workspace.account')"
-      :allow-edit="hasWorkspaceProfilePermission"
     />
     <SecuritySetting
       ref="securitySettingRef"
       :title="$t('settings.general.workspace.security')"
-      :allow-edit="hasWorkspaceProfilePermission"
     />
     <AIAugmentationSetting
       ref="aiAugmentationSettingRef"
       :title="$t('settings.general.workspace.ai-assistant.self')"
-      :allow-edit="hasSettingPermission"
     />
     <AnnouncementSetting
       ref="announcementSettingRef"
       :title="$t('settings.general.workspace.announcement.self')"
-      :allow-edit="hasWorkspaceProfilePermission"
     />
-    <ProductImprovementSetting
-      ref="productImprovementSettingRef"
-      :allow-edit="hasWorkspaceProfilePermission"
-    />
-    <AuditLogStdoutSetting
-      ref="auditLogStdoutSettingRef"
-      :allow-edit="hasWorkspaceProfilePermission"
-    />
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="[
+        'bb.settings.setWorkspaceProfile'
+      ]"
+    >
+      <ProductImprovementSetting
+        ref="productImprovementSettingRef"
+        :allow-edit="!slotProps.disabled"
+      />
+    </PermissionGuardWrapper>
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="[
+        'bb.settings.setWorkspaceProfile'
+      ]"
+    >
+      <AuditLogStdoutSetting
+        ref="auditLogStdoutSettingRef"
+        :allow-edit="!slotProps.disabled"
+      />
+    </PermissionGuardWrapper>
 
     <div v-if="isDirty" class="sticky bottom-0 z-10">
       <div
@@ -69,10 +77,10 @@ import {
   ProductImprovementSetting,
   SecuritySetting,
 } from "@/components/GeneralSetting";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { pushNotification } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const route = useRoute();
 const { t } = useI18n();
@@ -88,13 +96,6 @@ const productImprovementSettingRef =
   ref<InstanceType<typeof ProductImprovementSetting>>();
 const auditLogStdoutSettingRef =
   ref<InstanceType<typeof AuditLogStdoutSetting>>();
-
-const hasWorkspaceProfilePermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile")
-);
-const hasSettingPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.set")
-);
 
 const settingRefList = computed(() => {
   return [

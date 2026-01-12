@@ -99,30 +99,45 @@
           data-label="bb-database-detail-action-buttons-container"
         >
           <SyncDatabaseButton
-            v-if="allowSyncDatabase"
             :type="'default'"
             :text="false"
             :database="database"
           />
           <ExportSchemaButton :database="database" />
-          <NButton
-            v-if="allowTransferDatabase"
-            @click.prevent="tryTransferProject"
-            icon-placement="right"
+          <PermissionGuardWrapper
+            v-if="!isDefaultProject"
+            v-slot="slotProps"
+            :project="database.projectEntity"
+            :permissions="['bb.databases.update']"
           >
-            <span>{{ $t("database.transfer-project") }}</span>
-            <template #icon>
-              <ArrowRightLeftIcon :size="16" />
-            </template>
-          </NButton>
-          <NButton
-            v-if="allowChangeDatabase"
-            @click="() => {
-              preCreateIssue(database.project, [database.name])
-            }"
+            <NButton
+              :disabled="slotProps.disabled"
+              @click.prevent="tryTransferProject"
+              icon-placement="right"
+            >
+              <span>{{ $t("database.transfer-project") }}</span>
+              <template #icon>
+                <ArrowRightLeftIcon :size="16" />
+              </template>
+            </NButton>
+          </PermissionGuardWrapper>
+          <PermissionGuardWrapper
+            v-if="!isDefaultProject"
+            v-slot="slotProps"
+            :project="database.projectEntity"
+            :permissions="[
+              ...PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE
+            ]"
           >
-            <span>{{ $t("database.change-database") }}</span>
-          </NButton>
+            <NButton
+              :disabled="slotProps.disabled"
+              @click="() => {
+                preCreateIssue(database.project, [database.name])
+              }"
+            >
+              <span>{{ $t("database.change-database") }}</span>
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </div>
     </main>
@@ -132,20 +147,33 @@
         <DatabaseOverviewPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="allowListChangelogs"
         name="changelog"
         :tab="$t('common.changelog')"
       >
-        <DatabaseChangelogPanel class="mt-2" :database="database" />
+        <ComponentPermissionGuard
+          :project="project"
+          :permissions="['bb.changelogs.list']"
+        >
+          <DatabaseChangelogPanel class="mt-2" :database="database" />
+        </ComponentPermissionGuard>
       </NTabPane>
       <NTabPane name="revision" :tab="$t('database.revision.self')">
-        <DatabaseRevisionPanel class="mt-2" :database="database" />
+        <ComponentPermissionGuard
+          :project="project"
+          :permissions="['bb.revisions.list']"
+        >
+          <DatabaseRevisionPanel class="mt-2" :database="database" />
+        </ComponentPermissionGuard>
       </NTabPane>
       <NTabPane name="catalog" :tab="$t('common.catalog')">
-        <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
+        <ComponentPermissionGuard
+          :project="project"
+          :permissions="['bb.databaseCatalogs.get']"
+        >
+          <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
+        </ComponentPermissionGuard>
       </NTabPane>
       <NTabPane
-        v-if="allowUpdateDatabase"
         name="setting"
         :tab="$t('common.settings')"
       >
@@ -212,6 +240,8 @@ import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAle
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
+import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import {
@@ -231,6 +261,7 @@ import {
   extractProjectResourceName,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
+  PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
 } from "@/utils";
 
 const databaseHashList = [
@@ -266,18 +297,7 @@ const state = reactive<LocalState>({
   selectedTab: "overview",
 });
 const route = useRoute();
-const {
-  allowSyncDatabase,
-  allowUpdateDatabase,
-  allowTransferDatabase,
-  allowChangeData,
-  allowAlterSchema,
-  allowListChangelogs,
-} = useDatabaseDetailContext();
-
-const allowChangeDatabase = computed(() => {
-  return allowChangeData.value || allowAlterSchema.value;
-});
+const { isDefaultProject } = useDatabaseDetailContext();
 
 watch(
   () => route.hash,

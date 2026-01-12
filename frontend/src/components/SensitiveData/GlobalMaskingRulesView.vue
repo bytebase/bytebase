@@ -24,7 +24,7 @@
       <PermissionGuardWrapper
         v-else
         v-slot="slotProps"
-        :permissions="['bb.policies.update']"
+        :permissions="['bb.policies.updateMaskingRulePolicy']"
       >
         <div class="flex items-center gap-x-2">
           <NButton
@@ -196,8 +196,9 @@ const state = reactive<LocalState>({
 
 const policyStore = usePolicyV1Store();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.updateMaskingRulePolicy");
 });
+
 const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 const layout = {
   mainContainerRef: ref<HTMLDivElement>(),

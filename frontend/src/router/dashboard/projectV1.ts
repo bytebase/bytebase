@@ -92,6 +92,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
     props: true,
     meta: {
       title: () => t("common.rollout"),
+      requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
     },
     children: [
       {
@@ -100,9 +101,6 @@ const rolloutRoutes: RouteRecordRaw[] = [
         component: () =>
           import("@/components/RolloutV1/components/RolloutView.vue"),
         props: true,
-        meta: {
-          requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
-        },
       },
       {
         path: "stages/:stageId",
@@ -110,9 +108,6 @@ const rolloutRoutes: RouteRecordRaw[] = [
         component: () =>
           import("@/components/RolloutV1/components/RolloutView.vue"),
         props: true,
-        meta: {
-          requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
-        },
       },
       {
         path: "stages/:stageId/tasks/:taskId",
@@ -120,9 +115,6 @@ const rolloutRoutes: RouteRecordRaw[] = [
         component: () =>
           import("@/components/RolloutV1/components/TaskView.vue"),
         props: true,
-        meta: {
-          requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
-        },
       },
     ],
   },
@@ -161,7 +153,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "masking-exemption",
         meta: {
           title: () => t("project.masking-exemption.self"),
-          requiredPermissionList: () => ["bb.databases.get", "bb.policies.get"],
         },
         props: true,
         children: [
@@ -171,6 +162,12 @@ const projectV1Routes: RouteRecordRaw[] = [
             component: () =>
               import("@/views/project/ProjectMaskingExemption.vue"),
             props: true,
+            meta: {
+              requiredPermissionList: () => [
+                "bb.databases.get",
+                "bb.policies.getMaskingExemptionPolicy",
+              ],
+            },
           },
           {
             path: "create",
@@ -180,8 +177,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
             meta: {
               requiredPermissionList: () => [
-                "bb.policies.create",
+                "bb.policies.createMaskingExemptionPolicy",
+                "bb.policies.updateMaskingExemptionPolicy",
                 "bb.databases.list",
+                "bb.databaseCatalogs.get",
               ],
             },
           },
@@ -354,7 +353,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           title: () => t("common.settings"),
-          requiredPermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,

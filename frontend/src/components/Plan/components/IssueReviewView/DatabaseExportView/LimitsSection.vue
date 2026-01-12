@@ -7,7 +7,7 @@
         {{ $t("settings.general.workspace.maximum-sql-result.size.self") }}
       </span>
       <span class=" font-medium">
-        {{ Number(effectiveQueryDataPolicy.maximumResultSize) / 1024 / 1024 }} MB
+        {{ Number(policy.maximumResultSize) / 1024 / 1024 }} MB
       </span>
     </div>
     <div class="flex items-center gap-x-2">
@@ -24,17 +24,18 @@
 <script lang="tsx" setup>
 import { computed } from "vue";
 import { t } from "@/plugins/i18n";
-import { useCurrentProjectV1, usePolicyV1Store } from "@/store";
+import {
+  useCurrentProjectV1,
+  useEffectiveQueryDataPolicyForProject,
+} from "@/store";
 
-const policyStore = usePolicyV1Store();
 const { project } = useCurrentProjectV1();
-
-const effectiveQueryDataPolicy = computed(() => {
-  return policyStore.getEffectiveQueryDataPolicyForProject(project.value.name);
-});
+const { policy } = useEffectiveQueryDataPolicyForProject(
+  computed(() => project.value.name)
+);
 
 const maximumResultRows = computed(() => {
-  const { maximumResultRows } = effectiveQueryDataPolicy.value;
+  const { maximumResultRows } = policy.value;
   if (maximumResultRows === Number.MAX_VALUE) {
     return t("common.unlimited");
   }

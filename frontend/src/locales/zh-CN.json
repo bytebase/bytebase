@@ -653,7 +653,6 @@
         "id": "工作空间 ID",
         "id-description": "唯一且只读的工作空间 ID",
         "branding": "品牌",
-        "only-admin-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "select-logo": "选择",
@@ -798,8 +797,7 @@
           }
         },
         "announcement": {
-          "self": "公告",
-          "admin-or-dba-can-edit": "只有管理员或 DBA 可以更新公告设置。"
+          "self": "公告"
         },
         "announcement-alert-level": {
           "description": "等级"
@@ -1942,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "发布前要求变更检查通过",
           "description": "所有变更检查必须无错误才能创建发布。"
+        },
+        "allow-request-role": {
+          "self": "允许申请角色",
+          "description": "非项目所有者可以自行申请项目级角色"
         }
       },
       "project-labels": {
@@ -2398,7 +2400,6 @@
     "title": "SQL 审核策略",
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
     "disabled": "SQL 审核策略已禁用",
-    "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
     "select-review": "选择 SQL 审核",
     "select-review-rules": "选择 SQL 审核规则",
@@ -2774,7 +2775,7 @@
     },
     "project-viewer": {
       "self": "项目查看者",
-      "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
+      "description": "仅可查看项目和数据库的基本信息，用户可自助发起工单请求数据查询和导出。"
     }
   },
   "database-group": {

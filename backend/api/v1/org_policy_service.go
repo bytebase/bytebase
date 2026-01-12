@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -36,13 +38,19 @@ type OrgPolicyService struct {
 	v1connect.UnimplementedOrgPolicyServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
+	iamManager     *iam.Manager
 }
 
 // NewOrgPolicyService creates a new OrgPolicyService.
-func NewOrgPolicyService(store *store.Store, licenseService *enterprise.LicenseService) *OrgPolicyService {
+func NewOrgPolicyService(
+	store *store.Store,
+	licenseService *enterprise.LicenseService,
+	iamManager *iam.Manager,
+) *OrgPolicyService {
 	return &OrgPolicyService{
 		store:          store,
 		licenseService: licenseService,
+		iamManager:     iamManager,
 	}
 }
 
@@ -55,13 +63,30 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v
 		if connectErr == connect.CodeNotFound {
 			policyType, extractErr := extractPolicyTypeFromName(req.Msg.Name)
 			if extractErr == nil && policyType == storepb.Policy_ROLLOUT {
-				defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(parent, req.Msg.Name)
+				defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(parent)
 				if defaultErr != nil {
 					return nil, defaultErr
 				}
-				return connect.NewResponse(defaultPolicy), nil
+				policy = defaultPolicy
 			}
+		} else {
+			return nil, err
 		}
+	}
+	if policy == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the policy %v", req.Msg.Name))
+	}
+
+	var perm permission.Permission
+	switch policy.Type {
+	case storepb.Policy_MASKING_EXEMPTION:
+		perm = permission.PoliciesGetMaskingExemptionPolicy
+	case storepb.Policy_MASKING_RULE:
+		perm = permission.PoliciesGetMaskingRulePolicy
+	default:
+		perm = permission.PoliciesGet
+	}
+	if err := s.checkPolicyPermission(ctx, req, perm, policy); err != nil {
 		return nil, err
 	}
 
@@ -125,7 +150,7 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, req *connect.Reques
 	}
 
 	// TODO(d): validate policy.
-	response, err := s.createPolicyMessage(ctx, req.Msg.Parent, req.Msg.Policy)
+	response, err := s.createPolicyMessage(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -146,12 +171,28 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		connectErr := connect.CodeOf(err)
 		if connectErr == connect.CodeNotFound && req.Msg.AllowMissing {
-			response, err := s.createPolicyMessage(ctx, parent, req.Msg.Policy)
+			response, err := s.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
+				Parent: parent,
+				Policy: req.Msg.Policy,
+			}))
 			if err != nil {
 				return nil, err
 			}
-			return connect.NewResponse(response), nil
+			return response, nil
 		}
+		return nil, err
+	}
+
+	var perm permission.Permission
+	switch policy.Type {
+	case storepb.Policy_MASKING_EXEMPTION:
+		perm = permission.PoliciesUpdateMaskingExemptionPolicy
+	case storepb.Policy_MASKING_RULE:
+		perm = permission.PoliciesUpdateMaskingRulePolicy
+	default:
+		perm = permission.PoliciesUpdate
+	}
+	if err := s.checkPolicyPermission(ctx, req, perm, policy); err != nil {
 		return nil, err
 	}
 
@@ -235,6 +276,19 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
+	var perm permission.Permission
+	switch policy.Type {
+	case storepb.Policy_MASKING_EXEMPTION:
+		perm = permission.PoliciesDeleteMaskingExemptionPolicy
+	case storepb.Policy_MASKING_RULE:
+		perm = permission.PoliciesDeleteMaskingRulePolicy
+	default:
+		perm = permission.PoliciesDelete
+	}
+	if err := s.checkPolicyPermission(ctx, req, perm, policy); err != nil {
+		return nil, err
+	}
+
 	if err := s.store.DeletePolicy(ctx, policy); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -259,37 +313,30 @@ func extractPolicyTypeFromName(policyName string) (storepb.Policy_Type, error) {
 
 // getDefaultRolloutPolicy returns the default rollout policy when no custom policy exists.
 // Uses the shared store.GetDefaultRolloutPolicy to ensure consistency across API and store layers.
-func (*OrgPolicyService) getDefaultRolloutPolicy(parent string, policyName string) (*v1pb.Policy, error) {
-	resourceType, _, err := common.GetPolicyResourceTypeAndResource(parent)
+func (*OrgPolicyService) getDefaultRolloutPolicy(parent string) (*store.PolicyMessage, error) {
+	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	v1ResourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
-	switch resourceType {
-	case storepb.Policy_WORKSPACE:
-		v1ResourceType = v1pb.PolicyResourceType_WORKSPACE
-	case storepb.Policy_ENVIRONMENT:
-		v1ResourceType = v1pb.PolicyResourceType_ENVIRONMENT
-	case storepb.Policy_PROJECT:
-		v1ResourceType = v1pb.PolicyResourceType_PROJECT
-	default:
-		// Keep the default RESOURCE_TYPE_UNSPECIFIED
+	// Get the default rollout policy from the shared store function
+	defaultRolloutPolicy := store.GetDefaultRolloutPolicy()
+	payloadBytes, err := protojson.Marshal(defaultRolloutPolicy)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal rollout policy")
 	}
 
-	// Get the default rollout policy from the shared store function
-	defaultStorePBPolicy := store.GetDefaultRolloutPolicy()
-
-	return &v1pb.Policy{
-		Name:              policyName,
-		ResourceType:      v1ResourceType,
-		Type:              v1pb.PolicyType_ROLLOUT_POLICY,
+	policy := &store.PolicyMessage{
+		ResourceType:      resourceType,
+		Type:              storepb.Policy_ROLLOUT,
 		InheritFromParent: false,
 		Enforce:           true,
-		Policy: &v1pb.Policy_RolloutPolicy{
-			RolloutPolicy: convertToV1PBRolloutPolicy(defaultStorePBPolicy),
-		},
-	}, nil
+		Payload:           string(payloadBytes),
+	}
+	if v := resource; v != nil {
+		policy.Resource = *v
+	}
+	return policy, nil
 }
 
 // findPolicyMessage finds the policy and the parent name by the policy name.
@@ -337,7 +384,10 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	return policy, policyParent, nil
 }
 
-func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
+func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect.Request[v1pb.CreatePolicyRequest]) (*v1pb.Policy, error) {
+	parent := req.Msg.Parent
+	policy := req.Msg.Policy
+
 	resourceType, _, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -371,6 +421,19 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent strin
 		Enforce: true,
 	}
 
+	var perm permission.Permission
+	switch create.Type {
+	case storepb.Policy_MASKING_EXEMPTION:
+		perm = permission.PoliciesCreateMaskingExemptionPolicy
+	case storepb.Policy_MASKING_RULE:
+		perm = permission.PoliciesCreateMaskingRulePolicy
+	default:
+		perm = permission.PoliciesCreate
+	}
+	if err := s.checkPolicyPermission(ctx, req, perm, create); err != nil {
+		return nil, err
+	}
+
 	p, err := s.store.CreatePolicy(ctx, create)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -382,6 +445,38 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent strin
 	}
 
 	return response, nil
+}
+
+func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connect.AnyRequest, perm permission.Permission, policy *store.PolicyMessage) error {
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	projectIDs := []string{}
+	if policy.ResourceType == storepb.Policy_PROJECT {
+		projectID, err := common.GetProjectID(policy.Resource)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project id from %v", policy.Resource))
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	ok, err := s.iamManager.CheckPermission(ctx, perm, user, projectIDs...)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+	}
+	if !ok {
+		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
+		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
+			Method:              req.Spec().Procedure,
+			RequiredPermissions: []string{string(perm)},
+		}); detailErr == nil {
+			err.AddDetail(detail)
+		}
+		return err
+	}
+	return nil
 }
 
 func validatePolicyType(policyType storepb.Policy_Type, policyResourceType storepb.Policy_Resource) error {

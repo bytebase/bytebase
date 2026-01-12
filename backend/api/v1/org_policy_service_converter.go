@@ -161,13 +161,6 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 	}
 }
 
-func convertToV1PBRolloutPolicy(policy *storepb.RolloutPolicy) *v1pb.RolloutPolicy {
-	return &v1pb.RolloutPolicy{
-		Automatic: policy.Automatic,
-		Roles:     policy.Roles,
-	}
-}
-
 func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPolicy, error) {
 	payload := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {

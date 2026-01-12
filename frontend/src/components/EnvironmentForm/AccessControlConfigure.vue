@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div v-if="hasGetPermission" class="flex flex-col gap-y-2">
     <div class="font-medium flex items-center gap-x-2">
       <label>
         {{ t("environment.access-control.title") }}
@@ -15,63 +15,87 @@
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
-        <Switch
-          v-model:value="state.queryDataPolicy.disableCopyData"
-          :text="true"
-          :disabled="!allowUpdatePolicy || !hasRestrictCopyingDataFeature"
-        />
-        <span class="textlabel">{{
-          t("environment.access-control.disable-copy-data-from-sql-editor")
-        }}</span>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
+          <Switch
+            v-model:value="state.queryDataPolicy.disableCopyData"
+            :text="true"
+            :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
+          />
+        </PermissionGuardWrapper>
+        <span class="textlabel">
+          {{ t("environment.access-control.disable-copy-data-from-sql-editor") }}
+        </span>
         <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
       </div>
       <div class="">
         <div class="w-full inline-flex items-center gap-x-2">
-          <Switch
-            :value="adminDataSourceQueryRestrictionEnabled"
-            :text="true"
-            :disabled="!allowUpdatePolicy || !hasRestrictQueryDataSourceFeature"
-            @update:value="switchDataSourceQueryPolicyEnabled"
-          />
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="project"
+            :permissions="[
+              'bb.policies.update'
+            ]"
+          >
+            <Switch
+              :value="adminDataSourceQueryRestrictionEnabled"
+              :text="true"
+              :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
+              @update:value="switchDataSourceQueryPolicyEnabled"
+            />
+          </PermissionGuardWrapper>
           <span class="textlabel">{{
             t("environment.access-control.restrict-admin-connection.self")
           }}</span>
           <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
         </div>
         <div v-if="adminDataSourceQueryRestrictionEnabled" class="ml-12">
-          <NRadioGroup
-            v-model:value="
-              state.dataSourceQueryPolicy.adminDataSourceRestriction
-            "
-            :disabled="!allowUpdatePolicy || !hasRestrictQueryDataSourceFeature"
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="project"
+            :permissions="[
+              'bb.policies.update'
+            ]"
           >
-            <NRadio
-              class="w-full"
-              :value="DataSourceQueryPolicy_Restriction.DISALLOW"
+            <NRadioGroup
+              v-model:value="
+                state.dataSourceQueryPolicy.adminDataSourceRestriction
+              "
+              :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
             >
-              {{
-                t(
-                  "environment.access-control.restrict-admin-connection.disallow"
-                )
-              }}
-            </NRadio>
-            <NRadio
-              class="w-full"
-              :value="DataSourceQueryPolicy_Restriction.FALLBACK"
-            >
-              {{
-                t(
-                  "environment.access-control.restrict-admin-connection.fallback"
-                )
-              }}
-            </NRadio>
-          </NRadioGroup>
+              <NRadio
+                class="w-full"
+                :value="DataSourceQueryPolicy_Restriction.DISALLOW"
+              >
+                {{
+                  t(
+                    "environment.access-control.restrict-admin-connection.disallow"
+                  )
+                }}
+              </NRadio>
+              <NRadio
+                class="w-full"
+                :value="DataSourceQueryPolicy_Restriction.FALLBACK"
+              >
+                {{
+                  t(
+                    "environment.access-control.restrict-admin-connection.fallback"
+                  )
+                }}
+              </NRadio>
+            </NRadioGroup>
+          </PermissionGuardWrapper>
         </div>
       </div>
     </div>
   </div>
   <div
-    v-if="resource.startsWith(environmentNamePrefix)"
+    v-if="resource.startsWith(environmentNamePrefix) && hasGetPermission"
     class="flex flex-col gap-y-2"
   >
     <div class="font-medium flex items-center gap-x-2">
@@ -82,21 +106,37 @@
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
-        <Switch
-          v-model:value="state.dataSourceQueryPolicy.disallowDdl"
-          :text="true"
-          :disabled="!allowUpdatePolicy || !hasRestrictQueryDataSourceFeature"
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
+          <Switch
+            v-model:value="state.dataSourceQueryPolicy.disallowDdl"
+            :text="true"
+            :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
+          />
+        </PermissionGuardWrapper>
         <span class="textlabel">
           {{ t("environment.statement-execution.disallow-ddl") }}
         </span>
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
-        <Switch
-          v-model:value="state.dataSourceQueryPolicy.disallowDml"
-          :text="true"
-          :disabled="!allowUpdatePolicy || !hasRestrictQueryDataSourceFeature"
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
+          <Switch
+            v-model:value="state.dataSourceQueryPolicy.disallowDml"
+            :text="true"
+            :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
+          />
+        </PermissionGuardWrapper>
         <span class="textlabel">
           {{ t("environment.statement-execution.disallow-dml") }}
         </span>
@@ -106,29 +146,28 @@
 </template>
 
 <script setup lang="ts">
-import { create as createProto } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { CircleQuestionMarkIcon } from "lucide-vue-next";
 import { NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasFeature, usePolicyV1Store } from "@/store";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
+import { hasFeature, usePolicyV1Store, useProjectV1Store } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { isValidProjectName } from "@/types";
 import type {
   DataSourceQueryPolicy,
   QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   DataSourceQueryPolicy_Restriction,
-  DataSourceQueryPolicySchema,
   PolicyType,
-  QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
@@ -141,25 +180,38 @@ interface LocalState {
 
 const props = defineProps<{
   resource: string;
-  allowEdit: boolean;
 }>();
 
-const scope = computed(() => {
+const projectStore = useProjectV1Store();
+
+const project = computed(() => {
   if (props.resource.startsWith(projectNamePrefix)) {
-    return t("settings.general.workspace.query-data-policy.environment-scope");
+    const proj = projectStore.getProjectByName(props.resource);
+    if (!isValidProjectName(proj.name)) {
+      return undefined;
+    }
+    return proj;
   }
-  if (props.resource.startsWith(environmentNamePrefix)) {
-    return t("settings.general.workspace.query-data-policy.project-scope");
+  return undefined;
+});
+
+const hasGetPermission = computed(() => {
+  if (project.value) {
+    return hasProjectPermissionV2(project.value, "bb.policies.get");
   }
-  return "";
+  return hasWorkspacePermissionV2("bb.policies.get");
 });
 
 const tooltip = computed(() => {
-  if (!scope.value) {
-    return "";
+  if (project.value) {
+    return t("settings.general.workspace.query-data-policy.tooltip", {
+      scope: t(
+        "settings.general.workspace.query-data-policy.environment-scope"
+      ),
+    });
   }
   return t("settings.general.workspace.query-data-policy.tooltip", {
-    scope: scope.value,
+    scope: t("settings.general.workspace.query-data-policy.project-scope"),
   });
 });
 
@@ -168,24 +220,14 @@ const policyStore = usePolicyV1Store();
 const getInitialState = (): LocalState => {
   return {
     queryDataPolicy: (() => {
-      const policy = policyStore.getPolicyByParentAndType({
-        parentPath: props.resource,
-        policyType: PolicyType.DATA_QUERY,
-      });
-      if (policy?.policy.case === "queryDataPolicy") {
-        return cloneDeep(policy.policy.value);
-      }
-      return createProto(QueryDataPolicySchema, {});
+      const policy = policyStore.getQueryDataPolicyByParent(props.resource);
+      return cloneDeep(policy);
     })(),
     dataSourceQueryPolicy: (() => {
-      const policy = policyStore.getPolicyByParentAndType({
-        parentPath: props.resource,
-        policyType: PolicyType.DATA_SOURCE_QUERY,
-      });
-      if (policy?.policy.case === "dataSourceQueryPolicy") {
-        return cloneDeep(policy.policy.value);
-      }
-      return createProto(DataSourceQueryPolicySchema, {});
+      const policy = policyStore.getDataSourceQueryPolicyByParent(
+        props.resource
+      );
+      return cloneDeep(policy);
     })(),
   };
 };
@@ -193,6 +235,9 @@ const getInitialState = (): LocalState => {
 const state = reactive<LocalState>(getInitialState());
 
 watchEffect(async () => {
+  if (!hasGetPermission.value) {
+    return;
+  }
   await Promise.all([
     policyStore.getOrFetchPolicyByParentAndType({
       parentPath: props.resource,
@@ -225,10 +270,6 @@ const hasRestrictCopyingDataFeature = computed(() =>
   hasFeature(PlanFeature.FEATURE_RESTRICT_COPYING_DATA)
 );
 
-const allowUpdatePolicy = computed(() => {
-  return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
-});
-
 const updateQueryDataPolicy = async () => {
   await policyStore.upsertPolicy({
     parentPath: props.resource,
@@ -257,9 +298,9 @@ const updateAdminDataSourceQueryRestrctionPolicy = async () => {
       type: PolicyType.DATA_SOURCE_QUERY,
       policy: {
         case: "dataSourceQueryPolicy",
-        value: createProto(DataSourceQueryPolicySchema, {
+        value: {
           ...state.dataSourceQueryPolicy,
-        }),
+        },
       },
     },
   });

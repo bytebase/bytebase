@@ -8,26 +8,36 @@
       class="flex flex-col gap-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
     >
       <SearchBox v-model:value="state.searchText" style="max-width: 100%" />
-      <NButton
+      <PermissionGuardWrapper
         v-if="!isMaskingForNoSQL"
-        type="primary"
-        :disabled="
-          state.pendingGrantAccessColumn.length === 0 ||
-          !hasPolicyPermission ||
-          !hasGetCatalogPermission
-        "
-        @click="onGrantAccessButtonClick"
+        v-slot="slotProps"
+        :project="database.projectEntity"
+        :permissions="[
+          'bb.policies.createMaskingExemptionPolicy',
+          'bb.policies.updateMaskingExemptionPolicy',
+          'bb.databaseCatalogs.get'
+        ]"
       >
-        <template #icon>
-          <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
-          <FeatureBadge
-            :feature="PlanFeature.FEATURE_DATA_MASKING"
-            class="text-white"
-            :instance="database.instanceResource"
-          />
-        </template>
-        {{ $t("settings.sensitive-data.grant-access") }}
-      </NButton>
+        <NButton
+          type="primary"
+          :disabled="
+            slotProps.disabled ||
+            state.pendingGrantAccessColumn.length === 0
+          "
+          @click="onGrantAccessButtonClick"
+        >
+          <template #icon>
+            <ShieldCheckIcon v-if="hasSensitiveDataFeature" class="w-4" />
+            <FeatureBadge
+              v-else
+              :feature="PlanFeature.FEATURE_DATA_MASKING"
+              class="text-white"
+              :instance="database.instanceResource"
+            />
+          </template>
+          {{ $t("settings.sensitive-data.grant-access") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
 
     <SensitiveColumnTable
@@ -78,6 +88,7 @@ import {
   FeatureBadge,
   FeatureModal,
 } from "@/components/FeatureGuard";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
 import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
@@ -126,20 +137,6 @@ const hasUpdateCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
     props.database.projectEntity,
     "bb.databaseCatalogs.update"
-  );
-});
-
-const hasGetCatalogPermission = computed(() => {
-  return hasProjectPermissionV2(
-    props.database.projectEntity,
-    "bb.databaseCatalogs.get"
-  );
-});
-
-const hasPolicyPermission = computed(() => {
-  return hasProjectPermissionV2(
-    props.database.projectEntity,
-    "bb.policies.update"
   );
 });
 

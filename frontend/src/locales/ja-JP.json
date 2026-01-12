@@ -653,7 +653,6 @@
         "id": "ワークスペースID",
         "id-description": "一意の読み取り専用ワークスペース ID",
         "branding": "ブランド",
-        "only-admin-can-edit": "この設定を変更できるのは管理者だけです",
         "logo": "ロゴ",
         "logo-aspect": "推奨されるロゴの幅:高さの比率 (例: 100 x 40 ピクセル)",
         "select-logo": "選ぶ",
@@ -798,8 +797,7 @@
           }
         },
         "announcement": {
-          "self": "お知らせ",
-          "admin-or-dba-can-edit": "管理者または DBA のみがお知らせの設定を更新できます。"
+          "self": "お知らせ"
         },
         "announcement-alert-level": {
           "description": "レベル"
@@ -1942,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "ロールアウト前にプランチェック合格が必要",
           "description": "ロールアウトを作成する前にすべてのプランチェックがエラーなしで合格する必要があります。"
+        },
+        "allow-request-role": {
+          "self": "ロールリクエストを許可",
+          "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます"
         }
       },
       "project-labels": {
@@ -2398,7 +2400,6 @@
     "title": "SQL監査ポリシー",
     "description": "SQL 監査ポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL 監査ルールによって対応する実行ステートメントがチェックされます。",
     "disabled": "SQL監査ポリシーが無効になっています",
-    "no-policy-set": "SQL監査ポリシーなし",
     "create-policy": "監査ポリシーを作成する",
     "select-review": "SQLレビューを選択",
     "select-review-rules": "SQLレビュールールを選択",
@@ -2774,7 +2775,7 @@
     },
     "project-viewer": {
       "self": "プロジェクトビューア",
-      "description": "基本的なプロジェクト情報を表示し、独自にデータ クエリとデータ エクスポート リクエストを開始できます。"
+      "description": "プロジェクトとデータベースの基本情報を閲覧するための読み取り専用権限。ユーザーはデータクエリやエクスポートをリクエストするチケットを自分で発行できます。"
     }
   },
   "database-group": {

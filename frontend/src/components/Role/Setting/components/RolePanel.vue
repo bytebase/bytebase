@@ -21,6 +21,7 @@
               :placeholder="$t('role.setting.title-placeholder')"
               :status="state.role.title?.length === 0 ? 'error' : undefined"
               :maxlength="200"
+              :disabled="!allowUpdate"
             />
           </div>
           <div class="-mt-2">
@@ -47,6 +48,7 @@
               :autosize="{ minRows: 2, maxRows: 4 }"
               :placeholder="$t('role.setting.description-placeholder')"
               :maxlength="1000"
+              :disabled="!allowUpdate"
             />
           </div>
         </div>
@@ -59,6 +61,7 @@
             </div>
             <NButton
               size="small"
+              :disabled="!allowUpdate"
               @click="state.showImportPermissionFromRoleModal = true"
             >
               <PlusIcon class="w-4 h-auto mr-1" />
@@ -71,6 +74,7 @@
             source-filterable
             source-filter-placeholder="Search"
             :options="permissionOptions"
+            :disabled="!allowUpdate"
           />
         </div>
       </div>
@@ -121,7 +125,7 @@ import { PERMISSIONS } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { extractRoleResourceName } from "@/utils";
+import { extractRoleResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 
@@ -152,6 +156,8 @@ const state = reactive<LocalState>({
   loading: false,
   showImportPermissionFromRoleModal: false,
 });
+
+const allowUpdate = computed(() => hasWorkspacePermissionV2("bb.roles.update"));
 
 const resourceId = computed({
   get() {

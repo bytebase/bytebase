@@ -46,7 +46,7 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
+import { autoDatabaseRoute } from "@/utils";
 import {
   batchConvertFromCELString,
   type ConditionExpression,
@@ -78,10 +78,6 @@ const groupStore = useGroupStore();
 const databaseStore = useDatabaseV1Store();
 const policyStore = usePolicyV1Store();
 const $dialog = useDialog();
-
-const hasPermission = computed(() => {
-  return hasProjectPermissionV2(props.project, "bb.policies.update");
-});
 
 const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
@@ -303,7 +299,7 @@ const accessTableColumns = computed(
               actions={["confirm"]}
               isDateDisabled={(date: number) => date < Date.now()}
               clearable={true}
-              disabled={!hasPermission.value || props.disabled}
+              disabled={props.disabled}
               onUpdate:value={(val: number | undefined) =>
                 onAccessControlUpdate(
                   item,
@@ -324,7 +320,7 @@ const accessTableColumns = computed(
       {
         key: "operation",
         title: "",
-        hide: !hasPermission.value,
+        hide: props.disabled,
         width: "4rem",
         render: (item: AccessUser) => {
           return h(

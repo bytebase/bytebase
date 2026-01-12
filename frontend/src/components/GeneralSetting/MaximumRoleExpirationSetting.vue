@@ -8,27 +8,36 @@
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.maximum-role-expiration.description") }}
     </p>
-    <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
-      <NInputNumber
-        v-model:value="state.inputValue"
-        class="w-60"
-        :disabled="!allowEdit || state.neverExpire"
-        :min="1"
-        :precision="0"
+    <div class="mt-3 w-full flex flex-row">
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="[
+          'bb.settings.setWorkspaceProfile'
+        ]"
       >
-        <template #suffix>
-          {{ $t("settings.general.workspace.maximum-role-expiration.days") }}
-        </template>
-      </NInputNumber>
-      <NCheckbox
-        :disabled="!allowEdit"
-        v-model:checked="state.neverExpire"
-        style="margin-right: 12px"
-      >
-        {{
-          $t("settings.general.workspace.maximum-role-expiration.never-expires")
-        }}
-      </NCheckbox>
+      <div class="flex items-center gap-4">
+        <NInputNumber
+          v-model:value="state.inputValue"
+          class="w-60"
+          :disabled="slotProps.disabled || state.neverExpire"
+          :min="1"
+          :precision="0"
+        >
+          <template #suffix>
+            {{ $t("settings.general.workspace.maximum-role-expiration.days") }}
+          </template>
+        </NInputNumber>
+        <NCheckbox
+          :disabled="slotProps.disabled"
+          v-model:checked="state.neverExpire"
+          style="margin-right: 12px"
+        >
+          {{
+            $t("settings.general.workspace.maximum-role-expiration.never-expires")
+          }}
+        </NCheckbox>
+      </div>
+      </PermissionGuardWrapper>
     </div>
   </div>
 </template>
@@ -39,6 +48,7 @@ import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import { NCheckbox, NInputNumber } from "naive-ui";
 import { computed, reactive } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
@@ -63,10 +73,6 @@ const getInitialState = (): LocalState => {
   }
   return defaultState;
 };
-
-defineProps<{
-  allowEdit: boolean;
-}>();
 
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());

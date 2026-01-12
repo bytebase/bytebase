@@ -126,11 +126,11 @@ import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
-  usePolicyV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
+import { useEffectiveQueryDataPolicyForProject } from "@/store/modules/v1/policy";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
@@ -158,14 +158,12 @@ const { currentTab: tab } = storeToRefs(tabStore);
 const databaseStore = useDatabaseV1Store();
 const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
-const policyStore = usePolicyV1Store();
 const { project } = storeToRefs(useSQLEditorStore());
 const contextMenu = provideResultTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
-const effectiveQueryDataPolicy = computed(() => {
-  return policyStore.getEffectiveQueryDataPolicyForProject(project.value);
-});
+const { policy: effectiveQueryDataPolicy } =
+  useEffectiveQueryDataPolicyForProject(project);
 
 const selectedDatabaseNameList = ref<string[]>([]);
 

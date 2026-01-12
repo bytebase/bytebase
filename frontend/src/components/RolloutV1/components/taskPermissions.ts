@@ -65,6 +65,7 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
     }
 
     // Get rollout policy for the environment
+    // Note: Policies are prefetched by IssueLayout.vue and RolloutLayout.vue
     const rolloutPolicy = policyStore.getPolicyByParentAndType({
       parentPath: database.effectiveEnvironment,
       policyType: PolicyType.ROLLOUT_POLICY,

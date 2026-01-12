@@ -6,167 +6,184 @@
           {{ title }}
         </h1>
       </div>
-      <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
     </div>
     <div class="flex-1 lg:px-4">
-      <div v-if="actuatorStore.isSaaSMode">
-        <BBAttention
-          :type="'info'"
-          :description="
-            t('settings.general.workspace.ai-assistant.enabled-in-saas')
-          "
-        />
-      </div>
-      <div v-else class="mt-4 lg:mt-0 flex flex-col gap-y-4">
-        <div>
-          <div class="flex items-center gap-x-2">
-            <Switch
-              v-model:value="state.enabled"
-              :text="true"
-              :disabled="!allowEdit"
-              @update:value="toggleAIEnabled"
-            />
-            <span class="font-medium">
-              {{
-                $t(
-                  "settings.general.workspace.ai-assistant.enable-ai-assistant"
-                )
-              }}
-            </span>
-          </div>
-          <div class="mt-1 mb-3 text-sm text-gray-400">
-            {{ $t("settings.general.workspace.ai-assistant.description") }}
-            <LearnMoreLink
-              url="https://docs.bytebase.com/ai-assistant?source=console"
-              class="ml-1 text-sm"
-            />
-          </div>
+      <ComponentPermissionGuard
+        :permissions="['bb.settings.get']"
+      >
+        <div v-if="actuatorStore.isSaaSMode">
+          <BBAttention
+            :type="'info'"
+            :description="
+              t('settings.general.workspace.ai-assistant.enabled-in-saas')
+            "
+          />
         </div>
-        <NCollapseTransition :show="state.enabled" class="flex flex-col gap-y-4">
+        <div v-else class="mt-4 lg:mt-0 flex flex-col gap-y-4">
           <div>
-            <label class="flex items-center gap-x-2 mb-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.provider.self")
-              }}</span>
-            </label>
-            <NSelect
-              style="width: 12rem"
-              v-model:value="state.provider"
-              :options="providerOptions"
-              :disabled="!allowEdit"
-              :consistent-menu-width="true"
-            />
-          </div>
-          <div>
-            <label class="flex items-center gap-x-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.api-key.self")
-              }}</span>
-            </label>
-            <div class="mb-3 text-sm text-gray-400">
-              <i18n-t
-                keypath="settings.general.workspace.ai-assistant.api-key.description"
+            <div class="flex items-center gap-x-2">
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :permissions="[
+                  'bb.settings.set'
+                ]"
               >
-                <template #viewDoc>
-                  <a
-                    :href="providerDefault.apiKeyDoc"
-                    class="normal-link"
-                    target="_blank"
-                    >{{
-                      $t(
-                        "settings.general.workspace.ai-assistant.api-key.find-my-key"
-                      )
-                    }}
-                  </a>
-                </template>
-              </i18n-t>
+                <Switch
+                  v-model:value="state.enabled"
+                  :text="true"
+                  :disabled="slotProps.disabled"
+                  @update:value="toggleAIEnabled"
+                />
+              </PermissionGuardWrapper>
+              <span class="font-medium">
+                {{
+                  $t(
+                    "settings.general.workspace.ai-assistant.enable-ai-assistant"
+                  )
+                }}
+              </span>
             </div>
-            <NTooltip placement="top-start" :disabled="allowEdit">
-              <template #trigger>
+            <div class="mt-1 mb-3 text-sm text-gray-400">
+              {{ $t("settings.general.workspace.ai-assistant.description") }}
+              <LearnMoreLink
+                url="https://docs.bytebase.com/ai-assistant?source=console"
+                class="ml-1 text-sm"
+              />
+            </div>
+          </div>
+          <NCollapseTransition :show="state.enabled" class="flex flex-col gap-y-4">
+            <div>
+              <label class="flex items-center gap-x-2 mb-2">
+                <span class="font-medium">{{
+                  $t("settings.general.workspace.ai-assistant.provider.self")
+                }}</span>
+              </label>
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :permissions="[
+                  'bb.settings.set'
+                ]"
+              >
+                <NSelect
+                  style="width: 12rem"
+                  v-model:value="state.provider"
+                  :options="providerOptions"
+                  :disabled="slotProps.disabled"
+                  :consistent-menu-width="true"
+                />
+              </PermissionGuardWrapper>
+            </div>
+            <div>
+              <label class="flex items-center gap-x-2">
+                <span class="font-medium">{{
+                  $t("settings.general.workspace.ai-assistant.api-key.self")
+                }}</span>
+              </label>
+              <div class="mb-3 text-sm text-gray-400">
+                <i18n-t
+                  keypath="settings.general.workspace.ai-assistant.api-key.description"
+                >
+                  <template #viewDoc>
+                    <a
+                      :href="providerDefault.apiKeyDoc"
+                      class="normal-link"
+                      target="_blank"
+                      >{{
+                        $t(
+                          "settings.general.workspace.ai-assistant.api-key.find-my-key"
+                        )
+                      }}
+                    </a>
+                  </template>
+                </i18n-t>
+              </div>
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :permissions="[
+                  'bb.settings.set'
+                ]"
+              >
                 <BBTextField
                   v-model:value="state.apiKey"
-                  :disabled="!allowEdit"
+                  :disabled="slotProps.disabled"
                   :placeholder="
                     $t(
                       'settings.general.workspace.ai-assistant.api-key.placeholder'
                     )
                   "
                 />
-              </template>
-              <span class="text-sm text-gray-400 -translate-y-2">
-                {{ $t("settings.general.workspace.only-admin-can-edit") }}
-              </span>
-            </NTooltip>
-          </div>
-
-          <div>
-            <label class="flex items-center gap-x-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.endpoint.self")
-              }}</span>
-            </label>
-            <div class="mb-3 text-sm text-gray-400">
-              {{
-                $t(
-                  "settings.general.workspace.ai-assistant.endpoint.description"
-                )
-              }}
+              </PermissionGuardWrapper>
             </div>
-            <NTooltip placement="top-start" :disabled="allowEdit">
-              <template #trigger>
+
+            <div>
+              <label class="flex items-center gap-x-2">
+                <span class="font-medium">{{
+                  $t("settings.general.workspace.ai-assistant.endpoint.self")
+                }}</span>
+              </label>
+              <div class="mb-3 text-sm text-gray-400">
+                {{
+                  $t(
+                    "settings.general.workspace.ai-assistant.endpoint.description"
+                  )
+                }}
+              </div>
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :permissions="[
+                  'bb.settings.set'
+                ]"
+              >
                 <BBTextField
                   v-model:value="state.endpoint"
                   :required="true"
-                  :disabled="!allowEdit"
+                  :disabled="slotProps.disabled"
                   :placeholder="providerDefault.endpoint"
                 />
-              </template>
-              <span class="text-sm text-gray-400 -translate-y-2">
-                {{ $t("settings.general.workspace.only-admin-can-edit") }}
-              </span>
-            </NTooltip>
-          </div>
-
-          <div>
-            <label class="flex items-center gap-x-2">
-              <span class="font-medium">{{
-                $t("settings.general.workspace.ai-assistant.model.self")
-              }}</span>
-            </label>
-            <div class="mb-3 text-sm text-gray-400">
-              {{
-                $t("settings.general.workspace.ai-assistant.model.description")
-              }}
+              </PermissionGuardWrapper>
             </div>
-            <NTooltip placement="top-start" :disabled="allowEdit">
-              <template #trigger>
+
+            <div>
+              <label class="flex items-center gap-x-2">
+                <span class="font-medium">{{
+                  $t("settings.general.workspace.ai-assistant.model.self")
+                }}</span>
+              </label>
+              <div class="mb-3 text-sm text-gray-400">
+                {{
+                  $t("settings.general.workspace.ai-assistant.model.description")
+                }}
+              </div>
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :permissions="[
+                  'bb.settings.set'
+                ]"
+              >
                 <BBTextField
                   v-model:value="state.model"
                   :required="true"
-                  :disabled="!allowEdit"
+                  :disabled="slotProps.disabled"
                 />
-              </template>
-              <span class="text-sm text-gray-400 -translate-y-2">
-                {{ $t("settings.general.workspace.only-admin-can-edit") }}
-              </span>
-            </NTooltip>
-          </div>
-        </NCollapseTransition>
-      </div>
+              </PermissionGuardWrapper>
+            </div>
+          </NCollapseTransition>
+        </div>
+      </ComponentPermissionGuard>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NCollapseTransition, NSelect, NTooltip } from "naive-ui";
+import { NCollapseTransition, NSelect } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { useActuatorV1Store, useSettingV1Store } from "@/store/modules";
 import {
@@ -186,7 +203,6 @@ interface LocalState {
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const settingV1Store = useSettingV1Store();
@@ -252,7 +268,10 @@ const providerOptions = computed(() =>
 );
 
 watchEffect(async () => {
-  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI);
+  await settingV1Store.getOrFetchSettingByName(
+    Setting_SettingName.AI,
+    /* silent */ true
+  );
   Object.assign(state, getInitialState());
 });
 
