@@ -71,7 +71,11 @@ onMounted(() => {
     issueType.value === IssueType.EXPORT_DATA ||
     issueType.value === IssueType.GRANT_REQUEST;
 
-  if (!enabledNewLayout.value && !usesNewLayoutOnly) {
+  // Only redirect to legacy UI if:
+  // 1. New layout is disabled
+  // 2. Issue type is not new-layout-only
+  // 3. Rollout exists (legacy UI cannot display issues without rollout)
+  if (!enabledNewLayout.value && !usesNewLayoutOnly && plan.value.hasRollout) {
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
