@@ -1,7 +1,11 @@
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
+import { createRegistry } from "@bufbuild/protobuf";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
-import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
+import {
+  AuditDataSchema,
+  AuditLogService,
+} from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -36,6 +40,9 @@ import { isDev } from "@/utils";
 
 const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 
+// Registry for decoding google.protobuf.Any fields in JSON responses
+const registry = createRegistry(AuditDataSchema);
+
 const transport = createConnectTransport({
   baseUrl: address,
   useBinaryFormat: isDev() ? false : true,
@@ -45,6 +52,9 @@ const transport = createConnectTransport({
     errorNotificationInterceptor,
   ],
   fetch: (input, init) => fetch(input, { ...init, credentials: "include" }),
+  jsonOptions: {
+    registry,
+  },
 });
 
 export const actuatorServiceClientConnect = createClient(
