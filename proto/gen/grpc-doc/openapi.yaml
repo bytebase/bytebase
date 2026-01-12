@@ -1224,7 +1224,6 @@ paths:
                      - instance: the instance full name in "instances/{id}" format, support "==" operator.
                      - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
                      - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-                     - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
                      - table: filter by the database table, support "==" and ".matches()" operator.
                      - labels.{key}: the database label, support "==" and "in" operators.
 
@@ -1238,7 +1237,6 @@ paths:
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
                      exclude_unassigned == true
-                     drifted == true
                      table == "sample"
                      table.matches("sam")
                      labels.environment == "production"
@@ -3811,7 +3809,6 @@ paths:
                      - instance: the instance full name in "instances/{id}" format, support "==" operator.
                      - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
                      - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-                     - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
                      - table: filter by the database table, support "==" and ".matches()" operator.
                      - labels.{key}: the database label, support "==" and "in" operators.
 
@@ -3825,7 +3822,6 @@ paths:
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
                      exclude_unassigned == true
-                     drifted == true
                      table == "sample"
                      table.matches("sam")
                      labels.environment == "production"
@@ -7462,7 +7458,6 @@ paths:
                      - instance: the instance full name in "instances/{id}" format, support "==" operator.
                      - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
                      - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-                     - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
                      - table: filter by the database table, support "==" and ".matches()" operator.
                      - labels.{key}: the database label, support "==" and "in" operators.
 
@@ -7476,7 +7471,6 @@ paths:
                      engine in ["MYSQL", "POSTGRES"]
                      !(engine in ["MYSQL", "POSTGRES"])
                      exclude_unassigned == true
-                     drifted == true
                      table == "sample"
                      table.matches("sam")
                      labels.environment == "production"
@@ -9284,10 +9278,6 @@ components:
                     readOnly: true
                     type: boolean
                     description: The database is available for DML prior backup.
-                drifted:
-                    readOnly: true
-                    type: boolean
-                    description: The schema is drifted from the source of truth.
         DatabaseCatalog:
             type: object
             properties:

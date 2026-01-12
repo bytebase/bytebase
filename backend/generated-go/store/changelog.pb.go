@@ -76,13 +76,9 @@ func (ChangelogPayload_Type) EnumDescriptor() ([]byte, []int) {
 type ChangelogPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun   string                `protobuf:"bytes,1,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
-	Type      ChangelogPayload_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
-	GitCommit string                `protobuf:"bytes,6,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
-	// Dump format version for drift detection reliability.
-	// Engine-specific version stored when baseline/migration is created.
-	// 0 = legacy changelog (pre-versioning).
-	DumpVersion   int32 `protobuf:"varint,7,opt,name=dump_version,json=dumpVersion,proto3" json:"dump_version,omitempty"`
+	TaskRun       string                `protobuf:"bytes,1,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	Type          ChangelogPayload_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
+	GitCommit     string                `protobuf:"bytes,6,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -138,29 +134,21 @@ func (x *ChangelogPayload) GetGitCommit() string {
 	return ""
 }
 
-func (x *ChangelogPayload) GetDumpVersion() int32 {
-	if x != nil {
-		return x.DumpVersion
-	}
-	return 0
-}
-
 var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\"\xec\x01\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\"\xcf\x01\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
 	"\btask_run\x18\x01 \x01(\tR\ataskRun\x129\n" +
 	"\x04type\x18\x05 \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\x06 \x01(\tR\tgitCommit\x12!\n" +
-	"\fdump_version\x18\a \x01(\x05R\vdumpVersion\"@\n" +
+	"git_commit\x18\x06 \x01(\tR\tgitCommit\"@\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bBASELINE\x10\x01\x12\v\n" +
 	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03B\x91\x01\n" +
+	"\x03SDL\x10\x03J\x04\b\a\x10\bB\x91\x01\n" +
 	"\x12com.bytebase.storeB\x0eChangelogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

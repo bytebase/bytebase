@@ -5,6 +5,8 @@ package bytebase.store;
 option go_package = "generated-go/store";
 
 message ChangelogPayload {
+  reserved 7; // dump_version field removed
+
   // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 1;
 
@@ -17,9 +19,4 @@ message ChangelogPayload {
   Type type = 5;
 
   string git_commit = 6;
-
-  // Dump format version for drift detection reliability.
-  // Engine-specific version stored when baseline/migration is created.
-  // 0 = legacy changelog (pre-versioning).
-  int32 dump_version = 7;
 }

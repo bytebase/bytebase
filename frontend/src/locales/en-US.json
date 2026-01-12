@@ -1033,7 +1033,6 @@
     "stage-select": {
       "current": "{name} (current)"
     },
-    "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
       "online": {
         "description": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds {link}."
@@ -1144,10 +1143,6 @@
       "create-database": "Create database",
       "request-role": "Request role",
       "request-specific-role": "Request \"{role}\" role"
-    },
-    "schema-drift-detected": {
-      "self": "Schema drift detected",
-      "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
     },
     "review": {
       "self": "Review",
@@ -1648,11 +1643,7 @@
     "no-schema-change": "this migration has no schema change",
     "show-diff": "Show diff",
     "schema-snapshot-after-change": "The schema snapshot recorded after applying this change",
-    "current-schema-empty": "Current schema is empty",
-    "establish-baseline": "Establish new baseline",
-    "refreshing": "Refreshing changelog ...",
-    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
-    "establish-database-baseline": "Establish \"{name}\" baseline"
+    "current-schema-empty": "Current schema is empty"
   },
   "database": {
     "labels": "Database Labels",
@@ -1795,19 +1786,7 @@
       "version-already-exists": "This version already exists in the database",
       "delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
     },
-    "not-found": "Cannot found the database",
-    "drifted": {
-      "self": "Schema drifted",
-      "schema-drift-detected": {
-        "self": "Schema drift detected",
-        "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
-      },
-      "new-baseline": {
-        "self": "New baseline",
-        "successfully-established": "Successfully established new baseline"
-      },
-      "view-diff": "View diff"
-    }
+    "not-found": "Cannot found the database"
   },
   "project": {
     "filter-projects": "Filter projects",

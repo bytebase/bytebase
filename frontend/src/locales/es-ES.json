@@ -1033,7 +1033,6 @@
     "stage-select": {
       "current": "{name} (actual)"
     },
-    "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas.\nPrimero deben ser transferidas a un proyecto.",
     "migration-mode": {
       "online": {
         "description": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos {link}."
@@ -1144,10 +1143,6 @@
       "create-database": "Crear base de datos",
       "request-role": "Rol de solicitud",
       "request-specific-role": "Solicitar rol \"{role}\""
-    },
-    "schema-drift-detected": {
-      "self": "Se detectó una desviación del esquema",
-      "description": "Las bases de datos seleccionadas presentan una desviación de esquema. Asegúrese de que la desviación sea la esperada y de que sea segura para su aplicación."
     },
     "review": {
       "self": "Revisar",
@@ -1648,11 +1643,7 @@
     "no-schema-change": "esta migración no tiene cambios de esquema",
     "show-diff": "Mostrar diferencias",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
-    "current-schema-empty": "El esquema actual está vacío",
-    "establish-baseline": "Establecer nueva línea base",
-    "refreshing": "Refrescando historial...",
-    "establish-baseline-description": "Bytebase usará el esquema actual como la nueva línea base. Esto reconciliará el estado actual del esquema con el estado del esquema registrado en Bytebase y corregirá la deriva del esquema informado. Solo debe hacer esto si el esquema actual refleja el estado deseado.",
-    "establish-database-baseline": "Establecer línea base de \"{name}\""
+    "current-schema-empty": "El esquema actual está vacío"
   },
   "database": {
     "labels": "Etiquetas de base de datos",
@@ -1795,19 +1786,7 @@
       "version-already-exists": "Esta versión ya existe en la base de datos",
       "delete-confirm-dialog": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
     },
-    "not-found": "No se puede encontrar la base de datos",
-    "drifted": {
-      "self": "El esquema se desvió",
-      "schema-drift-detected": {
-        "self": "Se detectó una desviación del esquema",
-        "description": "El esquema es diferente del último aplicado. Esto puede causar errores de aplicación y debe solucionarse."
-      },
-      "new-baseline": {
-        "self": "Nueva línea base",
-        "successfully-established": "Se estableció con éxito una nueva línea base"
-      },
-      "view-diff": "Ver diferencia"
-    }
+    "not-found": "No se puede encontrar la base de datos"
   },
   "project": {
     "filter-projects": "Filtrar proyectos",

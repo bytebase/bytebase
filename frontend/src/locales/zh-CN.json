@@ -1033,7 +1033,6 @@
     "stage-select": {
       "current": "{name}（当前）"
     },
-    "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
       "online": {
         "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
@@ -1144,10 +1143,6 @@
       "create-database": "创建数据库",
       "request-role": "请求角色",
       "request-specific-role": "请求“{role}”角色"
-    },
-    "schema-drift-detected": {
-      "self": "检测到 Schema 偏差",
-      "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
     },
     "review": {
       "self": "审批",
@@ -1648,11 +1643,7 @@
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "show-diff": "显示差异",
     "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
-    "current-schema-empty": "当前 schema 为空",
-    "establish-baseline": "建立新的基线",
-    "refreshing": "刷新历史中...",
-    "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
-    "establish-database-baseline": "建立「{name}」基线"
+    "current-schema-empty": "当前 schema 为空"
   },
   "database": {
     "labels": "数据库标签",
@@ -1795,19 +1786,7 @@
       "version-already-exists": "此版本已存在于数据库中",
       "delete-confirm-dialog": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
     },
-    "not-found": "找不到数据库",
-    "drifted": {
-      "self": "Schema 偏差",
-      "schema-drift-detected": {
-        "self": "检测到 Schema 偏差",
-        "description": "当前数据库 Schema 与 Bytebase 中记录的 Schema 不一致。请及时检查并修复以避免潜在问题。"
-      },
-      "new-baseline": {
-        "self": "建立新基线",
-        "successfully-established": "成功建立新的基线"
-      },
-      "view-diff": "查看差异"
-    }
+    "not-found": "找不到数据库"
   },
   "project": {
     "filter-projects": "过滤项目",

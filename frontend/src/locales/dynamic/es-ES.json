@@ -112,10 +112,6 @@
         "title": "Registro de cambios de base de datos",
         "desc": "Rastree todos los cambios de esquema y datos de la base de datos."
       },
-      "FEATURE_SCHEMA_DRIFT_DETECTION": {
-        "title": "Detección de desviación de esquema",
-        "desc": "Detecte cambios de esquema fuera de banda e informe discrepancias."
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "Política de despliegue",
         "desc": "Controle si la tarea de cambio de esquema requiere despliegue manual."

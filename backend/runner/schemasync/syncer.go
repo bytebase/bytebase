@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -380,24 +379,12 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 
 	dbConfig := dbMetadata.GetConfig()
 
-	// Check for schema drift only when not creating sync history
-	var drifted bool
-	if !createSyncHistory {
-		drifted, err = s.getSchemaDrifted(ctx, instance, database, string(rawDump))
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to get schema drifted for database %q", database.DatabaseName)
-		}
-	}
-
 	// Build metadata updates
 	metadataUpdates := []func(*storepb.DatabaseMetadata){
 		func(md *storepb.DatabaseMetadata) {
 			md.LastSyncTime = timestamppb.Now()
 			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
 			md.Datashare = syncedDatabaseMetadata.Datashare
-			if !createSyncHistory {
-				md.Drifted = drifted
-			}
 		},
 	}
 
@@ -448,42 +435,6 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage) error {
 	_, err := s.doSyncDatabaseSchema(ctx, database, false)
 	return err
-}
-
-func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, rawDump string) (drifted bool, err error) {
-	// Redis and MongoDB are schemaless.
-	if disableSchemaDriftCheck(instance.Metadata.GetEngine()) {
-		return false, nil
-	}
-	limit := 1
-	list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
-		InstanceID:     &database.InstanceID,
-		DatabaseName:   &database.DatabaseName,
-		TypeList:       []string{storepb.ChangelogPayload_BASELINE.String(), storepb.ChangelogPayload_MIGRATE.String(), storepb.ChangelogPayload_SDL.String()},
-		HasSyncHistory: true,
-		Limit:          &limit,
-		ShowFull:       true,
-	})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to list changelogs")
-	}
-	if len(list) == 0 {
-		return false, nil
-	}
-
-	changelog := list[0]
-	if changelog.SyncHistoryUID == nil {
-		return false, errors.Errorf("expect sync history but get nil")
-	}
-
-	// Skip drift detection if dump format version changed to avoid false positives after Bytebase upgrade.
-	currentVersion := schema.GetDumpFormatVersion(instance.Metadata.GetEngine())
-	baselineVersion := changelog.Payload.GetDumpVersion()
-	if baselineVersion != currentVersion {
-		return false, nil
-	}
-
-	return changelog.Schema != rawDump, nil
 }
 
 func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *storepb.DatabaseSchemaMetadata) bool {
@@ -548,14 +499,4 @@ func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {
 		return t.AsTime()
 	}
 	return time.Unix(0, 0)
-}
-
-func disableSchemaDriftCheck(dbTp storepb.Engine) bool {
-	m := map[storepb.Engine]struct{}{
-		storepb.Engine_MONGODB:  {},
-		storepb.Engine_REDIS:    {},
-		storepb.Engine_REDSHIFT: {},
-	}
-	_, ok := m[dbTp]
-	return ok
 }

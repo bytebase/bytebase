@@ -406,8 +406,6 @@ type DatabaseMetadata struct {
 	LastSyncTime    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"`
 	BackupAvailable bool                   `protobuf:"varint,3,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
 	Datashare       bool                   `protobuf:"varint,4,opt,name=datashare,proto3" json:"datashare,omitempty"`
-	// The schema has drifted from the source of truth.
-	Drifted bool `protobuf:"varint,6,opt,name=drifted,proto3" json:"drifted,omitempty"`
 	// The version of database schema.
 	Version       string `protobuf:"bytes,7,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -468,13 +466,6 @@ func (x *DatabaseMetadata) GetBackupAvailable() bool {
 func (x *DatabaseMetadata) GetDatashare() bool {
 	if x != nil {
 		return x.Datashare
-	}
-	return false
-}
-
-func (x *DatabaseMetadata) GetDrifted() bool {
-	if x != nil {
-		return x.Drifted
 	}
 	return false
 }
@@ -4573,17 +4564,16 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd2\x02\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbe\x02\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
 	"\x10backup_available\x18\x03 \x01(\bR\x0fbackupAvailable\x12\x1c\n" +
 	"\tdatashare\x18\x04 \x01(\bR\tdatashare\x12\x18\n" +
-	"\adrifted\x18\x06 \x01(\bR\adrifted\x12\x18\n" +
 	"\aversion\x18\a \x01(\tR\aversion\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x06\x10\a\"\x84\x04\n" +
 	"\x16DatabaseSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1e.bytebase.store.SchemaMetadataR\aschemas\x12#\n" +

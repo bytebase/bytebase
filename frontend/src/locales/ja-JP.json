@@ -1033,7 +1033,6 @@
     "stage-select": {
       "current": "{name} (現在)"
     },
-    "not-allowed-to-operate-unassigned-database": "未割り当てのデータベースは {operation} できません。\nまずプロジェクトに転送する必要があります。",
     "migration-mode": {
       "online": {
         "description": "gh-ostをベースにしています。大規模なテーブルの場合、テーブルのロック時間を数時間から数秒 {link} に短縮できます。"
@@ -1144,10 +1143,6 @@
       "create-database": "データベースを作成する",
       "request-role": "役割をリクエストする",
       "request-specific-role": "「{role}」ロールをリクエスト"
-    },
-    "schema-drift-detected": {
-      "self": "スキーマドリフトが検出されました",
-      "description": "選択したデータベースにはスキーマドリフトがあります。ドリフトが想定どおりであり、適用しても安全であることを確認してください。"
     },
     "review": {
       "self": "レビュー",
@@ -1648,11 +1643,7 @@
     "no-schema-change": "この変更ではスキーマの変更はありません",
     "show-diff": "違いを表示",
     "schema-snapshot-after-change": "この変更を完了した後のスキーマのスナップショット",
-    "current-schema-empty": "現在のスキーマは空です",
-    "establish-baseline": "新しいベースラインを確立する",
-    "refreshing": "履歴を更新中...",
-    "establish-baseline-description": "Bytebase は、現在のスキーマを新しいベースラインとして使用します。これにより、データベースの現在のスキーマ状態が Bytebase によって記録されたスキーマ状態と同期され、スキーマの逸脱の問題が解決されます。これを行う前に、現在のベースラインが実際に望ましい状態を反映していることを確認する必要があります。",
-    "establish-database-baseline": "ベースライン「{name}」を作成します"
+    "current-schema-empty": "現在のスキーマは空です"
   },
   "database": {
     "labels": "データベースラベル",
@@ -1795,19 +1786,7 @@
       "version-already-exists": "このバージョンは既にデータベースに存在します",
       "delete-confirm-dialog": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
     },
-    "not-found": "データベースが見つかりません",
-    "drifted": {
-      "self": "スキーマがずれた",
-      "schema-drift-detected": {
-        "self": "スキーマドリフトが検出されました",
-        "description": "スキーマが最後に適用されたスキーマと異なります。アプリケーションエラーが発生する可能性があるため、解決する必要があります。"
-      },
-      "new-baseline": {
-        "self": "新しいベースライン",
-        "successfully-established": "新しいベースラインを確立しました"
-      },
-      "view-diff": "差分を表示"
-    }
+    "not-found": "データベースが見つかりません"
   },
   "project": {
     "filter-projects": "プロジェクトをフィルタリング",

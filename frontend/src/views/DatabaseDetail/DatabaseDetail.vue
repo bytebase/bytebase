@@ -17,8 +17,6 @@
     >
       {{ $t("database.no-environment") }}
     </BBAttention>
-    <DriftedDatabaseAlert :database="database" />
-
     <main class="flex-1 relative">
       <!-- Highlight Panel -->
       <div
@@ -236,7 +234,6 @@ import {
   SchemaDiagramButton,
   SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
-import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAlert.vue";
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
