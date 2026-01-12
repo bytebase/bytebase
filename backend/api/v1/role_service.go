@@ -43,7 +43,7 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *connect.Request[v1pb.Lis
 	}
 
 	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
-	for _, predefinedRole := range s.iamManager.PredefinedRoles {
+	for _, predefinedRole := range store.PredefinedRoles {
 		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
 	}
 
@@ -72,13 +72,8 @@ func (s *RoleService) GetRole(ctx context.Context, req *connect.Request[v1pb.Get
 	return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("role not found: %s", roleID))
 }
 
-func (s *RoleService) getBuildinRole(roleID string) *store.RoleMessage {
-	for _, predefinedRole := range s.iamManager.PredefinedRoles {
-		if predefinedRole.ResourceID == roleID {
-			return predefinedRole
-		}
-	}
-	return nil
+func (*RoleService) getBuildinRole(roleID string) *store.RoleMessage {
+	return store.GetPredefinedRole(roleID)
 }
 
 // CreateRole creates a new role.
