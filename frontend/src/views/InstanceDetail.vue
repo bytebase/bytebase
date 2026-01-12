@@ -25,7 +25,9 @@
           <PermissionGuardWrapper
             v-if="allowCreateDatabase"
             v-slot="slotProps"
-            :permissions="['bb.issues.create', 'bb.plans.create']"
+            :permissions="[
+              ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+            ]"
           >
             <NButton
               type="primary"
@@ -147,6 +149,7 @@ import {
   getValuesFromSearchParams,
   instanceV1HasCreateDatabase,
   instanceV1Name,
+  PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
 } from "@/utils";
 
 const instanceHashList = ["overview", "databases", "users"] as const;

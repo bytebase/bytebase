@@ -18,6 +18,9 @@
       <div v-if="requestRole" class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
           {{ $t("common.permissions") }}
+          ({{
+              requestRole.permissions.length
+          }})
         </span>
         <div class="max-h-[10em] overflow-auto border rounded-sm p-2">
         <p

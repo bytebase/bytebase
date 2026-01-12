@@ -52,8 +52,6 @@ export interface ActionPermissions {
   createRollout: boolean;
   runTasks: boolean;
   isApprovalCandidate: boolean;
-  canApprove: boolean;
-  canReject: boolean;
 }
 
 export interface ActionValidation {

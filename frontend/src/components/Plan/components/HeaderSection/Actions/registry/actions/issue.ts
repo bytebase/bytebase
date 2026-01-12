@@ -17,15 +17,20 @@ export const ISSUE_CREATE: ActionDefinition = {
     !ctx.isIssueOnly &&
     ctx.plan.issue === "" &&
     !ctx.plan.hasRollout &&
-    ctx.planState === State.ACTIVE &&
-    ctx.permissions.createIssue,
+    ctx.planState === State.ACTIVE,
 
   isDisabled: (ctx) =>
+    !ctx.permissions.createIssue ||
     ctx.validation.hasEmptySpec ||
     ctx.validation.planChecksRunning ||
     (ctx.validation.planChecksFailed && ctx.project.enforceSqlReview),
 
   disabledReason: (ctx) => {
+    if (!ctx.permissions.createIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.create",
+      });
+    }
     if (ctx.validation.hasEmptySpec) {
       return t("plan.navigator.statement-empty");
     }
@@ -79,13 +84,19 @@ export const ISSUE_STATUS_RESOLVE: ActionDefinition = {
       (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
         ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
       ctx.allTasksFinished &&
-      ctx.plan.hasRollout &&
-      ctx.permissions.updateIssue
+      ctx.plan.hasRollout
     );
   },
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updateIssue,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updateIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.update",
+      });
+    }
+    return undefined;
+  },
 
   executeType: "panel:issue-status",
 };
@@ -98,12 +109,17 @@ export const ISSUE_STATUS_CLOSE: ActionDefinition = {
   priority: 90,
 
   isVisible: (ctx) =>
-    ctx.issueStatus === IssueStatus.OPEN &&
-    !ctx.plan.hasRollout &&
-    ctx.permissions.updateIssue,
+    ctx.issueStatus === IssueStatus.OPEN && !ctx.plan.hasRollout,
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updateIssue,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updateIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.update",
+      });
+    }
+    return undefined;
+  },
 
   executeType: "panel:issue-status",
 };
@@ -116,11 +132,17 @@ export const ISSUE_STATUS_REOPEN: ActionDefinition = {
   priority: 20,
 
   // Only show reopen for canceled issues, not for done/resolved issues
-  isVisible: (ctx) =>
-    ctx.issueStatus === IssueStatus.CANCELED && ctx.permissions.updateIssue,
+  isVisible: (ctx) => ctx.issueStatus === IssueStatus.CANCELED,
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updateIssue,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updateIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.update",
+      });
+    }
+    return undefined;
+  },
 
   executeType: "panel:issue-status",
 };
