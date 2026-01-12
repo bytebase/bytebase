@@ -63,7 +63,7 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v
 		if connectErr == connect.CodeNotFound {
 			policyType, extractErr := extractPolicyTypeFromName(req.Msg.Name)
 			if extractErr == nil && policyType == storepb.Policy_ROLLOUT {
-				defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(parent, req.Msg.Name)
+				defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(parent)
 				if defaultErr != nil {
 					return nil, defaultErr
 				}
@@ -313,7 +313,7 @@ func extractPolicyTypeFromName(policyName string) (storepb.Policy_Type, error) {
 
 // getDefaultRolloutPolicy returns the default rollout policy when no custom policy exists.
 // Uses the shared store.GetDefaultRolloutPolicy to ensure consistency across API and store layers.
-func (*OrgPolicyService) getDefaultRolloutPolicy(parent string, policyName string) (*store.PolicyMessage, error) {
+func (*OrgPolicyService) getDefaultRolloutPolicy(parent string) (*store.PolicyMessage, error) {
 	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
