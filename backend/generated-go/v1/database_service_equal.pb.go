@@ -352,9 +352,6 @@ func (x *Database) Equal(y *Database) bool {
 	if x.BackupAvailable != y.BackupAvailable {
 		return false
 	}
-	if x.Drifted != y.Drifted {
-		return false
-	}
 	return true
 }
 

@@ -230,7 +230,6 @@ message ListDatabasesRequest {
   // - instance: the instance full name in "instances/{id}" format, support "==" operator.
   // - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
   // - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-  // - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
   // - table: filter by the database table, support "==" and ".matches()" operator.
   // - labels.{key}: the database label, support "==" and "in" operators.
   //
@@ -244,7 +243,6 @@ message ListDatabasesRequest {
   // engine in ["MYSQL", "POSTGRES"]
   // !(engine in ["MYSQL", "POSTGRES"])
   // exclude_unassigned == true
-  // drifted == true
   // table == "sample"
   // table.matches("sam")
   // labels.environment == "production"
@@ -465,9 +463,6 @@ message Database {
 
   // The database is available for DML prior backup.
   bool backup_available = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The schema is drifted from the source of truth.
-  bool drifted = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.

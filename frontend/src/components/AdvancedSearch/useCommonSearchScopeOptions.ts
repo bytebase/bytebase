@@ -179,24 +179,6 @@ export const useCommonSearchScopeOptions = (
         }),
         allowMultiple: true,
       }),
-      drifted: () => ({
-        id: "drifted",
-        title: t("database.drifted.self"),
-        description: t("database.drifted.schema-drift-detected.self"),
-        options: [
-          {
-            value: "true",
-            keywords: ["true"],
-            render: () => "TRUE",
-          },
-          {
-            value: "false",
-            keywords: ["false"],
-            render: () => "FALSE",
-          },
-        ],
-        allowMultiple: false,
-      }),
       state: () => ({
         id: "state",
         title: t("common.state"),

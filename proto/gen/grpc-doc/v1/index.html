@@ -9652,13 +9652,6 @@ https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
                   <td><p>The database is available for DML prior backup. </p></td>
                 </tr>
               
-                <tr>
-                  <td>drifted</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The schema is drifted from the source of truth. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -11025,7 +11018,6 @@ Supported filter:
 - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
 - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator.
 - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator.
-- drifted: should be &#34;true&#34; or &#34;false&#34;, show drifted databases if it&#39;s true, support &#34;==&#34; operator.
 - table: filter by the database table, support &#34;==&#34; and &#34;.matches()&#34; operator.
 - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
 
@@ -11039,7 +11031,6 @@ engine == &#34;MYSQL&#34;
 engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
 exclude_unassigned == true
-drifted == true
 table == &#34;sample&#34;
 table.matches(&#34;sam&#34;)
 labels.environment == &#34;production&#34;

@@ -361,15 +361,11 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				Status:         store.ChangelogStatusDone,
 				SyncHistoryUID: &syncHistory,
 				Payload: &storepb.ChangelogPayload{
-					Type:        storepb.ChangelogPayload_BASELINE,
-					GitCommit:   s.profile.GitCommit,
-					DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+					Type:      storepb.ChangelogPayload_BASELINE,
+					GitCommit: s.profile.GitCommit,
 				}}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create changelog")
 			}
-			patch.MetadataUpdates = append(patch.MetadataUpdates, func(dm *storepb.DatabaseMetadata) {
-				dm.Drifted = false
-			})
 		default:
 		}
 	}
@@ -960,7 +956,6 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
 		BackupAvailable:      database.Metadata.GetBackupAvailable(),
-		Drifted:              database.Metadata.GetDrifted(),
 	}, nil
 }
 

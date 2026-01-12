@@ -111,7 +111,7 @@ import {
   TagIcon,
   UnlinkIcon,
 } from "lucide-vue-next";
-import { NButton, NScrollbar, NTooltip, useDialog } from "naive-ui";
+import { NButton, NScrollbar, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -194,7 +194,6 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const dialog = useDialog();
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -251,36 +250,9 @@ const operations = computed(() => {
   ];
 });
 
-const showDatabaseDriftedWarningDialog = () => {
-  return new Promise((resolve) => {
-    dialog.create({
-      type: "warning",
-      positiveText: t("common.confirm"),
-      negativeText: t("common.cancel"),
-      title: t("issue.schema-drift-detected.self"),
-      content: t("issue.schema-drift-detected.description"),
-      autoFocus: false,
-      onNegativeClick: () => {
-        resolve(false);
-      },
-      onPositiveClick: () => {
-        resolve(true);
-      },
-    });
-  });
-};
-
 const generateMultiDb = async (
   type: "bb.issue.database.update" | "bb.issue.database.data.export"
 ) => {
-  // Check if any database is drifted.
-  if (props.databases.some((d) => d.drifted)) {
-    const confirmed = await showDatabaseDriftedWarningDialog();
-    if (!confirmed) {
-      return;
-    }
-  }
-
   // Fetch project to check enforce_issue_title setting
   const project = await projectStore.getOrFetchProjectByName(
     selectedProjectName.value

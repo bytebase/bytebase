@@ -112,10 +112,6 @@
         "title": "Database changelog",
         "desc": "Track all database schema and data changes."
       },
-      "FEATURE_SCHEMA_DRIFT_DETECTION": {
-        "title": "Schema drift detection",
-        "desc": "Detect out-of-band schema changes and report discrepancies."
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "Rollout policy",
         "desc": "Control whether the schema change task requires manual rolling out."

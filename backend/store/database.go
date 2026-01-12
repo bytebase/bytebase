@@ -607,16 +607,6 @@ func GetListDatabaseFilter(filter string) (*qb.Query, error) {
 			return qb.Q().Space("instance.metadata->>'engine' = ?", engine.String()), nil
 		case "name":
 			return qb.Q().Space("db.name = ?", value), nil
-		case "drifted":
-			drifted, ok := value.(bool)
-			if !ok {
-				return nil, errors.Errorf("invalid drifted filter %q", value)
-			}
-			condition := "IS"
-			if !drifted {
-				condition = "IS NOT"
-			}
-			return qb.Q().Space(fmt.Sprintf("(db.metadata->>'drifted')::boolean %s TRUE", condition)), nil
 		case "exclude_unassigned":
 			if excludeUnassigned, ok := value.(bool); excludeUnassigned && ok {
 				return qb.Q().Space("db.project != ?", common.DefaultProjectID), nil

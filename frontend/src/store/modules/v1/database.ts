@@ -37,7 +37,7 @@ import {
   type Instance,
   InstanceResourceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -58,7 +58,6 @@ export interface DatabaseFilter {
   labels?: string[];
   engines?: Engine[];
   excludeEngines?: Engine[];
-  drifted?: boolean;
   table?: string;
 }
 
@@ -136,9 +135,6 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
     params.push(
       `!(engine in [${filter.excludeEngines.map((e) => `"${Engine[e]}"`).join(", ")}])`
     );
-  }
-  if (!isNullOrUndefined(filter.drifted)) {
-    params.push(`drifted == ${filter.drifted}`);
   }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {
