@@ -377,7 +377,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 && issue.Type == storepb.Issue_DATABASE_CHANGE {
+	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
