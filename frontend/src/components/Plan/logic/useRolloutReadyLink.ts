@@ -13,12 +13,6 @@ import {
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContext } from "./context";
 
-const ROLLOUT_ROUTES = new Set([
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-]);
-
 const ACTIONABLE_TASK_STATUSES = new Set([
   Task_Status.NOT_STARTED,
   Task_Status.PENDING,
@@ -39,6 +33,14 @@ const ACTIONABLE_TASK_STATUSES = new Set([
 export const useRolloutReadyLink = () => {
   const route = useRoute();
   const { plan, issue, rollout } = usePlanContext();
+
+  // Defined inside the function to avoid circular dependency issues
+  // when the module is imported before the router is initialized
+  const ROLLOUT_ROUTES = new Set([
+    PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+    PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+    PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+  ]);
 
   const isOnRolloutTab = computed(() => {
     return ROLLOUT_ROUTES.has(route.name as string);
