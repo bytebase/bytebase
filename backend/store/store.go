@@ -5,8 +5,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -24,7 +26,7 @@ type Store struct {
 	projectCache   *lru.Cache[string, *ProjectMessage]
 	policyCache    *lru.Cache[string, *PolicyMessage]
 	settingCache   *lru.Cache[storepb.SettingName, *SettingMessage]
-	rolesCache     *lru.Cache[string, *RoleMessage]
+	rolesCache     *expirable.LRU[string, *RoleMessage]
 	groupCache     *lru.Cache[string, *GroupMessage]
 
 	// Large objects.
@@ -58,10 +60,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	rolesCache, err := lru.New[string, *RoleMessage](64)
-	if err != nil {
-		return nil, err
-	}
+	rolesCache := expirable.NewLRU[string, *RoleMessage](128, nil, time.Minute)
 	sheetFullCache, err := lru.New[string, *SheetMessage](10)
 	if err != nil {
 		return nil, err

@@ -21,6 +21,9 @@ func TestCheck(t *testing.T) {
 	for _, role := range store.PredefinedRoles {
 		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
 	}
+	getPermissions := func(role string) map[permission.Permission]bool {
+		return rolePermissions[role]
+	}
 
 	tests := []struct {
 		permission   permission.Permission
@@ -99,7 +102,7 @@ func TestCheck(t *testing.T) {
 		}}
 
 	for i, test := range tests {
-		got := check(testUser, test.permission, test.policy, rolePermissions, test.groupMembers)
+		got := check(testUser, test.permission, test.policy, getPermissions, test.groupMembers)
 		if got != test.want {
 			require.Equal(t, test.want, got, i)
 		}

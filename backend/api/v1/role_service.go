@@ -85,9 +85,9 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 		return nil, err
 	}
 
-	permissions := make(map[string]bool)
+	permissions := make(map[permission.Permission]bool)
 	for _, v := range req.Msg.GetRole().GetPermissions() {
-		permissions[v] = true
+		permissions[permission.Permission(v)] = true
 	}
 	create := &store.RoleMessage{
 		ResourceID:  req.Msg.RoleId,
@@ -152,9 +152,9 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 		case "description":
 			patch.Description = &req.Msg.Role.Description
 		case "permissions":
-			permissions := make(map[string]bool)
+			permissions := make(map[permission.Permission]bool)
 			for _, v := range req.Msg.GetRole().GetPermissions() {
-				permissions[v] = true
+				permissions[permission.Permission(v)] = true
 			}
 			patch.Permissions = &permissions
 			if ok := permission.Exists(req.Msg.Role.Permissions...); !ok {
