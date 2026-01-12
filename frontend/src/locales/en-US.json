@@ -209,6 +209,8 @@
     "untitled": "Untitled",
     "missing-required-permission": "Missing required permissions {permissions}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
+    "only-creator-allowed-action": "Only the creator is allowed to take action",
+    "only-creator-allowed-export": "Only the creator is allowed to export",
     "required-permission": "Required permissions",
     "resource-not-found": "Resource not found",
     "continue-anyway": "Continue anyway",

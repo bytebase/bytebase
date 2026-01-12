@@ -62,7 +62,7 @@ export const ROLLOUT_START: ActionDefinition = {
   disabledReason: (ctx) => {
     if (!ctx.permissions.runTasks) {
       if (ctx.isExportPlan) {
-        return "Only the creator is allowed to export.";
+        return t("common.only-creator-allowed-export");
       }
       return t("common.missing-required-permission");
     }

@@ -209,6 +209,8 @@
     "untitled": "Không tiêu đề",
     "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
+    "only-creator-allowed-action": "Chỉ người tạo mới được phép thực hiện hành động này",
+    "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
     "required-permission": "Quyền hạn cần thiết",
     "resource-not-found": "Không tìm thấy tài nguyên",
     "continue-anyway": "Tiếp tục",

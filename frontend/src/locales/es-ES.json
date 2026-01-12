@@ -209,6 +209,8 @@
     "untitled": "Intitulado",
     "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
+    "only-creator-allowed-action": "Solo el creador puede realizar esta acción",
+    "only-creator-allowed-export": "Solo el creador puede exportar",
     "required-permission": "Permisos necesarios",
     "resource-not-found": "Recurso no encontrado",
     "continue-anyway": "De todas maneras, continúe",

@@ -23,7 +23,7 @@ export const PLAN_CLOSE: ActionDefinition = {
           permissions: "bb.plans.update",
         });
       }
-      return "Only the creator is allowed to take action.";
+      return t("common.only-creator-allowed-action");
     }
     return undefined;
   },
@@ -54,7 +54,7 @@ export const PLAN_REOPEN: ActionDefinition = {
           permissions: "bb.plans.update",
         });
       }
-      return "Only the creator is allowed to take action.";
+      return t("common.only-creator-allowed-action");
     }
     return undefined;
   },
