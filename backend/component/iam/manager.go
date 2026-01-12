@@ -103,7 +103,7 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 // Role format is roles/{role}.
 func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[permission.Permission]bool, error) {
 	resourceID := strings.TrimPrefix(roleName, "roles/")
-	role, err := m.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &resourceID})
+	role, err := m.store.GetRoleSnapshot(ctx, resourceID)
 	if err != nil {
 		return nil, err
 	}

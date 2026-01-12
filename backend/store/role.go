@@ -108,14 +108,8 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 	return create, nil
 }
 
-// GetRole returns a role by ID.
+// GetRole returns a role by ID with strong/consistent reads (no cache).
 func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessage, error) {
-	if find.ResourceID != nil {
-		if v, ok := s.rolesCache.Get(*find.ResourceID); ok {
-			return v, nil
-		}
-	}
-
 	roles, err := s.ListRoles(ctx, find)
 	if err != nil {
 		return nil, err
@@ -130,6 +124,15 @@ func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessag
 
 	s.rolesCache.Add(role.ResourceID, role)
 	return role, nil
+}
+
+// GetRoleSnapshot returns a role by ID with snapshot reads (with cache).
+// Trades consistency for performance.
+func (s *Store) GetRoleSnapshot(ctx context.Context, resourceID string) (*RoleMessage, error) {
+	if v, ok := s.rolesCache.Get(resourceID); ok {
+		return v, nil
+	}
+	return s.GetRole(ctx, &FindRoleMessage{ResourceID: &resourceID})
 }
 
 // ListRoles returns a list of roles.
