@@ -93,3 +93,13 @@ bytebase:
   #   operator: "Equal"
   #   value: "value"
   #   effect: "NoSchedule"
+
+# Service account configuration
+# ref: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # -- Whether to create a service account or not. In case 'create' is false, do set 'name' to an existing service account name.
+  create: true
+  # -- Override for the generated service account name.
+  name:
+  annotations: {}
+  labels: {}
