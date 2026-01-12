@@ -17,6 +17,7 @@ type RoleMessage struct {
 	Name        string
 	Description string
 	Permissions map[string]bool
+	Predefined  bool
 }
 
 // UpdateRoleMessage is the message for updating roles.
@@ -132,6 +133,13 @@ func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessag
 
 // ListRoles returns a list of roles.
 func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMessage, error) {
+	// If looking for a specific role, check predefined first
+	if v := find.ResourceID; v != nil {
+		if role := GetPredefinedRole(*v); role != nil {
+			return []*RoleMessage{role}, nil
+		}
+	}
+
 	q := qb.Q().Space(`
 		SELECT
 			resource_id, name, description, permissions
@@ -176,6 +184,11 @@ func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMe
 
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	// Append predefined roles when listing all roles
+	if find.ResourceID == nil {
+		roles = append(roles, PredefinedRoles...)
 	}
 
 	return roles, nil
