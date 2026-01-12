@@ -46,16 +46,6 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	return true
 }
 
-func (x *DeleteCacheRequest) Equal(y *DeleteCacheRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	return true
-}
-
 func (x *ActuatorInfo_StatUser) Equal(y *ActuatorInfo_StatUser) bool {
 	if x == y {
 		return true

@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ActuatorService_GetActuatorInfo_FullMethodName    = "/bytebase.v1.ActuatorService/GetActuatorInfo"
 	ActuatorService_SetupSample_FullMethodName        = "/bytebase.v1.ActuatorService/SetupSample"
-	ActuatorService_DeleteCache_FullMethodName        = "/bytebase.v1.ActuatorService/DeleteCache"
 	ActuatorService_GetResourcePackage_FullMethodName = "/bytebase.v1.ActuatorService/GetResourcePackage"
 )
 
@@ -38,9 +37,6 @@ type ActuatorServiceClient interface {
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(ctx context.Context, in *SetupSampleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Clears the system cache to force data refresh.
-	// Permissions required: None
-	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error)
@@ -74,16 +70,6 @@ func (c *actuatorServiceClient) SetupSample(ctx context.Context, in *SetupSample
 	return out, nil
 }
 
-func (c *actuatorServiceClient) DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, ActuatorService_DeleteCache_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResourcePackage)
@@ -106,9 +92,6 @@ type ActuatorServiceServer interface {
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error)
-	// Clears the system cache to force data refresh.
-	// Permissions required: None
-	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
 	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error)
@@ -127,9 +110,6 @@ func (UnimplementedActuatorServiceServer) GetActuatorInfo(context.Context, *GetA
 }
 func (UnimplementedActuatorServiceServer) SetupSample(context.Context, *SetupSampleRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetupSample not implemented")
-}
-func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeleteCache not implemented")
 }
 func (UnimplementedActuatorServiceServer) GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResourcePackage not implemented")
@@ -191,24 +171,6 @@ func _ActuatorService_SetupSample_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ActuatorService_DeleteCache_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteCacheRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ActuatorServiceServer).DeleteCache(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ActuatorService_DeleteCache_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ActuatorServiceServer).DeleteCache(ctx, req.(*DeleteCacheRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ActuatorService_GetResourcePackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetResourcePackageRequest)
 	if err := dec(in); err != nil {
@@ -241,10 +203,6 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetupSample",
 			Handler:    _ActuatorService_SetupSample_Handler,
-		},
-		{
-			MethodName: "DeleteCache",
-			Handler:    _ActuatorService_DeleteCache_Handler,
 		},
 		{
 			MethodName: "GetResourcePackage",

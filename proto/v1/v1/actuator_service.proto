@@ -34,13 +34,6 @@ service ActuatorService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Clears the system cache to force data refresh.
-  // Permissions required: None
-  rpc DeleteCache(DeleteCacheRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/actuator/cache"};
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
   // Gets custom branding resources such as logos.
   // Permissions required: None
   rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {
@@ -64,9 +57,6 @@ message SetupSampleRequest {}
 
 // Request message for getting actuator information.
 message GetActuatorInfoRequest {}
-
-// Request message for deleting cache.
-message DeleteCacheRequest {}
 
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.

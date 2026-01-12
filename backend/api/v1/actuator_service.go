@@ -61,15 +61,6 @@ func (s *ActuatorService) GetActuatorInfo(
 	return connect.NewResponse(info), nil
 }
 
-// DeleteCache deletes the cache.
-func (s *ActuatorService) DeleteCache(
-	_ context.Context,
-	_ *connect.Request[v1pb.DeleteCacheRequest],
-) (*connect.Response[emptypb.Empty], error) {
-	s.store.DeleteCache()
-	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
 // GetResourcePackage gets the theme resources.
 func (s *ActuatorService) GetResourcePackage(
 	ctx context.Context,

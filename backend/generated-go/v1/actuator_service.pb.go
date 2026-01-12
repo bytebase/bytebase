@@ -181,43 +181,6 @@ func (*GetActuatorInfoRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{3}
 }
 
-// Request message for deleting cache.
-type DeleteCacheRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteCacheRequest) Reset() {
-	*x = DeleteCacheRequest{}
-	mi := &file_v1_actuator_service_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteCacheRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteCacheRequest) ProtoMessage() {}
-
-func (x *DeleteCacheRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteCacheRequest.ProtoReflect.Descriptor instead.
-func (*DeleteCacheRequest) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{4}
-}
-
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 type ActuatorInfo struct {
@@ -264,7 +227,7 @@ type ActuatorInfo struct {
 
 func (x *ActuatorInfo) Reset() {
 	*x = ActuatorInfo{}
-	mi := &file_v1_actuator_service_proto_msgTypes[5]
+	mi := &file_v1_actuator_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -276,7 +239,7 @@ func (x *ActuatorInfo) String() string {
 func (*ActuatorInfo) ProtoMessage() {}
 
 func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[5]
+	mi := &file_v1_actuator_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -289,7 +252,7 @@ func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ActuatorInfo) GetVersion() string {
@@ -433,7 +396,7 @@ type ActuatorInfo_StatUser struct {
 
 func (x *ActuatorInfo_StatUser) Reset() {
 	*x = ActuatorInfo_StatUser{}
-	mi := &file_v1_actuator_service_proto_msgTypes[6]
+	mi := &file_v1_actuator_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +408,7 @@ func (x *ActuatorInfo_StatUser) String() string {
 func (*ActuatorInfo_StatUser) ProtoMessage() {}
 
 func (x *ActuatorInfo_StatUser) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[6]
+	mi := &file_v1_actuator_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,7 +421,7 @@ func (x *ActuatorInfo_StatUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo_StatUser.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo_StatUser) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5, 0}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{4, 0}
 }
 
 func (x *ActuatorInfo_StatUser) GetUserType() UserType {
@@ -491,8 +454,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x0fResourcePackage\x12\x12\n" +
 	"\x04logo\x18\x01 \x01(\fR\x04logo\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xb3\a\n" +
+	"\x16GetActuatorInfoRequest\"\xb3\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -518,11 +480,10 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
 	"\x05count\x18\x03 \x01(\x05R\x05countJ\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\xf7\x03\n" +
+	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\x8f\x03\n" +
 	"\x0fActuatorService\x12s\n" +
 	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\" \xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/info\x12\x82\x01\n" +
-	"\vSetupSample\x12\x1f.bytebase.v1.SetupSampleRequest\x1a\x16.google.protobuf.Empty\":\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1a\"\x18/v1/actuator:setupSample\x12f\n" +
-	"\vDeleteCache\x12\x1f.bytebase.v1.DeleteCacheRequest\x1a\x16.google.protobuf.Empty\"\x1e\x80\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/actuator/cache\x12\x81\x01\n" +
+	"\vSetupSample\x12\x1f.bytebase.v1.SetupSampleRequest\x1a\x16.google.protobuf.Empty\":\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1a\"\x18/v1/actuator:setupSample\x12\x81\x01\n" +
 	"\x12GetResourcePackage\x12&.bytebase.v1.GetResourcePackageRequest\x1a\x1c.bytebase.v1.ResourcePackage\"%\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x18\x12\x16/v1/actuator/resourcesB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14ActuatorServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
@@ -538,38 +499,35 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 	return file_v1_actuator_service_proto_rawDescData
 }
 
-var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_v1_actuator_service_proto_goTypes = []any{
 	(*GetResourcePackageRequest)(nil), // 0: bytebase.v1.GetResourcePackageRequest
 	(*ResourcePackage)(nil),           // 1: bytebase.v1.ResourcePackage
 	(*SetupSampleRequest)(nil),        // 2: bytebase.v1.SetupSampleRequest
 	(*GetActuatorInfoRequest)(nil),    // 3: bytebase.v1.GetActuatorInfoRequest
-	(*DeleteCacheRequest)(nil),        // 4: bytebase.v1.DeleteCacheRequest
-	(*ActuatorInfo)(nil),              // 5: bytebase.v1.ActuatorInfo
-	(*ActuatorInfo_StatUser)(nil),     // 6: bytebase.v1.ActuatorInfo.StatUser
-	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
-	(UserType)(0),                     // 8: bytebase.v1.UserType
-	(State)(0),                        // 9: bytebase.v1.State
-	(*emptypb.Empty)(nil),             // 10: google.protobuf.Empty
+	(*ActuatorInfo)(nil),              // 4: bytebase.v1.ActuatorInfo
+	(*ActuatorInfo_StatUser)(nil),     // 5: bytebase.v1.ActuatorInfo.StatUser
+	(*timestamppb.Timestamp)(nil),     // 6: google.protobuf.Timestamp
+	(UserType)(0),                     // 7: bytebase.v1.UserType
+	(State)(0),                        // 8: bytebase.v1.State
+	(*emptypb.Empty)(nil),             // 9: google.protobuf.Empty
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
-	7,  // 0: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
-	6,  // 1: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
-	8,  // 2: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
-	9,  // 3: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State
-	3,  // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	2,  // 5: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
-	4,  // 6: bytebase.v1.ActuatorService.DeleteCache:input_type -> bytebase.v1.DeleteCacheRequest
-	0,  // 7: bytebase.v1.ActuatorService.GetResourcePackage:input_type -> bytebase.v1.GetResourcePackageRequest
-	5,  // 8: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	10, // 9: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
-	10, // 10: bytebase.v1.ActuatorService.DeleteCache:output_type -> google.protobuf.Empty
-	1,  // 11: bytebase.v1.ActuatorService.GetResourcePackage:output_type -> bytebase.v1.ResourcePackage
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	6, // 0: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
+	5, // 1: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
+	7, // 2: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
+	8, // 3: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State
+	3, // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	2, // 5: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
+	0, // 6: bytebase.v1.ActuatorService.GetResourcePackage:input_type -> bytebase.v1.GetResourcePackageRequest
+	4, // 7: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	9, // 8: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
+	1, // 9: bytebase.v1.ActuatorService.GetResourcePackage:output_type -> bytebase.v1.ResourcePackage
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_actuator_service_proto_init() }
@@ -586,7 +544,7 @@ func file_v1_actuator_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_actuator_service_proto_rawDesc), len(file_v1_actuator_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

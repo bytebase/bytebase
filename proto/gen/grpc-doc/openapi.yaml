@@ -6,24 +6,6 @@ info:
     title: ""
     version: 0.0.1
 paths:
-    /v1/actuator/cache:
-        delete:
-            tags:
-                - ActuatorService
-            description: |-
-                Clears the system cache to force data refresh.
-                 Permissions required: None
-            operationId: ActuatorService_DeleteCache
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/actuator/info:
         get:
             tags:

@@ -1,44 +1,6 @@
 openapi: 3.1.0
 info: {}
 paths:
-  /bytebase.v1.ActuatorService/DeleteCache:
-    post:
-      tags:
-        - bytebase.v1.ActuatorService
-      summary: 'Clears the system cache to force data refresh.  Permissions required: None'
-      description: |-
-        Clears the system cache to force data refresh.
-         Permissions required: None
-      operationId: bytebase.v1.ActuatorService.DeleteCache
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.DeleteCacheRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/google.protobuf.Empty'
   /bytebase.v1.ActuatorService/GetActuatorInfo:
     post:
       tags:
@@ -8833,11 +8795,6 @@ components:
       title: DatabaseSchema
       additionalProperties: false
       description: DatabaseSchema is the metadata for databases.
-    bytebase.v1.DeleteCacheRequest:
-      type: object
-      title: DeleteCacheRequest
-      additionalProperties: false
-      description: Request message for deleting cache.
     bytebase.v1.DeleteDatabaseGroupRequest:
       type: object
       properties:

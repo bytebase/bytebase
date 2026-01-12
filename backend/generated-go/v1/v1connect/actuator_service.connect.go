@@ -40,9 +40,6 @@ const (
 	// ActuatorServiceSetupSampleProcedure is the fully-qualified name of the ActuatorService's
 	// SetupSample RPC.
 	ActuatorServiceSetupSampleProcedure = "/bytebase.v1.ActuatorService/SetupSample"
-	// ActuatorServiceDeleteCacheProcedure is the fully-qualified name of the ActuatorService's
-	// DeleteCache RPC.
-	ActuatorServiceDeleteCacheProcedure = "/bytebase.v1.ActuatorService/DeleteCache"
 	// ActuatorServiceGetResourcePackageProcedure is the fully-qualified name of the ActuatorService's
 	// GetResourcePackage RPC.
 	ActuatorServiceGetResourcePackageProcedure = "/bytebase.v1.ActuatorService/GetResourcePackage"
@@ -56,9 +53,6 @@ type ActuatorServiceClient interface {
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
-	// Clears the system cache to force data refresh.
-	// Permissions required: None
-	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
 	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error)
@@ -87,12 +81,6 @@ func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(actuatorServiceMethods.ByName("SetupSample")),
 			connect.WithClientOptions(opts...),
 		),
-		deleteCache: connect.NewClient[v1.DeleteCacheRequest, emptypb.Empty](
-			httpClient,
-			baseURL+ActuatorServiceDeleteCacheProcedure,
-			connect.WithSchema(actuatorServiceMethods.ByName("DeleteCache")),
-			connect.WithClientOptions(opts...),
-		),
 		getResourcePackage: connect.NewClient[v1.GetResourcePackageRequest, v1.ResourcePackage](
 			httpClient,
 			baseURL+ActuatorServiceGetResourcePackageProcedure,
@@ -106,7 +94,6 @@ func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 type actuatorServiceClient struct {
 	getActuatorInfo    *connect.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
 	setupSample        *connect.Client[v1.SetupSampleRequest, emptypb.Empty]
-	deleteCache        *connect.Client[v1.DeleteCacheRequest, emptypb.Empty]
 	getResourcePackage *connect.Client[v1.GetResourcePackageRequest, v1.ResourcePackage]
 }
 
@@ -118,11 +105,6 @@ func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, req *connec
 // SetupSample calls bytebase.v1.ActuatorService.SetupSample.
 func (c *actuatorServiceClient) SetupSample(ctx context.Context, req *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.setupSample.CallUnary(ctx, req)
-}
-
-// DeleteCache calls bytebase.v1.ActuatorService.DeleteCache.
-func (c *actuatorServiceClient) DeleteCache(ctx context.Context, req *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
-	return c.deleteCache.CallUnary(ctx, req)
 }
 
 // GetResourcePackage calls bytebase.v1.ActuatorService.GetResourcePackage.
@@ -138,9 +120,6 @@ type ActuatorServiceHandler interface {
 	// Sets up sample data for demonstration and testing purposes.
 	// Permissions required: bb.projects.create
 	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
-	// Clears the system cache to force data refresh.
-	// Permissions required: None
-	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
 	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error)
@@ -165,12 +144,6 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 		connect.WithSchema(actuatorServiceMethods.ByName("SetupSample")),
 		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceDeleteCacheHandler := connect.NewUnaryHandler(
-		ActuatorServiceDeleteCacheProcedure,
-		svc.DeleteCache,
-		connect.WithSchema(actuatorServiceMethods.ByName("DeleteCache")),
-		connect.WithHandlerOptions(opts...),
-	)
 	actuatorServiceGetResourcePackageHandler := connect.NewUnaryHandler(
 		ActuatorServiceGetResourcePackageProcedure,
 		svc.GetResourcePackage,
@@ -183,8 +156,6 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 			actuatorServiceGetActuatorInfoHandler.ServeHTTP(w, r)
 		case ActuatorServiceSetupSampleProcedure:
 			actuatorServiceSetupSampleHandler.ServeHTTP(w, r)
-		case ActuatorServiceDeleteCacheProcedure:
-			actuatorServiceDeleteCacheHandler.ServeHTTP(w, r)
 		case ActuatorServiceGetResourcePackageProcedure:
 			actuatorServiceGetResourcePackageHandler.ServeHTTP(w, r)
 		default:
@@ -202,10 +173,6 @@ func (UnimplementedActuatorServiceHandler) GetActuatorInfo(context.Context, *con
 
 func (UnimplementedActuatorServiceHandler) SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.SetupSample is not implemented"))
-}
-
-func (UnimplementedActuatorServiceHandler) DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.DeleteCache is not implemented"))
 }
 
 func (UnimplementedActuatorServiceHandler) GetResourcePackage(context.Context, *connect.Request[v1.GetResourcePackageRequest]) (*connect.Response[v1.ResourcePackage], error) {
