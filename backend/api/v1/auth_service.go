@@ -785,7 +785,11 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
 	}
 
-	response.User = convertToUser(ctx, s.iamManager, user)
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
+	response.User = v1User
 	return resp, nil
 }
 

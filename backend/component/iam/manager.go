@@ -12,13 +12,9 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 type Manager struct {
-	groupMembers map[string]map[string]bool
-	// member - groups mapping
-	memberGroups   map[string][]string
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 }
@@ -39,12 +35,16 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 		perms, _ := m.GetPermissions(ctx, role)
 		return perms
 	}
+	getGroupMembers := func(groupName string) map[string]bool {
+		members, _ := m.store.GetGroupMembersSnapshot(ctx, groupName)
+		return members
+	}
 
 	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return false, err
 	}
-	if ok := check(user, p, policyMessage.Policy, getPermissions, m.groupMembers); ok {
+	if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers); ok {
 		return true, nil
 	}
 
@@ -65,7 +65,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 			if err != nil {
 				return false, err
 			}
-			if ok := check(user, p, policyMessage.Policy, getPermissions, m.groupMembers); !ok {
+			if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers); !ok {
 				allOK = false
 				break
 			}
@@ -75,27 +75,8 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 	return false, nil
 }
 
-func (m *Manager) ReloadCache(ctx context.Context) error {
-	groups, err := m.store.ListGroups(ctx, &store.FindGroupMessage{})
-	if err != nil {
-		return err
-	}
-	groupMembers := make(map[string]map[string]bool)
-	memberGroups := make(map[string][]string)
-	for _, group := range groups {
-		usersSet := make(map[string]bool)
-		groupName := utils.FormatGroupName(group)
-		for _, m := range group.Payload.GetMembers() {
-			usersSet[m.Member] = true
-			if _, ok := memberGroups[m.Member]; !ok {
-				memberGroups[m.Member] = []string{}
-			}
-			memberGroups[m.Member] = append(memberGroups[m.Member], groupName)
-		}
-		groupMembers[groupName] = usersSet
-	}
-	m.groupMembers = groupMembers
-	m.memberGroups = memberGroups
+func (m *Manager) ReloadCache(_ context.Context) error {
+	m.store.PurgeGroupCaches()
 	return nil
 }
 
@@ -113,11 +94,11 @@ func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[perm
 	return maps.Clone(role.Permissions), nil
 }
 
-func (m *Manager) GetUserGroups(email string) []string {
-	return m.memberGroups[common.FormatUserEmail(email)]
+func (m *Manager) GetUserGroups(ctx context.Context, email string) ([]string, error) {
+	return m.store.GetUserGroupsSnapshot(ctx, common.FormatUserEmail(email))
 }
 
-func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, groupMembers map[string]map[string]bool) bool {
+func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool) bool {
 	userName := common.FormatUserEmail(user.Email)
 
 	for _, binding := range policy.GetBindings() {
@@ -136,8 +117,8 @@ func check(user *store.UserMessage, p permission.Permission, policy *storepb.Iam
 				return true
 			}
 			if strings.HasPrefix(member, common.GroupPrefix) {
-				if groupMembers, ok := groupMembers[member]; ok {
-					if groupMembers[userName] {
+				if members := getGroupMembers(member); members != nil {
+					if members[userName] {
 						return true
 					}
 				}

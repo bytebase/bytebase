@@ -102,7 +102,13 @@ func TestCheck(t *testing.T) {
 		}}
 
 	for i, test := range tests {
-		got := check(testUser, test.permission, test.policy, getPermissions, test.groupMembers)
+		getGroupMembers := func(groupName string) map[string]bool {
+			if test.groupMembers == nil {
+				return nil
+			}
+			return test.groupMembers[groupName]
+		}
+		got := check(testUser, test.permission, test.policy, getPermissions, getGroupMembers)
 		if got != test.want {
 			require.Equal(t, test.want, got, i)
 		}

@@ -63,7 +63,11 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
 	}
-	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
+	return connect.NewResponse(v1User), nil
 }
 
 // BatchGetUsers get users in batch.
@@ -85,7 +89,11 @@ func (s *UserService) GetCurrentUser(ctx context.Context, _ *connect.Request[emp
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("authenticated user not found"))
 	}
-	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
+	return connect.NewResponse(v1User), nil
 }
 
 // ListUsers lists all users.
@@ -144,7 +152,11 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		NextPageToken: nextPageToken,
 	}
 	for _, user := range users {
-		response.Users = append(response.Users, convertToUser(ctx, s.iamManager, user))
+		v1User, err := convertToUser(ctx, s.iamManager, user)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+		}
+		response.Users = append(response.Users, v1User)
 	}
 	return connect.NewResponse(response), nil
 }
@@ -303,7 +315,10 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	userResponse := convertToUser(ctx, s.iamManager, user)
+	userResponse, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		userResponse.ServiceKey = password
 	}
@@ -526,7 +541,10 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
-	userResponse := convertToUser(ctx, s.iamManager, user)
+	userResponse, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
 		userResponse.ServiceKey = *passwordPatch
 	}
@@ -664,7 +682,11 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
+	return connect.NewResponse(v1User), nil
 }
 
 // UpdateEmail updates a user's email address.
@@ -722,7 +744,11 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user email"))
 	}
 
-	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
+	return connect.NewResponse(v1User), nil
 }
 
 func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
@@ -740,7 +766,11 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 	}
 }
 
-func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) *v1pb.User {
+func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
+	groups, err := iamManager.GetUserGroups(ctx, user.Email)
+	if err != nil {
+		return nil, err
+	}
 	convertedUser := &v1pb.User{
 		Name:     common.FormatUserEmail(user.Email),
 		State:    convertDeletedToState(user.MemberDeleted),
@@ -753,7 +783,7 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 			LastChangePasswordTime: user.Profile.LastChangePasswordTime,
 			Source:                 user.Profile.Source,
 		},
-		Groups: iamManager.GetUserGroups(user.Email),
+		Groups: groups,
 	}
 
 	// Add workload identity config if present
@@ -776,7 +806,7 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 			convertedUser.TempOtpSecretCreatedTime = user.MFAConfig.TempOtpSecretCreatedTime
 		}
 	}
-	return convertedUser
+	return convertedUser, nil
 }
 
 func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, error) {
