@@ -12,28 +12,7 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_COCKROACHDB, parseCockroachDBForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_COCKROACHDB, parseCockroachDBStatements)
-}
-
-// parseCockroachDBForRegistry is the ParseFunc for CockroachDB.
-// Returns []base.AST with *CockroachDBAST instances.
-func parseCockroachDBForRegistry(statement string) ([]base.AST, error) {
-	result, err := ParseCockroachDBSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	if result == nil {
-		return nil, nil
-	}
-	var asts []base.AST
-	for _, stmt := range result.Stmts {
-		asts = append(asts, &AST{
-			StartPosition: &storepb.Position{Line: 1},
-			Stmt:          stmt,
-		})
-	}
-	return asts, nil
 }
 
 // parseCockroachDBStatements is the ParseStatementsFunc for CockroachDB.
@@ -46,7 +25,7 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 	}
 
 	// Then parse to get ASTs
-	asts, err := parseCockroachDBForRegistry(statement)
+	parseResult, err := ParseCockroachDBSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +37,11 @@ func parseCockroachDBStatements(statement string) ([]base.ParsedStatement, error
 		ps := base.ParsedStatement{
 			Statement: stmt,
 		}
-		if !stmt.Empty && astIndex < len(asts) {
-			ps.AST = asts[astIndex]
+		if !stmt.Empty && parseResult != nil && astIndex < len(parseResult.Stmts) {
+			ps.AST = &AST{
+				StartPosition: &storepb.Position{Line: 1},
+				Stmt:          parseResult.Stmts[astIndex],
+			}
 			astIndex++
 		}
 		result = append(result, ps)

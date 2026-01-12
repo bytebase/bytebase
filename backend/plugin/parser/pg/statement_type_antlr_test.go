@@ -10,6 +10,7 @@ import (
 )
 
 func TestGetStatementTypesANTLR(t *testing.T) {
+	a := require.New(t)
 	tests := []struct {
 		name          string
 		sql           string
@@ -220,24 +221,26 @@ func TestGetStatementTypesANTLR(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			asts, err := base.Parse(storepb.Engine_POSTGRES, tt.sql)
-			require.NoError(t, err)
+		t.Run(tt.name, func(_ *testing.T) {
+			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, tt.sql)
+			a.NoError(err)
+			asts := base.ExtractASTs(stmts)
 
 			stmtsWithPos, err := GetStatementTypes(asts)
-			require.NoError(t, err)
+			a.NoError(err)
 
 			// Extract types from statements with positions
 			types := make([]string, len(stmtsWithPos))
 			for i, stmt := range stmtsWithPos {
 				types[i] = stmt.Type
 			}
-			require.ElementsMatch(t, tt.expectedTypes, types)
+			a.ElementsMatch(tt.expectedTypes, types)
 		})
 	}
 }
 
 func TestGetStatementTypesWithPositions(t *testing.T) {
+	a := require.New(t)
 	tests := []struct {
 		name     string
 		sql      string
@@ -277,20 +280,21 @@ INSERT INTO t1 VALUES (1);`,
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			asts, err := base.Parse(storepb.Engine_POSTGRES, tt.sql)
-			require.NoError(t, err)
+		t.Run(tt.name, func(_ *testing.T) {
+			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, tt.sql)
+			a.NoError(err)
+			asts := base.ExtractASTs(stmts)
 
 			results, err := GetStatementTypes(asts)
-			require.NoError(t, err)
-			require.Len(t, results, len(tt.expected))
+			a.NoError(err)
+			a.Len(results, len(tt.expected))
 
 			for i, expected := range tt.expected {
-				require.Equal(t, expected.Type, results[i].Type, "Statement %d type mismatch", i)
-				require.Equal(t, expected.Line, results[i].Line, "Statement %d line mismatch", i)
+				a.Equal(expected.Type, results[i].Type, "Statement %d type mismatch", i)
+				a.Equal(expected.Line, results[i].Line, "Statement %d line mismatch", i)
 				if expected.Text != "" {
 					// Check that text contains expected content (may not include semicolon)
-					require.Contains(t, results[i].Text, "CREATE TABLE t1", "Statement %d text mismatch", i)
+					a.Contains(results[i].Text, "CREATE TABLE t1", "Statement %d text mismatch", i)
 				}
 			}
 		})

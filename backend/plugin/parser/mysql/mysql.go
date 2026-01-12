@@ -16,29 +16,12 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_MYSQL, parseMySQLForRegistry)
-	base.RegisterParseFunc(storepb.Engine_MARIADB, parseMySQLForRegistry)
-	base.RegisterParseFunc(storepb.Engine_OCEANBASE, parseMySQLForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_MYSQL, parseMySQLStatements)
 	base.RegisterParseStatementsFunc(storepb.Engine_MARIADB, parseMySQLStatements)
 	base.RegisterParseStatementsFunc(storepb.Engine_OCEANBASE, parseMySQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_MYSQL, GetStatementTypes)
 	base.RegisterGetStatementTypes(storepb.Engine_MARIADB, GetStatementTypes)
 	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
-}
-
-// parseMySQLForRegistry is the ParseFunc for MySQL, MariaDB, and OceanBase.
-// Returns []base.AST with *ANTLRAST instances.
-func parseMySQLForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parseMySQLStatements is the ParseStatementsFunc for MySQL, MariaDB, and OceanBase.

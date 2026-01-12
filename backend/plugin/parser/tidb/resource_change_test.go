@@ -44,8 +44,9 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount: 2,
 	}
 
-	asts, err := base.Parse(storepb.Engine_TIDB, statement)
+	stmts, err := base.ParseStatements(storepb.Engine_TIDB, statement)
 	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
 	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
