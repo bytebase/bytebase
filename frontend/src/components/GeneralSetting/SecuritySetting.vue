@@ -6,19 +6,23 @@
           {{ title }}
         </h1>
       </div>
-      <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
     </div>
 
     <div class="flex-1 lg:px-4 flex flex-col gap-y-6">
       <div>
         <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="enableWatermark"
-            :text="true"
-            :disabled="!allowEdit || !hasWatermarkFeature"
-          />
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              'bb.settings.setWorkspaceProfile'
+            ]"
+          >
+            <Switch
+              v-model:value="enableWatermark"
+              :text="true"
+              :disabled="slotProps.disabled || !hasWatermarkFeature"
+            />
+          </PermissionGuardWrapper>
           <span class="font-medium">
             {{ $t("settings.general.workspace.watermark.enable") }}
           </span>
@@ -31,15 +35,12 @@
       <QueryDataPolicySetting
         ref="queryDataPolicySettingRef"
         resource=""
-        :allow-edit="hasPermission"
       />
       <MaximumRoleExpirationSetting
         ref="maximumRoleExpirationSettingRef"
-        :allow-edit="allowEdit"
       />
       <DomainRestrictionSetting
         ref="domainRestrictionSettingRef"
-        :allow-edit="allowEdit"
       />
     </div>
   </div>
@@ -49,10 +50,10 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { computed, ref } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { featureToRef, useSettingV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
@@ -60,14 +61,10 @@ import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const settingV1Store = useSettingV1Store();
 const hasWatermarkFeature = featureToRef(PlanFeature.FEATURE_WATERMARK);
-const hasPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.policies.update")
-);
 
 const domainRestrictionSettingRef =
   ref<InstanceType<typeof DomainRestrictionSetting>>();

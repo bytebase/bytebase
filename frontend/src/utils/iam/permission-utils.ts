@@ -1,4 +1,4 @@
-import type { ComposedDatabase, Permission } from "@/types";
+import type { Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2 } from "./permission";
 
@@ -21,13 +21,5 @@ export const hasPermissionToCreateChangeDatabaseIssueInProject = (
 ) => {
   return PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE.every((p) =>
     hasProjectPermissionV2(project, p)
-  );
-};
-
-export const hasPermissionToCreateChangeDatabaseIssue = (
-  database: ComposedDatabase
-) => {
-  return hasPermissionToCreateChangeDatabaseIssueInProject(
-    database.projectEntity
   );
 };

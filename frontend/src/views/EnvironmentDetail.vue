@@ -19,6 +19,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, ref, watchEffect } from "vue";
 import {
@@ -31,7 +32,11 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import { formatEnvironmentName } from "@/types";
 import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  PolicySchema,
+  PolicyType,
+  RolloutPolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { type VueClass } from "@/utils";
 
@@ -71,7 +76,14 @@ const preparePolicy = async () => {
     parentPath: stateEnvironmentName.value,
     policyType: PolicyType.ROLLOUT_POLICY,
   });
-  state.rolloutPolicy = policy;
+  state.rolloutPolicy =
+    policy ??
+    create(PolicySchema, {
+      policy: {
+        case: "rolloutPolicy",
+        value: create(RolloutPolicySchema, {}),
+      },
+    });
 };
 
 watchEffect(preparePolicy);

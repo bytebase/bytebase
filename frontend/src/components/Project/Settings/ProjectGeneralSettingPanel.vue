@@ -5,13 +5,21 @@
         {{ $t("common.name") }}
         <RequiredStar />
       </div>
-      <NInput
-        id="projectName"
-        class="mt-1"
-        v-model:value="state.title"
-        :disabled="!allowEdit"
-        required
-      />
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.projects.update'
+        ]"
+      >
+        <NInput
+          id="projectName"
+          class="mt-1"
+          v-model:value="state.title"
+          :disabled="slotProps.disabled"
+          required
+        />
+      </PermissionGuardWrapper>
       <div class="mt-1">
         <ResourceIdField
           resource-type="project"
@@ -30,12 +38,20 @@
         {{ $t("project.settings.project-labels.description") }}
       </div>
 
-      <LabelListEditor
-        ref="labelListEditorRef"
-        v-model:kv-list="labelKVList"
-        :readonly="!allowEdit"
-        :show-errors="true"
-      />
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.projects.update'
+        ]"
+      >
+        <LabelListEditor
+          ref="labelListEditorRef"
+          v-model:kv-list="labelKVList"
+          :readonly="slotProps.disabled"
+          :show-errors="true"
+        />
+      </PermissionGuardWrapper>
     </div>
   </form>
 </template>
@@ -45,6 +61,7 @@ import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { NInput } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { LabelListEditor } from "@/components/Label";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useProjectV1Store } from "@/store";
@@ -62,7 +79,6 @@ interface LocalState {
 
 const props = defineProps<{
   project: Project;
-  allowEdit: boolean;
 }>();
 
 const projectV1Store = useProjectV1Store();

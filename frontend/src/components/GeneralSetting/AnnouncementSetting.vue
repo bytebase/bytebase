@@ -7,12 +7,6 @@
         </h1>
         <FeatureBadge :feature="PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT" />
       </div>
-
-      <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{
-          $t("settings.general.workspace.announcement.admin-or-dba-can-edit")
-        }}
-      </span>
     </div>
     <div class="flex-1 lg:px-5">
       <div class="mt-5 lg:mt-0">
@@ -23,76 +17,64 @@
             )
           }}</span>
         </label>
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <div class="flex flex-wrap py-2 radio-set-row gap-4">
-              <AnnouncementLevelSelect
-                v-model:level="state.level"
-                :allow-edit="allowEdit && hasAnnouncementFeature"
-              />
-            </div>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{
-              $t(
-                "settings.general.workspace.announcement.admin-or-dba-can-edit"
-              )
-            }}
-          </span>
-        </NTooltip>
+        <div class="flex flex-wrap py-2 radio-set-row gap-4">
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              'bb.settings.setWorkspaceProfile'
+            ]"
+          >
+            <AnnouncementLevelSelect
+              v-model:level="state.level"
+              :allow-edit="!slotProps.disabled && hasAnnouncementFeature"
+            />
+          </PermissionGuardWrapper>
+        </div>
 
         <label class="flex items-center mt-2 gap-x-2">
-          <span class="font-medium"
-            >{{ $t("settings.general.workspace.announcement-text.self") }}
+          <span class="font-medium">
+            {{ $t("settings.general.workspace.announcement-text.self") }}
           </span>
         </label>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.announcement-text.description") }}
         </div>
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <NInput
-              v-model:value="state.text"
-              class="mb-3 w-full"
-              :placeholder="
-                $t('settings.general.workspace.announcement-text.placeholder')
-              "
-              :disabled="!allowEdit || !hasAnnouncementFeature"
-            />
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{
-              $t(
-                "settings.general.workspace.announcement.admin-or-dba-can-edit"
-              )
-            }}
-          </span>
-        </NTooltip>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setWorkspaceProfile'
+          ]"
+        >
+          <NInput
+            v-model:value="state.text"
+            class="mb-3 w-full"
+            :placeholder="
+              $t('settings.general.workspace.announcement-text.placeholder')
+            "
+            :disabled="slotProps.disabled || !hasAnnouncementFeature"
+          />
+        </PermissionGuardWrapper>
 
         <label class="flex items-center py-2 gap-x-2">
-          <span class="font-medium">{{
-            $t("settings.general.workspace.extra-link.self")
-          }}</span>
-        </label>
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <NInput
-              v-model:value="state.link"
-              class="mb-5 w-full"
-              :placeholder="
-                $t('settings.general.workspace.extra-link.placeholder')
-              "
-              :disabled="!allowEdit || !hasAnnouncementFeature"
-            />
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{
-              $t(
-                "settings.general.workspace.announcement.admin-or-dba-can-edit"
-              )
-            }}
+          <span class="font-medium">
+            {{ $t("settings.general.workspace.extra-link.self") }}
           </span>
-        </NTooltip>
+        </label>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setWorkspaceProfile'
+          ]"
+        >
+          <NInput
+            v-model:value="state.link"
+            class="mb-5 w-full"
+            :placeholder="
+              $t('settings.general.workspace.extra-link.placeholder')
+            "
+            :disabled="slotProps.disabled || !hasAnnouncementFeature"
+          />
+        </PermissionGuardWrapper>
       </div>
     </div>
   </div>
@@ -102,8 +84,9 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
-import { NInput, NTooltip } from "naive-ui";
+import { NInput } from "naive-ui";
 import { computed, reactive } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -117,7 +100,6 @@ import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const settingV1Store = useSettingV1Store();

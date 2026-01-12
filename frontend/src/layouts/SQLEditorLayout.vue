@@ -21,12 +21,7 @@ import BannersWrapper from "@/components/BannersWrapper.vue";
 import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import sqlEditorRoutes from "@/router/sqlEditor";
-import {
-  useEnvironmentV1Store,
-  usePolicyV1Store,
-  useSettingV1Store,
-} from "@/store";
-import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
@@ -48,19 +43,6 @@ const ready = ref(false);
 const prepare = async () => {
   await router.isReady();
 
-  const policyV1Store = usePolicyV1Store();
-  // Prepare roles, workspace policies and settings.
-  await Promise.all([
-    policyV1Store.fetchPolicies({
-      resourceType: PolicyResourceType.WORKSPACE,
-    }),
-    policyV1Store.fetchPolicies({
-      resourceType: PolicyResourceType.ENVIRONMENT,
-    }),
-    policyV1Store.fetchPolicies({
-      resourceType: PolicyResourceType.PROJECT,
-    }),
-  ]);
   await Promise.all([
     useSettingV1Store().getOrFetchSettingByName(
       Setting_SettingName.WORKSPACE_PROFILE

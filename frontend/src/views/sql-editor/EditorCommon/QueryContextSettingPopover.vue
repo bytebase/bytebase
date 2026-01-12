@@ -106,10 +106,14 @@ import { useI18n } from "vue-i18n";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  usePolicyV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
+import {
+  useDataSourceRestrictionPolicy,
+  useEffectiveQueryDataPolicyForProject,
+  usePolicyV1Store,
+} from "@/store/modules/v1/policy";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
@@ -122,11 +126,7 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  getAdminDataSourceRestrictionOfDatabase,
-  getValidDataSourceByPolicy,
-  readableDataSourceType,
-} from "@/utils";
+import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 
 defineProps<{
   disabled?: boolean;
@@ -141,9 +141,13 @@ const { redisCommandOption, resultRowsLimit, project } = storeToRefs(
   useSQLEditorStore()
 );
 
+const { policy: effectiveQueryDataPolicy } =
+  useEffectiveQueryDataPolicyForProject(project);
+
+const { dataSourceRestriction } = useDataSourceRestrictionPolicy(database);
+
 const maximumResultRows = computed(() => {
-  return policyStore.getEffectiveQueryDataPolicyForProject(project.value)
-    .maximumResultRows;
+  return effectiveQueryDataPolicy.value.maximumResultRows;
 });
 
 const show = computed(() => {
@@ -156,17 +160,6 @@ const showRedisConfig = computed(() => {
   }
   const instance = database.value.instanceResource;
   return instance.engine === Engine.REDIS;
-});
-
-const adminDataSourceRestriction = computed(() => {
-  if (!database.value) {
-    return {
-      environmentPolicy:
-        DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-      projectPolicy: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-    };
-  }
-  return getAdminDataSourceRestrictionOfDatabase(database.value);
 });
 
 const selectedDataSourceId = computed(() => {
@@ -189,9 +182,9 @@ const dataSourceUnaccessibleReason = (
 ): string | undefined => {
   if (dataSource.type === DataSourceType.ADMIN) {
     if (
-      adminDataSourceRestriction.value.environmentPolicy ===
+      dataSourceRestriction.value.environmentPolicy ===
         DataSourceQueryPolicy_Restriction.DISALLOW ||
-      adminDataSourceRestriction.value.projectPolicy ===
+      dataSourceRestriction.value.projectPolicy ===
         DataSourceQueryPolicy_Restriction.DISALLOW
     ) {
       return t(
@@ -203,9 +196,9 @@ const dataSourceUnaccessibleReason = (
     );
     if (
       readOnlyDataSources.length > 0 &&
-      (adminDataSourceRestriction.value.environmentPolicy ===
+      (dataSourceRestriction.value.environmentPolicy ===
         DataSourceQueryPolicy_Restriction.FALLBACK ||
-        adminDataSourceRestriction.value.projectPolicy ===
+        dataSourceRestriction.value.projectPolicy ===
           DataSourceQueryPolicy_Restriction.FALLBACK)
     ) {
       return t(
@@ -228,10 +221,10 @@ const onDataSourceSelected = (dataSourceId?: string) => {
 
 watch(
   [() => selectedDataSourceId.value, () => database.value],
-  ([current, database]) => {
+  async ([current, database]) => {
     if (!isValidDatabaseName(database.name)) return;
     if (!current) {
-      const fixed = getValidDataSourceByPolicy(database);
+      const fixed = await getValidDataSourceByPolicy(database);
       onDataSourceSelected(fixed);
     }
   },
@@ -246,16 +239,21 @@ watch(
     if (!isValidDatabaseName(database.value.name)) {
       return;
     }
-    if (database.value.effectiveEnvironment) {
-      await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: database.value.effectiveEnvironment,
+    const requests = [
+      policyStore.getOrFetchPolicyByParentAndType({
+        parentPath: database.value.project,
         policyType: PolicyType.DATA_SOURCE_QUERY,
-      });
+      }),
+    ];
+    if (database.value.effectiveEnvironment) {
+      requests.push(
+        policyStore.getOrFetchPolicyByParentAndType({
+          parentPath: database.value.effectiveEnvironment,
+          policyType: PolicyType.DATA_SOURCE_QUERY,
+        })
+      );
     }
-    await policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: database.value.project,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
-    });
+    await Promise.all(requests);
   },
   {
     immediate: true,

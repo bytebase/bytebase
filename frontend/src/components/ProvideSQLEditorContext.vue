@@ -37,7 +37,6 @@ import {
 import {
   pushNotification,
   useDatabaseV1Store,
-  usePolicyV1Store,
   useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -51,7 +50,6 @@ import {
   isValidInstanceName,
   isValidProjectName,
 } from "@/types";
-import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   emptySQLEditorConnection,
   extractInstanceResourceName,
@@ -77,7 +75,6 @@ const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
-const policyStore = usePolicyV1Store();
 const {
   asidePanelTab,
   events: editorEvents,
@@ -376,12 +373,7 @@ const restoreLastVisitedSidebarTab = () => {
 
 onMounted(async () => {
   editorStore.projectContextReady = false;
-  const [_, project] = await Promise.all([
-    policyStore.fetchPolicies({
-      resourceType: PolicyResourceType.WORKSPACE,
-    }),
-    initializeProject(),
-  ]);
+  const project = await initializeProject();
 
   await migrateLegacyCache();
   await tabStore.initProject(project);

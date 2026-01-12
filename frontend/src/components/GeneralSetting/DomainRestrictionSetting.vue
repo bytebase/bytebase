@@ -12,43 +12,57 @@
       {{ $t("settings.general.workspace.domain-restriction.description") }}
     </p>
     <div class="w-full flex flex-col gap-2 mt-2">
-      <NDynamicTags
-        :size="'large'"
-        :disabled="!allowEdit"
-        :value="state.domains"
-        :input-props="{
-          placeholder: $t(
-            'settings.general.workspace.domain-restriction.domain-input-placeholder'
-          ),
-          clearable: true,
-        }"
-        :input-style="'min-width: 20rem;'"
-        @update:value="onDomainsUpdate"
-      />
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="[
+          'bb.settings.setWorkspaceProfile'
+        ]"
+      >
+        <NDynamicTags
+          :size="'large'"
+          :disabled="slotProps.disabled"
+          :value="state.domains"
+          :input-props="{
+            placeholder: $t(
+              'settings.general.workspace.domain-restriction.domain-input-placeholder'
+            ),
+            clearable: true,
+          }"
+          :input-style="'min-width: 20rem;'"
+          @update:value="onDomainsUpdate"
+        />
+      </PermissionGuardWrapper>
 
       <div class="w-full flex flex-row justify-between items-center">
-        <NCheckbox
-          v-model:checked="state.enableRestriction"
-          :disabled="validDomains.length === 0 || !hasFeature || !allowEdit"
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setWorkspaceProfile'
+          ]"
         >
-          <div class="font-medium flex items-center gap-x-2">
-            {{
-              $t(
-                "settings.general.workspace.domain-restriction.members-restriction.self"
-              )
-            }}
-            <FeatureBadge
-              :feature="PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION"
-            />
-          </div>
-          <p class="text-sm text-gray-400 leading-tight">
-            {{
-              $t(
-                "settings.general.workspace.domain-restriction.members-restriction.description"
-              )
-            }}
-          </p>
-        </NCheckbox>
+          <NCheckbox
+            v-model:checked="state.enableRestriction"
+            :disabled="validDomains.length === 0 || !hasFeature || slotProps.disabled"
+          >
+            <div class="font-medium flex items-center gap-x-2">
+              {{
+                $t(
+                  "settings.general.workspace.domain-restriction.members-restriction.self"
+                )
+              }}
+              <FeatureBadge
+                :feature="PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION"
+              />
+            </div>
+            <p class="text-sm text-gray-400 leading-tight">
+              {{
+                $t(
+                  "settings.general.workspace.domain-restriction.members-restriction.description"
+                )
+              }}
+            </p>
+          </NCheckbox>
+        </PermissionGuardWrapper>
       </div>
     </div>
   </div>
@@ -60,6 +74,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NCheckbox, NDynamicTags } from "naive-ui";
 import { computed, reactive } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -82,10 +97,6 @@ interface LocalState {
   domains: string[];
   enableRestriction: boolean;
 }
-
-defineProps<{
-  allowEdit: boolean;
-}>();
 
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(cloneDeep(initialState.value));

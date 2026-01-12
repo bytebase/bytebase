@@ -67,14 +67,6 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 		if isSettingDisallowed(setting.Name) {
 			continue
 		}
-		// environment setting is controlled by bb.settings.getEnvironment permission, not expose in the ListSettings API.
-		if setting.Name == storepb.SettingName_ENVIRONMENT {
-			continue
-		}
-		// workspace profile setting is controlled by bb.settings.getWorkspaceProfile permission, not expose in the ListSettings API.
-		if setting.Name == storepb.SettingName_WORKSPACE_PROFILE {
-			continue
-		}
 		settingMessage, err := convertToSettingMessage(setting, s.profile)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
@@ -111,7 +103,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 	default:
 		permission = iam.PermissionSettingsGet
 	}
-	if err := s.CheckSettingPermission(ctx, permission); err != nil {
+	if err := s.checkSettingPermission(ctx, request, permission); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +156,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	default:
 		permission = iam.PermissionSettingsSet
 	}
-	if err := s.CheckSettingPermission(ctx, permission); err != nil {
+	if err := s.checkSettingPermission(ctx, request, permission); err != nil {
 		return nil, err
 	}
 
@@ -629,7 +621,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	return connect.NewResponse(settingMessage), nil
 }
 
-func (s *SettingService) CheckSettingPermission(ctx context.Context, permission iam.Permission) error {
+func (s *SettingService) checkSettingPermission(ctx context.Context, req connect.AnyRequest, permission iam.Permission) error {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -640,7 +632,14 @@ func (s *SettingService) CheckSettingPermission(ctx context.Context, permission 
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionEnvironmentSettingsGet))
+		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission))
+		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
+			Method:              req.Spec().Procedure,
+			RequiredPermissions: []string{string(permission)},
+		}); detailErr == nil {
+			err.AddDetail(detail)
+		}
+		return err
 	}
 	return nil
 }

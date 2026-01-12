@@ -27,25 +27,51 @@
         @on-focus="state.editingTitle = true"
         @end-editing="changeName"
       />
-      <div v-if="hasUpdateReviwConfigPermission" class="flex gap-x-2">
-        <NButton
-          v-if="reviewPolicy.enforce"
-          @click.prevent="state.showDisableModal = true"
+      <div class="flex gap-x-2">
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.reviewConfigs.update'
+          ]"
         >
-          {{ $t("common.disable") }}
-        </NButton>
-        <NButton v-else @click.prevent="state.showEnableModal = true">
-          {{ $t("common.enable") }}
-        </NButton>
-        <NButton
-          v-if="reviewPolicy.resources.length > 0 && hasTagPolicyPermission"
-          @click.prevent="state.showResourcePanel = true"
+          <NButton
+            v-if="reviewPolicy.enforce"
+            :disabled="slotProps.disabled"
+            @click.prevent="state.showDisableModal = true"
+          >
+            {{ $t("common.disable") }}
+          </NButton>
+          <NButton
+            v-else
+            :disabled="slotProps.disabled"
+            @click.prevent="state.showEnableModal = true"
+          >
+            {{ $t("common.enable") }}
+          </NButton>
+        </PermissionGuardWrapper>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.policies.update'
+          ]"
         >
-          {{ $t("sql-review.attach-resource.change-resources") }}
-        </NButton>
-        <NButton type="primary" @click="onEdit">
-          {{ $t("sql-review.create.configure-rule.change-template") }}
-        </NButton>
+          <NButton
+            :disabled="slotProps.disabled"
+            @click.prevent="state.showResourcePanel = true"
+          >
+            {{ $t("sql-review.attach-resource.change-resources") }}
+          </NButton>
+        </PermissionGuardWrapper>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.reviewConfigs.update'
+          ]"
+        >
+          <NButton type="primary" :disabled="slotProps.disabled" @click="onEdit">
+            {{ $t("sql-review.create.configure-rule.change-template") }}
+          </NButton>
+        </PermissionGuardWrapper>
       </div>
     </div>
     <div class="mt-4 flex flex-col gap-y-4">
@@ -158,6 +184,7 @@ import {
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBAlert, BBAttention, BBButtonConfirm, BBTextField } from "@/bbkit";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { SQLReviewCreation } from "@/components/SQLReview";
 import SQLReviewAttachResourcesPanel from "@/components/SQLReview/components/SQLReviewAttachResourcesPanel.vue";
 import SQLReviewTabsByEngine from "@/components/SQLReview/components/SQLReviewTabsByEngine.vue";

@@ -34,6 +34,7 @@ onMounted(async () => {
   );
   await dbSchemaStore.getOrFetchDatabaseMetadata({
     database: database.name,
+    silent: true,
   });
 });
 </script>

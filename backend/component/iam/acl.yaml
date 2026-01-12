@@ -50,6 +50,14 @@ roles:
       - bb.policies.get
       - bb.policies.list
       - bb.policies.update
+      - bb.policies.getMaskingRulePolicy
+      - bb.policies.updateMaskingRulePolicy
+      - bb.policies.createMaskingRulePolicy
+      - bb.policies.deleteMaskingRulePolicy
+      - bb.policies.getMaskingExemptionPolicy
+      - bb.policies.updateMaskingExemptionPolicy
+      - bb.policies.createMaskingExemptionPolicy
+      - bb.policies.deleteMaskingExemptionPolicy
       - bb.projects.create
       - bb.projects.delete
       - bb.projects.get
@@ -163,6 +171,14 @@ roles:
       - bb.policies.get
       - bb.policies.list
       - bb.policies.update
+      - bb.policies.getMaskingRulePolicy
+      - bb.policies.updateMaskingRulePolicy
+      - bb.policies.createMaskingRulePolicy
+      - bb.policies.deleteMaskingRulePolicy
+      - bb.policies.getMaskingExemptionPolicy
+      - bb.policies.updateMaskingExemptionPolicy
+      - bb.policies.createMaskingExemptionPolicy
+      - bb.policies.deleteMaskingExemptionPolicy
       - bb.projects.create
       - bb.projects.delete
       - bb.projects.get
@@ -226,7 +242,6 @@ roles:
       - bb.instanceRoles.get
       - bb.instanceRoles.list
       - bb.policies.get
-      - bb.policies.list
       - bb.reviewConfigs.get
       - bb.reviewConfigs.list
       - bb.roles.list
@@ -277,6 +292,14 @@ roles:
       - bb.policies.get
       - bb.policies.list
       - bb.policies.update
+      - bb.policies.getMaskingRulePolicy
+      - bb.policies.updateMaskingRulePolicy
+      - bb.policies.createMaskingRulePolicy
+      - bb.policies.deleteMaskingRulePolicy
+      - bb.policies.getMaskingExemptionPolicy
+      - bb.policies.updateMaskingExemptionPolicy
+      - bb.policies.createMaskingExemptionPolicy
+      - bb.policies.deleteMaskingExemptionPolicy
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy

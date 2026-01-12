@@ -46,10 +46,10 @@ defineEmits<{
 const slots = useSlots();
 
 const tooltipEnabled = computed(() => {
-  // Enable tooltip when tooltipMode is "ALWAYS"
-  if (props.tooltipMode === "ALWAYS") return true;
   // Disable tooltip if no tooltip contents
   if (!slots.tooltip) return false;
+  // Enable tooltip when tooltipMode is "ALWAYS"
+  if (props.tooltipMode === "ALWAYS") return true;
   // Enable tooltip if button is disabled
   // Disable tooltip otherwise
   return props.disabled;

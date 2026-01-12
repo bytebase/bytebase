@@ -11,11 +11,18 @@
             <RequiredStar />
           </span>
         </div>
-        <NInput
-          v-model:value="state.environment.title"
-          :disabled="!allowEdit"
-          required
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setEnvironment'
+          ]"
+        >
+          <NInput
+            v-model:value="state.environment.title"
+            :disabled="slotProps.disabled"
+            required
+          />
+        </PermissionGuardWrapper>
 
         <ResourceIdField
           ref="resourceIdField"
@@ -45,23 +52,31 @@
             />
           </p>
         </div>
-        <NCheckbox
-          :checked="state.environment.tags.protected === 'protected'"
-          :disabled="!allowEdit"
-          @update:checked="
-            (on: boolean) => {
-              state.environment.tags.protected = on
-                ? 'protected'
-                : 'unprotected';
-            }
-          "
+
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setEnvironment'
+          ]"
         >
-          {{ t("policy.environment-tier.mark-env-as-production") }}
-        </NCheckbox>
+          <NCheckbox
+            :checked="state.environment.tags.protected === 'protected'"
+            :disabled="slotProps.disabled"
+            @update:checked="
+              (on: boolean) => {
+                state.environment.tags.protected = on
+                  ? 'protected'
+                  : 'unprotected';
+              }
+            "
+          >
+            {{ t("policy.environment-tier.mark-env-as-production") }}
+          </NCheckbox>
+        </PermissionGuardWrapper>
       </div>
 
       <div
-        v-if="features.includes('ROLLOUT_POLICY')"
+        v-if="features.includes('ROLLOUT_POLICY') && hasGetPolicyPermission"
         class="flex flex-col gap-y-2"
       >
         <div class="gap-y-1">
@@ -86,7 +101,6 @@
         </div>
         <RolloutPolicyConfig
           v-model:policy="state.rolloutPolicy"
-          :disabled="!allowEdit"
         />
       </div>
 
@@ -94,14 +108,12 @@
         v-if="features.includes('SQL_REVIEW') && !create"
         ref="sqlReviewForResourceRef"
         :resource="`${environmentNamePrefix}${environment.id}`"
-        :allow-edit="allowEdit"
       />
 
       <AccessControlConfigure
         v-if="features.includes('ACCESS_CONTROL') && !create"
         ref="accessControlConfigureRef"
         :resource="`${environmentNamePrefix}${environment.id}`"
-        :allow-edit="allowEdit"
       />
     </div>
 
@@ -149,6 +161,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
@@ -161,6 +174,7 @@ import {
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidEnvironmentName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
@@ -200,6 +214,10 @@ const {
 const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
+
+const hasGetPolicyPermission = computed(() => {
+  return hasWorkspacePermissionV2("bb.policies.get");
+});
 
 const accessControlConfigureRef =
   ref<InstanceType<typeof AccessControlConfigure>>();
@@ -291,6 +309,7 @@ const renderColorPicker = () => {
       class="w-full! h-full!"
       modes={["hex"]}
       showAlpha={false}
+      disabled={!allowEdit.value}
       value={state.value.environment.color || "#4f46e5"}
       renderLabel={() => (
         <div

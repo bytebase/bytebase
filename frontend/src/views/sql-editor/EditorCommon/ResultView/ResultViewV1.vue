@@ -174,7 +174,7 @@ import {
   NTooltip,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, ref, toRef } from "vue";
+import { computed, ref, toRef, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
@@ -187,12 +187,11 @@ import type {
 import DataExportButton from "@/components/DataExportButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
+import { useSQLEditorStore, useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
+  useEffectiveQueryDataPolicyForProject,
   usePolicyV1Store,
-  useSQLEditorStore,
-  useSQLEditorTabStore,
-  useSQLStore,
-} from "@/store";
+} from "@/store/modules/v1/policy";
 import type {
   ComposedDatabase,
   DatabaseResource,
@@ -200,8 +199,8 @@ import type {
   SQLResultSetV1,
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
 import { provideBinaryFormatContext } from "./DataTable/common/binary-format-store";
@@ -239,8 +238,17 @@ const policyStore = usePolicyV1Store();
 const tabStore = useSQLEditorTabStore();
 const { project } = storeToRefs(useSQLEditorStore());
 
-const effectiveQueryDataPolicy = computed(() => {
-  return policyStore.getEffectiveQueryDataPolicyForProject(project.value);
+const { policy: effectiveQueryDataPolicy } =
+  useEffectiveQueryDataPolicyForProject(project);
+
+watchEffect(() => {
+  const environment = props.database.effectiveEnvironment;
+  if (environment) {
+    policyStore.getOrFetchPolicyByParentAndType({
+      parentPath: environment,
+      policyType: PolicyType.DATA_QUERY,
+    });
+  }
 });
 
 const detail: SQLResultViewContext["detail"] = ref(undefined);
@@ -306,10 +314,7 @@ const tabName = (index: number) => {
 };
 
 const disallowCopyingData = computed(() => {
-  if (
-    policyStore.getQueryDataPolicyByParent(props.database.project)
-      .disableCopyData
-  ) {
+  if (effectiveQueryDataPolicy.value.disableCopyData) {
     return true;
   }
   // If the database is provided, use its effective environment.

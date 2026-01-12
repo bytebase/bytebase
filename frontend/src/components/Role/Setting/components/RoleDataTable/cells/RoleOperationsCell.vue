@@ -7,7 +7,7 @@
     >
       <Trash2Icon />
     </MiniActionButton>
-    <MiniActionButton :disabled="!allowUpdate" @click="$emit('edit', role)">
+    <MiniActionButton @click="$emit('edit', role)">
       <PencilIcon />
     </MiniActionButton>
   </div>
@@ -49,7 +49,6 @@ const { t } = useI18n();
 const resourceOccupiedModalRef =
   ref<InstanceType<typeof ResourceOccupiedModal>>();
 
-const allowUpdate = computed(() => hasWorkspacePermissionV2("bb.roles.update"));
 const allowDelete = computed(() => hasWorkspacePermissionV2("bb.roles.delete"));
 
 const usersWithRole = computed(() => {

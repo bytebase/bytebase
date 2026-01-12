@@ -7,9 +7,6 @@
         </h1>
         <FeatureBadge :feature="PlanFeature.FEATURE_CUSTOM_LOGO" />
       </div>
-      <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
     </div>
     <div class="flex-1 lg:px-4">
       <div class="mb-4 mt-4 lg:mt-0">
@@ -19,40 +16,48 @@
         <p class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.logo-aspect") }}
         </p>
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setWorkspaceProfile'
+          ]"
+        >
+          <div
+            class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-48"
+          >
             <div
-              class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-48"
-            >
-              <div
-                class="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
-                :style="`background-image: url(${state.logoUrl});`"
-              ></div>
-              <SingleFileSelector
-                class="flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0"
-                :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
-                :max-file-size-in-mi-b="maxFileSizeInMiB"
-                :support-file-extensions="supportImageExtensions"
-                :disabled="!allowEdit || !hasBrandingFeature"
-                :show-no-data-placeholder="!state.logoUrl"
-                @on-select="onLogoSelect"
-              />
-            </div>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
-          </span>
-        </NTooltip>
+              class="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
+              :style="`background-image: url(${state.logoUrl});`"
+            ></div>
+            <SingleFileSelector
+              class="flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+              :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
+              :max-file-size-in-mi-b="maxFileSizeInMiB"
+              :support-file-extensions="supportImageExtensions"
+              :disabled="slotProps.disabled || !hasBrandingFeature"
+              :show-no-data-placeholder="!state.logoUrl"
+              @on-select="onLogoSelect"
+            />
+          </div>
+        </PermissionGuardWrapper>
       </div>
       <div class="flex justify-end gap-x-3">
-        <NButton
-          v-if="allowEdit && !!state.logoUrl"
-          secondary
-          type="error"
-          @click="() => (state.logoUrl = '')"
+        <PermissionGuardWrapper
+          v-if="!!state.logoUrl"
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setWorkspaceProfile'
+          ]"
         >
-          {{ $t("common.delete") }}
-        </NButton>
+          <NButton
+            secondary
+            :disabled="slotProps.disabled"
+            type="error"
+            @click="() => (state.logoUrl = '')"
+          >
+            {{ $t("common.delete") }}
+          </NButton>
+        </PermissionGuardWrapper>
       </div>
     </div>
   </div>
@@ -67,8 +72,9 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -84,7 +90,6 @@ interface LocalState {
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const maxFileSizeInMiB = 2;

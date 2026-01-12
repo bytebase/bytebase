@@ -6,19 +6,23 @@
           {{ title }}
         </h1>
       </div>
-      <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
     </div>
 
     <div class="flex-1 lg:px-4">
       <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
         <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.disallowSignup"
-            :text="true"
-            :disabled="!allowEdit || !hasDisallowSignupFeature"
-          />
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              'bb.settings.setWorkspaceProfile'
+            ]"
+          >
+            <Switch
+              v-model:value="state.disallowSignup"
+              :text="true"
+              :disabled="slotProps.disabled || !hasDisallowSignupFeature"
+            />
+          </PermissionGuardWrapper>
           <div class="font-medium flex items-center gap-x-2">
             {{ $t("settings.general.workspace.disallow-signup.enable") }}
             <FeatureBadge
@@ -35,18 +39,24 @@
 
       <PasswordRestrictionSetting
         ref="passwordRestrictionSettingRef"
-        :allow-edit="allowEdit"
       />
       <NDivider />
 
       <div>
         <div class="mb-7 mt-4 lg:mt-0">
           <div class="flex items-center gap-x-2">
-            <Switch
-              v-model:value="state.require2fa"
-              :text="true"
-              :disabled="!allowEdit || !has2FAFeature"
-            />
+            <PermissionGuardWrapper
+              v-slot="slotProps"
+              :permissions="[
+                'bb.settings.setWorkspaceProfile'
+              ]"
+            >
+              <Switch
+                v-model:value="state.require2fa"
+                :text="true"
+                :disabled="slotProps.disabled || !has2FAFeature"
+              />
+            </PermissionGuardWrapper>
             <div class="font-medium flex items-center gap-x-2">
               {{ $t("settings.general.workspace.require-2fa.enable") }}
               <FeatureBadge :feature="PlanFeature.FEATURE_TWO_FA" />
@@ -58,22 +68,28 @@
         </div>
         <div class="mb-7 mt-4 lg:mt-0">
           <div class="flex items-center gap-x-2">
-            <Switch
-              v-model:value="state.disallowPasswordSignin"
-              :text="true"
-              :disabled="
-                !allowEdit ||
-                !hasDisallowPasswordSigninFeature ||
-                (!state.disallowPasswordSignin && !existActiveIdentityProvider)
-              "
-            />
+            <PermissionGuardWrapper
+              v-slot="slotProps"
+              :permissions="[
+                'bb.settings.setWorkspaceProfile'
+              ]"
+            >
+              <Switch
+                v-model:value="state.disallowPasswordSignin"
+                :text="true"
+                :disabled="
+                  slotProps.disabled ||
+                  !hasDisallowPasswordSigninFeature ||
+                  (!state.disallowPasswordSignin && !existActiveIdentityProvider)
+                "
+              />
+            </PermissionGuardWrapper>
             <div class="font-medium flex items-center gap-x-2">
               {{
                 $t("settings.general.workspace.disallow-password-signin.enable")
               }}
               <NTooltip
                 v-if="
-                  allowEdit &&
                   hasDisallowPasswordSigninFeature &&
                   !state.disallowPasswordSignin &&
                   !existActiveIdentityProvider
@@ -106,7 +122,6 @@
 
       <TokenDurationSetting
         ref="tokenDurationSettingRef"
-        :allow-edit="allowEdit"
       />
     </div>
   </div>
@@ -126,6 +141,7 @@ import { TriangleAlertIcon } from "lucide-vue-next";
 import { NDivider, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref, watchEffect } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import {
   featureToRef,
@@ -148,7 +164,6 @@ interface LocalState {
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const settingV1Store = useSettingV1Store();

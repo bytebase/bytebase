@@ -24,9 +24,18 @@ import {
   ReviewConfigSchema,
   UpdateReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
-import { usePolicyV1Store } from "./v1/policy";
+import {
+  replacePolicyTypeNameToLowerCase,
+  usePolicyV1Store,
+} from "./v1/policy";
 
 const reviewConfigTagName = "bb.tag.review_config";
+
+const getTagPolicyName = (resourcePath: string): string => {
+  return replacePolicyTypeNameToLowerCase(
+    `${resourcePath}/${policyNamePrefix}${PolicyType[PolicyType.TAG]}`
+  );
+};
 
 const upsertReviewConfigTag = async (
   resources: string[],
@@ -78,10 +87,6 @@ const convertToSQLReviewPolicy = (
 interface SQLReviewState {
   reviewPolicyList: SQLReviewPolicy[];
 }
-
-const getTagPolicyName = (resourcePath: string): string => {
-  return `${resourcePath}/${policyNamePrefix}tag`;
-};
 
 export const useSQLReviewStore = defineStore("sqlReview", {
   state: (): SQLReviewState => ({
