@@ -5,7 +5,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -55,35 +54,18 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 		}
 		errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
 	}
-	if l.Statement == "" {
-		// ANTLR provides 1-based line and 0-based column
-		// Store as 1-based line and 1-based column in Position
-		posLine := int32(line) + lineOffset
-		posColumn := int32(column + 1)
-		l.Err = &SyntaxError{
-			Position: &storepb.Position{
-				Line:   posLine,
-				Column: posColumn,
-			},
-			RawMessage: message,
-			// Display directly (already 1-based)
-			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", posLine, posColumn, errMessage),
-		}
-		return
-	}
-
-	p := common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-		Line:   int32(line),
-		Column: int32(column),
-	}, l.Statement)
-	p.Line += lineOffset
+	// ANTLR provides 1-based line and 0-based column
+	// Store as 1-based line and 1-based column in Position
+	posLine := int32(line) + lineOffset
+	posColumn := int32(column + 1)
 	l.Err = &SyntaxError{
 		Position: &storepb.Position{
-			Line:   p.Line,
-			Column: p.Column,
+			Line:   posLine,
+			Column: posColumn,
 		},
 		RawMessage: message,
-		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", p.Line, p.Column, errMessage),
+		// Display directly (already 1-based)
+		Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", posLine, posColumn, errMessage),
 	}
 }
 
