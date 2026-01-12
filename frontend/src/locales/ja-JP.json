@@ -1940,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "ロールアウト前にプランチェック合格が必要",
           "description": "ロールアウトを作成する前にすべてのプランチェックがエラーなしで合格する必要があります。"
+        },
+        "allow-request-role": {
+          "self": "ロールリクエストを許可",
+          "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます"
         }
       },
       "project-labels": {

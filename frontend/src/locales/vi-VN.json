@@ -1940,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "Yêu cầu kiểm tra kế hoạch phải đạt trước khi triển khai",
           "description": "Tất cả kiểm tra kế hoạch phải đạt không có lỗi trước khi tạo triển khai."
+        },
+        "allow-request-role": {
+          "self": "Cho phép yêu cầu vai trò",
+          "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án"
         }
       },
       "project-labels": {

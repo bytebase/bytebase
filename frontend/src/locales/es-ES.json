@@ -1940,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "Requiere que las verificaciones del plan pasen antes del despliegue",
           "description": "Todas las verificaciones del plan deben pasar sin errores antes de crear un despliegue."
+        },
+        "allow-request-role": {
+          "self": "Permitir solicitar rol",
+          "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos"
         }
       },
       "project-labels": {

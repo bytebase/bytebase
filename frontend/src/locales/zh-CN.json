@@ -1940,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "发布前要求变更检查通过",
           "description": "所有变更检查必须无错误才能创建发布。"
+        },
+        "allow-request-role": {
+          "self": "允许申请角色",
+          "description": "非项目所有者可以自行申请项目级角色"
         }
       },
       "project-labels": {

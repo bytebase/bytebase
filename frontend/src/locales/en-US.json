@@ -1940,6 +1940,10 @@
         "require-plan-check-no-error": {
           "self": "Require plan checks to pass before rollout",
           "description": "All plan checks must pass without errors before creating rollout."
+        },
+        "allow-request-role": {
+          "self": "Allow request role",
+          "description": "Non-project-owner users can request project-level roles themselves"
         }
       },
       "project-labels": {
