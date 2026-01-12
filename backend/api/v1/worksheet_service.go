@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -432,7 +433,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	if worksheet.Creator == user.Email {
 		return true, nil
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -445,10 +446,10 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return false, nil
 	case store.ProjectReadWorkSheet:
 		// For READ visibility, check the "bb.worksheets.manage" permission in the project.
-		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsManage)
+		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, permission.WorksheetsManage)
 	case store.ProjectWriteWorkSheet:
 		// For READ visibility, needs "bb.worksheets.get" permission in the project.
-		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsGet)
+		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, permission.WorksheetsGet)
 	default:
 		return false, nil
 	}
@@ -469,7 +470,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	if worksheet.Creator == user.Email {
 		return true, nil
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -482,7 +483,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
 		// Check the "bb.worksheets.get" permission in the project.
-		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, iam.PermissionWorksheetsGet)
+		return s.checkWorksheetPermission(ctx, worksheet.ProjectID, user, permission.WorksheetsGet)
 	default:
 		return false, nil
 	}
@@ -492,7 +493,7 @@ func (s *WorksheetService) checkWorksheetPermission(
 	ctx context.Context,
 	projectID string,
 	user *store.UserMessage,
-	permission iam.Permission,
+	permission permission.Permission,
 ) (bool, error) {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,

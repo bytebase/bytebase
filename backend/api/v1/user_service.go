@@ -19,6 +19,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 
@@ -117,12 +118,12 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 		}
-		hasPermission, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, *v)
+		hasPermission, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, *v)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check user permission"))
 		}
 		if !hasPermission {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionProjectsGet))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.ProjectsGet))
 		}
 	}
 
@@ -160,12 +161,12 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 			if !ok {
 				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed"))
 			}
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.UsersCreate, callerUser)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersCreate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersCreate))
 			}
 		}
 	}
@@ -357,12 +358,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	}
 	if user == nil {
 		if request.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.UsersCreate, callerUser)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersCreate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersCreate))
 			}
 			return s.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 				User: request.Msg.User,
@@ -375,12 +376,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	}
 
 	if callerUser.ID != user.ID {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdate, callerUser)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdate, callerUser)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersUpdate))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdate))
 		}
 	}
 
@@ -538,12 +539,12 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersDelete, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersDelete, callerUser)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersDelete))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersDelete))
 	}
 
 	email, err := common.GetUserEmail(request.Msg.Name)
@@ -631,12 +632,12 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUndelete, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUndelete, callerUser)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersUndelete))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUndelete))
 	}
 
 	email, err := common.GetUserEmail(request.Msg.Name)
@@ -672,12 +673,12 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdateEmail, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdateEmail, callerUser)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersUpdateEmail))
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdateEmail))
 	}
 
 	// Get user by email from the name field

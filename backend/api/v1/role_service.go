@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -94,10 +95,10 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 		Description: req.Msg.Role.Description,
 		Permissions: permissions,
 	}
-	if ok := iam.PermissionsExist(req.Msg.Role.Permissions...); !ok {
+	if ok := permission.Exists(req.Msg.Role.Permissions...); !ok {
 		invalidPerms := []string{}
 		for _, p := range req.Msg.Role.Permissions {
-			if !iam.PermissionExist(p) {
+			if !permission.Exist(p) {
 				invalidPerms = append(invalidPerms, p)
 			}
 		}
@@ -156,10 +157,10 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 				permissions[v] = true
 			}
 			patch.Permissions = &permissions
-			if ok := iam.PermissionsExist(req.Msg.Role.Permissions...); !ok {
+			if ok := permission.Exists(req.Msg.Role.Permissions...); !ok {
 				invalidPerms := []string{}
 				for _, p := range req.Msg.Role.Permissions {
-					if !iam.PermissionExist(p) {
+					if !permission.Exist(p) {
 						invalidPerms = append(invalidPerms, p)
 					}
 				}

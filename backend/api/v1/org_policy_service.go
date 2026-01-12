@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -76,16 +77,16 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the policy %v", req.Msg.Name))
 	}
 
-	var permission iam.Permission
+	var perm permission.Permission
 	switch policy.Type {
 	case storepb.Policy_MASKING_EXEMPTION:
-		permission = iam.PermissionPoliciesGetMaskingExemptionPolicy
+		perm = permission.PoliciesGetMaskingExemptionPolicy
 	case storepb.Policy_MASKING_RULE:
-		permission = iam.PermissionPoliciesGetMaskingRulePolicy
+		perm = permission.PoliciesGetMaskingRulePolicy
 	default:
-		permission = iam.PermissionPoliciesGet
+		perm = permission.PoliciesGet
 	}
-	if err := s.checkPolicyPermission(ctx, req, permission, policy); err != nil {
+	if err := s.checkPolicyPermission(ctx, req, perm, policy); err != nil {
 		return nil, err
 	}
 
@@ -182,16 +183,16 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	var permission iam.Permission
+	var perm permission.Permission
 	switch policy.Type {
 	case storepb.Policy_MASKING_EXEMPTION:
-		permission = iam.PermissionPoliciesUpdateMaskingExemptionPolicy
+		perm = permission.PoliciesUpdateMaskingExemptionPolicy
 	case storepb.Policy_MASKING_RULE:
-		permission = iam.PermissionPoliciesUpdateMaskingRulePolicy
+		perm = permission.PoliciesUpdateMaskingRulePolicy
 	default:
-		permission = iam.PermissionPoliciesUpdate
+		perm = permission.PoliciesUpdate
 	}
-	if err := s.checkPolicyPermission(ctx, req, permission, policy); err != nil {
+	if err := s.checkPolicyPermission(ctx, req, perm, policy); err != nil {
 		return nil, err
 	}
 
@@ -275,16 +276,16 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	var permission iam.Permission
+	var perm permission.Permission
 	switch policy.Type {
 	case storepb.Policy_MASKING_EXEMPTION:
-		permission = iam.PermissionPoliciesDeleteMaskingExemptionPolicy
+		perm = permission.PoliciesDeleteMaskingExemptionPolicy
 	case storepb.Policy_MASKING_RULE:
-		permission = iam.PermissionPoliciesDeleteMaskingRulePolicy
+		perm = permission.PoliciesDeleteMaskingRulePolicy
 	default:
-		permission = iam.PermissionPoliciesDelete
+		perm = permission.PoliciesDelete
 	}
-	if err := s.checkPolicyPermission(ctx, req, permission, policy); err != nil {
+	if err := s.checkPolicyPermission(ctx, req, perm, policy); err != nil {
 		return nil, err
 	}
 
@@ -420,16 +421,16 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 		Enforce: true,
 	}
 
-	var permission iam.Permission
+	var perm permission.Permission
 	switch create.Type {
 	case storepb.Policy_MASKING_EXEMPTION:
-		permission = iam.PermissionPoliciesCreateMaskingExemptionPolicy
+		perm = permission.PoliciesCreateMaskingExemptionPolicy
 	case storepb.Policy_MASKING_RULE:
-		permission = iam.PermissionPoliciesCreateMaskingRulePolicy
+		perm = permission.PoliciesCreateMaskingRulePolicy
 	default:
-		permission = iam.PermissionPoliciesCreate
+		perm = permission.PoliciesCreate
 	}
-	if err := s.checkPolicyPermission(ctx, req, permission, create); err != nil {
+	if err := s.checkPolicyPermission(ctx, req, perm, create); err != nil {
 		return nil, err
 	}
 
@@ -446,7 +447,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 	return response, nil
 }
 
-func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connect.AnyRequest, permission iam.Permission, policy *store.PolicyMessage) error {
+func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connect.AnyRequest, perm permission.Permission, policy *store.PolicyMessage) error {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -461,15 +462,15 @@ func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connec
 		projectIDs = append(projectIDs, projectID)
 	}
 
-	ok, err := s.iamManager.CheckPermission(ctx, permission, user, projectIDs...)
+	ok, err := s.iamManager.CheckPermission(ctx, perm, user, projectIDs...)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission))
+		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
 		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
 			Method:              req.Spec().Procedure,
-			RequiredPermissions: []string{string(permission)},
+			RequiredPermissions: []string{string(perm)},
 		}); detailErr == nil {
 			err.AddDetail(detail)
 		}

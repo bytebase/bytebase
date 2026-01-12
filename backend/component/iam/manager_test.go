@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -16,19 +17,19 @@ func TestCheck(t *testing.T) {
 		Email: "test@example.com",
 	}
 
-	rolePermissions := make(map[string]map[Permission]bool)
+	rolePermissions := make(map[string]map[permission.Permission]bool)
 	for _, role := range store.PredefinedRoles {
 		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
 	}
 
 	tests := []struct {
-		permission   Permission
+		permission   permission.Permission
 		policy       *storepb.IamPolicy
 		groupMembers map[string]map[string]bool
 		want         bool
 	}{
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -41,7 +42,7 @@ func TestCheck(t *testing.T) {
 			want:         false,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -54,7 +55,7 @@ func TestCheck(t *testing.T) {
 			want:         true,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -67,7 +68,7 @@ func TestCheck(t *testing.T) {
 			want:         false,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -80,7 +81,7 @@ func TestCheck(t *testing.T) {
 			want:         true,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{

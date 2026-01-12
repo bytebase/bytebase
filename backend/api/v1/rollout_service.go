@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -1107,7 +1108,7 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 	}
 
 	// Users with bb.taskRuns.create can always create task runs.
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user, project.ResourceID)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.TaskRunsCreate, user, project.ResourceID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check workspace role")
 	}
