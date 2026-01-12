@@ -15,8 +15,8 @@ const (
 	ProjectViewerRole      = "projectViewer"
 )
 
-func permissionSet(perms ...permission.Permission) map[string]bool {
-	m := make(map[string]bool, len(perms))
+func permissionSet(perms ...permission.Permission) map[permission.Permission]bool {
+	m := make(map[permission.Permission]bool, len(perms))
 	for _, p := range perms {
 		m[p] = true
 	}
