@@ -33,8 +33,9 @@ func TestGetStatementType(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for _, test := range tests {
-		asts, err := base.Parse(storepb.Engine_MSSQL, test.Statement)
+		stmts, err := base.ParseStatements(storepb.Engine_MSSQL, test.Statement)
 		a.NoError(err)
+		asts := base.ExtractASTs(stmts)
 		a.NotEmpty(asts)
 		sqlType, err := GetStatementTypes(asts)
 		a.NoError(err)

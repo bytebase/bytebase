@@ -188,14 +188,14 @@ func TestWalkThroughANTLR(t *testing.T) {
 		// Create DatabaseMetadata for walk-through
 		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
-		// Parse using base.Parse to get AST
-		unifiedASTs, parseErr := base.Parse(storepb.Engine_POSTGRES, test.Statement)
+		// Parse using base.ParseStatements to get AST
+		stmts, parseErr := base.ParseStatements(storepb.Engine_POSTGRES, test.Statement)
 		if parseErr != nil {
 			t.Fatalf("Failed to parse SQL: %v\nSQL: %s", parseErr, test.Statement)
 		}
 
 		// Call WalkThrough with AST
-		advice := WalkThrough(state, unifiedASTs)
+		advice := WalkThrough(state, base.ExtractASTs(stmts))
 		if advice != nil {
 			// Compare the advice fields
 			require.Equal(t, test.Advice.Code, advice.Code)

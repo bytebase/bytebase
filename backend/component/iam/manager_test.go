@@ -16,10 +16,8 @@ func TestCheck(t *testing.T) {
 		Email: "test@example.com",
 	}
 
-	roles, err := loadPredefinedRoles()
-	require.NoError(t, err)
 	rolePermissions := make(map[string]map[Permission]bool)
-	for _, role := range roles {
+	for _, role := range store.PredefinedRoles {
 		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
 	}
 

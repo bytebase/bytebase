@@ -12,22 +12,7 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_CASSANDRA, parseCassandraForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_CASSANDRA, parseCassandraStatements)
-}
-
-// parseCassandraForRegistry is the ParseFunc for Cassandra.
-// Returns []base.AST with *ANTLRAST instances.
-func parseCassandraForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParseCassandraSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parseCassandraStatements is the ParseStatementsFunc for Cassandra.

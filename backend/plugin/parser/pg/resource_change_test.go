@@ -54,8 +54,9 @@ func TestExtractChangedResources(t *testing.T) {
 		InsertCount:      2,
 	}
 
-	asts, err := base.Parse(storepb.Engine_POSTGRES, statement)
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
 	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
 	got, err := extractChangedResources("db", "public", dbMetadata, asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)

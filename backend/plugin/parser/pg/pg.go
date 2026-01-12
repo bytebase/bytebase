@@ -11,23 +11,8 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_POSTGRES, parsePostgreSQLForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_POSTGRES, parsePgStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_POSTGRES, GetStatementTypesForRegistry)
-}
-
-// parsePostgreSQLForRegistry is the ParseFunc for PostgreSQL.
-// Returns []base.AST with *ANTLRAST instances.
-func parsePostgreSQLForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParsePostgreSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parsePgStatements is the ParseStatementsFunc for PostgreSQL.

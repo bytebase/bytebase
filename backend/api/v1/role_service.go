@@ -41,14 +41,8 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *connect.Request[v1pb.Lis
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list roles"))
 	}
-
-	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
-	for _, predefinedRole := range s.iamManager.PredefinedRoles {
-		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
-	}
-
 	return connect.NewResponse(&v1pb.ListRolesResponse{
-		Roles: roles,
+		Roles: convertToRoles(roleMessages),
 	}), nil
 }
 
@@ -64,21 +58,16 @@ func (s *RoleService) GetRole(ctx context.Context, req *connect.Request[v1pb.Get
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
 	if role != nil {
-		return connect.NewResponse(convertToRole(role, v1pb.Role_CUSTOM)), nil
+		return connect.NewResponse(convertToRole(role)), nil
 	}
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
-		return connect.NewResponse(convertToRole(predefinedRole, v1pb.Role_BUILT_IN)), nil
+		return connect.NewResponse(convertToRole(predefinedRole)), nil
 	}
 	return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("role not found: %s", roleID))
 }
 
-func (s *RoleService) getBuildinRole(roleID string) *store.RoleMessage {
-	for _, predefinedRole := range s.iamManager.PredefinedRoles {
-		if predefinedRole.ResourceID == roleID {
-			return predefinedRole
-		}
-	}
-	return nil
+func (*RoleService) getBuildinRole(roleID string) *store.RoleMessage {
+	return store.GetPredefinedRole(roleID)
 }
 
 // CreateRole creates a new role.
@@ -121,7 +110,7 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(convertToRole(roleMessage, v1pb.Role_CUSTOM)), nil
+	return connect.NewResponse(convertToRole(roleMessage)), nil
 }
 
 // UpdateRole updates an existing role.
@@ -188,7 +177,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(convertToRole(roleMessage, v1pb.Role_CUSTOM)), nil
+	return connect.NewResponse(convertToRole(roleMessage)), nil
 }
 
 // DeleteRole deletes an existing role.
@@ -237,20 +226,24 @@ func (s *RoleService) DeleteRole(ctx context.Context, req *connect.Request[v1pb.
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func convertToRoles(roleMessages []*store.RoleMessage, roleType v1pb.Role_Type) []*v1pb.Role {
-	var roles []*v1pb.Role
-	for _, roleMessage := range roleMessages {
-		roles = append(roles, convertToRole(roleMessage, roleType))
+func convertToRoles(roles []*store.RoleMessage) []*v1pb.Role {
+	result := make([]*v1pb.Role, 0, len(roles))
+	for _, role := range roles {
+		result = append(result, convertToRole(role))
 	}
-	return roles
+	return result
 }
 
-func convertToRole(role *store.RoleMessage, roleType v1pb.Role_Type) *v1pb.Role {
+func convertToRole(role *store.RoleMessage) *v1pb.Role {
 	var permissions []string
 	for p := range role.Permissions {
 		permissions = append(permissions, p)
 	}
 	slices.Sort(permissions)
+	roleType := v1pb.Role_CUSTOM
+	if role.Predefined {
+		roleType = v1pb.Role_BUILT_IN
+	}
 	return &v1pb.Role{
 		Name:        common.FormatRole(role.ResourceID),
 		Title:       role.Name,

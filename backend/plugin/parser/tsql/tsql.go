@@ -14,23 +14,8 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_MSSQL, parseTSQLForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_MSSQL, parseTSQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_MSSQL, GetStatementTypes)
-}
-
-// parseTSQLForRegistry is the ParseFunc for T-SQL.
-// Returns []base.AST with *ANTLRAST instances.
-func parseTSQLForRegistry(statement string) ([]base.AST, error) {
-	antlrASTs, err := ParseTSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	var asts []base.AST
-	for _, a := range antlrASTs {
-		asts = append(asts, a)
-	}
-	return asts, nil
 }
 
 // parseTSQLStatements is the ParseStatementsFunc for T-SQL (MSSQL).

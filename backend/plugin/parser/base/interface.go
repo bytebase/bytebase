@@ -50,7 +50,6 @@ var (
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
-	parsers                 = make(map[storepb.Engine]ParseFunc)
 	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
 	statementTypeGetters    = make(map[storepb.Engine]GetStatementTypesFunc)
 )
@@ -69,11 +68,6 @@ type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statem
 type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
 
 type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
-
-// ParseFunc is the interface for parsing SQL statements and returning []AST.
-// Each parser package is responsible for creating AST instances with the appropriate data.
-// Parser packages can return *ANTLRAST for ANTLR-based parsers or their own concrete types.
-type ParseFunc func(statement string) ([]AST, error)
 
 // ParseStatementsFunc is the interface for parsing SQL statements and returning []ParsedStatement.
 // This is the new unified parsing function that returns complete ParsedStatement objects with AST.
@@ -286,25 +280,6 @@ func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx Restore
 	return f(ctx, rCtx, statement, backupItem)
 }
 
-func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := parsers[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	parsers[engine] = f
-}
-
-// Parse parses the SQL statement and returns an AST representation.
-// Each parser is responsible for creating []AST instances directly.
-func Parse(engine storepb.Engine, statement string) ([]AST, error) {
-	f, ok := parsers[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(statement)
-}
-
 func RegisterParseStatementsFunc(engine storepb.Engine, f ParseStatementsFunc) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -368,10 +343,11 @@ func IsAllDML(engine storepb.Engine, statement string) bool {
 }
 
 func isAllDMLImpl(engine storepb.Engine, statement string) bool {
-	asts, err := Parse(engine, statement)
+	stmts, err := ParseStatements(engine, statement)
 	if err != nil {
 		return false
 	}
+	asts := ExtractASTs(stmts)
 	if len(asts) == 0 {
 		return false
 	}
