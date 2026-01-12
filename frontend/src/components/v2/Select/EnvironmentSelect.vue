@@ -63,7 +63,7 @@ defineEmits<{
 const environmentV1Store = useEnvironmentV1Store();
 
 const hasPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.get")
+  hasWorkspacePermissionV2("bb.settings.getEnvironment")
 );
 
 const rawEnvironmentList = computed(() => {

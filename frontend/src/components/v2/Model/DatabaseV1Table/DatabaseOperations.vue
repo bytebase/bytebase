@@ -465,7 +465,10 @@ const actions = computed((): DatabaseAction[] => {
           text: t("database.edit-environment"),
           disabled: props.databases.length < 1,
           click: () => (state.showEditEnvironmentDrawer = true),
-          requiredPermissions: ["bb.databases.update", "bb.settings.get"],
+          requiredPermissions: [
+            "bb.databases.update",
+            "bb.settings.getEnvironment",
+          ],
         });
         break;
       case "TRANSFER-IN": {
@@ -487,7 +490,7 @@ const actions = computed((): DatabaseAction[] => {
             text: t("database.transfer-project"),
             disabled: props.databases.length < 1,
             click: () => (state.transferOutDatabaseType = "TRANSFER-OUT"),
-            requiredPermissions: [],
+            requiredPermissions: ["bb.databases.update"],
           });
         } else if (!isInDefaultProject.value) {
           resp.push({
