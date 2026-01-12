@@ -207,7 +207,11 @@ const introList = computed(() => {
       },
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
       hide: !sampleWorksheet.value,
-      requiredPermissions: ["bb.sql.select", "bb.projects.get", "bb.worksheets.get"],
+      requiredPermissions: [
+        "bb.sql.select",
+        "bb.projects.get",
+        "bb.worksheets.get",
+      ],
     },
     {
       name: computed(() => t("quick-start.visit-project")),
@@ -253,24 +257,22 @@ const introList = computed(() => {
     },
   ];
 
-  return introList.filter(
-    (item) => {
-      if (item.hide) {
+  return introList.filter((item) => {
+    if (item.hide) {
+      return false;
+    }
+    const route = router.resolve(item.link);
+    const permissions = item.requiredPermissions ?? [];
+    if (!!route.params["project"] || !!route.params["projectId"]) {
+      if (!sampleProject.value) {
         return false;
       }
-      const route = router.resolve(item.link);
-      const permissions = item.requiredPermissions ?? []
-      if (!!route.params["project"] || !!route.params["projectId"]) {
-        if (!sampleProject.value) {
-          return false;
-        }
-        return permissions.every((permission) =>
-          hasProjectPermissionV2(sampleProject.value!, permission)
-        )
-      }
-      return permissions.every(hasWorkspacePermissionV2)
+      return permissions.every((permission) =>
+        hasProjectPermissionV2(sampleProject.value!, permission)
+      );
     }
-  );
+    return permissions.every(hasWorkspacePermissionV2);
+  });
 });
 
 const showQuickstart = computed(() => {

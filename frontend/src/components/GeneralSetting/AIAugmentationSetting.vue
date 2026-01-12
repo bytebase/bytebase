@@ -182,6 +182,7 @@ import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { useActuatorV1Store, useSettingV1Store } from "@/store/modules";
@@ -191,7 +192,6 @@ import {
   Setting_SettingName,
   SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 
 interface LocalState {
   enabled: boolean;
@@ -268,7 +268,10 @@ const providerOptions = computed(() =>
 );
 
 watchEffect(async () => {
-  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI, /* silent */ true);
+  await settingV1Store.getOrFetchSettingByName(
+    Setting_SettingName.AI,
+    /* silent */ true
+  );
   Object.assign(state, getInitialState());
 });
 
