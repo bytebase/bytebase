@@ -1,5 +1,14 @@
 <template>
   <div v-if="ready" class="w-full">
+    <NAlert
+      v-if="!hideHint"
+      type="info"
+      closable
+      class="mb-4"
+      @close="dismissHint"
+    >
+      {{ $t("plan.subtitle") }}
+    </NAlert>
     <div
       class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
     >
@@ -51,7 +60,7 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NAlert, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, h, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
@@ -77,6 +86,7 @@ import {
   useCurrentProjectV1,
   useCurrentUserV1,
   useStorageStore,
+  useUIStateStore,
   useUserStore,
 } from "@/store";
 import {
@@ -107,6 +117,13 @@ const { enabledNewLayout } = useIssueLayoutVersion();
 const { project, ready } = useCurrentProjectV1();
 const userStore = useUserStore();
 const showAddSpecDrawer = ref(false);
+
+const uiStateStore = useUIStateStore();
+const HINT_KEY = "plan.hint-dismissed";
+const hideHint = computed(() => uiStateStore.getIntroStateByKey(HINT_KEY));
+const dismissHint = () => {
+  uiStateStore.saveIntroStateByKey({ key: HINT_KEY, newState: true });
+};
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [];
