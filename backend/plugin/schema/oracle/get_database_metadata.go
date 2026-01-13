@@ -448,22 +448,20 @@ func (e *metadataExtractor) EnterCreate_sequence(ctx *parser.Create_sequenceCont
 
 // extractSequenceOptions extracts sequence specification options using ANTLR parser
 func (*metadataExtractor) extractSequenceOptions(ctx *parser.Create_sequenceContext, sequence *storepb.SequenceMetadata) {
-	// Extract START WITH clause using ANTLR parser
-	startClauses := ctx.AllSequence_start_clause()
-	for _, startClause := range startClauses {
-		if startClause.START() != nil && startClause.WITH() != nil && startClause.UNSIGNED_INTEGER() != nil {
-			startValue := startClause.UNSIGNED_INTEGER().GetText()
-			if startValue != "" {
-				// Store all start values - Oracle metadata may not match DDL
-				sequence.Start = startValue
-				break
-			}
-		}
-	}
-
 	// Extract sequence specifications using ANTLR parser
+	// Note: sequence_start_clause is now nested inside sequence_spec
 	sequenceSpecs := ctx.AllSequence_spec()
 	for _, spec := range sequenceSpecs {
+		// Extract START WITH clause (now nested in sequence_spec)
+		if startClause := spec.Sequence_start_clause(); startClause != nil {
+			if startClause.START() != nil && startClause.WITH() != nil && startClause.UNSIGNED_INTEGER() != nil {
+				startValue := startClause.UNSIGNED_INTEGER().GetText()
+				if startValue != "" {
+					sequence.Start = startValue
+				}
+			}
+		}
+
 		// Extract INCREMENT BY value
 		if spec.INCREMENT() != nil && spec.BY() != nil && spec.UNSIGNED_INTEGER() != nil {
 			incrementValue := spec.UNSIGNED_INTEGER().GetText()
