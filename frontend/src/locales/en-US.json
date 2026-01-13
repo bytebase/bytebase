@@ -941,6 +941,7 @@
   },
   "issue": {
     "labels": "Issue Labels",
+    "subtitle": "Issues cover database changes, data exports, and access requests. Review and approve before execution.",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
     "create-rollout": "Create Rollout",
@@ -1162,6 +1163,7 @@
   },
   "plan": {
     "plans": "Plans",
+    "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "new-plan": "New Plan",
     "add-spec": "Add Change",
     "select-targets": "Select Targets",

@@ -941,6 +941,7 @@
   },
   "issue": {
     "labels": "工单标签",
+    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
     "create-rollout": "创建发布",
@@ -1162,6 +1163,7 @@
   },
   "plan": {
     "plans": "变更计划",
+    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "new-plan": "创建变更计划",
     "add-spec": "添加变更项",
     "select-targets": "选择目标库",
