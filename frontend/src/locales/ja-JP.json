@@ -2673,17 +2673,16 @@
       "approve-issue": "イシューを承認しますか?",
       "generating-approval-flow": "承認フローが生成されています",
       "approved-issue": "イシューを承認する",
+      "rejected-issue": "イシューを却下した",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "失敗したタスクチェックがまだあります",
         "some-task-checks-are-still-running": "確認すべき実行中のタスクがまだあります",
         "x-field-is-required": "{field}は必須です"
       },
-      "send-back": "戻る",
       "send-back-issue": "イシューを却下しますか?",
       "re-request-review": "再度承認をリクエストする",
       "re-request-review-issue": "イシューの承認を再度リクエストしますか?",
       "re-request-review-success": "レビューの再リクエストが完了しました",
-      "sent-back-issue": "イシューを却下する",
       "re-requested-review": "イシューの承認を再度リクエストします",
       "approved-by": "承認者",
       "rejected-by": "拒否された",

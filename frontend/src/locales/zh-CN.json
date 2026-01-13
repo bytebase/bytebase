@@ -2673,17 +2673,16 @@
       "approve-issue": "批准工单？",
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
+      "rejected-issue": "驳回工单",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "尚有未通过的任务检查项。",
         "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
         "x-field-is-required": "{field}为必填项"
       },
-      "send-back": "退回",
       "send-back-issue": "退回工单？",
       "re-request-review": "请求再次审批",
       "re-request-review-issue": "请求再次审批工单？",
       "re-request-review-success": "已成功请求再次审批",
-      "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
       "approved-by": "已批准",
       "rejected-by": "被拒绝",

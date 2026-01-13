@@ -57,7 +57,7 @@ const renderActionSentence = () => {
     if (status === IssueComment_Approval_Status.APPROVED) {
       verb = t("custom-approval.issue-review.approved-issue");
     } else if (status === IssueComment_Approval_Status.REJECTED) {
-      verb = t("custom-approval.issue-review.sent-back-issue");
+      verb = t("custom-approval.issue-review.rejected-issue");
     } else if (status === IssueComment_Approval_Status.PENDING) {
       verb = t("custom-approval.issue-review.re-requested-review");
     }
