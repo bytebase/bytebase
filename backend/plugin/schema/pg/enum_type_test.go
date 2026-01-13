@@ -393,6 +393,260 @@ CREATE TABLE "public"."users" (
 	})
 }
 
+// TestEnumTypeAlterAddValue tests that ALTER TYPE ADD VALUE is generated for new enum values
+func TestEnumTypeAlterAddValue(t *testing.T) {
+	t.Run("Add single value at end", func(t *testing.T) {
+		oldMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "orderstatus_enum",
+							Values: []string{"active", "inactive"},
+						},
+					},
+				},
+			},
+		}
+
+		newMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "orderstatus_enum",
+							Values: []string{"active", "inactive", "archived"},
+						},
+					},
+				},
+			},
+		}
+
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
+		require.NoError(t, err)
+
+		// Should have one ALTER enum change
+		require.Equal(t, 1, len(diff.EnumTypeChanges), "Should have 1 enum type change")
+		enumDiff := diff.EnumTypeChanges[0]
+		require.Equal(t, schema.MetadataDiffActionAlter, enumDiff.Action)
+		require.Equal(t, "public", enumDiff.SchemaName)
+		require.Equal(t, "orderstatus_enum", enumDiff.EnumTypeName)
+
+		migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+		require.NoError(t, err)
+		t.Logf("Generated migration:\n%s", migration)
+
+		require.Contains(t, migration, "ALTER TYPE")
+		require.Contains(t, migration, "ADD VALUE")
+		require.Contains(t, migration, "'archived'")
+		// Should not contain DROP TYPE since we're using ALTER
+		require.NotContains(t, migration, "DROP TYPE")
+	})
+
+	t.Run("Add multiple values", func(t *testing.T) {
+		oldMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "priority_enum",
+							Values: []string{"low", "high"},
+						},
+					},
+				},
+			},
+		}
+
+		newMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "priority_enum",
+							Values: []string{"low", "medium", "high", "urgent"},
+						},
+					},
+				},
+			},
+		}
+
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
+		require.NoError(t, err)
+
+		migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+		require.NoError(t, err)
+		t.Logf("Generated migration:\n%s", migration)
+
+		// Should have ALTER TYPE ADD VALUE for 'medium' and 'urgent'
+		require.Contains(t, migration, "ALTER TYPE")
+		require.Contains(t, migration, "'medium'")
+		require.Contains(t, migration, "'urgent'")
+		// 'medium' should be added BEFORE 'high'
+		require.Contains(t, migration, "BEFORE 'high'")
+	})
+
+	t.Run("Add value in the middle with BEFORE clause", func(t *testing.T) {
+		oldMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "status_enum",
+							Values: []string{"draft", "published"},
+						},
+					},
+				},
+			},
+		}
+
+		newMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "status_enum",
+							Values: []string{"draft", "pending", "published"},
+						},
+					},
+				},
+			},
+		}
+
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
+		require.NoError(t, err)
+
+		migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+		require.NoError(t, err)
+		t.Logf("Generated migration:\n%s", migration)
+
+		// 'pending' should be added BEFORE 'published'
+		require.Contains(t, migration, "'pending'")
+		require.Contains(t, migration, "BEFORE 'published'")
+	})
+
+	t.Run("Remove enum value - generates warning comment", func(t *testing.T) {
+		// PostgreSQL does NOT support ALTER TYPE ... DROP VALUE
+		// When enum values are removed, we generate a warning comment with instructions
+
+		oldMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "status_enum",
+							Values: []string{"active", "inactive", "archived"},
+						},
+					},
+				},
+			},
+		}
+
+		newMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "status_enum",
+							Values: []string{"active", "inactive"}, // 'archived' removed
+						},
+					},
+				},
+			},
+		}
+
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
+		require.NoError(t, err)
+
+		// Should detect the change
+		require.Equal(t, 1, len(diff.EnumTypeChanges), "Should have 1 enum type change")
+		enumDiff := diff.EnumTypeChanges[0]
+		require.Equal(t, schema.MetadataDiffActionAlter, enumDiff.Action)
+
+		migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+		require.NoError(t, err)
+		t.Logf("Generated migration for enum value removal:\n%s", migration)
+
+		// Should generate warning comment about removed values
+		require.Contains(t, migration, "WARNING")
+		require.Contains(t, migration, "does not support removing enum values")
+		require.Contains(t, migration, "'archived'")
+		require.Contains(t, migration, "RENAME TO")
+	})
+
+	t.Run("Rename enum value - generates warning and adds new value", func(t *testing.T) {
+		// When enum values appear to be renamed (one removed, one added at same position),
+		// we generate a warning for the removed value and ADD VALUE for the new one
+
+		oldMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "priority_enum",
+							Values: []string{"low", "medium", "high"},
+						},
+					},
+				},
+			},
+		}
+
+		newMetadata := &storepb.DatabaseSchemaMetadata{
+			Schemas: []*storepb.SchemaMetadata{
+				{
+					Name: "public",
+					EnumTypes: []*storepb.EnumTypeMetadata{
+						{
+							Name:   "priority_enum",
+							Values: []string{"low", "normal", "high"}, // 'medium' renamed to 'normal'
+						},
+					},
+				},
+			},
+		}
+
+		oldSchema := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newSchema := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldSchema, newSchema)
+		require.NoError(t, err)
+
+		// Should detect the change
+		require.Equal(t, 1, len(diff.EnumTypeChanges), "Should have 1 enum type change")
+		enumDiff := diff.EnumTypeChanges[0]
+		require.Equal(t, schema.MetadataDiffActionAlter, enumDiff.Action)
+
+		migration, err := schema.GenerateMigration(storepb.Engine_POSTGRES, diff)
+		require.NoError(t, err)
+		t.Logf("Generated migration for enum value rename:\n%s", migration)
+
+		// Should generate warning for removed 'medium' and ADD VALUE for 'normal'
+		require.Contains(t, migration, "WARNING")
+		require.Contains(t, migration, "'medium'")
+		require.Contains(t, migration, "ADD VALUE 'normal'")
+	})
+}
+
 // TestEnumTypeCommentChanges tests that enum type comment changes are properly detected and generated
 func TestEnumTypeCommentChanges(t *testing.T) {
 	// Previous SDL (enum without comment)

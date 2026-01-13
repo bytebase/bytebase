@@ -732,6 +732,126 @@ func createEnumTypes(diff *schema.MetadataDiff, buf *strings.Builder) error {
 	return nil
 }
 
+// alterEnumTypes generates ALTER TYPE ADD VALUE statements for enum value additions.
+func alterEnumTypes(diff *schema.MetadataDiff, buf *strings.Builder) error {
+	for _, enumDiff := range diff.EnumTypeChanges {
+		if enumDiff.Action == schema.MetadataDiffActionAlter {
+			if enumDiff.OldEnumType != nil && enumDiff.NewEnumType != nil {
+				if err := writeAlterEnumTypeAddValues(buf, enumDiff.SchemaName, enumDiff.OldEnumType, enumDiff.NewEnumType); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// writeAlterEnumTypeAddValues generates ALTER TYPE ADD VALUE statements for new enum values.
+// PostgreSQL supports adding enum values with ALTER TYPE ... ADD VALUE.
+// New values can be added at the end, before an existing value, or after an existing value.
+// For removed values, a warning comment is generated since PostgreSQL doesn't support DROP VALUE.
+func writeAlterEnumTypeAddValues(out *strings.Builder, schemaName string, oldEnum, newEnum *storepb.EnumTypeMetadata) error {
+	// Build sets for comparison
+	oldValueSet := make(map[string]bool)
+	for _, v := range oldEnum.Values {
+		oldValueSet[v] = true
+	}
+
+	newValueSet := make(map[string]bool)
+	for _, v := range newEnum.Values {
+		newValueSet[v] = true
+	}
+
+	// Find removed values (exist in old but not in new)
+	var removedValues []string
+	for _, v := range oldEnum.Values {
+		if !newValueSet[v] {
+			removedValues = append(removedValues, v)
+		}
+	}
+
+	// Generate warning comment for removed values
+	if len(removedValues) > 0 {
+		_, _ = out.WriteString(`-- WARNING: PostgreSQL does not support removing enum values.`)
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`-- The following enum values were removed from "`)
+		_, _ = out.WriteString(schemaName)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(newEnum.Name)
+		_, _ = out.WriteString(`": `)
+		for i, v := range removedValues {
+			if i > 0 {
+				_, _ = out.WriteString(", ")
+			}
+			_, _ = out.WriteString("'")
+			_, _ = out.WriteString(v)
+			_, _ = out.WriteString("'")
+		}
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`-- To remove enum values, you must recreate the type:`)
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`--   1. Update existing data that uses the removed values`)
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`--   2. ALTER TYPE "`)
+		_, _ = out.WriteString(schemaName)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(newEnum.Name)
+		_, _ = out.WriteString(`" RENAME TO "`)
+		_, _ = out.WriteString(newEnum.Name)
+		_, _ = out.WriteString(`_old";`)
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`--   3. CREATE TYPE "`)
+		_, _ = out.WriteString(schemaName)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(newEnum.Name)
+		_, _ = out.WriteString(`" AS ENUM (...);`)
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`--   4. ALTER TABLE ... ALTER COLUMN ... TYPE "`)
+		_, _ = out.WriteString(schemaName)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(newEnum.Name)
+		_, _ = out.WriteString(`" USING ...;`)
+		_, _ = out.WriteString("\n")
+		_, _ = out.WriteString(`--   5. DROP TYPE "`)
+		_, _ = out.WriteString(schemaName)
+		_, _ = out.WriteString(`"."`)
+		_, _ = out.WriteString(newEnum.Name)
+		_, _ = out.WriteString(`_old";`)
+		_, _ = out.WriteString("\n")
+	}
+
+	// Find new values and their positions
+	for i, newValue := range newEnum.Values {
+		if !oldValueSet[newValue] {
+			// This is a new value, generate ALTER TYPE ADD VALUE
+			_, _ = out.WriteString(`ALTER TYPE "`)
+			_, _ = out.WriteString(schemaName)
+			_, _ = out.WriteString(`"."`)
+			_, _ = out.WriteString(newEnum.Name)
+			_, _ = out.WriteString(`" ADD VALUE '`)
+			_, _ = out.WriteString(newValue)
+			_, _ = out.WriteString(`'`)
+
+			// Determine position: if not the last value, add BEFORE clause
+			if i < len(newEnum.Values)-1 {
+				// Find the next value that exists in oldEnum to use as reference
+				for j := i + 1; j < len(newEnum.Values); j++ {
+					if oldValueSet[newEnum.Values[j]] {
+						_, _ = out.WriteString(` BEFORE '`)
+						_, _ = out.WriteString(newEnum.Values[j])
+						_, _ = out.WriteString(`'`)
+						break
+					}
+				}
+			}
+
+			_, _ = out.WriteString(`;`)
+			_, _ = out.WriteString("\n")
+		}
+	}
+	return nil
+}
+
 // createSequences creates all new sequences.
 func createSequences(diff *schema.MetadataDiff, buf *strings.Builder) error {
 	for _, seqDiff := range diff.SequenceChanges {
@@ -1120,6 +1240,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error
 		return err
 	}
 	if err := createEnumTypes(diff, buf); err != nil {
+		return err
+	}
+	if err := alterEnumTypes(diff, buf); err != nil {
 		return err
 	}
 	if err := createSequences(diff, buf); err != nil {
