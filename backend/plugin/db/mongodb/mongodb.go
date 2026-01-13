@@ -249,6 +249,12 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, errors.New("MongoDB does not support EXPLAIN")
 	}
 
+	// Use native driver only in dev mode for testing during early development stage.
+	// Once stable, this will be enabled for release builds as well.
+	if common.IsDev() {
+		return d.queryWithNativeDriver(ctx, statement, queryContext), nil
+	}
+
 	statement = strings.Trim(statement, " \t\n\r\f;")
 	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
