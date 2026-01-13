@@ -2673,17 +2673,16 @@
       "approve-issue": "¿Aprobar incidencia?",
       "generating-approval-flow": "Generando flujo de aprobación",
       "approved-issue": "incidencia aprobada",
+      "rejected-issue": "incidencia rechazada",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron",
         "some-task-checks-are-still-running": "Algunas comprobaciones de tareas aún se están ejecutando",
         "x-field-is-required": "{field} se requiere"
       },
-      "send-back": "Enviar de vuelta",
       "send-back-issue": "¿Devolver el problema?",
       "re-request-review": "Volver a solicitar revisión",
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "re-request-review-success": "Revisión solicitada nuevamente con éxito",
-      "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
       "approved-by": "Aprobado por",
       "rejected-by": "Rechazado por",

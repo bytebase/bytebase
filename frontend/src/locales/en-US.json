@@ -2673,17 +2673,16 @@
       "approve-issue": "Approve issue?",
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
+      "rejected-issue": "rejected issue",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Some task checks didn't pass.",
         "some-task-checks-are-still-running": "Some task checks are still running.",
         "x-field-is-required": "{field} is required"
       },
-      "send-back": "Send back",
       "send-back-issue": "Send back issue?",
       "re-request-review": "Re-request review",
       "re-request-review-issue": "Re-request review issue?",
       "re-request-review-success": "Review re-requested successfully",
-      "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
       "approved-by": "Approved by",
       "rejected-by": "Rejected by",

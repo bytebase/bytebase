@@ -2673,17 +2673,16 @@
       "approve-issue": "Phê duyệt vấn đề?",
       "generating-approval-flow": "Đang tạo quy trình phê duyệt",
       "approved-issue": "đã phê duyệt vấn đề",
+      "rejected-issue": "đã từ chối vấn đề",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Một số kiểm tra tác vụ không vượt qua",
         "some-task-checks-are-still-running": "Một số kiểm tra tác vụ vẫn đang chạy",
         "x-field-is-required": "{field} là bắt buộc"
       },
-      "send-back": "Gửi lại",
       "send-back-issue": "Gửi lại vấn đề?",
       "re-request-review": "Yêu cầu xem xét lại",
       "re-request-review-issue": "Yêu cầu xem xét lại vấn đề?",
       "re-request-review-success": "Yêu cầu xem xét lại đã được thực hiện thành công.",
-      "sent-back-issue": "Đã gửi lại vấn đề",
       "re-requested-review": "đã yêu cầu xem xét lại vấn đề",
       "approved-by": "Được chấp thuận bởi",
       "rejected-by": "Bị từ chối bởi",
