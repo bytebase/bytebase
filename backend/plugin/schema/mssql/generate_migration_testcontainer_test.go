@@ -27,6 +27,8 @@ import (
 
 // TestGenerateMigrationWithTestcontainer tests the generate migration function
 // by applying migrations and rollback to verify the schema can be restored.
+//
+//nolint:tparallel
 func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping MSSQL testcontainer test in short mode")
@@ -52,11 +54,11 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 		Started:          true,
 	})
 	require.NoError(t, err)
-	defer func() {
+	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
 			t.Logf("failed to terminate container: %s", err)
 		}
-	}()
+	})
 
 	// Get connection details
 	host, err := container.Host(ctx)
@@ -2375,11 +2377,13 @@ GO
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase // Capture range variable
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			// Step 1: Execute 5-step workflow
 			portInt, err := strconv.Atoi(port.Port())
 			require.NoError(t, err)
-			err = executeFiveStepWorkflow(ctx, host, portInt, testCase.initialSchema, testCase.migrationDDL)
+			err = executeFiveStepWorkflow(ctx, host, portInt, testCase.name, testCase.initialSchema, testCase.migrationDDL)
 			require.NoError(t, err, "Failed 5-step workflow for test case: %s", testCase.description)
 		})
 	}
@@ -2391,7 +2395,7 @@ GO
 // 3. Generate rollback DDL via generate_migration
 // 4. Execute rollback DDL, get schema result C via syncDBSchema
 // 5. Compare schema results A and C to verify they are identical
-func executeFiveStepWorkflow(ctx context.Context, host string, port int, initialSchema, migrationDDL string) error {
+func executeFiveStepWorkflow(ctx context.Context, host string, port int, testName, initialSchema, migrationDDL string) error {
 	// Create driver instance
 	driverInstance := &mssqldb.Driver{}
 
@@ -2417,8 +2421,8 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, initial
 	}
 	defer driver.Close(ctx)
 
-	// Create test database with unique name
-	testDB := fmt.Sprintf("test_db_%d_%d", time.Now().Unix(), time.Now().UnixNano()%1000000)
+	// Create test database with unique name based on test case
+	testDB := fmt.Sprintf("test_%s_%d", strings.ReplaceAll(strings.ReplaceAll(testName, " ", "_"), "-", "_"), time.Now().UnixNano()%1000000)
 	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", testDB), db.ExecuteOptions{CreateDatabase: true}); err != nil {
 		return errors.Wrap(err, "failed to create test database")
 	}
