@@ -6426,7 +6426,6 @@ components:
           description: |-
             The default schema to execute the statement. Equals to the current schema
              in Oracle and search path in Postgres.
-          nullable: true
         container:
           type:
             - string
@@ -6435,7 +6434,6 @@ components:
           description: |-
             Container is the container name to execute the query against, used for
              CosmosDB only.
-          nullable: true
       title: AdminExecuteRequest
       additionalProperties: false
     bytebase.v1.AdminExecuteResponse:
@@ -7192,7 +7190,6 @@ components:
         runTime:
           title: run_time
           description: The task run should run after run_time.
-          nullable: true
           $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: BatchRunTasksRequest
       additionalProperties: false
@@ -7676,7 +7673,6 @@ components:
         objectSchema:
           title: object_schema
           description: Object schema for complex column types like JSON.
-          nullable: true
           $ref: '#/components/schemas/bytebase.v1.ObjectSchema'
       title: ColumnCatalog
       additionalProperties: false
@@ -8049,7 +8045,6 @@ components:
              Format: environments/{environment}
              If unspecified, all stages are created.
              If set to "", no stages are created.
-          nullable: true
       title: CreateRolloutRequest
       additionalProperties: false
     bytebase.v1.CreateSheetRequest:
@@ -8153,7 +8148,6 @@ components:
             - string
             - "null"
           title: level_id
-          nullable: true
       title: DataClassification
       additionalProperties: false
     bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level:
@@ -8631,7 +8625,6 @@ components:
           description: |-
             The environment resource.
              Format: environments/prod where prod is the environment resource ID.
-          nullable: true
         effectiveEnvironment:
           type:
             - string
@@ -8641,7 +8634,6 @@ components:
             The effective environment based on environment tag above and environment
              tag on the instance. Inheritance follows
              https://cloud.google.com/resource-manager/docs/tags/tags-overview.
-          nullable: true
         labels:
           type: object
           title: labels
@@ -9436,7 +9428,6 @@ components:
           description: |-
             The default schema to search objects. Equals to the current schema in
              Oracle and search path in Postgres.
-          nullable: true
       title: ExportRequest
       additionalProperties: false
     bytebase.v1.ExportResponse:
@@ -10417,7 +10408,6 @@ components:
           description: |-
             The environment resource.
              Format: environments/prod where prod is the environment resource ID.
-          nullable: true
         activation:
           type: boolean
           title: activation
@@ -10505,7 +10495,6 @@ components:
           description: |-
             The environment resource.
              Format: environments/prod where prod is the environment resource ID.
-          nullable: true
       title: InstanceResource
       additionalProperties: false
     bytebase.v1.InstanceRole:
@@ -10528,7 +10517,6 @@ components:
             - "null"
           title: password
           description: The role password.
-          nullable: true
         connectionLimit:
           type:
             - integer
@@ -10536,14 +10524,12 @@ components:
           title: connection_limit
           format: int32
           description: The connection count limit for this role.
-          nullable: true
         validUntil:
           type:
             - string
             - "null"
           title: valid_until
           description: The expiration for the role's password.
-          nullable: true
         attribute:
           type:
             - string
@@ -10553,7 +10539,6 @@ components:
             The role attribute.
              For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
              For MySQL, it's the global privileges as GRANT statements, which means it only contains "GRANT ... ON *.* TO ...". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html
-          nullable: true
       title: InstanceRole
       additionalProperties: false
       description: InstanceRole is the API message for instance role.
@@ -10753,32 +10738,26 @@ components:
             - string
             - "null"
           title: from_title
-          nullable: true
         toTitle:
           type:
             - string
             - "null"
           title: to_title
-          nullable: true
         fromDescription:
           type:
             - string
             - "null"
           title: from_description
-          nullable: true
         toDescription:
           type:
             - string
             - "null"
           title: to_description
-          nullable: true
         fromStatus:
           title: from_status
-          nullable: true
           $ref: '#/components/schemas/bytebase.v1.IssueStatus'
         toStatus:
           title: to_status
-          nullable: true
           $ref: '#/components/schemas/bytebase.v1.IssueStatus'
         fromLabels:
           type: array
@@ -10810,7 +10789,6 @@ components:
           description: |-
             The previous sheet.
              Format: projects/{project}/sheets/{sheet}
-          nullable: true
         toSheet:
           type:
             - string
@@ -10819,7 +10797,6 @@ components:
           description: |-
             The new sheet.
              Format: projects/{project}/sheets/{sheet}
-          nullable: true
       title: PlanSpecUpdate
       additionalProperties: false
       description: Plan spec update event information (tracks sheet changes to plan specs).
@@ -11223,7 +11200,6 @@ components:
         instance:
           title: instance
           description: The target instance. We need to set this field if the target instance is not created yet.
-          nullable: true
           $ref: '#/components/schemas/bytebase.v1.Instance'
       title: ListInstanceDatabaseRequest
       additionalProperties: false
@@ -11580,7 +11556,6 @@ components:
         policyType:
           title: policy_type
           description: Filter by specific policy type.
-          nullable: true
           $ref: '#/components/schemas/bytebase.v1.PolicyType'
         showDeleted:
           type: boolean
@@ -11989,21 +11964,18 @@ components:
             - "null"
           title: otp_code
           description: The otp_code is used to verify the user's identity by MFA.
-          nullable: true
         recoveryCode:
           type:
             - string
             - "null"
           title: recovery_code
           description: The recovery_code is used to recovery the user's identity with MFA.
-          nullable: true
         mfaTempToken:
           type:
             - string
             - "null"
           title: mfa_temp_token
           description: The mfa_temp_token is used to verify the user's identity by MFA.
-          nullable: true
       title: LoginRequest
       additionalProperties: false
     bytebase.v1.LoginResponse:
@@ -12021,7 +11993,6 @@ components:
             - "null"
           title: mfa_temp_token
           description: Temporary token for MFA verification.
-          nullable: true
         requireResetPassword:
           type: boolean
           title: require_reset_password
@@ -12648,7 +12619,6 @@ components:
           description: |-
             The zip password provide by users.
              Leave it empty if no needs to encrypt the zip file.
-          nullable: true
       title: ExportDataConfig
       additionalProperties: false
     bytebase.v1.Plan.PlanCheckRunStatusCountEntry:
@@ -13317,7 +13287,6 @@ components:
             - string
             - "null"
           title: error
-          nullable: true
         duration:
           title: duration
           $ref: '#/components/schemas/google.protobuf.Duration'
@@ -13396,7 +13365,6 @@ components:
           description: |-
             The default schema to search objects. Equals to the current schema in
              Oracle and search path in Postgres.
-          nullable: true
         queryOption:
           title: query_option
           $ref: '#/components/schemas/bytebase.v1.QueryOption'
@@ -13408,7 +13376,6 @@ components:
           description: |-
             Container is the container name to execute the query against, used for
              CosmosDB only.
-          nullable: true
       title: QueryRequest
       additionalProperties: false
     bytebase.v1.QueryResponse:
@@ -14221,7 +14188,6 @@ components:
             The UUID of the specific spec to run plan checks for.
              This should match the spec.id field in Plan.Spec.
              If not set, all specs in the plan will be used.
-          nullable: true
       title: RunPlanChecksRequest
       additionalProperties: false
     bytebase.v1.RunPlanChecksResponse:
@@ -15731,14 +15697,12 @@ components:
               description: |-
                 The update_time is the update time of latest task run.
                  If there are no task runs, it will be empty.
-              nullable: true
               $ref: '#/components/schemas/google.protobuf.Timestamp'
             runTime:
               title: run_time
               description: |-
                 The run_time is the scheduled run time of latest task run.
                  If there are no task runs or the task run is not scheduled, it will be empty.
-              nullable: true
               $ref: '#/components/schemas/google.protobuf.Timestamp'
         - oneOf:
             - properties:
@@ -15936,7 +15900,6 @@ components:
           description: |-
             The task run should run after run_time.
              This can only be set when creating the task run calling BatchRunTasks.
-          nullable: true
           $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: TaskRun
       additionalProperties: false
@@ -16372,35 +16335,30 @@ components:
             - "null"
           title: state
           description: Session state (active, idle, etc.).
-          nullable: true
         waitEventType:
           type:
             - string
             - "null"
           title: wait_event_type
           description: Wait event type if session is waiting.
-          nullable: true
         waitEvent:
           type:
             - string
             - "null"
           title: wait_event
           description: Specific wait event if session is waiting.
-          nullable: true
         datname:
           type:
             - string
             - "null"
           title: datname
           description: Database name.
-          nullable: true
         usename:
           type:
             - string
             - "null"
           title: usename
           description: User name.
-          nullable: true
         applicationName:
           type: string
           title: application_name
@@ -16411,14 +16369,12 @@ components:
             - "null"
           title: client_addr
           description: Client IP address.
-          nullable: true
         clientPort:
           type:
             - string
             - "null"
           title: client_port
           description: Client port number.
-          nullable: true
         backendStart:
           title: backend_start
           description: When the backend process started.
@@ -16426,12 +16382,10 @@ components:
         xactStart:
           title: xact_start
           description: When the current transaction started.
-          nullable: true
           $ref: '#/components/schemas/google.protobuf.Timestamp'
         queryStart:
           title: query_start
           description: When the current query started.
-          nullable: true
           $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: Session
       additionalProperties: false
@@ -17059,7 +17013,6 @@ components:
             - "null"
           title: otp_code
           description: The otp_code is used to verify the user's identity by MFA.
-          nullable: true
         regenerateTempMfaSecret:
           type: boolean
           title: regenerate_temp_mfa_secret

@@ -256,6 +256,54 @@ func (x *SchedulerInfo) GetWaitingCause() *SchedulerInfo_WaitingCause {
 	return nil
 }
 
+// TaskRunPayload contains extensible runtime data for a task run.
+// Stored in the payload JSONB column. New fields can be added here
+// without database schema changes.
+type TaskRunPayload struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Scheduler information about why a task is waiting.
+	SchedulerInfo *SchedulerInfo `protobuf:"bytes,1,opt,name=scheduler_info,json=schedulerInfo,proto3" json:"scheduler_info,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskRunPayload) Reset() {
+	*x = TaskRunPayload{}
+	mi := &file_store_task_run_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskRunPayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunPayload) ProtoMessage() {}
+
+func (x *TaskRunPayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_task_run_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunPayload.ProtoReflect.Descriptor instead.
+func (*TaskRunPayload) Descriptor() ([]byte, []int) {
+	return file_store_task_run_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TaskRunPayload) GetSchedulerInfo() *SchedulerInfo {
+	if x != nil {
+		return x.SchedulerInfo
+	}
+	return nil
+}
+
 // WaitingCause indicates why a task run is waiting to execute.
 type SchedulerInfo_WaitingCause struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -269,7 +317,7 @@ type SchedulerInfo_WaitingCause struct {
 
 func (x *SchedulerInfo_WaitingCause) Reset() {
 	*x = SchedulerInfo_WaitingCause{}
-	mi := &file_store_task_run_proto_msgTypes[3]
+	mi := &file_store_task_run_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -281,7 +329,7 @@ func (x *SchedulerInfo_WaitingCause) String() string {
 func (*SchedulerInfo_WaitingCause) ProtoMessage() {}
 
 func (x *SchedulerInfo_WaitingCause) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_proto_msgTypes[3]
+	mi := &file_store_task_run_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -351,7 +399,9 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aK\n" +
 	"\fWaitingCause\x122\n" +
 	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimitB\a\n" +
-	"\x05causeB\x8f\x01\n" +
+	"\x05cause\"V\n" +
+	"\x0eTaskRunPayload\x12D\n" +
+	"\x0escheduler_info\x18\x01 \x01(\v2\x1d.bytebase.store.SchedulerInfoR\rschedulerInfoB\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fTaskRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -367,23 +417,25 @@ func file_store_task_run_proto_rawDescGZIP() []byte {
 }
 
 var file_store_task_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_task_run_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_store_task_run_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_task_run_proto_goTypes = []any{
 	(TaskRun_Status)(0),                // 0: bytebase.store.TaskRun.Status
 	(*TaskRun)(nil),                    // 1: bytebase.store.TaskRun
 	(*TaskRunResult)(nil),              // 2: bytebase.store.TaskRunResult
 	(*SchedulerInfo)(nil),              // 3: bytebase.store.SchedulerInfo
-	(*SchedulerInfo_WaitingCause)(nil), // 4: bytebase.store.SchedulerInfo.WaitingCause
-	(*timestamppb.Timestamp)(nil),      // 5: google.protobuf.Timestamp
+	(*TaskRunPayload)(nil),             // 4: bytebase.store.TaskRunPayload
+	(*SchedulerInfo_WaitingCause)(nil), // 5: bytebase.store.SchedulerInfo.WaitingCause
+	(*timestamppb.Timestamp)(nil),      // 6: google.protobuf.Timestamp
 }
 var file_store_task_run_proto_depIdxs = []int32{
-	5, // 0: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
-	4, // 1: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	6, // 0: bytebase.store.SchedulerInfo.report_time:type_name -> google.protobuf.Timestamp
+	5, // 1: bytebase.store.SchedulerInfo.waiting_cause:type_name -> bytebase.store.SchedulerInfo.WaitingCause
+	3, // 2: bytebase.store.TaskRunPayload.scheduler_info:type_name -> bytebase.store.SchedulerInfo
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_store_task_run_proto_init() }
@@ -391,7 +443,7 @@ func file_store_task_run_proto_init() {
 	if File_store_task_run_proto != nil {
 		return
 	}
-	file_store_task_run_proto_msgTypes[3].OneofWrappers = []any{
+	file_store_task_run_proto_msgTypes[4].OneofWrappers = []any{
 		(*SchedulerInfo_WaitingCause_ParallelTasksLimit)(nil),
 	}
 	type x struct{}
@@ -400,7 +452,7 @@ func file_store_task_run_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_run_proto_rawDesc), len(file_store_task_run_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

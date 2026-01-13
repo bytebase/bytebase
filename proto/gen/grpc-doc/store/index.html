@@ -1329,6 +1329,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.TaskRunPayload"><span class="badge">M</span>TaskRunPayload</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
                 </li>
               
@@ -12967,6 +12971,30 @@ or sheet content for non-release tasks.</p></td>
         <p>TaskRun represents an execution attempt of a task.</p>
 
         
+
+        
+      
+        <h3 id="bytebase.store.TaskRunPayload">TaskRunPayload</h3>
+        <p>TaskRunPayload contains extensible runtime data for a task run.</p><p>Stored in the payload JSONB column. New fields can be added here</p><p>without database schema changes.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>scheduler_info</td>
+                  <td><a href="#bytebase.store.SchedulerInfo">SchedulerInfo</a></td>
+                  <td></td>
+                  <td><p>Scheduler information about why a task is waiting. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       

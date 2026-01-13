@@ -323,7 +323,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
 	}
 
-	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.bus, taskRuns)
+	taskRunsV1, err := convertToTaskRuns(ctx, s.store, taskRuns)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task runs"))
 	}
@@ -467,7 +467,7 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in rollout %d", taskRunUID, planID))
 	}
 
-	taskRunV1, err := convertToTaskRun(ctx, s.store, s.bus, taskRun)
+	taskRunV1, err := convertToTaskRun(ctx, s.store, taskRun)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task run"))
 	}

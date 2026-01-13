@@ -265,7 +265,9 @@ CREATE TABLE task_run (
     -- result saves the task run result in json format
     -- Stored as TaskRunResult (proto/store/store/task_run.proto)
     result jsonb NOT NULL DEFAULT '{}',
-    replica_id TEXT
+    replica_id TEXT,
+    -- Stored as TaskRunPayload (proto/store/store/task_run.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);

@@ -59,3 +59,11 @@ message SchedulerInfo {
   // Reason why the task run is currently waiting.
   WaitingCause waiting_cause = 2;
 }
+
+// TaskRunPayload contains extensible runtime data for a task run.
+// Stored in the payload JSONB column. New fields can be added here
+// without database schema changes.
+message TaskRunPayload {
+  // Scheduler information about why a task is waiting.
+  SchedulerInfo scheduler_info = 1;
+}
