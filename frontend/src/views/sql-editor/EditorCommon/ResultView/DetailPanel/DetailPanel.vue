@@ -146,6 +146,10 @@
 <script setup lang="ts">
 import { onKeyStroke, useLocalStorage } from "@vueuse/core";
 import {
+  parse as losslessParse,
+  stringify as losslessStringify,
+} from "lossless-json";
+import {
   BracesIcon,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -249,10 +253,11 @@ const copyContent = computed(() => {
   const raw = content.value ?? "";
 
   // For JSON content
+  // Use lossless-json to preserve precision for large integers (> 2^53-1)
   if (guessedIsJSON.value && format.value) {
     try {
-      const obj = JSON.parse(raw);
-      return JSON.stringify(obj, null, "  ");
+      const obj = losslessParse(raw);
+      return losslessStringify(obj, null, "  ") ?? raw;
     } catch {
       console.warn(
         "[DetailPanel]",
