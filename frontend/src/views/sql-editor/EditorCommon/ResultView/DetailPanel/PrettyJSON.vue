@@ -33,16 +33,11 @@ watch(
 
     try {
       const { prettyPrintJson } = await import("pretty-print-json");
-      const { parse, isLosslessNumber } = await import("lossless-json");
+      const { parse } = await import("lossless-json");
+      const { losslessReviver } = await import("@/composables/utils");
       await import("./pretty-print-json.css");
       // Use lossless-json to preserve precision for large integers (> 2^53-1)
-      // Convert LosslessNumber to string for display
-      const obj = parse(content, null, (value) => {
-        if (isLosslessNumber(value)) {
-          return value.toString();
-        }
-        return value;
-      });
+      const obj = parse(content, null, losslessReviver);
       const html = prettyPrintJson.toHtml(obj, {
         quoteKeys: true,
         trailingCommas: false,

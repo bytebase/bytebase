@@ -1,7 +1,11 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { NullValue } from "@bufbuild/protobuf/wkt";
 import { orderBy } from "lodash-es";
-import { isLosslessNumber, parse as losslessParse } from "lossless-json";
+import {
+  isLosslessNumber,
+  type LosslessNumber,
+  parse as losslessParse,
+} from "lossless-json";
 import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
@@ -13,6 +17,15 @@ import {
 type NoSQLRowData = {
   key: string;
   value: unknown;
+};
+
+// Reviver for lossless-json that converts LosslessNumber to string
+// to preserve precision for large integers (> 2^53-1)
+export const losslessReviver = (value: unknown): unknown => {
+  if (isLosslessNumber(value)) {
+    return (value as LosslessNumber).toString();
+  }
+  return value;
 };
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
@@ -250,13 +263,11 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
         continue;
       }
       // Use lossless-json to preserve precision for large integers (> 2^53-1)
-      // Convert LosslessNumber to string for downstream processing
-      const data = losslessParse(row.values[0].kind.value, null, (value) => {
-        if (isLosslessNumber(value)) {
-          return value.toString();
-        }
-        return value;
-      }) as Record<string, unknown>;
+      const data = losslessParse(
+        row.values[0].kind.value,
+        null,
+        losslessReviver
+      ) as Record<string, unknown>;
       const values: RowValue[] = Array.from({ length: columns.length }).map(
         (_) =>
           createProto(RowValueSchema, {
@@ -335,12 +346,11 @@ const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
     return;
   }
   // Use lossless-json to preserve precision for large integers (> 2^53-1)
-  const parsedRow = losslessParse(row.values[0].kind.value, null, (value) => {
-    if (isLosslessNumber(value)) {
-      return value.toString();
-    }
-    return value;
-  }) as {
+  const parsedRow = losslessParse(
+    row.values[0].kind.value,
+    null,
+    losslessReviver
+  ) as {
     [key: string]: Record<string, unknown>;
   };
   const results: NoSQLRowData[] = [];

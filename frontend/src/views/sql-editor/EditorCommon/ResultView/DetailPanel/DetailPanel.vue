@@ -252,8 +252,8 @@ const contentClass = computed(() => {
 const copyContent = computed(() => {
   const raw = content.value ?? "";
 
-  // For JSON content
-  // Use lossless-json to preserve precision for large integers (> 2^53-1)
+  // For JSON content, use lossless-json to preserve precision for large integers (> 2^53-1)
+  // No reviver needed: losslessStringify correctly outputs LosslessNumber as numeric literals
   if (guessedIsJSON.value && format.value) {
     try {
       const obj = losslessParse(raw);
