@@ -239,6 +239,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.StatementType"><span class="badge">E</span>StatementType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.VCSType"><span class="badge">E</span>VCSType</a>
                 </li>
               
@@ -3179,6 +3183,263 @@ Examples:
                 <td>DELETED</td>
                 <td>2</td>
                 <td><p>Resource is soft-deleted but may be recoverable.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.StatementType">StatementType</h3>
+        <p>StatementType represents the type of SQL statement.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATEMENT_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_DATABASE</td>
+                <td>1</td>
+                <td><p>DDL - CREATE statements</p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_TABLE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_VIEW</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_INDEX</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_SEQUENCE</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_SCHEMA</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_FUNCTION</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_TRIGGER</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_PROCEDURE</td>
+                <td>9</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_EVENT</td>
+                <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_EXTENSION</td>
+                <td>11</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CREATE_TYPE</td>
+                <td>12</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_DATABASE</td>
+                <td>20</td>
+                <td><p>DDL - DROP statements</p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_TABLE</td>
+                <td>21</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_VIEW</td>
+                <td>22</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_INDEX</td>
+                <td>23</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_SEQUENCE</td>
+                <td>24</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_SCHEMA</td>
+                <td>25</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_FUNCTION</td>
+                <td>26</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_TRIGGER</td>
+                <td>27</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_PROCEDURE</td>
+                <td>28</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_EVENT</td>
+                <td>29</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_EXTENSION</td>
+                <td>30</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DROP_TYPE</td>
+                <td>31</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_DATABASE</td>
+                <td>40</td>
+                <td><p>DDL - ALTER statements</p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_TABLE</td>
+                <td>41</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_VIEW</td>
+                <td>42</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_SEQUENCE</td>
+                <td>43</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_EVENT</td>
+                <td>44</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_TYPE</td>
+                <td>45</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALTER_INDEX</td>
+                <td>46</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TRUNCATE</td>
+                <td>50</td>
+                <td><p>DDL - Other</p></td>
+              </tr>
+            
+              <tr>
+                <td>RENAME</td>
+                <td>51</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RENAME_INDEX</td>
+                <td>52</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RENAME_SCHEMA</td>
+                <td>53</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RENAME_SEQUENCE</td>
+                <td>54</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COMMENT</td>
+                <td>55</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INSERT</td>
+                <td>60</td>
+                <td><p>DML statements</p></td>
+              </tr>
+            
+              <tr>
+                <td>UPDATE</td>
+                <td>61</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DELETE</td>
+                <td>62</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -19750,7 +20011,7 @@ Format: instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>statement_types</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#bytebase.v1.StatementType">StatementType</a></td>
                   <td>repeated</td>
                   <td><p>statement_types are the types of statements that are found in the sql. </p></td>
                 </tr>

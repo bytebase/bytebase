@@ -550,3 +550,230 @@ export enum WebhookType {
  */
 export declare const WebhookTypeSchema: GenEnum<WebhookType>;
 
+/**
+ * StatementType represents the type of SQL statement.
+ *
+ * @generated from enum bytebase.v1.StatementType
+ */
+export enum StatementType {
+  /**
+   * @generated from enum value: STATEMENT_TYPE_UNSPECIFIED = 0;
+   */
+  STATEMENT_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * DDL - CREATE statements
+   *
+   * @generated from enum value: CREATE_DATABASE = 1;
+   */
+  CREATE_DATABASE = 1,
+
+  /**
+   * @generated from enum value: CREATE_TABLE = 2;
+   */
+  CREATE_TABLE = 2,
+
+  /**
+   * @generated from enum value: CREATE_VIEW = 3;
+   */
+  CREATE_VIEW = 3,
+
+  /**
+   * @generated from enum value: CREATE_INDEX = 4;
+   */
+  CREATE_INDEX = 4,
+
+  /**
+   * @generated from enum value: CREATE_SEQUENCE = 5;
+   */
+  CREATE_SEQUENCE = 5,
+
+  /**
+   * @generated from enum value: CREATE_SCHEMA = 6;
+   */
+  CREATE_SCHEMA = 6,
+
+  /**
+   * @generated from enum value: CREATE_FUNCTION = 7;
+   */
+  CREATE_FUNCTION = 7,
+
+  /**
+   * @generated from enum value: CREATE_TRIGGER = 8;
+   */
+  CREATE_TRIGGER = 8,
+
+  /**
+   * @generated from enum value: CREATE_PROCEDURE = 9;
+   */
+  CREATE_PROCEDURE = 9,
+
+  /**
+   * @generated from enum value: CREATE_EVENT = 10;
+   */
+  CREATE_EVENT = 10,
+
+  /**
+   * @generated from enum value: CREATE_EXTENSION = 11;
+   */
+  CREATE_EXTENSION = 11,
+
+  /**
+   * @generated from enum value: CREATE_TYPE = 12;
+   */
+  CREATE_TYPE = 12,
+
+  /**
+   * DDL - DROP statements
+   *
+   * @generated from enum value: DROP_DATABASE = 20;
+   */
+  DROP_DATABASE = 20,
+
+  /**
+   * @generated from enum value: DROP_TABLE = 21;
+   */
+  DROP_TABLE = 21,
+
+  /**
+   * @generated from enum value: DROP_VIEW = 22;
+   */
+  DROP_VIEW = 22,
+
+  /**
+   * @generated from enum value: DROP_INDEX = 23;
+   */
+  DROP_INDEX = 23,
+
+  /**
+   * @generated from enum value: DROP_SEQUENCE = 24;
+   */
+  DROP_SEQUENCE = 24,
+
+  /**
+   * @generated from enum value: DROP_SCHEMA = 25;
+   */
+  DROP_SCHEMA = 25,
+
+  /**
+   * @generated from enum value: DROP_FUNCTION = 26;
+   */
+  DROP_FUNCTION = 26,
+
+  /**
+   * @generated from enum value: DROP_TRIGGER = 27;
+   */
+  DROP_TRIGGER = 27,
+
+  /**
+   * @generated from enum value: DROP_PROCEDURE = 28;
+   */
+  DROP_PROCEDURE = 28,
+
+  /**
+   * @generated from enum value: DROP_EVENT = 29;
+   */
+  DROP_EVENT = 29,
+
+  /**
+   * @generated from enum value: DROP_EXTENSION = 30;
+   */
+  DROP_EXTENSION = 30,
+
+  /**
+   * @generated from enum value: DROP_TYPE = 31;
+   */
+  DROP_TYPE = 31,
+
+  /**
+   * DDL - ALTER statements
+   *
+   * @generated from enum value: ALTER_DATABASE = 40;
+   */
+  ALTER_DATABASE = 40,
+
+  /**
+   * @generated from enum value: ALTER_TABLE = 41;
+   */
+  ALTER_TABLE = 41,
+
+  /**
+   * @generated from enum value: ALTER_VIEW = 42;
+   */
+  ALTER_VIEW = 42,
+
+  /**
+   * @generated from enum value: ALTER_SEQUENCE = 43;
+   */
+  ALTER_SEQUENCE = 43,
+
+  /**
+   * @generated from enum value: ALTER_EVENT = 44;
+   */
+  ALTER_EVENT = 44,
+
+  /**
+   * @generated from enum value: ALTER_TYPE = 45;
+   */
+  ALTER_TYPE = 45,
+
+  /**
+   * @generated from enum value: ALTER_INDEX = 46;
+   */
+  ALTER_INDEX = 46,
+
+  /**
+   * DDL - Other
+   *
+   * @generated from enum value: TRUNCATE = 50;
+   */
+  TRUNCATE = 50,
+
+  /**
+   * @generated from enum value: RENAME = 51;
+   */
+  RENAME = 51,
+
+  /**
+   * @generated from enum value: RENAME_INDEX = 52;
+   */
+  RENAME_INDEX = 52,
+
+  /**
+   * @generated from enum value: RENAME_SCHEMA = 53;
+   */
+  RENAME_SCHEMA = 53,
+
+  /**
+   * @generated from enum value: RENAME_SEQUENCE = 54;
+   */
+  RENAME_SEQUENCE = 54,
+
+  /**
+   * @generated from enum value: COMMENT = 55;
+   */
+  COMMENT = 55,
+
+  /**
+   * DML statements
+   *
+   * @generated from enum value: INSERT = 60;
+   */
+  INSERT = 60,
+
+  /**
+   * @generated from enum value: UPDATE = 61;
+   */
+  UPDATE = 61,
+
+  /**
+   * @generated from enum value: DELETE = 62;
+   */
+  DELETE = 62,
+}
+
+/**
+ * Describes the enum bytebase.v1.StatementType.
+ */
+export declare const StatementTypeSchema: GenEnum<StatementType>;
+

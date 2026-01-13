@@ -1020,7 +1020,7 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
 		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
 			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
-				StatementTypes: report.SqlSummaryReport.StatementTypes,
+				StatementTypes: convertStatementTypesToV1(report.SqlSummaryReport.StatementTypes),
 				AffectedRows:   report.SqlSummaryReport.AffectedRows,
 			},
 		}
@@ -1046,6 +1046,14 @@ func convertToV1ResultType(t storepb.PlanCheckType) v1pb.PlanCheckRun_Result_Typ
 	default:
 		return v1pb.PlanCheckRun_Result_TYPE_UNSPECIFIED
 	}
+}
+
+func convertStatementTypesToV1(storeTypes []storepb.StatementType) []v1pb.StatementType {
+	result := make([]v1pb.StatementType, len(storeTypes))
+	for i, t := range storeTypes {
+		result[i] = v1pb.StatementType(t)
+	}
+	return result
 }
 
 func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.Advice_Level {

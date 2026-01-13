@@ -4,12 +4,13 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // StatementTypeWithPosition contains statement type and its position information.
 type StatementTypeWithPosition struct {
-	Type string
+	Type storepb.StatementType
 	// Line is the one-based line number where the statement ends.
 	Line int
 	Text string
@@ -44,14 +45,14 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 	return allResults, nil
 }
 
-// GetStatementTypesForRegistry returns only the statement types as strings.
+// GetStatementTypesForRegistry returns only the statement types.
 // This is used for registration with base.RegisterGetStatementTypes.
-func GetStatementTypesForRegistry(asts []base.AST) ([]string, error) {
+func GetStatementTypesForRegistry(asts []base.AST) ([]storepb.StatementType, error) {
 	results, err := GetStatementTypes(asts)
 	if err != nil {
 		return nil, err
 	}
-	types := make([]string, len(results))
+	types := make([]storepb.StatementType, len(results))
 	for i, r := range results {
 		types[i] = r.Type
 	}

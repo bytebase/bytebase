@@ -12,6 +12,7 @@
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [RiskLevel](#bytebase-store-RiskLevel)
     - [SchemaChangeType](#bytebase-store-SchemaChangeType)
+    - [StatementType](#bytebase-store-StatementType)
     - [VCSType](#bytebase-store-VCSType)
     - [WebhookType](#bytebase-store-WebhookType)
   
@@ -477,6 +478,57 @@ SchemaChangeType represents the strategy for schema changes.
 | SCHEMA_CHANGE_TYPE_UNSPECIFIED | 0 |  |
 | VERSIONED | 1 | Versioned migration with explicit migration scripts. |
 | DECLARATIVE | 2 | Declarative schema definition (state-based). |
+
+
+
+<a name="bytebase-store-StatementType"></a>
+
+### StatementType
+StatementType represents the type of SQL statement.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATEMENT_TYPE_UNSPECIFIED | 0 |  |
+| CREATE_DATABASE | 1 | DDL - CREATE statements |
+| CREATE_TABLE | 2 |  |
+| CREATE_VIEW | 3 |  |
+| CREATE_INDEX | 4 |  |
+| CREATE_SEQUENCE | 5 |  |
+| CREATE_SCHEMA | 6 |  |
+| CREATE_FUNCTION | 7 |  |
+| CREATE_TRIGGER | 8 |  |
+| CREATE_PROCEDURE | 9 |  |
+| CREATE_EVENT | 10 |  |
+| CREATE_EXTENSION | 11 |  |
+| CREATE_TYPE | 12 |  |
+| DROP_DATABASE | 20 | DDL - DROP statements |
+| DROP_TABLE | 21 |  |
+| DROP_VIEW | 22 |  |
+| DROP_INDEX | 23 |  |
+| DROP_SEQUENCE | 24 |  |
+| DROP_SCHEMA | 25 |  |
+| DROP_FUNCTION | 26 |  |
+| DROP_TRIGGER | 27 |  |
+| DROP_PROCEDURE | 28 |  |
+| DROP_EVENT | 29 |  |
+| DROP_EXTENSION | 30 |  |
+| DROP_TYPE | 31 |  |
+| ALTER_DATABASE | 40 | DDL - ALTER statements |
+| ALTER_TABLE | 41 |  |
+| ALTER_VIEW | 42 |  |
+| ALTER_SEQUENCE | 43 |  |
+| ALTER_EVENT | 44 |  |
+| ALTER_TYPE | 45 |  |
+| ALTER_INDEX | 46 |  |
+| TRUNCATE | 50 | DDL - Other |
+| RENAME | 51 |  |
+| RENAME_INDEX | 52 |  |
+| RENAME_SCHEMA | 53 |  |
+| RENAME_SEQUENCE | 54 |  |
+| COMMENT | 55 |  |
+| INSERT | 60 | DML statements |
+| UPDATE | 61 |  |
+| DELETE | 62 |  |
 
 
 
@@ -3016,7 +3068,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| statement_types | [string](#string) | repeated | statement_types are the types of statements found in the SQL. |
+| statement_types | [StatementType](#bytebase-store-StatementType) | repeated | statement_types are the types of statements found in the SQL. |
 | affected_rows | [int64](#int64) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
