@@ -941,6 +941,7 @@
   },
   "issue": {
     "labels": "Etiquetas de problema",
+    "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y solicitudes de acceso. Revisar y aprobar antes de la ejecución.",
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
     "create-rollout": "Crear despliegue",
@@ -1162,6 +1163,7 @@
   },
   "plan": {
     "plans": "Planes",
+    "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "new-plan": "Nuevo plan",
     "add-spec": "Agregar especificación",
     "select-targets": "Seleccionar objetivos",

@@ -941,6 +941,7 @@
   },
   "issue": {
     "labels": "Nhãn vấn đề",
+    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
     "create-rollout": "Tạo triển khai",
@@ -1162,6 +1163,7 @@
   },
   "plan": {
     "plans": "Kế hoạch",
+    "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "new-plan": "Kế hoạch mới",
     "add-spec": "Thêm thông số kỹ thuật",
     "select-targets": "Chọn mục tiêu",
