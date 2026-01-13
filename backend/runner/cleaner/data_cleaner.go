@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -22,13 +23,15 @@ const (
 
 // DataCleaner periodically cleans up expired data from the database.
 type DataCleaner struct {
-	store *store.Store
+	store          *store.Store
+	licenseService *enterprise.LicenseService
 }
 
 // NewDataCleaner creates a new DataCleaner.
-func NewDataCleaner(store *store.Store) *DataCleaner {
+func NewDataCleaner(store *store.Store, licenseService *enterprise.LicenseService) *DataCleaner {
 	return &DataCleaner{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
 	}
 }
 
@@ -54,8 +57,16 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cleanupTicker.C:
+			if err := c.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Data cleaner skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			c.cleanup(ctx)
 		case <-staleTicker.C:
+			if err := c.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Stale detection skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			c.detectStaleTaskRuns(ctx)
 			c.detectStalePlanCheckRuns(ctx)
 		case <-ctx.Done():

@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,19 +25,21 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, bus *bus.Bus, executor *CombinedExecutor) *Scheduler {
+func NewScheduler(s *store.Store, bus *bus.Bus, executor *CombinedExecutor, licenseService *enterprise.LicenseService) *Scheduler {
 	return &Scheduler{
-		store:    s,
-		bus:      bus,
-		executor: executor,
+		store:          s,
+		bus:            bus,
+		executor:       executor,
+		licenseService: licenseService,
 	}
 }
 
 // Scheduler is the plan check run scheduler.
 type Scheduler struct {
-	store    *store.Store
-	bus      *bus.Bus
-	executor *CombinedExecutor
+	store          *store.Store
+	bus            *bus.Bus
+	executor       *CombinedExecutor
+	licenseService *enterprise.LicenseService
 }
 
 // Run runs the scheduler.
@@ -48,8 +51,16 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
+			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Plan check scheduler skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			s.runOnce(ctx)
 		case <-s.bus.PlanCheckTickleChan:
+			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Plan check scheduler skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			s.runOnce(ctx)
 		case <-ctx.Done():
 			return

@@ -406,7 +406,8 @@
     "deploy": "本地部署",
     "cloud": "云服务",
     "request-demo": "预约一个 30 分钟的产品演示。",
-    "external-url": "Bytebase 还没有配置 --external-url"
+    "external-url": "Bytebase 还没有配置 --external-url",
+    "ha-not-licensed": "检测到多个副本但没有 HA 许可证。后端任务运行器已禁用。"
   },
   "bbkit": {
     "confirm-button": {

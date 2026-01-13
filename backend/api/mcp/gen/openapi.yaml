@@ -6340,6 +6340,11 @@ components:
           type: boolean
           title: external_url_from_flag
           description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+        replicaCount:
+          type: integer
+          title: replica_count
+          format: int32
+          description: The number of active replicas (servers sharing the same database).
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -15343,6 +15348,10 @@ components:
         orgName:
           type: string
           title: org_name
+        ha:
+          type: boolean
+          title: ha
+          description: Whether high availability (multiple replicas) is enabled.
       title: Subscription
       additionalProperties: false
     bytebase.v1.SyncDatabaseRequest:

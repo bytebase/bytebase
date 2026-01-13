@@ -108,6 +108,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     () => serverInfo.value?.totalInstanceCount ?? 0
   );
 
+  const replicaCount = computed(() => serverInfo.value?.replicaCount ?? 1);
+
   const inactiveUserCount = computed(() => {
     return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
       if (stat.state === State.DELETED) {
@@ -274,6 +276,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     hasNewRelease,
     activatedInstanceCount,
     totalInstanceCount,
+    replicaCount,
     inactiveUserCount,
     quickStartEnabled,
     // Actions

@@ -406,7 +406,8 @@
     "deploy": "Self Host",
     "cloud": "Cloud",
     "request-demo": "Book a 30-minute product demo.",
-    "external-url": "Bytebase has not configured --external-url"
+    "external-url": "Bytebase has not configured --external-url",
+    "ha-not-licensed": "Multiple replicas detected without HA license. Backend runners are disabled."
   },
   "bbkit": {
     "confirm-button": {

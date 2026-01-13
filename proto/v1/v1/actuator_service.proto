@@ -136,4 +136,7 @@ message ActuatorInfo {
 
   // Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
   bool external_url_from_flag = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The number of active replicas (servers sharing the same database).
+  int32 replica_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

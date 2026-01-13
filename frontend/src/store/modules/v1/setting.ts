@@ -9,7 +9,6 @@ import { settingNamePrefix } from "@/store/modules/v1/common";
 import {
   type DataClassificationSetting_DataClassificationConfig,
   GetSettingRequestSchema,
-  ListSettingsRequestSchema,
   type Setting,
   Setting_SettingName,
   SettingSchema,
@@ -19,7 +18,6 @@ import {
   type WorkspaceProfileSetting,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./actuator";
 
 export const useSettingV1Store = defineStore("setting_v1", () => {
@@ -92,17 +90,6 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
     return fetchSettingByName(name, silent);
   };
 
-  const fetchSettingList = async () => {
-    if (!hasWorkspacePermissionV2("bb.settings.list")) {
-      return;
-    }
-    const request = create(ListSettingsRequestSchema, {});
-    const response = await settingServiceClientConnect.listSettings(request);
-    for (const setting of response.settings) {
-      settingMapByName.set(setting.name, setting);
-    }
-  };
-
   const upsertSetting = async ({
     name,
     value,
@@ -166,7 +153,6 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
     fetchSettingByName,
     getSettingByName,
     getOrFetchSettingByName,
-    fetchSettingList,
     upsertSetting,
     updateWorkspaceProfile,
   };

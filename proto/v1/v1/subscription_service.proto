@@ -73,6 +73,9 @@ message Subscription {
   bool trialing = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string org_name = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether high availability (multiple replicas) is enabled.
+  bool ha = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // PlanFeature represents the available features in Bytebase

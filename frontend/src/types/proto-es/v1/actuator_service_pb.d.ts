@@ -221,6 +221,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bool external_url_from_flag = 23;
    */
   externalUrlFromFlag: boolean;
+
+  /**
+   * The number of active replicas (servers sharing the same database).
+   *
+   * @generated from field: int32 replica_count = 24;
+   */
+  replicaCount: number;
 };
 
 /**

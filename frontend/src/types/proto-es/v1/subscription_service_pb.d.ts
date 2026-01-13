@@ -85,6 +85,13 @@ export declare type Subscription = Message<"bytebase.v1.Subscription"> & {
    * @generated from field: string org_name = 7;
    */
   orgName: string;
+
+  /**
+   * Whether high availability (multiple replicas) is enabled.
+   *
+   * @generated from field: bool ha = 8;
+   */
+  ha: boolean;
 };
 
 /**

@@ -25,10 +25,18 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 	for {
 		select {
 		case <-ticker.C:
+			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Pending task runs scheduler skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
 		case <-s.bus.TaskRunTickleChan:
+			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Pending task runs scheduler skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}

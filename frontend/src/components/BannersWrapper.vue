@@ -3,6 +3,7 @@
   <BannerDemo v-if="shouldShowDemoBanner" />
   <BannerSubscription v-if="shouldShowSubscriptionBanner" />
   <BannerExternalUrl v-if="shouldShowExternalUrlBanner" />
+  <BannerHA v-if="shouldShowHABanner" />
   <BannerAnnouncement />
 </template>
 
@@ -19,14 +20,15 @@ import { isDev } from "@/utils";
 import BannerAnnouncement from "@/views/BannerAnnouncement.vue";
 import BannerDemo from "@/views/BannerDemo.vue";
 import BannerExternalUrl from "@/views/BannerExternalUrl.vue";
+import BannerHA from "@/views/BannerHA.vue";
 import BannerSubscription from "@/views/BannerSubscription.vue";
 import BannerUpgradeSubscription from "@/views/BannerUpgradeSubscription.vue";
 
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
-const { needConfigureExternalUrl } = storeToRefs(actuatorStore);
-const { isExpired, isTrialing, currentPlan, daysBeforeExpire } =
+const { needConfigureExternalUrl, replicaCount } = storeToRefs(actuatorStore);
+const { isExpired, isTrialing, currentPlan, daysBeforeExpire, isHAAllowed } =
   storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {
@@ -45,5 +47,9 @@ const shouldShowSubscriptionBanner = computed(() => {
 
 const shouldShowExternalUrlBanner = computed(() => {
   return !isDev() && needConfigureExternalUrl.value;
+});
+
+const shouldShowHABanner = computed(() => {
+  return !isHAAllowed.value && replicaCount.value > 1;
 });
 </script>
