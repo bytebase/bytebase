@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
@@ -17,10 +16,11 @@ import (
 	mssqldb "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 )
 
+//nolint:tparallel
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestMSSQLContainer(ctx, t)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	host := container.GetHost()
 	port := container.GetPort()
@@ -652,8 +652,10 @@ GO
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
-			databaseName := fmt.Sprintf("test_%d", time.Now().Unix())
+			t.Parallel() // Safe to parallelize - shared container, unique databases per test
+			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
 			// Create driver instance
 			driverInstance := &mssqldb.Driver{}

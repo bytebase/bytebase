@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/pkg/errors"
@@ -19,10 +18,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
+//nolint:tparallel
 func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestMSSQLContainer(ctx, t)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	host := container.GetHost()
 	port := container.GetPort()
@@ -403,8 +403,11 @@ GO
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
-			databaseName := fmt.Sprintf("test_%d", time.Now().Unix())
+			t.Parallel() // Safe to parallelize - shared container, unique databases per test
+			// Use test name for database name - each test case has a unique name
+			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
 			// Create a new driver instance for this test
 			driverInstance := &mssqldb.Driver{}
@@ -466,7 +469,7 @@ GO
 			require.NotEmpty(t, definitionX)
 
 			// Step 3: Create a new database and run the definition X
-			newDatabaseName := fmt.Sprintf("test_copy_%d", time.Now().Unix())
+			newDatabaseName := fmt.Sprintf("test_copy_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
 			// Reconnect to master to create new database
 			testDriver.Close(ctx)
