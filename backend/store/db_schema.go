@@ -64,7 +64,18 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 		return nil, err
 	}
 
+	s.dbSchemaCache.Add(getDBSchemaCacheKey(find.InstanceID, find.DatabaseName), dbMetadata)
+
 	return dbMetadata, nil
+}
+
+// GetDBSchemaSnapshot gets the schema for a database with cache.
+func (s *Store) GetDBSchemaSnapshot(ctx context.Context, instanceID, databaseName string) (*model.DatabaseMetadata, error) {
+	cacheKey := getDBSchemaCacheKey(instanceID, databaseName)
+	if v, ok := s.dbSchemaCache.Get(cacheKey); ok {
+		return v, nil
+	}
+	return s.GetDBSchema(ctx, &FindDBSchemaMessage{InstanceID: instanceID, DatabaseName: databaseName})
 }
 
 // UpsertDBSchema upserts a database schema.
@@ -126,7 +137,13 @@ func (s *Store) UpsertDBSchema(
 		return err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	s.dbSchemaCache.Remove(getDBSchemaCacheKey(instanceID, databaseName))
+
+	return nil
 }
 
 // UpdateDBSchema updates a database schema.
@@ -159,7 +176,13 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		return err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	s.dbSchemaCache.Remove(getDBSchemaCacheKey(instanceID, databaseName))
+
+	return nil
 }
 
 func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseMetadata, error) {

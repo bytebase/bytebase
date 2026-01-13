@@ -9,7 +9,6 @@ import (
 	"time"
 
 	lsp "github.com/bytebase/lsp-protocol"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
 
@@ -21,7 +20,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type Method string
@@ -58,9 +56,8 @@ func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam
 		user:                 user,
 		tokenExpiry:          tokenExpiry,
 		iamManager:           iamManager,
-		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond),                            // 500ms debounce
-		contentCache:         NewContentCache(100),                                                       // Cache up to 100 documents
-		metadataCache:        expirable.NewLRU[string, *model.DatabaseMetadata](128, nil, 5*time.Minute), // Cache up to 128 database metadata with 5min TTL
+		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
+		contentCache:         NewContentCache(100),                            // Cache up to 100 documents
 	}
 	return lspHandler{Handler: jsonrpc2.HandlerWithError(handler.handle)}
 }
@@ -97,7 +94,6 @@ type Handler struct {
 	// Performance optimizations
 	diagnosticsDebouncer *DiagnosticsDebouncer
 	contentCache         *ContentCache
-	metadataCache        *expirable.LRU[string, *model.DatabaseMetadata]
 }
 
 // ShutDown shuts down the handler.

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Store provides database access to all raw objects.
@@ -30,6 +31,7 @@ type Store struct {
 	groupCache        *expirable.LRU[string, *GroupMessage]
 	groupMembersCache *expirable.LRU[string, map[string]bool]
 	memberGroupsCache *expirable.LRU[string, []string]
+	dbSchemaCache     *expirable.LRU[string, *model.DatabaseMetadata]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
@@ -70,6 +72,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	groupCache := expirable.NewLRU[string, *GroupMessage](1024, nil, time.Minute)
 	groupMembersCache := expirable.NewLRU[string, map[string]bool](1024, nil, time.Minute)
 	memberGroupsCache := expirable.NewLRU[string, []string](4096, nil, time.Minute)
+	dbSchemaCache := expirable.NewLRU[string, *model.DatabaseMetadata](128, nil, 5*time.Minute)
 
 	// Initialize database connection (handles both direct URL and file-based)
 	dbConnManager := NewDBConnectionManager(pgURL)
@@ -93,6 +96,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		groupCache:        groupCache,
 		groupMembersCache: groupMembersCache,
 		memberGroupsCache: memberGroupsCache,
+		dbSchemaCache:     dbSchemaCache,
 	}
 
 	return s, nil
@@ -130,5 +134,9 @@ func getPolicyCacheKey(resourceType storepb.Policy_Resource, resource string, po
 }
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {
+	return fmt.Sprintf("%s/%s", instanceID, databaseName)
+}
+
+func getDBSchemaCacheKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }
