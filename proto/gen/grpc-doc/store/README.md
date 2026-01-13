@@ -289,6 +289,7 @@
     - [SchedulerInfo](#bytebase-store-SchedulerInfo)
     - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
     - [TaskRun](#bytebase-store-TaskRun)
+    - [TaskRunPayload](#bytebase-store-TaskRunPayload)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
   
     - [TaskRun.Status](#bytebase-store-TaskRun-Status)
@@ -4755,6 +4756,23 @@ WaitingCause indicates why a task run is waiting to execute.
 
 ### TaskRun
 TaskRun represents an execution attempt of a task.
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunPayload"></a>
+
+### TaskRunPayload
+TaskRunPayload contains extensible runtime data for a task run.
+Stored in the payload JSONB column. New fields can be added here
+without database schema changes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scheduler_info | [SchedulerInfo](#bytebase-store-SchedulerInfo) |  | Scheduler information about why a task is waiting. |
 
 
 

@@ -99,7 +99,7 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 		return errors.Wrapf(err, "failed to get max parallel limit")
 	}
 	if !sc.checkParallelLimit(task.PlanID, maxParallel) {
-		s.storeParallelLimitCause(taskRun.ID)
+		s.storeParallelLimitCause(ctx, taskRun.ID)
 		return nil
 	}
 
@@ -112,15 +112,20 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	return nil
 }
 
-func (s *Scheduler) storeParallelLimitCause(taskRunID int) {
-	s.bus.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
-		ReportTime: timestamppb.Now(),
-		WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-			Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
-				ParallelTasksLimit: true,
+func (s *Scheduler) storeParallelLimitCause(ctx context.Context, taskRunID int) {
+	payload := &storepb.TaskRunPayload{
+		SchedulerInfo: &storepb.SchedulerInfo{
+			ReportTime: timestamppb.Now(),
+			WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+				Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
+					ParallelTasksLimit: true,
+				},
 			},
 		},
-	})
+	}
+	if err := s.store.UpdateTaskRunPayload(ctx, taskRunID, payload); err != nil {
+		slog.Error("failed to store parallel limit cause", log.BBError(err))
+	}
 }
 
 func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskMessage) (int, error) {
@@ -144,7 +149,10 @@ func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskM
 }
 
 func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
-	s.bus.TaskRunSchedulerInfo.Delete(taskRun.ID)
+	// Clear scheduler info by writing empty payload
+	if err := s.store.UpdateTaskRunPayload(ctx, taskRun.ID, &storepb.TaskRunPayload{}); err != nil {
+		slog.Error("failed to clear scheduler info", log.BBError(err))
+	}
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:      taskRun.ID,

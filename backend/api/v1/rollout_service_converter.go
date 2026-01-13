@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,10 +23,10 @@ func formatEnvironmentFromStageID(stageID string) string {
 	return stageID
 }
 
-func convertToTaskRuns(ctx context.Context, s *store.Store, bus *bus.Bus, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
+func convertToTaskRuns(ctx context.Context, s *store.Store, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunV1, err := convertToTaskRun(ctx, s, bus, taskRun)
+		taskRunV1, err := convertToTaskRun(ctx, s, taskRun)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert task run")
 		}
@@ -36,7 +35,7 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, bus *bus.Bus, taskRu
 	return taskRunsV1, nil
 }
 
-func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
 		Name:       common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
@@ -53,10 +52,8 @@ func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun
 		t.RunTime = timestamppb.New(*taskRun.RunAt)
 	}
 
-	if v, ok := bus.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
-		if info, ok := v.(*storepb.SchedulerInfo); ok {
-			t.SchedulerInfo = convertToSchedulerInfo(info)
-		}
+	if taskRun.PayloadProto != nil && taskRun.PayloadProto.SchedulerInfo != nil {
+		t.SchedulerInfo = convertToSchedulerInfo(taskRun.PayloadProto.SchedulerInfo)
 	}
 
 	if taskRun.ResultProto.ExportArchiveUid != 0 {
