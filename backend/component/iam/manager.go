@@ -40,7 +40,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 		return members
 	}
 
-	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
+	policyMessage, err := m.store.GetWorkspaceIamPolicySnapshot(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -61,7 +61,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 			if project == nil {
 				return false, errors.Errorf("project %q not found", projectID)
 			}
-			policyMessage, err := m.store.GetProjectIamPolicy(ctx, project.ResourceID)
+			policyMessage, err := m.store.GetProjectIamPolicySnapshot(ctx, project.ResourceID)
 			if err != nil {
 				return false, err
 			}
