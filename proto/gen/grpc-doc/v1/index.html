@@ -4532,6 +4532,13 @@ Permissions required: bb.users.updateEmail</p></td>
                   <td><p>Whether the external URL is set via command-line flag (and thus cannot be changed via UI). </p></td>
                 </tr>
               
+                <tr>
+                  <td>replica_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of active replicas (servers sharing the same database). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28953,6 +28960,13 @@ Permissions required: bb.sheets.get</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ha</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether high availability (multiple replicas) is enabled. </p></td>
                 </tr>
               
             </tbody>

@@ -153,6 +153,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		UnlicensedFeatures:  unlicensedFeaturesString,
 		EnableSample:        hasSampleInstances,
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
+		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
 	}
 
 	stats, err := s.store.StatUsers(ctx)

@@ -47,3 +47,24 @@ func (s *Store) DeleteStaleReplicaHeartbeats(ctx context.Context, olderThan time
 	}
 	return result.RowsAffected()
 }
+
+// CountActiveReplicas returns the count of replicas with recent heartbeats.
+// The `within` parameter defines the time window for considering a replica active.
+// Replicas without heartbeats within this window are considered inactive.
+func (s *Store) CountActiveReplicas(ctx context.Context, within time.Duration) (int, error) {
+	q := qb.Q().Space(`
+		SELECT COUNT(*) FROM replica_heartbeat
+		WHERE last_heartbeat > now() - ?::INTERVAL
+	`, within.String())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var count int
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+		return 0, errors.Wrapf(err, "failed to count active replicas")
+	}
+	return count, nil
+}

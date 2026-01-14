@@ -406,7 +406,8 @@
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
-    "external-url": "Bytebase no ha configurado --external-url"
+    "external-url": "Bytebase no ha configurado --external-url",
+    "ha-not-licensed": "Se detectaron múltiples réplicas sin licencia HA. Los ejecutores del backend están deshabilitados."
   },
   "bbkit": {
     "confirm-button": {

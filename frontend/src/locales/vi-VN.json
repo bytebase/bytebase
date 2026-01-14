@@ -406,7 +406,8 @@
     "deploy": "Tự lưu trữ",
     "cloud": "Đám mây",
     "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
-    "external-url": "Bytebase chưa được cấu hình --external-url"
+    "external-url": "Bytebase chưa được cấu hình --external-url",
+    "ha-not-licensed": "Phát hiện nhiều bản sao mà không có giấy phép HA. Trình chạy backend đã bị tắt."
   },
   "bbkit": {
     "confirm-button": {

@@ -57,6 +57,9 @@ func (x *Subscription) Equal(y *Subscription) bool {
 	if x.OrgName != y.OrgName {
 		return false
 	}
+	if x.Ha != y.Ha {
+		return false
+	}
 	return true
 }
 

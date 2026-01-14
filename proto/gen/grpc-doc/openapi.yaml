@@ -7761,6 +7761,11 @@ components:
                     readOnly: true
                     type: boolean
                     description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+                replicaCount:
+                    readOnly: true
+                    type: integer
+                    description: The number of active replicas (servers sharing the same database).
+                    format: int32
             description: |-
                 System information and configuration for the Bytebase instance.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -13504,6 +13509,10 @@ components:
                 orgName:
                     readOnly: true
                     type: string
+                ha:
+                    readOnly: true
+                    type: boolean
+                    description: Whether high availability (multiple replicas) is enabled.
         SyncDatabaseRequest:
             required:
                 - name

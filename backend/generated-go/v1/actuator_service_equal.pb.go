@@ -146,5 +146,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.ExternalUrlFromFlag != y.ExternalUrlFromFlag {
 		return false
 	}
+	if x.ReplicaCount != y.ReplicaCount {
+		return false
+	}
 	return true
 }

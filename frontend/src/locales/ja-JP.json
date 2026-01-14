@@ -406,7 +406,8 @@
     "deploy": "ローカル展開",
     "cloud": "クラウドサービス",
     "request-demo": "30 分間の製品デモを予約してください。",
-    "external-url": "Bytebase は --extern-url を設定していません"
+    "external-url": "Bytebase は --extern-url を設定していません",
+    "ha-not-licensed": "HAライセンスなしで複数のレプリカが検出されました。バックエンドランナーは無効です。"
   },
   "bbkit": {
     "confirm-button": {

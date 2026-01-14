@@ -49,6 +49,10 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case issueUID := <-r.bus.ApprovalCheckChan:
+			if err := r.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Approval runner skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			r.processIssue(ctx, issueUID)
 		case <-ctx.Done():
 			return
