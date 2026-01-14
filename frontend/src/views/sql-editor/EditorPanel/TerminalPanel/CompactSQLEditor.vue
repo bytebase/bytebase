@@ -127,6 +127,8 @@ const execute = (explain = false) => {
 };
 
 const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
+  // Mark this as a terminal editor to scope keybindings
+  useEditorContextKey(editor, "isTerminalEditor", true);
   useEditorContextKey(editor, "readonly", toRef(props, "readonly"));
 
   editor.addAction({
@@ -249,7 +251,7 @@ const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && !content && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
+    "isTerminalEditor && !readonly && !content && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
   editor.addCommand(
     monaco.KeyCode.DownArrow,
@@ -262,7 +264,7 @@ const handleEditorReady = (_: MonacoModule, editor: IStandaloneCodeEditor) => {
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
-    "!readonly && cursorAtLastLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
+    "isTerminalEditor && !readonly && cursorAtLastLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
   );
 
   watch(
