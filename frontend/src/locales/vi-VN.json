@@ -1227,9 +1227,9 @@
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
       "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}",
-      "missing-backup-schema-postgres": "Tạo schema 'bbdataarchive' trong cơ sở dữ liệu '{database}' để sao lưu trước",
-      "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên instance '{instance}' để sao lưu trước",
-      "missing-backup-database-oracle": "Tạo cơ sở dữ liệu 'BBDATAARCHIVE' trên instance '{instance}' để sao lưu trước"
+      "missing-backup-schema-postgres": "Tạo schema 'bbdataarchive' trong cơ sở dữ liệu '{database}', sau đó đồng bộ cơ sở dữ liệu",
+      "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu",
+      "missing-backup-database-oracle": "Tạo cơ sở dữ liệu 'BBDATAARCHIVE' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu"
     },
     "ghost": {
       "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",

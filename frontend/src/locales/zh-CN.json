@@ -1227,9 +1227,9 @@
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive' 以启用预备份",
-      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive' 以启用预备份",
-      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE' 以启用预备份"
+      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'，然后同步数据库",
+      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
+      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
     },
     "ghost": {
       "only-some-databases-checked": "仅检查部分数据库",

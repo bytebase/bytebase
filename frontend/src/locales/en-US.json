@@ -1227,9 +1227,9 @@
       "some-databases-not-meeting-requirements": "Some databases ({databases}) don't meet requirements",
       "some-databases-have-issues": "{count} database has issues | {count} databases have issues",
       "configuration-has-issues": "Configuration has {count} issue | Configuration has {count} issues",
-      "missing-backup-schema-postgres": "Create schema 'bbdataarchive' in database '{database}' for prior backup",
-      "missing-backup-database": "Create database 'bbdataarchive' on instance '{instance}' for prior backup",
-      "missing-backup-database-oracle": "Create database 'BBDATAARCHIVE' on instance '{instance}' for prior backup"
+      "missing-backup-schema-postgres": "Create schema 'bbdataarchive' in database '{database}', then sync the database",
+      "missing-backup-database": "Create database 'bbdataarchive' on instance '{instance}', then sync the instance and database",
+      "missing-backup-database-oracle": "Create database 'BBDATAARCHIVE' on instance '{instance}', then sync the instance and database"
     },
     "ghost": {
       "only-some-databases-checked": "Only some databases are checked",
