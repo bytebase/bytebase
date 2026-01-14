@@ -1,6 +1,11 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { NullValue } from "@bufbuild/protobuf/wkt";
 import { orderBy } from "lodash-es";
+import {
+  isLosslessNumber,
+  type LosslessNumber,
+  parse as losslessParse,
+} from "lossless-json";
 import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
@@ -12,6 +17,15 @@ import {
 type NoSQLRowData = {
   key: string;
   value: unknown;
+};
+
+// Reviver for lossless-json that converts LosslessNumber to string
+// to preserve precision for large integers (> 2^53-1)
+export const losslessReviver = (value: unknown): unknown => {
+  if (isLosslessNumber(value)) {
+    return (value as LosslessNumber).toString();
+  }
+  return value;
 };
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
@@ -57,7 +71,8 @@ const flattenNoSQLColumn = (value: unknown): unknown => {
         }
         return new Date(parseInt(dateObj["$numberLong"] as string));
       case "$numberLong":
-        return parseInt(dict[key] as string);
+        // Return as string to preserve precision for large integers (> 2^53-1)
+        return dict[key] as string;
       case "$numberDouble":
         return parseFloat(dict[key] as string);
       case "$numberInt":
@@ -247,7 +262,12 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
       ) {
         continue;
       }
-      const data = JSON.parse(row.values[0].kind.value);
+      // Use lossless-json to preserve precision for large integers (> 2^53-1)
+      const data = losslessParse(
+        row.values[0].kind.value,
+        null,
+        losslessReviver
+      ) as Record<string, unknown>;
       const values: RowValue[] = Array.from({ length: columns.length }).map(
         (_) =>
           createProto(RowValueSchema, {
@@ -325,7 +345,12 @@ const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
   if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
     return;
   }
-  const parsedRow = JSON.parse(row.values[0].kind.value) as {
+  // Use lossless-json to preserve precision for large integers (> 2^53-1)
+  const parsedRow = losslessParse(
+    row.values[0].kind.value,
+    null,
+    losslessReviver
+  ) as {
     [key: string]: Record<string, unknown>;
   };
   const results: NoSQLRowData[] = [];

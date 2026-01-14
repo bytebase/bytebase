@@ -100,6 +100,9 @@ importers:
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
+      lossless-json:
+        specifier: ^4.3.0
+        version: 4.3.0
       lucide-static:
         specifier: ^0.555.0
         version: 0.555.0
@@ -4121,6 +4124,9 @@ packages:
 
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
+
+  lossless-json@4.3.0:
+    resolution: {integrity: sha512-ToxOC+SsduRmdSuoLZLYAr5zy1Qu7l5XhmPWM3zefCZ5IcrzW/h108qbJUKfOlDlhvhjUK84+8PSVX0kxnit0g==}
 
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
@@ -10211,6 +10217,8 @@ snapshots:
   lodash@4.17.21: {}
 
   longest-streak@3.1.0: {}
+
+  lossless-json@4.3.0: {}
 
   lru-cache@10.4.3: {}
 
