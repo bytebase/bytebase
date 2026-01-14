@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-row justify-between items-center gap-2">
+  <div v-if="issueStatusText" class="w-full flex flex-row justify-between items-center gap-2">
     <h3 class="textlabel">
       {{ $t("common.status") }}
     </h3>
@@ -26,72 +26,39 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+const isRejected = computed(() =>
+  props.issue.approvers.some(
+    (app) => app.status === Issue_Approver_Status.REJECTED
+  )
+);
+
 const issueStatusText = computed(() => {
   const issueValue = props.issue;
-
-  // Show review status instead of just "Open"
-  if (issueValue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
-    return t("issue.table.open");
+  if (issueValue.status !== IssueStatus.OPEN) {
+    return "";
   }
 
   const rolloutReady =
     issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
     issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
-  const reviewStatus = rolloutReady
-    ? Issue_Approver_Status.APPROVED
-    : issueValue.approvers.some(
-          (app) => app.status === Issue_Approver_Status.REJECTED
-        )
-      ? Issue_Approver_Status.REJECTED
-      : Issue_Approver_Status.PENDING;
-
-  switch (reviewStatus) {
-    case Issue_Approver_Status.APPROVED:
-      return t("issue.review.approved");
-    case Issue_Approver_Status.REJECTED:
-      return t("issue.review.rejected");
-    default:
-      return t("issue.review.under-review");
+  if (rolloutReady) {
+    return t("issue.review.approved");
   }
+  if (isRejected.value) {
+    return t("issue.review.rejected");
+  }
+  return t("issue.review.under-review");
 });
 
 const issueStatusTagType = computed(() => {
   const issueValue = props.issue;
-
-  switch (issueValue.status) {
-    case IssueStatus.OPEN:
-      // Show different colors based on review status
-      if (issueValue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
-        return "info";
-      }
-
-      const rolloutReady =
-        issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-        issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
-      const reviewStatus = rolloutReady
-        ? Issue_Approver_Status.APPROVED
-        : issueValue.approvers.some(
-              (app) => app.status === Issue_Approver_Status.REJECTED
-            )
-          ? Issue_Approver_Status.REJECTED
-          : Issue_Approver_Status.PENDING;
-
-      switch (reviewStatus) {
-        case Issue_Approver_Status.APPROVED:
-          return "success";
-        case Issue_Approver_Status.REJECTED:
-          return "error";
-        case Issue_Approver_Status.PENDING:
-          return "warning";
-        default:
-          return "info";
-      }
-    case IssueStatus.DONE:
-      return "success";
-    case IssueStatus.CANCELED:
-      return "default";
-    default:
-      return "default";
+  if (issueValue.status !== IssueStatus.OPEN) {
+    return "default";
   }
+
+  if (isRejected.value) {
+    return "error";
+  }
+  return "success";
 });
 </script>

@@ -24,10 +24,7 @@ export const IssueStatusActionToIssueStatusMap: Record<
   RESOLVE: IssueStatus.DONE,
 };
 
-export const PossibleIssueStatusActionMap: Record<
-  IssueStatus,
-  IssueStatusAction[]
-> = {
+const PossibleIssueStatusActionMap: Record<IssueStatus, IssueStatusAction[]> = {
   [IssueStatus.OPEN]: ["RESOLVE", "CLOSE"],
   [IssueStatus.DONE]: ["REOPEN"],
   [IssueStatus.CANCELED]: ["REOPEN"],

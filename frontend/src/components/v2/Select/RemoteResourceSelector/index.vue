@@ -102,10 +102,17 @@ const searchText = ref("");
 const show = ref(false);
 const rawOptions = ref([]) as Ref<ResourceSelectOption<T>[]>;
 
-const appendDataToRawList = (data: ResourceSelectOption<T>[]) => {
+const appendDataToRawList = (
+  data: ResourceSelectOption<T>[],
+  unshift: boolean = false
+) => {
   for (const item of data) {
     if (!rawOptions.value.find((raw) => raw.value === item.value)) {
-      rawOptions.value.unshift(item);
+      if (unshift) {
+        rawOptions.value.unshift(item);
+      } else {
+        rawOptions.value.push(item);
+      }
     }
   }
 };
@@ -118,7 +125,7 @@ watch(
   ],
   ([additionalOptions, isLoadingNextPage, searchText]) => {
     if (!isLoadingNextPage && !searchText) {
-      appendDataToRawList(additionalOptions);
+      appendDataToRawList(additionalOptions, true);
     }
   },
   { deep: true }

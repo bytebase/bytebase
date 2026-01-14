@@ -96,7 +96,8 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 }
 
 // checkPlanCompletion checks if all tasks in a plan are complete and successful.
-// If so, sends PIPELINE_COMPLETED webhook.
+// If so, sends PIPELINE_COMPLETED webhook and auto-resolves issues for deferred rollout plans.
+// Deferred rollout plans (exportDataConfig, createDatabaseConfig) auto-resolve when tasks complete.
 // Called when tasks are marked DONE/SKIPPED, or when tasks are skipped/canceled via API.
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 	// Get all tasks for this plan
@@ -153,4 +154,48 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 			Rollout: webhook.NewRollout(plan),
 		},
 	})
+
+	// Auto-resolve issue for deferred rollout plans.
+	// Deferred rollout plans are those with only exportDataConfig or createDatabaseConfig specs.
+	// These are simple single-phase operations that don't require manual resolution.
+	if isDeferredRolloutPlan(plan) {
+		s.autoResolveIssue(ctx, planID)
+	}
+}
+
+// isDeferredRolloutPlan returns true if the plan contains only deferred rollout specs
+// (exportDataConfig or createDatabaseConfig).
+func isDeferredRolloutPlan(plan *store.PlanMessage) bool {
+	specs := plan.Config.GetSpecs()
+	if len(specs) == 0 {
+		return false
+	}
+	for _, spec := range specs {
+		if spec.GetExportDataConfig() == nil && spec.GetCreateDatabaseConfig() == nil {
+			return false
+		}
+	}
+	return true
+}
+
+// autoResolveIssue automatically resolves the issue associated with a plan by setting its status to DONE.
+func (s *Scheduler) autoResolveIssue(ctx context.Context, planID int64) {
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
+	if err != nil {
+		slog.Error("failed to get issue for auto-resolve", log.BBError(err))
+		return
+	}
+	if issue == nil {
+		return
+	}
+	if issue.Status != storepb.Issue_OPEN {
+		return
+	}
+
+	newStatus := storepb.Issue_DONE
+	if _, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}); err != nil {
+		slog.Error("failed to auto-resolve issue", slog.Int("issueUID", issue.UID), log.BBError(err))
+		return
+	}
+	slog.Info("auto-resolved deferred rollout issue", slog.Int("issueUID", issue.UID), slog.Int64("planID", planID))
 }
