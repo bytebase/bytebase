@@ -408,24 +408,8 @@ GO
 			// Use test name for database name - each test case has a unique name
 			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
-			// Create a new driver instance for this test
-			driverInstance := &mssqldb.Driver{}
-			config := db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Type:     storepb.DataSourceType_ADMIN,
-					Username: "sa",
-					Host:     host,
-					Port:     strconv.Itoa(portInt),
-					Database: "master",
-				},
-				Password: "Test123!",
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "master",
-				},
-			}
-
-			// Open connection
-			driver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+			// Create driver connection to master database
+			driver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), "master")
 			require.NoError(t, err)
 
 			// Create test database
@@ -434,9 +418,7 @@ GO
 
 			// Reconnect to test database
 			driver.Close(ctx)
-			config.DataSource.Database = databaseName
-			config.ConnectionContext.DatabaseName = databaseName
-			testDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+			testDriver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), databaseName)
 			require.NoError(t, err)
 			defer testDriver.Close(ctx)
 
@@ -460,9 +442,7 @@ GO
 
 			// Reconnect to master to create new database
 			testDriver.Close(ctx)
-			config.DataSource.Database = "master"
-			config.ConnectionContext.DatabaseName = "master"
-			masterDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+			masterDriver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), "master")
 			require.NoError(t, err)
 
 			_, err = masterDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", newDatabaseName), db.ExecuteOptions{CreateDatabase: true})
@@ -470,9 +450,7 @@ GO
 
 			// Connect to the new database
 			masterDriver.Close(ctx)
-			config.DataSource.Database = newDatabaseName
-			config.ConnectionContext.DatabaseName = newDatabaseName
-			newDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+			newDriver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), newDatabaseName)
 			require.NoError(t, err)
 			defer newDriver.Close(ctx)
 
@@ -480,11 +458,8 @@ GO
 			err = executeSQLStatements(ctx, newDriver, definitionX)
 			require.NoError(t, err)
 
-			mssqlNewDriver, ok := newDriver.(*mssqldb.Driver)
-			require.True(t, ok, "failed to cast to mssqldb.Driver")
-
 			// Get metadata B
-			metadataB, err := mssqlNewDriver.SyncDBSchema(ctx)
+			metadataB, err := newDriver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 4: Compare metadata A and B

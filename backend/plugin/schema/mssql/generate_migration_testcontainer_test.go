@@ -14,13 +14,11 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	mssqldb "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -36,34 +34,14 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Start MSSQL container
-	req := testcontainers.ContainerRequest{
-		Image: "mcr.microsoft.com/mssql/server:2022-latest",
-		Env: map[string]string{
-			"ACCEPT_EULA": "Y",
-			"SA_PASSWORD": "Test123!",
-			"MSSQL_PID":   "Express",
-		},
-		ExposedPorts: []string{"1433/tcp"},
-		WaitingFor: wait.ForLog("SQL Server is now ready for client connections").
-			WithStartupTimeout(3 * time.Minute),
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	})
+	// Start shared MSSQL container for all subtests
+	container := testcontainer.GetTestMSSQLContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Get connection details
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "1433")
+	host := container.GetHost()
+	port := container.GetPort()
+	portInt, err := strconv.Atoi(port)
 	require.NoError(t, err)
 
 	// Test cases with various schema changes
@@ -2380,9 +2358,7 @@ GO
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			// Step 1: Execute 5-step workflow
-			portInt, err := strconv.Atoi(port.Port())
-			require.NoError(t, err)
-			err = executeFiveStepWorkflow(ctx, host, portInt, testCase.name, testCase.initialSchema, testCase.migrationDDL)
+			err := executeFiveStepWorkflow(ctx, host, portInt, testCase.name, testCase.initialSchema, testCase.migrationDDL)
 			require.NoError(t, err, "Failed 5-step workflow for test case: %s", testCase.description)
 		})
 	}
@@ -2395,26 +2371,8 @@ GO
 // 4. Execute rollback DDL, get schema result C via syncDBSchema
 // 5. Compare schema results A and C to verify they are identical
 func executeFiveStepWorkflow(ctx context.Context, host string, port int, testName, initialSchema, migrationDDL string) error {
-	// Create driver instance
-	driverInstance := &mssqldb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "sa",
-			Host:     host,
-			Port:     strconv.Itoa(port),
-			Database: "master",
-		},
-		Password: "Test123!",
-		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "master",
-		},
-	}
-
-	// Open connection
-	driver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+	// Create driver connection to master database
+	driver, err := createMSSQLDriver(ctx, host, strconv.Itoa(port), "master")
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to MSSQL")
 	}
@@ -2428,9 +2386,7 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, testNam
 
 	// Reconnect to test database
 	driver.Close(ctx)
-	config.DataSource.Database = testDB
-	config.ConnectionContext.DatabaseName = testDB
-	driver, err = driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+	driver, err = createMSSQLDriver(ctx, host, strconv.Itoa(port), testDB)
 	if err != nil {
 		return errors.Wrap(err, "failed to reconnect to test database")
 	}
@@ -2441,12 +2397,7 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, testNam
 		return errors.Wrap(err, "failed to execute initial schema")
 	}
 
-	mssqlDriver, ok := driver.(*mssqldb.Driver)
-	if !ok {
-		return errors.New("failed to cast to mssqldb.Driver")
-	}
-
-	schemaA, err := mssqlDriver.SyncDBSchema(ctx)
+	schemaA, err := driver.SyncDBSchema(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to sync schema A")
 	}
@@ -2456,7 +2407,7 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, testNam
 		return errors.Wrap(err, "failed to execute migration DDL")
 	}
 
-	schemaB, err := mssqlDriver.SyncDBSchema(ctx)
+	schemaB, err := driver.SyncDBSchema(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to sync schema B")
 	}
@@ -2518,7 +2469,7 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, testNam
 		return errors.Wrapf(err, "failed to execute rollback DDL: %s", rollbackDDL)
 	}
 
-	schemaC, err := mssqlDriver.SyncDBSchema(ctx)
+	schemaC, err := driver.SyncDBSchema(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to sync schema C")
 	}

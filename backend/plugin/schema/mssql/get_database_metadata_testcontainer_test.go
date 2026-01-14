@@ -656,24 +656,8 @@ GO
 			t.Parallel() // Safe to parallelize - shared container, unique databases per test
 			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
-			// Create driver instance
-			driverInstance := &mssqldb.Driver{}
-			config := db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Type:     storepb.DataSourceType_ADMIN,
-					Username: "sa",
-					Host:     host,
-					Port:     strconv.Itoa(portInt),
-					Database: "master",
-				},
-				Password: "Test123!",
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "master",
-				},
-			}
-
-			// Open connection
-			driver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+			// Create driver connection to master database
+			driver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), "master")
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 
@@ -683,9 +667,7 @@ GO
 
 			// Connect to the test database
 			driver.Close(ctx)
-			config.DataSource.Database = databaseName
-			config.ConnectionContext.DatabaseName = databaseName
-			driver, err = driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
+			driver, err = createMSSQLDriver(ctx, host, strconv.Itoa(portInt), databaseName)
 			require.NoError(t, err)
 
 			// Execute setup SQL
