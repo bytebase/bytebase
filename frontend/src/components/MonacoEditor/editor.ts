@@ -41,9 +41,7 @@ export const createMonacoEditor = async (config: {
 
   // Disable "Cannot edit in read-only editor" tooltip
   // https://github.com/microsoft/monaco-editor/discussions/4156
-  editor
-    .getContribution("editor.contrib.readOnlyMessageController")
-    ?.dispose();
+  editor.getContribution("editor.contrib.readOnlyMessageController")?.dispose();
 
   MonacoEditorReadyDefer.resolve(undefined);
 
