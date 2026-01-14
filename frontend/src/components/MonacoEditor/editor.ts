@@ -39,6 +39,12 @@ export const createMonacoEditor = async (config: {
     ...config.options,
   });
 
+  // Disable "Cannot edit in read-only editor" tooltip
+  // https://github.com/microsoft/monaco-editor/discussions/4156
+  editor
+    .getContribution("editor.contrib.readOnlyMessageController")
+    ?.dispose();
+
   MonacoEditorReadyDefer.resolve(undefined);
 
   return editor;
@@ -60,6 +66,13 @@ export const createMonacoDiffEditor = async (config: {
     ...defaultDiffEditorOptions(),
     ...config.options,
   });
+
+  // Disable "Cannot edit in read-only editor" tooltip
+  // https://github.com/microsoft/monaco-editor/discussions/4156
+  editor
+    .getModifiedEditor()
+    .getContribution("editor.contrib.readOnlyMessageController")
+    ?.dispose();
 
   MonacoEditorReadyDefer.resolve();
 
