@@ -26,7 +26,7 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	// Start shared MySQL container for all subtests
 	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	host := container.GetHost()
 	port := container.GetPort()

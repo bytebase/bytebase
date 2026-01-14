@@ -35,7 +35,7 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	// Start shared MySQL container for all subtests
 	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Get connection details
 	host := container.GetHost()
