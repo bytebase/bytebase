@@ -24,6 +24,8 @@ import (
 // TestGenerateMigrationWithTestcontainer tests the generate migration function
 // by applying migrations and rollback to verify the schema can be restored.
 func TestGenerateMigrationWithTestcontainer(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("Skipping TiDB testcontainer test in short mode")
 	}

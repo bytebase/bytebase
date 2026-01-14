@@ -20,6 +20,8 @@ import (
 )
 
 func TestGetDatabaseDefinition(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("Skipping TiDB testcontainer test in short mode")
 	}

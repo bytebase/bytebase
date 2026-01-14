@@ -17,6 +17,8 @@ import (
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
 // by comparing its output with the metadata retrieved from a real TiDB instance.
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("Skipping TiDB testcontainer test in short mode")
 	}
