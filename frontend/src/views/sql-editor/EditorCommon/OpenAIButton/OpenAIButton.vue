@@ -83,7 +83,7 @@ const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
 
 onMounted(async () => {
-  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI);
+  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI, true);
 });
 
 const openAIEnabled = computed(() => {

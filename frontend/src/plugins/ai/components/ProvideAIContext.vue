@@ -34,7 +34,7 @@ const state = reactive<LocalState>({
 const settingV1Store = useSettingV1Store();
 
 onMounted(async () => {
-  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI);
+  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI, true);
 });
 
 const aiSetting = computed(() => {

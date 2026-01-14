@@ -157,10 +157,3 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
     updateWorkspaceProfile,
   };
 });
-
-export const useSettingByName = (name: Setting_SettingName) => {
-  const store = useSettingV1Store();
-  const setting = computed(() => store.getSettingByName(name));
-  store.getOrFetchSettingByName(name, /* silent */ true);
-  return setting;
-};
