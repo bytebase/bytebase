@@ -143,6 +143,7 @@ import {
   wrapRefAsPromise,
 } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
+import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
 interface LocalState {
@@ -232,11 +233,18 @@ const previousSchema = computed((): string => {
 });
 
 // Allow rollback for completed MIGRATE changelogs when user has alter schema permission
+// and the database engine supports schema diff rollback
 const allowRollback = computed((): boolean => {
   if (isDefaultProject.value) {
     return false;
   }
-  if (!changelog.value || !allowAlterSchema.value) {
+  if (!changelog.value || !allowAlterSchema.value || !database.value) {
+    return false;
+  }
+  // Check if engine supports schema diff rollback (GenerateMigration in backend)
+  if (
+    !instanceV1SupportsSchemaRollback(database.value.instanceResource.engine)
+  ) {
     return false;
   }
   return (
