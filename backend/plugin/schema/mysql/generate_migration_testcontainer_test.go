@@ -1645,13 +1645,8 @@ CREATE TABLE some_table (
 
 			// Create a test database
 			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
-			_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
-			require.NoError(t, err)
 			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
-			}()
 
 			// Use the test database
 			_, err = db.Exec(fmt.Sprintf("USE `%s`", testDBName))

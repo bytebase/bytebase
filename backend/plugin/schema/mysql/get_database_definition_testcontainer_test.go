@@ -324,9 +324,6 @@ CREATE TABLE translations (
 			newDBName := fmt.Sprintf("%s_recreated", tc.databaseName)
 			metadataB, err := createDatabaseAndSync(ctx, host, port, "root", "root-password", tc.databaseName, newDBName, definitionX)
 			require.NoError(t, err)
-			defer func() {
-				dropDatabase(ctx, host, port, "root", "root-password", tc.databaseName, newDBName)
-			}()
 
 			// Step 4: Compare the database metadata A and B, should be the same
 			normalizeMetadata(metadataA)
@@ -467,9 +464,6 @@ CREATE TABLE project_member (
 	newDBName := fmt.Sprintf("%s_recreated", databaseName)
 	metadataB, err := createDatabaseAndSync(ctx, host, port, "root", "root-password", databaseName, newDBName, definitionX)
 	require.NoError(t, err)
-	defer func() {
-		dropDatabase(ctx, host, port, "root", "root-password", databaseName, newDBName)
-	}()
 
 	// Compare
 	normalizeMetadata(metadataA)
@@ -563,28 +557,4 @@ func createDatabaseAndSync(ctx context.Context, host, port, username, password, 
 
 	// Now connect to the new database and apply DDL
 	return initializeAndSyncDatabase(ctx, host, port, username, password, targetDB, ddl)
-}
-
-// dropDatabase drops a database
-func dropDatabase(ctx context.Context, host, port, username, password, sourceDB, targetDB string) {
-	driver := &mysqldb.Driver{}
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
-			Host:     host,
-			Port:     port,
-			Database: sourceDB,
-		},
-		Password: password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  sourceDB,
-		},
-	}
-
-	if openedDriver, err := driver.Open(ctx, storepb.Engine_MYSQL, config); err == nil {
-		_, _ = openedDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", targetDB), db.ExecuteOptions{})
-		openedDriver.Close(ctx)
-	}
 }

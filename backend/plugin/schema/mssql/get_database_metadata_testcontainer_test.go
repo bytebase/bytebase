@@ -652,7 +652,6 @@ GO
 	}
 
 	for _, tc := range testCases {
-		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel() // Safe to parallelize - shared container, unique databases per test
 			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
@@ -681,20 +680,6 @@ GO
 			// Create test database
 			_, err = driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
 			require.NoError(t, err)
-
-			// Clean up database after test
-			defer func() {
-				// Reconnect to master to drop the test database
-				driver.Close(ctx)
-				config.DataSource.Database = "master"
-				config.ConnectionContext.DatabaseName = "master"
-				cleanupDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
-				if err == nil {
-					_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", databaseName), db.ExecuteOptions{CreateDatabase: true})
-					_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
-					cleanupDriver.Close(ctx)
-				}
-			}()
 
 			// Connect to the test database
 			driver.Close(ctx)

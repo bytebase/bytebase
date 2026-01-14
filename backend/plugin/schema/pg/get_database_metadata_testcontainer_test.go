@@ -874,9 +874,6 @@ INSERT INTO array_types_test (
 			dbName := fmt.Sprintf("test_%s", tc.name)
 			_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName))
-			}()
 
 			// Connect to the test database
 			testConnConfig := *connConfig

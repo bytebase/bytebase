@@ -411,9 +411,6 @@ CREATE TABLE cities (
 			dbNameA := fmt.Sprintf("test_a_%s", tc.name)
 			_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameA))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbNameA))
-			}()
 
 			// Connect to database A
 			testDBA, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s sslmode=disable",
@@ -438,9 +435,6 @@ CREATE TABLE cities (
 			dbNameB := fmt.Sprintf("test_b_%s", tc.name)
 			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameB))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbNameB))
-			}()
 
 			// Connect to database B
 			testDBB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s sslmode=disable",

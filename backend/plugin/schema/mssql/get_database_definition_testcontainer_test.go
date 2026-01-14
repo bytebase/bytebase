@@ -403,7 +403,6 @@ GO
 	}
 
 	for _, tc := range testCases {
-		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel() // Safe to parallelize - shared container, unique databases per test
 			// Use test name for database name - each test case has a unique name
@@ -432,18 +431,6 @@ GO
 			// Create test database
 			_, err = driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
 			require.NoError(t, err)
-			defer func() {
-				// Clean up test database
-				driver.Close(ctx)
-				config.DataSource.Database = "master"
-				config.ConnectionContext.DatabaseName = "master"
-				cleanupDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
-				if err == nil {
-					_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", databaseName), db.ExecuteOptions{CreateDatabase: true})
-					_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
-					cleanupDriver.Close(ctx)
-				}
-			}()
 
 			// Reconnect to test database
 			driver.Close(ctx)
@@ -480,18 +467,6 @@ GO
 
 			_, err = masterDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", newDatabaseName), db.ExecuteOptions{CreateDatabase: true})
 			require.NoError(t, err)
-			defer func() {
-				// Clean up new database
-				masterDriver.Close(ctx)
-				config.DataSource.Database = "master"
-				config.ConnectionContext.DatabaseName = "master"
-				cleanupDriver2, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
-				if err == nil {
-					_, _ = cleanupDriver2.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", newDatabaseName), db.ExecuteOptions{CreateDatabase: true})
-					_, _ = cleanupDriver2.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", newDatabaseName), db.ExecuteOptions{CreateDatabase: true})
-					cleanupDriver2.Close(ctx)
-				}
-			}()
 
 			// Connect to the new database
 			masterDriver.Close(ctx)
