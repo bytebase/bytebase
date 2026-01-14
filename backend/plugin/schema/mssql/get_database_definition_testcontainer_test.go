@@ -3,18 +3,14 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 
 	_ "github.com/microsoft/go-mssqldb"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	mssqldb "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -26,8 +22,6 @@ func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 
 	host := container.GetHost()
 	port := container.GetPort()
-	portInt, err := strconv.Atoi(port)
-	require.NoError(t, err)
 
 	testCases := []struct {
 		name      string
@@ -408,28 +402,20 @@ GO
 			// Use test name for database name - each test case has a unique name
 			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
-			// Create driver connection to master database
-			driver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), "master")
+			// Create test database using container's master connection
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", databaseName))
 			require.NoError(t, err)
 
-			// Create test database
-			_, err = driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", databaseName), db.ExecuteOptions{CreateDatabase: true})
-			require.NoError(t, err)
-
-			// Reconnect to test database
-			driver.Close(ctx)
-			testDriver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), databaseName)
+			// Connect to test database
+			testDriver, err := createMSSQLDriver(ctx, host, port, databaseName)
 			require.NoError(t, err)
 			defer testDriver.Close(ctx)
 
 			// Step 1: Initialize database schema and get metadata A
-			err = executeSQLStatements(ctx, testDriver, tc.setupSQL)
+			err = executeSQL(ctx, testDriver, tc.setupSQL)
 			require.NoError(t, err)
 
-			mssqlTestDriver, ok := testDriver.(*mssqldb.Driver)
-			require.True(t, ok, "failed to cast to mssqldb.Driver")
-
-			metadataA, err := mssqlTestDriver.SyncDBSchema(ctx)
+			metadataA, err := testDriver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Call GetDatabaseDefinition to generate database definition X
@@ -440,22 +426,17 @@ GO
 			// Step 3: Create a new database and run the definition X
 			newDatabaseName := fmt.Sprintf("test_copy_%s", strings.ReplaceAll(tc.name, " ", "_"))
 
-			// Reconnect to master to create new database
-			testDriver.Close(ctx)
-			masterDriver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), "master")
-			require.NoError(t, err)
-
-			_, err = masterDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", newDatabaseName), db.ExecuteOptions{CreateDatabase: true})
+			// Create new database using container's master connection
+			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", newDatabaseName))
 			require.NoError(t, err)
 
 			// Connect to the new database
-			masterDriver.Close(ctx)
-			newDriver, err := createMSSQLDriver(ctx, host, strconv.Itoa(portInt), newDatabaseName)
+			newDriver, err := createMSSQLDriver(ctx, host, port, newDatabaseName)
 			require.NoError(t, err)
 			defer newDriver.Close(ctx)
 
 			// Execute the generated definition
-			err = executeSQLStatements(ctx, newDriver, definitionX)
+			err = executeSQL(ctx, newDriver, definitionX)
 			require.NoError(t, err)
 
 			// Get metadata B
@@ -567,43 +548,4 @@ GO
 			}
 		})
 	}
-}
-
-func executeSQLStatements(ctx context.Context, driver db.Driver, sqlScript string) error {
-	statements := splitSQLByGO(sqlScript)
-	for _, stmt := range statements {
-		stmt = strings.TrimSpace(stmt)
-		if stmt == "" {
-			continue
-		}
-		if _, err := driver.Execute(ctx, stmt, db.ExecuteOptions{}); err != nil {
-			return errors.Wrapf(err, "failed to execute statement: %s", stmt)
-		}
-	}
-	return nil
-}
-
-func splitSQLByGO(script string) []string {
-	var statements []string
-	lines := strings.Split(script, "\n")
-	var currentStatement strings.Builder
-
-	for _, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-		if strings.EqualFold(trimmedLine, "GO") {
-			if currentStatement.Len() > 0 {
-				statements = append(statements, currentStatement.String())
-				currentStatement.Reset()
-			}
-		} else {
-			currentStatement.WriteString(line)
-			currentStatement.WriteString("\n")
-		}
-	}
-
-	if currentStatement.Len() > 0 {
-		statements = append(statements, currentStatement.String())
-	}
-
-	return statements
 }
