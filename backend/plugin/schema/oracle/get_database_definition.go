@@ -243,7 +243,7 @@ func writeTable(buf *strings.Builder, schema string, table *storepb.TableMetadat
 		if _, err := buf.WriteString(`  `); err != nil {
 			return err
 		}
-		if err := writeForeignKey(buf, schema, fk); err != nil {
+		if err := writeForeignKey(buf, fk); err != nil {
 			return err
 		}
 	}
@@ -379,7 +379,7 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 	return nil
 }
 
-func writeForeignKey(buf *strings.Builder, schema string, fk *storepb.ForeignKeyMetadata) error {
+func writeForeignKey(buf *strings.Builder, fk *storepb.ForeignKeyMetadata) error {
 	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -411,14 +411,8 @@ func writeForeignKey(buf *strings.Builder, schema string, fk *storepb.ForeignKey
 	if _, err := buf.WriteString(`) REFERENCES "`); err != nil {
 		return err
 	}
-	if fk.ReferencedSchema != schema {
-		if _, err := buf.WriteString(fk.ReferencedSchema); err != nil {
-			return err
-		}
-		if _, err := buf.WriteString(`"."`); err != nil {
-			return err
-		}
-	}
+	// Don't include schema prefix for foreign key references
+	// The generated DDL should be portable and work when recreated in any schema
 	if _, err := buf.WriteString(fk.ReferencedTable); err != nil {
 		return err
 	}
