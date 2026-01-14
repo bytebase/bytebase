@@ -195,9 +195,6 @@ CREATE TABLE nonclustered_pk (
 			// Create database
 			_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", tc.databaseName))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = container.GetDB().ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s", tc.databaseName))
-			}()
 
 			// Execute original DDL
 			_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", tc.databaseName))
@@ -218,9 +215,6 @@ CREATE TABLE nonclustered_pk (
 			newDatabaseName := fmt.Sprintf("%s_new", tc.databaseName)
 			_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", newDatabaseName))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = container.GetDB().ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s", newDatabaseName))
-			}()
 
 			// Apply the generated definition to the new database
 			_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", newDatabaseName))
@@ -300,9 +294,6 @@ CREATE TABLE project_members (
 	// Create database
 	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName))
 	require.NoError(t, err)
-	defer func() {
-		_, _ = container.GetDB().ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s", databaseName))
-	}()
 
 	// Execute original DDL
 	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", databaseName))
@@ -323,9 +314,6 @@ CREATE TABLE project_members (
 	newDatabaseName := fmt.Sprintf("%s_new", databaseName)
 	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", newDatabaseName))
 	require.NoError(t, err)
-	defer func() {
-		_, _ = container.GetDB().ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s", newDatabaseName))
-	}()
 
 	// Apply the generated definition to the new database
 	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", newDatabaseName))

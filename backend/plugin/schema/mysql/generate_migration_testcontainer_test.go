@@ -12,6 +12,7 @@ import (
 	// Import MySQL driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -1644,12 +1645,13 @@ CREATE TABLE some_table (
 			db := container.GetDB()
 
 			// Create a test database
-			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
+			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 			_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
 			require.NoError(t, err)
 			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
 			require.NoError(t, err)
 			defer func() {
+				_, _ = db.Exec("USE mysql")
 				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
 			}()
 

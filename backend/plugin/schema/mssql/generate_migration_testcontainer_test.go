@@ -2377,7 +2377,6 @@ GO
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase // Capture range variable
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			// Step 1: Execute 5-step workflow
@@ -2426,23 +2425,6 @@ func executeFiveStepWorkflow(ctx context.Context, host string, port int, testNam
 	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", testDB), db.ExecuteOptions{CreateDatabase: true}); err != nil {
 		return errors.Wrap(err, "failed to create test database")
 	}
-	defer func() {
-		// Clean up test database - reconnect to master first
-		driver.Close(ctx)
-		config.DataSource.Database = "master"
-		config.ConnectionContext.DatabaseName = "master"
-		cleanupDriver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
-		if err == nil {
-			// Set the database to single user mode to close any open connections
-			_, _ = cleanupDriver.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", testDB), db.ExecuteOptions{CreateDatabase: true})
-			// Drop the database using CreateDatabase option to avoid transaction issues
-			if _, err := cleanupDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", testDB), db.ExecuteOptions{CreateDatabase: true}); err != nil {
-				// Log but don't fail if cleanup fails
-				fmt.Printf("Warning: failed to clean up test database %s: %v\n", testDB, err)
-			}
-			cleanupDriver.Close(ctx)
-		}
-	}()
 
 	// Reconnect to test database
 	driver.Close(ctx)

@@ -227,7 +227,7 @@ CREATE TABLE non_clustered_test (
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Clean up any existing objects from previous tests
+			// Create test database (drop first to avoid conflicts between test cases)
 			_, err := container.GetDB().ExecContext(ctx, "DROP DATABASE IF EXISTS test_db")
 			require.NoError(t, err)
 			_, err = container.GetDB().ExecContext(ctx, "CREATE DATABASE test_db")
