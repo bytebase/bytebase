@@ -16,7 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -1370,26 +1370,21 @@ ALTER TABLE test_table COMMENT = '';
 			require.NoError(t, err, "failed to create driver")
 			defer driver.Close(ctx)
 
-			// Cast to TiDB driver for SyncDBSchema
-			tidbDriver, ok := driver.(*tidbdb.Driver)
-			require.True(t, ok, "failed to cast to tidb.Driver")
-
 			// Step 1: Initialize the database schema and get schema result A
-			_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", testDB))
 			require.NoError(t, err)
 
 			// Execute initial schema
-			err = executeStatements(container.GetDB(), tc.initialSchema)
+			_, err = driver.Execute(ctx, tc.initialSchema, db.ExecuteOptions{})
 			require.NoError(t, err, "Failed to execute initial schema")
 
-			schemaA, err := tidbDriver.SyncDBSchema(ctx)
+			schemaA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			err = executeStatements(container.GetDB(), tc.migrationDDL)
+			_, err = driver.Execute(ctx, tc.migrationDDL, db.ExecuteOptions{})
 			require.NoError(t, err, "Failed to execute migration DDL")
 
-			schemaB, err := tidbDriver.SyncDBSchema(ctx)
+			schemaB, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -1401,21 +1396,6 @@ ALTER TABLE test_table COMMENT = '';
 			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_TIDB, dbMetadataB, dbMetadataA)
 			require.NoError(t, err)
 
-			// Log the diff for debugging
-			t.Logf("Test case: %s", tc.description)
-			t.Logf("Table changes: %d", len(diff.TableChanges))
-			for _, tc := range diff.TableChanges {
-				t.Logf("  Table: %s, Action: %v", tc.TableName, tc.Action)
-			}
-			t.Logf("View changes: %d", len(diff.ViewChanges))
-			for _, vc := range diff.ViewChanges {
-				t.Logf("  View: %s, Action: %v", vc.ViewName, vc.Action)
-			}
-			t.Logf("Function changes: %d", len(diff.FunctionChanges))
-			for _, fc := range diff.FunctionChanges {
-				t.Logf("  Function: %s, Action: %v", fc.FunctionName, fc.Action)
-			}
-
 			// Generate rollback migration
 			rollbackDDL, err := schema.GenerateMigration(storepb.Engine_TIDB, diff)
 			require.NoError(t, err)
@@ -1423,10 +1403,10 @@ ALTER TABLE test_table COMMENT = '';
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
 
 			// Step 4: Run rollback DDL and get schema result C
-			err = executeStatements(container.GetDB(), rollbackDDL)
+			_, err = driver.Execute(ctx, rollbackDDL, db.ExecuteOptions{})
 			require.NoError(t, err, "Failed to execute rollback DDL")
 
-			schemaC, err := tidbDriver.SyncDBSchema(ctx)
+			schemaC, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same

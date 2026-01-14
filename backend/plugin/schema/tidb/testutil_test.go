@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/pkg/errors"
 
@@ -12,7 +11,7 @@ import (
 )
 
 // createTiDBDriver creates and opens a TiDB driver connection
-func createTiDBDriver(ctx context.Context, host, port, database string) (db.Driver, error) {
+func createTiDBDriver(ctx context.Context, host, port, database string) (*tidbdb.Driver, error) {
 	driver := &tidbdb.Driver{}
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
@@ -28,14 +27,13 @@ func createTiDBDriver(ctx context.Context, host, port, database string) (db.Driv
 			DatabaseName:  database,
 		},
 	}
-	return driver.Open(ctx, storepb.Engine_TIDB, config)
-}
-
-// executeStatements executes multiple SQL statements
-// TiDB/MySQL driver supports multi-statement execution natively
-func executeStatements(db *sql.DB, statements string) error {
-	if _, err := db.Exec(statements); err != nil {
-		return errors.Wrapf(err, "failed to execute statements")
+	d, err := driver.Open(ctx, storepb.Engine_TIDB, config)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	tidbDriver, ok := d.(*tidbdb.Driver)
+	if !ok {
+		return nil, errors.Errorf("failed to cast to TiDB driver")
+	}
+	return tidbDriver, nil
 }

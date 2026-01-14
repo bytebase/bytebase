@@ -11,7 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
@@ -213,18 +213,13 @@ CREATE TABLE non_clustered_test (
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 
-			// Cast to TiDB driver for SyncDBSchema
-			tidbDriver, ok := driver.(*tidbdb.Driver)
-			require.True(t, ok, "failed to cast to tidb.Driver")
-
 			// Execute DDL statements
-			_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", testDB))
 			require.NoError(t, err)
-			err = executeStatements(container.GetDB(), tc.ddl)
+			_, err = driver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
 			require.NoError(t, err)
 
 			// Get metadata from live database using driver
-			dbMetadata, err := tidbDriver.SyncDBSchema(ctx)
+			dbMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Get metadata from parser

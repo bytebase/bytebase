@@ -15,7 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -195,21 +195,15 @@ CREATE TABLE nonclustered_pk (
 			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDB))
 			require.NoError(t, err)
 
-			// Execute original DDL
-			_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", testDB))
-			require.NoError(t, err)
-			err = executeStatements(container.GetDB(), tc.originalDDL)
-			require.NoError(t, err)
-
 			// Get the original database metadata using SyncDBSchema
 			driver, err := createTiDBDriver(ctx, host, port, testDB)
 			require.NoError(t, err)
 			defer driver.Close(ctx)
+			// Execute original DDL
+			_, err = driver.Execute(ctx, tc.originalDDL, db.ExecuteOptions{})
+			require.NoError(t, err)
 
-			tidbDriver, ok := driver.(*tidbdb.Driver)
-			require.True(t, ok, "failed to cast to tidb.Driver")
-
-			originalMetadata, err := tidbDriver.SyncDBSchema(ctx)
+			originalMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Generate the database definition
@@ -222,21 +216,16 @@ CREATE TABLE nonclustered_pk (
 			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newTestDB))
 			require.NoError(t, err)
 
-			// Apply the generated definition to the new database
-			_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", newTestDB))
-			require.NoError(t, err)
-			err = executeStatements(container.GetDB(), definition)
-			require.NoError(t, err)
-
 			// Get the new database metadata
 			newDriver, err := createTiDBDriver(ctx, host, port, newTestDB)
 			require.NoError(t, err)
 			defer newDriver.Close(ctx)
 
-			newTiDBDriver, ok := newDriver.(*tidbdb.Driver)
-			require.True(t, ok, "failed to cast to tidb.Driver")
+			require.NoError(t, err)
+			_, err = newDriver.Execute(ctx, definition, db.ExecuteOptions{})
+			require.NoError(t, err)
 
-			newMetadata, err := newTiDBDriver.SyncDBSchema(ctx)
+			newMetadata, err := newDriver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Compare the metadata
@@ -313,21 +302,15 @@ CREATE TABLE project_members (
 	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDB))
 	require.NoError(t, err)
 
-	// Execute original DDL
-	_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", testDB))
-	require.NoError(t, err)
-	err = executeStatements(container.GetDB(), originalDDL)
-	require.NoError(t, err)
-
 	// Get the original database metadata
 	driver, err := createTiDBDriver(ctx, host, port, testDB)
 	require.NoError(t, err)
+	// Execute original DDL
+	_, err = driver.Execute(ctx, originalDDL, db.ExecuteOptions{})
+	require.NoError(t, err)
 	defer driver.Close(ctx)
 
-	tidbDriver, ok := driver.(*tidbdb.Driver)
-	require.True(t, ok, "failed to cast to tidb.Driver")
-
-	originalMetadata, err := tidbDriver.SyncDBSchema(ctx)
+	originalMetadata, err := driver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
 	// Generate the database definition
@@ -340,21 +323,16 @@ CREATE TABLE project_members (
 	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newTestDB))
 	require.NoError(t, err)
 
-	// Apply the generated definition to the new database
-	_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", newTestDB))
-	require.NoError(t, err)
-	err = executeStatements(container.GetDB(), definition)
-	require.NoError(t, err)
-
 	// Get the new database metadata
 	newDriver, err := createTiDBDriver(ctx, host, port, newTestDB)
 	require.NoError(t, err)
 	defer newDriver.Close(ctx)
 
-	newTiDBDriver, ok := newDriver.(*tidbdb.Driver)
-	require.True(t, ok, "failed to cast to tidb.Driver")
+	// Apply the generated definition to the new database
+	_, err = newDriver.Execute(ctx, definition, db.ExecuteOptions{})
+	require.NoError(t, err)
 
-	newMetadata, err := newTiDBDriver.SyncDBSchema(ctx)
+	newMetadata, err := newDriver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
 	// Compare the metadata
