@@ -17,7 +17,7 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask, hasProjectPermissionV2 } from "@/utils";
-import { ROLLBACK_AVAILABLE_ENGINES } from "./common";
+import { instanceV1SupportsPriorBackupRollback } from "@/utils/v1/instance";
 import TaskRollbackSection from "./TaskRollbackSection.vue";
 
 const { isCreating, issue, selectedTask, events } = useIssueContext();
@@ -77,7 +77,9 @@ const shouldShowTaskRollbackSection = computed((): boolean => {
     return false;
   }
   if (
-    !ROLLBACK_AVAILABLE_ENGINES.includes(database.value.instanceResource.engine)
+    !instanceV1SupportsPriorBackupRollback(
+      database.value.instanceResource.engine
+    )
   ) {
     return false;
   }
