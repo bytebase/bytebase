@@ -49,9 +49,9 @@ func (s *Service) handleRegister(c echo.Context) error {
 		if err != nil {
 			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "invalid redirect URI format")
 		}
-		// Require HTTPS except for localhost
-		if parsed.Scheme != "https" && !isLocalhostURI(uri) {
-			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must use HTTPS (except localhost)")
+		// Reject plain HTTP except for localhost (allow HTTPS and custom schemes like cursor://, vscode://)
+		if parsed.Scheme == "http" && !isLocalhostURI(uri) {
+			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "http:// redirect URIs are only allowed for localhost")
 		}
 	}
 
