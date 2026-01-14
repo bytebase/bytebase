@@ -1226,7 +1226,10 @@
       "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
       "some-databases-not-meeting-requirements": "Algunas bases de datos ({databases}) no cumplen los requisitos",
       "some-databases-have-issues": "{count} la base de datos tiene problemas | {count} las bases de datos tienen problemas",
-      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas"
+      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas",
+      "missing-backup-schema-postgres": "Cree el esquema 'bbdataarchive' en la base de datos '{database}', luego sincronice la base de datos",
+      "missing-backup-database": "Cree la base de datos 'bbdataarchive' en la instancia '{instance}', luego sincronice la instancia y la base de datos",
+      "missing-backup-database-oracle": "Cree la base de datos 'BBDATAARCHIVE' en la instancia '{instance}', luego sincronice la instancia y la base de datos"
     },
     "ghost": {
       "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",

@@ -1,9 +1,14 @@
 <template>
   <ul
-    class="flex flex-col whitespace-nowrap"
+    class="flex flex-col"
     :class="[showBullets && 'list-disc pl-4']"
   >
-    <li v-for="(item, i) in errors" :key="i" :style="itemStyle(item)">
+    <li
+      v-for="(item, i) in errors"
+      :key="i"
+      :style="itemStyle(item)"
+      class="wrap-break-word"
+    >
       <slot name="prefix" />
       <component v-if="isJSXElement(itemText(item))" :is="itemText(item)" />
       <span v-else>{{ itemText(item) }}</span>

@@ -1226,7 +1226,10 @@
       "only-some-databases-checked": "一部のデータベースのみがチェックされます",
       "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません",
       "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
-      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
+      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります",
+      "missing-backup-schema-postgres": "データベース '{database}' にスキーマ 'bbdataarchive' を作成し、データベースを同期してください",
+      "missing-backup-database": "インスタンス '{instance}' にデータベース 'bbdataarchive' を作成し、インスタンスとデータベースを同期してください",
+      "missing-backup-database-oracle": "インスタンス '{instance}' にデータベース 'BBDATAARCHIVE' を作成し、インスタンスとデータベースを同期してください"
     },
     "ghost": {
       "only-some-databases-checked": "一部のデータベースのみがチェックされます",
