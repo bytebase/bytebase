@@ -12,9 +12,15 @@
   </teleport>
 
   <Suspense>
+    <RoutePermissionGuard
+      class="m-6"
+      :project="project"
+      :routes="sqlEditorRoutes"
+    >
     <ProvideAIContext>
       <router-view />
     </ProvideAIContext>
+    </RoutePermissionGuard>
   </Suspense>
 </template>
 
@@ -24,10 +30,11 @@ import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { ProvideAIContext } from "@/plugins/ai";
-import {
+import sqlEditorRoutes, {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
@@ -131,6 +138,14 @@ const initializeProject = async () => {
   }
   return editorStore.project;
 };
+
+const project = computed(() => {
+  const proj = projectStore.getProjectByName(editorStore.project);
+  if (!isValidProjectName(proj.name)) {
+    return;
+  }
+  return proj;
+});
 
 const switchWorksheet = async (sheetName: string) => {
   const openedSheetTab = tabStore.getTabByWorksheet(sheetName);

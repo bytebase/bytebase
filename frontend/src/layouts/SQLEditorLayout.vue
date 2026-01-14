@@ -1,26 +1,22 @@
 <template>
-  <RoutePermissionGuard class="m-6" :routes="sqlEditorRoutes">
-    <div class="relative h-screen overflow-hidden flex flex-col">
-      <ul
-        id="sql-editor-debug"
-        class="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-999999"
-      ></ul>
+  <div class="relative h-screen overflow-hidden flex flex-col">
+    <ul
+      id="sql-editor-debug"
+      class="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-999999"
+    ></ul>
 
-      <BannersWrapper />
-      <template v-if="ready">
-        <ProvideSQLEditorContext />
-      </template>
-    </div>
-  </RoutePermissionGuard>
+    <BannersWrapper />
+    <template v-if="ready">
+      <ProvideSQLEditorContext />
+    </template>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
-import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
-import sqlEditorRoutes from "@/router/sqlEditor";
 import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
