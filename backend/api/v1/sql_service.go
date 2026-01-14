@@ -733,6 +733,14 @@ func queryRetryStopOnError(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
+	// MSSQL requires statements to be executed as a batch to preserve variable scope.
+	// For example, "DECLARE @meta int = 1; SELECT @meta" must be sent as one batch,
+	// otherwise the second statement will fail with "variable not defined" error.
+	// The queryRetry function will handle splitting internally via GetQuerySpan and queryBatch.
+	if instance.Metadata.GetEngine() == storepb.Engine_MSSQL {
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+	}
+
 	// Split the statement into individual SQLs
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
 	if err != nil {
