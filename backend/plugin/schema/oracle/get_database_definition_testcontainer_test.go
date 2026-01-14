@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -103,24 +104,21 @@ CREATE INDEX IDX_EMP_NAME ON EMPLOYEES(NAME);
 			// Log the generated definition for debugging
 			t.Logf("Generated definition:\n%s", definition)
 
-			// Step 3: Create a new user and run the database definition X
-			// Create a second unique user for recreation test
-			testUser2 := fmt.Sprintf("U_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			// Step 3: Drop all objects and recreate using the generated definition in the same schema
+			// Get list of all objects to drop
+			dropStatements, err := generateDropStatements(ctx, driver)
+			require.NoError(t, err, "Failed to generate drop statements")
 
-			// Create the second user
-			require.NoError(t, createOracleUser(systemDB, testUser2))
+			// Drop all objects
+			err = executeStatements(ctx, driver, dropStatements)
+			require.NoError(t, err, "Failed to drop objects")
 
-			// Connect as the second test user
-			driver2, err := createOracleDriver(ctx, container.GetHost(), container.GetPort(), testUser2)
-			require.NoError(t, err)
-			defer driver2.Close(ctx)
-
-			// Execute the generated definition in the new user's schema
-			err = executeStatements(ctx, driver2, definition)
+			// Execute the generated definition in the same schema
+			err = executeStatements(ctx, driver, definition)
 			require.NoError(t, err, "Failed to execute generated definition")
 
 			// Get metadata B after recreating from definition
-			metadataB, err := driver2.SyncDBSchema(ctx)
+			metadataB, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err, "Failed to get metadata after recreation")
 
 			// Step 4: Compare the database metadata A and B, should be the same
@@ -173,4 +171,49 @@ func normalizeOracleMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 			}
 		}
 	}
+}
+
+// generateDropStatements generates DROP statements for all objects in the schema
+func generateDropStatements(ctx context.Context, driver db.Driver) (string, error) {
+	metadata, err := driver.SyncDBSchema(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var drops []string
+
+	// Drop in reverse dependency order
+	for _, schema := range metadata.Schemas {
+		// Drop materialized views
+		for _, mv := range schema.MaterializedViews {
+			drops = append(drops, fmt.Sprintf("DROP MATERIALIZED VIEW \"%s\"", mv.Name))
+		}
+
+		// Drop views
+		for _, view := range schema.Views {
+			drops = append(drops, fmt.Sprintf("DROP VIEW \"%s\"", view.Name))
+		}
+
+		// Drop tables (cascade constraints to handle foreign keys)
+		for _, table := range schema.Tables {
+			drops = append(drops, fmt.Sprintf("DROP TABLE \"%s\" CASCADE CONSTRAINTS", table.Name))
+		}
+
+		// Drop sequences
+		for _, seq := range schema.Sequences {
+			drops = append(drops, fmt.Sprintf("DROP SEQUENCE \"%s\"", seq.Name))
+		}
+
+		// Drop functions
+		for _, fn := range schema.Functions {
+			drops = append(drops, fmt.Sprintf("DROP FUNCTION \"%s\"", fn.Name))
+		}
+
+		// Drop procedures
+		for _, proc := range schema.Procedures {
+			drops = append(drops, fmt.Sprintf("DROP PROCEDURE \"%s\"", proc.Name))
+		}
+	}
+
+	return strings.Join(drops, ";\n") + ";\n", nil
 }
