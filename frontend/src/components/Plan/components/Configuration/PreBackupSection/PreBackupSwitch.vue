@@ -34,6 +34,7 @@ import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { pushNotification } from "@/store";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 import { usePreBackupSettingContext } from "./context";
 
@@ -57,6 +58,76 @@ const errors = computed(() => {
           .join(", "),
       })
     );
+  }
+
+  // Check for databases with supported engines but missing backup location
+  const missingBackupLocationDatabases = databases.value.filter(
+    (db) =>
+      BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine) &&
+      !db.backupAvailable
+  );
+
+  if (missingBackupLocationDatabases.length > 0) {
+    // Group by engine type for clearer messages
+    const postgresDBs = missingBackupLocationDatabases.filter(
+      (db) => db.instanceResource.engine === Engine.POSTGRES
+    );
+    const mysqlLikeDBs = missingBackupLocationDatabases.filter(
+      (db) =>
+        db.instanceResource.engine === Engine.MYSQL ||
+        db.instanceResource.engine === Engine.TIDB ||
+        db.instanceResource.engine === Engine.MSSQL
+    );
+    const oracleDBs = missingBackupLocationDatabases.filter(
+      (db) => db.instanceResource.engine === Engine.ORACLE
+    );
+
+    // PostgreSQL: requires schema 'bbdataarchive' within the database
+    for (const db of postgresDBs) {
+      errors.push(
+        t("plan.pre-backup.missing-backup-schema-postgres", {
+          database: db.databaseName,
+        })
+      );
+    }
+
+    // MySQL/TiDB/MSSQL: requires database 'bbdataarchive' on the instance
+    // Group by instance to avoid duplicate messages
+    const mysqlInstanceMap = new Map<string, string>();
+    for (const db of mysqlLikeDBs) {
+      if (!mysqlInstanceMap.has(db.instanceResource.name)) {
+        mysqlInstanceMap.set(
+          db.instanceResource.name,
+          db.instanceResource.title
+        );
+      }
+    }
+    for (const [, instanceTitle] of mysqlInstanceMap) {
+      errors.push(
+        t("plan.pre-backup.missing-backup-database", {
+          instance: instanceTitle,
+        })
+      );
+    }
+
+    // Oracle: requires database 'BBDATAARCHIVE' on the instance
+    // Group by instance to avoid duplicate messages
+    const oracleInstanceMap = new Map<string, string>();
+    for (const db of oracleDBs) {
+      if (!oracleInstanceMap.has(db.instanceResource.name)) {
+        oracleInstanceMap.set(
+          db.instanceResource.name,
+          db.instanceResource.title
+        );
+      }
+    }
+    for (const [, instanceTitle] of oracleInstanceMap) {
+      errors.push(
+        t("plan.pre-backup.missing-backup-database-oracle", {
+          instance: instanceTitle,
+        })
+      );
+    }
   }
 
   return errors;
