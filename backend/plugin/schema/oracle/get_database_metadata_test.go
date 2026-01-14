@@ -28,10 +28,8 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	host := container.GetHost()
 	port := container.GetPort()
 
-	// Create shared SYSTEM database connection for user management
-	systemDB, err := openSystemDatabase(host, port)
-	require.NoError(t, err)
-	t.Cleanup(func() { systemDB.Close() })
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
 
 	// Test cases with various Oracle features
 	testCases := []struct {

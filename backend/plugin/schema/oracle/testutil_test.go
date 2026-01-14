@@ -50,20 +50,6 @@ func createOracleDriver(ctx context.Context, host, port, username string) (db.Dr
 	return driver.Open(ctx, storepb.Engine_ORACLE, config)
 }
 
-// openSystemDatabase opens a connection to Oracle using the SYSTEM account
-func openSystemDatabase(host string, port string) (*sql.DB, error) {
-	// Use SYSTEM account with the password from container env
-	dsn := fmt.Sprintf("oracle://system:test123@%s:%s/FREEPDB1", host, port)
-	db, err := sql.Open("oracle", dsn)
-	if err != nil {
-		return nil, err
-	}
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
 // executeStatements executes multiple SQL statements, handling both regular DDL and PL/SQL blocks
 func executeStatements(ctx context.Context, driver db.Driver, statements string) error {
 	// Use plsql.SplitSQL to properly split Oracle SQL statements

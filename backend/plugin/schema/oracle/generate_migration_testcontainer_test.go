@@ -33,10 +33,8 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	container := testcontainer.GetTestOracleContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	// Create shared SYSTEM database connection for user management
-	systemDB, err := openSystemDatabase(container.GetHost(), container.GetPort())
-	require.NoError(t, err)
-	t.Cleanup(func() { systemDB.Close() })
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
 
 	// Test cases with various schema changes
 	testCases := []struct {
