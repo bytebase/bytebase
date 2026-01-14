@@ -1256,10 +1256,6 @@
     "task-execution-notices": "Avisos de ejecución de tareas",
     "task-execution-errors": "Errores de ejecución de tareas",
     "no-active-task-to-cancel": "No hay ninguna tarea activa para cancelar.",
-    "no-runnable-task": "No hay ninguna tarea ejecutable disponible.",
-    "automatic-rollout": {
-      "description": "Este entorno tiene habilitada la implementación automática."
-    },
     "stage": {
       "self": "Escenario | Escenarios",
       "run-stage": "Ejecutar tareas",

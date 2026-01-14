@@ -1256,10 +1256,6 @@
     "task-execution-notices": "任务执行提醒",
     "task-execution-errors": "任务执行警告",
     "no-active-task-to-cancel": "没有要取消的任务。",
-    "no-runnable-task": "没有可运行的任务。",
-    "automatic-rollout": {
-      "description": "此环境已启用自动部署。"
-    },
     "stage": {
       "self": "阶段 | 阶段",
       "run-stage": "运行任务",
