@@ -32,6 +32,7 @@ type Store struct {
 	groupMembersCache *expirable.LRU[string, map[string]bool]
 	memberGroupsCache *expirable.LRU[string, []string]
 	dbSchemaCache     *expirable.LRU[string, *model.DatabaseMetadata]
+	iamPolicyCache    *expirable.LRU[string, *IamPolicyMessage]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
@@ -73,6 +74,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	groupMembersCache := expirable.NewLRU[string, map[string]bool](1024, nil, time.Minute)
 	memberGroupsCache := expirable.NewLRU[string, []string](4096, nil, time.Minute)
 	dbSchemaCache := expirable.NewLRU[string, *model.DatabaseMetadata](128, nil, 5*time.Minute)
+	iamPolicyCache := expirable.NewLRU[string, *IamPolicyMessage](1024, nil, time.Minute)
 
 	// Initialize database connection (handles both direct URL and file-based)
 	dbConnManager := NewDBConnectionManager(pgURL)
@@ -97,6 +99,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		groupMembersCache: groupMembersCache,
 		memberGroupsCache: memberGroupsCache,
 		dbSchemaCache:     dbSchemaCache,
+		iamPolicyCache:    iamPolicyCache,
 	}
 
 	return s, nil
@@ -123,6 +126,11 @@ func (s *Store) PurgeGroupCaches() {
 	s.groupCache.Purge()
 	s.groupMembersCache.Purge()
 	s.memberGroupsCache.Purge()
+}
+
+// PurgeIamPolicyCaches purges all IAM policy caches.
+func (s *Store) PurgeIamPolicyCaches() {
+	s.iamPolicyCache.Purge()
 }
 
 func getInstanceCacheKey(instanceID string) string {

@@ -24,6 +24,10 @@ type IamPolicyMessage struct {
 	Etag   string
 }
 
+func getIamPolicyCacheKey(resourceType storepb.Policy_Resource, resourceID string) string {
+	return fmt.Sprintf("iam/%s/%s", resourceType, resourceID)
+}
+
 // generateEtag generates etag for the given body.
 func generateEtag(t time.Time) string {
 	return fmt.Sprintf("%d", t.UnixMilli())
@@ -31,9 +35,14 @@ func generateEtag(t time.Time) string {
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
 	resourceType := storepb.Policy_WORKSPACE
-	return s.getIamPolicy(ctx, &FindPolicyMessage{
+	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, ""), policy)
+	return policy, nil
 }
 
 type PatchIamPolicyMessage struct {
@@ -93,16 +102,42 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		return nil, err
 	}
 
+	// Invalidate IAM policy cache after mutation.
+	s.iamPolicyCache.Remove(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, ""))
+
 	return s.GetWorkspaceIamPolicy(ctx)
 }
 
 func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
 	resourceType := storepb.Policy_PROJECT
 	resource := common.FormatProject(projectID)
-	return s.getIamPolicy(ctx, &FindPolicyMessage{
+	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_PROJECT, projectID), policy)
+	return policy, nil
+}
+
+// GetWorkspaceIamPolicySnapshot returns the workspace IAM policy with snapshot reads (with cache).
+func (s *Store) GetWorkspaceIamPolicySnapshot(ctx context.Context) (*IamPolicyMessage, error) {
+	key := getIamPolicyCacheKey(storepb.Policy_WORKSPACE, "")
+	if v, ok := s.iamPolicyCache.Get(key); ok {
+		return v, nil
+	}
+	return s.GetWorkspaceIamPolicy(ctx)
+}
+
+// GetProjectIamPolicySnapshot returns the project IAM policy with snapshot reads (with cache).
+func (s *Store) GetProjectIamPolicySnapshot(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
+	key := getIamPolicyCacheKey(storepb.Policy_PROJECT, projectID)
+	if v, ok := s.iamPolicyCache.Get(key); ok {
+		return v, nil
+	}
+	return s.GetProjectIamPolicy(ctx, projectID)
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
