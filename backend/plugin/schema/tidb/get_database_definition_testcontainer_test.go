@@ -2,20 +2,19 @@ package tidb
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	// Import MySQL driver (TiDB is compatible with MySQL protocol)
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -27,18 +26,19 @@ func TestGetDatabaseDefinition(t *testing.T) {
 
 	ctx := context.Background()
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	host := container.GetHost()
+	port := container.GetPort()
 
 	type testCase struct {
-		description  string
-		databaseName string
-		originalDDL  string
+		description string
+		originalDDL string
 	}
 
 	testCases := []testCase{
 		{
-			description:  "Basic tables with various column types",
-			databaseName: "test_basic",
+			description: "Basic tables with various column types",
 			originalDDL: `
 CREATE TABLE users (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -65,8 +65,7 @@ CREATE TABLE posts (
 `,
 		},
 		{
-			description:  "Generated columns and complex indexes",
-			databaseName: "test_generated",
+			description: "Generated columns and complex indexes",
 			originalDDL: `
 CREATE TABLE products (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -91,8 +90,7 @@ CREATE TABLE inventory (
 `,
 		},
 		{
-			description:  "Views",
-			databaseName: "test_views",
+			description: "Views",
 			originalDDL: `
 CREATE TABLE orders (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -132,8 +130,7 @@ GROUP BY o.id, o.order_number, o.customer_name, o.total_amount;
 `,
 		},
 		{
-			description:  "TiDB specific features - AUTO_RANDOM",
-			databaseName: "test_tidb_features",
+			description: "TiDB specific features - AUTO_RANDOM",
 			originalDDL: `
 CREATE TABLE distributed_data (
 	id BIGINT AUTO_RANDOM(5) PRIMARY KEY,
@@ -152,8 +149,7 @@ CREATE TABLE users_autorand (
 `,
 		},
 		{
-			description:  "Character sets and collations",
-			databaseName: "test_charset",
+			description: "Character sets and collations",
 			originalDDL: `
 CREATE TABLE multilingual (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -170,8 +166,7 @@ CREATE TABLE charset_test (
 `,
 		},
 		{
-			description:  "TiDB clustered and non-clustered indexes",
-			databaseName: "test_tidb_indexes",
+			description: "TiDB clustered and non-clustered indexes",
 			originalDDL: `
 CREATE TABLE clustered_pk (
 	id BIGINT PRIMARY KEY /*T![clustered_index] CLUSTERED */,
@@ -191,39 +186,57 @@ CREATE TABLE nonclustered_pk (
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
-			// Create database
-			_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", tc.databaseName))
+			t.Parallel()
+
+			// Create unique test database using UUID
+			testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDB))
 			require.NoError(t, err)
 
 			// Execute original DDL
-			_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", tc.databaseName))
+			_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", testDB))
 			require.NoError(t, err)
-			err = executeMultiStatements(ctx, container.GetDB(), tc.originalDDL)
+			err = executeStatements(container.GetDB(), tc.originalDDL)
 			require.NoError(t, err)
 
 			// Get the original database metadata using SyncDBSchema
-			originalMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), tc.databaseName)
+			driver, err := createTiDBDriver(ctx, host, port, testDB)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
+
+			tidbDriver, ok := driver.(*tidbdb.Driver)
+			require.True(t, ok, "failed to cast to tidb.Driver")
+
+			originalMetadata, err := tidbDriver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Generate the database definition
-			definition, err := generateDatabaseDefinition(ctx, container.GetHost(), container.GetPort(), tc.databaseName)
+			definition, err := schema.GetDatabaseDefinition(storepb.Engine_TIDB, schema.GetDefinitionContext{PrintHeader: true}, originalMetadata)
 			require.NoError(t, err)
 			require.NotEmpty(t, definition)
 
 			// Create a new database and apply the generated definition
-			newDatabaseName := fmt.Sprintf("%s_new", tc.databaseName)
-			_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", newDatabaseName))
+			newTestDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newTestDB))
 			require.NoError(t, err)
 
 			// Apply the generated definition to the new database
-			_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", newDatabaseName))
+			_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", newTestDB))
 			require.NoError(t, err)
-			err = executeMultiStatements(ctx, container.GetDB(), definition)
+			err = executeStatements(container.GetDB(), definition)
 			require.NoError(t, err)
 
 			// Get the new database metadata
-			newMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), newDatabaseName)
+			newDriver, err := createTiDBDriver(ctx, host, port, newTestDB)
+			require.NoError(t, err)
+			defer newDriver.Close(ctx)
+
+			newTiDBDriver, ok := newDriver.(*tidbdb.Driver)
+			require.True(t, ok, "failed to cast to tidb.Driver")
+
+			newMetadata, err := newTiDBDriver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Compare the metadata
@@ -245,9 +258,14 @@ func TestGetDatabaseDefinitionWithConnectedDeps(t *testing.T) {
 
 	ctx := context.Background()
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
-	databaseName := "test_deps"
+	host := container.GetHost()
+	port := container.GetPort()
+
+	// Create unique test database using UUID
+	testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+
 	originalDDL := `
 -- Create tables with complex foreign key dependencies
 CREATE TABLE departments (
@@ -292,37 +310,51 @@ CREATE TABLE project_members (
 `
 
 	// Create database
-	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName))
+	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDB))
 	require.NoError(t, err)
 
 	// Execute original DDL
-	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", databaseName))
+	_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", testDB))
 	require.NoError(t, err)
-	err = executeMultiStatements(ctx, container.GetDB(), originalDDL)
+	err = executeStatements(container.GetDB(), originalDDL)
 	require.NoError(t, err)
 
 	// Get the original database metadata
-	originalMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), databaseName)
+	driver, err := createTiDBDriver(ctx, host, port, testDB)
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+
+	tidbDriver, ok := driver.(*tidbdb.Driver)
+	require.True(t, ok, "failed to cast to tidb.Driver")
+
+	originalMetadata, err := tidbDriver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
 	// Generate the database definition
-	definition, err := generateDatabaseDefinition(ctx, container.GetHost(), container.GetPort(), databaseName)
+	definition, err := schema.GetDatabaseDefinition(storepb.Engine_TIDB, schema.GetDefinitionContext{PrintHeader: true}, originalMetadata)
 	require.NoError(t, err)
 	require.NotEmpty(t, definition)
 
 	// Create a new database and apply the generated definition
-	newDatabaseName := fmt.Sprintf("%s_new", databaseName)
-	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", newDatabaseName))
+	newTestDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newTestDB))
 	require.NoError(t, err)
 
 	// Apply the generated definition to the new database
-	_, err = container.GetDB().ExecContext(ctx, fmt.Sprintf("USE %s", newDatabaseName))
+	_, err = container.GetDB().Exec(fmt.Sprintf("USE `%s`", newTestDB))
 	require.NoError(t, err)
-	err = executeMultiStatements(ctx, container.GetDB(), definition)
+	err = executeStatements(container.GetDB(), definition)
 	require.NoError(t, err)
 
 	// Get the new database metadata
-	newMetadata, err := getMetadata(ctx, container.GetHost(), container.GetPort(), newDatabaseName)
+	newDriver, err := createTiDBDriver(ctx, host, port, newTestDB)
+	require.NoError(t, err)
+	defer newDriver.Close(ctx)
+
+	newTiDBDriver, ok := newDriver.(*tidbdb.Driver)
+	require.True(t, ok, "failed to cast to tidb.Driver")
+
+	newMetadata, err := newTiDBDriver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
 	// Compare the metadata
@@ -331,101 +363,4 @@ CREATE TABLE project_members (
 	newMetadata.Name = ""
 	diff := cmp.Diff(originalMetadata, newMetadata, protocmp.Transform())
 	require.Empty(t, diff, "Database metadata should be identical")
-}
-
-// executeMultiStatements executes multiple SQL statements separated by semicolons
-func executeMultiStatements(ctx context.Context, db *sql.DB, statements string) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, statements); err != nil {
-		return errors.New("failed to execute context in a transaction: " + err.Error())
-	}
-
-	return tx.Commit()
-}
-
-// getMetadata creates a database connection and retrieves metadata
-func getMetadata(ctx context.Context, host, port, database string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create driver instance
-	driver := &tidbdb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "root",
-			Host:     host,
-			Port:     port,
-			Database: database,
-		},
-		Password: "",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.5.0",
-			DatabaseName:  database,
-		},
-	}
-
-	// Open connection
-	openedDriver, err := driver.Open(ctx, storepb.Engine_TIDB, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// No DDL execution since it's not used
-
-	// Sync metadata
-	tidbDriver, ok := openedDriver.(*tidbdb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to tidb.Driver")
-	}
-
-	return tidbDriver.SyncDBSchema(ctx)
-}
-
-// generateDatabaseDefinition generates the database definition using schema.GetDatabaseDefinition
-func generateDatabaseDefinition(ctx context.Context, host, port, database string) (string, error) {
-	// Create driver instance
-	driver := &tidbdb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "root",
-			Host:     host,
-			Port:     port,
-			Database: database,
-		},
-		Password: "",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.5.0",
-			DatabaseName:  database,
-		},
-	}
-
-	// Open connection
-	openedDriver, err := driver.Open(ctx, storepb.Engine_TIDB, config)
-	if err != nil {
-		return "", err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Sync metadata first
-	tidbDriver, ok := openedDriver.(*tidbdb.Driver)
-	if !ok {
-		return "", errors.New("failed to cast to tidb.Driver")
-	}
-
-	metadata, err := tidbDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	// Generate definition
-	return schema.GetDatabaseDefinition(storepb.Engine_TIDB, schema.GetDefinitionContext{PrintHeader: true}, metadata)
 }
