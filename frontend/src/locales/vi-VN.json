@@ -1256,10 +1256,6 @@
     "task-execution-notices": "Thông báo thực hiện nhiệm vụ",
     "task-execution-errors": "Lỗi thực hiện tác vụ",
     "no-active-task-to-cancel": "Không có tác vụ nào đang hoạt động để hủy.",
-    "no-runnable-task": "Không có tác vụ nào có thể chạy được.",
-    "automatic-rollout": {
-      "description": "Môi trường này đã bật tính năng triển khai tự động."
-    },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "run-stage": "Chạy tác vụ",
