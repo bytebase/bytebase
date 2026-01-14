@@ -1793,9 +1793,9 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 
 // createOracleUser creates an Oracle user (schema) with necessary privileges
 func createOracleUser(systemDB *sql.DB, username string) error {
-	// Oracle doesn't support truly empty passwords, use NO AUTHENTICATION for test simplicity
+	// Use same password as container for test simplicity
 	for _, stmt := range []string{
-		fmt.Sprintf("CREATE USER %s NO AUTHENTICATION", username),
+		fmt.Sprintf("CREATE USER %s IDENTIFIED BY test123", username),
 		fmt.Sprintf("GRANT CONNECT, RESOURCE, CREATE VIEW, CREATE MATERIALIZED VIEW, CREATE PROCEDURE, CREATE SEQUENCE, CREATE TRIGGER TO %s", username),
 		fmt.Sprintf("GRANT UNLIMITED TABLESPACE TO %s", username),
 	} {
@@ -1818,7 +1818,7 @@ func createOracleDriver(ctx context.Context, host, port, username string) (db.Dr
 			Database:    "",
 			ServiceName: "FREEPDB1",
 		},
-		Password: "", // Use empty password for simplicity in tests
+		Password: "test123", // Use same password as container for test simplicity
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "23.0",
 			DatabaseName:  strings.ToUpper(username),
