@@ -692,19 +692,22 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 
 	// Validate release existence.
 	if releaseString != "" {
-		releaseProjectID, releaseUID, err := common.GetProjectReleaseUID(releaseString)
+		releaseProjectID, releaseID, err := common.GetProjectReleaseID(releaseString)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid release name %q", releaseString))
+			return nil, errors.Errorf("invalid release name %q", releaseString)
 		}
 		if releaseProjectID != projectID {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID))
+			return nil, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID)
 		}
-		release, err := s.GetReleaseByUID(ctx, releaseUID)
+		release, err := s.GetRelease(ctx, &store.FindReleaseMessage{
+			ProjectID: &releaseProjectID,
+			ReleaseID: &releaseID,
+		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get release %d: %v", releaseUID, err))
+			return nil, errors.Errorf("failed to get release %s: %v", releaseID, err)
 		}
 		if release == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found", releaseUID))
+			return nil, errors.Errorf("release %s not found", releaseID)
 		}
 	}
 	return databaseGroup, nil

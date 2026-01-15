@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,26 +16,27 @@ import (
 
 type ReleaseMessage struct {
 	ProjectID string
-	Digest    string
+	ReleaseID string
 	Payload   *storepb.ReleasePayload
 
-	// output only
-	UID     int64
-	Deleted bool
-	Creator string
-	At      time.Time
+	Deleted   bool
+	Creator   string
+	At        time.Time
+	Train     string
+	Iteration int32
 }
 
 type FindReleaseMessage struct {
 	ProjectID   *string
-	UID         *int64
+	ReleaseID   *string
 	Limit       *int
 	Offset      *int
 	ShowDeleted bool
 }
 
 type UpdateReleaseMessage struct {
-	UID int64
+	ProjectID string
+	ReleaseID string
 
 	Deleted *bool
 	Payload *storepb.ReleasePayload
@@ -46,33 +48,58 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 		return nil, errors.Wrapf(err, "failed to marshal release payload")
 	}
 
-	q := qb.Q().Space(`
-		INSERT INTO release (
-			creator,
-			project,
-			digest,
-			payload
-		) VALUES (
-			?,
-			?,
-			?,
-			?
-		) RETURNING id, created_at
-	`, creator, release.ProjectID, release.Digest, p)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
-	var id int64
+	// Atomically get next iteration for (project, train)
+	// Lock all rows for this (project, train) to prevent concurrent inserts with same iteration
+	var maxIteration sql.NullInt64
+	err = tx.QueryRowContext(ctx,
+		`SELECT COALESCE(MAX(iteration), -1) FROM (
+			SELECT iteration FROM release WHERE project = $1 AND train = $2 FOR UPDATE
+		) sub`,
+		release.ProjectID, release.Train,
+	).Scan(&maxIteration)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, errors.Wrapf(err, "failed to get max iteration")
+	}
+
+	nextIteration := int32(0)
+	if maxIteration.Valid {
+		nextIteration = int32(maxIteration.Int64) + 1
+	}
+
+	// Compute release_id = train + formatted iteration
+	releaseID := fmt.Sprintf("%s%02d", release.Train, nextIteration)
+
+	q := qb.Q().Space(`
+		INSERT INTO release (
+			creator,
+			project,
+			payload,
+			release_id,
+			train,
+			iteration
+		) VALUES (
+			?,
+			?,
+			?,
+			?,
+			?,
+			?
+		) RETURNING id, created_at
+	`, creator, release.ProjectID, p, releaseID, release.Train, nextIteration)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
 	var createdTime time.Time
+	var id int64 // Still needed for RETURNING clause
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
 	}
@@ -81,9 +108,10 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
-	release.UID = id
 	release.Creator = creator
 	release.At = createdTime
+	release.ReleaseID = releaseID
+	release.Iteration = nextIteration
 
 	return release, nil
 }
@@ -102,20 +130,17 @@ func (s *Store) GetRelease(ctx context.Context, find *FindReleaseMessage) (*Rele
 	return releases[0], nil
 }
 
-func (s *Store) GetReleaseByUID(ctx context.Context, uid int64) (*ReleaseMessage, error) {
-	return s.GetRelease(ctx, &FindReleaseMessage{UID: &uid, ShowDeleted: true})
-}
-
 func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*ReleaseMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
 			deleted,
 			project,
-			digest,
 			creator,
 			created_at,
-			payload
+			payload,
+			release_id,
+			train,
+			iteration
 		FROM release
 		WHERE TRUE
 	`)
@@ -123,8 +148,8 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	if v := find.ProjectID; v != nil {
 		q.And("project = ?", *v)
 	}
-	if v := find.UID; v != nil {
-		q.And("id = ?", *v)
+	if v := find.ReleaseID; v != nil {
+		q.And("release_id = ?", *v)
 	}
 	if !find.ShowDeleted {
 		q.And("deleted = ?", false)
@@ -163,13 +188,14 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		var payload []byte
 
 		if err := rows.Scan(
-			&r.UID,
 			&r.Deleted,
 			&r.ProjectID,
-			&r.Digest,
 			&r.Creator,
 			&r.At,
 			&payload,
+			&r.ReleaseID,
+			&r.Train,
+			&r.Iteration,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
@@ -209,7 +235,7 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		return nil, errors.New("no update field provided")
 	}
 
-	query, args, err := qb.Q().Space("UPDATE release SET ? WHERE id = ?", set, update.UID).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE release SET ? WHERE project = ? AND release_id = ?", set, update.ProjectID, update.ReleaseID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
@@ -228,5 +254,8 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
-	return s.GetReleaseByUID(ctx, update.UID)
+	return s.GetRelease(ctx, &FindReleaseMessage{
+		ProjectID: &update.ProjectID,
+		ReleaseID: &update.ReleaseID,
+	})
 }

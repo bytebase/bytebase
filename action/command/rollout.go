@@ -31,6 +31,8 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", "", "The title of the release. Generated from project and current timestamp if not provided.")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
+	cmdRollout.Flags().StringVar(&w.ReleaseIDTemplate, "release-id-template", "release_{date}-RC{iteration}", "Template for release ID. Available variables: {date}, {time}, {timestamp}, {iteration}")
+	cmdRollout.Flags().StringVar(&w.ReleaseIDTimezone, "release-id-timezone", "UTC", "Timezone for {date} and {time} variables (e.g., 'UTC', 'America/Los_Angeles')")
 	return cmdRollout
 }
 
@@ -84,13 +86,18 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			if w.Declarative {
 				releaseType = v1pb.Release_DECLARATIVE
 			}
+			// Render train from template
+			train, err := renderTrain(w.ReleaseIDTemplate, w.ReleaseIDTimezone, time.Now())
+			if err != nil {
+				return errors.Wrapf(err, "failed to render train")
+			}
 			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
 				Title:     w.ReleaseTitle,
 				Files:     releaseFiles,
 				VcsSource: getVCSSource(w),
 				Digest:    releaseDigest,
 				Type:      releaseType,
-			})
+			}, train)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create release")
 			}
@@ -322,4 +329,49 @@ func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
 	default:
 		return nil
 	}
+}
+
+func renderTrain(template, timezone string, t time.Time) (string, error) {
+	// Validate template
+	if err := validateTemplate(template); err != nil {
+		return "", err
+	}
+
+	// Validate timezone
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return "", errors.Wrapf(err, "invalid timezone: %s", timezone)
+	}
+
+	now := t.In(loc)
+
+	train := template
+	train = strings.ReplaceAll(train, "{date}", now.Format("20060102"))
+	train = strings.ReplaceAll(train, "{time}", now.Format("1504"))
+	train = strings.ReplaceAll(train, "{timestamp}", now.Format("20060102_1504"))
+	train = strings.ReplaceAll(train, "{iteration}", "")
+
+	return train, nil
+}
+
+func validateTemplate(template string) error {
+	// Must contain {iteration}
+	if !strings.Contains(template, "{iteration}") {
+		return errors.New("template must contain {iteration} placeholder")
+	}
+
+	// {iteration} must be at the end of the template
+	if !strings.HasSuffix(template, "{iteration}") {
+		return errors.New("{iteration} must be at the end of the template")
+	}
+
+	// Must contain at least one time variable
+	hasTimeVar := strings.Contains(template, "{date}") ||
+		strings.Contains(template, "{time}") ||
+		strings.Contains(template, "{timestamp}")
+	if !hasTimeVar {
+		return errors.New("template must contain at least one of: {date}, {time}, {timestamp}")
+	}
+
+	return nil
 }

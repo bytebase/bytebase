@@ -55,7 +55,8 @@ const documentTitle = computed(() => {
   if (route.name !== PROJECT_V1_ROUTE_RELEASE_DETAIL) {
     return undefined;
   }
-  return release.value.title;
+  const parts = release.value.name.split("/");
+  return parts[parts.length - 1] || release.value.name;
 });
 
 watch(

@@ -420,6 +420,11 @@ func validateTemplate(template string) error {
         return errors.New("template must contain {iteration} placeholder")
     }
 
+    // {iteration} must be at the end of the template
+    if !strings.HasSuffix(template, "{iteration}") {
+        return errors.New("{iteration} must be at the end of the template")
+    }
+
     // Must contain at least one time variable
     hasTimeVar := strings.Contains(template, "{date}") ||
                   strings.Contains(template, "{time}") ||
@@ -501,6 +506,11 @@ func validateTemplate(template string) error {
     // Must contain {iteration}
     if !strings.Contains(template, "{iteration}") {
         return errors.New("template must contain {iteration} placeholder")
+    }
+
+    // {iteration} must be at the end of the template
+    if !strings.HasSuffix(template, "{iteration}") {
+        return errors.New("{iteration} must be at the end of the template")
     }
 
     // Must contain at least one time variable

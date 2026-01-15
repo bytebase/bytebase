@@ -109,9 +109,12 @@ const handleCreate = async () => {
   const firstFile = release.value.files?.[0];
   const enableGhost = firstFile?.enableGhost ?? false;
 
+  const parts = release.value.name.split("/");
+  const releaseName = parts[parts.length - 1] || release.value.name;
+
   const newPlan = create(PlanSchema, {
-    title: `Release "${release.value.title}"`,
-    description: `Apply release "${release.value.title}" to selected databases.`,
+    title: `Release "${releaseName}"`,
+    description: `Apply release "${releaseName}" to selected databases.`,
     specs: [
       {
         id: uuidv4(),
