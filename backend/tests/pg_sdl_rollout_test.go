@@ -61,7 +61,6 @@ func TestPgSDLRollout(t *testing.T) {
 	instance := instanceResp.Msg
 
 	t.Run("BasicWorkflow", func(t *testing.T) {
-		
 		a := require.New(t)
 
 		// Create unique database name
@@ -106,8 +105,8 @@ CREATE INDEX "idx_posts_user_id" ON "public"."posts"("user_id");`
 		a.NotEmpty(result.ExecutedStatements, "Expected SQL statements to be executed")
 
 		// Verify initial schema was created
-		a.True(verifyTableExists(ctx, ctl, database, "public", "users"))
-		a.True(verifyTableExists(ctx, ctl, database, "public", "posts"))
+		a.True(verifyTableExists(ctx, ctl, database, "users"))
+		a.True(verifyTableExists(ctx, ctl, database, "posts"))
 		a.Equal(3, getTableColumnCount(ctx, ctl, database, "users"))
 		a.Equal(4, getTableColumnCount(ctx, ctl, database, "posts"))
 
@@ -144,9 +143,9 @@ CREATE TABLE "public"."comments" (
 		a.NotEmpty(result.ExecutedStatements, "Expected ALTER/CREATE statements to be executed")
 
 		// Verify schema was updated
-		a.True(verifyTableExists(ctx, ctl, database, "public", "users"))
-		a.True(verifyTableExists(ctx, ctl, database, "public", "posts"))
-		a.True(verifyTableExists(ctx, ctl, database, "public", "comments"))
+		a.True(verifyTableExists(ctx, ctl, database, "users"))
+		a.True(verifyTableExists(ctx, ctl, database, "posts"))
+		a.True(verifyTableExists(ctx, ctl, database, "comments"))
 		a.Equal(4, getTableColumnCount(ctx, ctl, database, "users"))
 		a.True(verifyColumnExists(ctx, ctl, database, "users", "created_at"))
 
@@ -173,13 +172,12 @@ CREATE TABLE "public"."posts" (
 		a.NotEmpty(result.ExecutedStatements, "Expected DROP statements to be executed")
 
 		// Verify objects were removed
-		a.True(verifyTableExists(ctx, ctl, database, "public", "users"))
-		a.True(verifyTableExists(ctx, ctl, database, "public", "posts"))
+		a.True(verifyTableExists(ctx, ctl, database, "users"))
+		a.True(verifyTableExists(ctx, ctl, database, "posts"))
 		a.True(verifyTableNotExists(ctx, ctl, database, "comments"))
 	})
 
 	t.Run("EmptySDL", func(t *testing.T) {
-		
 		a := require.New(t)
 
 		// Create unique database name
@@ -208,7 +206,7 @@ CREATE TABLE "public"."posts" (
 
 		_, err = executeSDLRolloutWithResult(ctx, ctl, database, initialSDL)
 		a.NoError(err)
-		a.True(verifyTableExists(ctx, ctl, database, "public", "test_table"))
+		a.True(verifyTableExists(ctx, ctl, database, "test_table"))
 
 		// Apply empty SDL to drop all objects
 		result, err := executeSDLRolloutWithResult(ctx, ctl, database, "")
@@ -220,7 +218,6 @@ CREATE TABLE "public"."posts" (
 	})
 
 	t.Run("NoChangesNeeded", func(t *testing.T) {
-		
 		a := require.New(t)
 
 		// Create unique database name
@@ -263,7 +260,6 @@ CREATE TABLE "public"."posts" (
 	})
 
 	t.Run("DriftDetection", func(t *testing.T) {
-		
 		a := require.New(t)
 
 		// Create unique database name
@@ -317,7 +313,6 @@ CREATE TABLE "public"."posts" (
 
 // executeSDLRolloutWithResult performs a complete SDL rollout and returns the result including executed SQL.
 func executeSDLRolloutWithResult(ctx context.Context, ctl *controller, database *v1pb.Database, sdlContent string) (*sdlRolloutResult, error) {
-
 	// Create a DECLARATIVE release with SDL content
 	// Empty SDL content is allowed for DECLARATIVE releases (represents dropping all objects)
 	releaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
@@ -437,7 +432,7 @@ func getExecutedStatements(ctx context.Context, ctl *controller, rolloutName str
 }
 
 // verifyTableExists checks if a table exists in the database schema.
-func verifyTableExists(ctx context.Context, ctl *controller, database *v1pb.Database, schemaName, tableName string) bool {
+func verifyTableExists(ctx context.Context, ctl *controller, database *v1pb.Database, tableName string) bool {
 	metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
 		Name: database.Name + "/metadata",
 	}))
@@ -446,7 +441,7 @@ func verifyTableExists(ctx context.Context, ctl *controller, database *v1pb.Data
 	}
 
 	for _, schema := range metadata.Msg.Schemas {
-		if schema.Name == schemaName {
+		if schema.Name == "public" {
 			for _, table := range schema.Tables {
 				if table.Name == tableName {
 					return true
@@ -459,7 +454,7 @@ func verifyTableExists(ctx context.Context, ctl *controller, database *v1pb.Data
 
 // verifyTableNotExists checks if a table does not exist in the database schema.
 func verifyTableNotExists(ctx context.Context, ctl *controller, database *v1pb.Database, tableName string) bool {
-	return !verifyTableExists(ctx, ctl, database, "public", tableName)
+	return !verifyTableExists(ctx, ctl, database, tableName)
 }
 
 // verifyColumnExists checks if a column exists in a table.
