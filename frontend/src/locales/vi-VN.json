@@ -1148,9 +1148,6 @@
     },
     "review": {
       "self": "Ôn tập",
-      "approved": "Tán thành",
-      "rejected": "Vật bị loại bỏ",
-      "under-review": "Đang xem xét",
       "comment-description": "Gửi phản hồi chung mà không cần phê duyệt",
       "approve-description": "Gửi phản hồi và phê duyệt vấn đề này.",
       "reject-description": "Gửi phản hồi và yêu cầu thay đổi"

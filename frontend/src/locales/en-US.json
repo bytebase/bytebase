@@ -1148,9 +1148,6 @@
     },
     "review": {
       "self": "Review",
-      "approved": "Approved",
-      "rejected": "Rejected",
-      "under-review": "Under review",
       "comment-description": "Submit general feedback without approval",
       "approve-description": "Submit feedback and approve this issue",
       "reject-description": "Submit feedback and request changes"

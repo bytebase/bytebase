@@ -1148,9 +1148,6 @@
     },
     "review": {
       "self": "Revisar",
-      "approved": "Aprobado",
-      "rejected": "Rechazado",
-      "under-review": "Bajo revisión",
       "comment-description": "Enviar comentarios generales sin aprobación",
       "approve-description": "Enviar comentarios y aprobar este problema",
       "reject-description": "Envíe comentarios y solicite cambios"
