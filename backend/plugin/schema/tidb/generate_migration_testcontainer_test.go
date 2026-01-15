@@ -16,7 +16,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -1376,14 +1375,14 @@ ALTER TABLE test_table COMMENT = '';
 			require.NoError(t, err)
 
 			// Execute initial schema
-			_, err = driver.Execute(ctx, tc.initialSchema, db.ExecuteOptions{})
+			_, err = container.GetDB().Exec(tc.initialSchema)
 			require.NoError(t, err, "Failed to execute initial schema")
 
 			schemaA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			_, err = driver.Execute(ctx, tc.migrationDDL, db.ExecuteOptions{})
+			_, err = container.GetDB().Exec(tc.migrationDDL)
 			require.NoError(t, err, "Failed to execute migration DDL")
 
 			schemaB, err := driver.SyncDBSchema(ctx)
@@ -1405,7 +1404,7 @@ ALTER TABLE test_table COMMENT = '';
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
 
 			// Step 4: Run rollback DDL and get schema result C
-			_, err = driver.Execute(ctx, rollbackDDL, db.ExecuteOptions{})
+			_, err = container.GetDB().Exec(rollbackDDL)
 			require.NoError(t, err, "Failed to execute rollback DDL")
 
 			schemaC, err := driver.SyncDBSchema(ctx)

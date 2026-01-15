@@ -15,7 +15,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -202,7 +201,7 @@ CREATE TABLE nonclustered_pk (
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 			// Execute original DDL
-			_, err = driver.Execute(ctx, tc.originalDDL, db.ExecuteOptions{})
+			_, err = container.GetDB().Exec(tc.originalDDL)
 			require.NoError(t, err)
 
 			originalMetadata, err := driver.SyncDBSchema(ctx)
@@ -224,7 +223,7 @@ CREATE TABLE nonclustered_pk (
 			defer newDriver.Close(ctx)
 
 			require.NoError(t, err)
-			_, err = newDriver.Execute(ctx, definition, db.ExecuteOptions{})
+			_, err = container.GetDB().Exec(definition)
 			require.NoError(t, err)
 
 			newMetadata, err := newDriver.SyncDBSchema(ctx)
@@ -308,7 +307,7 @@ CREATE TABLE project_members (
 	driver, err := createTiDBDriver(ctx, host, port, testDB)
 	require.NoError(t, err)
 	// Execute original DDL
-	_, err = driver.Execute(ctx, originalDDL, db.ExecuteOptions{})
+	_, err = container.GetDB().Exec(originalDDL)
 	require.NoError(t, err)
 	defer driver.Close(ctx)
 
@@ -331,7 +330,7 @@ CREATE TABLE project_members (
 	defer newDriver.Close(ctx)
 
 	// Apply the generated definition to the new database
-	_, err = newDriver.Execute(ctx, definition, db.ExecuteOptions{})
+	_, err = container.GetDB().Exec(definition)
 	require.NoError(t, err)
 
 	newMetadata, err := newDriver.SyncDBSchema(ctx)

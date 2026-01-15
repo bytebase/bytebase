@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
@@ -217,7 +216,7 @@ CREATE TABLE non_clustered_test (
 
 			// Execute DDL statements
 			require.NoError(t, err)
-			_, err = driver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
+			_, err = container.GetDB().Exec(tc.ddl)
 			require.NoError(t, err)
 
 			// Get metadata from live database using driver
