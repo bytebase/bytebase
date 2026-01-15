@@ -36,6 +36,7 @@ func (p *ProjectMessage) GetName() string {
 // FindProjectMessage is the message for finding projects.
 type FindProjectMessage struct {
 	ResourceID  *string
+	ResourceIDs []string
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
@@ -103,6 +104,9 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	}
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
+	}
+	if len(find.ResourceIDs) > 0 {
+		q.And("resource_id = ANY(?)", find.ResourceIDs)
 	}
 	if !find.ShowDeleted {
 		q.And("deleted = ?", false)
