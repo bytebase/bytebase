@@ -1375,14 +1375,14 @@ ALTER TABLE test_table COMMENT = '';
 			require.NoError(t, err)
 
 			// Execute initial schema
-			_, err = container.GetDB().Exec(tc.initialSchema)
+			_, err = driver.GetDB().Exec(tc.initialSchema)
 			require.NoError(t, err, "Failed to execute initial schema")
 
 			schemaA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			_, err = container.GetDB().Exec(tc.migrationDDL)
+			_, err = driver.GetDB().Exec(tc.migrationDDL)
 			require.NoError(t, err, "Failed to execute migration DDL")
 
 			schemaB, err := driver.SyncDBSchema(ctx)
@@ -1404,7 +1404,7 @@ ALTER TABLE test_table COMMENT = '';
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
 
 			// Step 4: Run rollback DDL and get schema result C
-			_, err = container.GetDB().Exec(rollbackDDL)
+			_, err = driver.GetDB().Exec(rollbackDDL)
 			require.NoError(t, err, "Failed to execute rollback DDL")
 
 			schemaC, err := driver.SyncDBSchema(ctx)

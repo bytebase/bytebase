@@ -216,7 +216,7 @@ CREATE TABLE non_clustered_test (
 
 			// Execute DDL statements
 			require.NoError(t, err)
-			_, err = container.GetDB().Exec(tc.ddl)
+			_, err = driver.GetDB().Exec(tc.ddl)
 			require.NoError(t, err)
 
 			// Get metadata from live database using driver

@@ -201,7 +201,7 @@ CREATE TABLE nonclustered_pk (
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 			// Execute original DDL
-			_, err = container.GetDB().Exec(tc.originalDDL)
+			_, err = driver.GetDB().Exec(tc.originalDDL)
 			require.NoError(t, err)
 
 			originalMetadata, err := driver.SyncDBSchema(ctx)
@@ -223,7 +223,7 @@ CREATE TABLE nonclustered_pk (
 			defer newDriver.Close(ctx)
 
 			require.NoError(t, err)
-			_, err = container.GetDB().Exec(definition)
+			_, err = newDriver.GetDB().Exec(definition)
 			require.NoError(t, err)
 
 			newMetadata, err := newDriver.SyncDBSchema(ctx)
@@ -307,7 +307,7 @@ CREATE TABLE project_members (
 	driver, err := createTiDBDriver(ctx, host, port, testDB)
 	require.NoError(t, err)
 	// Execute original DDL
-	_, err = container.GetDB().Exec(originalDDL)
+	_, err = driver.GetDB().Exec(originalDDL)
 	require.NoError(t, err)
 	defer driver.Close(ctx)
 
@@ -330,7 +330,7 @@ CREATE TABLE project_members (
 	defer newDriver.Close(ctx)
 
 	// Apply the generated definition to the new database
-	_, err = container.GetDB().Exec(definition)
+	_, err = newDriver.GetDB().Exec(definition)
 	require.NoError(t, err)
 
 	newMetadata, err := newDriver.SyncDBSchema(ctx)
