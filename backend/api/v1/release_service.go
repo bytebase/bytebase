@@ -214,8 +214,8 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
-func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("UpdateRelease is not supported. Create a new release iteration instead."))
+func (*ReleaseService) UpdateRelease(_ context.Context, _ *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("update release is not supported, create a new release iteration instead"))
 }
 
 func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request[v1pb.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error) {

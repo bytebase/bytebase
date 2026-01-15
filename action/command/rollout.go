@@ -78,7 +78,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			w.Logger.Info("use the provided plan", "url", fmt.Sprintf("%s/%s", client.url, plan.Name))
 		} else {
 			var release string
-			releaseFiles, releaseDigest, err := getReleaseFiles(w)
+			releaseFiles, err := getReleaseFiles(w)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get release files")
 			}
@@ -92,10 +92,8 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 				return errors.Wrapf(err, "failed to render train")
 			}
 			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
-				Title:     w.ReleaseTitle,
 				Files:     releaseFiles,
 				VcsSource: getVCSSource(w),
-				Digest:    releaseDigest,
 				Type:      releaseType,
 			}, train)
 			if err != nil {
