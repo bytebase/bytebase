@@ -63,6 +63,7 @@ type FindDatabaseMessage struct {
 	EffectiveEnvironmentID *string
 	InstanceID             *string
 	DatabaseName           *string
+	DatabaseNames          []string
 	Engine                 *storepb.Engine
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
@@ -134,6 +135,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 	if v := find.DatabaseName; v != nil {
 		where.And("db.name = ?", *v)
+	}
+	if len(find.DatabaseNames) > 0 {
+		where.And("db.name = ANY(?)", find.DatabaseNames)
 	}
 	if v := find.Engine; v != nil {
 		where.And("instance.metadata->>'engine' = ?", v.String())
