@@ -171,27 +171,16 @@ func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhoo
 
 // GetProjectWebhook gets an instance of ProjectWebhook.
 func (s *Store) GetProjectWebhook(ctx context.Context, find *FindProjectWebhookMessage) (*ProjectWebhookMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-
 	webhooks, err := s.ListProjectWebhooks(ctx, find)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-
 	if len(webhooks) == 0 {
 		return nil, nil
 	}
 	if len(webhooks) > 1 {
 		return nil, errors.Errorf("expected find one project webhook wit %+v, but found %d", find, len(webhooks))
 	}
-
 	return webhooks[0], nil
 }
 

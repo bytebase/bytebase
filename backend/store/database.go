@@ -82,12 +82,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 		}
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	databases, err := s.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, err
@@ -99,10 +93,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d database with filter %+v, expect 1", len(databases), find)}
 	}
 	database := databases[0]
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
 	return database, nil
