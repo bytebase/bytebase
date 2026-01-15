@@ -95,6 +95,39 @@ func TestBuildTablesMetadata(t *testing.T) {
 	}
 }
 
+func TestPartitionTable_CreateIndex(t *testing.T) {
+	a := require.New(t)
+
+	// Create a table with partitions
+	tableProto := &storepb.TableMetadata{
+		Name: "orders",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id"},
+			{Name: "created_at"},
+		},
+		Partitions: []*storepb.TablePartitionMetadata{
+			{Name: "orders_2024"},
+			{Name: "orders_2025"},
+		},
+	}
+
+	tables, names := buildTablesMetadata(tableProto, nil, true)
+	a.Equal(3, len(tables))
+	a.ElementsMatch([]string{"orders", "orders_2024", "orders_2025"}, names)
+
+	// Verify that CreateIndex works on partition tables (was causing nil map panic)
+	for i, table := range tables {
+		index := &storepb.IndexMetadata{
+			Name:        "idx_" + names[i] + "_created_at",
+			Expressions: []string{"created_at"},
+			Type:        "btree",
+		}
+		err := table.CreateIndex(index)
+		a.NoError(err, "CreateIndex should not panic on table %s", names[i])
+		a.NotNil(table.GetIndex(index.Name), "Index should be retrievable after creation")
+	}
+}
+
 func TestSchemaMetadata_CreateTable(t *testing.T) {
 	metadata := &storepb.DatabaseSchemaMetadata{
 		Name: "testdb",
