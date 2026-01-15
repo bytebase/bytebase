@@ -2,10 +2,8 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -13,20 +11,20 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestGenerateMigrationWithTestcontainer tests the generate migration function
 // by applying migrations and rollback to verify the schema can be restored.
+//
+//nolint:tparallel
 func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping MySQL testcontainer test in short mode")
@@ -34,10 +32,10 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Start MySQL container using common testcontainer interface
+	// Start shared MySQL container for all subtests
 	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Get connection details
 	host := container.GetHost()
@@ -1637,44 +1635,35 @@ CREATE TABLE some_table (
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Step 1: Initialize the database schema and get schema result A
-			portInt, err := strconv.Atoi(port)
-			require.NoError(t, err)
-
-			// Get the database connection from container
-			db := container.GetDB()
-
-			// Create a test database
+			// Create a unique test database for parallel execution
 			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
-			_, err = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
+			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
 			require.NoError(t, err)
-			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
-			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec("USE mysql")
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", testDBName))
-			}()
 
-			// Use the test database
-			_, err = db.Exec(fmt.Sprintf("USE `%s`", testDBName))
+			// Create MySQL driver for this test's database
+			driver, err := createMySQLDriver(ctx, host, port, testDBName)
 			require.NoError(t, err)
+			defer driver.Close(ctx)
 
 			// Execute initial schema
 			if strings.TrimSpace(tc.initialSchema) != "" {
-				if err := executeStatements(db, tc.initialSchema); err != nil {
+				if _, err := driver.Execute(ctx, tc.initialSchema, db.ExecuteOptions{}); err != nil {
 					t.Fatalf("Failed to execute initial schema: %v", err)
 				}
 			}
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
+			schemaA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			if err := executeStatements(db, tc.migrationDDL); err != nil {
+			if _, err := driver.Execute(ctx, tc.migrationDDL, db.ExecuteOptions{}); err != nil {
 				t.Fatalf("Failed to execute migration DDL: %v", err)
 			}
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
+			schemaB, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -1717,11 +1706,11 @@ CREATE TABLE some_table (
 			}
 
 			// Step 4: Run rollback DDL and get schema result C
-			if err := executeStatements(db, rollbackDDL); err != nil {
+			if _, err := driver.Execute(ctx, rollbackDDL, db.ExecuteOptions{}); err != nil {
 				t.Fatalf("Failed to execute rollback DDL: %v", err)
 			}
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt, "root", "root-password", testDBName)
+			schemaC, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -1734,57 +1723,6 @@ CREATE TABLE some_table (
 			}
 		})
 	}
-}
-
-// executeStatements executes multiple SQL statements
-func executeStatements(db *sql.DB, statements string) error {
-	// MySQL driver supports multi-statement execution natively
-	if _, err := db.Exec(statements); err != nil {
-		return errors.Wrapf(err, "failed to execute statements")
-	}
-	return nil
-}
-
-// getSyncMetadataForGenerateMigration retrieves metadata from the live database using Driver.SyncDBSchema
-func getSyncMetadataForGenerateMigration(ctx context.Context, host string, port int, username, password, database string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create a driver instance using the mysql package
-	driver := &mysqldb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
-			Host:     host,
-			Port:     fmt.Sprintf("%d", port),
-			Database: database,
-		},
-		Password: password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  database,
-		},
-	}
-
-	// Open connection using the driver
-	openedDriver, err := driver.Open(ctx, storepb.Engine_MYSQL, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Use SyncDBSchema to get the metadata
-	mysqlDriver, ok := openedDriver.(*mysqldb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to mysql.Driver")
-	}
-
-	metadata, err := mysqlDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
 }
 
 // normalizeMetadataForComparison normalizes metadata to ignore differences that don't affect schema equality

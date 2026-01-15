@@ -2,60 +2,34 @@ package mysql
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
 // by comparing its output with the metadata retrieved from a real MySQL instance.
+//
+//nolint:tparallel
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
-	// Start MySQL container
+	// Start shared MySQL container for all subtests
 	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer container.Close(ctx)
-
-	// Create test database
-	_, err = container.GetDB().Exec("CREATE DATABASE IF NOT EXISTS test_db")
-	require.NoError(t, err)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	host := container.GetHost()
 	port := container.GetPort()
-
-	// Create MySQL driver for metadata sync
-	driver := &mysqldb.Driver{}
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "root",
-			Host:     host,
-			Port:     port,
-			Database: "test_db",
-		},
-		Password: "root-password",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  "test_db",
-		},
-	}
-
-	openedDriver, err := driver.Open(ctx, storepb.Engine_MYSQL, config)
-	require.NoError(t, err)
-	defer openedDriver.Close(ctx)
-
-	// Cast to MySQL driver for SyncDBSchema
-	mysqlDriver, ok := openedDriver.(*mysqldb.Driver)
-	require.True(t, ok, "failed to cast to mysql.Driver")
 
 	// Test cases with various MySQL features
 	testCases := []struct {
@@ -540,18 +514,24 @@ CREATE TABLE json_features (
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create test database (drop first to avoid conflicts between test cases)
-			_, err := container.GetDB().ExecContext(ctx, "DROP DATABASE IF EXISTS test_db")
-			require.NoError(t, err)
-			_, err = container.GetDB().ExecContext(ctx, "CREATE DATABASE test_db")
+			t.Parallel()
+
+			// Create unique test database for parallel execution
+			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
 			require.NoError(t, err)
 
+			// Create MySQL driver for this test's database
+			driver, err := createMySQLDriver(ctx, host, port, testDBName)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
+
 			// Execute DDL using the driver
-			_, err = openedDriver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
+			_, err = driver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
 			require.NoError(t, err)
 
 			// Get metadata from live database using driver
-			dbMetadata, err := mysqlDriver.SyncDBSchema(ctx)
+			dbMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Get metadata from parser
