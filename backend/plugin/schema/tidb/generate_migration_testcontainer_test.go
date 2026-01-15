@@ -33,9 +33,6 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	// Test cases with various schema changes
 	testCases := []struct {
 		name          string
@@ -1367,7 +1364,7 @@ ALTER TABLE test_table COMMENT = '';
 			require.NoError(t, err, "failed to create test database")
 
 			// Create driver for this test database
-			driver, err := createTiDBDriver(ctx, host, port, testDB)
+			driver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), testDB)
 			require.NoError(t, err, "failed to create driver")
 			defer driver.Close(ctx)
 

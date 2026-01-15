@@ -20,9 +20,6 @@ func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	container := testcontainer.GetTestMSSQLContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	testCases := []struct {
 		name      string
 		setupSQL  string
@@ -407,7 +404,7 @@ GO
 			require.NoError(t, err)
 
 			// Connect to test database
-			testDriver, err := createMSSQLDriver(ctx, host, port, databaseName)
+			testDriver, err := createMSSQLDriver(ctx, container.GetHost(), container.GetPort(), databaseName)
 			require.NoError(t, err)
 			defer testDriver.Close(ctx)
 
@@ -431,7 +428,7 @@ GO
 			require.NoError(t, err)
 
 			// Connect to the new database
-			newDriver, err := createMSSQLDriver(ctx, host, port, newDatabaseName)
+			newDriver, err := createMSSQLDriver(ctx, container.GetHost(), container.GetPort(), newDatabaseName)
 			require.NoError(t, err)
 			defer newDriver.Close(ctx)
 

@@ -2,22 +2,15 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -25,37 +18,14 @@ import (
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
 // by comparing its output with the metadata retrieved from a real PostgreSQL instance.
+//
+//nolint:tparallel
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("test_db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("test"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Minute),
-		),
-	)
-	require.NoError(t, err)
-	defer func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
-
-	// Get connection string
-	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	// Connect to the database
-	connConfig, err := pgx.ParseConfig(connectionString)
-	require.NoError(t, err)
-	db := stdlib.OpenDB(*connConfig)
-	defer db.Close()
+	// Start shared PostgreSQL container for all subtests
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Test cases with various PostgreSQL features
 	testCases := []struct {
@@ -870,23 +840,24 @@ INSERT INTO array_types_test (
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a new database for each test case
-			dbName := fmt.Sprintf("test_%s", tc.name)
-			_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+			t.Parallel()
+
+			// Create a new database for each test case with unique name
+			dbName := fmt.Sprintf("test_%s_%d", strings.ReplaceAll(tc.name, "-", "_"), time.Now().UnixNano()%1000000)
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 			require.NoError(t, err)
 
-			// Connect to the test database
-			testConnConfig := *connConfig
-			testConnConfig.Database = dbName
-			testDB := stdlib.OpenDB(testConnConfig)
-			defer testDB.Close()
+			// Create driver for the test database
+			driver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
 
 			// Execute the DDL
-			_, err = testDB.Exec(tc.ddl)
+			_, err = driver.GetDB().ExecContext(ctx, tc.ddl)
 			require.NoError(t, err)
 
 			// Get metadata using Driver.SyncDBSchema
-			syncMetadata, err := getSyncMetadata(ctx, &testConnConfig, dbName)
+			syncMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Get metadata using get_database_metadata
@@ -908,48 +879,6 @@ INSERT INTO array_types_test (
 			}
 		})
 	}
-}
-
-// getSyncMetadata retrieves metadata from the live database using Driver.SyncDBSchema
-func getSyncMetadata(ctx context.Context, connConfig *pgx.ConnConfig, dbName string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create a driver instance using the pg package
-	driver := &pgdb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: connConfig.User,
-			Host:     connConfig.Host,
-			Port:     fmt.Sprintf("%d", connConfig.Port),
-			Database: dbName,
-		},
-		Password: connConfig.Password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "16.0", // PostgreSQL 16
-			DatabaseName:  dbName,
-		},
-	}
-
-	// Open connection using the driver
-	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Use SyncDBSchema to get the metadata
-	pgDriver, ok := openedDriver.(*pgdb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to pg.Driver")
-	}
-
-	metadata, err := pgDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
 }
 
 // compareMetadata compares metadata from sync.go and get_database_metadata
