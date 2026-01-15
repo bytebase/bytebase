@@ -136,7 +136,7 @@ const handleAddTab = async () => {
 
 const handleRemoveTab = async (tab: SQLEditorTab, focusWhenConfirm = false) => {
   const _defer = defer<boolean>();
-  if (tab.mode === "WORKSHEET" && tab.status === "DIRTY") {
+  if (tab.mode === "WORKSHEET" && tab.status !== "CLEAN") {
     if (focusWhenConfirm) {
       tabStore.setCurrentTabId(tab.id);
     }

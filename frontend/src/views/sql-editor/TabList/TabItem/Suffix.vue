@@ -11,7 +11,11 @@
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
-    <carbon:dot-mark v-if="icon === 'unsaved'" class="icon unsaved" />
+    <LoaderCircleIcon
+      v-if="icon === 'saving'"
+      class="icon saving animate-spin"
+    />
+    <carbon:dot-mark v-else-if="icon === 'unsaved'" class="icon unsaved" />
     <heroicons-solid:x
       v-else-if="icon === 'close'"
       class="icon close"
@@ -22,6 +26,7 @@
 </template>
 
 <script lang="ts" setup>
+import { LoaderCircleIcon } from "lucide-vue-next";
 import { computed, reactive } from "vue";
 import type { SQLEditorTab } from "@/types";
 
@@ -29,7 +34,7 @@ type LocalState = {
   hovering: boolean;
 };
 
-type IconType = "unsaved" | "close";
+type IconType = "unsaved" | "saving" | "close";
 
 const props = defineProps<{
   tab: SQLEditorTab;
@@ -44,10 +49,14 @@ defineEmits<{
 }>();
 
 const icon = computed((): IconType | undefined => {
+  const { mode, status } = props.tab;
+  // Always show saving indicator when saving, even when hovering
+  if (mode === "WORKSHEET" && status === "SAVING") {
+    return "saving";
+  }
   if (state.hovering) {
     return "close";
   }
-  const { mode, status } = props.tab;
   if (mode === "WORKSHEET" && status === "DIRTY") {
     return "unsaved";
   }
@@ -72,7 +81,10 @@ const icon = computed((): IconType | undefined => {
 .suffix.closable {
   cursor: pointer;
 }
-.suffix.closable.dirty .icon {
+.suffix.closable.DIRTY .icon {
+  color: rgb(var(--color-accent));
+}
+.suffix.closable.SAVING .icon.saving {
   color: rgb(var(--color-accent));
 }
 .suffix.closable .icon:hover {
