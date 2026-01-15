@@ -20,6 +20,8 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	var buf strings.Builder
 	schema := to.Schemas[0]
+	// For Oracle, the database name (user/schema name) is stored in to.Name
+	databaseName := to.Name
 
 	// First generate sequences (they need to exist before tables that reference them)
 	for _, sequence := range schema.Sequences {
@@ -41,14 +43,14 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	// Add tables to graph
 	for _, table := range schema.Tables {
-		tableID := getObjectID(schema.Name, table.Name)
+		tableID := getObjectID(databaseName, table.Name)
 		tableMap[tableID] = table
 		graph.AddNode(tableID)
 	}
 
 	// Add views to graph
 	for _, view := range schema.Views {
-		viewID := getObjectID(schema.Name, view.Name)
+		viewID := getObjectID(databaseName, view.Name)
 		viewMap[viewID] = view
 		graph.AddNode(viewID)
 		// Add dependencies from view to tables/views it references
@@ -60,7 +62,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	// Add materialized views to graph
 	for _, view := range schema.MaterializedViews {
-		viewID := getObjectID(schema.Name, view.Name)
+		viewID := getObjectID(databaseName, view.Name)
 		materializedViewMap[viewID] = view
 		graph.AddNode(viewID)
 		// Add dependencies from materialized view to tables/views it references
@@ -72,7 +74,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	// Add functions to graph
 	for _, function := range schema.Functions {
-		functionID := getObjectID(schema.Name, function.Name)
+		functionID := getObjectID(databaseName, function.Name)
 		functionMap[functionID] = function
 		graph.AddNode(functionID)
 		// Add dependencies from function to tables it references
@@ -84,7 +86,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	// Add procedures to graph
 	for _, procedure := range schema.Procedures {
-		procedureID := getObjectID(schema.Name, procedure.Name)
+		procedureID := getObjectID(databaseName, procedure.Name)
 		procedureMap[procedureID] = procedure
 		graph.AddNode(procedureID)
 		// Note: ProcedureMetadata doesn't have DependencyTables field
@@ -93,10 +95,10 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	// Add foreign key dependencies between tables
 	for _, table := range schema.Tables {
-		tableID := getObjectID(schema.Name, table.Name)
+		tableID := getObjectID(databaseName, table.Name)
 		for _, fk := range table.ForeignKeys {
 			if fk.ReferencedTable != table.Name { // Avoid self-references
-				referencedTableID := getObjectID(schema.Name, fk.ReferencedTable)
+				referencedTableID := getObjectID(databaseName, fk.ReferencedTable)
 				graph.AddEdge(referencedTableID, tableID)
 			}
 		}
@@ -107,27 +109,27 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	if err != nil {
 		// If there are cycles, fall back to original order
 		for _, table := range schema.Tables {
-			if err := writeTable(&buf, schema.Name, table); err != nil {
+			if err := writeTable(&buf, table); err != nil {
 				return "", err
 			}
 		}
 		for _, view := range schema.Views {
-			if err := writeView(&buf, schema.Name, view); err != nil {
+			if err := writeView(&buf, view); err != nil {
 				return "", err
 			}
 		}
 		for _, view := range schema.MaterializedViews {
-			if err := writeMaterializedView(&buf, schema.Name, view); err != nil {
+			if err := writeMaterializedView(&buf, view); err != nil {
 				return "", err
 			}
 		}
 		for _, function := range schema.Functions {
-			if err := writeFunction(&buf, schema.Name, function); err != nil {
+			if err := writeFunction(&buf, function); err != nil {
 				return "", err
 			}
 		}
 		for _, procedure := range schema.Procedures {
-			if err := writeProcedure(&buf, schema.Name, procedure); err != nil {
+			if err := writeProcedure(&buf, procedure); err != nil {
 				return "", err
 			}
 		}
@@ -137,27 +139,27 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	// Generate objects in dependency order
 	for _, objectID := range orderedList {
 		if table, ok := tableMap[objectID]; ok {
-			if err := writeTable(&buf, schema.Name, table); err != nil {
+			if err := writeTable(&buf, table); err != nil {
 				return "", err
 			}
 		}
 		if view, ok := viewMap[objectID]; ok {
-			if err := writeView(&buf, schema.Name, view); err != nil {
+			if err := writeView(&buf, view); err != nil {
 				return "", err
 			}
 		}
 		if view, ok := materializedViewMap[objectID]; ok {
-			if err := writeMaterializedView(&buf, schema.Name, view); err != nil {
+			if err := writeMaterializedView(&buf, view); err != nil {
 				return "", err
 			}
 		}
 		if function, ok := functionMap[objectID]; ok {
-			if err := writeFunction(&buf, schema.Name, function); err != nil {
+			if err := writeFunction(&buf, function); err != nil {
 				return "", err
 			}
 		}
 		if procedure, ok := procedureMap[objectID]; ok {
-			if err := writeProcedure(&buf, schema.Name, procedure); err != nil {
+			if err := writeProcedure(&buf, procedure); err != nil {
 				return "", err
 			}
 		}
@@ -166,16 +168,16 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	return buf.String(), nil
 }
 
-func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
-	if err := writeTable(&buf, schemaName, table); err != nil {
+	if err := writeTable(&buf, table); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
 }
 
-func writeTable(buf *strings.Builder, schema string, table *storepb.TableMetadata) error {
+func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 	if _, err := buf.WriteString(`CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -243,7 +245,7 @@ func writeTable(buf *strings.Builder, schema string, table *storepb.TableMetadat
 		if _, err := buf.WriteString(`  `); err != nil {
 			return err
 		}
-		if err := writeForeignKey(buf, schema, fk); err != nil {
+		if err := writeForeignKey(buf, fk); err != nil {
 			return err
 		}
 	}
@@ -262,7 +264,7 @@ func writeTable(buf *strings.Builder, schema string, table *storepb.TableMetadat
 
 	// Write triggers for this table
 	for _, trigger := range table.Triggers {
-		if err := writeTrigger(buf, schema, trigger); err != nil {
+		if err := writeTrigger(buf, trigger); err != nil {
 			return err
 		}
 	}
@@ -379,7 +381,7 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 	return nil
 }
 
-func writeForeignKey(buf *strings.Builder, schema string, fk *storepb.ForeignKeyMetadata) error {
+func writeForeignKey(buf *strings.Builder, fk *storepb.ForeignKeyMetadata) error {
 	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -411,7 +413,9 @@ func writeForeignKey(buf *strings.Builder, schema string, fk *storepb.ForeignKey
 	if _, err := buf.WriteString(`) REFERENCES "`); err != nil {
 		return err
 	}
-	if fk.ReferencedSchema != schema {
+	// Only include schema prefix for cross-schema foreign key references
+	// Same-schema references don't need prefix for portability
+	if fk.ReferencedSchema != "" {
 		if _, err := buf.WriteString(fk.ReferencedSchema); err != nil {
 			return err
 		}
@@ -642,7 +646,7 @@ func getObjectID(schema, objectName string) string {
 }
 
 // writeView writes a CREATE VIEW statement
-func writeView(buf *strings.Builder, _ string, view *storepb.ViewMetadata) error {
+func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString(`CREATE VIEW "`); err != nil {
 		return err
 	}
@@ -667,7 +671,7 @@ func writeView(buf *strings.Builder, _ string, view *storepb.ViewMetadata) error
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
-func writeMaterializedView(buf *strings.Builder, _ string, view *storepb.MaterializedViewMetadata) error {
+func writeMaterializedView(buf *strings.Builder, view *storepb.MaterializedViewMetadata) error {
 	if _, err := buf.WriteString(`CREATE MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
@@ -692,7 +696,7 @@ func writeMaterializedView(buf *strings.Builder, _ string, view *storepb.Materia
 }
 
 // writeFunction writes a CREATE FUNCTION statement
-func writeFunction(buf *strings.Builder, _ string, function *storepb.FunctionMetadata) error {
+func writeFunction(buf *strings.Builder, function *storepb.FunctionMetadata) error {
 	definition := function.Definition
 	// If the definition doesn't start with CREATE, add the CREATE OR REPLACE prefix
 	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(definition)), "CREATE") {
@@ -715,7 +719,7 @@ func writeFunction(buf *strings.Builder, _ string, function *storepb.FunctionMet
 }
 
 // writeProcedure writes a CREATE PROCEDURE statement
-func writeProcedure(buf *strings.Builder, _ string, procedure *storepb.ProcedureMetadata) error {
+func writeProcedure(buf *strings.Builder, procedure *storepb.ProcedureMetadata) error {
 	definition := procedure.Definition
 	// If the definition doesn't start with CREATE, add the CREATE OR REPLACE prefix
 	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(definition)), "CREATE") {
@@ -738,7 +742,7 @@ func writeProcedure(buf *strings.Builder, _ string, procedure *storepb.Procedure
 }
 
 // writeTrigger writes a CREATE TRIGGER statement
-func writeTrigger(buf *strings.Builder, _ string, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(buf *strings.Builder, trigger *storepb.TriggerMetadata) error {
 	// The trigger body should already contain the full CREATE TRIGGER statement
 	if _, err := buf.WriteString(trigger.Body); err != nil {
 		return err

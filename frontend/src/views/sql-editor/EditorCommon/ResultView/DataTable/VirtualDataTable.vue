@@ -3,7 +3,7 @@
     ref="containerRef"
     class="relative w-full flex-1 overflow-auto flex flex-col rounded-sm border dark:border-zinc-500"
   >
-    <div class="inline-block">
+    <div class="inline-block shrink-0">
       <table
         ref="tableRef"
         class="relative border-collapse -mx-px"

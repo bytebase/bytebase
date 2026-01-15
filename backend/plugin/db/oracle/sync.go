@@ -727,15 +727,17 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 		case "R":
 			if rOwner.Valid && rConstraintName.Valid {
 				foreignKey := &storepb.ForeignKeyMetadata{
-					Name:             constraintName,
-					Columns:          constraintColumnMap[constraintKey],
-					ReferencedSchema: rOwner.String,
+					Name:    constraintName,
+					Columns: constraintColumnMap[constraintKey],
 				}
 				if rOwner.String == schemaName {
+					// Same-schema reference - don't set ReferencedSchema for portability
 					rConstraintKey := db.ConstraintKey{Schema: rOwner.String, Constraint: rConstraintName.String}
 					foreignKey.ReferencedTable = constraintTableMap[rConstraintKey]
 					foreignKey.ReferencedColumns = constraintColumnMap[rConstraintKey]
 				} else {
+					// Cross-schema reference - set ReferencedSchema
+					foreignKey.ReferencedSchema = rOwner.String
 					foreignKey.ReferencedTable, foreignKey.ReferencedColumns, err = getOuterSchemaRColumns(txn, outerRTableMap, outerRColumnMap, rOwner.String, rConstraintName.String)
 					if err != nil {
 						return nil, nil, nil, nil, errors.Wrapf(err, "failed to get outer schema reference columns")

@@ -131,8 +131,6 @@ const title = computed(() => {
   const { action } = props;
 
   switch (action) {
-    case "RESOLVE":
-      return t("issue.status-transition.modal.resolve");
     case "CLOSE":
       return t("issue.status-transition.modal.close");
     case "REOPEN":

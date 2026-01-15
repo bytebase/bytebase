@@ -1,0 +1,30 @@
+{
+  "hasDifferences": true,
+  "summary": "Schema changes: 1, Table changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 1,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "DROP",
+        "schemaName": "temp_data",
+        "tableName": "sessions"
+      },
+      {
+        "action": "DROP",
+        "schemaName": "temp_data",
+        "tableName": "logs"
+      }
+    ],
+    "schemas": [
+      {
+        "action": "DROP",
+        "schemaName": "temp_data"
+      }
+    ]
+  }
+}

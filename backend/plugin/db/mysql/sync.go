@@ -397,7 +397,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			cc.CONSTRAINT_NAME,
 			cc.CHECK_CLAUSE
 		FROM information_schema.CHECK_CONSTRAINTS cc
-			JOIN information_schema.TABLE_CONSTRAINTS tc ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+			JOIN information_schema.TABLE_CONSTRAINTS tc
+				ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+				AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
 		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
 	`
 		checkRows, err := d.db.QueryContext(ctx, checkQuery, d.databaseName)

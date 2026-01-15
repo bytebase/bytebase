@@ -136,6 +136,13 @@ function computeExportArchiveReady(
   return true;
 }
 
+// Check if issue has no approval required (empty approval flow)
+function hasNoApprovalRequired(issue: Issue | undefined): boolean {
+  if (!issue) return false;
+  const roles = issue.approvalTemplate?.flow?.roles ?? [];
+  return roles.length === 0;
+}
+
 export function buildActionContext(input: ContextBuilderInput): ActionContext {
   const {
     plan,
@@ -220,9 +227,13 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
   );
 
   // Compute approval status
+  // Issue is considered approved if:
+  // - Status is APPROVED or SKIPPED, OR
+  // - Approval template has no roles (no approval required)
   const issueApproved =
     issue?.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+    issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
+    hasNoApprovalRequired(issue);
 
   return {
     plan,

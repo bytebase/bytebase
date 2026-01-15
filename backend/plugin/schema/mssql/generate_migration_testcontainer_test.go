@@ -4,23 +4,19 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	// Import MSSQL driver
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	mssqldb "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -36,35 +32,9 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Start MSSQL container
-	req := testcontainers.ContainerRequest{
-		Image: "mcr.microsoft.com/mssql/server:2022-latest",
-		Env: map[string]string{
-			"ACCEPT_EULA": "Y",
-			"SA_PASSWORD": "Test123!",
-			"MSSQL_PID":   "Express",
-		},
-		ExposedPorts: []string{"1433/tcp"},
-		WaitingFor: wait.ForLog("SQL Server is now ready for client connections").
-			WithStartupTimeout(3 * time.Minute),
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	})
-
-	// Get connection details
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "1433")
-	require.NoError(t, err)
+	// Start shared MSSQL container for all subtests
+	container := testcontainer.GetTestMSSQLContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Test cases with various schema changes
 	testCases := []struct {
@@ -2379,249 +2349,58 @@ GO
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			// Step 1: Execute 5-step workflow
-			portInt, err := strconv.Atoi(port.Port())
-			require.NoError(t, err)
-			err = executeFiveStepWorkflow(ctx, host, portInt, testCase.name, testCase.initialSchema, testCase.migrationDDL)
-			require.NoError(t, err, "Failed 5-step workflow for test case: %s", testCase.description)
+
+			// Create test database with unique name
+			testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", testDB))
+			require.NoError(t, err, "failed to create test database")
+
+			// Connect to test database
+			driver, err := createMSSQLDriver(ctx, container.GetHost(), container.GetPort(), testDB)
+			require.NoError(t, err, "failed to connect to test database")
+			defer driver.Close(ctx)
+
+			// Step 1: Initialize database schema and get schema result A
+			err = executeSQL(ctx, driver, testCase.initialSchema)
+			require.NoError(t, err, "failed to execute initial schema")
+
+			schemaA, err := driver.SyncDBSchema(ctx)
+			require.NoError(t, err, "failed to sync schema A")
+
+			// Step 2: Apply migration DDL and get schema result B
+			err = executeSQL(ctx, driver, testCase.migrationDDL)
+			require.NoError(t, err, "failed to execute migration DDL")
+
+			schemaB, err := driver.SyncDBSchema(ctx)
+			require.NoError(t, err, "failed to sync schema B")
+
+			// Step 3: Generate rollback DDL using generate_migration
+			// Convert to model schemas for diff
+			dbMetadataA := model.NewDatabaseMetadata(schemaA, nil, nil, storepb.Engine_MSSQL, false)
+			dbMetadataB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_MSSQL, false)
+
+			// Get diff from B to A (to generate rollback)
+			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, dbMetadataB, dbMetadataA)
+			require.NoError(t, err, "failed to generate diff")
+
+			rollbackDDL, err := schema.GenerateMigration(storepb.Engine_MSSQL, diff)
+			require.NoError(t, err, "failed to generate rollback migration")
+
+			// Only proceed if there's actual rollback DDL to execute
+			if strings.TrimSpace(rollbackDDL) != "" {
+				// Step 4: Execute rollback DDL and get schema result C
+				err = executeSQL(ctx, driver, rollbackDDL)
+				require.NoError(t, err, "failed to execute rollback DDL: %s", rollbackDDL)
+
+				schemaC, err := driver.SyncDBSchema(ctx)
+				require.NoError(t, err, "failed to sync schema C")
+
+				// Step 5: Compare schema results A and C
+				err = compareSchemas(schemaA, schemaC)
+				require.NoError(t, err, "schema comparison failed for test case: %s", testCase.description)
+			}
 		})
 	}
-}
-
-// executeFiveStepWorkflow implements the 5-step workflow:
-// 1. Initialize database schema, get schema result A via syncDBSchema
-// 2. Apply migration DDL, get schema result B via syncDBSchema
-// 3. Generate rollback DDL via generate_migration
-// 4. Execute rollback DDL, get schema result C via syncDBSchema
-// 5. Compare schema results A and C to verify they are identical
-func executeFiveStepWorkflow(ctx context.Context, host string, port int, testName, initialSchema, migrationDDL string) error {
-	// Create driver instance
-	driverInstance := &mssqldb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "sa",
-			Host:     host,
-			Port:     strconv.Itoa(port),
-			Database: "master",
-		},
-		Password: "Test123!",
-		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "master",
-		},
-	}
-
-	// Open connection
-	driver, err := driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
-	if err != nil {
-		return errors.Wrap(err, "failed to connect to MSSQL")
-	}
-	defer driver.Close(ctx)
-
-	// Create test database with unique name based on test case
-	testDB := fmt.Sprintf("test_%s_%d", strings.ReplaceAll(strings.ReplaceAll(testName, " ", "_"), "-", "_"), time.Now().UnixNano()%1000000)
-	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", testDB), db.ExecuteOptions{CreateDatabase: true}); err != nil {
-		return errors.Wrap(err, "failed to create test database")
-	}
-
-	// Reconnect to test database
-	driver.Close(ctx)
-	config.DataSource.Database = testDB
-	config.ConnectionContext.DatabaseName = testDB
-	driver, err = driverInstance.Open(ctx, storepb.Engine_MSSQL, config)
-	if err != nil {
-		return errors.Wrap(err, "failed to reconnect to test database")
-	}
-	defer driver.Close(ctx)
-
-	// Step 1: Initialize database schema and get schema result A
-	if err := executeSQL(ctx, driver, initialSchema); err != nil {
-		return errors.Wrap(err, "failed to execute initial schema")
-	}
-
-	mssqlDriver, ok := driver.(*mssqldb.Driver)
-	if !ok {
-		return errors.New("failed to cast to mssqldb.Driver")
-	}
-
-	schemaA, err := mssqlDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to sync schema A")
-	}
-
-	// Step 2: Apply migration DDL and get schema result B
-	if err := executeSQL(ctx, driver, migrationDDL); err != nil {
-		return errors.Wrap(err, "failed to execute migration DDL")
-	}
-
-	schemaB, err := mssqlDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to sync schema B")
-	}
-
-	// Debug: Print what tables are in each schema
-	fmt.Printf("Schema A contents:\n")
-	for _, s := range schemaA.Schemas {
-		fmt.Printf("  Schema [%s]: %d tables\n", s.Name, len(s.Tables))
-		for _, t := range s.Tables {
-			fmt.Printf("    - [%s].[%s]\n", s.Name, t.Name)
-		}
-	}
-	fmt.Printf("Schema B contents:\n")
-	for _, s := range schemaB.Schemas {
-		fmt.Printf("  Schema [%s]: %d tables\n", s.Name, len(s.Tables))
-		for _, t := range s.Tables {
-			fmt.Printf("    - [%s].[%s]\n", s.Name, t.Name)
-		}
-	}
-
-	// Step 3: Generate rollback DDL using generate_migration
-	// Convert to model schemas for diff
-	dbMetadataA := model.NewDatabaseMetadata(schemaA, nil, nil, storepb.Engine_MSSQL, false)
-	dbMetadataB := model.NewDatabaseMetadata(schemaB, nil, nil, storepb.Engine_MSSQL, false)
-
-	// Get diff from B to A (to generate rollback)
-	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MSSQL, dbMetadataB, dbMetadataA)
-	if err != nil {
-		return errors.Wrap(err, "failed to generate diff")
-	}
-
-	// Debug: Print what changes are detected
-	fmt.Printf("Schema changes detected:\n")
-	fmt.Printf("- Table changes: %d\n", len(diff.TableChanges))
-	for i, tc := range diff.TableChanges {
-		fmt.Printf("  %d. %s [%s].[%s]\n", i+1, tc.Action, tc.SchemaName, tc.TableName)
-	}
-	fmt.Printf("- Schema changes: %d\n", len(diff.SchemaChanges))
-	for i, sc := range diff.SchemaChanges {
-		fmt.Printf("  %d. %s [%s]\n", i+1, sc.Action, sc.SchemaName)
-	}
-
-	rollbackDDL, err := schema.GenerateMigration(storepb.Engine_MSSQL, diff)
-	if err != nil {
-		return errors.Wrap(err, "failed to generate rollback migration")
-	}
-
-	// Debug: Print the generated rollback DDL
-	fmt.Printf("Generated rollback DDL:\n%s\n", rollbackDDL)
-
-	// Only proceed if there's actual rollback DDL to execute
-	if strings.TrimSpace(rollbackDDL) == "" {
-		// No rollback needed, schemas should already be identical
-		return nil
-	}
-
-	// Step 4: Execute rollback DDL and get schema result C
-	if err := executeSQL(ctx, driver, rollbackDDL); err != nil {
-		return errors.Wrapf(err, "failed to execute rollback DDL: %s", rollbackDDL)
-	}
-
-	schemaC, err := mssqlDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to sync schema C")
-	}
-
-	// Step 5: Compare schema results A and C
-	if err := compareSchemas(schemaA, schemaC); err != nil {
-		return errors.Wrap(err, "schema comparison failed")
-	}
-
-	return nil
-}
-
-// executeSQL executes SQL statements, handling GO separators
-func executeSQL(ctx context.Context, driver db.Driver, sql string) error {
-	if strings.TrimSpace(sql) == "" {
-		return nil
-	}
-
-	// Split by GO statements (case insensitive)
-	statements := splitByGO(sql)
-
-	for i, stmt := range statements {
-		stmt = strings.TrimSpace(stmt)
-		if stmt == "" {
-			continue
-		}
-
-		if _, err := driver.Execute(ctx, stmt, db.ExecuteOptions{}); err != nil {
-			return errors.Wrapf(err, "failed to execute statement %d: %s", i+1, stmt)
-		}
-	}
-
-	return nil
-}
-
-// splitByGO splits SQL by GO statements (case insensitive) or by semicolons if no GO statements
-func splitByGO(sql string) []string {
-	sql = strings.TrimSpace(sql)
-	if sql == "" {
-		return []string{}
-	}
-
-	// First check if there are any GO statements
-	hasGOStatements := false
-	lines := strings.Split(sql, "\n")
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.EqualFold(trimmed, "GO") {
-			hasGOStatements = true
-			break
-		}
-	}
-
-	if hasGOStatements {
-		// Split by GO statements
-		var statements []string
-		var currentStatement strings.Builder
-
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if strings.EqualFold(trimmed, "GO") {
-				if currentStatement.Len() > 0 {
-					statements = append(statements, currentStatement.String())
-					currentStatement.Reset()
-				}
-			} else {
-				if currentStatement.Len() > 0 {
-					currentStatement.WriteString("\n")
-				}
-				currentStatement.WriteString(line)
-			}
-		}
-
-		if currentStatement.Len() > 0 {
-			statements = append(statements, currentStatement.String())
-		}
-
-		return statements
-	}
-	// Split by semicolons for DDL statements
-	statements := strings.Split(sql, ";")
-	var result []string
-	for _, stmt := range statements {
-		stmt = strings.TrimSpace(stmt)
-		if stmt != "" {
-			// Check if this statement contains any non-comment SQL
-			lines := strings.Split(stmt, "\n")
-			hasSQL := false
-			var sqlLines []string
-			for _, line := range lines {
-				line = strings.TrimSpace(line)
-				if line != "" && !strings.HasPrefix(line, "--") {
-					hasSQL = true
-					sqlLines = append(sqlLines, line)
-				}
-			}
-			// Only include if there's actual SQL (not just comments)
-			if hasSQL {
-				result = append(result, strings.Join(sqlLines, " "))
-			}
-		}
-	}
-	return result
 }
 
 // compareSchemas compares two database schemas and returns an error if they differ

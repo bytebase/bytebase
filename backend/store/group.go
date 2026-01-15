@@ -57,17 +57,8 @@ func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMes
 		}
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	groups, err := s.ListGroups(ctx, find)
 	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

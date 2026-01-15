@@ -10,19 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"database/sql"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -34,37 +26,14 @@ import (
 // 3. Define expected schema C, use getDatabaseMetadata to get its metadata, generate diff from B to C, then generate migration DDL
 // 4. Apply generated DDL to database, then sync to get schema D
 // 5. Verify schema D and schema C metadata have no diff and validate each member consistently
+//
+//nolint:tparallel
 func TestSDLValidationWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("test_db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("test"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Minute),
-		),
-	)
-	require.NoError(t, err)
-	defer func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
-
-	// Get connection string
-	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	// Connect to the database
-	connConfig, err := pgx.ParseConfig(connectionString)
-	require.NoError(t, err)
-	db := stdlib.OpenDB(*connConfig)
-	defer db.Close()
+	// Start shared PostgreSQL container for all subtests
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Test cases following the 5-step SDL validation process
 	testCases := []struct {
@@ -914,135 +883,73 @@ CREATE TABLE employees (
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a new database for each test case
-			dbName := fmt.Sprintf("sdl_test_%s", tc.name)
-			_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+			t.Parallel()
+
+			// Create a new database for each test case with unique name
+			dbName := fmt.Sprintf("sdl_test_%s_%d", strings.ReplaceAll(tc.name, "-", "_"), time.Now().UnixNano()%1000000)
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 			require.NoError(t, err)
 
-			// Connect to the test database
-			testConnConfig := *connConfig
-			testConnConfig.Database = dbName
-			testDB := stdlib.OpenDB(testConnConfig)
-			defer testDB.Close()
+			// Create driver for the test database
+			driver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
 
 			// Execute the 5-step SDL validation process
-			err = executeSDLValidationProcess(ctx, t, &testConnConfig, testDB, dbName, tc.initialSchema, tc.expectedSchema, tc.description)
-			require.NoError(t, err, "SDL validation process should complete successfully for test case: %s", tc.description)
+			t.Logf("Starting SDL validation process for: %s", tc.description)
+
+			// Step 1: Apply initial schema A to database
+			t.Log("Step 1: Applying initial schema A to database")
+			if strings.TrimSpace(tc.initialSchema) != "" {
+				_, err = driver.GetDB().ExecContext(ctx, tc.initialSchema)
+				require.NoError(t, err, "failed to apply initial schema")
+			}
+
+			// Step 2: Sync to get schema B from database
+			t.Log("Step 2: Syncing to get schema B from database")
+			schemaB, err := driver.SyncDBSchema(ctx)
+			require.NoError(t, err, "failed to sync schema B")
+
+			// Step 3: Define expected schema C, use getDatabaseMetadata to get its metadata, generate diff from B to C, then generate migration DDL
+			t.Log("Step 3: Define expected schema C, use getDatabaseMetadata to get its metadata, generate diff from B to C, then generate migration DDL")
+
+			// Get metadata for expected schema C using GetDatabaseMetadata
+			// Note: Empty expectedSchema means we expect an empty database (all objects dropped)
+			schemaCMetadata, err := GetDatabaseMetadata(tc.expectedSchema)
+			require.NoError(t, err, "failed to get expected schema C metadata")
+
+			// Generate migration DDL from schema B to schema C using the differ
+			migrationDDL, actualDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
+			require.NoError(t, err, "Failed to generate migration DDL from metadata")
+
+			t.Logf("Generated migration DDL (%d characters):\n%s", len(migrationDDL), migrationDDL)
+
+			// Save or validate the actual diff (B to C) and DDL files
+			testName := strings.ReplaceAll(t.Name(), "/", "_")
+			err = validateOrSaveTestFiles(t, actualDiff, testName, migrationDDL)
+			require.NoError(t, err, "test file validation/creation failed")
+
+			// Step 4: Apply generated DDL to database, then sync to get schema D
+			t.Log("Step 4: Apply generated DDL to database, then sync to get schema D")
+			if strings.TrimSpace(migrationDDL) != "" {
+				_, err = driver.GetDB().ExecContext(ctx, migrationDDL)
+				require.NoError(t, err, "failed to apply migration DDL")
+			}
+
+			// Sync to get schema D after migration
+			schemaD, err := driver.SyncDBSchema(ctx)
+			require.NoError(t, err, "failed to sync schema D after migration")
+
+			// Step 5: Verify schema D and schema C metadata have no diff and validate each member consistently
+			t.Log("Step 5: Verify schema D and schema C metadata have no diff and validate each member consistently")
+
+			// Compare schema D with schema C metadata to ensure they match
+			err = validateSchemaConsistency(schemaD, schemaCMetadata)
+			require.NoError(t, err, "schema validation failed - schema D does not match expected schema C")
+
+			t.Logf("✓ SDL validation process completed successfully for: %s", tc.description)
 		})
 	}
-}
-
-// executeSDLValidationProcess implements the 5-step SDL validation workflow
-func executeSDLValidationProcess(ctx context.Context, t *testing.T, connConfig *pgx.ConnConfig, testDB *sql.DB, dbName, initialSchema, expectedSchema, description string) error {
-	t.Logf("Starting SDL validation process for: %s", description)
-
-	// Step 1: Apply initial schema A to database
-	t.Log("Step 1: Applying initial schema A to database")
-	if strings.TrimSpace(initialSchema) != "" {
-		_, err := testDB.Exec(initialSchema)
-		if err != nil {
-			return errors.Wrapf(err, "failed to apply initial schema")
-		}
-	}
-
-	// Step 2: Sync to get schema B from database
-	t.Log("Step 2: Syncing to get schema B from database")
-	schemaB, err := getSyncMetadataForSDL(ctx, connConfig, dbName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync schema B")
-	}
-
-	// Step 3: Define expected schema C, use getDatabaseMetadata to get its metadata, generate diff from B to C, then generate migration DDL
-	t.Log("Step 3: Define expected schema C, use getDatabaseMetadata to get its metadata, generate diff from B to C, then generate migration DDL")
-
-	// Get metadata for expected schema C using GetDatabaseMetadata
-	// Note: Empty expectedSchema means we expect an empty database (all objects dropped)
-	schemaCMetadata, err := GetDatabaseMetadata(expectedSchema)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get expected schema C metadata")
-	}
-
-	// Generate migration DDL from schema B to schema C using the differ
-	migrationDDL, actualDiff, err := generateMigrationDDLFromMetadata(schemaB, schemaCMetadata)
-	require.NoError(t, err, "Failed to generate migration DDL from metadata")
-
-	t.Logf("Generated migration DDL (%d characters):\n%s", len(migrationDDL), migrationDDL)
-
-	// Save or validate the actual diff (B to C) and DDL files
-	testName := strings.ReplaceAll(t.Name(), "/", "_")
-	err = validateOrSaveTestFiles(t, actualDiff, testName, migrationDDL)
-	if err != nil {
-		return errors.Wrapf(err, "test file validation/creation failed")
-	}
-
-	// Step 4: Apply generated DDL to database, then sync to get schema D
-	t.Log("Step 4: Apply generated DDL to database, then sync to get schema D")
-	if strings.TrimSpace(migrationDDL) != "" {
-		_, err := testDB.Exec(migrationDDL)
-		if err != nil {
-			return errors.Wrapf(err, "failed to apply migration DDL")
-		}
-	}
-
-	// Sync to get schema D after migration
-	schemaD, err := getSyncMetadataForSDL(ctx, connConfig, dbName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync schema D after migration")
-	}
-
-	// Step 5: Verify schema D and schema C metadata have no diff and validate each member consistently
-	t.Log("Step 5: Verify schema D and schema C metadata have no diff and validate each member consistently")
-
-	// Compare schema D with schema C metadata to ensure they match
-	err = validateSchemaConsistency(schemaD, schemaCMetadata)
-	if err != nil {
-		return errors.Wrapf(err, "schema validation failed - schema D does not match expected schema C")
-	}
-
-	t.Logf("✓ SDL validation process completed successfully for: %s", description)
-	return nil
-}
-
-// getSyncMetadataForSDL retrieves metadata from the live database using Driver.SyncDBSchema
-func getSyncMetadataForSDL(ctx context.Context, connConfig *pgx.ConnConfig, dbName string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create a driver instance using the pg package
-	driver := &pgdb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: connConfig.User,
-			Host:     connConfig.Host,
-			Port:     fmt.Sprintf("%d", connConfig.Port),
-			Database: dbName,
-		},
-		Password: connConfig.Password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "16.0", // PostgreSQL 16
-			DatabaseName:  dbName,
-		},
-	}
-
-	// Open connection using the driver
-	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Use SyncDBSchema to get the metadata
-	pgDriver, ok := openedDriver.(*pgdb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to pg.Driver")
-	}
-
-	metadata, err := pgDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
 }
 
 // generateMigrationDDLFromMetadata generates migration DDL from schema B to schema C using schema.differ

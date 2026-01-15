@@ -134,7 +134,7 @@ export const useIssueSearchScopeOptions = (
           {
             value: IssueStatus[IssueStatus.CANCELED],
             keywords: ["closed", "canceled"],
-            render: () => renderSpan(t("common.canceled")),
+            render: () => renderSpan(t("common.closed")),
           },
         ],
       },

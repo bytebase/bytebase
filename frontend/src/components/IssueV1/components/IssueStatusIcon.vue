@@ -117,7 +117,7 @@ const stringifyIssueStatus = (issueStatus: IssueStatus): string => {
   } else if (issueStatus === IssueStatus.DONE) {
     return t("common.done");
   } else if (issueStatus === IssueStatus.CANCELED) {
-    return t("common.canceled");
+    return t("common.closed");
   }
   return "";
 };

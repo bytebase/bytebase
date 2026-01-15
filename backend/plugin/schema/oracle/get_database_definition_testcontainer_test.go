@@ -2,12 +2,12 @@ package oracle
 
 import (
 	"context"
-	"database/sql"
-	"strconv"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -19,6 +19,8 @@ import (
 // TestGetDatabaseDefinitionWithTestcontainer tests the GetDatabaseDefinition function
 // by creating a schema, getting its definition, recreating it in a new database,
 // and comparing the results.
+//
+//nolint:tparallel
 func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping Oracle testcontainer test in short mode")
@@ -28,7 +30,10 @@ func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 
 	// Get Oracle container from testcontainer utility
 	container := testcontainer.GetTestOracleContainer(ctx, t)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
 
 	// Test cases with various schema configurations
 	testCases := []struct {
@@ -64,24 +69,28 @@ CREATE INDEX IDX_EMP_NAME ON EMPLOYEES(NAME);
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
-			// Get the database connection from the container
-			testDB := container.GetDB()
+			t.Parallel()
 
-			// Set current schema to TESTUSER
-			_, err := testDB.Exec("ALTER SESSION SET CURRENT_SCHEMA = TESTUSER")
+			// Create unique Oracle user for this test (Oracle users are schemas)
+			// Use UUID to ensure uniqueness and avoid name collisions
+			testUser := fmt.Sprintf("U_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+
+			// Create user using shared SYSTEM connection
+			require.NoError(t, createOracleUser(systemDB, testUser))
+
+			// Connect as the test user
+			driver, err := createOracleDriver(ctx, container.GetHost(), container.GetPort(), testUser)
 			require.NoError(t, err)
-
-			// Clean up any existing objects
-			cleanupSchema(t, testDB)
+			defer driver.Close(ctx)
 
 			// Step 1: Initialize the database schema and use SyncDBSchema to get metadata A
-			err = executeStatements(testDB, tc.initialSchema)
+			err = executeStatements(ctx, driver, tc.initialSchema)
 			require.NoError(t, err, "Failed to execute initial schema")
 
-			portInt, err := strconv.Atoi(container.GetPort())
-			require.NoError(t, err)
-			metadataA, err := getSyncMetadataForGenerateMigration(ctx, container.GetHost(), portInt)
+			// Get schema metadata A
+			metadataA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err, "Failed to get initial metadata")
 
 			// Step 2: Call GetDatabaseDefinition to generate the database definition X
@@ -92,16 +101,24 @@ CREATE INDEX IDX_EMP_NAME ON EMPLOYEES(NAME);
 			// Log the generated definition for debugging
 			t.Logf("Generated definition:\n%s", definition)
 
-			// Step 3: Create a new database schema and run the database definition X
-			// First, clean up the schema
-			cleanupSchema(t, testDB)
+			// Step 3: Create a new user and run the database definition X
+			// Create a second unique user for recreation test
+			testUser2 := fmt.Sprintf("U_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 
-			// Execute the generated definition
-			err = executeStatements(testDB, definition)
+			// Create the second user
+			require.NoError(t, createOracleUser(systemDB, testUser2))
+
+			// Connect as the second test user
+			driver2, err := createOracleDriver(ctx, container.GetHost(), container.GetPort(), testUser2)
+			require.NoError(t, err)
+			defer driver2.Close(ctx)
+
+			// Execute the generated definition in the new user's schema
+			err = executeStatements(ctx, driver2, definition)
 			require.NoError(t, err, "Failed to execute generated definition")
 
 			// Get metadata B after recreating from definition
-			metadataB, err := getSyncMetadataForGenerateMigration(ctx, container.GetHost(), portInt)
+			metadataB, err := driver2.SyncDBSchema(ctx)
 			require.NoError(t, err, "Failed to get metadata after recreation")
 
 			// Step 4: Compare the database metadata A and B, should be the same
@@ -121,40 +138,6 @@ CREATE INDEX IDX_EMP_NAME ON EMPLOYEES(NAME);
 				t.Errorf("Schema mismatch after recreation (-original +recreated):\n%s", diff)
 			}
 		})
-	}
-}
-
-// cleanupSchema drops all user objects in the schema
-func cleanupSchema(t *testing.T, db *sql.DB) {
-	// Set current schema to TESTUSER before cleanup
-	_, err := db.Exec("ALTER SESSION SET CURRENT_SCHEMA = TESTUSER")
-	require.NoError(t, err)
-
-	// Drop all user objects in dependency order
-	dropStatements := []string{
-		// Drop triggers first
-		"BEGIN FOR c IN (SELECT trigger_name FROM user_triggers) LOOP EXECUTE IMMEDIATE 'DROP TRIGGER ' || c.trigger_name; END LOOP; END;",
-		// Drop materialized views
-		"BEGIN FOR c IN (SELECT mview_name FROM user_mviews) LOOP EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW ' || c.mview_name; END LOOP; END;",
-		// Drop views
-		"BEGIN FOR c IN (SELECT view_name FROM user_views) LOOP EXECUTE IMMEDIATE 'DROP VIEW ' || c.view_name || ' CASCADE CONSTRAINTS'; END LOOP; END;",
-		// Drop synonyms
-		"BEGIN FOR c IN (SELECT synonym_name FROM user_synonyms) LOOP EXECUTE IMMEDIATE 'DROP SYNONYM ' || c.synonym_name; END LOOP; END;",
-		// Drop procedures
-		"BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'PROCEDURE') LOOP EXECUTE IMMEDIATE 'DROP PROCEDURE ' || c.object_name; END LOOP; END;",
-		// Drop functions
-		"BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'FUNCTION') LOOP EXECUTE IMMEDIATE 'DROP FUNCTION ' || c.object_name; END LOOP; END;",
-		// Drop tables with cascade constraints
-		"BEGIN FOR c IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE 'DROP TABLE ' || c.table_name || ' CASCADE CONSTRAINTS'; END LOOP; END;",
-		// Drop non-system sequences (system sequences cannot be dropped)
-		"BEGIN FOR c IN (SELECT sequence_name FROM user_sequences WHERE sequence_name NOT LIKE 'ISEQ$$_%') LOOP EXECUTE IMMEDIATE 'DROP SEQUENCE ' || c.sequence_name; END LOOP; END;",
-	}
-
-	for _, stmt := range dropStatements {
-		_, err := db.Exec(stmt)
-		if err != nil {
-			t.Logf("Warning during cleanup: %v", err)
-		}
 	}
 }
 

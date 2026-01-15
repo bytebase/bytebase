@@ -1,0 +1,46 @@
+{
+  "hasDifferences": true,
+  "summary": "Schema changes: 2, Table changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 2,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "schemas": [
+      {
+        "action": "CREATE",
+        "schemaName": "auth"
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "app"
+      }
+    ],
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "auth",
+        "tableName": "users"
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "app",
+        "tableName": "posts",
+        "foreignKeyChanges": 1,
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_author",
+            "columns": ["author_id"],
+            "referencedSchema": "auth",
+            "referencedTable": "users",
+            "referencedColumns": ["id"],
+            "onDelete": "CASCADE"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -35,7 +35,7 @@ Actions/
 
 **hasDeferredRollout**: Plans where rollout is created on-demand (export, create database). For these plans:
 - ROLLOUT_CREATE is hidden; ROLLOUT_START creates rollout and runs tasks in one step
-- ISSUE_STATUS_RESOLVE is hidden (issues auto-resolve when task completes)
+- Issues auto-resolve when task completes
 
 **ActionDefinition**: Declarative action with pure functions:
 ```typescript
@@ -117,21 +117,6 @@ interface ActionDefinition {
 ---
 
 ### Issue Status Actions
-
-#### `ISSUE_STATUS_RESOLVE` (Primary, Priority: 50)
-**Label**: "Resolve"
-
-**Description**: Marks the issue as resolved (DONE).
-
-**Visibility**:
-- Issue exists and is OPEN
-- Issue approval status is APPROVED or SKIPPED
-- All tasks in the rollout are finished (DONE or SKIPPED)
-- Rollout exists (`plan.hasRollout`)
-- Not a deferred rollout plan (export/create database plans auto-resolve when task completes)
-- User has `bb.issues.update` permission
-
----
 
 #### `ISSUE_STATUS_CLOSE` (Secondary, Priority: 90)
 **Label**: "Close"
@@ -272,7 +257,6 @@ Actions are sorted by priority (lower number = higher priority). The first visib
 | 10 | PLAN_REOPEN | primary |
 | 20 | ISSUE_STATUS_REOPEN | primary |
 | 30 | ISSUE_REVIEW | primary |
-| 50 | ISSUE_STATUS_RESOLVE | primary |
 | 55 | ROLLOUT_CREATE | primary |
 | 60 | ROLLOUT_START | primary |
 | 80 | ROLLOUT_CANCEL | secondary |
@@ -288,7 +272,7 @@ Actions are sorted by priority (lower number = higher priority). The first visib
 - `bb.issues.create`: Create issues from plans
 
 ### Issue Permissions
-- `bb.issues.update`: Close, reopen, or resolve issues
+- `bb.issues.update`: Close or reopen issues
 
 ### Rollout Permissions
 - `bb.rollouts.create`: Create rollouts

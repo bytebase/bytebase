@@ -6,51 +6,30 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	oracledb "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
 // by comparing its output with the metadata retrieved from a real Oracle instance.
+//
+//nolint:tparallel
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Start Oracle container
 	container := testcontainer.GetTestOracleContainer(ctx, t)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	host := container.GetHost()
 	port := container.GetPort()
 
-	// Create Oracle driver for metadata sync
-	driver := &oracledb.Driver{}
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:        storepb.DataSourceType_ADMIN,
-			Username:    "testuser",
-			Host:        host,
-			Port:        port,
-			Database:    "FREEPDB1",
-			ServiceName: "FREEPDB1",
-		},
-		Password: "testpass",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "21.0",
-			DatabaseName:  "TESTUSER",
-		},
-	}
-
-	openedDriver, err := driver.Open(ctx, storepb.Engine_ORACLE, config)
-	require.NoError(t, err)
-	defer openedDriver.Close(ctx)
-
-	// Cast to Oracle driver for SyncDBSchema
-	oracleDriver, ok := openedDriver.(*oracledb.Driver)
-	require.True(t, ok, "failed to cast to oracle.Driver")
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
 
 	// Test cases with various Oracle features
 	testCases := []struct {
@@ -773,13 +752,27 @@ COMMENT ON COLUMN ORDER_LINE_ITEMS.FULFILLMENT_STATUS IS 'Status: PENDING, PICKE
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create unique Oracle user for this test (Oracle users are schemas)
+			testUser := fmt.Sprintf("U_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+
+			// Create user using shared SYSTEM connection
+			require.NoError(t, createOracleUser(systemDB, testUser))
+
+			// Create Oracle driver for metadata sync
+			driver, err := createOracleDriver(ctx, host, port, testUser)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
+
 			// Execute DDL using the driver
-			_, err = openedDriver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
+			_, err = driver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
 			require.NoError(t, err)
 
 			// Get metadata from live database using driver
-			dbMetadata, err := oracleDriver.SyncDBSchema(ctx)
+			dbMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Get metadata from parser
@@ -789,51 +782,7 @@ COMMENT ON COLUMN ORDER_LINE_ITEMS.FULFILLMENT_STATUS IS 'Status: PENDING, PICKE
 			// Compare metadata
 			compareMetadata(t, dbMetadata, parsedMetadata, tc.name)
 
-			// Clean up - drop all objects to avoid conflicts
-			cleanupStatements := []string{
-				// Drop packages first
-				"DROP PACKAGE BODY financial_utils",
-				"DROP PACKAGE financial_utils",
-				// Drop functions and procedures
-				"DROP FUNCTION get_available_credit",
-				"DROP FUNCTION calculate_account_risk_score",
-				"DROP PROCEDURE update_account_balance",
-				// Drop materialized views
-				"DROP MATERIALIZED VIEW PRODUCT_PERFORMANCE_MV",
-				"DROP MATERIALIZED VIEW SALES_MONTHLY_MV",
-				// Drop views
-				"DROP VIEW CUSTOMER_SALES_ANALYSIS",
-				"DROP VIEW MONTHLY_SALES_SUMMARY",
-				"DROP VIEW EXPENSIVE_PRODUCTS",
-				// Drop triggers
-				"DROP TRIGGER inventory_audit_trigger",
-				"DROP TRIGGER audit_log_trigger",
-				// Drop sequences
-				"DROP SEQUENCE inventory_seq",
-				"DROP SEQUENCE audit_log_seq",
-				"DROP SEQUENCE EMP_SEQ",
-				// Drop tables (order matters due to foreign keys)
-				"DROP TABLE ORDER_LINE_ITEMS CASCADE CONSTRAINTS",
-				"DROP TABLE PRODUCT_CATALOG CASCADE CONSTRAINTS",
-				"DROP TABLE CUSTOMER_ACCOUNTS CASCADE CONSTRAINTS",
-				"DROP TABLE PRODUCT_SALES_DAILY CASCADE CONSTRAINTS",
-				"DROP TABLE SALES_TRANSACTIONS CASCADE CONSTRAINTS",
-				"DROP TABLE INVENTORY CASCADE CONSTRAINTS",
-				"DROP TABLE AUDIT_LOG CASCADE CONSTRAINTS",
-				"DROP TABLE CUSTOMER_ORDERS CASCADE CONSTRAINTS",
-				"DROP TABLE EMPLOYEES_FK CASCADE CONSTRAINTS",
-				"DROP TABLE DEPARTMENTS CASCADE CONSTRAINTS",
-				"DROP TABLE ORDERS CASCADE CONSTRAINTS",
-				"DROP TABLE DATA_TYPES_COMPREHENSIVE CASCADE CONSTRAINTS",
-				"DROP TABLE TEST_TABLE CASCADE CONSTRAINTS",
-				"DROP TABLE EMPLOYEES CASCADE CONSTRAINTS",
-				"DROP TABLE PRODUCTS CASCADE CONSTRAINTS",
-			}
-
-			for _, stmt := range cleanupStatements {
-				_, _ = openedDriver.Execute(ctx, stmt, db.ExecuteOptions{})
-				// Ignore errors during cleanup
-			}
+			// No need to clean up - each test has its own isolated user
 		})
 	}
 }

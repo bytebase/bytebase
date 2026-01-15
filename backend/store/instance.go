@@ -79,25 +79,92 @@ func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*In
 
 // ListInstances lists all instance.
 func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	where := qb.Q().Space("TRUE")
+	if filterQ := find.FilterQ; filterQ != nil {
+		where.And("?", filterQ)
+	}
+	if v := find.ResourceID; v != nil {
+		where.And("instance.resource_id = ?", *v)
+	}
+	if v := find.ResourceIDs; v != nil {
+		where.And("instance.resource_id = ANY(?)", *v)
+	}
+	if !find.ShowDeleted {
+		where.And("instance.deleted = ?", false)
+	}
+
+	q := qb.Q().Space(`
+		SELECT
+			instance.resource_id,
+			instance.environment,
+			instance.deleted,
+			instance.metadata
+		FROM instance
+		WHERE ?
+	`, where)
+
+	if len(find.OrderByKeys) > 0 {
+		orderBy := []string{}
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	} else {
+		q.Space("ORDER BY resource_id ASC")
+	}
+
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, queryArgs, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var instanceMessages []*InstanceMessage
+	rows, err := s.GetDB().QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer rows.Close()
+	for rows.Next() {
+		var instanceMessage InstanceMessage
+		var environment sql.NullString
+		var metadata []byte
+		if err := rows.Scan(
+			&instanceMessage.ResourceID,
+			&environment,
+			&instanceMessage.Deleted,
+			&metadata,
+		); err != nil {
+			return nil, err
+		}
+		if environment.Valid {
+			instanceMessage.EnvironmentID = &environment.String
+		}
 
-	instances, err := s.listInstanceImpl(ctx, tx, find)
-	if err != nil {
+		instanceMetadata := &storepb.Instance{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, instanceMetadata); err != nil {
+			return nil, err
+		}
+		instanceMessage.Metadata = instanceMetadata
+		instanceMessages = append(instanceMessages, &instanceMessage)
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := s.deobfuscateInstances(ctx, instanceMessages); err != nil {
 		return nil, err
 	}
-
-	for _, instance := range instances {
+	for _, instance := range instanceMessages {
 		s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	}
-	return instances, nil
+	return instanceMessages, nil
 }
 
 // CreateInstance creates an instance.
@@ -105,12 +172,6 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	if err := validateDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
 	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	redacted, err := s.obfuscateInstance(ctx, instanceCreate.Metadata)
 	if err != nil {
@@ -124,6 +185,13 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	if instanceCreate.EnvironmentID != nil && *instanceCreate.EnvironmentID != "" {
 		environment = instanceCreate.EnvironmentID
 	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
@@ -223,92 +291,6 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	}
 
 	return nil, nil
-}
-
-func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
-	where := qb.Q().Space("TRUE")
-	if filterQ := find.FilterQ; filterQ != nil {
-		where.And("?", filterQ)
-	}
-	if v := find.ResourceID; v != nil {
-		where.And("instance.resource_id = ?", *v)
-	}
-	if v := find.ResourceIDs; v != nil {
-		where.And("instance.resource_id = ANY(?)", *v)
-	}
-	if !find.ShowDeleted {
-		where.And("instance.deleted = ?", false)
-	}
-
-	q := qb.Q().Space(`
-		SELECT
-			instance.resource_id,
-			instance.environment,
-			instance.deleted,
-			instance.metadata
-		FROM instance
-		WHERE ?
-	`, where)
-
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY resource_id ASC")
-	}
-
-	if v := find.Limit; v != nil {
-		q.Space("LIMIT ?", *v)
-	}
-	if v := find.Offset; v != nil {
-		q.Space("OFFSET ?", *v)
-	}
-
-	query, queryArgs, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	var instanceMessages []*InstanceMessage
-	rows, err := txn.QueryContext(ctx, query, queryArgs...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var instanceMessage InstanceMessage
-		var environment sql.NullString
-		var metadata []byte
-		if err := rows.Scan(
-			&instanceMessage.ResourceID,
-			&environment,
-			&instanceMessage.Deleted,
-			&metadata,
-		); err != nil {
-			return nil, err
-		}
-		if environment.Valid {
-			instanceMessage.EnvironmentID = &environment.String
-		}
-
-		instanceMetadata := &storepb.Instance{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, instanceMetadata); err != nil {
-			return nil, err
-		}
-		if err := s.unObfuscateInstance(ctx, instanceMetadata); err != nil {
-			return nil, err
-		}
-		instanceMessage.Metadata = instanceMetadata
-		instanceMessages = append(instanceMessages, &instanceMessage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return instanceMessages, nil
 }
 
 // GetActivatedInstanceCount gets the number of activated instances.
@@ -418,122 +400,125 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 	return redacted, nil
 }
 
-func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Instance) error {
+// deobfuscateInstances deobfuscate in-place.
+func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceMessage) error {
 	systemSetting, err := s.GetSystemSetting(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get system setting")
 	}
 	secret := systemSetting.AuthSecret
 
-	for _, ds := range instance.GetDataSources() {
-		password, err := common.Unobfuscate(ds.GetObfuscatedPassword(), secret)
-		if err != nil {
-			return err
-		}
-		ds.Password = password
-
-		sslCa, err := common.Unobfuscate(ds.GetObfuscatedSslCa(), secret)
-		if err != nil {
-			return err
-		}
-		ds.SslCa = sslCa
-
-		sslCert, err := common.Unobfuscate(ds.GetObfuscatedSslCert(), secret)
-		if err != nil {
-			return err
-		}
-		ds.SslCert = sslCert
-
-		sslKey, err := common.Unobfuscate(ds.GetObfuscatedSslKey(), secret)
-		if err != nil {
-			return err
-		}
-		ds.SslKey = sslKey
-
-		sshPassword, err := common.Unobfuscate(ds.GetObfuscatedSshPassword(), secret)
-		if err != nil {
-			return err
-		}
-		ds.SshPassword = sshPassword
-
-		sshPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
-		if err != nil {
-			return err
-		}
-		ds.SshPrivateKey = sshPrivateKey
-
-		authenticationPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
-		if err != nil {
-			return err
-		}
-		ds.AuthenticationPrivateKey = authenticationPrivateKey
-
-		authenticationPrivateKeyPassphrase, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
-		if err != nil {
-			return err
-		}
-		ds.AuthenticationPrivateKeyPassphrase = authenticationPrivateKeyPassphrase
-
-		masterPassword, err := common.Unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
-		if err != nil {
-			return err
-		}
-		ds.MasterPassword = masterPassword
-
-		if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
-			clientSecret, err := common.Unobfuscate(azureCredential.ObfuscatedClientSecret, secret)
+	for _, instance := range instances {
+		for _, ds := range instance.Metadata.GetDataSources() {
+			password, err := common.Unobfuscate(ds.GetObfuscatedPassword(), secret)
 			if err != nil {
 				return err
 			}
-			ds.GetAzureCredential().ClientSecret = clientSecret
-		}
+			ds.Password = password
 
-		if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
-			accessKeyID, err := common.Unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
+			sslCa, err := common.Unobfuscate(ds.GetObfuscatedSslCa(), secret)
 			if err != nil {
 				return err
 			}
-			awsCredential.AccessKeyId = accessKeyID
+			ds.SslCa = sslCa
 
-			secretAccessKey, err := common.Unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
+			sslCert, err := common.Unobfuscate(ds.GetObfuscatedSslCert(), secret)
 			if err != nil {
 				return err
 			}
-			awsCredential.SecretAccessKey = secretAccessKey
+			ds.SslCert = sslCert
 
-			sessionToken, err := common.Unobfuscate(awsCredential.ObfuscatedSessionToken, secret)
+			sslKey, err := common.Unobfuscate(ds.GetObfuscatedSslKey(), secret)
 			if err != nil {
 				return err
 			}
-			awsCredential.SessionToken = sessionToken
-		}
+			ds.SslKey = sslKey
 
-		if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
-			content, err := common.Unobfuscate(gcpCredential.ObfuscatedContent, secret)
+			sshPassword, err := common.Unobfuscate(ds.GetObfuscatedSshPassword(), secret)
 			if err != nil {
 				return err
 			}
-			gcpCredential.Content = content
-		}
+			ds.SshPassword = sshPassword
 
-		if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
-			sslCa, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
+			sshPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
 			if err != nil {
 				return err
 			}
-			externalSecret.VaultSslCa = sslCa
+			ds.SshPrivateKey = sshPrivateKey
 
-			sslCert, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
+			authenticationPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
 			if err != nil {
 				return err
 			}
-			externalSecret.VaultSslCert = sslCert
+			ds.AuthenticationPrivateKey = authenticationPrivateKey
 
-			sslKey, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
+			authenticationPrivateKeyPassphrase, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
 			if err != nil {
 				return err
 			}
-			externalSecret.VaultSslKey = sslKey
+			ds.AuthenticationPrivateKeyPassphrase = authenticationPrivateKeyPassphrase
+
+			masterPassword, err := common.Unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
+			if err != nil {
+				return err
+			}
+			ds.MasterPassword = masterPassword
+
+			if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
+				clientSecret, err := common.Unobfuscate(azureCredential.ObfuscatedClientSecret, secret)
+				if err != nil {
+					return err
+				}
+				ds.GetAzureCredential().ClientSecret = clientSecret
+			}
+
+			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
+				accessKeyID, err := common.Unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
+				if err != nil {
+					return err
+				}
+				awsCredential.AccessKeyId = accessKeyID
+
+				secretAccessKey, err := common.Unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
+				if err != nil {
+					return err
+				}
+				awsCredential.SecretAccessKey = secretAccessKey
+
+				sessionToken, err := common.Unobfuscate(awsCredential.ObfuscatedSessionToken, secret)
+				if err != nil {
+					return err
+				}
+				awsCredential.SessionToken = sessionToken
+			}
+
+			if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
+				content, err := common.Unobfuscate(gcpCredential.ObfuscatedContent, secret)
+				if err != nil {
+					return err
+				}
+				gcpCredential.Content = content
+			}
+
+			if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
+				sslCa, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
+				if err != nil {
+					return err
+				}
+				externalSecret.VaultSslCa = sslCa
+
+				sslCert, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
+				if err != nil {
+					return err
+				}
+				externalSecret.VaultSslCert = sslCert
+
+				sslKey, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
+				if err != nil {
+					return err
+				}
+				externalSecret.VaultSslKey = sslKey
+			}
 		}
 	}
 	return nil

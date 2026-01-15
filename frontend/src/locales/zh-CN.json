@@ -936,7 +936,7 @@
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "reopened-issue": "重开工单",
       "resolved-issue": "完成工单",
-      "canceled-issue": "取消工单",
+      "canceled-issue": "关闭工单",
       "xxx-automatically": "自动{verb}"
     }
   },
@@ -948,7 +948,6 @@
     "create-rollout": "创建发布",
     "status-transition": {
       "modal": {
-        "resolve": "完成工单?",
         "reopen": "重开工单？",
         "close": "关闭工单？"
       },
@@ -1056,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "resolve": "完成",
-      "resolved": "完成",
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
@@ -1148,9 +1145,6 @@
     },
     "review": {
       "self": "审批",
-      "approved": "已批准",
-      "rejected": "已驳回",
-      "under-review": "等待审批",
       "comment-description": "提交反馈，不进行批准操作",
       "approve-description": "提交反馈并批准此工单",
       "reject-description": "提交反馈并要求修改"

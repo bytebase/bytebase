@@ -2,58 +2,29 @@ package tidb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 )
 
 // TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
 // by comparing its output with the metadata retrieved from a real TiDB instance.
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
-	ctx := context.Background()
+	t.Parallel()
 
-	// Start TiDB container
-	container, err := testcontainer.GetTiDBContainer(ctx)
-	require.NoError(t, err)
-	defer container.Close(ctx)
-
-	// Create test database
-	_, err = container.GetDB().Exec("CREATE DATABASE IF NOT EXISTS test_db")
-	require.NoError(t, err)
-
-	host := container.GetHost()
-	port := container.GetPort()
-
-	// Create TiDB driver for metadata sync
-	driver := &tidbdb.Driver{}
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "root",
-			Host:     host,
-			Port:     port,
-			Database: "test_db",
-		},
-		Password: "",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  "test_db",
-		},
+	if testing.Short() {
+		t.Skip("Skipping TiDB testcontainer test in short mode")
 	}
 
-	openedDriver, err := driver.Open(ctx, storepb.Engine_TIDB, config)
-	require.NoError(t, err)
-	defer openedDriver.Close(ctx)
-
-	// Cast to TiDB driver for SyncDBSchema
-	tidbDriver, ok := openedDriver.(*tidbdb.Driver)
-	require.True(t, ok, "failed to cast to tidb.Driver")
+	ctx := context.Background()
+	container := testcontainer.GetTestTiDBContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Test cases with various TiDB features
 	testCases := []struct {
@@ -226,19 +197,27 @@ CREATE TABLE non_clustered_test (
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// Create test database (drop first to avoid conflicts between test cases)
-			_, err := container.GetDB().ExecContext(ctx, "DROP DATABASE IF EXISTS test_db")
-			require.NoError(t, err)
-			_, err = container.GetDB().ExecContext(ctx, "CREATE DATABASE test_db")
+			t.Parallel()
+
+			// Create unique test database using UUID
+			testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDB))
 			require.NoError(t, err)
 
-			// Execute DDL using the driver
-			_, err = openedDriver.Execute(ctx, tc.ddl, db.ExecuteOptions{})
+			// Create TiDB driver for this test database
+			driver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), testDB)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
+
+			// Execute DDL statements
+			require.NoError(t, err)
+			_, err = driver.GetDB().Exec(tc.ddl)
 			require.NoError(t, err)
 
 			// Get metadata from live database using driver
-			dbMetadata, err := tidbDriver.SyncDBSchema(ctx)
+			dbMetadata, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Get metadata from parser
