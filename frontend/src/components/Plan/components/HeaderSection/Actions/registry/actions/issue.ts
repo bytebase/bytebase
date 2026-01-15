@@ -69,38 +69,6 @@ export const ISSUE_REVIEW: ActionDefinition = {
   executeType: "popover:review",
 };
 
-export const ISSUE_STATUS_RESOLVE: ActionDefinition = {
-  id: "ISSUE_STATUS_RESOLVE",
-  label: () => t("issue.batch-transition.resolve"),
-  buttonType: "success",
-  category: "primary",
-  priority: 50,
-
-  isVisible: (ctx) => {
-    // Deferred rollout plans auto-resolve when task completes, never show manual resolve
-    if (ctx.hasDeferredRollout) return false;
-    return (
-      ctx.issueStatus === IssueStatus.OPEN &&
-      (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-        ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
-      ctx.allTasksFinished &&
-      ctx.plan.hasRollout
-    );
-  },
-
-  isDisabled: (ctx) => !ctx.permissions.updateIssue,
-  disabledReason: (ctx) => {
-    if (!ctx.permissions.updateIssue) {
-      return t("common.missing-required-permission", {
-        permissions: "bb.issues.update",
-      });
-    }
-    return undefined;
-  },
-
-  executeType: "panel:issue-status",
-};
-
 export const ISSUE_STATUS_CLOSE: ActionDefinition = {
   id: "ISSUE_STATUS_CLOSE",
   label: () => t("issue.batch-transition.close"),
@@ -150,7 +118,6 @@ export const ISSUE_STATUS_REOPEN: ActionDefinition = {
 export const issueActions: ActionDefinition[] = [
   ISSUE_CREATE,
   ISSUE_REVIEW,
-  ISSUE_STATUS_RESOLVE,
   ISSUE_STATUS_CLOSE,
   ISSUE_STATUS_REOPEN,
 ];

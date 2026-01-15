@@ -936,7 +936,7 @@
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "reopened-issue": "重开工单",
       "resolved-issue": "完成工单",
-      "canceled-issue": "取消工单",
+      "canceled-issue": "关闭工单",
       "xxx-automatically": "自动{verb}"
     }
   },
@@ -948,7 +948,6 @@
     "create-rollout": "创建发布",
     "status-transition": {
       "modal": {
-        "resolve": "完成工单?",
         "reopen": "重开工单？",
         "close": "关闭工单？"
       },
@@ -1056,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "resolve": "完成",
-      "resolved": "完成",
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",

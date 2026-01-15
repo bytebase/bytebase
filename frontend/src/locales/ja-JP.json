@@ -936,7 +936,7 @@
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "reopened-issue": "イシューを再開する",
       "resolved-issue": "イシューを完了する",
-      "canceled-issue": "イシューをキャンセルする",
+      "canceled-issue": "イシューを閉じた",
       "xxx-automatically": "自動{verb}"
     }
   },
@@ -948,7 +948,6 @@
     "create-rollout": "ロールアウトを作成",
     "status-transition": {
       "modal": {
-        "resolve": "イシューは完了しましたか?",
         "reopen": "イシューを再開しますか?",
         "close": "問題を閉じますか?"
       },
@@ -1056,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "選択したイシューの一部を {operation} にすることはできません",
-      "resolve": "仕上げる",
-      "resolved": "仕上げる",
       "reopen": "再開",
       "reopened": "再開",
       "action-n-issues": "{action} {n} 個のイシュー",

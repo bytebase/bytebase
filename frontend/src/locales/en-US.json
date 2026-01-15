@@ -935,8 +935,8 @@
       "changed-labels": "changed labels",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "reopened-issue": "reopened issue",
-      "resolved-issue": "resolved issue",
-      "canceled-issue": "canceled issue",
+      "resolved-issue": "completed the issue",
+      "canceled-issue": "closed the issue",
       "xxx-automatically": "{verb} automatically"
     }
   },
@@ -948,7 +948,6 @@
     "create-rollout": "Create Rollout",
     "status-transition": {
       "modal": {
-        "resolve": "Resolve issue?",
         "reopen": "Reopen issue?",
         "close": "Close issue?"
       },
@@ -1056,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
-      "resolve": "Resolve",
-      "resolved": "resolved",
       "reopen": "Reopen",
       "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues",

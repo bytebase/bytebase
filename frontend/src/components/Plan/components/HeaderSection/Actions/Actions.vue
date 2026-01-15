@@ -147,7 +147,6 @@ const handlePerformAction = async (action: UnifiedAction) => {
   switch (action) {
     case "ISSUE_STATUS_CLOSE":
     case "ISSUE_STATUS_REOPEN":
-    case "ISSUE_STATUS_RESOLVE":
       await handleIssueStatusChange(action as IssueStatusAction);
       break;
     case "PLAN_CLOSE":
@@ -187,11 +186,6 @@ const handleIssueStatusChange = async (action: IssueStatusAction) => {
       title: t("common.reopen"),
       content: t("issue.status-transition.modal.reopen"),
       status: IssueStatus.OPEN,
-    },
-    ISSUE_STATUS_RESOLVE: {
-      title: t("issue.batch-transition.resolve"),
-      content: t("issue.status-transition.modal.resolve"),
-      status: IssueStatus.DONE,
     },
   }[action];
 
