@@ -453,12 +453,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 		}
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	// We will always return the resource regardless of its deleted state.
 	find.ShowAll = true
 	policies, err := s.ListPolicies(ctx, find)
@@ -476,10 +470,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policies with filter %+v, expect 1", len(policies), find)}
 	}
 	policy := policies[0]
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 
