@@ -1262,7 +1262,15 @@
       "view-full-details": "Xem chi tiết đầy đủ",
       "statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn."
     },
-    "no-stages": "Không có giai đoạn nào có sẵn"
+    "no-stages": "Không có giai đoạn nào có sẵn",
+    "no-tasks-created": "Chưa có tác vụ nào được tạo.",
+    "pending-tasks-preview": {
+      "title": "Các nhiệm vụ đang chờ xử lý",
+      "description": "Các tác vụ sau chưa được tạo.",
+      "action": "Xem trước",
+      "task-count": "{count} nhiệm vụ | {count} nhiệm vụ",
+      "no-pending-tasks": "Không có nhiệm vụ nào đang chờ xử lý"
+    }
   },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",

@@ -1262,7 +1262,15 @@
       "view-full-details": "查看详情",
       "statement-truncated-hint": "由于语句过长，已被截断。"
     },
-    "no-stages": "没有可用的阶段"
+    "no-stages": "没有可用的阶段",
+    "no-tasks-created": "尚未创建任何任务",
+    "pending-tasks-preview": {
+      "title": "待处理任务",
+      "description": "以下任务尚未创建。",
+      "action": "预览",
+      "task-count": "{count} 个任务 | {count} 个任务",
+      "no-pending-tasks": "没有待处理任务"
+    }
   },
   "quick-action": {
     "create-db": "创建数据库",
