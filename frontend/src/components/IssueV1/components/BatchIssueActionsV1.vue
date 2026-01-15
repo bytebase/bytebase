@@ -1,25 +1,5 @@
 <template>
   <TooltipButton
-    type="primary"
-    :disabled="!isActionApplicableForAllIssues('RESOLVE')"
-    tooltip-mode="DISABLED-ONLY"
-    @click="startBatchIssueStatusAction('RESOLVE')"
-  >
-    <template #default>
-      {{ $t("issue.batch-transition.resolve") }}
-    </template>
-    <template #tooltip>
-      <div class="whitespace-nowrap">
-        {{
-          $t("issue.batch-transition.not-allowed-tips", {
-            operation: $t("issue.batch-transition.resolved"),
-          })
-        }}
-      </div>
-    </template>
-  </TooltipButton>
-
-  <TooltipButton
     :disabled="!isActionApplicableForAllIssues('CLOSE')"
     tooltip-mode="DISABLED-ONLY"
     @click="startBatchIssueStatusAction('CLOSE')"

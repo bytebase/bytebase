@@ -935,8 +935,8 @@
       "changed-labels": "etiquetas cambiadas",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "reopened-issue": "incidencia reabierta",
-      "resolved-issue": "incidencia resuelta",
-      "canceled-issue": "incidencia cancelada",
+      "resolved-issue": "completó la incidencia",
+      "canceled-issue": "cerró la incidencia",
       "xxx-automatically": "{verb} automáticamente"
     }
   },
@@ -948,7 +948,6 @@
     "create-rollout": "Crear despliegue",
     "status-transition": {
       "modal": {
-        "resolve": "¿Resolver incidencia?",
         "reopen": "¿Reabrir incidencia?",
         "close": "¿Cerrar el problema?"
       },
@@ -1056,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {operation}",
-      "resolve": "Resolver",
-      "resolved": "resuelto",
       "reopen": "Reabrir",
       "reopened": "reabierto",
       "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",

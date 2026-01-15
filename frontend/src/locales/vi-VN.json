@@ -935,8 +935,8 @@
       "changed-labels": "đã thay đổi nhãn",
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "reopened-issue": "đã mở lại vấn đề",
-      "resolved-issue": "đã giải quyết vấn đề",
-      "canceled-issue": "đã hủy vấn đề",
+      "resolved-issue": "đã hoàn tất vấn đề",
+      "canceled-issue": "đã đóng vấn đề",
       "xxx-automatically": "{verb} tự động"
     }
   },
@@ -948,7 +948,6 @@
     "create-rollout": "Tạo triển khai",
     "status-transition": {
       "modal": {
-        "resolve": "Giải quyết vấn đề?",
         "reopen": "Mở lại vấn đề?",
         "close": "Đóng vấn đề?"
       },
@@ -1056,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",
-      "resolve": "Giải quyết",
-      "resolved": "đã giải quyết",
       "reopen": "Mở lại",
       "reopened": "đã mở lại",
       "action-n-issues": "{action} {n} vấn đề | {action} {n} vấn đề",

@@ -12,10 +12,7 @@ import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 // Action type definitions
 export type IssueReviewAction = "ISSUE_REVIEW";
 
-export type IssueStatusAction =
-  | "ISSUE_STATUS_CLOSE"
-  | "ISSUE_STATUS_REOPEN"
-  | "ISSUE_STATUS_RESOLVE";
+export type IssueStatusAction = "ISSUE_STATUS_CLOSE" | "ISSUE_STATUS_REOPEN";
 
 export type IssueAction =
   | IssueReviewAction
