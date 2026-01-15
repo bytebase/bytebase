@@ -104,6 +104,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				mentionUsers = append(mentionUsers, &store.UserMessage{
 					Name:  user.Name,
 					Email: user.Email,
+					Type:  storepb.PrincipalType_END_USER,
 				})
 			}
 		}
@@ -121,6 +122,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 				{
 					Name:  e.SentBack.Creator.Name,
 					Email: e.SentBack.Creator.Email,
+					Type:  storepb.PrincipalType_END_USER,
 				},
 			}
 		}
