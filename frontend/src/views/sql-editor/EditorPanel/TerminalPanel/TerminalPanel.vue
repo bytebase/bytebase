@@ -39,7 +39,7 @@
           </Suspense>
           <ResultViewV1
             v-if="query.params && query.resultSet"
-            class="flex-1 flex flex-col overflow-hidden max-h-80 p-2"
+            class="p-2"
             :execute-params="query.params"
             :result-set="query.resultSet"
             :database="

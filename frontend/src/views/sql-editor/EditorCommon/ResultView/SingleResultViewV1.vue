@@ -92,7 +92,10 @@
       <SelectionCopyTooltips />
     </div>
 
-    <div class="flex-1 w-full flex flex-col overflow-y-auto relative">
+    <div
+      class="w-full flex flex-col relative"
+      :class="dark ? 'h-80 overflow-hidden' : 'flex-1 overflow-y-auto'"
+    >
       <VirtualDataBlock
         v-if="state.vertical"
         ref="dataTableRef"
@@ -121,7 +124,7 @@
       />
 
       <div class="absolute bottom-2 right-4 flex items-end gap-x-2">
-        <div v-if="state.searchCandidateRowIndexs.length > 0" class="flex flex-row gap-x-2 border shadow rounded bg-white py-1 px-2">
+        <div v-if="state.searchCandidateRowIndexs.length > 0" class="flex flex-row gap-x-2 border shadow rounded bg-white dark:bg-gray-800 dark:border-gray-600 py-1 px-2">
           <NButton
             quaternary
             size="small"
@@ -154,31 +157,35 @@
         <div class="flex flex-col gap-y-2">
           <NTooltip>
             <template #trigger>
-              <NButton
-                circle
-                size="medium"
-                class="shadow"
-                @click="() => scrollToRow(0)"
-              >
-                <template #icon>
-                  <ArrowUpIcon class="x-4" />
-                </template>
-              </NButton>
+              <div class="rounded-full shadow bg-white dark:bg-gray-800">
+                <NButton
+                  circle
+                  size="medium"
+                  quaternary
+                  @click="() => scrollToRow(0)"
+                >
+                  <template #icon>
+                    <ArrowUpIcon class="x-4" />
+                  </template>
+                </NButton>
+              </div>
             </template>
             {{ $t("sql-editor.scroll-to-top") }}
           </NTooltip>
           <NTooltip>
             <template #trigger>
-              <NButton
-                circle
-                size="medium"
-                class="shadow"
-                @click="() => scrollToRow(rows.length - 1)"
-              >
-                <template #icon>
-                  <ArrowDownIcon class="x-4" />
-                </template>
-              </NButton>
+              <div class="rounded-full shadow bg-white dark:bg-gray-800">
+                <NButton
+                  circle
+                  size="medium"
+                  quaternary
+                  @click="() => scrollToRow(rows.length - 1)"
+                >
+                  <template #icon>
+                    <ArrowDownIcon class="x-4" />
+                  </template>
+                </NButton>
+              </div>
             </template>
             {{ $t("sql-editor.scroll-to-bottom") }}
           </NTooltip>
