@@ -1,0 +1,39 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1, View changes: 3",
+  "tableChanges": 1,
+  "viewChanges": 3,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "orders"
+      }
+    ],
+    "views": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "viewName": "active_orders",
+        "dependsOn": ["orders"]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "viewName": "high_value_orders",
+        "dependsOn": ["active_orders"]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "viewName": "recent_high_value_orders",
+        "dependsOn": ["high_value_orders"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "hasDifferences": true,
+  "summary": "Extension changes: 1",
+  "tableChanges": 0,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "extensionChanges": 1,
+  "details": {
+    "extensions": [
+      {
+        "action": "CREATE",
+        "extensionName": "uuid-ossp",
+        "schemaName": "public"
+      }
+    ]
+  }
+}
