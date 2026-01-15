@@ -129,17 +129,10 @@ type maskingDataProvider struct {
 }
 
 func newMaskingDataProvider(ctx context.Context, s *store.Store, instance *store.InstanceMessage, span *parserbase.QuerySpan) (*maskingDataProvider, error) {
-	p := &maskingDataProvider{
-		databases: make(map[string]*store.DatabaseMessage),
-		projects:  make(map[string]*store.ProjectMessage),
-		schemas:   make(map[string]*model.DatabaseMetadata),
-		policies:  make(map[string]*storepb.MaskingExemptionPolicy),
-	}
 	if instance == nil || span == nil {
-		return p, nil
+		return newEmptyMaskingDataProvider(), nil
 	}
 
-	// Collect unique database names.
 	dbNameSet := make(map[string]struct{})
 	for _, r := range span.Results {
 		for col := range r.SourceColumns {
@@ -148,17 +141,45 @@ func newMaskingDataProvider(ctx context.Context, s *store.Store, instance *store
 			}
 		}
 	}
+
+	return newMaskingDataProviderFromDBNames(ctx, s, instance, dbNameSet)
+}
+
+func newMaskingDataProviderFromColumns(ctx context.Context, s *store.Store, instance *store.InstanceMessage, columns parserbase.SourceColumnSet) (*maskingDataProvider, error) {
+	if instance == nil || len(columns) == 0 {
+		return newEmptyMaskingDataProvider(), nil
+	}
+
+	dbNameSet := make(map[string]struct{})
+	for col := range columns {
+		if col.Database != "" {
+			dbNameSet[col.Database] = struct{}{}
+		}
+	}
+
+	return newMaskingDataProviderFromDBNames(ctx, s, instance, dbNameSet)
+}
+
+func newEmptyMaskingDataProvider() *maskingDataProvider {
+	return &maskingDataProvider{
+		databases: make(map[string]*store.DatabaseMessage),
+		projects:  make(map[string]*store.ProjectMessage),
+		schemas:   make(map[string]*model.DatabaseMetadata),
+		policies:  make(map[string]*storepb.MaskingExemptionPolicy),
+	}
+}
+
+func newMaskingDataProviderFromDBNames(ctx context.Context, s *store.Store, instance *store.InstanceMessage, dbNameSet map[string]struct{}) (*maskingDataProvider, error) {
+	p := newEmptyMaskingDataProvider()
 	if len(dbNameSet) == 0 {
 		return p, nil
 	}
 
-	// Convert to slice for batch query.
 	dbNames := make([]string, 0, len(dbNameSet))
 	for name := range dbNameSet {
 		dbNames = append(dbNames, name)
 	}
 
-	// Batch fetch databases.
 	databases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{
 		InstanceID:    &instance.ResourceID,
 		DatabaseNames: dbNames,
@@ -173,7 +194,6 @@ func newMaskingDataProvider(ctx context.Context, s *store.Store, instance *store
 		projectIDSet[db.ProjectID] = struct{}{}
 	}
 
-	// Batch fetch projects.
 	if len(projectIDSet) > 0 {
 		projectIDs := make([]string, 0, len(projectIDSet))
 		for id := range projectIDSet {
@@ -191,7 +211,6 @@ func newMaskingDataProvider(ctx context.Context, s *store.Store, instance *store
 		}
 	}
 
-	// Fetch schemas and policies (no batch API available).
 	for dbName := range p.databases {
 		schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{InstanceID: instance.ResourceID, DatabaseName: dbName})
 		if err != nil {
@@ -201,6 +220,7 @@ func newMaskingDataProvider(ctx context.Context, s *store.Store, instance *store
 			p.schemas[dbName] = schema
 		}
 	}
+
 	for projectID := range projectIDSet {
 		policy, err := s.GetMaskingExemptionPolicyByProject(ctx, projectID)
 		if err != nil {
@@ -400,50 +420,6 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 
 	evaluation.Algorithm = getAlgorithmName(result)
 	return result, evaluation, nil
-}
-
-func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
-	if sourceColumn == nil {
-		return nil, nil, nil
-	}
-	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &sourceColumn.Database,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
-	}
-	if database == nil {
-		return nil, nil, nil
-	}
-	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to find database schema: %q", sourceColumn.Database)
-	}
-	if dbMetadata == nil {
-		return nil, nil, nil
-	}
-
-	var columnMetadata *storepb.ColumnMetadata
-	schema := dbMetadata.GetSchemaMetadata(sourceColumn.Schema)
-	if schema == nil {
-		return nil, nil, nil
-	}
-	table := schema.GetTable(sourceColumn.Table)
-	if table == nil {
-		return nil, nil, nil
-	}
-	column := table.GetColumn(sourceColumn.Column)
-	if column == nil {
-		return nil, nil, nil
-	}
-	columnMetadata = column.GetProto()
-
-	columnConfig := column.GetCatalog()
-	return columnMetadata, columnConfig, nil
 }
 
 func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) (masker.Masker, error) {

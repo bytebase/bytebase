@@ -34,7 +34,18 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 		withDataClassificationSetting(classificationSetting).
 		withSemanticTypeSetting(semanticTypesSetting)
 
-	maskingExemptionPolicyMap := make(map[string]*storepb.MaskingExemptionPolicy)
+	// Collect all predicate columns from all spans for batch fetching.
+	allColumns := make(base.SourceColumnSet)
+	for _, span := range spans {
+		for col := range span.PredicateColumns {
+			allColumns[col] = true
+		}
+	}
+
+	data, err := newMaskingDataProviderFromColumns(ctx, s.store, instance, allColumns)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to initialize masking data provider")
+	}
 
 	for _, span := range spans {
 		sensitiveColumns, err := s.getSensitiveColumnsForPredicate(
@@ -42,7 +53,7 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 			m,
 			instance,
 			span.PredicateColumns,
-			maskingExemptionPolicyMap,
+			data,
 			user,
 		)
 		if err != nil {
@@ -59,7 +70,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	m *maskingLevelEvaluator,
 	instance *store.InstanceMessage,
 	predicateColumns base.SourceColumnSet,
-	maskingExemptionPolicyMap map[string]*storepb.MaskingExemptionPolicy,
+	data *maskingDataProvider,
 	currentPrincipal *store.UserMessage,
 ) ([]base.ColumnResource, error) {
 	if instance != nil && !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
@@ -69,58 +80,34 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	var result []base.ColumnResource
 
 	for column := range predicateColumns {
-		database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &column.Database,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", column.Database)
-		}
+		database := data.getDatabase(column.Database)
 		if database == nil {
 			continue
 		}
 
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-			ResourceID: &database.ProjectID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get project %q", database.ProjectID)
-		}
+		project := data.getProject(database.ProjectID)
 		if project == nil {
 			continue
 		}
 
-		meta, config, err := s.getColumnForColumnResource(ctx, instance.ResourceID, &column)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database metadata for column resource: %q", column.String())
-		}
-		// Span and metadata are not the same in real time, so we fall back to none masker.
-		if meta == nil {
-			return nil, nil
+		columnMeta, config := data.getColumn(&column)
+		if columnMeta == nil {
+			continue
 		}
 
-		if _, ok := maskingExemptionPolicyMap[database.ProjectID]; !ok {
-			policy, err := s.store.GetMaskingExemptionPolicyByProject(ctx, project.ResourceID)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find masking exemption policy for project %q", project.ResourceID)
-			}
-			maskingExemptionPolicyMap[database.ProjectID] = policy
-		}
-		maskingExemptionPolicy := maskingExemptionPolicyMap[database.ProjectID]
-
-		var maskingExemptionContainsCurrentPrincipal []*storepb.MaskingExemptionPolicy_Exemption
-		if maskingExemptionPolicy != nil {
-			for _, maskingExemption := range maskingExemptionPolicy.Exemptions {
-				for _, member := range maskingExemption.Members {
+		var exemptions []*storepb.MaskingExemptionPolicy_Exemption
+		if policy := data.getMaskingExemptionPolicy(database.ProjectID); policy != nil {
+			for _, e := range policy.Exemptions {
+				for _, member := range e.Members {
 					if utils.MemberContainsUser(ctx, s.store, member, currentPrincipal) {
-						maskingExemptionContainsCurrentPrincipal = append(maskingExemptionContainsCurrentPrincipal, maskingExemption)
+						exemptions = append(exemptions, e)
 						break
 					}
 				}
 			}
 		}
 
-		isSensitive, err := m.isSensitiveColumn(database, column, project.Setting.DataClassificationConfigId, config, maskingExemptionContainsCurrentPrincipal)
+		isSensitive, err := m.isSensitiveColumn(database, column, project.Setting.DataClassificationConfigId, config, exemptions)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check if column is sensitive")
 		}
