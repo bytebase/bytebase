@@ -1148,9 +1148,6 @@
     },
     "review": {
       "self": "レビュー",
-      "approved": "承認された",
-      "rejected": "拒否",
-      "under-review": "審査中",
       "comment-description": "承認なしで一般的なフィードバックを送信する",
       "approve-description": "フィードバックを送信してこの問題を承認する",
       "reject-description": "フィードバックを送信して変更をリクエストする"
