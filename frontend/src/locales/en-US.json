@@ -1262,7 +1262,15 @@
       "view-full-details": "View Details",
       "statement-truncated-hint": "Statement truncated due to large size."
     },
-    "no-stages": "No stages available"
+    "no-stages": "No stages available",
+    "no-tasks-created": "No tasks created yet",
+    "pending-tasks-preview": {
+      "title": "Pending Tasks",
+      "description": "The following tasks have not been created yet.",
+      "action": "Preview",
+      "task-count": "{count} task | {count} tasks",
+      "no-pending-tasks": "No pending tasks"
+    }
   },
   "quick-action": {
     "create-db": "Create database",

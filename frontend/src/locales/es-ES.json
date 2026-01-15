@@ -1262,7 +1262,15 @@
       "view-full-details": "Ver detalles",
       "statement-truncated-hint": "Declaración truncada debido al gran tamaño."
     },
-    "no-stages": "No hay etapas disponibles"
+    "no-stages": "No hay etapas disponibles",
+    "no-tasks-created": "No hay tareas creadas todavía",
+    "pending-tasks-preview": {
+      "title": "Tareas pendientes",
+      "description": "Las siguientes tareas aún no han sido creadas.",
+      "action": "Avance",
+      "task-count": "{count} tarea | {count} tareas",
+      "no-pending-tasks": "No hay tareas pendientes"
+    }
   },
   "quick-action": {
     "create-db": "Crear base de datos",

@@ -1262,7 +1262,15 @@
       "view-full-details": "詳細を表示",
       "statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。"
     },
-    "no-stages": "利用可能なステージはありません"
+    "no-stages": "利用可能なステージはありません",
+    "no-tasks-created": "まだタスクは作成されていません",
+    "pending-tasks-preview": {
+      "title": "保留中のタスク",
+      "description": "以下のタスクはまだ作成されていません。",
+      "action": "プレビュー",
+      "task-count": "{count} タスク | {count} タスク",
+      "no-pending-tasks": "保留中のタスクはありません"
+    }
   },
   "quick-action": {
     "create-db": "データベースの作成",
