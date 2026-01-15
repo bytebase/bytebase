@@ -89,10 +89,13 @@ export const useRolloutReadyLink = () => {
 
     // For OPEN issues, check if approved and has actionable tasks
     if (issue.value.status === IssueStatus.OPEN) {
-      // Check if issue is approved
+      // Check if issue is approved or has no approval required (empty flow)
+      const roles = issue.value.approvalTemplate?.flow?.roles ?? [];
+      const noApprovalRequired = roles.length === 0;
       if (
         issue.value.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
-        issue.value.approvalStatus !== Issue_ApprovalStatus.SKIPPED
+        issue.value.approvalStatus !== Issue_ApprovalStatus.SKIPPED &&
+        !noApprovalRequired
       ) {
         return false;
       }

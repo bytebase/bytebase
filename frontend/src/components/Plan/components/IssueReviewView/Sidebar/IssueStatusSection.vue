@@ -38,9 +38,13 @@ const issueStatusText = computed(() => {
     return "";
   }
 
+  // Issue is rollout-ready if approved, skipped, or has no approval required (empty flow)
+  const roles = issueValue.approvalTemplate?.flow?.roles ?? [];
+  const noApprovalRequired = roles.length === 0;
   const rolloutReady =
     issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+    issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
+    noApprovalRequired;
   if (rolloutReady) {
     return t("issue.review.approved");
   }
