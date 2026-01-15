@@ -270,6 +270,8 @@ const allowSave = computed(() => {
       return true;
     }
   }
+  // Only disable when status is CLEAN (nothing to save)
+  // SAVING is allowed - manual save will abort auto-save and proceed
   if (tab.status === "CLEAN") {
     return false;
   }
@@ -280,7 +282,7 @@ const allowSave = computed(() => {
 const allowShare = computed(() => {
   const tab = currentTab.value;
   if (!tab) return false;
-  if (tab.status === "DIRTY") return false;
+  if (tab.status !== "CLEAN") return false;
   if (isEmptyStatement.value) return false;
   if (isDisconnected.value) return false;
   if (tab.worksheet) {

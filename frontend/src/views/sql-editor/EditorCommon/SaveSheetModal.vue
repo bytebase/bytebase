@@ -46,6 +46,7 @@ import { useSQLEditorContext } from "../context";
 
 const worksheetV1Store = useWorkSheetStore();
 const editorContext = useSQLEditorContext();
+const { abortAutoSave } = editorContext;
 const { getPwdForWorksheet } = useSheetContextByView("my");
 const folderFormRef = ref<InstanceType<typeof FolderForm>>();
 
@@ -66,6 +67,9 @@ const doSaveSheet = async () => {
   if (pendingEdit.value.title === "") {
     return;
   }
+
+  // Abort any in-progress auto-save - manual save takes priority
+  abortAutoSave();
 
   const {
     worksheet,

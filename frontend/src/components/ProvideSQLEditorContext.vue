@@ -91,7 +91,7 @@ const {
 useRouteChangeGuard(
   computed(() => {
     return (
-      tabStore.openTabList.find((tab) => tab.status === "DIRTY") !== undefined
+      tabStore.openTabList.find((tab) => tab.status !== "CLEAN") !== undefined
     );
   }),
   `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`

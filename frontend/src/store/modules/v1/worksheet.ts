@@ -205,14 +205,20 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return response.worksheets;
   };
 
-  const patchWorksheet = async (worksheet: Worksheet, updateMask: string[]) => {
+  const patchWorksheet = async (
+    worksheet: Worksheet,
+    updateMask: string[],
+    signal?: AbortSignal
+  ) => {
     if (!worksheet.name) return;
     const request = create(UpdateWorksheetRequestSchema, {
       worksheet: worksheet,
       updateMask: { paths: updateMask },
     });
-    const response =
-      await worksheetServiceClientConnect.updateWorksheet(request);
+    const response = await worksheetServiceClientConnect.updateWorksheet(
+      request,
+      { signal }
+    );
     setCacheEntry(response, "FULL");
     return response;
   };
