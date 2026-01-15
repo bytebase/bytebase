@@ -1,0 +1,20 @@
+{
+  "hasDifferences": true,
+  "summary": "Enum type changes: 1",
+  "tableChanges": 0,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 1,
+  "details": {
+    "enumTypes": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "enumName": "order_status",
+        "values": ["pending", "processing", "shipped", "delivered", "cancelled"]
+      }
+    ]
+  }
+}

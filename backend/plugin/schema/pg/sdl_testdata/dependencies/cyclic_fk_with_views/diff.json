@@ -1,0 +1,60 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 2, View changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 2,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "authors",
+        "foreignKeyChanges": 1,
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_featured_book",
+            "columns": ["featured_book_id"],
+            "referencedSchema": "public",
+            "referencedTable": "books",
+            "referencedColumns": ["id"]
+          }
+        ]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "books",
+        "foreignKeyChanges": 1,
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_book_author",
+            "columns": ["author_id"],
+            "referencedSchema": "public",
+            "referencedTable": "authors",
+            "referencedColumns": ["id"]
+          }
+        ]
+      }
+    ],
+    "views": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "viewName": "author_book_summary",
+        "dependsOn": ["authors", "books"]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "viewName": "prolific_authors",
+        "dependsOn": ["author_book_summary"]
+      }
+    ]
+  }
+}

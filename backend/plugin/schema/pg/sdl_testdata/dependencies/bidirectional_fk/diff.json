@@ -1,0 +1,48 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "departments",
+        "columnChanges": 3,
+        "foreignKeyChanges": 1,
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_department_manager",
+            "columns": ["manager_id"],
+            "referencedSchema": "public",
+            "referencedTable": "employees",
+            "referencedColumns": ["id"]
+          }
+        ]
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "employees",
+        "columnChanges": 3,
+        "foreignKeyChanges": 1,
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_employee_department",
+            "columns": ["department_id"],
+            "referencedSchema": "public",
+            "referencedTable": "departments",
+            "referencedColumns": ["id"]
+          }
+        ]
+      }
+    ]
+  }
+}

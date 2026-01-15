@@ -1,0 +1,34 @@
+{
+  "hasDifferences": true,
+  "summary": "Schema changes: 2, Table changes: 2",
+  "tableChanges": 2,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 2,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "schemas": [
+      {
+        "action": "CREATE",
+        "schemaName": "sales"
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "inventory"
+      }
+    ],
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "sales",
+        "tableName": "customers"
+      },
+      {
+        "action": "CREATE",
+        "schemaName": "inventory",
+        "tableName": "products"
+      }
+    ]
+  }
+}
