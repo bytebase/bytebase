@@ -173,12 +173,6 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 		return nil, err
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	redacted, err := s.obfuscateInstance(ctx, instanceCreate.Metadata)
 	if err != nil {
 		return nil, err
@@ -191,6 +185,13 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	if instanceCreate.EnvironmentID != nil && *instanceCreate.EnvironmentID != "" {
 		environment = instanceCreate.EnvironmentID
 	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
