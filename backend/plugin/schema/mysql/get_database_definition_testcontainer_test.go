@@ -32,9 +32,6 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	type testCase struct {
 		description string
 		originalDDL string
@@ -303,7 +300,7 @@ CREATE TABLE translations (
 			require.NoError(t, err)
 
 			// Step 1: Initialize the database schema and get metadata A
-			driverA, err := createMySQLDriver(ctx, host, port, testDBName)
+			driverA, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), testDBName)
 			require.NoError(t, err)
 			defer driverA.Close(ctx)
 
@@ -326,7 +323,7 @@ CREATE TABLE translations (
 			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newDBName))
 			require.NoError(t, err)
 
-			driverB, err := createMySQLDriver(ctx, host, port, newDBName)
+			driverB, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), newDBName)
 			require.NoError(t, err)
 			defer driverB.Close(ctx)
 
@@ -456,11 +453,8 @@ CREATE TABLE project_member (
 	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", databaseName))
 	require.NoError(t, err)
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	// Step 1: Initialize the database schema
-	driverA, err := createMySQLDriver(ctx, host, port, databaseName)
+	driverA, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), databaseName)
 	require.NoError(t, err)
 	defer driverA.Close(ctx)
 
@@ -483,7 +477,7 @@ CREATE TABLE project_member (
 	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newDBName))
 	require.NoError(t, err)
 
-	driverB, err := createMySQLDriver(ctx, host, port, newDBName)
+	driverB, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), newDBName)
 	require.NoError(t, err)
 	defer driverB.Close(ctx)
 

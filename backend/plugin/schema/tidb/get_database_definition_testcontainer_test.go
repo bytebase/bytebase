@@ -29,9 +29,6 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	type testCase struct {
 		description string
 		originalDDL string
@@ -197,7 +194,7 @@ CREATE TABLE nonclustered_pk (
 			require.NoError(t, err)
 
 			// Get the original database metadata using SyncDBSchema
-			driver, err := createTiDBDriver(ctx, host, port, testDB)
+			driver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), testDB)
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 			// Execute original DDL
@@ -218,7 +215,7 @@ CREATE TABLE nonclustered_pk (
 			require.NoError(t, err)
 
 			// Get the new database metadata
-			newDriver, err := createTiDBDriver(ctx, host, port, newTestDB)
+			newDriver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), newTestDB)
 			require.NoError(t, err)
 			defer newDriver.Close(ctx)
 
@@ -249,9 +246,6 @@ func TestGetDatabaseDefinitionWithConnectedDeps(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
-
-	host := container.GetHost()
-	port := container.GetPort()
 
 	// Create unique test database using UUID
 	testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
@@ -304,7 +298,7 @@ CREATE TABLE project_members (
 	require.NoError(t, err)
 
 	// Get the original database metadata
-	driver, err := createTiDBDriver(ctx, host, port, testDB)
+	driver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), testDB)
 	require.NoError(t, err)
 	// Execute original DDL
 	_, err = driver.GetDB().Exec(originalDDL)
@@ -325,7 +319,7 @@ CREATE TABLE project_members (
 	require.NoError(t, err)
 
 	// Get the new database metadata
-	newDriver, err := createTiDBDriver(ctx, host, port, newTestDB)
+	newDriver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), newTestDB)
 	require.NoError(t, err)
 	defer newDriver.Close(ctx)
 

@@ -19,9 +19,6 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	container := testcontainer.GetTestMSSQLContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	testCases := []struct {
 		name     string
 		setupSQL string
@@ -656,7 +653,7 @@ GO
 			require.NoError(t, err)
 
 			// Connect to the test database
-			driver, err := createMSSQLDriver(ctx, host, port, databaseName)
+			driver, err := createMSSQLDriver(ctx, container.GetHost(), container.GetPort(), databaseName)
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 

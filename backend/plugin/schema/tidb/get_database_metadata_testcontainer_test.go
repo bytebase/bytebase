@@ -26,9 +26,6 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	// Test cases with various TiDB features
 	testCases := []struct {
 		name string
@@ -210,7 +207,7 @@ CREATE TABLE non_clustered_test (
 			require.NoError(t, err)
 
 			// Create TiDB driver for this test database
-			driver, err := createTiDBDriver(ctx, host, port, testDB)
+			driver, err := createTiDBDriver(ctx, container.GetHost(), container.GetPort(), testDB)
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 

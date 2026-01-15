@@ -37,10 +37,6 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { container.Close(ctx) })
 
-	// Get connection details
-	host := container.GetHost()
-	port := container.GetPort()
-
 	// Test cases with various schema changes
 	testCases := []struct {
 		name          string
@@ -1644,7 +1640,7 @@ CREATE TABLE some_table (
 			require.NoError(t, err)
 
 			// Create MySQL driver for this test's database
-			driver, err := createMySQLDriver(ctx, host, port, testDBName)
+			driver, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), testDBName)
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 
