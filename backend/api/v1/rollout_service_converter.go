@@ -173,14 +173,23 @@ func convertToRollout(project *store.ProjectMessage, plan *store.PlanMessage, ta
 	}
 
 	// Collect environments that have tasks and are in the environment order map.
+	// Also include empty environment (for tasks without environment assignment).
 	var envs []string
 	for env := range tasksByEnv {
-		if _, exists := environmentOrderMap[env]; exists {
+		if env == "" {
+			envs = append(envs, env)
+		} else if _, exists := environmentOrderMap[env]; exists {
 			envs = append(envs, env)
 		}
 	}
-	// Sort environments by their order.
+	// Sort environments by their order. Empty environment goes first.
 	slices.SortFunc(envs, func(a, b string) int {
+		if a == "" {
+			return -1
+		}
+		if b == "" {
+			return 1
+		}
 		return environmentOrderMap[a] - environmentOrderMap[b]
 	})
 
