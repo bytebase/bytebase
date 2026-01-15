@@ -63,12 +63,6 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	projects, err := s.ListProjects(ctx, find)
 	if err != nil {
 		return nil, err
@@ -81,12 +75,8 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 	}
 	project := projects[0]
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	s.storeProjectCache(project)
-	return projects[0], nil
+	return project, nil
 }
 
 // ListProjects lists all projects.
@@ -158,16 +148,17 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Fetch webhooks outside the transaction to prevent deadlock when connection pool is exhausted.
 	for _, project := range projectMessages {
 		projectWebhooks, err := s.ListProjectWebhooks(ctx, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
 		if err != nil {
 			return nil, err
 		}
 		project.Webhooks = projectWebhooks
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 
 	for _, project := range projectMessages {

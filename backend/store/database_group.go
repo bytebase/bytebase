@@ -124,21 +124,10 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 
 // GetDatabaseGroup gets a database group.
 func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	databaseGroups, err := s.ListDatabaseGroups(ctx, find)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-
 	if len(databaseGroups) == 0 {
 		return nil, nil
 	}
