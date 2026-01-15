@@ -1,6 +1,7 @@
 -- Migrate APP_IM setting from object format to array format
 -- Old format: { "slack": { "enabled": true, "token": "..." }, "feishu": { ... }, ... }
--- New format: { "settings": [ { "type": "SLACK", "token": "..." }, { "type": "FEISHU", "appId": "...", "appSecret": "..." }, ... ] }
+-- New format: { "settings": [ { "type": "SLACK", "slack": {"token": "..."} }, { "type": "FEISHU", "feishu": {"appId": "...", "appSecret": "..."} }, ... ] }
+-- Note: Each setting must have nested payload under its type key (e.g., "slack", "wecom") for protojson oneof deserialization.
 
 DO $$
 DECLARE
@@ -25,7 +26,9 @@ BEGIN
         settings_array := settings_array || jsonb_build_array(
             jsonb_build_object(
                 'type', 'SLACK',
-                'token', old_val->'slack'->>'token'
+                'slack', jsonb_build_object(
+                    'token', old_val->'slack'->>'token'
+                )
             )
         );
     END IF;
@@ -35,8 +38,10 @@ BEGIN
         settings_array := settings_array || jsonb_build_array(
             jsonb_build_object(
                 'type', 'FEISHU',
-                'appId', old_val->'feishu'->>'appId',
-                'appSecret', old_val->'feishu'->>'appSecret'
+                'feishu', jsonb_build_object(
+                    'appId', old_val->'feishu'->>'appId',
+                    'appSecret', old_val->'feishu'->>'appSecret'
+                )
             )
         );
     END IF;
@@ -46,9 +51,11 @@ BEGIN
         settings_array := settings_array || jsonb_build_array(
             jsonb_build_object(
                 'type', 'WECOM',
-                'corpId', old_val->'wecom'->>'corpId',
-                'agentId', old_val->'wecom'->>'agentId',
-                'secret', old_val->'wecom'->>'secret'
+                'wecom', jsonb_build_object(
+                    'corpId', old_val->'wecom'->>'corpId',
+                    'agentId', old_val->'wecom'->>'agentId',
+                    'secret', old_val->'wecom'->>'secret'
+                )
             )
         );
     END IF;
@@ -58,8 +65,10 @@ BEGIN
         settings_array := settings_array || jsonb_build_array(
             jsonb_build_object(
                 'type', 'LARK',
-                'appId', old_val->'lark'->>'appId',
-                'appSecret', old_val->'lark'->>'appSecret'
+                'lark', jsonb_build_object(
+                    'appId', old_val->'lark'->>'appId',
+                    'appSecret', old_val->'lark'->>'appSecret'
+                )
             )
         );
     END IF;
@@ -69,9 +78,11 @@ BEGIN
         settings_array := settings_array || jsonb_build_array(
             jsonb_build_object(
                 'type', 'DINGTALK',
-                'clientId', old_val->'dingtalk'->>'clientId',
-                'clientSecret', old_val->'dingtalk'->>'clientSecret',
-                'robotCode', old_val->'dingtalk'->>'robotCode'
+                'dingtalk', jsonb_build_object(
+                    'clientId', old_val->'dingtalk'->>'clientId',
+                    'clientSecret', old_val->'dingtalk'->>'clientSecret',
+                    'robotCode', old_val->'dingtalk'->>'robotCode'
+                )
             )
         );
     END IF;
