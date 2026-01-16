@@ -142,7 +142,7 @@ func TestTenantBackfill(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project.Msg, &v1pb.Plan_Spec{
+	err = ctl.changeDatabaseWithConfig(ctx, project.Msg, &v1pb.Plan_Spec{
 		Id: uuid.NewString(),
 		Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
