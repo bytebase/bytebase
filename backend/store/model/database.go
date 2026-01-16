@@ -758,9 +758,11 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, colu
 
 	for _, partition := range partitions {
 		partitionMetadata := &TableMetadata{
-			partitionOf:    root,
-			internalColumn: make(map[string]*ColumnMetadata),
-			proto:          proto,
+			partitionOf:           root,
+			isDetailCaseSensitive: isDetailCaseSensitive,
+			internalColumn:        make(map[string]*ColumnMetadata),
+			internalIndexes:       make(map[string]*IndexMetadata),
+			proto:                 proto,
 		}
 		for _, column := range originalColumn {
 			columnCatalog := columnCatalogMap[column.Name]
