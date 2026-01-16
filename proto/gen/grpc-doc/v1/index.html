@@ -21852,6 +21852,14 @@ Should be a database. Format: instances/{instance}/databases/{database} </p></td
                   <td><p>The release to create. </p></td>
                 </tr>
               
+                <tr>
+                  <td>train</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Train for iteration tracking (template rendered without {iteration}).
+Used to group releases and determine the next iteration number. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22009,13 +22017,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
                 <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the release. </p></td>
-                </tr>
-              
-                <tr>
                   <td>files</td>
                   <td><a href="#bytebase.v1.Release.File">Release.File</a></td>
                   <td>repeated</td>
@@ -22048,16 +22049,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#bytebase.v1.State">State</a></td>
                   <td></td>
                   <td><p>The lifecycle state of the release. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>digest</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The digest of the release.
-The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
-Whether to provide digest and how to generate it is up to the user.
-If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. </p></td>
                 </tr>
               
                 <tr>
@@ -22215,14 +22206,6 @@ Format: projects/{project}/releases/{release} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to be updated. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the release is not found, a new release will be created.
-In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>

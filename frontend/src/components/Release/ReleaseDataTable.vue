@@ -68,20 +68,16 @@ const columnList = computed(
         multiple: !props.singleSelect,
       },
       {
-        key: "title",
+        key: "name",
         width: 300,
-        title: t("common.title"),
+        title: t("common.name"),
         resizable: true,
         render: (release) => {
+          const parts = release.name.split("/");
+          const releaseName = parts[parts.length - 1] || release.name;
           return (
             <p class="inline-flex w-full">
-              {release.title ? (
-                <span class="shrink truncate">{release.title}</span>
-              ) : (
-                <span class="shrink truncate italic opacity-60">
-                  {t("common.untitled")}
-                </span>
-              )}
+              <span class="shrink truncate">{releaseName}</span>
               {release.state === State.DELETED && (
                 <NTag class="shrink-0" type="warning" size="small" round>
                   {t("common.archived")}

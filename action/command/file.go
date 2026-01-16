@@ -1,8 +1,6 @@
 package command
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,20 +16,18 @@ import (
 
 const versionFormat = "20060102.150405"
 
-// getReleaseFiles returns the release files and the digest of the release.
-func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
+// getReleaseFiles returns the release files.
+func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 	// Use doublestar for recursive glob support (**/*.sql)
 	matches, err := doublestar.FilepathGlob(w.FilePattern)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	if len(matches) == 0 {
-		return nil, "", errors.Errorf("no files found for pattern: %s", w.FilePattern)
+		return nil, errors.Errorf("no files found for pattern: %s", w.FilePattern)
 	}
 
 	slices.Sort(matches)
-
-	h := sha256.New()
 
 	if w.Declarative {
 		// For declarative files, we need to concat all the file contents if it is rollout.
@@ -40,13 +36,7 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			for _, m := range matches {
 				content, err := os.ReadFile(m)
 				if err != nil {
-					return nil, "", err
-				}
-				if _, err := h.Write([]byte(m)); err != nil {
-					return nil, "", errors.Wrapf(err, "failed to write file path")
-				}
-				if _, err := h.Write(content); err != nil {
-					return nil, "", errors.Wrapf(err, "failed to write file content")
+					return nil, err
 				}
 				// Add newline separator between files to prevent SQL statements from being concatenated
 				if len(contents) > 0 {
@@ -62,20 +52,14 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 					EnableGhost: false,
 					Statement:   contents,
 				},
-			}, hex.EncodeToString(h.Sum(nil)), nil
+			}, nil
 		}
 
 		var files []*v1pb.Release_File
 		for _, m := range matches {
 			content, err := os.ReadFile(m)
 			if err != nil {
-				return nil, "", err
-			}
-			if _, err := h.Write([]byte(m)); err != nil {
-				return nil, "", errors.Wrapf(err, "failed to write file path")
-			}
-			if _, err := h.Write(content); err != nil {
-				return nil, "", errors.Wrapf(err, "failed to write file content")
+				return nil, err
 			}
 			files = append(files, &v1pb.Release_File{
 				Path:        m,
@@ -84,14 +68,14 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 				Statement:   content,
 			})
 		}
-		return files, hex.EncodeToString(h.Sum(nil)), nil
+		return files, nil
 	}
 
 	var files []*v1pb.Release_File
 	for _, m := range matches {
 		content, err := os.ReadFile(m)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 
 		base := strings.TrimSuffix(filepath.Base(m), filepath.Ext(m))
@@ -105,12 +89,6 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 			continue
 		}
 
-		if _, err := h.Write([]byte(m)); err != nil {
-			return nil, "", errors.Wrapf(err, "failed to write file path")
-		}
-		if _, err := h.Write(content); err != nil {
-			return nil, "", errors.Wrapf(err, "failed to write file content")
-		}
 		files = append(files, &v1pb.Release_File{
 			Path:        m,
 			Version:     version,
@@ -119,7 +97,7 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, string, error) {
 		})
 	}
 
-	return files, hex.EncodeToString(h.Sum(nil)), nil
+	return files, nil
 }
 
 var versionReg = regexp.MustCompile(`^[vV]?(\d+(\.\d+)*)`)

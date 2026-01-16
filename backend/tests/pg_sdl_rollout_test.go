@@ -318,8 +318,7 @@ func executeSDLRolloutWithResult(ctx context.Context, ctl *controller, database 
 	releaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: ctl.project.Name,
 		Release: &v1pb.Release{
-			Title: "SDL Rollout Release",
-			Type:  v1pb.Release_DECLARATIVE,
+			Type: v1pb.Release_DECLARATIVE,
 			Files: []*v1pb.Release_File{
 				{
 					Path:      "schema.sql",

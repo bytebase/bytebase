@@ -3558,7 +3558,6 @@ Activity type enumeration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
 | files | [ReleasePayload.File](#bytebase-store-ReleasePayload-File) | repeated |  |
 | vcs_source | [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource) |  |  |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |

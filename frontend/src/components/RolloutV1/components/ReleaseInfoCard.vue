@@ -30,11 +30,8 @@
         <div class="flex items-start justify-between">
           <div>
             <h3 class="text-sm font-medium text-gray-900">
-              {{ release.title }}
+              {{ releaseTitle }}
             </h3>
-            <p v-if="release.name" class="text-xs text-gray-500 mt-0.5">
-              {{ release.name }}
-            </p>
           </div>
         </div>
 
@@ -169,8 +166,9 @@ const { release, ready: releaseReady } = useReleaseByName(
 const maxDisplayedFiles = computed(() => (props.compact ? 4 : 6));
 
 const releaseTitle = computed(() => {
-  if (release.value && release.value.title) {
-    return release.value.title;
+  if (release.value && release.value.name) {
+    const parts = release.value.name.split("/");
+    return parts[parts.length - 1] || release.value.name;
   }
   if (props.releaseName) {
     const parts = props.releaseName.split("/");

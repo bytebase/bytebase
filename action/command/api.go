@@ -145,10 +145,11 @@ func (c *Client) CheckRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) 
 	return resp.Msg, nil
 }
 
-func (c *Client) CreateRelease(ctx context.Context, project string, r *v1pb.Release) (*v1pb.Release, error) {
+func (c *Client) CreateRelease(ctx context.Context, project string, r *v1pb.Release, train string) (*v1pb.Release, error) {
 	req := connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent:  project,
 		Release: r,
+		Train:   train,
 	})
 	resp, err := c.releaseClient.CreateRelease(ctx, req)
 	if err != nil {

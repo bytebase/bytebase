@@ -7989,6 +7989,12 @@ components:
           title: release
           description: The release to create.
           $ref: '#/components/schemas/bytebase.v1.Release'
+        train:
+          type: string
+          title: train
+          description: |-
+            Train for iteration tracking (template rendered without {iteration}).
+             Used to group releases and determine the next iteration number.
       title: CreateReleaseRequest
       additionalProperties: false
     bytebase.v1.CreateReviewConfigRequest:
@@ -13662,11 +13668,6 @@ components:
           type: string
           title: name
           description: 'Format: projects/{project}/releases/{release}'
-        title:
-          type: string
-          title: title
-          maxLength: 200
-          description: The title of the release.
         files:
           type: array
           items:
@@ -13688,14 +13689,6 @@ components:
           title: state
           description: The lifecycle state of the release.
           $ref: '#/components/schemas/bytebase.v1.State'
-        digest:
-          type: string
-          title: digest
-          description: |-
-            The digest of the release.
-             The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
-             Whether to provide digest and how to generate it is up to the user.
-             If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
         type:
           title: type
           description: The type of schema change for all files in this release.
@@ -16916,12 +16909,6 @@ components:
           title: update_mask
           description: The list of fields to be updated.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the release is not found, a new release will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateReleaseRequest
       additionalProperties: false
     bytebase.v1.UpdateReviewConfigRequest:
