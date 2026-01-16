@@ -24,11 +24,10 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 			},
 		},
 	}
-	_, _, _, err := ctl.changeDatabaseWithConfig(ctx, project, spec)
-	return err
+	return ctl.changeDatabaseWithConfig(ctx, project, spec)
 }
 
-func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, spec *v1pb.Plan_Spec) (*v1pb.Plan, *v1pb.Rollout, *v1pb.Issue, error) {
+func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1pb.Project, spec *v1pb.Plan_Spec) error {
 	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
@@ -36,7 +35,7 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 		},
 	}))
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to create plan")
+		return errors.Wrapf(err, "failed to create plan")
 	}
 	plan := planResp.Msg
 	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
@@ -49,19 +48,15 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 		},
 	}))
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to create issue")
+		return errors.Wrapf(err, "failed to create issue")
 	}
 	issue := issueResp.Msg
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: plan.Name}))
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to create rollout")
+		return errors.Wrapf(err, "failed to create rollout")
 	}
 	rollout := rolloutResp.Msg
-	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return plan, rollout, issue, nil
+	return ctl.waitRollout(ctx, issue.Name, rollout.Name)
 }
 
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
