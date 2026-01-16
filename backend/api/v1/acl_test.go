@@ -272,13 +272,6 @@ func TestHasAllowMissingEnabled(t *testing.T) {
 			},
 			want: false,
 		},
-		{
-			name: "UpdateReleaseRequest with AllowMissing false",
-			request: &v1pb.UpdateReleaseRequest{
-				AllowMissing: false,
-			},
-			want: false,
-		},
 	}
 
 	for _, tt := range tests {

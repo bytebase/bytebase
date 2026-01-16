@@ -77,6 +77,9 @@ func (x *CreateReleaseRequest) Equal(y *CreateReleaseRequest) bool {
 	if !x.Release.Equal(y.Release) {
 		return false
 	}
+	if x.Train != y.Train {
+		return false
+	}
 	return true
 }
 
@@ -95,9 +98,6 @@ func (x *UpdateReleaseRequest) Equal(y *UpdateReleaseRequest) bool {
 	}); !ok || !equal.Equal(y.UpdateMask) {
 		return false
 	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
-		return false
-	}
-	if x.AllowMissing != y.AllowMissing {
 		return false
 	}
 	return true
@@ -264,9 +264,6 @@ func (x *Release) Equal(y *Release) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Title != y.Title {
-		return false
-	}
 	if len(x.Files) != len(y.Files) {
 		return false
 	}
@@ -285,9 +282,6 @@ func (x *Release) Equal(y *Release) bool {
 		return false
 	}
 	if x.State != y.State {
-		return false
-	}
-	if x.Digest != y.Digest {
 		return false
 	}
 	if x.Type != y.Type {

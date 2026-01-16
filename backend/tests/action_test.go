@@ -716,7 +716,6 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.NoError(err)
 		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
 		release := releases.Msg.Releases[0]
-		a.Equal("Test Release", release.Title)
 
 		// 3. Verify rollout was created and completed
 		rollouts, err := ctl.rolloutServiceClient.ListRollouts(ctx, connect.NewRequest(&v1pb.ListRolloutsRequest{
@@ -863,7 +862,6 @@ func TestActionRolloutCommand(t *testing.T) {
 		a.NoError(err)
 		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
 		release := releases.Msg.Releases[0]
-		a.Equal("Multi-file Release", release.Title)
 
 		// Verify release files
 		a.Len(release.Files, 3, "Expected exactly 3 files in release")
@@ -1136,8 +1134,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		}))
 		a.NoError(err)
 		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
-		release := releases.Msg.Releases[0]
-		a.Equal("Declarative Release V1", release.Title)
 
 		// Verify database schema was created
 		metadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, connect.NewRequest(&v1pb.GetDatabaseMetadataRequest{
@@ -1635,7 +1631,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 		a.NoError(err)
 		a.Len(releases.Msg.Releases, 1, "Expected exactly one release")
 		release := releases.Msg.Releases[0]
-		a.Equal("Multiple Declarative Files Release", release.Title)
 
 		// Verify the release contains exactly one file (the merged result)
 		a.Len(release.Files, 1, "Release should contain exactly one merged file")

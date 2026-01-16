@@ -525,9 +525,11 @@ CREATE TABLE release (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
+    release_id text NOT NULL DEFAULT '',
     creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
-    digest text NOT NULL DEFAULT '',
+    train text NOT NULL DEFAULT '',
+    iteration integer NOT NULL DEFAULT 0,
     -- Stored as ReleasePayload (proto/store/store/release.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -535,6 +537,8 @@ CREATE TABLE release (
 ALTER SEQUENCE release_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_release_project ON release(project);
+CREATE UNIQUE INDEX idx_release_project_train_iteration ON release(project, train, iteration);
+CREATE INDEX idx_release_project_release_id ON release(project, release_id);
 
 -- OAuth2 tables
 CREATE TABLE oauth2_client (

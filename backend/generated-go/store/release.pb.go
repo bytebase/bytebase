@@ -23,7 +23,6 @@ const (
 
 type ReleasePayload struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Title         string                    `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Files         []*ReleasePayload_File    `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
 	VcsSource     *ReleasePayload_VCSSource `protobuf:"bytes,3,opt,name=vcs_source,json=vcsSource,proto3" json:"vcs_source,omitempty"`
 	Type          SchemaChangeType          `protobuf:"varint,4,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
@@ -59,13 +58,6 @@ func (x *ReleasePayload) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ReleasePayload.ProtoReflect.Descriptor instead.
 func (*ReleasePayload) Descriptor() ([]byte, []int) {
 	return file_store_release_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *ReleasePayload) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
 }
 
 func (x *ReleasePayload) GetFiles() []*ReleasePayload_File {
@@ -216,9 +208,8 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xaf\x03\n" +
-	"\x0eReleasePayload\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x99\x03\n" +
+	"\x0eReleasePayload\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
 	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x124\n" +

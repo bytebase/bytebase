@@ -79,8 +79,7 @@ func TestGitOpsCheck(t *testing.T) {
 
 	// Create a release with migration files simulating GitOps workflow.
 	release := &v1pb.Release{
-		Title: "GitOps Check Release v1.0",
-		Type:  v1pb.Release_VERSIONED,
+		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:        "migrations/001__create_users_table.sql",
@@ -199,8 +198,7 @@ func TestGitOpsRollout(t *testing.T) {
 	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: project.Name,
 		Release: &v1pb.Release{
-			Title: "GitOps Rollout Release v1.0",
-			Type:  v1pb.Release_VERSIONED,
+			Type: v1pb.Release_VERSIONED,
 			Files: []*v1pb.Release_File{
 				{
 					Path:        "migrations/001__create_products_table.sql",
@@ -384,8 +382,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent: project.Name,
 		Release: &v1pb.Release{
-			Title: "GitOps Multi-Target Release v1.0",
-			Type:  v1pb.Release_VERSIONED,
+			Type: v1pb.Release_VERSIONED,
 			Files: []*v1pb.Release_File{
 				{
 					Path:        "migrations/1.0.0__create_table_one.sql",
@@ -614,8 +611,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 
 	// Step 1: Create a release with version 1.0.0 file.
 	originalRelease := &v1pb.Release{
-		Title: "Original Release v1.0.0",
-		Type:  v1pb.Release_VERSIONED,
+		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:        "migrations/1.0.0__create_users_table.sql",
@@ -640,7 +636,6 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project.Name,
 		Plan: &v1pb.Plan{
-			Title:       "Apply Original Release",
 			Description: "Apply original release to database",
 			Specs: []*v1pb.Plan_Spec{
 				{
@@ -669,7 +664,6 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: project.Name,
 		Issue: &v1pb.Issue{
-			Title:       "Apply Original Release",
 			Description: "Apply original release to database",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Plan:        plan.Name,
@@ -684,8 +678,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 
 	// Step 3: Create a release with version 1.0.0 file but with different content.
 	modifiedRelease := &v1pb.Release{
-		Title: "Modified Release v1.0.0",
-		Type:  v1pb.Release_VERSIONED,
+		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:        "migrations/1.0.0__create_users_table.sql",
@@ -758,8 +751,7 @@ func TestGitOpsCheckEmptyTargets(t *testing.T) {
 
 	// Create a release with a migration file.
 	release := &v1pb.Release{
-		Title: "Test Release",
-		Type:  v1pb.Release_VERSIONED,
+		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
 				Path:      "migrations/001__create_table.sql",
@@ -833,8 +825,7 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 
 	// Create a release with declarative SDL files.
 	release := &v1pb.Release{
-		Title: "Declarative SDL Release",
-		Type:  v1pb.Release_DECLARATIVE,
+		Type: v1pb.Release_DECLARATIVE,
 		Files: []*v1pb.Release_File{
 			{
 				Path:    "schema/users.sql",
@@ -973,8 +964,7 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 			a.NoError(err)
 
 			release := &v1pb.Release{
-				Title: fmt.Sprintf("Test Release - %s", tc.name),
-				Type:  v1pb.Release_DECLARATIVE,
+				Type: v1pb.Release_DECLARATIVE,
 				Files: []*v1pb.Release_File{
 					{
 						Path:      "schema/test.sql",
@@ -1155,7 +1145,6 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			a.NoError(err)
 
 			release := &v1pb.Release{
-				Title: fmt.Sprintf("Test Release - %s", tc.name),
 				Type:  v1pb.Release_VERSIONED,
 				Files: tc.files,
 			}
@@ -1252,8 +1241,7 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 
 	// Create a release with multiple declarative SDL files.
 	release := &v1pb.Release{
-		Title: "Multi-File Declarative SDL Release",
-		Type:  v1pb.Release_DECLARATIVE,
+		Type: v1pb.Release_DECLARATIVE,
 		Files: []*v1pb.Release_File{
 			{
 				Path:    "schema/users.sql",

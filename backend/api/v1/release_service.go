@@ -100,9 +100,8 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	releaseMessage := &store.ReleaseMessage{
 		ProjectID: project.ResourceID,
-		Digest:    req.Msg.Release.Digest,
+		Train:     req.Msg.Train,
 		Payload: &storepb.ReleasePayload{
-			Title:     req.Msg.Release.Title,
 			VcsSource: convertReleaseVcsSource(req.Msg.Release.VcsSource),
 			Type:      storepb.SchemaChangeType(req.Msg.Release.Type),
 		},
@@ -143,19 +142,19 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 }
 
 func (s *ReleaseService) GetRelease(ctx context.Context, req *connect.Request[v1pb.GetReleaseRequest]) (*connect.Response[v1pb.Release], error) {
-	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
+	projectID, releaseID, err := common.GetProjectReleaseID(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release id"))
 	}
 	releaseMessage, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID: &projectID,
-		UID:       &releaseUID,
+		ReleaseID: &releaseID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 	}
 	if releaseMessage == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %s not found in project %s", releaseID, projectID))
 	}
 	release := convertToRelease(releaseMessage)
 	return connect.NewResponse(release), nil
@@ -215,88 +214,30 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
-func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
-	if req.Msg.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
-	}
-
-	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Release.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
-	}
-
-	// Use GetRelease with FindReleaseMessage for database-level filtering
-	release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
-		ProjectID: &projectID,
-		UID:       &releaseUID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
-	}
-	if release == nil {
-		if req.Msg.AllowMissing {
-			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
-			}
-			if project == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
-			}
-			return s.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
-				Parent:  common.FormatProject(project.ResourceID),
-				Release: req.Msg.Release,
-			}))
-		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
-	}
-
-	if release.Deleted {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("release %d is deleted", releaseUID))
-	}
-
-	update := &store.UpdateReleaseMessage{
-		UID: releaseUID,
-	}
-	for _, path := range req.Msg.UpdateMask.Paths {
-		if path == "title" {
-			payload := release.Payload
-			payload.Title = req.Msg.Release.Title
-			update.Payload = payload
-		}
-		if path == "type" {
-			payload := release.Payload
-			payload.Type = storepb.SchemaChangeType(req.Msg.Release.Type)
-			update.Payload = payload
-		}
-	}
-
-	releaseMessage, err := s.store.UpdateRelease(ctx, update)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update release"))
-	}
-	converted := convertToRelease(releaseMessage)
-	return connect.NewResponse(converted), nil
+func (*ReleaseService) UpdateRelease(_ context.Context, _ *connect.Request[v1pb.UpdateReleaseRequest]) (*connect.Response[v1pb.Release], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("update release is not supported, create a new release iteration instead"))
 }
 
 func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request[v1pb.DeleteReleaseRequest]) (*connect.Response[emptypb.Empty], error) {
-	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
+	projectID, releaseID, err := common.GetProjectReleaseID(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release id"))
 	}
 	release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID: &projectID,
-		UID:       &releaseUID,
+		ReleaseID: &releaseID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 	}
 	if release == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %s not found in project %s", releaseID, projectID))
 	}
 
 	if _, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
-		UID:     releaseUID,
-		Deleted: &deletePatch,
+		ProjectID: projectID,
+		ReleaseID: releaseID,
+		Deleted:   &deletePatch,
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete release"))
 	}
@@ -304,25 +245,26 @@ func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request
 }
 
 func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Request[v1pb.UndeleteReleaseRequest]) (*connect.Response[v1pb.Release], error) {
-	projectID, releaseUID, err := common.GetProjectReleaseUID(req.Msg.Name)
+	projectID, releaseID, err := common.GetProjectReleaseID(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release id"))
 	}
 	release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID:   &projectID,
-		UID:         &releaseUID,
+		ReleaseID:   &releaseID,
 		ShowDeleted: true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 	}
 	if release == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %s not found in project %s", releaseID, projectID))
 	}
 
 	releaseMessage, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
-		UID:     releaseUID,
-		Deleted: &undeletePatch,
+		ProjectID: projectID,
+		ReleaseID: releaseID,
+		Deleted:   &undeletePatch,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete release"))
@@ -341,13 +283,11 @@ func convertToReleases(releases []*store.ReleaseMessage) []*v1pb.Release {
 
 func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	r := &v1pb.Release{
-		Name:       common.FormatReleaseName(release.ProjectID, release.UID),
-		Title:      release.Payload.Title,
+		Name:       common.FormatReleaseName(release.ProjectID, release.ReleaseID),
 		Creator:    common.FormatUserEmail(release.Creator),
 		CreateTime: timestamppb.New(release.At),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 		State:      convertDeletedToState(release.Deleted),
-		Digest:     release.Digest,
 		Type:       v1pb.Release_Type(release.Payload.Type),
 	}
 

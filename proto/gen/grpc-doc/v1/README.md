@@ -7593,6 +7593,7 @@ Check result for a single release file on a target database.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
 | release | [Release](#bytebase-v1-Release) |  | The release to create. |
+| train | [string](#string) |  | Train for iteration tracking (template rendered without {iteration}). Used to group releases and determine the next iteration number. |
 
 
 
@@ -7674,13 +7675,11 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/releases/{release} |
-| title | [string](#string) |  | The title of the release. |
 | files | [Release.File](#bytebase-v1-Release-File) | repeated | The SQL files included in the release. |
 | vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  | The version control source of the release. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the release. |
-| digest | [string](#string) |  | The digest of the release. The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease. Whether to provide digest and how to generate it is up to the user. If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned. |
 | type | [Release.Type](#bytebase-v1-Release-Type) |  | The type of schema change for all files in this release. |
 
 
@@ -7751,7 +7750,6 @@ Version control system source information.
 | ----- | ---- | ----- | ----------- |
 | release | [Release](#bytebase-v1-Release) |  | The release to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
-| allow_missing | [bool](#bool) |  | If set to true, and the release is not found, a new release will be created. In this situation, `update_mask` is ignored. |
 
 
 
