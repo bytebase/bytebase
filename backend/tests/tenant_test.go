@@ -25,7 +25,7 @@ import (
 //
 // When a new tenant database is created, it needs to:
 // 1. Have the same schema as existing tenants (baseline database)
-// 2. Be included in any pending DDL rollouts that haven't been executed yet
+// 2. Be included in any pending rollouts that haven't been executed yet
 //
 // =============================================================================
 // KEY CONCEPTS
@@ -35,7 +35,7 @@ import (
 //     their initial schema from the baseline.
 //
 //   - Database Group: A logical grouping of tenant databases that receive the same
-//     DDL changes. Uses CEL expressions to match databases dynamically.
+//     database changes. Uses CEL expressions to match databases dynamically.
 //
 //   - Idempotent CreateRollout: Calling CreateRollout multiple times on the same
 //     plan is safe - it re-evaluates the database group and adds newly matched
@@ -132,9 +132,9 @@ func TestTenantBackfill(t *testing.T) {
 	a.NoError(err)
 
 	// ==========================================================================
-	// STEP 3: Execute first DDL change on baseline (creates changelog)
+	// STEP 3: Execute first database change on baseline (creates changelog)
 	// ==========================================================================
-	// This DDL change is already executed - it will be in baseline's changelog.
+	// This change is already executed - it will be in baseline's changelog.
 
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Msg.Name,
@@ -161,9 +161,9 @@ func TestTenantBackfill(t *testing.T) {
 	a.Equal(wantBookSchema, baselineSchema.Msg.Schema)
 
 	// ==========================================================================
-	// STEP 4: Create second DDL change but DON'T execute it (pending rollout)
+	// STEP 4: Create second database change but DON'T execute it (pending rollout)
 	// ==========================================================================
-	// This simulates a DDL change that is approved but waiting for execution
+	// This simulates a change that is approved but waiting for execution
 	// (e.g., scheduled for maintenance window).
 
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
@@ -194,7 +194,7 @@ func TestTenantBackfill(t *testing.T) {
 		Issue: &v1pb.Issue{
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Title:       "Add author column",
-			Description: "Pending DDL change",
+			Description: "Pending database change",
 			Plan:        pendingPlan.Msg.Name,
 		},
 	}))
@@ -213,7 +213,7 @@ func TestTenantBackfill(t *testing.T) {
 	// ==========================================================================
 	// NEW TENANT ONBOARDING WORKFLOW
 	// ==========================================================================
-	// Now we simulate a new tenant being onboarded while there's a pending DDL change.
+	// Now we simulate a new tenant being onboarded while there's a pending database change.
 
 	// --------------------------------------------------------------------------
 	// STEP 5: Get baseline's current schema
@@ -237,7 +237,7 @@ func TestTenantBackfill(t *testing.T) {
 	// STEP 7: Initialize new tenant with baseline schema
 	// --------------------------------------------------------------------------
 	// Apply the baseline's current schema to the new tenant database.
-	// This ensures the new tenant has all previously executed DDL changes.
+	// This ensures the new tenant has all previously executed database changes.
 
 	initSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Msg.Name,
@@ -357,8 +357,8 @@ func TestTenantBackfill(t *testing.T) {
 	// ==========================================================================
 	// At this point, the automation workflow is complete:
 	//
-	// - New tenant has baseline's current schema (all executed DDL changes)
-	// - New tenant is included in all pending rollouts (NOT_STARTED DDL changes)
+	// - New tenant has baseline's current schema (all executed database changes)
+	// - New tenant is included in all pending rollouts (NOT_STARTED database changes)
 	//
 	// Executing the pending tasks is OPTIONAL and depends on user's choice.
 	// Users can execute via:
@@ -404,7 +404,7 @@ func TestTenantBackfill(t *testing.T) {
 	a.NoError(err)
 
 	a.Equal(finalBaselineSchema.Msg.Schema, finalNewTenantSchema.Msg.Schema)
-	a.Contains(finalNewTenantSchema.Msg.Schema, "author") // New column from pending DDL
+	a.Contains(finalNewTenantSchema.Msg.Schema, "author") // New column from pending change
 
 	// Verify: All tasks are DONE.
 	completedRollout, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
