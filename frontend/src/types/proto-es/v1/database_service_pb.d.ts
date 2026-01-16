@@ -578,11 +578,13 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
   project: string;
 
   /**
-   * The version of database schema.
+   * The release that was last applied to this database.
+   * Format: projects/{project}/releases/{release_id}
+   * Example: projects/my-project/releases/release_20260115-RC00
    *
-   * @generated from field: string schema_version = 5;
+   * @generated from field: string release = 5;
    */
-  schemaVersion: string;
+  release: string;
 
   /**
    * The environment resource.

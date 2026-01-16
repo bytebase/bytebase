@@ -35,7 +35,7 @@ func (x *DatabaseMetadata) Equal(y *DatabaseMetadata) bool {
 	if x.Datashare != y.Datashare {
 		return false
 	}
-	if x.Version != y.Version {
+	if x.Release != y.Release {
 		return false
 	}
 	return true
