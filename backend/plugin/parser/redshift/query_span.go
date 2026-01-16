@@ -14,7 +14,7 @@ func init() {
 }
 
 // GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, schema string, _ bool) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, _ bool) (*base.QuerySpan, error) {
 	if gCtx.GetDatabaseMetadataFunc == nil {
 		return nil, errors.New("GetDatabaseMetadataFunc is not set in GetQuerySpanContext")
 	}
@@ -29,9 +29,9 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement,
 	extractor := newQuerySpanExtractor(database, searchPath, gCtx)
 
 	// Use the new ANTLR-based implementation
-	querySpan, err := extractor.getQuerySpan(ctx, statement)
+	querySpan, err := extractor.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", statement)
+		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 	return querySpan, nil
 }

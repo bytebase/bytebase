@@ -61,8 +61,9 @@ type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement 
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
 type StatementRangeFunc func(ctx context.Context, sCtx StatementRangeContext, statement string) ([]Range, error)
 
-// GetQuerySpanFunc is the interface of getting the query span for a query.
-type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
+// GetQuerySpanFunc is the interface of getting the query span for a single statement.
+// It accepts a pre-split Statement instead of raw string to avoid redundant splitting.
+type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, stmt Statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
 type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
@@ -202,27 +203,24 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 	spans[engine] = f
 }
 
-// GetQuerySpan gets the span of a query.
+// GetQuerySpan gets the span of a query from pre-split statements.
 // The interface will return the query spans with non-critical errors, or return an error if the query is invalid.
-func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.Engine, statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
+// Callers should split the SQL first using SplitMultiSQL and pass the resulting []Statement.
+func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.Engine, statements []Statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
 		return nil, nil
 	}
 	gCtx.Engine = engine
-	statements, err := SplitMultiSQL(engine, statement)
-	if err != nil {
-		return nil, err
-	}
 	gCtx.TempTables = make(map[string]*PhysicalTable)
 	var results []*QuerySpan
-	var nonEmptyStatement []string
+	var nonEmptyStatements []Statement
 	for _, stmt := range statements {
 		if stmt.Empty {
 			continue
 		}
-		nonEmptyStatement = append(nonEmptyStatement, stmt.Text)
-		result, err := f(ctx, gCtx, stmt.Text, database, schema, ignoreCaseSensitive)
+		nonEmptyStatements = append(nonEmptyStatements, stmt)
+		result, err := f(ctx, gCtx, stmt, database, schema, ignoreCaseSensitive)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
 			// TODO(d): remove resource not found error checks.
@@ -239,7 +237,7 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 		results = append(results, result)
 	}
 	if engine == storepb.Engine_MSSQL {
-		TSQLRecognizeExplainType(results, nonEmptyStatement)
+		tsqlRecognizeExplainType(results, nonEmptyStatements)
 	}
 	return results, nil
 }
@@ -381,14 +379,14 @@ var (
 	showplanReg = regexp.MustCompile(`(?mi)^\s*SET\s+SHOWPLAN_(ALL|XML|TEXT)\s+(?P<status>(ON|OFF))\s*;?$`)
 )
 
-// TSQLRecognizeExplainType walks the spans, and rewrite the select type to explain type if previous statement is SET SHOWPLAN_ALL.
-func TSQLRecognizeExplainType(spans []*QuerySpan, stmt []string) {
-	if len(spans) != len(stmt) {
+// tsqlRecognizeExplainType walks the spans, and rewrite the select type to explain type if previous statement is SET SHOWPLAN_ALL.
+func tsqlRecognizeExplainType(spans []*QuerySpan, stmts []Statement) {
+	if len(spans) != len(stmts) {
 		return
 	}
 	on := false
 	for i := range spans {
-		matches := showplanReg.FindStringSubmatch(stmt[i])
+		matches := showplanReg.FindStringSubmatch(stmts[i].Text)
 		if matches != nil {
 			for k, name := range showplanReg.SubexpNames() {
 				if k != 0 && name == "status" {

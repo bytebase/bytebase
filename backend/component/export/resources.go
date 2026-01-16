@@ -59,12 +59,16 @@ func getResourcesForMySQL(
 	listDatabaseNamesFunc base.ListDatabaseNamesFunc,
 	getLinkedDatabaseMetadataFunc base.GetLinkedDatabaseMetadataFunc,
 ) ([]base.SchemaResource, error) {
+	statements, err := base.SplitMultiSQL(engine, statement)
+	if err != nil {
+		return nil, err
+	}
 	spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
 		InstanceID:                    instance.ResourceID,
 		GetDatabaseMetadataFunc:       getDatabaseMetadataFunc,
 		ListDatabaseNamesFunc:         listDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: getLinkedDatabaseMetadataFunc,
-	}, engine, statement, databaseName, "", !store.IsObjectCaseSensitive(instance))
+	}, engine, statements, databaseName, "", !store.IsObjectCaseSensitive(instance))
 	if err != nil {
 		return nil, err
 	} else if databaseName == "" {
@@ -158,12 +162,16 @@ func getResourcesForPostgres(
 	listDatabaseNamesFunc base.ListDatabaseNamesFunc,
 	getLinkedDatabaseMetadataFunc base.GetLinkedDatabaseMetadataFunc,
 ) ([]base.SchemaResource, error) {
+	statements, err := base.SplitMultiSQL(engine, statement)
+	if err != nil {
+		return nil, err
+	}
 	spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
 		InstanceID:                    instance.ResourceID,
 		GetDatabaseMetadataFunc:       getDatabaseMetadataFunc,
 		ListDatabaseNamesFunc:         listDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: getLinkedDatabaseMetadataFunc,
-	}, engine, statement, databaseName, defaultSchema, !store.IsObjectCaseSensitive(instance))
+	}, engine, statements, databaseName, defaultSchema, !store.IsObjectCaseSensitive(instance))
 	if err != nil {
 		return nil, err
 	}
@@ -224,12 +232,16 @@ func getResourcesForRedshift(
 	listDatabaseNamesFunc base.ListDatabaseNamesFunc,
 	getLinkedDatabaseMetadataFunc base.GetLinkedDatabaseMetadataFunc,
 ) ([]base.SchemaResource, error) {
+	statements, err := base.SplitMultiSQL(engine, statement)
+	if err != nil {
+		return nil, err
+	}
 	spans, err := base.GetQuerySpan(ctx, base.GetQuerySpanContext{
 		InstanceID:                    instance.ResourceID,
 		GetDatabaseMetadataFunc:       getDatabaseMetadataFunc,
 		ListDatabaseNamesFunc:         listDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: getLinkedDatabaseMetadataFunc,
-	}, engine, statement, databaseName, defaultSchema, !store.IsObjectCaseSensitive(instance))
+	}, engine, statements, databaseName, defaultSchema, !store.IsObjectCaseSensitive(instance))
 	if err != nil {
 		return nil, err
 	}
