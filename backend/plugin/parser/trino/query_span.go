@@ -15,12 +15,12 @@ func init() {
 
 // GetQuerySpan gets the query span for Trino.
 // This is the entry point registered with the base package.
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, schema string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
 	extractor := newQuerySpanExtractor(database, schema, gCtx, ignoreCaseSensitive)
 
-	querySpan, err := extractor.getQuerySpan(ctx, statement)
+	querySpan, err := extractor.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", statement)
+		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 
 	return querySpan, nil

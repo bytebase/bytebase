@@ -40,7 +40,7 @@ func TestGetQuerySpan(t *testing.T) {
 		a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 		for i, tc := range testCases {
-			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{}, tc.Statement, "", "", false)
+			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{}, base.Statement{Text: tc.Statement}, "", "", false)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 			resultYaml := result.ToYaml()
 			if record {

@@ -1123,7 +1123,7 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 				return []string{}, nil
 			},
 		},
-		l.result,
+		base.Statement{Text: l.result},
 		"", // database
 		schemaName,
 		false, // case sensitive

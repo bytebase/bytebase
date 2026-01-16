@@ -231,7 +231,7 @@ func TestGetQuerySpan(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
 
-			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: tt.statement}, "test_keyspace", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
@@ -306,7 +306,7 @@ func TestGetQuerySpanWithErrors(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
 
-			_, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			_, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: tt.statement}, "test_keyspace", "", false)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -398,7 +398,7 @@ func TestWhereColumnExtraction(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
 
-			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: tt.statement}, "test_keyspace", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
@@ -478,7 +478,7 @@ func TestSourceColumnsTableResources(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
 
-			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: tt.statement}, "test_keyspace", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
@@ -627,7 +627,7 @@ func TestQueryTypeDetection(t *testing.T) {
 			ctx := context.Background()
 			gCtx := base.GetQuerySpanContext{}
 
-			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: tt.statement}, "test_keyspace", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 			require.Equal(t, tt.expectedType, got.Type, "Query type mismatch for %s", tt.statement)
@@ -657,7 +657,7 @@ func TestSelectAsteriskWithMetadata(t *testing.T) {
 			// Note: tt.hasMetadata would be used to set up mock metadata function
 			// For now, we're testing the fallback behavior without metadata
 
-			got, err := GetQuerySpan(ctx, gCtx, tt.statement, "test_keyspace", "", false)
+			got, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: tt.statement}, "test_keyspace", "", false)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 

@@ -468,6 +468,11 @@ func queryRetry(
 	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
 	var err error
+	// Split the statement once at entry point
+	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
+	if err != nil {
+		return nil, nil, time.Duration(0), err
+	}
 	if !queryContext.Explain {
 		spans, err = parserbase.GetQuerySpan(
 			ctx,
@@ -478,7 +483,7 @@ func queryRetry(
 				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
 			instance.Metadata.GetEngine(),
-			statement,
+			statements,
 			database.DatabaseName,
 			queryContext.Schema,
 			!store.IsObjectCaseSensitive(instance),
@@ -561,7 +566,7 @@ func queryRetry(
 				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
 			instance.Metadata.GetEngine(),
-			statement,
+			statements,
 			database.DatabaseName,
 			queryContext.Schema,
 			!store.IsObjectCaseSensitive(instance),

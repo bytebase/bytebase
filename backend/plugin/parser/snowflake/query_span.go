@@ -15,11 +15,12 @@ func init() {
 func GetQuerySpan(
 	ctx context.Context,
 	gCtx base.GetQuerySpanContext,
-	statement, database, schema string,
+	stmt base.Statement,
+	database, schema string,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
 	q := newQuerySpanExtractor(database, schema, gCtx, ignoreCaseSensitive)
-	querySpan, err := q.getQuerySpan(ctx, statement)
+	querySpan, err := q.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
 		return nil, err
 	}

@@ -15,8 +15,8 @@ func init() {
 }
 
 // GetQuerySpan extracts the query span from a CQL statement.
-func GetQuerySpan(_ context.Context, gCtx base.GetQuerySpanContext, statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	parseResults, err := ParseCassandraSQL(statement)
+func GetQuerySpan(_ context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
+	parseResults, err := ParseCassandraSQL(stmt.Text)
 	if err != nil {
 		return nil, err
 	}
