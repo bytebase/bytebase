@@ -524,21 +524,24 @@ func (x *IamPolicy) GetBindings() []*Binding {
 	return nil
 }
 
-// QueryDataPolicy is the policy configuration for querying data.
+// QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// workspace-level policy
 	// The query timeout duration.
 	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// workspace-level policy
 	// Disable exporting data in the SQL editor.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
-	// The size limit in bytes.
-	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-	MaximumResultSize int64 `protobuf:"varint,3,opt,name=maximum_result_size,json=maximumResultSize,proto3" json:"maximum_result_size,omitempty"`
+	// workspace-level policy
 	// The return rows limit.
 	// The default value is -1, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,4,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
+	// workspace-level policy
 	// Disable copying data.
 	DisableCopyData bool `protobuf:"varint,5,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
+	// workspace-level policy
+	AllowAdminDataSource bool `protobuf:"varint,9,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
 	// Restriction for admin data source queries.
 	AdminDataSourceRestriction QueryDataPolicy_Restriction `protobuf:"varint,6,opt,name=admin_data_source_restriction,json=adminDataSourceRestriction,proto3,enum=bytebase.store.QueryDataPolicy_Restriction" json:"admin_data_source_restriction,omitempty"`
 	// Disallow running DDL statements in the SQL editor.
@@ -593,13 +596,6 @@ func (x *QueryDataPolicy) GetDisableExport() bool {
 	return false
 }
 
-func (x *QueryDataPolicy) GetMaximumResultSize() int64 {
-	if x != nil {
-		return x.MaximumResultSize
-	}
-	return 0
-}
-
 func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 	if x != nil {
 		return x.MaximumResultRows
@@ -610,6 +606,13 @@ func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 func (x *QueryDataPolicy) GetDisableCopyData() bool {
 	if x != nil {
 		return x.DisableCopyData
+	}
+	return false
+}
+
+func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
+	if x != nil {
+		return x.AllowAdminDataSource
 	}
 	return false
 }
@@ -813,20 +816,20 @@ const file_store_policy_proto_rawDesc = "" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"@\n" +
 	"\tIamPolicy\x123\n" +
-	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xf7\x03\n" +
+	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\x84\x04\n" +
 	"\x0fQueryDataPolicy\x123\n" +
 	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12%\n" +
 	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12.\n" +
-	"\x13maximum_result_size\x18\x03 \x01(\x03R\x11maximumResultSize\x12.\n" +
 	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
-	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\x12n\n" +
+	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\x125\n" +
+	"\x17allow_admin_data_source\x18\t \x01(\bR\x14allowAdminDataSource\x12n\n" +
 	"\x1dadmin_data_source_restriction\x18\x06 \x01(\x0e2+.bytebase.store.QueryDataPolicy.RestrictionR\x1aadminDataSourceRestriction\x12!\n" +
 	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
 	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDml\"F\n" +
 	"\vRestriction\x12\x1b\n" +
 	"\x17RESTRICTION_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bFALLBACK\x10\x01\x12\f\n" +
-	"\bDISALLOW\x10\x02B\x8e\x01\n" +
+	"\bDISALLOW\x10\x02J\x04\b\x03\x10\x04B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vPolicyProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

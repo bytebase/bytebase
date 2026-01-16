@@ -173,7 +173,6 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { computed, ref, toRef, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
@@ -187,7 +186,7 @@ import type {
 import DataExportButton from "@/components/DataExportButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
-import { useSQLEditorStore, useSQLEditorTabStore, useSQLStore } from "@/store";
+import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
   useEffectiveQueryDataPolicyForProject,
   usePolicyV1Store,
@@ -236,10 +235,9 @@ defineEmits<{
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const tabStore = useSQLEditorTabStore();
-const { project } = storeToRefs(useSQLEditorStore());
 
 const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject(project);
+  useEffectiveQueryDataPolicyForProject();
 
 watchEffect(() => {
   const environment = props.database.effectiveEnvironment;

@@ -612,6 +612,14 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool enable_debug = 19;
    */
   enableDebug: boolean;
+
+  /**
+   * The maximum result size limit in bytes.
+   * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+   *
+   * @generated from field: int64 data_export_result_size = 20;
+   */
+  dataExportResultSize: bigint;
 };
 
 /**

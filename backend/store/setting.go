@@ -42,6 +42,19 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 	}
 }
 
+// GetDataExportResultSize gets the valid data_export_result_size from the workspace profile setting.
+func (s *Store) GetDataExportResultSize(ctx context.Context) (int64, error) {
+	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return 0, err
+	}
+	maximumResultSize := workspaceProfile.GetDataExportResultSize()
+	if maximumResultSize <= 0 {
+		maximumResultSize = common.DefaultMaximumSQLResultSize
+	}
+	return maximumResultSize, nil
+}
+
 // GetWorkspaceProfileSetting gets the workspace profile setting payload.
 func (s *Store) GetWorkspaceProfileSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
 	setting, err := s.GetSetting(ctx, storepb.SettingName_WORKSPACE_PROFILE)

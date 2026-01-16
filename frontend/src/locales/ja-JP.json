@@ -667,8 +667,7 @@
           "enable": "ウォーターマークをオンにする"
         },
         "data-export": {
-          "enable": "データのエクスポートを有効にする",
-          "description": "ユーザーがSQLエディタでデータをエクスポートできるようにする"
+          "enable": "データのエクスポートを有効にする"
         },
         "product-improvement": {
           "self": "製品改善",
@@ -744,7 +743,6 @@
           },
           "seconds": "秒",
           "project-scope": "プロジェクト",
-          "workspace-scope": "ワークスペース",
           "environment-scope": "環境",
           "tooltip": "{scope} レベルでも設定可能です。Bytebase は最も厳格な値を適用します。"
         },
@@ -1553,7 +1551,7 @@
     "production-environment": "本番環境",
     "access-control": {
       "title": "アクセス制御",
-      "disable-copy-data-from-sql-editor": "SQL エディタにおけるデータコピーの制限",
+      "disable-copy-data": "データのコピーを制限する",
       "restrict-admin-connection": {
         "self": "管理データソースのクエリを制限する",
         "disallow": "管理データソースからのデータのクエリを禁止する",

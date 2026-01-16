@@ -667,8 +667,7 @@
           "enable": "Bật hình mờ"
         },
         "data-export": {
-          "enable": "Bật xuất dữ liệu",
-          "description": "Cho phép người dùng xuất dữ liệu trong Trình soạn thảo SQL"
+          "enable": "Bật xuất dữ liệu"
         },
         "product-improvement": {
           "self": "Cải thiện Sản phẩm",
@@ -744,7 +743,6 @@
           },
           "seconds": "Giây",
           "project-scope": "dự án",
-          "workspace-scope": "không gian làm việc",
           "environment-scope": "môi trường",
           "tooltip": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ áp dụng giá trị nghiêm ngặt nhất."
         },
@@ -1553,7 +1551,7 @@
     "production-environment": "Môi trường sản xuất",
     "access-control": {
       "title": "Kiểm soát truy cập",
-      "disable-copy-data-from-sql-editor": "Hạn chế sao chép dữ liệu trong Trình soạn thảo SQL",
+      "disable-copy-data": "Hạn chế sao chép dữ liệu",
       "restrict-admin-connection": {
         "self": "Hạn chế truy vấn nguồn dữ liệu quản trị",
         "disallow": "Không cho phép truy vấn dữ liệu từ nguồn dữ liệu quản trị",

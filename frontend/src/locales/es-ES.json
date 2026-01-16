@@ -667,8 +667,7 @@
           "enable": "Activar marca de agua"
         },
         "data-export": {
-          "enable": "Habilitar la exportación de datos",
-          "description": "Permitir a los usuarios exportar datos en el Editor SQL"
+          "enable": "Habilitar la exportación de datos"
         },
         "product-improvement": {
           "self": "Mejora del Producto",
@@ -744,7 +743,6 @@
           },
           "seconds": "Artículos de segunda clase",
           "project-scope": "proyecto",
-          "workspace-scope": "espacio de trabajo",
           "environment-scope": "ambiente",
           "tooltip": "También es configurable a nivel {scope}. Bytebase aplicará el valor más estricto."
         },
@@ -1553,7 +1551,7 @@
     "production-environment": "Entorno de producción",
     "access-control": {
       "title": "Control de Acceso",
-      "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL",
+      "disable-copy-data": "Restringir la copia de datos",
       "restrict-admin-connection": {
         "self": "Restringir la consulta de la fuente de datos de administración",
         "disallow": "No permitir la consulta de datos desde la fuente de datos de administración",

@@ -297,12 +297,13 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
 
 /**
- * QueryDataPolicy is the policy configuration for querying data.
+ * QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
  *
  * @generated from message bytebase.v1.QueryDataPolicy
  */
 export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   /**
+   * workspace-level policy
    * The query timeout duration.
    *
    * @generated from field: google.protobuf.Duration timeout = 1;
@@ -310,34 +311,36 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   timeout?: Duration;
 
   /**
-   * Disable data export in the SQL editor.
-   *
-   * @generated from field: bool disable_export = 2;
-   */
-  disableExport: boolean;
-
-  /**
-   * The maximum result size limit in bytes.
-   * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-   *
-   * @generated from field: int64 maximum_result_size = 3;
-   */
-  maximumResultSize: bigint;
-
-  /**
+   * workspace-level policy
    * The maximum number of rows to return.
    * The default value is -1, means no limit.
    *
-   * @generated from field: int32 maximum_result_rows = 4;
+   * @generated from field: int32 maximum_result_rows = 2;
    */
   maximumResultRows: number;
 
   /**
+   * workspace-level policy
+   * Disable data export in the SQL editor.
+   *
+   * @generated from field: bool disable_export = 3;
+   */
+  disableExport: boolean;
+
+  /**
+   * workspace-level policy
    * Disable copying query results.
    *
-   * @generated from field: bool disable_copy_data = 5;
+   * @generated from field: bool disable_copy_data = 4;
    */
   disableCopyData: boolean;
+
+  /**
+   * workspace-level policy
+   *
+   * @generated from field: bool allow_admin_data_source = 5;
+   */
+  allowAdminDataSource: boolean;
 
   /**
    * Restriction for admin data source queries.
@@ -347,6 +350,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   adminDataSourceRestriction: QueryDataPolicy_Restriction;
 
   /**
+   * current scope: env
    * Disallow running DDL statements in the SQL editor.
    *
    * @generated from field: bool disallow_ddl = 7;
@@ -354,6 +358,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   disallowDdl: boolean;
 
   /**
+   * current scope: env
    * Disallow running DML statements in the SQL editor.
    *
    * @generated from field: bool disallow_dml = 8;
@@ -368,6 +373,10 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
 
 /**
+ * ===================================
+ * TODO(ed):
+ * plan to deprecate following fields
+ * current scope: env + project
  * Restriction level for admin data source access.
  *
  * @generated from enum bytebase.v1.QueryDataPolicy.Restriction

@@ -387,6 +387,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.EnableDebug != y.EnableDebug {
 		return false
 	}
+	if x.DataExportResultSize != y.DataExportResultSize {
+		return false
+	}
 	return true
 }
 

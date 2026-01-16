@@ -5833,19 +5833,19 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 <a name="bytebase-v1-QueryDataPolicy"></a>
 
 ### QueryDataPolicy
-QueryDataPolicy is the policy configuration for querying data.
+QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
-| disable_export | [bool](#bool) |  | Disable data export in the SQL editor. |
-| maximum_result_size | [int64](#int64) |  | The maximum result size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-| maximum_result_rows | [int32](#int32) |  | The maximum number of rows to return. The default value is -1, means no limit. |
-| disable_copy_data | [bool](#bool) |  | Disable copying query results. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | workspace-level policy The query timeout duration. |
+| maximum_result_rows | [int32](#int32) |  | workspace-level policy The maximum number of rows to return. The default value is -1, means no limit. |
+| disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
+| disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results. |
+| allow_admin_data_source | [bool](#bool) |  | workspace-level policy |
 | admin_data_source_restriction | [QueryDataPolicy.Restriction](#bytebase-v1-QueryDataPolicy-Restriction) |  | Restriction for admin data source queries. |
-| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
-| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
+| disallow_ddl | [bool](#bool) |  | current scope: env Disallow running DDL statements in the SQL editor. |
+| disallow_dml | [bool](#bool) |  | current scope: env Disallow running DML statements in the SQL editor. |
 
 
 
@@ -5953,6 +5953,10 @@ The type of organizational policy.
 <a name="bytebase-v1-QueryDataPolicy-Restriction"></a>
 
 ### QueryDataPolicy.Restriction
+===================================
+TODO(ed):
+plan to deprecate following fields
+current scope: env &#43; project
 Restriction level for admin data source access.
 
 | Name | Number | Description |
@@ -9991,6 +9995,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
+| data_export_result_size | [int64](#int64) |  | The maximum result size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 
 
 

@@ -281,25 +281,32 @@ message RolloutPolicy {
   repeated string roles = 2;
 }
 
-// QueryDataPolicy is the policy configuration for querying data.
+// QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 message QueryDataPolicy {
+  // workspace-level policy
   // The query timeout duration.
   google.protobuf.Duration timeout = 1;
 
-  // Disable data export in the SQL editor.
-  bool disable_export = 2;
-
-  // The maximum result size limit in bytes.
-  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 maximum_result_size = 3;
-
+  // workspace-level policy
   // The maximum number of rows to return.
   // The default value is -1, means no limit.
-  int32 maximum_result_rows = 4;
+  int32 maximum_result_rows = 2;
 
+  // workspace-level policy
+  // Disable data export in the SQL editor.
+  bool disable_export = 3;
+
+  // workspace-level policy
   // Disable copying query results.
-  bool disable_copy_data = 5;
+  bool disable_copy_data = 4;
 
+  // workspace-level policy
+  bool allow_admin_data_source = 5;
+
+  // ===================================
+  // TODO(ed):
+  // plan to deprecate following fields
+  // current scope: env + project
   // Restriction level for admin data source access.
   enum Restriction {
     // Unspecified restriction.
@@ -311,9 +318,10 @@ message QueryDataPolicy {
   }
   // Restriction for admin data source queries.
   Restriction admin_data_source_restriction = 6;
-
+  // current scope: env
   // Disallow running DDL statements in the SQL editor.
   bool disallow_ddl = 7;
+  // current scope: env
   // Disallow running DML statements in the SQL editor.
   bool disallow_dml = 8;
 }

@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"strings"
 	"time"
 
 	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
@@ -161,18 +159,12 @@ func (exec *DataExportExecutor) executeExport(
 	}
 
 	// 2. Get query restrictions from workspace policy
-	queryRestriction := exec.getEffectiveQueryDataPolicy(ctx, database.ProjectID)
+	maximumSQLResultSize := exec.getDataExportResultSizeLimit(ctx)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
-		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
-		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-	}
-	if queryRestriction.MaxQueryTimeoutInSeconds > 0 {
-		queryContext.Timeout = &durationpb.Duration{
-			Seconds: queryRestriction.MaxQueryTimeoutInSeconds,
-		}
+		MaximumSQLResultSize: maximumSQLResultSize,
 	}
 
 	// 4. Execute query with timeout
@@ -203,27 +195,16 @@ func (exec *DataExportExecutor) executeExport(
 	return exec.formatAndZipResults(ctx, results, instance, database, format, statement)
 }
 
-// getEffectiveQueryDataPolicy gets the effective query data policy for a project.
-func (exec *DataExportExecutor) getEffectiveQueryDataPolicy(
+// getDataExportResultSizeLimit gets the export result size limit.
+func (exec *DataExportExecutor) getDataExportResultSizeLimit(
 	ctx context.Context,
-	projectID string,
-) *store.EffectiveQueryDataPolicy {
-	value := &store.EffectiveQueryDataPolicy{
-		MaximumResultSize: common.DefaultMaximumSQLResultSize,
-		MaximumResultRows: math.MaxInt32,
+) int64 {
+	maximumResultSize, err := exec.store.GetDataExportResultSize(ctx)
+	if err != nil {
+		slog.Error("failed to get the query data policy", log.BBError(err))
+		return common.DefaultMaximumSQLResultSize
 	}
-	if err := exec.license.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		policy, err := exec.store.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(projectID))
-		if err != nil {
-			slog.Error("failed to get the query data policy", log.BBError(err))
-			return value
-		}
-		value = policy
-	}
-	if value.MaximumResultRows == math.MaxInt32 {
-		value.MaximumResultRows = 0
-	}
-	return value
+	return maximumResultSize
 }
 
 // formatAndZipResults formats query results and packages them into a ZIP archive.

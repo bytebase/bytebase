@@ -17124,32 +17124,34 @@ components:
       properties:
         timeout:
           title: timeout
-          description: The query timeout duration.
-          $ref: '#/components/schemas/google.protobuf.Duration'
-        disableExport:
-          type: boolean
-          title: disable_export
-          description: Disable data export in the SQL editor.
-        maximumResultSize:
-          type:
-            - integer
-            - string
-          title: maximum_result_size
-          format: int64
           description: |-
-            The maximum result size limit in bytes.
-             The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+            workspace-level policy
+             The query timeout duration.
+          $ref: '#/components/schemas/google.protobuf.Duration'
         maximumResultRows:
           type: integer
           title: maximum_result_rows
           format: int32
           description: |-
-            The maximum number of rows to return.
+            workspace-level policy
+             The maximum number of rows to return.
              The default value is -1, means no limit.
+        disableExport:
+          type: boolean
+          title: disable_export
+          description: |-
+            workspace-level policy
+             Disable data export in the SQL editor.
         disableCopyData:
           type: boolean
           title: disable_copy_data
-          description: Disable copying query results.
+          description: |-
+            workspace-level policy
+             Disable copying query results.
+        allowAdminDataSource:
+          type: boolean
+          title: allow_admin_data_source
+          description: workspace-level policy
         adminDataSourceRestriction:
           title: admin_data_source_restriction
           description: Restriction for admin data source queries.
@@ -17157,14 +17159,18 @@ components:
         disallowDdl:
           type: boolean
           title: disallow_ddl
-          description: Disallow running DDL statements in the SQL editor.
+          description: |-
+            current scope: env
+             Disallow running DDL statements in the SQL editor.
         disallowDml:
           type: boolean
           title: disallow_dml
-          description: Disallow running DML statements in the SQL editor.
+          description: |-
+            current scope: env
+             Disallow running DML statements in the SQL editor.
       title: QueryDataPolicy
       additionalProperties: false
-      description: QueryDataPolicy is the policy configuration for querying data.
+      description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
     bytebase.v1.QueryDataPolicy.Restriction:
       type: string
       title: Restriction
@@ -17172,7 +17178,12 @@ components:
         - RESTRICTION_UNSPECIFIED
         - FALLBACK
         - DISALLOW
-      description: Restriction level for admin data source access.
+      description: |-
+        ===================================
+         TODO(ed):
+         plan to deprecate following fields
+         current scope: env + project
+         Restriction level for admin data source access.
     bytebase.v1.QueryHistory:
       type: object
       properties:
@@ -21641,6 +21652,15 @@ components:
           type: boolean
           title: enable_debug
           description: Whether debug mode is enabled.
+        dataExportResultSize:
+          type:
+            - integer
+            - string
+          title: data_export_result_size
+          format: int64
+          description: |-
+            The maximum result size limit in bytes.
+             The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

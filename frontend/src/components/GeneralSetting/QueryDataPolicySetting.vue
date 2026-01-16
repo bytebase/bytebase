@@ -1,10 +1,8 @@
 <template>
-  <div v-if="hasGetPermission" class="flex-1 flex flex-col gap-y-6">
-    <div>
-      <div class="flex items-center gap-x-2">
+  <div class="flex-1 flex flex-col gap-y-6">
+    <div class="w-full inline-flex items-center gap-x-2">
         <PermissionGuardWrapper
           v-slot="slotProps"
-          :project="project"
           :permissions="[
             'bb.policies.update'
           ]"
@@ -19,25 +17,29 @@
         <span class="font-medium">
           {{ $t("settings.general.workspace.data-export.enable") }}
         </span>
-        <NTooltip v-if="tooltip">
-          <template #trigger>
-            <CircleQuestionMarkIcon class="w-4 textinfolabel" />
-          </template>
-          <span>
-            {{ tooltip }}
-          </span>
-        </NTooltip>
       </div>
-      <div class="mt-1 text-sm text-gray-400">
-        {{ $t("settings.general.workspace.data-export.description") }}
+    <div class="w-full inline-flex items-center gap-x-2">
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
+          <Switch
+            v-model:value="disableCopyData"
+            :text="true"
+            :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
+          />
+        </PermissionGuardWrapper>
+        <span class="textlabel">
+          {{ t("environment.access-control.disable-copy-data") }}
+        </span>
+        <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
       </div>
-    </div>
     <MaximumSQLResultSizeSetting
       ref="maximumSQLResultSizeSettingRef"
       :resource="resource"
       :policy="policyPayload"
-      :tooltip="tooltip"
-      :project="project"
     />
     <div>
       <p class="font-medium flex flex-row justify-start items-center">
@@ -45,14 +47,6 @@
           {{ $t("settings.general.workspace.query-data-policy.timeout.self") }}
         </span>
         <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
-        <NTooltip v-if="tooltip">
-          <template #trigger>
-            <CircleQuestionMarkIcon class="w-4 textinfolabel" />
-          </template>
-          <span>
-            {{ tooltip }}
-          </span>
-        </NTooltip>
       </p>
       <p class="text-sm text-gray-400 mt-1">
         {{
@@ -65,7 +59,6 @@
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <PermissionGuardWrapper
           v-slot="slotProps"
-          :project="project"
           :permissions="[
             'bb.policies.update'
           ]"
@@ -91,8 +84,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
-import { CircleQuestionMarkIcon } from "lucide-vue-next";
-import { NInputNumber, NTooltip } from "naive-ui";
+import { NInputNumber } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
@@ -101,17 +93,13 @@ import {
   featureToRef,
   usePolicyByParentAndType,
   usePolicyV1Store,
-  useProjectV1Store,
 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { isValidProjectName } from "@/types";
 import {
   PolicyResourceType,
   PolicyType,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 
@@ -120,38 +108,9 @@ const props = defineProps<{
 }>();
 
 const policyV1Store = usePolicyV1Store();
-const projectStore = useProjectV1Store();
 
 const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
-
-const project = computed(() => {
-  if (props.resource.startsWith(projectNamePrefix)) {
-    const proj = projectStore.getProjectByName(props.resource);
-    if (!isValidProjectName(proj.name)) {
-      return undefined;
-    }
-    return proj;
-  }
-  return undefined;
-});
-
-const hasGetPermission = computed(() => {
-  if (project.value) {
-    return hasProjectPermissionV2(project.value, "bb.policies.get");
-  }
-  return hasWorkspacePermissionV2("bb.policies.get");
-});
-
-const tooltip = computed(() => {
-  if (project.value) {
-    return t("settings.general.workspace.query-data-policy.tooltip", {
-      scope: t("settings.general.workspace.query-data-policy.workspace-scope"),
-    });
-  }
-  return t("settings.general.workspace.query-data-policy.tooltip", {
-    scope: t("settings.general.workspace.query-data-policy.project-scope"),
-  });
-});
+const hasRestrictCopyingDataFeature = featureToRef(PlanFeature.FEATURE_RESTRICT_COPYING_DATA)
 
 const { ready } = usePolicyByParentAndType(
   computed(() => ({
@@ -171,6 +130,7 @@ const initialMaxQueryTimeInseconds = computed(() =>
 // limit in seconds.
 const maxQueryTimeInseconds = ref<number>(initialMaxQueryTimeInseconds.value);
 const disableExport = ref(policyPayload.value.disableExport);
+const disableCopyData = ref(policyPayload.value.disableCopyData);
 
 const maximumSQLResultSizeSettingRef =
   ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
@@ -178,6 +138,7 @@ const maximumSQLResultSizeSettingRef =
 const revert = () => {
   maxQueryTimeInseconds.value = initialMaxQueryTimeInseconds.value;
   disableExport.value = policyPayload.value.disableExport;
+  disableCopyData.value = policyPayload.value.disableCopyData;
   maximumSQLResultSizeSettingRef.value?.revert();
 };
 
@@ -194,6 +155,7 @@ const isDirty = computed(() => {
   return (
     maxQueryTimeInseconds.value !== initialMaxQueryTimeInseconds.value ||
     disableExport.value !== policyPayload.value.disableExport ||
+    disableCopyData.value !== policyPayload.value.disableCopyData ||
     maximumSQLResultSizeSettingRef.value?.isDirty
   );
 });
@@ -212,6 +174,7 @@ const updateChange = async () => {
         value: create(QueryDataPolicySchema, {
           ...policyPayload.value,
           disableExport: disableExport.value,
+          disableCopyData: disableCopyData.value,
           timeout: create(DurationSchema, {
             seconds: BigInt(maxQueryTimeInseconds.value),
           }),

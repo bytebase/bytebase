@@ -132,12 +132,12 @@ const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 
-const { redisCommandOption, resultRowsLimit, project } = storeToRefs(
+const { redisCommandOption, resultRowsLimit } = storeToRefs(
   useSQLEditorStore()
 );
 
 const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject(project);
+  useEffectiveQueryDataPolicyForProject();
 
 const { dataSourceRestriction } = useDataSourceRestrictionPolicy(database);
 

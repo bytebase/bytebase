@@ -101,24 +101,33 @@ message IamPolicy {
   repeated Binding bindings = 1;
 }
 
-// QueryDataPolicy is the policy configuration for querying data.
+// QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 message QueryDataPolicy {
+  reserved 3;
+
+  // workspace-level policy
   // The query timeout duration.
   google.protobuf.Duration timeout = 1;
 
+  // workspace-level policy
   // Disable exporting data in the SQL editor.
   bool disable_export = 2;
 
-  // The size limit in bytes.
-  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 maximum_result_size = 3;
-
+  // workspace-level policy
   // The return rows limit.
   // The default value is -1, means no limit.
   int32 maximum_result_rows = 4;
 
+  // workspace-level policy
   // Disable copying data.
   bool disable_copy_data = 5;
+
+  // workspace-level policy
+  bool allow_admin_data_source = 9;
+
+  // ===================================
+  // TODO(ed):
+  // plan to deprecate following fields
 
   enum Restriction {
     RESTRICTION_UNSPECIFIED = 0;

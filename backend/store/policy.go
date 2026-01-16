@@ -214,10 +214,6 @@ type EffectiveQueryDataPolicy struct {
 }
 
 func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQueryDataPolicy {
-	maximumResultSize := policy.GetMaximumResultSize()
-	if maximumResultSize <= 0 {
-		maximumResultSize = common.DefaultMaximumSQLResultSize
-	}
 	maximumResultRows := policy.GetMaximumResultRows()
 	if maximumResultRows <= 0 {
 		maximumResultRows = math.MaxInt32
@@ -228,7 +224,6 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	}
 
 	return &EffectiveQueryDataPolicy{
-		MaximumResultSize:          maximumResultSize,
 		MaximumResultRows:          maximumResultRows,
 		MaxQueryTimeoutInSeconds:   timeoutInSeconds,
 		DisableCopyData:            policy.GetDisableCopyData(),
@@ -252,7 +247,6 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, project string)
 	formatPorjectPolicy := formatEffectiveQueryDataPolicy(projectPolicy)
 	formatWorkspacePolicy := formatEffectiveQueryDataPolicy(workspacePolicy)
 
-	maximumResultSize := min(formatPorjectPolicy.MaximumResultSize, formatWorkspacePolicy.MaximumResultSize)
 	maximumResultRows := min(formatPorjectPolicy.MaximumResultRows, formatWorkspacePolicy.MaximumResultRows)
 	maximumTimeout := min(formatPorjectPolicy.MaxQueryTimeoutInSeconds, formatWorkspacePolicy.MaxQueryTimeoutInSeconds)
 
@@ -262,11 +256,16 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, project string)
 		adminRestriction = formatWorkspacePolicy.AdminDataSourceRestriction
 	}
 
+	maximumResultSize, err := s.GetDataExportResultSize(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &EffectiveQueryDataPolicy{
 		DisableCopyData:            formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
 		DisableExport:              formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
-		MaximumResultSize:          maximumResultSize,
 		MaximumResultRows:          maximumResultRows,
+		MaximumResultSize:          maximumResultSize,
 		MaxQueryTimeoutInSeconds:   maximumTimeout,
 		AdminDataSourceRestriction: adminRestriction,
 		DisallowDDL:                formatPorjectPolicy.DisallowDDL || formatWorkspacePolicy.DisallowDDL,

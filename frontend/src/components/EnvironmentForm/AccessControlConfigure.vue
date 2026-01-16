@@ -1,4 +1,5 @@
 <template>
+  <!-- TODO(ed): deprecate and use the disallow_admin_data_source in the workspace level instead -->
   <div v-if="hasGetPermission" class="flex flex-col gap-y-2">
     <div class="font-medium flex items-center gap-x-2">
       <label>
@@ -14,25 +15,6 @@
       </NTooltip>
     </div>
     <div class="flex flex-col gap-y-2">
-      <div class="w-full inline-flex items-center gap-x-2">
-        <PermissionGuardWrapper
-          v-slot="slotProps"
-          :project="project"
-          :permissions="[
-            'bb.policies.update'
-          ]"
-        >
-          <Switch
-            v-model:value="state.disableCopyData"
-            :text="true"
-            :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
-          />
-        </PermissionGuardWrapper>
-        <span class="textlabel">
-          {{ t("environment.access-control.disable-copy-data-from-sql-editor") }}
-        </span>
-        <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
-      </div>
       <div class="">
         <div class="w-full inline-flex items-center gap-x-2">
           <PermissionGuardWrapper
@@ -240,10 +222,6 @@ const adminDataSourceQueryRestrictionEnabled = computed(() => {
 
 const hasRestrictQueryDataSourceFeature = computed(() =>
   hasFeature(PlanFeature.FEATURE_QUERY_POLICY)
-);
-
-const hasRestrictCopyingDataFeature = computed(() =>
-  hasFeature(PlanFeature.FEATURE_RESTRICT_COPYING_DATA)
 );
 
 const updateQueryDataPolicy = async () => {

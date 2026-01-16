@@ -667,8 +667,7 @@
           "enable": "开启水印"
         },
         "data-export": {
-          "enable": "启用数据导出",
-          "description": "允许用户在 SQL 编辑器里导出数据"
+          "enable": "启用数据导出"
         },
         "product-improvement": {
           "self": "产品改进",
@@ -744,7 +743,6 @@
           },
           "seconds": "秒",
           "project-scope": "项目",
-          "workspace-scope": "工作区",
           "environment-scope": "环境",
           "tooltip": "也可在 {scope} 级别进行配置。Bytebase 将应用最严格的值。"
         },
@@ -1553,7 +1551,7 @@
     "production-environment": "生产环境",
     "access-control": {
       "title": "访问控制",
-      "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制",
+      "disable-copy-data": "限制复制数据",
       "restrict-admin-connection": {
         "self": "限制查询主数据源",
         "disallow": "不允许从主数据源查询数据",

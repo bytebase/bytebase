@@ -148,6 +148,10 @@ func (PolicyResourceType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{1}
 }
 
+// ===================================
+// TODO(ed):
+// plan to deprecate following fields
+// current scope: env + project
 // Restriction level for admin data source access.
 type QueryDataPolicy_Restriction int32
 
@@ -781,25 +785,30 @@ func (x *RolloutPolicy) GetRoles() []string {
 	return nil
 }
 
-// QueryDataPolicy is the policy configuration for querying data.
+// QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// workspace-level policy
 	// The query timeout duration.
 	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	// Disable data export in the SQL editor.
-	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
-	// The maximum result size limit in bytes.
-	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-	MaximumResultSize int64 `protobuf:"varint,3,opt,name=maximum_result_size,json=maximumResultSize,proto3" json:"maximum_result_size,omitempty"`
+	// workspace-level policy
 	// The maximum number of rows to return.
 	// The default value is -1, means no limit.
-	MaximumResultRows int32 `protobuf:"varint,4,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
+	MaximumResultRows int32 `protobuf:"varint,2,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
+	// workspace-level policy
+	// Disable data export in the SQL editor.
+	DisableExport bool `protobuf:"varint,3,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
+	// workspace-level policy
 	// Disable copying query results.
-	DisableCopyData bool `protobuf:"varint,5,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
+	DisableCopyData bool `protobuf:"varint,4,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
+	// workspace-level policy
+	AllowAdminDataSource bool `protobuf:"varint,5,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
 	// Restriction for admin data source queries.
 	AdminDataSourceRestriction QueryDataPolicy_Restriction `protobuf:"varint,6,opt,name=admin_data_source_restriction,json=adminDataSourceRestriction,proto3,enum=bytebase.v1.QueryDataPolicy_Restriction" json:"admin_data_source_restriction,omitempty"`
+	// current scope: env
 	// Disallow running DDL statements in the SQL editor.
 	DisallowDdl bool `protobuf:"varint,7,opt,name=disallow_ddl,json=disallowDdl,proto3" json:"disallow_ddl,omitempty"`
+	// current scope: env
 	// Disallow running DML statements in the SQL editor.
 	DisallowDml   bool `protobuf:"varint,8,opt,name=disallow_dml,json=disallowDml,proto3" json:"disallow_dml,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -843,20 +852,6 @@ func (x *QueryDataPolicy) GetTimeout() *durationpb.Duration {
 	return nil
 }
 
-func (x *QueryDataPolicy) GetDisableExport() bool {
-	if x != nil {
-		return x.DisableExport
-	}
-	return false
-}
-
-func (x *QueryDataPolicy) GetMaximumResultSize() int64 {
-	if x != nil {
-		return x.MaximumResultSize
-	}
-	return 0
-}
-
 func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 	if x != nil {
 		return x.MaximumResultRows
@@ -864,9 +859,23 @@ func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
 	return 0
 }
 
+func (x *QueryDataPolicy) GetDisableExport() bool {
+	if x != nil {
+		return x.DisableExport
+	}
+	return false
+}
+
 func (x *QueryDataPolicy) GetDisableCopyData() bool {
 	if x != nil {
 		return x.DisableCopyData
+	}
+	return false
+}
+
+func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
+	if x != nil {
+		return x.AllowAdminDataSource
 	}
 	return false
 }
@@ -1232,13 +1241,13 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x06policy\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xf4\x03\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xfb\x03\n" +
 	"\x0fQueryDataPolicy\x123\n" +
-	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12%\n" +
-	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12.\n" +
-	"\x13maximum_result_size\x18\x03 \x01(\x03R\x11maximumResultSize\x12.\n" +
-	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
-	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\x12k\n" +
+	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12.\n" +
+	"\x13maximum_result_rows\x18\x02 \x01(\x05R\x11maximumResultRows\x12%\n" +
+	"\x0edisable_export\x18\x03 \x01(\bR\rdisableExport\x12*\n" +
+	"\x11disable_copy_data\x18\x04 \x01(\bR\x0fdisableCopyData\x125\n" +
+	"\x17allow_admin_data_source\x18\x05 \x01(\bR\x14allowAdminDataSource\x12k\n" +
 	"\x1dadmin_data_source_restriction\x18\x06 \x01(\x0e2(.bytebase.v1.QueryDataPolicy.RestrictionR\x1aadminDataSourceRestriction\x12!\n" +
 	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
 	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDml\"F\n" +

@@ -29,8 +29,6 @@ interface PolicyState {
   policyMapByName: Map<string, Policy>;
 }
 
-export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
-
 export const replacePolicyTypeNameToLowerCase = (name: string) => {
   const pattern = /(^|\/)policies\/([^/]+)($|\/)/;
   const replaced = name.replace(
@@ -58,9 +56,6 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
     return policy?.policy?.case === "queryDataPolicy"
       ? policy.policy.value
       : create(QueryDataPolicySchema, {
-          maximumResultSize: BigInt(
-            DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024
-          ),
           maximumResultRows: -1,
           timeout: create(DurationSchema, {
             seconds: BigInt(0),
@@ -177,13 +172,9 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
 });
 
 const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
-  let maximumResultSize = Number(policy.maximumResultSize);
   let maximumResultRows = policy.maximumResultRows;
   let queryTimeoutInSeconds = Number(policy.timeout?.seconds ?? 0);
 
-  if (maximumResultSize <= 0) {
-    maximumResultSize = DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024;
-  }
   if (maximumResultRows <= 0) {
     maximumResultRows = Number.MAX_VALUE;
   }
@@ -194,7 +185,6 @@ const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
   return {
     disableCopyData: policy.disableCopyData,
     disableExport: policy.disableExport,
-    maximumResultSize,
     maximumResultRows,
     queryTimeoutInSeconds,
   };
@@ -253,6 +243,7 @@ export const usePolicyByParentAndType = (
   };
 };
 
+// TODO(ed): deprecate and use allow_admin_data_source instead.
 export const useDataSourceRestrictionPolicy = (
   database: MaybeRef<ComposedDatabase>
 ) => {
@@ -303,53 +294,21 @@ export const useDataSourceRestrictionPolicy = (
 };
 
 export const useEffectiveQueryDataPolicyForProject = (
-  project: MaybeRef<string>
 ) => {
   const store = usePolicyV1Store();
   const ready = ref(false);
 
   watchEffect(() => {
-    const projectName = unref(project);
-    // Fetch both workspace-level and project-level DATA_QUERY policies
-    Promise.all([
-      store.getOrFetchPolicyByParentAndType({
+    // Fetch workspace-level DATA_QUERY policies
+    store.getOrFetchPolicyByParentAndType({
         parentPath: "",
         policyType: PolicyType.DATA_QUERY,
-      }),
-      store.getOrFetchPolicyByParentAndType({
-        parentPath: projectName,
-        policyType: PolicyType.DATA_QUERY,
-      }),
-    ]).finally(() => (ready.value = true));
+      }).finally(() => (ready.value = true));
   });
 
-  const policy = computed(() => {
-    const workspacePolicy = formatQueryDataPolicy(
+  const policy = computed(() => formatQueryDataPolicy(
       store.getQueryDataPolicyByParent("")
-    );
-    const projectPolicy = formatQueryDataPolicy(
-      store.getQueryDataPolicyByParent(unref(project))
-    );
-
-    return {
-      disableCopyData:
-        projectPolicy.disableCopyData || workspacePolicy.disableCopyData,
-      disableExport:
-        projectPolicy.disableExport || workspacePolicy.disableExport,
-      maximumResultRows: Math.min(
-        projectPolicy.maximumResultRows,
-        workspacePolicy.maximumResultRows
-      ),
-      maximumResultSize: Math.min(
-        projectPolicy.maximumResultSize,
-        workspacePolicy.maximumResultSize
-      ),
-      queryTimeoutInSeconds: Math.min(
-        projectPolicy.queryTimeoutInSeconds,
-        workspacePolicy.queryTimeoutInSeconds
-      ),
-    };
-  });
+    ));
 
   return {
     policy,

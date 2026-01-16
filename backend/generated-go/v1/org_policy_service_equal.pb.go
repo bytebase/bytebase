@@ -185,16 +185,16 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if p, q := x.Timeout, y.Timeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.DisableExport != y.DisableExport {
-		return false
-	}
-	if x.MaximumResultSize != y.MaximumResultSize {
-		return false
-	}
 	if x.MaximumResultRows != y.MaximumResultRows {
 		return false
 	}
+	if x.DisableExport != y.DisableExport {
+		return false
+	}
 	if x.DisableCopyData != y.DisableCopyData {
+		return false
+	}
+	if x.AllowAdminDataSource != y.AllowAdminDataSource {
 		return false
 	}
 	if x.AdminDataSourceRestriction != y.AdminDataSourceRestriction {
