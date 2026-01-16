@@ -2,6 +2,9 @@ package secret
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"net/http"
 
 	"github.com/pkg/errors"
 
@@ -15,26 +18,34 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 	config := vault.DefaultConfig()
 	config.Address = externalSecret.Url
 
-	// Configure TLS based on Vault-specific TLS settings
-	tlsConfig := &vault.TLSConfig{
-		// Use skip_vault_tls_verification from ExternalSecret
-		// Default is false (verification enabled) for security
-		Insecure: externalSecret.SkipVaultTlsVerification,
+	// Build TLS config manually to use certificate content instead of file paths
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: externalSecret.SkipVaultTlsVerification,
 	}
 
-	// If custom CA certificate is provided for Vault, use it
+	// Add CA certificate from bytes
 	if externalSecret.VaultSslCa != "" {
-		tlsConfig.CACertBytes = []byte(externalSecret.VaultSslCa)
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM([]byte(externalSecret.VaultSslCa)) {
+			return nil, errors.Errorf("failed to parse CA certificate")
+		}
+		tlsConfig.RootCAs = caCertPool
 	}
 
-	// Configure client certificate for Vault if provided
+	// Add client certificate from bytes
 	if externalSecret.VaultSslCert != "" && externalSecret.VaultSslKey != "" {
-		tlsConfig.ClientCert = externalSecret.VaultSslCert
-		tlsConfig.ClientKey = externalSecret.VaultSslKey
+		cert, err := tls.X509KeyPair([]byte(externalSecret.VaultSslCert), []byte(externalSecret.VaultSslKey))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to load client certificate")
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 
-	if err := config.ConfigureTLS(tlsConfig); err != nil {
-		return nil, errors.Wrapf(err, "failed to configure TLS")
+	// Create HTTP client with custom TLS transport
+	config.HttpClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
 	}
 
 	client, err := vault.NewClient(config)

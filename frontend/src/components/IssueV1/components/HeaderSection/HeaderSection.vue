@@ -15,6 +15,15 @@
     </div>
 
     <div class="flex flex-row items-center justify-end">
+      <router-link v-if="rolloutRoute" :to="rolloutRoute">
+        <NButton quaternary size="small">
+          <template #icon>
+            <ExternalLinkIcon class="w-4 h-4" />
+          </template>
+          {{ $t("common.rollout") }}
+        </NButton>
+      </router-link>
+
       <Actions />
 
       <NButton
@@ -31,18 +40,38 @@
 </template>
 
 <script lang="ts" setup>
-import { MenuIcon } from "lucide-vue-next";
+import { ExternalLinkIcon, MenuIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
+import type { RouteLocationRaw } from "vue-router";
 import { useSidebarContext } from "@/components/Plan";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { activeTaskInRollout, isDatabaseChangeRelatedIssue } from "@/utils";
+import {
+  activeTaskInRollout,
+  extractPlanUID,
+  extractProjectResourceName,
+  isDatabaseChangeRelatedIssue,
+} from "@/utils";
 import { useIssueContext } from "../../logic";
 import IssueStatusIcon from "../IssueStatusIcon.vue";
 import Actions from "./Actions";
 import Title from "./Title.vue";
 
 const { isCreating, issue } = useIssueContext();
+
+const rolloutRoute = computed((): RouteLocationRaw | undefined => {
+  const plan = issue.value.planEntity;
+  if (!plan || !plan.hasRollout) return undefined;
+
+  return {
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+    params: {
+      projectId: extractProjectResourceName(plan.name),
+      planId: extractPlanUID(plan.name),
+    },
+  };
+});
 
 const issueTaskStatus = computed(() => {
   // For grant request issue, we always show the status as "NOT_STARTED" as task status.

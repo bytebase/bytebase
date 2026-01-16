@@ -207,8 +207,10 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "untitled": "未命名",
-    "missing-required-permission": "缺少必需的权限",
+    "missing-required-permission": "缺少必需的权限 {permissions}",
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
+    "only-creator-allowed-action": "只有创建者才能执行此操作",
+    "only-creator-allowed-export": "只有创建者才能执行导出",
     "required-permission": "所需权限",
     "resource-not-found": "未找到请求的资源",
     "continue-anyway": "仍要继续",
@@ -404,7 +406,8 @@
     "deploy": "本地部署",
     "cloud": "云服务",
     "request-demo": "预约一个 30 分钟的产品演示。",
-    "external-url": "Bytebase 还没有配置 --external-url"
+    "external-url": "Bytebase 还没有配置 --external-url",
+    "ha-not-licensed": "检测到多个副本但没有 HA 许可证。后端任务运行器已禁用。"
   },
   "bbkit": {
     "confirm-button": {
@@ -651,7 +654,6 @@
         "id": "工作空间 ID",
         "id-description": "唯一且只读的工作空间 ID",
         "branding": "品牌",
-        "only-admin-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "select-logo": "选择",
@@ -659,6 +661,7 @@
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "security": "安全",
         "account": "帐户",
+        "log": "日志",
         "watermark": {
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "enable": "开启水印"
@@ -673,9 +676,11 @@
           "description": "通过分享匿名使用数据帮助改进 Bytebase"
         },
         "audit-log-stdout": {
-          "self": "审计日志导出",
           "enable": "启用审计日志输出到标准输出",
           "description": "将结构化的 JSON 审计日志输出到标准输出，以便日志聚合器（Splunk、ELK、Datadog、Loki）摄取。需要 TEAM 或 ENTERPRISE 许可证。"
+        },
+        "enable-debug": {
+          "enable": "启用后端服务的调试级别日志"
         },
         "disallow-signup": {
           "enable": "禁用自助注册",
@@ -793,8 +798,7 @@
           }
         },
         "announcement": {
-          "self": "公告",
-          "admin-or-dba-can-edit": "只有管理员或 DBA 可以更新公告设置。"
+          "self": "公告"
         },
         "announcement-alert-level": {
           "description": "等级"
@@ -932,18 +936,18 @@
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "reopened-issue": "重开工单",
       "resolved-issue": "完成工单",
-      "canceled-issue": "取消工单",
+      "canceled-issue": "关闭工单",
       "xxx-automatically": "自动{verb}"
     }
   },
   "issue": {
     "labels": "工单标签",
+    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
     "create-rollout": "创建发布",
     "status-transition": {
       "modal": {
-        "resolve": "完成工单?",
         "reopen": "重开工单？",
         "close": "关闭工单？"
       },
@@ -1030,7 +1034,6 @@
     "stage-select": {
       "current": "{name}（当前）"
     },
-    "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
       "online": {
         "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
@@ -1052,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "resolve": "完成",
-      "resolved": "完成",
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
@@ -1142,15 +1143,8 @@
       "request-role": "请求角色",
       "request-specific-role": "请求“{role}”角色"
     },
-    "schema-drift-detected": {
-      "self": "检测到 Schema 偏差",
-      "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
-    },
     "review": {
       "self": "审批",
-      "approved": "已批准",
-      "rejected": "已驳回",
-      "under-review": "等待审批",
       "comment-description": "提交反馈，不进行批准操作",
       "approve-description": "提交反馈并批准此工单",
       "reject-description": "提交反馈并要求修改"
@@ -1164,6 +1158,7 @@
   },
   "plan": {
     "plans": "变更计划",
+    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "new-plan": "创建变更计划",
     "add-spec": "添加变更项",
     "select-targets": "选择目标库",
@@ -1226,7 +1221,10 @@
       "only-some-databases-checked": "仅检查部分数据库",
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
+      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
+      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'，然后同步数据库",
+      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
+      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
     },
     "ghost": {
       "only-some-databases-checked": "仅检查部分数据库",
@@ -1252,10 +1250,6 @@
     "task-execution-notices": "任务执行提醒",
     "task-execution-errors": "任务执行警告",
     "no-active-task-to-cancel": "没有要取消的任务。",
-    "no-runnable-task": "没有可运行的任务。",
-    "automatic-rollout": {
-      "description": "此环境已启用自动部署。"
-    },
     "stage": {
       "self": "阶段 | 阶段",
       "run-stage": "运行任务",
@@ -1268,7 +1262,15 @@
       "view-full-details": "查看详情",
       "statement-truncated-hint": "由于语句过长，已被截断。"
     },
-    "no-stages": "没有可用的阶段"
+    "no-stages": "没有可用的阶段",
+    "no-tasks-created": "尚未创建任何任务",
+    "pending-tasks-preview": {
+      "title": "待处理任务",
+      "description": "以下任务尚未创建。",
+      "action": "预览",
+      "task-count": "{count} 个任务 | {count} 个任务",
+      "no-pending-tasks": "没有待处理任务"
+    }
   },
   "quick-action": {
     "create-db": "创建数据库",
@@ -1645,11 +1647,7 @@
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "show-diff": "显示差异",
     "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
-    "current-schema-empty": "当前 schema 为空",
-    "establish-baseline": "建立新的基线",
-    "refreshing": "刷新历史中...",
-    "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
-    "establish-database-baseline": "建立「{name}」基线"
+    "current-schema-empty": "当前 schema 为空"
   },
   "database": {
     "labels": "数据库标签",
@@ -1761,7 +1759,6 @@
     "engine-not-supported-for-backup": "引擎不支持预备份：{databases}",
     "revision": {
       "self": "版本",
-      "applied-at": "应用时间",
       "filename": "文件名",
       "import-revision": "导入版本",
       "select-source": "选择来源",
@@ -1793,19 +1790,7 @@
       "version-already-exists": "此版本已存在于数据库中",
       "delete-confirm-dialog": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
     },
-    "not-found": "找不到数据库",
-    "drifted": {
-      "self": "Schema 偏差",
-      "schema-drift-detected": {
-        "self": "检测到 Schema 偏差",
-        "description": "当前数据库 Schema 与 Bytebase 中记录的 Schema 不一致。请及时检查并修复以避免潜在问题。"
-      },
-      "new-baseline": {
-        "self": "建立新基线",
-        "successfully-established": "成功建立新的基线"
-      },
-      "view-diff": "查看差异"
-    }
+    "not-found": "找不到数据库"
   },
   "project": {
     "filter-projects": "过滤项目",
@@ -1938,6 +1923,10 @@
         "require-plan-check-no-error": {
           "self": "发布前要求变更检查通过",
           "description": "所有变更检查必须无错误才能创建发布。"
+        },
+        "allow-request-role": {
+          "self": "允许申请角色",
+          "description": "非项目所有者可以自行申请项目级角色"
         }
       },
       "project-labels": {
@@ -2394,7 +2383,6 @@
     "title": "SQL 审核策略",
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
     "disabled": "SQL 审核策略已禁用",
-    "no-policy-set": "没有 SQL 审核策略",
     "create-policy": "创建审核策略",
     "select-review": "选择 SQL 审核",
     "select-review-rules": "选择 SQL 审核规则",
@@ -2689,17 +2677,16 @@
       "approve-issue": "批准工单？",
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
+      "rejected-issue": "驳回工单",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "尚有未通过的任务检查项。",
         "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
         "x-field-is-required": "{field}为必填项"
       },
-      "send-back": "退回",
       "send-back-issue": "退回工单？",
       "re-request-review": "请求再次审批",
       "re-request-review-issue": "请求再次审批工单？",
       "re-request-review-success": "已成功请求再次审批",
-      "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
       "approved-by": "已批准",
       "rejected-by": "被拒绝",
@@ -2770,7 +2757,7 @@
     },
     "project-viewer": {
       "self": "项目查看者",
-      "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
+      "description": "仅可查看项目和数据库的基本信息，用户可自助发起工单请求数据查询和导出。"
     }
   },
   "database-group": {

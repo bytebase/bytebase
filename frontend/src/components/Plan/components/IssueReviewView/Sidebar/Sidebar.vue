@@ -1,11 +1,15 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
-    <DatabaseChangeSection v-if="isDatabaseChangePlan" />
+    <!-- 1. Stages - Progress indicator -->
+    <StagesSection v-if="isDatabaseChangePlan" />
 
-    <IssueStatusSection v-if="issue.approvalTemplate" :issue="issue" />
+    <!-- 2. Checks - Health status -->
+    <ChecksSection v-if="isDatabaseChangePlan" />
 
+    <!-- 3. Approval Flow - Reviewers -->
     <ApprovalFlowSection :issue="issue" />
 
+    <!-- 4. Labels - Metadata -->
     <IssueLabels
       :project="project"
       :value="issue.labels || []"
@@ -35,8 +39,8 @@ import {
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../../../logic/context";
 import ApprovalFlowSection from "./ApprovalFlowSection/ApprovalFlowSection.vue";
-import DatabaseChangeSection from "./DatabaseChangeSection.vue";
-import IssueStatusSection from "./IssueStatusSection.vue";
+import ChecksSection from "./ChecksSection.vue";
+import StagesSection from "./StagesSection.vue";
 
 const { t } = useI18n();
 const { plan, issue } = usePlanContextWithIssue();

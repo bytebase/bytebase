@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ExportFormat, Position, State } from "./common_pb";
+import type { ExportFormat, Position, State, StatementType } from "./common_pb";
 import type { Advice_Level } from "./sql_service_pb";
 
 /**
@@ -686,9 +686,9 @@ export declare type PlanCheckRun_Result_SqlSummaryReport = Message<"bytebase.v1.
   /**
    * statement_types are the types of statements that are found in the sql.
    *
-   * @generated from field: repeated string statement_types = 2;
+   * @generated from field: repeated bytebase.v1.StatementType statement_types = 2;
    */
-  statementTypes: string[];
+  statementTypes: StatementType[];
 
   /**
    * @generated from field: int64 affected_rows = 3;

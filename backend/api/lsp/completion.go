@@ -145,32 +145,14 @@ func convertLSPCompletionItemKind(tp parserbase.CandidateType) lsp.CompletionIte
 }
 
 func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-	// Check cache first
-	cacheKey := getDatabaseMetadataCacheKey(instanceID, databaseName)
-	if cached, exists := h.metadataCache.Get(cacheKey); exists {
-		return databaseName, cached, nil
-	}
-
-	// Cache miss, fetch from store
-	metadata, err := h.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   instanceID,
-		DatabaseName: databaseName,
-	})
+	metadata, err := h.store.GetDBSchemaSnapshot(ctx, instanceID, databaseName)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "failed to get database schema")
 	}
 	if metadata == nil {
 		return "", nil, errors.Errorf("database %s schema for instance %s not found", databaseName, instanceID)
 	}
-
-	// Store in cache
-	h.metadataCache.Add(cacheKey, metadata)
-
 	return databaseName, metadata, nil
-}
-
-func getDatabaseMetadataCacheKey(instanceID, databaseName string) string {
-	return instanceID + "/" + databaseName
 }
 
 func (h *Handler) ListDatabaseNamesFunc(ctx context.Context, instanceID string) ([]string, error) {

@@ -37,7 +37,7 @@ import {
   type Instance,
   InstanceResourceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -58,7 +58,6 @@ export interface DatabaseFilter {
   labels?: string[];
   engines?: Engine[];
   excludeEngines?: Engine[];
-  drifted?: boolean;
   table?: string;
 }
 
@@ -137,9 +136,6 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
       `!(engine in [${filter.excludeEngines.map((e) => `"${Engine[e]}"`).join(", ")}])`
     );
   }
-  if (!isNullOrUndefined(filter.drifted)) {
-    params.push(`drifted == ${filter.drifted}`);
-  }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {
     params.push(`name.matches("${keyword}")`);
@@ -187,6 +183,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     filter?: DatabaseFilter;
     skipCacheRemoval?: boolean;
     orderBy?: string;
+    silent?: boolean;
   }): Promise<{
     databases: ComposedDatabase[];
     nextPageToken: string;
@@ -206,7 +203,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       showDeleted: params.filter?.showDeleted,
       filter: getListDatabaseFilter(params.filter ?? {}),
     });
-    const response = await databaseServiceClientConnect.listDatabases(request);
+    const response = await databaseServiceClientConnect.listDatabases(request, {
+      contextValues: createContextValues().set(silentContextKey, params.silent),
+    });
     const databases = response.databases; // Work directly with proto-es types
     const { nextPageToken } = response;
     if (

@@ -1,81 +1,129 @@
 <template>
-  <div v-if="revision" class="w-full">
-    <div class="flex flex-row items-center gap-2">
-      <p class="text-lg flex gap-x-1">
-        <span class="text-control">{{ $t("common.version") }}:</span>
-        <span class="font-bold text-main">{{ revision.version }}</span>
-      </p>
-    </div>
+  <div class="focus:outline-hidden" tabindex="0" v-bind="$attrs">
     <div
-      class="mt-3 text-control text-base flex flex-row items-center flex-wrap gap-x-4"
+      v-if="state.loading"
+      class="flex items-center justify-center py-2 text-gray-400 text-sm"
     >
-      <span>
-        {{ $t("database.revision.applied-at") }}:
-        <HumanizeDate
-          :date="getDateForPbTimestampProtoEs(revision.createTime)"
-        />
-      </span>
+      <BBSpin />
     </div>
-  </div>
+    <main v-else-if="revision" class="flex flex-col relative gap-y-6">
+      <!-- Highlight Panel -->
+      <div class="flex flex-col gap-y-4">
+        <!-- Version Title -->
+        <h2 class="text-2xl font-semibold text-main">
+          {{ revision.version }}
+        </h2>
 
-  <div class="flex flex-col my-4">
-    <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
-      <span>{{ $t("common.statement") }}</span>
-      <CopyButton :content="fetchedStatement" />
-    </p>
-    <div class="relative">
-      <NSpin v-if="loading" :show="loading" class="absolute inset-0 z-10" />
-      <MonacoEditor
-        class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-        :content="fetchedStatement"
-        :readonly="true"
-        :auto-height="{ min: 120, max: 480 }"
-      />
-    </div>
-  </div>
+        <!-- Metadata Row -->
+        <div class="flex items-center gap-x-3 text-sm text-control-light">
+          <span>{{ getRevisionType(revision.type) }}</span>
+          <span v-if="formattedCreateTime">•</span>
+          <span v-if="formattedCreateTime">
+            {{ formattedCreateTime }}
+          </span>
+        </div>
+      </div>
 
-  <div v-if="logEntries.length > 0" class="my-4">
-    <p class="w-auto flex items-center text-base text-main mb-2">
-      {{ $t("issue.task-run.logs") }}
-    </p>
-    <TaskRunLogViewer :entries="logEntries" :sheet="fetchedSheet" />
+      <div class="flex flex-col gap-y-6">
+        <!-- Task Run Logs Section -->
+        <div v-if="revision.taskRun" class="flex flex-col gap-y-2">
+          <div class="flex items-center justify-between">
+            <p class="text-lg text-main">
+              {{ $t("issue.task-run.logs") }}
+            </p>
+            <router-link
+              v-if="taskFullLink"
+              :to="taskFullLink"
+              class="flex items-center gap-x-1 text-sm text-control-light hover:text-accent transition-colors"
+            >
+              {{ $t("common.show-more") }}
+              <ArrowUpRightIcon class="w-4 h-4" />
+            </router-link>
+          </div>
+          <TaskRunLogViewer :task-run-name="revision.taskRun" />
+        </div>
+
+        <!-- Statement Section -->
+        <div class="flex flex-col gap-y-2">
+          <p class="flex items-center text-lg text-main gap-x-2">
+            {{ $t("common.statement") }}
+            <span
+              v-if="formattedStatementSize"
+              class="text-sm font-normal text-control-light"
+            >
+              ({{ formattedStatementSize }})
+            </span>
+            <CopyButton size="small" :content="state.statement" />
+          </p>
+          <MonacoEditor
+            class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
+            :content="state.statement"
+            :readonly="true"
+            :auto-height="{ min: 120, max: 600 }"
+          />
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
-import { computedAsync } from "@vueuse/core";
-import { NSpin } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { ArrowUpRightIcon } from "lucide-vue-next";
+import { computed, reactive, watch } from "vue";
+import { BBSpin } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
-import {
-  rolloutServiceClientConnect,
-  sheetServiceClientConnect,
-} from "@/connect";
+import { sheetServiceClientConnect } from "@/connect";
 import { useRevisionStore } from "@/store";
-import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
-import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  GetTaskRunLogRequestSchema,
-  GetTaskRunRequestSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import HumanizeDate from "../misc/HumanizeDate.vue";
+import type { ComposedDatabase } from "@/types";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
+import { bytesToString } from "@/utils";
+import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
+
+interface LocalState {
+  loading: boolean;
+  statement: string;
+}
 
 const props = defineProps<{
   database: ComposedDatabase;
   revisionName: string;
 }>();
 
-import { type Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-
-const loading = ref(false);
-const fetchedStatement = ref("");
-const fetchedSheet = ref<Sheet | undefined>(undefined);
-
 const revisionStore = useRevisionStore();
-const taskRun = ref<TaskRun | undefined>(undefined);
+const state = reactive<LocalState>({
+  loading: false,
+  statement: "",
+});
+
+const revision = computed((): Revision | undefined =>
+  revisionStore.getRevisionByName(props.revisionName)
+);
+
+const taskFullLink = computed(() => {
+  if (!revision.value?.taskRun) {
+    return "";
+  }
+  return extractTaskLink(revision.value.taskRun);
+});
+
+const formattedCreateTime = computed(() => {
+  if (!revision.value) {
+    return "";
+  }
+  return getDateForPbTimestampProtoEs(
+    revision.value.createTime
+  )?.toLocaleString();
+});
+
+const formattedStatementSize = computed(() => {
+  if (!state.statement) {
+    return "";
+  }
+  return bytesToString(new TextEncoder().encode(state.statement).length);
+});
 
 watch(
   () => props.revisionName,
@@ -84,61 +132,30 @@ watch(
       return;
     }
 
-    loading.value = true;
-    fetchedStatement.value = "";
-    fetchedSheet.value = undefined;
+    state.loading = true;
+    state.statement = "";
 
     try {
-      const revision =
-        await revisionStore.getOrFetchRevisionByName(revisionName);
-      if (revision) {
-        if (revision.taskRun) {
-          // Fetch the task run details.
-          const request = create(GetTaskRunRequestSchema, {
-            name: revision.taskRun,
+      const rev = await revisionStore.getOrFetchRevisionByName(revisionName);
+      if (rev?.sheet) {
+        try {
+          const sheet = await sheetServiceClientConnect.getSheet({
+            name: rev.sheet,
+            raw: true,
           });
-          const response =
-            await rolloutServiceClientConnect.getTaskRun(request);
-          taskRun.value = response;
-        }
-        // Prepare the sheet data from task run.
-        // We fetch raw content directly.
-        if (revision.sheet) {
-          try {
-            const sheet = await sheetServiceClientConnect.getSheet({
-              name: revision.sheet,
-              raw: true,
-            });
-            fetchedSheet.value = sheet;
-            if (sheet.content) {
-              fetchedStatement.value = new TextDecoder().decode(sheet.content);
-            }
-          } catch (error) {
-            console.error("Failed to fetch sheet content", error);
+          if (sheet.content) {
+            state.statement = new TextDecoder().decode(sheet.content);
           }
+        } catch (error) {
+          console.error("Failed to fetch sheet content", error);
         }
       }
     } catch (error) {
       console.error("Failed to fetch revision details", error);
     } finally {
-      loading.value = false;
+      state.loading = false;
     }
   },
   { immediate: true }
-);
-
-// Fetch task run log
-const taskRunLog = computedAsync(async () => {
-  if (!taskRun.value?.name) return undefined;
-  const request = create(GetTaskRunLogRequestSchema, {
-    parent: taskRun.value.name,
-  });
-  return await rolloutServiceClientConnect.getTaskRunLog(request);
-}, undefined);
-
-const logEntries = computed(() => taskRunLog.value?.entries ?? []);
-
-const revision = computed(() =>
-  revisionStore.getRevisionByName(props.revisionName)
 );
 </script>

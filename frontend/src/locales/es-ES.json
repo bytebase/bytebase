@@ -207,8 +207,10 @@
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
     "untitled": "Intitulado",
-    "missing-required-permission": "Faltan permisos requeridos",
+    "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
+    "only-creator-allowed-action": "Solo el creador puede realizar esta acción",
+    "only-creator-allowed-export": "Solo el creador puede exportar",
     "required-permission": "Permisos necesarios",
     "resource-not-found": "Recurso no encontrado",
     "continue-anyway": "De todas maneras, continúe",
@@ -404,7 +406,8 @@
     "deploy": "Auto Hospedaje",
     "cloud": "Cloud",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
-    "external-url": "Bytebase no ha configurado --external-url"
+    "external-url": "Bytebase no ha configurado --external-url",
+    "ha-not-licensed": "Se detectaron múltiples réplicas sin licencia HA. Los ejecutores del backend están deshabilitados."
   },
   "bbkit": {
     "confirm-button": {
@@ -651,7 +654,6 @@
         "id": "ID del espacio de trabajo",
         "id-description": "La identificación única del espacio de trabajo de solo lectura.",
         "branding": "Marca",
-        "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración.",
         "logo": "Logo",
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
@@ -659,6 +661,7 @@
         "logo-upload-tip": "{extension} hasta {size} MiB",
         "security": "Seguridad",
         "account": "Cuenta",
+        "log": "Registro",
         "watermark": {
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
           "enable": "Activar marca de agua"
@@ -673,9 +676,11 @@
           "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
         },
         "audit-log-stdout": {
-          "self": "Exportación de Registros de Auditoría",
           "enable": "Habilitar el registro de auditoría en la salida estándar",
           "description": "Generar registros de auditoría JSON estructurados en la salida estándar para su ingesta por agregadores de registros (Splunk, ELK, Datadog, Loki). Requiere licencia TEAM o ENTERPRISE."
+        },
+        "enable-debug": {
+          "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
@@ -793,8 +798,7 @@
           }
         },
         "announcement": {
-          "self": "Anuncio",
-          "admin-or-dba-can-edit": "Solo el administrador del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
+          "self": "Anuncio"
         },
         "announcement-alert-level": {
           "description": "Level"
@@ -931,19 +935,19 @@
       "changed-labels": "etiquetas cambiadas",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "reopened-issue": "incidencia reabierta",
-      "resolved-issue": "incidencia resuelta",
-      "canceled-issue": "incidencia cancelada",
+      "resolved-issue": "completó la incidencia",
+      "canceled-issue": "cerró la incidencia",
       "xxx-automatically": "{verb} automáticamente"
     }
   },
   "issue": {
     "labels": "Etiquetas de problema",
+    "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y solicitudes de acceso. Revisar y aprobar antes de la ejecución.",
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
     "create-rollout": "Crear despliegue",
     "status-transition": {
       "modal": {
-        "resolve": "¿Resolver incidencia?",
         "reopen": "¿Reabrir incidencia?",
         "close": "¿Cerrar el problema?"
       },
@@ -1030,7 +1034,6 @@
     "stage-select": {
       "current": "{name} (actual)"
     },
-    "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas.\nPrimero deben ser transferidas a un proyecto.",
     "migration-mode": {
       "online": {
         "description": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos {link}."
@@ -1052,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {operation}",
-      "resolve": "Resolver",
-      "resolved": "resuelto",
       "reopen": "Reabrir",
       "reopened": "reabierto",
       "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
@@ -1142,15 +1143,8 @@
       "request-role": "Rol de solicitud",
       "request-specific-role": "Solicitar rol \"{role}\""
     },
-    "schema-drift-detected": {
-      "self": "Se detectó una desviación del esquema",
-      "description": "Las bases de datos seleccionadas presentan una desviación de esquema. Asegúrese de que la desviación sea la esperada y de que sea segura para su aplicación."
-    },
     "review": {
       "self": "Revisar",
-      "approved": "Aprobado",
-      "rejected": "Rechazado",
-      "under-review": "Bajo revisión",
       "comment-description": "Enviar comentarios generales sin aprobación",
       "approve-description": "Enviar comentarios y aprobar este problema",
       "reject-description": "Envíe comentarios y solicite cambios"
@@ -1164,6 +1158,7 @@
   },
   "plan": {
     "plans": "Planes",
+    "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "new-plan": "Nuevo plan",
     "add-spec": "Agregar especificación",
     "select-targets": "Seleccionar objetivos",
@@ -1226,7 +1221,10 @@
       "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
       "some-databases-not-meeting-requirements": "Algunas bases de datos ({databases}) no cumplen los requisitos",
       "some-databases-have-issues": "{count} la base de datos tiene problemas | {count} las bases de datos tienen problemas",
-      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas"
+      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas",
+      "missing-backup-schema-postgres": "Cree el esquema 'bbdataarchive' en la base de datos '{database}', luego sincronice la base de datos",
+      "missing-backup-database": "Cree la base de datos 'bbdataarchive' en la instancia '{instance}', luego sincronice la instancia y la base de datos",
+      "missing-backup-database-oracle": "Cree la base de datos 'BBDATAARCHIVE' en la instancia '{instance}', luego sincronice la instancia y la base de datos"
     },
     "ghost": {
       "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
@@ -1252,10 +1250,6 @@
     "task-execution-notices": "Avisos de ejecución de tareas",
     "task-execution-errors": "Errores de ejecución de tareas",
     "no-active-task-to-cancel": "No hay ninguna tarea activa para cancelar.",
-    "no-runnable-task": "No hay ninguna tarea ejecutable disponible.",
-    "automatic-rollout": {
-      "description": "Este entorno tiene habilitada la implementación automática."
-    },
     "stage": {
       "self": "Escenario | Escenarios",
       "run-stage": "Ejecutar tareas",
@@ -1268,7 +1262,15 @@
       "view-full-details": "Ver detalles",
       "statement-truncated-hint": "Declaración truncada debido al gran tamaño."
     },
-    "no-stages": "No hay etapas disponibles"
+    "no-stages": "No hay etapas disponibles",
+    "no-tasks-created": "No hay tareas creadas todavía",
+    "pending-tasks-preview": {
+      "title": "Tareas pendientes",
+      "description": "Las siguientes tareas aún no han sido creadas.",
+      "action": "Avance",
+      "task-count": "{count} tarea | {count} tareas",
+      "no-pending-tasks": "No hay tareas pendientes"
+    }
   },
   "quick-action": {
     "create-db": "Crear base de datos",
@@ -1645,11 +1647,7 @@
     "no-schema-change": "esta migración no tiene cambios de esquema",
     "show-diff": "Mostrar diferencias",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
-    "current-schema-empty": "El esquema actual está vacío",
-    "establish-baseline": "Establecer nueva línea base",
-    "refreshing": "Refrescando historial...",
-    "establish-baseline-description": "Bytebase usará el esquema actual como la nueva línea base. Esto reconciliará el estado actual del esquema con el estado del esquema registrado en Bytebase y corregirá la deriva del esquema informado. Solo debe hacer esto si el esquema actual refleja el estado deseado.",
-    "establish-database-baseline": "Establecer línea base de \"{name}\""
+    "current-schema-empty": "El esquema actual está vacío"
   },
   "database": {
     "labels": "Etiquetas de base de datos",
@@ -1761,7 +1759,6 @@
     "engine-not-supported-for-backup": "No se admite la copia de seguridad previa para: {databases}",
     "revision": {
       "self": "Revisión",
-      "applied-at": "Aplicado en",
       "filename": "Nombre del archivo",
       "import-revision": "Revisión de importación",
       "select-source": "Seleccionar fuente",
@@ -1793,19 +1790,7 @@
       "version-already-exists": "Esta versión ya existe en la base de datos",
       "delete-confirm-dialog": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
     },
-    "not-found": "No se puede encontrar la base de datos",
-    "drifted": {
-      "self": "El esquema se desvió",
-      "schema-drift-detected": {
-        "self": "Se detectó una desviación del esquema",
-        "description": "El esquema es diferente del último aplicado. Esto puede causar errores de aplicación y debe solucionarse."
-      },
-      "new-baseline": {
-        "self": "Nueva línea base",
-        "successfully-established": "Se estableció con éxito una nueva línea base"
-      },
-      "view-diff": "Ver diferencia"
-    }
+    "not-found": "No se puede encontrar la base de datos"
   },
   "project": {
     "filter-projects": "Filtrar proyectos",
@@ -1938,6 +1923,10 @@
         "require-plan-check-no-error": {
           "self": "Requiere que las verificaciones del plan pasen antes del despliegue",
           "description": "Todas las verificaciones del plan deben pasar sin errores antes de crear un despliegue."
+        },
+        "allow-request-role": {
+          "self": "Permitir solicitar rol",
+          "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos"
         }
       },
       "project-labels": {
@@ -2394,7 +2383,6 @@
     "title": "Revisión de SQL",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
     "disabled": "La revisión de SQL está deshabilitada",
-    "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
     "select-review": "Seleccione revisión SQL",
     "select-review-rules": "Seleccionar reglas de revisión de SQL",
@@ -2689,17 +2677,16 @@
       "approve-issue": "¿Aprobar incidencia?",
       "generating-approval-flow": "Generando flujo de aprobación",
       "approved-issue": "incidencia aprobada",
+      "rejected-issue": "incidencia rechazada",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron",
         "some-task-checks-are-still-running": "Algunas comprobaciones de tareas aún se están ejecutando",
         "x-field-is-required": "{field} se requiere"
       },
-      "send-back": "Enviar de vuelta",
       "send-back-issue": "¿Devolver el problema?",
       "re-request-review": "Volver a solicitar revisión",
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "re-request-review-success": "Revisión solicitada nuevamente con éxito",
-      "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
       "approved-by": "Aprobado por",
       "rejected-by": "Rechazado por",
@@ -2770,7 +2757,7 @@
     },
     "project-viewer": {
       "self": "Espectador del proyecto",
-      "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+      "description": "Permisos de solo lectura para ver información básica del proyecto y la base de datos; los usuarios pueden iniciar tickets por su cuenta para solicitar consultas y exportaciones de datos."
     }
   },
   "database-group": {

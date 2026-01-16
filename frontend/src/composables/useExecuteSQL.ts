@@ -36,7 +36,7 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getValidDataSourceByPolicy,
-  hasPermissionToCreateChangeDatabaseIssue,
+  hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
 import { flattenNoSQLResult } from "./utils";
 
@@ -219,16 +219,17 @@ const useExecuteSQL = () => {
       }
 
       const database = dbStore.getDatabaseByName(databaseName);
+      const dataSourceId = await getDataSourceId(
+        database,
+        params.connection,
+        isBatch ? tab.batchQueryContext.dataSourceType : undefined
+      );
       const context: SQLEditorDatabaseQueryContext = {
         id: uuidv4(),
         params: Object.assign(cloneDeep(params), {
           connection: {
             ...params.connection,
-            dataSourceId: getDataSourceId(
-              database,
-              params.connection,
-              isBatch ? tab.batchQueryContext.dataSourceType : undefined
-            ),
+            dataSourceId,
           },
         }),
         status: "PENDING",
@@ -331,7 +332,11 @@ const useExecuteSQL = () => {
     if (isOnlySelectError(resultSet)) {
       // Show a tips to navigate to issue creation
       // if the user is allowed to create issue in the project.
-      if (hasPermissionToCreateChangeDatabaseIssue(database)) {
+      if (
+        hasPermissionToCreateChangeDatabaseIssueInProject(
+          database.projectEntity
+        )
+      ) {
         sqlEditorStore.isShowExecutingHint = true;
         sqlEditorStore.executingHintDatabase = database;
       }

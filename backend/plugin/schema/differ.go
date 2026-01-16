@@ -1971,19 +1971,39 @@ func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 		}
 	}
 
-	// Check for new enum types
+	// Check for new and modified enum types
 	for enumName, newEnum := range newEnumMap {
-		if _, exists := oldEnumMap[enumName]; !exists {
+		if oldEnum, exists := oldEnumMap[enumName]; !exists {
 			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
 				Action:       MetadataDiffActionCreate,
 				SchemaName:   schemaName,
 				EnumTypeName: enumName,
 				NewEnumType:  newEnum,
 			})
+		} else if !enumValuesEqual(oldEnum.Values, newEnum.Values) {
+			// Enum values changed - generate ALTER diff
+			diff.EnumTypeChanges = append(diff.EnumTypeChanges, &EnumTypeDiff{
+				Action:       MetadataDiffActionAlter,
+				SchemaName:   schemaName,
+				EnumTypeName: enumName,
+				OldEnumType:  oldEnum,
+				NewEnumType:  newEnum,
+			})
 		}
-		// Note: We don't support ALTER enum types yet
-		// PostgreSQL doesn't allow modifying enum values easily
 	}
+}
+
+// enumValuesEqual checks if two enum value slices are equal.
+func enumValuesEqual(oldValues, newValues []string) bool {
+	if len(oldValues) != len(newValues) {
+		return false
+	}
+	for i, v := range oldValues {
+		if v != newValues[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // compareExtensions compares extensions between old and new database metadata.

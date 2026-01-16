@@ -1,74 +1,90 @@
 <template>
-  <div class="flex-1 flex flex-col gap-y-6">
+  <div v-if="hasGetPermission" class="flex-1 flex flex-col gap-y-6">
     <div>
-        <div class="flex items-center gap-x-2">
+      <div class="flex items-center gap-x-2">
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
           <Switch
             :value="!disableExport"
             :text="true"
-            :disabled="!allowEdit"
+            :disabled="slotProps.disabled || !hasQueryPolicyFeature"
             @update:value="(val: boolean) => disableExport = !val"
           />
-          <span class="font-medium">
-            {{ $t("settings.general.workspace.data-export.enable") }}
-          </span>
-          <NTooltip v-if="scope">
-            <template #trigger>
-              <CircleQuestionMarkIcon class="w-4 textinfolabel" />
-            </template>
-            <span>
-              {{ $t("settings.general.workspace.query-data-policy.tooltip", { scope }) }}
-            </span>
-          </NTooltip>
-        </div>
-        <div class="mt-1 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.data-export.description") }}
-        </div>
-      </div>
-      <MaximumSQLResultSizeSetting
-        ref="maximumSQLResultSizeSettingRef"
-        :allow-edit="allowEdit"
-        :resource="resource"
-        :policy="policyPayload"
-        :tooltip="scope ? $t('settings.general.workspace.query-data-policy.tooltip', { scope }) : ''"
-      />
-      <div>
-    <p class="font-medium flex flex-row justify-start items-center">
-      <span class="mr-2">
-        {{ $t("settings.general.workspace.query-data-policy.timeout.self") }}
-      </span>
-      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
-      <NTooltip v-if="scope">
-        <template #trigger>
-          <CircleQuestionMarkIcon class="w-4 textinfolabel" />
-        </template>
-        <span>
-          {{ $t("settings.general.workspace.query-data-policy.tooltip", { scope }) }}
+        </PermissionGuardWrapper>
+        <span class="font-medium">
+          {{ $t("settings.general.workspace.data-export.enable") }}
         </span>
-      </NTooltip>
-    </p>
-    <p class="text-sm text-gray-400 mt-1">
-      {{
-        $t("settings.general.workspace.query-data-policy.timeout.description")
-      }}
-      <span class="font-semibold! textinfolabel">
-        {{ $t("settings.general.workspace.no-limit") }}
-      </span>
-    </p>
-    <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
-      <NInputNumber
-        :value="maxQueryTimeInseconds"
-        :disabled="!allowEdit"
-        class="w-60"
-        :min="0"
-        :precision="0"
-        @update:value="handleInput"
-      >
-        <template #suffix>{{
-          $t("settings.general.workspace.query-data-policy.seconds")
-        }}</template>
-      </NInputNumber>
+        <NTooltip v-if="tooltip">
+          <template #trigger>
+            <CircleQuestionMarkIcon class="w-4 textinfolabel" />
+          </template>
+          <span>
+            {{ tooltip }}
+          </span>
+        </NTooltip>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{ $t("settings.general.workspace.data-export.description") }}
+      </div>
     </div>
-  </div>
+    <MaximumSQLResultSizeSetting
+      ref="maximumSQLResultSizeSettingRef"
+      :resource="resource"
+      :policy="policyPayload"
+      :tooltip="tooltip"
+      :project="project"
+    />
+    <div>
+      <p class="font-medium flex flex-row justify-start items-center">
+        <span class="mr-2">
+          {{ $t("settings.general.workspace.query-data-policy.timeout.self") }}
+        </span>
+        <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
+        <NTooltip v-if="tooltip">
+          <template #trigger>
+            <CircleQuestionMarkIcon class="w-4 textinfolabel" />
+          </template>
+          <span>
+            {{ tooltip }}
+          </span>
+        </NTooltip>
+      </p>
+      <p class="text-sm text-gray-400 mt-1">
+        {{
+          $t("settings.general.workspace.query-data-policy.timeout.description")
+        }}
+        <span class="font-semibold! textinfolabel">
+          {{ $t("settings.general.workspace.no-limit") }}
+        </span>
+      </p>
+      <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
+          <NInputNumber
+            :value="maxQueryTimeInseconds"
+            :disabled="!hasQueryPolicyFeature || slotProps.disabled"
+            class="w-60"
+            :min="0"
+            :precision="0"
+            @update:value="handleInput"
+          >
+            <template #suffix>{{
+              $t("settings.general.workspace.query-data-policy.seconds")
+            }}</template>
+          </NInputNumber>
+        </PermissionGuardWrapper>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -78,21 +94,24 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { CircleQuestionMarkIcon } from "lucide-vue-next";
 import { NInputNumber, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import {
   featureToRef,
   usePolicyByParentAndType,
   usePolicyV1Store,
+  useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { isValidProjectName } from "@/types";
 import {
   PolicyResourceType,
   PolicyType,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 
@@ -101,16 +120,37 @@ const props = defineProps<{
 }>();
 
 const policyV1Store = usePolicyV1Store();
+const projectStore = useProjectV1Store();
+
 const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
 
-const scope = computed(() => {
+const project = computed(() => {
   if (props.resource.startsWith(projectNamePrefix)) {
-    return t("settings.general.workspace.query-data-policy.workspace-scope");
+    const proj = projectStore.getProjectByName(props.resource);
+    if (!isValidProjectName(proj.name)) {
+      return undefined;
+    }
+    return proj;
   }
-  if (props.resource === "") {
-    return t("settings.general.workspace.query-data-policy.project-scope");
+  return undefined;
+});
+
+const hasGetPermission = computed(() => {
+  if (project.value) {
+    return hasProjectPermissionV2(project.value, "bb.policies.get");
   }
-  return "";
+  return hasWorkspacePermissionV2("bb.policies.get");
+});
+
+const tooltip = computed(() => {
+  if (project.value) {
+    return t("settings.general.workspace.query-data-policy.tooltip", {
+      scope: t("settings.general.workspace.query-data-policy.workspace-scope"),
+    });
+  }
+  return t("settings.general.workspace.query-data-policy.tooltip", {
+    scope: t("settings.general.workspace.query-data-policy.project-scope"),
+  });
 });
 
 const { ready } = usePolicyByParentAndType(
@@ -148,12 +188,6 @@ watch(
       revert();
     }
   }
-);
-
-const allowEdit = computed(
-  () =>
-    hasWorkspacePermissionV2("bb.policies.update") &&
-    hasQueryPolicyFeature.value
 );
 
 const isDirty = computed(() => {

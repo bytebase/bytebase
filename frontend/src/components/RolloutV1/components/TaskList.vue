@@ -56,7 +56,6 @@ import { useTaskSelection } from "./composables/useTaskSelection";
 import { DEFAULT_PAGE_SIZE } from "./constants";
 import TaskItem from "./TaskItem.vue";
 import TaskToolbar from "./TaskToolbar.vue";
-import { compareTasksByStatus } from "./utils/taskStatus";
 
 const props = withDefaults(
   defineProps<{
@@ -76,14 +75,10 @@ const displayedTaskCount = ref(DEFAULT_PAGE_SIZE);
 
 const filteredTasks = computed(() => {
   const tasks = props.stage.tasks;
-  let result = tasks;
-
   if (props.filterStatuses.length > 0) {
-    result = tasks.filter((task) => props.filterStatuses.includes(task.status));
+    return tasks.filter((task) => props.filterStatuses.includes(task.status));
   }
-
-  // Sort by status priority (order defined in TASK_STATUS_FILTERS)
-  return [...result].sort(compareTasksByStatus);
+  return tasks;
 });
 
 const visibleTasks = computed(() => {

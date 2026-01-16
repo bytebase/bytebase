@@ -429,6 +429,175 @@ func (WebhookType) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{5}
 }
 
+// StatementType represents the type of SQL statement.
+type StatementType int32
+
+const (
+	StatementType_STATEMENT_TYPE_UNSPECIFIED StatementType = 0
+	// DDL - CREATE statements
+	StatementType_CREATE_DATABASE  StatementType = 1
+	StatementType_CREATE_TABLE     StatementType = 2
+	StatementType_CREATE_VIEW      StatementType = 3
+	StatementType_CREATE_INDEX     StatementType = 4
+	StatementType_CREATE_SEQUENCE  StatementType = 5
+	StatementType_CREATE_SCHEMA    StatementType = 6
+	StatementType_CREATE_FUNCTION  StatementType = 7
+	StatementType_CREATE_TRIGGER   StatementType = 8
+	StatementType_CREATE_PROCEDURE StatementType = 9
+	StatementType_CREATE_EVENT     StatementType = 10
+	StatementType_CREATE_EXTENSION StatementType = 11
+	StatementType_CREATE_TYPE      StatementType = 12
+	// DDL - DROP statements
+	StatementType_DROP_DATABASE  StatementType = 20
+	StatementType_DROP_TABLE     StatementType = 21
+	StatementType_DROP_VIEW      StatementType = 22
+	StatementType_DROP_INDEX     StatementType = 23
+	StatementType_DROP_SEQUENCE  StatementType = 24
+	StatementType_DROP_SCHEMA    StatementType = 25
+	StatementType_DROP_FUNCTION  StatementType = 26
+	StatementType_DROP_TRIGGER   StatementType = 27
+	StatementType_DROP_PROCEDURE StatementType = 28
+	StatementType_DROP_EVENT     StatementType = 29
+	StatementType_DROP_EXTENSION StatementType = 30
+	StatementType_DROP_TYPE      StatementType = 31
+	// DDL - ALTER statements
+	StatementType_ALTER_DATABASE StatementType = 40
+	StatementType_ALTER_TABLE    StatementType = 41
+	StatementType_ALTER_VIEW     StatementType = 42
+	StatementType_ALTER_SEQUENCE StatementType = 43
+	StatementType_ALTER_EVENT    StatementType = 44
+	StatementType_ALTER_TYPE     StatementType = 45
+	StatementType_ALTER_INDEX    StatementType = 46
+	// DDL - Other
+	StatementType_TRUNCATE        StatementType = 50
+	StatementType_RENAME          StatementType = 51
+	StatementType_RENAME_INDEX    StatementType = 52
+	StatementType_RENAME_SCHEMA   StatementType = 53
+	StatementType_RENAME_SEQUENCE StatementType = 54
+	StatementType_COMMENT         StatementType = 55
+	// DML statements
+	StatementType_INSERT StatementType = 60
+	StatementType_UPDATE StatementType = 61
+	StatementType_DELETE StatementType = 62
+)
+
+// Enum value maps for StatementType.
+var (
+	StatementType_name = map[int32]string{
+		0:  "STATEMENT_TYPE_UNSPECIFIED",
+		1:  "CREATE_DATABASE",
+		2:  "CREATE_TABLE",
+		3:  "CREATE_VIEW",
+		4:  "CREATE_INDEX",
+		5:  "CREATE_SEQUENCE",
+		6:  "CREATE_SCHEMA",
+		7:  "CREATE_FUNCTION",
+		8:  "CREATE_TRIGGER",
+		9:  "CREATE_PROCEDURE",
+		10: "CREATE_EVENT",
+		11: "CREATE_EXTENSION",
+		12: "CREATE_TYPE",
+		20: "DROP_DATABASE",
+		21: "DROP_TABLE",
+		22: "DROP_VIEW",
+		23: "DROP_INDEX",
+		24: "DROP_SEQUENCE",
+		25: "DROP_SCHEMA",
+		26: "DROP_FUNCTION",
+		27: "DROP_TRIGGER",
+		28: "DROP_PROCEDURE",
+		29: "DROP_EVENT",
+		30: "DROP_EXTENSION",
+		31: "DROP_TYPE",
+		40: "ALTER_DATABASE",
+		41: "ALTER_TABLE",
+		42: "ALTER_VIEW",
+		43: "ALTER_SEQUENCE",
+		44: "ALTER_EVENT",
+		45: "ALTER_TYPE",
+		46: "ALTER_INDEX",
+		50: "TRUNCATE",
+		51: "RENAME",
+		52: "RENAME_INDEX",
+		53: "RENAME_SCHEMA",
+		54: "RENAME_SEQUENCE",
+		55: "COMMENT",
+		60: "INSERT",
+		61: "UPDATE",
+		62: "DELETE",
+	}
+	StatementType_value = map[string]int32{
+		"STATEMENT_TYPE_UNSPECIFIED": 0,
+		"CREATE_DATABASE":            1,
+		"CREATE_TABLE":               2,
+		"CREATE_VIEW":                3,
+		"CREATE_INDEX":               4,
+		"CREATE_SEQUENCE":            5,
+		"CREATE_SCHEMA":              6,
+		"CREATE_FUNCTION":            7,
+		"CREATE_TRIGGER":             8,
+		"CREATE_PROCEDURE":           9,
+		"CREATE_EVENT":               10,
+		"CREATE_EXTENSION":           11,
+		"CREATE_TYPE":                12,
+		"DROP_DATABASE":              20,
+		"DROP_TABLE":                 21,
+		"DROP_VIEW":                  22,
+		"DROP_INDEX":                 23,
+		"DROP_SEQUENCE":              24,
+		"DROP_SCHEMA":                25,
+		"DROP_FUNCTION":              26,
+		"DROP_TRIGGER":               27,
+		"DROP_PROCEDURE":             28,
+		"DROP_EVENT":                 29,
+		"DROP_EXTENSION":             30,
+		"DROP_TYPE":                  31,
+		"ALTER_DATABASE":             40,
+		"ALTER_TABLE":                41,
+		"ALTER_VIEW":                 42,
+		"ALTER_SEQUENCE":             43,
+		"ALTER_EVENT":                44,
+		"ALTER_TYPE":                 45,
+		"ALTER_INDEX":                46,
+		"TRUNCATE":                   50,
+		"RENAME":                     51,
+		"RENAME_INDEX":               52,
+		"RENAME_SCHEMA":              53,
+		"RENAME_SEQUENCE":            54,
+		"COMMENT":                    55,
+		"INSERT":                     60,
+		"UPDATE":                     61,
+		"DELETE":                     62,
+	}
+)
+
+func (x StatementType) Enum() *StatementType {
+	p := new(StatementType)
+	*p = x
+	return p
+}
+
+func (x StatementType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (StatementType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_common_proto_enumTypes[6].Descriptor()
+}
+
+func (StatementType) Type() protoreflect.EnumType {
+	return &file_store_common_proto_enumTypes[6]
+}
+
+func (x StatementType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use StatementType.Descriptor instead.
+func (StatementType) EnumDescriptor() ([]byte, []int) {
+	return file_store_common_proto_rawDescGZIP(), []int{6}
+}
+
 // PageToken is used internally for obfuscating pagination tokens.
 type PageToken struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -696,7 +865,59 @@ const file_store_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
-	"\x04LARK\x10\aB\x8e\x01\n" +
+	"\x04LARK\x10\a*\xeb\x05\n" +
+	"\rStatementType\x12\x1e\n" +
+	"\x1aSTATEMENT_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fCREATE_DATABASE\x10\x01\x12\x10\n" +
+	"\fCREATE_TABLE\x10\x02\x12\x0f\n" +
+	"\vCREATE_VIEW\x10\x03\x12\x10\n" +
+	"\fCREATE_INDEX\x10\x04\x12\x13\n" +
+	"\x0fCREATE_SEQUENCE\x10\x05\x12\x11\n" +
+	"\rCREATE_SCHEMA\x10\x06\x12\x13\n" +
+	"\x0fCREATE_FUNCTION\x10\a\x12\x12\n" +
+	"\x0eCREATE_TRIGGER\x10\b\x12\x14\n" +
+	"\x10CREATE_PROCEDURE\x10\t\x12\x10\n" +
+	"\fCREATE_EVENT\x10\n" +
+	"\x12\x14\n" +
+	"\x10CREATE_EXTENSION\x10\v\x12\x0f\n" +
+	"\vCREATE_TYPE\x10\f\x12\x11\n" +
+	"\rDROP_DATABASE\x10\x14\x12\x0e\n" +
+	"\n" +
+	"DROP_TABLE\x10\x15\x12\r\n" +
+	"\tDROP_VIEW\x10\x16\x12\x0e\n" +
+	"\n" +
+	"DROP_INDEX\x10\x17\x12\x11\n" +
+	"\rDROP_SEQUENCE\x10\x18\x12\x0f\n" +
+	"\vDROP_SCHEMA\x10\x19\x12\x11\n" +
+	"\rDROP_FUNCTION\x10\x1a\x12\x10\n" +
+	"\fDROP_TRIGGER\x10\x1b\x12\x12\n" +
+	"\x0eDROP_PROCEDURE\x10\x1c\x12\x0e\n" +
+	"\n" +
+	"DROP_EVENT\x10\x1d\x12\x12\n" +
+	"\x0eDROP_EXTENSION\x10\x1e\x12\r\n" +
+	"\tDROP_TYPE\x10\x1f\x12\x12\n" +
+	"\x0eALTER_DATABASE\x10(\x12\x0f\n" +
+	"\vALTER_TABLE\x10)\x12\x0e\n" +
+	"\n" +
+	"ALTER_VIEW\x10*\x12\x12\n" +
+	"\x0eALTER_SEQUENCE\x10+\x12\x0f\n" +
+	"\vALTER_EVENT\x10,\x12\x0e\n" +
+	"\n" +
+	"ALTER_TYPE\x10-\x12\x0f\n" +
+	"\vALTER_INDEX\x10.\x12\f\n" +
+	"\bTRUNCATE\x102\x12\n" +
+	"\n" +
+	"\x06RENAME\x103\x12\x10\n" +
+	"\fRENAME_INDEX\x104\x12\x11\n" +
+	"\rRENAME_SCHEMA\x105\x12\x13\n" +
+	"\x0fRENAME_SEQUENCE\x106\x12\v\n" +
+	"\aCOMMENT\x107\x12\n" +
+	"\n" +
+	"\x06INSERT\x10<\x12\n" +
+	"\n" +
+	"\x06UPDATE\x10=\x12\n" +
+	"\n" +
+	"\x06DELETE\x10>B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vCommonProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -711,7 +932,7 @@ func file_store_common_proto_rawDescGZIP() []byte {
 	return file_store_common_proto_rawDescData
 }
 
-var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
 	(Engine)(0),           // 0: bytebase.store.Engine
@@ -720,9 +941,10 @@ var file_store_common_proto_goTypes = []any{
 	(RiskLevel)(0),        // 3: bytebase.store.RiskLevel
 	(SchemaChangeType)(0), // 4: bytebase.store.SchemaChangeType
 	(WebhookType)(0),      // 5: bytebase.store.WebhookType
-	(*PageToken)(nil),     // 6: bytebase.store.PageToken
-	(*Position)(nil),      // 7: bytebase.store.Position
-	(*Range)(nil),         // 8: bytebase.store.Range
+	(StatementType)(0),    // 6: bytebase.store.StatementType
+	(*PageToken)(nil),     // 7: bytebase.store.PageToken
+	(*Position)(nil),      // 8: bytebase.store.Position
+	(*Range)(nil),         // 9: bytebase.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -742,7 +964,7 @@ func file_store_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_common_proto_rawDesc), len(file_store_common_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      7,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -3,43 +3,51 @@
     <GeneralSetting
       ref="generalSettingRef"
       :title="$t('common.general')"
-      :allow-edit="allowEdit"
     />
     <BrandingSetting
       ref="brandingSettingRef"
       :title="$t('settings.general.workspace.branding')"
-      :allow-edit="allowEdit"
     />
     <AccountSetting
       ref="accountSettingRef"
       :title="$t('settings.general.workspace.account')"
-      :allow-edit="allowEdit"
     />
     <SecuritySetting
       ref="securitySettingRef"
       :title="$t('settings.general.workspace.security')"
-      :allow-edit="allowEdit"
     />
     <AIAugmentationSetting
       ref="aiAugmentationSettingRef"
       :title="$t('settings.general.workspace.ai-assistant.self')"
-      :allow-edit="allowEdit"
     />
     <AnnouncementSetting
       ref="announcementSettingRef"
       :title="$t('settings.general.workspace.announcement.self')"
-      :allow-edit="allowEdit"
     />
-    <ProductImprovementSetting
-      ref="productImprovementSettingRef"
-      :allow-edit="allowEdit"
-    />
-    <AuditLogStdoutSetting
-      ref="auditLogStdoutSettingRef"
-      :allow-edit="allowEdit"
-    />
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="[
+        'bb.settings.setWorkspaceProfile'
+      ]"
+    >
+      <ProductImprovementSetting
+        ref="productImprovementSettingRef"
+        :allow-edit="!slotProps.disabled"
+      />
+    </PermissionGuardWrapper>
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="[
+        'bb.settings.setWorkspaceProfile'
+      ]"
+    >
+      <AuditLogStdoutSetting
+        ref="auditLogStdoutSettingRef"
+        :allow-edit="!slotProps.disabled"
+      />
+    </PermissionGuardWrapper>
 
-    <div v-if="allowEdit && isDirty" class="sticky bottom-0 z-10">
+    <div v-if="isDirty" class="sticky bottom-0 z-10">
       <div
         class="flex justify-between w-full py-4 border-t border-block-border bg-white"
       >
@@ -69,13 +77,10 @@ import {
   ProductImprovementSetting,
   SecuritySetting,
 } from "@/components/GeneralSetting";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { pushNotification } from "@/store";
-
-defineProps<{
-  allowEdit: boolean;
-}>();
 
 const route = useRoute();
 const { t } = useI18n();

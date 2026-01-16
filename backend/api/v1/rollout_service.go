@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -322,7 +323,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
 	}
 
-	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.bus, taskRuns)
+	taskRunsV1, err := convertToTaskRuns(ctx, s.store, taskRuns)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task runs"))
 	}
@@ -466,7 +467,7 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in rollout %d", taskRunUID, planID))
 	}
 
-	taskRunV1, err := convertToTaskRun(ctx, s.store, s.bus, taskRun)
+	taskRunV1, err := convertToTaskRun(ctx, s.store, taskRun)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task run"))
 	}
@@ -1107,7 +1108,7 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 	}
 
 	// Users with bb.taskRuns.create can always create task runs.
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user, project.ResourceID)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.TaskRunsCreate, user, project.ResourceID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check workspace role")
 	}

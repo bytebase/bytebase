@@ -3,11 +3,6 @@
 
 package v1
 
-import (
-	proto "google.golang.org/protobuf/proto"
-	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
-)
-
 func (x *GetResourcePackageRequest) Equal(y *GetResourcePackageRequest) bool {
 	if x == y {
 		return true
@@ -51,80 +46,12 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	return true
 }
 
-func (x *UpdateActuatorInfoRequest) Equal(y *UpdateActuatorInfoRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.Actuator.Equal(y.Actuator) {
-		return false
-	}
-	if equal, ok := interface{}(x.UpdateMask).(interface {
-		Equal(*fieldmaskpb.FieldMask) bool
-	}); !ok || !equal.Equal(y.UpdateMask) {
-		return false
-	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
-		return false
-	}
-	if x.AllowMissing != y.AllowMissing {
-		return false
-	}
-	return true
-}
-
 func (x *DeleteCacheRequest) Equal(y *DeleteCacheRequest) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	return true
-}
-
-func (x *Restriction) Equal(y *Restriction) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.DisallowSignup != y.DisallowSignup {
-		return false
-	}
-	if x.Require_2Fa != y.Require_2Fa {
-		return false
-	}
-	if x.DisallowPasswordSignin != y.DisallowPasswordSignin {
-		return false
-	}
-	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
-		return false
-	}
-	if x.Watermark != y.Watermark {
-		return false
-	}
-	if x.DatabaseChangeMode != y.DatabaseChangeMode {
-		return false
-	}
-	if p, q := x.InactiveSessionTimeout, y.InactiveSessionTimeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if len(x.Domains) != len(y.Domains) {
-		return false
-	}
-	for i := 0; i < len(x.Domains); i++ {
-		if x.Domains[i] != y.Domains[i] {
-			return false
-		}
-	}
-	if x.EnforceIdentityDomain != y.EnforceIdentityDomain {
-		return false
-	}
-	if p, q := x.MaximumRoleExpiration, y.MaximumRoleExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
 	}
 	return true
 }
@@ -188,9 +115,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.WorkspaceId != y.WorkspaceId {
 		return false
 	}
-	if x.Debug != y.Debug {
-		return false
-	}
 	if len(x.UnlicensedFeatures) != len(y.UnlicensedFeatures) {
 		return false
 	}
@@ -222,13 +146,7 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.ExternalUrlFromFlag != y.ExternalUrlFromFlag {
 		return false
 	}
-	if !x.Announcement.Equal(y.Announcement) {
-		return false
-	}
-	if x.EnableMetricCollection != y.EnableMetricCollection {
-		return false
-	}
-	if !x.Restriction.Equal(y.Restriction) {
+	if x.ReplicaCount != y.ReplicaCount {
 		return false
 	}
 	return true

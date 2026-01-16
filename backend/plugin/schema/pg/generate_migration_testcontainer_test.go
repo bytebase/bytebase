@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -10,54 +9,25 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestGenerateMigrationWithTestcontainer tests the generate migration function
 // by applying migrations and rollback to verify the schema can be restored.
+//
+//nolint:tparallel
 func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("test_db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("test"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Minute),
-		),
-	)
-	require.NoError(t, err)
-	defer func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
-
-	// Get connection string
-	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	// Connect to the database
-	connConfig, err := pgx.ParseConfig(connectionString)
-	require.NoError(t, err)
-	db := stdlib.OpenDB(*connConfig)
-	defer db.Close()
+	// Start shared PostgreSQL container for all subtests
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Test cases with various schema changes
 	testCases := []struct {
@@ -2146,32 +2116,30 @@ $$ LANGUAGE plpgsql;
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a new database for each test case
-			dbName := fmt.Sprintf("test_%s", tc.name)
-			_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
-			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName))
-			}()
+			t.Parallel()
 
-			// Connect to the test database
-			testConnConfig := *connConfig
-			testConnConfig.Database = dbName
-			testDB := stdlib.OpenDB(testConnConfig)
-			defer testDB.Close()
+			// Create a new database for each test case with unique name
+			dbName := fmt.Sprintf("test_%s_%s", strings.ReplaceAll(tc.name, "-", "_"), strings.ReplaceAll(fmt.Sprintf("%d", time.Now().UnixNano()%1000000), "-", "_"))
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+			require.NoError(t, err)
+
+			// Create driver for the test database
+			driver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
 
 			// Step 1: Initialize the database schema and get schema result A
-			_, err = testDB.Exec(tc.initialSchema)
+			_, err = driver.GetDB().ExecContext(ctx, tc.initialSchema)
 			require.NoError(t, err)
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, &testConnConfig, dbName)
+			schemaA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			_, err = testDB.Exec(tc.migrationDDL)
+			_, err = driver.GetDB().ExecContext(ctx, tc.migrationDDL)
 			require.NoError(t, err)
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, &testConnConfig, dbName)
+			schemaB, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -2224,10 +2192,10 @@ $$ LANGUAGE plpgsql;
 			t.Logf("Rollback DDL:\n%s", rollbackDDL)
 
 			// Step 4: Run rollback DDL and get schema result C
-			_, err = testDB.Exec(rollbackDDL)
+			_, err = driver.GetDB().ExecContext(ctx, rollbackDDL)
 			require.NoError(t, err)
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, &testConnConfig, dbName)
+			schemaC, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -2240,48 +2208,6 @@ $$ LANGUAGE plpgsql;
 			}
 		})
 	}
-}
-
-// getSyncMetadataForGenerateMigration retrieves metadata from the live database using Driver.SyncDBSchema
-func getSyncMetadataForGenerateMigration(ctx context.Context, connConfig *pgx.ConnConfig, dbName string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create a driver instance using the pg package
-	driver := &pgdb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: connConfig.User,
-			Host:     connConfig.Host,
-			Port:     fmt.Sprintf("%d", connConfig.Port),
-			Database: dbName,
-		},
-		Password: connConfig.Password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "16.0", // PostgreSQL 16
-			DatabaseName:  dbName,
-		},
-	}
-
-	// Open connection using the driver
-	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Use SyncDBSchema to get the metadata
-	pgDriver, ok := openedDriver.(*pgdb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to pg.Driver")
-	}
-
-	metadata, err := pgDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
 }
 
 // normalizeMetadataForComparison normalizes metadata to ignore differences that don't affect schema equality
@@ -2419,34 +2345,18 @@ func sortExtensionsByName(extensions []*storepb.ExtensionMetadata) {
 func TestSDLForeignKeyDependencyOrder(t *testing.T) {
 	ctx := context.Background()
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("test_db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("test"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Minute),
-		),
-	)
-	require.NoError(t, err)
-	defer func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() {
+		container.Close(ctx)
+	})
 
-	// Get connection string
-	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	dbName := fmt.Sprintf("test_fk_dep_order_%d", time.Now().Unix())
+	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 	require.NoError(t, err)
 
-	// Connect to the database
-	connConfig, err := pgx.ParseConfig(connectionString)
+	driver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
 	require.NoError(t, err)
-	testDB := stdlib.OpenDB(*connConfig)
-	defer testDB.Close()
+	defer driver.Close(ctx)
 
 	// This SDL text simulates multi-file SDL where files are merged in alphabetical order
 	// table1.sql comes before table2.sql, but table1 has FK to table2
@@ -2471,7 +2381,7 @@ CREATE TABLE table2 (
 	previousSDL := ``
 
 	// Get current schema (empty database)
-	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
+	currentSchema, err := driver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 	dbMetadata := model.NewDatabaseMetadata(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
 
@@ -2487,14 +2397,20 @@ CREATE TABLE table2 (
 
 	// Execute the generated migration SQL
 	// This should work because generateMigration should have sorted tables by FK dependencies
-	_, err = testDB.Exec(migrationSQL)
+	_, err = driver.GetDB().ExecContext(ctx, migrationSQL)
 	require.NoError(t, err, "Migration SQL should execute successfully with correct FK dependency order")
 
-	// Verify both tables were created
-	var table1Exists, table2Exists bool
-	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table1')").Scan(&table1Exists)
+	// Connect to the test database for verification queries
+	verifyDriver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
 	require.NoError(t, err)
-	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table2')").Scan(&table2Exists)
+	defer verifyDriver.Close(ctx)
+
+	// Verify both tables were created
+	verifyDB := verifyDriver.GetDB()
+	var table1Exists, table2Exists bool
+	err = verifyDB.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table1')").Scan(&table1Exists)
+	require.NoError(t, err)
+	err = verifyDB.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table2')").Scan(&table2Exists)
 	require.NoError(t, err)
 
 	require.True(t, table1Exists, "table1 should be created")
@@ -2502,9 +2418,9 @@ CREATE TABLE table2 (
 
 	// Verify FK constraint exists
 	var fkExists bool
-	err = testDB.QueryRow(`
+	err = verifyDB.QueryRowContext(ctx, `
 		SELECT EXISTS (
-			SELECT 1 FROM information_schema.table_constraints 
+			SELECT 1 FROM information_schema.table_constraints
 			WHERE constraint_name = 'fk_table1_name' AND table_name = 'table1'
 		)
 	`).Scan(&fkExists)
@@ -2517,34 +2433,18 @@ CREATE TABLE table2 (
 func TestSDLViewDependencyChain(t *testing.T) {
 	ctx := context.Background()
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("test_db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("test"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Minute),
-		),
-	)
-	require.NoError(t, err)
-	defer func() {
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() {
+		container.Close(ctx)
+	})
 
-	// Get connection string
-	connectionString, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	dbName := fmt.Sprintf("test_view_dep_chain_%d", time.Now().Unix())
+	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 	require.NoError(t, err)
 
-	// Connect to the database
-	connConfig, err := pgx.ParseConfig(connectionString)
+	driver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
 	require.NoError(t, err)
-	testDB := stdlib.OpenDB(*connConfig)
-	defer testDB.Close()
+	defer driver.Close(ctx)
 
 	// This SDL text simulates the REAL multi-file scenario where files are merged alphabetically:
 	// Files: table_base.sql, test_view_0.sql, test_view2.sql
@@ -2570,7 +2470,7 @@ SELECT id, info, created_at, updated_at FROM table_base;
 	previousSDL := ``
 
 	// Get current schema (empty database)
-	currentSchema, err := getSyncMetadataForGenerateMigration(ctx, connConfig, connConfig.Database)
+	currentSchema, err := driver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 	dbMetadata := model.NewDatabaseMetadata(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
 
@@ -2584,24 +2484,31 @@ SELECT id, info, created_at, updated_at FROM table_base;
 
 	// Execute the generated migration SQL
 	// This should work because generateMigration should have sorted objects by dependencies
-	_, err = testDB.Exec(migrationSQL)
+	_, err = driver.GetDB().ExecContext(ctx, migrationSQL)
 	require.NoError(t, err, "Migration SQL should execute successfully with correct view dependency order")
+
+	// Connect to the test database for verification queries
+	verifyDriver, err := createPgDriver(ctx, container.GetHost(), container.GetPort(), dbName)
+	require.NoError(t, err)
+	defer verifyDriver.Close(ctx)
+
+	verifyDB := verifyDriver.GetDB()
 
 	// Verify table was created
 	var tableExists bool
-	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table_base')").Scan(&tableExists)
+	err = verifyDB.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'table_base')").Scan(&tableExists)
 	require.NoError(t, err)
 	require.True(t, tableExists, "table_base should be created")
 
 	// Verify test_view2 was created (depends on table_base)
 	var view2Exists bool
-	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view2')").Scan(&view2Exists)
+	err = verifyDB.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view2')").Scan(&view2Exists)
 	require.NoError(t, err)
 	require.True(t, view2Exists, "test_view2 should be created")
 
 	// Verify test_view_0 was created (depends on test_view2)
 	var view0Exists bool
-	err = testDB.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view_0')").Scan(&view0Exists)
+	err = verifyDB.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_name = 'test_view_0')").Scan(&view0Exists)
 	require.NoError(t, err)
 	require.True(t, view0Exists, "test_view_0 should be created")
 }

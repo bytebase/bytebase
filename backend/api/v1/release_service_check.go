@@ -706,31 +706,31 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 // allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.
 // SDL files should only contain CREATE and COMMENT statements to declare the desired schema.
 // ALTER SEQUENCE is allowed for setting ownership (OWNED BY).
-var allowedSDLStatementTypes = map[string]bool{
+var allowedSDLStatementTypes = map[storepb.StatementType]bool{
 	// CREATE statements - declare new objects
-	"CREATE_TABLE":     true,
-	"CREATE_INDEX":     true,
-	"CREATE_VIEW":      true,
-	"CREATE_SEQUENCE":  true,
-	"CREATE_FUNCTION":  true,
-	"CREATE_PROCEDURE": true,
-	"CREATE_SCHEMA":    true,
+	storepb.StatementType_CREATE_TABLE:     true,
+	storepb.StatementType_CREATE_INDEX:     true,
+	storepb.StatementType_CREATE_VIEW:      true,
+	storepb.StatementType_CREATE_SEQUENCE:  true,
+	storepb.StatementType_CREATE_FUNCTION:  true,
+	storepb.StatementType_CREATE_PROCEDURE: true,
+	storepb.StatementType_CREATE_SCHEMA:    true,
 
 	// ALTER statements - limited to specific cases
-	"ALTER_SEQUENCE": true, // Allowed for OWNED BY and sequence options
+	storepb.StatementType_ALTER_SEQUENCE: true, // Allowed for OWNED BY and sequence options
 
 	// COMMENT - metadata annotations
-	"COMMENT": true,
+	storepb.StatementType_COMMENT: true,
 }
 
 // isAllowedInSDL checks if a statement type is allowed in SDL files.
-func isAllowedInSDL(stmtType string) bool {
+func isAllowedInSDL(stmtType storepb.StatementType) bool {
 	return allowedSDLStatementTypes[stmtType]
 }
 
 // statementTypeWithPosition contains statement type and its position information.
 type statementTypeWithPosition struct {
-	Type string
+	Type storepb.StatementType
 	// Line is the one-based line number where the statement ends.
 	Line int
 	Text string
@@ -741,7 +741,7 @@ type statementTypeWithPosition struct {
 // Currently only PostgreSQL is supported.
 func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.AST) ([]statementTypeWithPosition, error) {
 	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB, storepb.Engine_REDSHIFT:
+	case storepb.Engine_POSTGRES:
 		pgStmts, err := pg.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err

@@ -63,6 +63,7 @@ type FindDatabaseMessage struct {
 	EffectiveEnvironmentID *string
 	InstanceID             *string
 	DatabaseName           *string
+	DatabaseNames          []string
 	Engine                 *storepb.Engine
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
@@ -82,12 +83,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 		}
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	databases, err := s.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, err
@@ -99,10 +94,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d database with filter %+v, expect 1", len(databases), find)}
 	}
 	database := databases[0]
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
 	return database, nil
@@ -144,6 +135,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 	if v := find.DatabaseName; v != nil {
 		where.And("db.name = ?", *v)
+	}
+	if len(find.DatabaseNames) > 0 {
+		where.And("db.name = ANY(?)", find.DatabaseNames)
 	}
 	if v := find.Engine; v != nil {
 		where.And("instance.metadata->>'engine' = ?", v.String())
@@ -607,16 +601,6 @@ func GetListDatabaseFilter(filter string) (*qb.Query, error) {
 			return qb.Q().Space("instance.metadata->>'engine' = ?", engine.String()), nil
 		case "name":
 			return qb.Q().Space("db.name = ?", value), nil
-		case "drifted":
-			drifted, ok := value.(bool)
-			if !ok {
-				return nil, errors.Errorf("invalid drifted filter %q", value)
-			}
-			condition := "IS"
-			if !drifted {
-				condition = "IS NOT"
-			}
-			return qb.Q().Space(fmt.Sprintf("(db.metadata->>'drifted')::boolean %s TRUE", condition)), nil
 		case "exclude_unassigned":
 			if excludeUnassigned, ok := value.(bool); excludeUnassigned && ok {
 				return qb.Q().Space("db.project != ?", common.DefaultProjectID), nil

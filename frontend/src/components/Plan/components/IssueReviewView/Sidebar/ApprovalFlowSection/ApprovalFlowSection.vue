@@ -3,7 +3,10 @@
     <div class="w-full flex flex-row items-center gap-2">
       <h3 class="textlabel">{{ $t("issue.approval-flow.self") }}</h3>
       <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
-      <RiskLevelIcon :risk-level="issue.riskLevel" />
+      <RiskLevelIcon
+        :risk-level="issue.riskLevel"
+        :title="approvalTemplate?.title?.trim()"
+      />
     </div>
 
     <div class="mt-2">

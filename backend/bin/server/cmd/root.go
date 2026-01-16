@@ -67,8 +67,7 @@ var (
 		// output logs in json format
 		enableJSONLogging bool
 		// demo mode.
-		demo  bool
-		debug bool
+		demo bool
 		// memoryProfileThreshold is the threshold of memory usage in bytes to trigger a memory profile.
 		memoryProfileThreshold uint64
 	}
@@ -112,7 +111,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
-	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().Uint64Var(&flags.memoryProfileThreshold, "memory-profile-threshold", 0, "the threshold of memory usage in bytes to trigger a memory profile")
 }
 
@@ -148,9 +146,6 @@ func checkPort(port int) error {
 }
 
 func start() {
-	if flags.debug {
-		log.LogLevel.Set(slog.LevelDebug)
-	}
 	if flags.saas || flags.enableJSONLogging {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 	} else {

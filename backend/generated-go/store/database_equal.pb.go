@@ -35,9 +35,6 @@ func (x *DatabaseMetadata) Equal(y *DatabaseMetadata) bool {
 	if x.Datashare != y.Datashare {
 		return false
 	}
-	if x.Drifted != y.Drifted {
-		return false
-	}
 	if x.Version != y.Version {
 		return false
 	}

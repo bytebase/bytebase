@@ -223,11 +223,14 @@ func (s *RevisionService) createRevisions(
 			if !strings.HasPrefix(revision.File, revision.Release) {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q is not in release %q", revision.File, revision.Release))
 			}
-			_, releaseUID, fileID, err := common.GetProjectReleaseUIDFile(revision.File)
+			projectID, releaseID, fileID, err := common.GetProjectReleaseIDFile(revision.File)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get release and file from %q", revision.File))
 			}
-			release, err := s.store.GetReleaseByUID(ctx, releaseUID)
+			release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
+				ProjectID: &projectID,
+				ReleaseID: &releaseID,
+			})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
 			}

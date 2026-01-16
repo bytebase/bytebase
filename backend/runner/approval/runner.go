@@ -49,6 +49,10 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case issueUID := <-r.bus.ApprovalCheckChan:
+			if err := r.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Approval runner skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			r.processIssue(ctx, issueUID)
 		case <-ctx.Done():
 			return
@@ -777,7 +781,7 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 }
 
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.
-func expandCELVars(base map[string]any, statementTypes, tableNames []string) []map[string]any {
+func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, tableNames []string) []map[string]any {
 	if len(statementTypes) == 0 {
 		return []map[string]any{base}
 	}
@@ -791,7 +795,7 @@ func expandCELVars(base map[string]any, statementTypes, tableNames []string) []m
 	for _, statementType := range statementTypes {
 		for _, tableName := range tableNames {
 			vars := maps.Clone(base)
-			vars[common.CELAttributeStatementSQLType] = statementType
+			vars[common.CELAttributeStatementSQLType] = statementType.String()
 			if tableName != "" {
 				vars[common.CELAttributeResourceTableName] = tableName
 			}

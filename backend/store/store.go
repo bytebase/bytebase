@@ -5,10 +5,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Store provides database access to all raw objects.
@@ -17,15 +20,19 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret         string
-	userEmailCache *lru.Cache[string, *UserMessage]
-	instanceCache  *lru.Cache[string, *InstanceMessage]
-	databaseCache  *lru.Cache[string, *DatabaseMessage]
-	projectCache   *lru.Cache[string, *ProjectMessage]
-	policyCache    *lru.Cache[string, *PolicyMessage]
-	settingCache   *lru.Cache[storepb.SettingName, *SettingMessage]
-	rolesCache     *lru.Cache[string, *RoleMessage]
-	groupCache     *lru.Cache[string, *GroupMessage]
+	Secret            string
+	userEmailCache    *lru.Cache[string, *UserMessage]
+	instanceCache     *lru.Cache[string, *InstanceMessage]
+	databaseCache     *lru.Cache[string, *DatabaseMessage]
+	projectCache      *lru.Cache[string, *ProjectMessage]
+	policyCache       *lru.Cache[string, *PolicyMessage]
+	settingCache      *lru.Cache[storepb.SettingName, *SettingMessage]
+	rolesCache        *expirable.LRU[string, *RoleMessage]
+	groupCache        *expirable.LRU[string, *GroupMessage]
+	groupMembersCache *expirable.LRU[string, map[string]bool]
+	memberGroupsCache *expirable.LRU[string, []string]
+	dbSchemaCache     *expirable.LRU[string, *model.DatabaseMetadata]
+	iamPolicyCache    *expirable.LRU[string, *IamPolicyMessage]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
@@ -58,18 +65,16 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	rolesCache, err := lru.New[string, *RoleMessage](64)
-	if err != nil {
-		return nil, err
-	}
+	rolesCache := expirable.NewLRU[string, *RoleMessage](128, nil, time.Minute)
 	sheetFullCache, err := lru.New[string, *SheetMessage](10)
 	if err != nil {
 		return nil, err
 	}
-	groupCache, err := lru.New[string, *GroupMessage](1024)
-	if err != nil {
-		return nil, err
-	}
+	groupCache := expirable.NewLRU[string, *GroupMessage](1024, nil, time.Minute)
+	groupMembersCache := expirable.NewLRU[string, map[string]bool](1024, nil, time.Minute)
+	memberGroupsCache := expirable.NewLRU[string, []string](4096, nil, time.Minute)
+	dbSchemaCache := expirable.NewLRU[string, *model.DatabaseMetadata](128, nil, 5*time.Minute)
+	iamPolicyCache := expirable.NewLRU[string, *IamPolicyMessage](1024, nil, time.Minute)
 
 	// Initialize database connection (handles both direct URL and file-based)
 	dbConnManager := NewDBConnectionManager(pgURL)
@@ -82,15 +87,19 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		enableCache:   enableCache,
 
 		// Cache.
-		userEmailCache: userEmailCache,
-		instanceCache:  instanceCache,
-		databaseCache:  databaseCache,
-		projectCache:   projectCache,
-		policyCache:    policyCache,
-		settingCache:   settingCache,
-		rolesCache:     rolesCache,
-		sheetFullCache: sheetFullCache,
-		groupCache:     groupCache,
+		userEmailCache:    userEmailCache,
+		instanceCache:     instanceCache,
+		databaseCache:     databaseCache,
+		projectCache:      projectCache,
+		policyCache:       policyCache,
+		settingCache:      settingCache,
+		rolesCache:        rolesCache,
+		sheetFullCache:    sheetFullCache,
+		groupCache:        groupCache,
+		groupMembersCache: groupMembersCache,
+		memberGroupsCache: memberGroupsCache,
+		dbSchemaCache:     dbSchemaCache,
+		iamPolicyCache:    iamPolicyCache,
 	}
 
 	return s, nil
@@ -112,6 +121,18 @@ func (s *Store) DeleteCache() {
 	s.userEmailCache.Purge()
 }
 
+// PurgeGroupCaches purges all group-related caches.
+func (s *Store) PurgeGroupCaches() {
+	s.groupCache.Purge()
+	s.groupMembersCache.Purge()
+	s.memberGroupsCache.Purge()
+}
+
+// PurgeIamPolicyCaches purges all IAM policy caches.
+func (s *Store) PurgeIamPolicyCaches() {
+	s.iamPolicyCache.Purge()
+}
+
 func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
@@ -121,5 +142,9 @@ func getPolicyCacheKey(resourceType storepb.Policy_Resource, resource string, po
 }
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {
+	return fmt.Sprintf("%s/%s", instanceID, databaseName)
+}
+
+func getDBSchemaCacheKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }

@@ -33,8 +33,11 @@ watch(
 
     try {
       const { prettyPrintJson } = await import("pretty-print-json");
+      const { parse } = await import("lossless-json");
+      const { losslessReviver } = await import("@/composables/utils");
       await import("./pretty-print-json.css");
-      const obj = JSON.parse(content);
+      // Use lossless-json to preserve precision for large integers (> 2^53-1)
+      const obj = parse(content, null, losslessReviver);
       const html = prettyPrintJson.toHtml(obj, {
         quoteKeys: true,
         trailingCommas: false,

@@ -17,15 +17,20 @@ export const ISSUE_CREATE: ActionDefinition = {
     !ctx.isIssueOnly &&
     ctx.plan.issue === "" &&
     !ctx.plan.hasRollout &&
-    ctx.planState === State.ACTIVE &&
-    ctx.permissions.createIssue,
+    ctx.planState === State.ACTIVE,
 
   isDisabled: (ctx) =>
+    !ctx.permissions.createIssue ||
     ctx.validation.hasEmptySpec ||
     ctx.validation.planChecksRunning ||
     (ctx.validation.planChecksFailed && ctx.project.enforceSqlReview),
 
   disabledReason: (ctx) => {
+    if (!ctx.permissions.createIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.create",
+      });
+    }
     if (ctx.validation.hasEmptySpec) {
       return t("plan.navigator.statement-empty");
     }
@@ -64,32 +69,6 @@ export const ISSUE_REVIEW: ActionDefinition = {
   executeType: "popover:review",
 };
 
-export const ISSUE_STATUS_RESOLVE: ActionDefinition = {
-  id: "ISSUE_STATUS_RESOLVE",
-  label: () => t("issue.batch-transition.resolve"),
-  buttonType: "success",
-  category: "primary",
-  priority: 50,
-
-  isVisible: (ctx) => {
-    // Deferred rollout plans auto-resolve when task completes, never show manual resolve
-    if (ctx.hasDeferredRollout) return false;
-    return (
-      ctx.issueStatus === IssueStatus.OPEN &&
-      (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-        ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
-      ctx.allTasksFinished &&
-      ctx.plan.hasRollout &&
-      ctx.permissions.updateIssue
-    );
-  },
-
-  isDisabled: () => false,
-  disabledReason: () => undefined,
-
-  executeType: "panel:issue-status",
-};
-
 export const ISSUE_STATUS_CLOSE: ActionDefinition = {
   id: "ISSUE_STATUS_CLOSE",
   label: () => t("issue.batch-transition.close"),
@@ -98,12 +77,17 @@ export const ISSUE_STATUS_CLOSE: ActionDefinition = {
   priority: 90,
 
   isVisible: (ctx) =>
-    ctx.issueStatus === IssueStatus.OPEN &&
-    !ctx.plan.hasRollout &&
-    ctx.permissions.updateIssue,
+    ctx.issueStatus === IssueStatus.OPEN && !ctx.plan.hasRollout,
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updateIssue,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updateIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.update",
+      });
+    }
+    return undefined;
+  },
 
   executeType: "panel:issue-status",
 };
@@ -116,11 +100,17 @@ export const ISSUE_STATUS_REOPEN: ActionDefinition = {
   priority: 20,
 
   // Only show reopen for canceled issues, not for done/resolved issues
-  isVisible: (ctx) =>
-    ctx.issueStatus === IssueStatus.CANCELED && ctx.permissions.updateIssue,
+  isVisible: (ctx) => ctx.issueStatus === IssueStatus.CANCELED,
 
-  isDisabled: () => false,
-  disabledReason: () => undefined,
+  isDisabled: (ctx) => !ctx.permissions.updateIssue,
+  disabledReason: (ctx) => {
+    if (!ctx.permissions.updateIssue) {
+      return t("common.missing-required-permission", {
+        permissions: "bb.issues.update",
+      });
+    }
+    return undefined;
+  },
 
   executeType: "panel:issue-status",
 };
@@ -128,7 +118,6 @@ export const ISSUE_STATUS_REOPEN: ActionDefinition = {
 export const issueActions: ActionDefinition[] = [
   ISSUE_CREATE,
   ISSUE_REVIEW,
-  ISSUE_STATUS_RESOLVE,
   ISSUE_STATUS_CLOSE,
   ISSUE_STATUS_REOPEN,
 ];

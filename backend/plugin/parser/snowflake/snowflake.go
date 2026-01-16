@@ -13,22 +13,7 @@ import (
 )
 
 func init() {
-	base.RegisterParseFunc(storepb.Engine_SNOWFLAKE, parseSnowflakeForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_SNOWFLAKE, parseSnowflakeStatements)
-}
-
-// parseSnowflakeForRegistry is the ParseFunc for Snowflake.
-// Returns []base.AST with *ANTLRAST instances.
-func parseSnowflakeForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParseSnowSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-	asts := make([]base.AST, len(parseResults))
-	for i, r := range parseResults {
-		asts[i] = r
-	}
-	return asts, nil
 }
 
 // parseSnowflakeStatements is the ParseStatementsFunc for Snowflake.

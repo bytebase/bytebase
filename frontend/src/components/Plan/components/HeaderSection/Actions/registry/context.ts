@@ -136,6 +136,13 @@ function computeExportArchiveReady(
   return true;
 }
 
+// Check if issue has no approval required (empty approval flow)
+function hasNoApprovalRequired(issue: Issue | undefined): boolean {
+  if (!issue) return false;
+  const roles = issue.approvalTemplate?.flow?.roles ?? [];
+  return roles.length === 0;
+}
+
 export function buildActionContext(input: ContextBuilderInput): ActionContext {
   const {
     plan,
@@ -174,14 +181,17 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
       hasProjectPermissionV2(project, "bb.plans.update"),
     createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
-    createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
+    // Check both permissions: developers have bb.rollouts.create (for legacy UI)
+    // but not bb.taskRuns.create, so they can't create rollouts in the new CI/CD workflow.
+    // Releasers have both permissions.
+    createRollout:
+      hasProjectPermissionV2(project, "bb.rollouts.create") &&
+      hasProjectPermissionV2(project, "bb.taskRuns.create"),
     runTasks:
       issue?.type === Issue_Type.DATABASE_EXPORT
         ? currentUserEmail === extractUserId(issue.creator)
         : hasProjectPermissionV2(project, "bb.taskRuns.create"),
     isApprovalCandidate,
-    canApprove: isApprovalCandidate,
-    canReject: isApprovalCandidate,
   };
 
   // Compute validation state
@@ -217,9 +227,13 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
   );
 
   // Compute approval status
+  // Issue is considered approved if:
+  // - Status is APPROVED or SKIPPED, OR
+  // - Approval template has no roles (no approval required)
   const issueApproved =
     issue?.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+    issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
+    hasNoApprovalRequired(issue);
 
   return {
     plan,

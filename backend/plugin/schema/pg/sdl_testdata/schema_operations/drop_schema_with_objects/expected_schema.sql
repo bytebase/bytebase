@@ -1,0 +1,1 @@
+-- Schema and all objects dropped

@@ -190,10 +190,11 @@ import {
 // Internal action type for the review button
 type ReviewAction = "APPROVE" | "REJECT" | "COMMENT";
 
-defineProps<{
+const props = defineProps<{
   canApprove: boolean;
   canReject: boolean;
   disabled?: boolean;
+  disabledReason?: string;
 }>();
 
 const { t } = useI18n();
@@ -208,8 +209,14 @@ const comment = ref("");
 const selectedAction = ref<ReviewAction>("COMMENT");
 const performActionAnyway = ref(false);
 
-// No errors that disable the main button currently
-const errors: string[] = [];
+// Errors that disable the main button
+const errors = computed(() => {
+  const list: string[] = [];
+  if (props.disabledReason) {
+    list.push(props.disabledReason);
+  }
+  return list;
+});
 
 // Reset state when popover opens
 watch(showPopover, (show) => {

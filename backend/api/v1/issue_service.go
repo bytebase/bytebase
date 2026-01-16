@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -301,7 +302,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 		}
-		projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionIssuesGet, s.iamManager, s.store)
+		projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, permission.IssuesGet, s.iamManager, s.store)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get projectIDs"))
 		}
@@ -361,9 +362,6 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
-	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
-	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -377,6 +375,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	issue, err = s.store.CreateIssue(ctx, issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+	}
+
+	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
 	// Trigger ISSUE_CREATED webhook
@@ -865,12 +867,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
 			// When allow_missing is true and issue doesn't exist, create a new one
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesCreate, user)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.IssuesCreate, user)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionIssuesCreate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssuesCreate))
 			}
 
 			// Extract project ID from the issue name (format: projects/{project}/issues/{issue})
@@ -1174,12 +1176,12 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	}
 	if issueComment == nil {
 		if req.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssueCommentsCreate, user)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.IssueCommentsCreate, user)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionIssueCommentsCreate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssueCommentsCreate))
 			}
 			return s.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
 				Parent:       req.Msg.Parent,

@@ -507,13 +507,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   refreshTokenDuration?: Duration;
 
   /**
-   * The duration for access token. Default is 1 hour.
-   *
-   * @generated from field: google.protobuf.Duration access_token_duration = 18;
-   */
-  accessTokenDuration?: Duration;
-
-  /**
    * The setting of custom announcement
    *
    * @generated from field: bytebase.v1.Announcement announcement = 5;
@@ -605,6 +598,20 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 17;
    */
   passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
+
+  /**
+   * The duration for access token. Default is 1 hour.
+   *
+   * @generated from field: google.protobuf.Duration access_token_duration = 18;
+   */
+  accessTokenDuration?: Duration;
+
+  /**
+   * Whether debug mode is enabled.
+   *
+   * @generated from field: bool enable_debug = 19;
+   */
+  enableDebug: boolean;
 };
 
 /**

@@ -29,6 +29,25 @@
         :filter="filterRole"
       />
     </div>
+    <div v-if="selectedRole" class="w-full flex flex-col gap-y-2">
+      <div class="flex items-center gap-x-1">
+        <span>
+          {{ $t("common.permissions") }}
+          ({{
+              selectedRole.permissions.length
+          }})
+        </span>
+      </div>
+      <div class="max-h-[10em] overflow-auto border rounded-sm p-2">
+        <p
+          v-for="permission in selectedRole.permissions"
+          :key="permission"
+          class="text-sm leading-5"
+        >
+          {{ permission }}
+        </p>
+      </div>
+    </div>
     <div class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
         <span>{{ $t("common.reason") }}</span>
@@ -85,6 +104,7 @@ import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/Database
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
+import { useRoleStore } from "@/store";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -141,6 +161,9 @@ const state = reactive<LocalState>(getInitialState());
 const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 const databaseResourceFormRef =
   ref<InstanceType<typeof QuerierDatabaseResourceForm>>();
+const roleStore = useRoleStore();
+
+const selectedRole = computed(() => roleStore.getRoleByName(state.role));
 
 defineExpose({
   reason: computed(() => state.reason),

@@ -10,36 +10,36 @@
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.access-token-duration.description") }}
     </p>
-    <NTooltip placement="top-start" :disabled="allowChangeSetting">
-      <template #trigger>
-        <div class="mt-3 w-full flex flex-row justify-start items-center">
-          <NInputNumber
-            v-model:value="state.accessTokenDuration"
-            class="w-24 mr-4"
-            :disabled="!allowChangeSetting"
-            :min="1"
-            :max="state.accessTokenTimeFormat === 'MINUTES' ? 59 : 23"
-            :precision="0"
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="[
+        'bb.settings.setWorkspaceProfile'
+      ]"
+    >
+      <div class="mt-3 flex flex-row justify-start items-center">
+        <NInputNumber
+          v-model:value="state.accessTokenDuration"
+          class="w-24 mr-4"
+          :disabled="!hasSecureTokenFeature || slotProps.disabled"
+          :min="1"
+          :max="state.accessTokenTimeFormat === 'MINUTES' ? 59 : 23"
+          :precision="0"
+        />
+        <NRadioGroup
+          v-model:value="state.accessTokenTimeFormat"
+          :disabled="!hasSecureTokenFeature || slotProps.disabled"
+        >
+          <NRadio
+            :value="'MINUTES'"
+            :label="$t('settings.general.workspace.access-token-duration.minutes')"
           />
-          <NRadioGroup
-            v-model:value="state.accessTokenTimeFormat"
-            :disabled="!allowChangeSetting"
-          >
-            <NRadio
-              :value="'MINUTES'"
-              :label="$t('settings.general.workspace.access-token-duration.minutes')"
-            />
-            <NRadio
-              :value="'HOURS'"
-              :label="$t('settings.general.workspace.access-token-duration.hours')"
-            />
-          </NRadioGroup>
-        </div>
-      </template>
-      <span class="text-sm text-gray-400 -translate-y-2">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
-    </NTooltip>
+          <NRadio
+            :value="'HOURS'"
+            :label="$t('settings.general.workspace.access-token-duration.hours')"
+          />
+        </NRadioGroup>
+      </div>
+    </PermissionGuardWrapper>
   </div>
 
   <!-- Refresh Token Duration -->
@@ -53,36 +53,36 @@
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.refresh-token-duration.description") }}
     </p>
-    <NTooltip placement="top-start" :disabled="allowChangeSetting">
-      <template #trigger>
-        <div class="mt-3 w-full flex flex-row justify-start items-center">
-          <NInputNumber
-            v-model:value="state.refreshTokenDuration"
-            class="w-24 mr-4"
-            :disabled="!allowChangeSetting"
-            :min="1"
-            :max="state.refreshTokenTimeFormat === 'HOURS' ? 23 : undefined"
-            :precision="0"
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :permissions="[
+        'bb.settings.setWorkspaceProfile'
+      ]"
+    >
+      <div class="mt-3 w-full flex flex-row justify-start items-center">
+        <NInputNumber
+          v-model:value="state.refreshTokenDuration"
+          class="w-24 mr-4"
+          :disabled="!hasSecureTokenFeature || slotProps.disabled"
+          :min="1"
+          :max="state.refreshTokenTimeFormat === 'HOURS' ? 23 : undefined"
+          :precision="0"
+        />
+        <NRadioGroup
+          v-model:value="state.refreshTokenTimeFormat"
+          :disabled="!hasSecureTokenFeature || slotProps.disabled"
+        >
+          <NRadio
+            :value="'HOURS'"
+            :label="$t('settings.general.workspace.refresh-token-duration.hours')"
           />
-          <NRadioGroup
-            v-model:value="state.refreshTokenTimeFormat"
-            :disabled="!allowChangeSetting"
-          >
-            <NRadio
-              :value="'HOURS'"
-              :label="$t('settings.general.workspace.refresh-token-duration.hours')"
-            />
-            <NRadio
-              :value="'DAYS'"
-              :label="$t('settings.general.workspace.refresh-token-duration.days')"
-            />
-          </NRadioGroup>
-        </div>
-      </template>
-      <span class="text-sm text-gray-400 -translate-y-2">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
-    </NTooltip>
+          <NRadio
+            :value="'DAYS'"
+            :label="$t('settings.general.workspace.refresh-token-duration.days')"
+          />
+        </NRadioGroup>
+      </div>
+    </PermissionGuardWrapper>
   </div>
 
   <div class="mb-7 mt-4 lg:mt-0" @click="handleValueFieldClick">
@@ -100,26 +100,26 @@
         {{ $t("settings.general.workspace.no-limit") }}
       </span>
     </p>
-    <NTooltip placement="top-start" :disabled="allowChangeSetting">
-      <template #trigger>
-        <div class="mt-3 w-full flex flex-row justify-start items-center">
-          <NInputNumber
-            v-model:value="state.inactiveTimeout"
-            class="w-24 mr-4"
-            :min="-1"
-            :disabled="!allowChangeSetting"
-          />
-          <span class="textinfo text-sm">
-            {{
-              $t("settings.general.workspace.inactive-session-timeout.hours")
-            }}
-          </span>
-        </div>
-      </template>
-      <span class="text-sm text-gray-400 -translate-y-2">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
+    <div class="mt-3 w-full flex flex-row justify-start items-center">
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="[
+          'bb.settings.setWorkspaceProfile'
+        ]"
+      >
+        <NInputNumber
+          v-model:value="state.inactiveTimeout"
+          class="w-24 mr-4"
+          :min="-1"
+          :disabled="!hasSecureTokenFeature || slotProps.disabled"
+        />
+      </PermissionGuardWrapper>
+      <span class="textinfo text-sm">
+        {{
+          $t("settings.general.workspace.inactive-session-timeout.hours")
+        }}
       </span>
-    </NTooltip>
+    </div>
   </div>
 
   <FeatureModal
@@ -133,9 +133,10 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NInputNumber, NRadio, NRadioGroup, NTooltip } from "naive-ui";
+import { NInputNumber, NRadio, NRadioGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
@@ -164,9 +165,9 @@ const getInitialState = (): LocalState => {
   };
 
   // Access token duration
-  const accessTokenSeconds = settingV1Store.workspaceProfileSetting
-    ?.accessTokenDuration?.seconds
-    ? Number(settingV1Store.workspaceProfileSetting.accessTokenDuration.seconds)
+  const accessTokenSeconds = settingV1Store.workspaceProfile.accessTokenDuration
+    ?.seconds
+    ? Number(settingV1Store.workspaceProfile.accessTokenDuration.seconds)
     : undefined;
   if (accessTokenSeconds && accessTokenSeconds > 0) {
     if (accessTokenSeconds < 60 * 60) {
@@ -181,11 +182,9 @@ const getInitialState = (): LocalState => {
   }
 
   // Refresh token duration
-  const refreshTokenSeconds = settingV1Store.workspaceProfileSetting
-    ?.refreshTokenDuration?.seconds
-    ? Number(
-        settingV1Store.workspaceProfileSetting.refreshTokenDuration.seconds
-      )
+  const refreshTokenSeconds = settingV1Store.workspaceProfile
+    .refreshTokenDuration?.seconds
+    ? Number(settingV1Store.workspaceProfile.refreshTokenDuration.seconds)
     : undefined;
   if (refreshTokenSeconds && refreshTokenSeconds > 0) {
     if (refreshTokenSeconds < 60 * 60 * 24) {
@@ -201,7 +200,7 @@ const getInitialState = (): LocalState => {
 
   // Inactive timeout
   const inactiveTimeoutSeconds = Number(
-    settingV1Store.workspaceProfileSetting?.inactiveSessionTimeout?.seconds ?? 0
+    settingV1Store.workspaceProfile.inactiveSessionTimeout?.seconds ?? 0
   );
   if (inactiveTimeoutSeconds) {
     defaultState.inactiveTimeout =
@@ -211,20 +210,12 @@ const getInitialState = (): LocalState => {
   return defaultState;
 };
 
-const props = defineProps<{
-  allowEdit: boolean;
-}>();
-
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
 const hasSecureTokenFeature = featureToRef(
   PlanFeature.FEATURE_TOKEN_DURATION_CONTROL
 );
-
-const allowChangeSetting = computed(() => {
-  return hasSecureTokenFeature.value && props.allowEdit;
-});
 
 const handleValueFieldClick = () => {
   if (!hasSecureTokenFeature.value) {

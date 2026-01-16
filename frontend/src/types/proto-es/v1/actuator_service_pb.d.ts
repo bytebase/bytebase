@@ -4,8 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Duration, EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { Announcement, DatabaseChangeMode, WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
+import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { UserType } from "./user_service_pb";
 import type { State } from "./common_pb";
 
@@ -77,41 +76,6 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
 
 /**
- * Request message for updating actuator information.
- *
- * @generated from message bytebase.v1.UpdateActuatorInfoRequest
- */
-export declare type UpdateActuatorInfoRequest = Message<"bytebase.v1.UpdateActuatorInfoRequest"> & {
-  /**
-   * The actuator to update.
-   *
-   * @generated from field: bytebase.v1.ActuatorInfo actuator = 1;
-   */
-  actuator?: ActuatorInfo;
-
-  /**
-   * The list of fields to update.
-   *
-   * @generated from field: google.protobuf.FieldMask update_mask = 2;
-   */
-  updateMask?: FieldMask;
-
-  /**
-   * If set to true, and the actuator is not found, a new actuator will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 3;
-   */
-  allowMissing: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.UpdateActuatorInfoRequest.
- * Use `create(UpdateActuatorInfoRequestSchema)` to create a new message.
- */
-export declare const UpdateActuatorInfoRequestSchema: GenMessage<UpdateActuatorInfoRequest>;
-
-/**
  * Request message for deleting cache.
  *
  * @generated from message bytebase.v1.DeleteCacheRequest
@@ -124,87 +88,6 @@ export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest
  * Use `create(DeleteCacheRequestSchema)` to create a new message.
  */
 export declare const DeleteCacheRequestSchema: GenMessage<DeleteCacheRequest>;
-
-/**
- * @generated from message bytebase.v1.Restriction
- */
-export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
-  /**
-   * Whether self-service user signup is disabled.
-   *
-   * @generated from field: bool disallow_signup = 1;
-   */
-  disallowSignup: boolean;
-
-  /**
-   * Whether two-factor authentication is required for all users.
-   *
-   * @generated from field: bool require_2fa = 2;
-   */
-  require2fa: boolean;
-
-  /**
-   * Whether password-based signin is disabled (except for workspace admins).
-   *
-   * @generated from field: bool disallow_password_signin = 3;
-   */
-  disallowPasswordSignin: boolean;
-
-  /**
-   * Password complexity and restriction requirements.
-   *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 4;
-   */
-  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
-
-  /**
-   * Whether to display watermark on pages.
-   *
-   * @generated from field: bool watermark = 5;
-   */
-  watermark: boolean;
-
-  /**
-   * The workspace database change mode.
-   *
-   * @generated from field: bytebase.v1.DatabaseChangeMode database_change_mode = 6;
-   */
-  databaseChangeMode: DatabaseChangeMode;
-
-  /**
-   * The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-   *
-   * @generated from field: google.protobuf.Duration inactive_session_timeout = 7;
-   */
-  inactiveSessionTimeout?: Duration;
-
-  /**
-   * The workspace domain, e.g., bytebase.com.
-   *
-   * @generated from field: repeated string domains = 8;
-   */
-  domains: string[];
-
-  /**
-   * Only user and group from the domains can be created and login.
-   *
-   * @generated from field: bool enforce_identity_domain = 9;
-   */
-  enforceIdentityDomain: boolean;
-
-  /**
-   * The max duration for role expired.
-   *
-   * @generated from field: google.protobuf.Duration maximum_role_expiration = 10;
-   */
-  maximumRoleExpiration?: Duration;
-};
-
-/**
- * Describes the message bytebase.v1.Restriction.
- * Use `create(RestrictionSchema)` to create a new message.
- */
-export declare const RestrictionSchema: GenMessage<Restriction>;
 
 /**
  * System information and configuration for the Bytebase instance.
@@ -291,13 +174,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   workspaceId: string;
 
   /**
-   * Whether debug mode is enabled.
-   *
-   * @generated from field: bool debug = 14;
-   */
-  debug: boolean;
-
-  /**
    * List of features that are not licensed.
    *
    * @generated from field: repeated string unlicensed_features = 15;
@@ -347,23 +223,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   externalUrlFromFlag: boolean;
 
   /**
-   * The setting of custom announcement
+   * The number of active replicas (servers sharing the same database).
    *
-   * @generated from field: bytebase.v1.Announcement announcement = 24;
+   * @generated from field: int32 replica_count = 24;
    */
-  announcement?: Announcement;
-
-  /**
-   * Whether to enable metric collection for the workspace.
-   *
-   * @generated from field: bool enable_metric_collection = 25;
-   */
-  enableMetricCollection: boolean;
-
-  /**
-   * @generated from field: bytebase.v1.Restriction restriction = 26;
-   */
-  restriction?: Restriction;
+  replicaCount: number;
 };
 
 /**
@@ -421,17 +285,6 @@ export declare const ActuatorService: GenService<{
   getActuatorInfo: {
     methodKind: "unary";
     input: typeof GetActuatorInfoRequestSchema;
-    output: typeof ActuatorInfoSchema;
-  },
-  /**
-   * Updates system configuration settings for the Bytebase instance.
-   * Permissions required: bb.settings.set
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.UpdateActuatorInfo
-   */
-  updateActuatorInfo: {
-    methodKind: "unary";
-    input: typeof UpdateActuatorInfoRequestSchema;
     output: typeof ActuatorInfoSchema;
   },
   /**

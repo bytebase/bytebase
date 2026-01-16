@@ -57,17 +57,8 @@ func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMes
 		}
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	groups, err := s.ListGroups(ctx, find)
 	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -311,6 +302,7 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 
 	if group.Email != "" {
 		s.groupCache.Add(group.Email, &group)
+		s.groupMembersCache.Remove("groups/" + group.Email)
 	}
 	return &group, nil
 }
@@ -340,8 +332,65 @@ func (s *Store) DeleteGroup(ctx context.Context, id string) error {
 
 	if email.Valid && email.String != "" {
 		s.groupCache.Remove(email.String)
+		s.groupMembersCache.Remove("groups/" + email.String)
 	}
 	return nil
+}
+
+// GetUserGroupsSnapshot returns groups for a user with snapshot reads (with cache).
+// userName format is "users/{email}".
+// Trades consistency for performance.
+func (s *Store) GetUserGroupsSnapshot(ctx context.Context, userName string) ([]string, error) {
+	if v, ok := s.memberGroupsCache.Get(userName); ok {
+		return v, nil
+	}
+
+	groups, err := s.ListGroups(ctx, &FindGroupMessage{})
+	if err != nil {
+		return nil, err
+	}
+
+	var userGroups []string
+	for _, group := range groups {
+		for _, m := range group.Payload.GetMembers() {
+			if m.Member == userName {
+				groupName := common.FormatGroupEmail(group.Email)
+				if group.Email == "" {
+					groupName = common.FormatGroupEmail(group.ID)
+				}
+				userGroups = append(userGroups, groupName)
+				break
+			}
+		}
+	}
+	s.memberGroupsCache.Add(userName, userGroups)
+	return userGroups, nil
+}
+
+// GetGroupMembersSnapshot returns group members with snapshot reads (with cache).
+// groupName format is "groups/{email}".
+// Trades consistency for performance.
+func (s *Store) GetGroupMembersSnapshot(ctx context.Context, groupName string) (map[string]bool, error) {
+	if v, ok := s.groupMembersCache.Get(groupName); ok {
+		return v, nil
+	}
+
+	// Extract email from group name "groups/{email}"
+	email := strings.TrimPrefix(groupName, "groups/")
+	group, err := s.GetGroup(ctx, &FindGroupMessage{Email: &email})
+	if err != nil {
+		return nil, err
+	}
+	if group == nil {
+		return nil, nil
+	}
+
+	members := make(map[string]bool)
+	for _, m := range group.Payload.GetMembers() {
+		members[m.Member] = true
+	}
+	s.groupMembersCache.Add(groupName, members)
+	return members, nil
 }
 
 func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error) {

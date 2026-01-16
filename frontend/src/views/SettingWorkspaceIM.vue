@@ -272,7 +272,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import { PlusIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton, NEmpty, NPopconfirm, NSelect } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import BBTextField from "@/bbkit/BBTextField.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -660,12 +660,16 @@ const renderOption = ({ value }: { value: WebhookType }) => {
   );
 };
 
+onMounted(async () => {
+  await settingStore.getOrFetchSettingByName(Setting_SettingName.APP_IM);
+});
+
 watch(
   () => imSetting.value,
   (setting) => {
     state.setting = clone(AppIMSettingSchema, setting);
   },
-  { once: true, immediate: true }
+  { immediate: true }
 );
 
 const isDataChanged = (

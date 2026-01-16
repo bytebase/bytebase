@@ -12,9 +12,15 @@
   </teleport>
 
   <Suspense>
+    <RoutePermissionGuard
+      class="m-6"
+      :project="project"
+      :routes="sqlEditorRoutes"
+    >
     <ProvideAIContext>
       <router-view />
     </ProvideAIContext>
+    </RoutePermissionGuard>
   </Suspense>
 </template>
 
@@ -24,10 +30,11 @@ import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { ProvideAIContext } from "@/plugins/ai";
-import {
+import sqlEditorRoutes, {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
@@ -37,7 +44,6 @@ import {
 import {
   pushNotification,
   useDatabaseV1Store,
-  usePolicyV1Store,
   useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -51,7 +57,6 @@ import {
   isValidInstanceName,
   isValidProjectName,
 } from "@/types";
-import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   emptySQLEditorConnection,
   extractInstanceResourceName,
@@ -77,7 +82,6 @@ const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
-const policyStore = usePolicyV1Store();
 const {
   asidePanelTab,
   events: editorEvents,
@@ -87,7 +91,7 @@ const {
 useRouteChangeGuard(
   computed(() => {
     return (
-      tabStore.openTabList.find((tab) => tab.status === "DIRTY") !== undefined
+      tabStore.openTabList.find((tab) => tab.status !== "CLEAN") !== undefined
     );
   }),
   `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`
@@ -134,6 +138,14 @@ const initializeProject = async () => {
   }
   return editorStore.project;
 };
+
+const project = computed(() => {
+  const proj = projectStore.getProjectByName(editorStore.project);
+  if (!isValidProjectName(proj.name)) {
+    return;
+  }
+  return proj;
+});
 
 const switchWorksheet = async (sheetName: string) => {
   const openedSheetTab = tabStore.getTabByWorksheet(sheetName);
@@ -376,12 +388,7 @@ const restoreLastVisitedSidebarTab = () => {
 
 onMounted(async () => {
   editorStore.projectContextReady = false;
-  const [_, project] = await Promise.all([
-    policyStore.fetchPolicies({
-      resourceType: PolicyResourceType.WORKSPACE,
-    }),
-    initializeProject(),
-  ]);
+  const project = await initializeProject();
 
   await migrateLegacyCache();
   await tabStore.initProject(project);

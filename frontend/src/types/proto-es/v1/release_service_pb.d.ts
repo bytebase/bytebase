@@ -119,6 +119,14 @@ export declare type CreateReleaseRequest = Message<"bytebase.v1.CreateReleaseReq
    * @generated from field: bytebase.v1.Release release = 2;
    */
   release?: Release;
+
+  /**
+   * Train for iteration tracking (template rendered without {iteration}).
+   * Used to group releases and determine the next iteration number.
+   *
+   * @generated from field: string train = 3;
+   */
+  train: string;
 };
 
 /**
@@ -144,14 +152,6 @@ export declare type UpdateReleaseRequest = Message<"bytebase.v1.UpdateReleaseReq
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask;
-
-  /**
-   * If set to true, and the release is not found, a new release will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 3;
-   */
-  allowMissing: boolean;
 };
 
 /**
@@ -337,13 +337,6 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
   name: string;
 
   /**
-   * The title of the release.
-   *
-   * @generated from field: string title = 2;
-   */
-  title: string;
-
-  /**
    * The SQL files included in the release.
    *
    * @generated from field: repeated bytebase.v1.Release.File files = 3;
@@ -377,19 +370,9 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
   state: State;
 
   /**
-   * The digest of the release.
-   * The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
-   * Whether to provide digest and how to generate it is up to the user.
-   * If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
-   *
-   * @generated from field: string digest = 8;
-   */
-  digest: string;
-
-  /**
    * The type of schema change for all files in this release.
    *
-   * @generated from field: bytebase.v1.Release.Type type = 9;
+   * @generated from field: bytebase.v1.Release.Type type = 8;
    */
   type: Release_Type;
 };

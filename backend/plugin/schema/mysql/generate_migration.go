@@ -661,6 +661,9 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		}
 	}
 
+	// Add extra newline after table creation for readability
+	_, _ = buf.WriteString("\n")
+
 	// Note: Foreign keys are NOT created here - they will be added separately
 
 	return nil
@@ -726,7 +729,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 
 	// TODO: Add column position support (FIRST, AFTER column_name)
 
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -788,7 +791,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 		_, _ = buf.WriteString("'")
 	}
 
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -849,7 +852,7 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 		_, _ = buf.WriteString("'")
 	}
 
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -867,7 +870,7 @@ func writeAddPrimaryKey(buf *strings.Builder, table string, index *storepb.Index
 		_, _ = buf.WriteString("`")
 	}
 
-	_, _ = buf.WriteString(");\n")
+	_, _ = buf.WriteString(");\n\n")
 	return nil
 }
 
@@ -887,7 +890,7 @@ func writeAddUniqueKey(buf *strings.Builder, table string, index *storepb.IndexM
 		_, _ = buf.WriteString("`")
 	}
 
-	_, _ = buf.WriteString(");\n")
+	_, _ = buf.WriteString(");\n\n")
 	return nil
 }
 
@@ -899,7 +902,7 @@ func writeAddCheckConstraint(buf *strings.Builder, table string, check *storepb.
 	_, _ = buf.WriteString("` CHECK ")
 	// The expression already includes parentheses from the parser
 	_, _ = buf.WriteString(check.Expression)
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -943,7 +946,7 @@ func writeAddForeignKey(buf *strings.Builder, table string, fk *storepb.ForeignK
 		_, _ = buf.WriteString(fk.OnDelete)
 	}
 
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -956,7 +959,7 @@ func writeCreateOrReplaceView(buf *strings.Builder, viewName string, view *store
 	if !strings.HasSuffix(strings.TrimSpace(view.Definition), ";") {
 		_, _ = buf.WriteString(";")
 	}
-	_, _ = buf.WriteString("\n")
+	_, _ = buf.WriteString("\n\n")
 
 	// Note: MySQL doesn't support adding comments directly to views via DDL
 	// View comments are stored in information_schema.VIEWS but cannot be set via CREATE VIEW
@@ -971,7 +974,7 @@ func writeFunctionDiff(buf *strings.Builder, funcDiff *schema.FunctionDiff) erro
 		if !strings.HasSuffix(strings.TrimSpace(funcDiff.NewFunction.Definition), ";") {
 			_, _ = buf.WriteString(";")
 		}
-		_, _ = buf.WriteString("\n")
+		_, _ = buf.WriteString("\n\n")
 
 		// Note: MySQL doesn't support ALTER FUNCTION ... COMMENT syntax
 		// Function comments must be set during CREATE FUNCTION statement
@@ -987,7 +990,7 @@ func writeProcedureDiff(buf *strings.Builder, procDiff *schema.ProcedureDiff) er
 		if !strings.HasSuffix(strings.TrimSpace(procDiff.NewProcedure.Definition), ";") {
 			_, _ = buf.WriteString(";")
 		}
-		_, _ = buf.WriteString("\n")
+		_, _ = buf.WriteString("\n\n")
 
 		// Note: MySQL doesn't support ALTER PROCEDURE ... COMMENT syntax
 		// Procedure comments must be set during CREATE PROCEDURE statement
@@ -1003,7 +1006,7 @@ func writeEventDiff(buf *strings.Builder, eventDiff *schema.EventDiff) error {
 		if !strings.HasSuffix(strings.TrimSpace(eventDiff.NewEvent.Definition), ";") {
 			_, _ = buf.WriteString(";")
 		}
-		_, _ = buf.WriteString("\n")
+		_, _ = buf.WriteString("\n\n")
 
 		// Note: MySQL doesn't support ALTER EVENT ... COMMENT syntax
 		// Event comments must be set during CREATE EVENT statement
@@ -1017,7 +1020,7 @@ func writeAlterTableComment(buf *strings.Builder, tableName, comment string) err
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` COMMENT = '")
 	_, _ = buf.WriteString(comment)
-	_, _ = buf.WriteString("';\n")
+	_, _ = buf.WriteString("';\n\n")
 	return nil
 }
 
@@ -1105,7 +1108,7 @@ func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *stor
 		_, _ = buf.WriteString(" 1")
 	}
 
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -1130,7 +1133,7 @@ func writeCreateTemporaryView(buf *strings.Builder, viewName string, view *store
 		_, _ = buf.WriteString(" 1")
 	}
 
-	_, _ = buf.WriteString(";\n")
+	_, _ = buf.WriteString(";\n\n")
 	return nil
 }
 
@@ -1149,7 +1152,7 @@ func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb
 	if !strings.HasSuffix(strings.TrimSpace(trigger.Body), ";") {
 		_, _ = buf.WriteString(";")
 	}
-	_, _ = buf.WriteString("\n")
+	_, _ = buf.WriteString("\n\n")
 
 	// Note: MySQL doesn't support specifying comments in CREATE TRIGGER syntax
 	// Trigger comments are retrieved from INFORMATION_SCHEMA.TRIGGERS but cannot be set via DDL

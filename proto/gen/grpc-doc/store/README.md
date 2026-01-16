@@ -12,6 +12,7 @@
     - [ExportFormat](#bytebase-store-ExportFormat)
     - [RiskLevel](#bytebase-store-RiskLevel)
     - [SchemaChangeType](#bytebase-store-SchemaChangeType)
+    - [StatementType](#bytebase-store-StatementType)
     - [VCSType](#bytebase-store-VCSType)
     - [WebhookType](#bytebase-store-WebhookType)
   
@@ -178,7 +179,6 @@
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
-    - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskingExemptionPolicy](#bytebase-store-MaskingExemptionPolicy)
     - [MaskingExemptionPolicy.Exemption](#bytebase-store-MaskingExemptionPolicy-Exemption)
@@ -190,9 +190,9 @@
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
-    - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
+    - [QueryDataPolicy.Restriction](#bytebase-store-QueryDataPolicy-Restriction)
   
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
@@ -288,6 +288,7 @@
     - [SchedulerInfo](#bytebase-store-SchedulerInfo)
     - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
     - [TaskRun](#bytebase-store-TaskRun)
+    - [TaskRunPayload](#bytebase-store-TaskRunPayload)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
   
     - [TaskRun.Status](#bytebase-store-TaskRun-Status)
@@ -477,6 +478,57 @@ SchemaChangeType represents the strategy for schema changes.
 | SCHEMA_CHANGE_TYPE_UNSPECIFIED | 0 |  |
 | VERSIONED | 1 | Versioned migration with explicit migration scripts. |
 | DECLARATIVE | 2 | Declarative schema definition (state-based). |
+
+
+
+<a name="bytebase-store-StatementType"></a>
+
+### StatementType
+StatementType represents the type of SQL statement.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATEMENT_TYPE_UNSPECIFIED | 0 |  |
+| CREATE_DATABASE | 1 | DDL - CREATE statements |
+| CREATE_TABLE | 2 |  |
+| CREATE_VIEW | 3 |  |
+| CREATE_INDEX | 4 |  |
+| CREATE_SEQUENCE | 5 |  |
+| CREATE_SCHEMA | 6 |  |
+| CREATE_FUNCTION | 7 |  |
+| CREATE_TRIGGER | 8 |  |
+| CREATE_PROCEDURE | 9 |  |
+| CREATE_EVENT | 10 |  |
+| CREATE_EXTENSION | 11 |  |
+| CREATE_TYPE | 12 |  |
+| DROP_DATABASE | 20 | DDL - DROP statements |
+| DROP_TABLE | 21 |  |
+| DROP_VIEW | 22 |  |
+| DROP_INDEX | 23 |  |
+| DROP_SEQUENCE | 24 |  |
+| DROP_SCHEMA | 25 |  |
+| DROP_FUNCTION | 26 |  |
+| DROP_TRIGGER | 27 |  |
+| DROP_PROCEDURE | 28 |  |
+| DROP_EVENT | 29 |  |
+| DROP_EXTENSION | 30 |  |
+| DROP_TYPE | 31 |  |
+| ALTER_DATABASE | 40 | DDL - ALTER statements |
+| ALTER_TABLE | 41 |  |
+| ALTER_VIEW | 42 |  |
+| ALTER_SEQUENCE | 43 |  |
+| ALTER_EVENT | 44 |  |
+| ALTER_TYPE | 45 |  |
+| ALTER_INDEX | 46 |  |
+| TRUNCATE | 50 | DDL - Other |
+| RENAME | 51 |  |
+| RENAME_INDEX | 52 |  |
+| RENAME_SCHEMA | 53 |  |
+| RENAME_SEQUENCE | 54 |  |
+| COMMENT | 55 |  |
+| INSERT | 60 | DML statements |
+| UPDATE | 61 |  |
+| DELETE | 62 |  |
 
 
 
@@ -759,7 +811,6 @@ Metadata about the request.
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
-| dump_version | [int32](#int32) |  | Dump format version for drift detection reliability. Engine-specific version stored when baseline/migration is created. 0 = legacy changelog (pre-versioning). |
 
 
 
@@ -931,7 +982,6 @@ DatabaseMetadata is the metadata for databases.
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
-| drifted | [bool](#bool) |  | The schema has drifted from the source of truth. |
 | version | [string](#string) |  | The version of database schema. |
 
 
@@ -3018,7 +3068,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| statement_types | [string](#string) | repeated | statement_types are the types of statements found in the SQL. |
+| statement_types | [StatementType](#bytebase-store-StatementType) | repeated | statement_types are the types of statements found in the SQL. |
 | affected_rows | [int64](#int64) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
@@ -3068,23 +3118,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{email} For groups, the member should be: groups/{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-
-
-
-
-
-
-<a name="bytebase-store-DataSourceQueryPolicy"></a>
-
-### DataSourceQueryPolicy
-DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction) |  |  |
-| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
-| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
 
 
@@ -3198,6 +3231,9 @@ QueryDataPolicy is the policy configuration for querying data.
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 | disable_copy_data | [bool](#bool) |  | Disable copying data. |
+| admin_data_source_restriction | [QueryDataPolicy.Restriction](#bytebase-store-QueryDataPolicy-Restriction) |  | Restriction for admin data source queries. |
+| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
+| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
 
 
@@ -3253,19 +3289,6 @@ QueryDataPolicy is the policy configuration for querying data.
  
 
 
-<a name="bytebase-store-DataSourceQueryPolicy-Restriction"></a>
-
-### DataSourceQueryPolicy.Restriction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESTRICTION_UNSPECIFIED | 0 |  |
-| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
-| DISALLOW | 2 | Disallow to query admin data sources. |
-
-
-
 <a name="bytebase-store-Policy-Resource"></a>
 
 ### Policy.Resource
@@ -3294,7 +3317,19 @@ QueryDataPolicy is the policy configuration for querying data.
 | MASKING_RULE | 4 |  |
 | IAM | 5 |  |
 | TAG | 6 |  |
-| DATA_SOURCE_QUERY | 7 |  |
+
+
+
+<a name="bytebase-store-QueryDataPolicy-Restriction"></a>
+
+### QueryDataPolicy.Restriction
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 |  |
+| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow to query admin data sources. |
 
 
  
@@ -3351,6 +3386,8 @@ Project contains settings and configuration for a Bytebase project.
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
 | require_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
 | require_plan_check_no_error | [bool](#bool) |  | Whether to block rollout when plan check finds errors. |
+| allow_request_role | [bool](#bool) |  |  |
+| data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
 
 
 
@@ -3505,7 +3542,6 @@ Activity type enumeration.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
 | files | [ReleasePayload.File](#bytebase-store-ReleasePayload-File) | repeated |  |
 | vcs_source | [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource) |  |  |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
@@ -4391,7 +4427,6 @@ The severity level for SQL review rules.
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
-| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | announcement | [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
@@ -4405,6 +4440,8 @@ The severity level for SQL review rules.
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
+| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
+| enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 
 
 
@@ -4702,6 +4739,23 @@ WaitingCause indicates why a task run is waiting to execute.
 
 ### TaskRun
 TaskRun represents an execution attempt of a task.
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunPayload"></a>
+
+### TaskRunPayload
+TaskRunPayload contains extensible runtime data for a task run.
+Stored in the payload JSONB column. New fields can be added here
+without database schema changes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scheduler_info | [SchedulerInfo](#bytebase-store-SchedulerInfo) |  | Scheduler information about why a task is waiting. |
 
 
 

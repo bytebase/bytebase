@@ -13,7 +13,9 @@
             <PermissionGuardWrapper
               v-slot="slotProps"
               :project="specificProject"
-              :permissions="['bb.issues.create', 'bb.plans.create', 'bb.rollouts.create']"
+              :permissions="[
+                ...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE
+              ]"
             >
               <NButton
                 type="primary"
@@ -82,6 +84,7 @@ import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   extractProjectResourceName,
+  PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
   type SearchParams,
   type SearchScope,
   type SearchScopeId,

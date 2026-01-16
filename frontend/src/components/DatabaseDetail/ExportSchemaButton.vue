@@ -1,7 +1,13 @@
 <template>
-  <div v-if="available">
+  <PermissionGuardWrapper
+    v-if="available"
+    v-slot="slotProps"
+    :project="database.projectEntity"
+    :permissions="['bb.databases.getSchema']"
+  >
     <NDropdown
       :options="exportOptions"
+      :disabled="slotProps.disabled"
       @select="handleExportFormat"
       trigger="click"
     >
@@ -9,7 +15,7 @@
         {{ $t("database.export-schema") }}
       </NButton>
     </NDropdown>
-  </div>
+  </PermissionGuardWrapper>
 </template>
 
 <script setup lang="ts">
@@ -18,6 +24,7 @@ import { ConnectError } from "@connectrpc/connect";
 import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { databaseServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -26,7 +33,6 @@ import {
   GetDatabaseSDLSchemaRequest_SDLFormat,
   GetDatabaseSDLSchemaRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -36,14 +42,7 @@ const exporting = ref(false);
 const { t } = useI18n();
 
 const available = computed(() => {
-  if (!isValidDatabaseName(props.database.name)) {
-    return false;
-  }
-
-  return hasProjectPermissionV2(
-    props.database.projectEntity,
-    "bb.databases.getSchema"
-  );
+  return isValidDatabaseName(props.database.name);
 });
 
 const exportOptions = computed(() => [

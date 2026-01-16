@@ -249,7 +249,7 @@ import {
   NRadioGroup,
   NTooltip,
 } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
@@ -307,6 +307,10 @@ const projectWebhookV1Store = useProjectWebhookV1Store();
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
 overrideMainContainerClass("!pb-0");
+
+onMounted(async () => {
+  await settingStore.getOrFetchSettingByName(Setting_SettingName.APP_IM);
+});
 
 const state = reactive<LocalState>({
   webhook: cloneDeep(props.webhook),

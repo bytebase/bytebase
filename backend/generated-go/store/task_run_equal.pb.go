@@ -60,3 +60,16 @@ func (x *SchedulerInfo) Equal(y *SchedulerInfo) bool {
 	}
 	return true
 }
+
+func (x *TaskRunPayload) Equal(y *TaskRunPayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.SchedulerInfo.Equal(y.SchedulerInfo) {
+		return false
+	}
+	return true
+}

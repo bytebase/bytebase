@@ -41,8 +41,10 @@ type World struct {
 	ReleaseTitle string // The title of the release
 	// Rollout up to the target-stage.
 	// Format: environments/{environment}
-	TargetStage string
-	Plan        string
+	TargetStage       string
+	Plan              string
+	ReleaseIDTemplate string // Template for release ID
+	ReleaseIDTimezone string // Timezone for release ID variables
 
 	// Outputs
 	OutputMap struct {

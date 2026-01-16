@@ -111,6 +111,10 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 	}()
 
+	if profile.HA && profile.UseEmbedDB() {
+		return nil, errors.New("HA mode requires external PostgreSQL (set PG_URL environment variable)")
+	}
+
 	var pgURL string
 	if profile.UseEmbedDB() {
 		pgDataDir := path.Join(profile.DataDir, "pgdata")
@@ -169,6 +173,15 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
+	workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace profile setting")
+	}
+	profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
+	if workspaceProfile.EnableDebug {
+		log.LogLevel.Set(slog.LevelDebug)
+	}
+
 	// Settings are now initialized in the database schema (LATEST.sql)
 	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
@@ -188,20 +201,20 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory)
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService)
 	s.approvalRunner = approval.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
-	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, profile)
+	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, s.licenseService, profile)
 	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer))
 	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.bus, s.schemaSyncer, profile))
 	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService))
 
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory)
-	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService)
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 
 	// Data cleaner
-	s.dataCleaner = cleaner.NewDataCleaner(stores)
+	s.dataCleaner = cleaner.NewDataCleaner(stores, s.licenseService)
 
 	// Heartbeat runner
 	s.heartbeatRunner = heartbeat.NewRunner(stores, profile)

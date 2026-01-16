@@ -6,7 +6,7 @@ import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { orgPolicyServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import type { MaybeRef } from "@/types";
+import type { ComposedDatabase, MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
 import type {
   Policy,
@@ -15,10 +15,10 @@ import type {
 import {
   DeletePolicyRequestSchema,
   GetPolicyRequestSchema,
-  ListPoliciesRequestSchema,
   PolicyResourceType,
   PolicySchema,
   PolicyType,
+  QueryDataPolicy_Restriction,
   QueryDataPolicySchema,
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
@@ -31,7 +31,7 @@ interface PolicyState {
 
 export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
 
-const replacePolicyTypeNameToLowerCase = (name: string) => {
+export const replacePolicyTypeNameToLowerCase = (name: string) => {
   const pattern = /(^|\/)policies\/([^/]+)($|\/)/;
   const replaced = name.replace(
     pattern,
@@ -45,25 +45,10 @@ const replacePolicyTypeNameToLowerCase = (name: string) => {
   return replaced;
 };
 
-const getPolicyParentByResourceType = (
-  resourceType: PolicyResourceType
-): string => {
-  switch (resourceType) {
-    case PolicyResourceType.PROJECT:
-      return "projects/-";
-    case PolicyResourceType.ENVIRONMENT:
-      return "environments/-";
-    default:
-      return "";
-  }
-};
-
 export const usePolicyV1Store = defineStore("policy_v1", () => {
   const state = reactive<PolicyState>({
     policyMapByName: new Map(),
   });
-
-  const policyList = computed(() => Array.from(state.policyMapByName.values()));
 
   const getQueryDataPolicyByParent = (parent: string): QueryDataPolicy => {
     const policy = getPolicyByParentAndType({
@@ -80,105 +65,11 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
           timeout: create(DurationSchema, {
             seconds: BigInt(0),
           }),
+          adminDataSourceRestriction:
+            QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+          disallowDdl: false,
+          disallowDml: false,
         });
-  };
-
-  const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
-    let maximumResultSize = Number(policy.maximumResultSize);
-    let maximumResultRows = policy.maximumResultRows;
-    let queryTimeoutInSeconds = Number(policy.timeout?.seconds ?? 0);
-
-    if (maximumResultSize <= 0) {
-      maximumResultSize = DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024;
-    }
-    if (maximumResultRows <= 0) {
-      maximumResultRows = Number.MAX_VALUE;
-    }
-    if (queryTimeoutInSeconds <= 0) {
-      queryTimeoutInSeconds = Number.MAX_VALUE;
-    }
-
-    return {
-      disableCopyData: policy.disableCopyData,
-      disableExport: policy.disableExport,
-      maximumResultSize,
-      maximumResultRows,
-      queryTimeoutInSeconds,
-    };
-  };
-
-  const getEffectiveQueryDataPolicyForProject = (project: string) => {
-    const workspacePolicy = formatQueryDataPolicy(
-      getQueryDataPolicyByParent("")
-    );
-    const projectPolicy = formatQueryDataPolicy(
-      getQueryDataPolicyByParent(project)
-    );
-
-    return {
-      disableCopyData:
-        projectPolicy.disableCopyData || workspacePolicy.disableCopyData,
-      disableExport:
-        projectPolicy.disableExport || workspacePolicy.disableExport,
-      maximumResultRows: Math.min(
-        projectPolicy.maximumResultRows,
-        workspacePolicy.maximumResultRows
-      ),
-      maximumResultSize: Math.min(
-        projectPolicy.maximumResultSize,
-        workspacePolicy.maximumResultSize
-      ),
-      queryTimeoutInSeconds: Math.min(
-        projectPolicy.queryTimeoutInSeconds,
-        workspacePolicy.queryTimeoutInSeconds
-      ),
-    };
-  };
-
-  const fetchPolicies = async ({
-    resourceType,
-    policyType,
-    parent,
-    showDeleted = false,
-  }: {
-    resourceType: PolicyResourceType;
-    policyType?: PolicyType;
-    parent?: string;
-    showDeleted?: boolean;
-  }) => {
-    const request = create(ListPoliciesRequestSchema, {
-      parent: parent ?? getPolicyParentByResourceType(resourceType),
-      policyType: policyType,
-      showDeleted,
-    });
-    const response = await orgPolicyServiceClientConnect.listPolicies(request);
-    const policies = response.policies;
-    for (const policy of policies) {
-      state.policyMapByName.set(policy.name, policy);
-    }
-    return policies;
-  };
-
-  const getPolicies = ({
-    resourceType,
-    policyType,
-    showDeleted,
-  }: {
-    resourceType: PolicyResourceType;
-    policyType: PolicyType;
-    showDeleted?: boolean;
-  }) => {
-    const response: Policy[] = [];
-    for (const [_, policy] of state.policyMapByName) {
-      if (policy.resourceType != resourceType || policy.type != policyType) {
-        continue;
-      }
-      if (!showDeleted && !policy.enforce) {
-        continue;
-      }
-      response.push(policy);
-    }
-    return response;
   };
 
   const getOrFetchPolicyByParentAndType = async ({
@@ -276,19 +167,38 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
   };
 
   return {
-    policyList,
-    fetchPolicies,
-    getPolicies,
     getOrFetchPolicyByParentAndType,
     getOrFetchPolicyByName,
     getPolicyByParentAndType,
-    getPolicyByName,
     upsertPolicy,
     deletePolicy,
     getQueryDataPolicyByParent,
-    getEffectiveQueryDataPolicyForProject,
   };
 });
+
+const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
+  let maximumResultSize = Number(policy.maximumResultSize);
+  let maximumResultRows = policy.maximumResultRows;
+  let queryTimeoutInSeconds = Number(policy.timeout?.seconds ?? 0);
+
+  if (maximumResultSize <= 0) {
+    maximumResultSize = DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024;
+  }
+  if (maximumResultRows <= 0) {
+    maximumResultRows = Number.MAX_VALUE;
+  }
+  if (queryTimeoutInSeconds <= 0) {
+    queryTimeoutInSeconds = Number.MAX_VALUE;
+  }
+
+  return {
+    disableCopyData: policy.disableCopyData,
+    disableExport: policy.disableExport,
+    maximumResultSize,
+    maximumResultRows,
+    queryTimeoutInSeconds,
+  };
+};
 
 const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
   switch (policyType) {
@@ -300,8 +210,6 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
       return [PolicySchema.field.maskingRulePolicy.name];
     case PolicyType.DATA_QUERY:
       return [PolicySchema.field.queryDataPolicy.name];
-    case PolicyType.DATA_SOURCE_QUERY:
-      return [PolicySchema.field.dataSourceQueryPolicy.name];
     case PolicyType.TAG:
       return [PolicySchema.field.tagPolicy.name];
     case PolicyType.POLICY_TYPE_UNSPECIFIED:
@@ -309,28 +217,6 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
     default:
       throw new Error(`unknown policyType ${policyType satisfies never}`);
   }
-};
-
-export const usePolicyListByResourceTypeAndPolicyType = (
-  params: MaybeRef<{
-    resourceType: PolicyResourceType;
-    policyType: PolicyType;
-    showDeleted: false;
-  }>
-) => {
-  const store = usePolicyV1Store();
-  const currentUserV1 = useCurrentUserV1();
-  watchEffect(() => {
-    if (currentUserV1.value.name === UNKNOWN_USER_NAME) return;
-    const { resourceType, policyType, showDeleted } = unref(params);
-
-    store.fetchPolicies({ resourceType, policyType, showDeleted });
-  });
-
-  return computed(() => {
-    const { resourceType, policyType, showDeleted } = unref(params);
-    return store.getPolicies({ resourceType, policyType, showDeleted });
-  });
 };
 
 export const usePolicyByParentAndType = (
@@ -361,6 +247,110 @@ export const usePolicyByParentAndType = (
       policyType,
     });
   });
+  return {
+    policy,
+    ready,
+  };
+};
+
+export const useDataSourceRestrictionPolicy = (
+  database: MaybeRef<ComposedDatabase>
+) => {
+  const store = usePolicyV1Store();
+  const ready = ref(false);
+
+  watchEffect(async () => {
+    await store.getOrFetchPolicyByParentAndType({
+      parentPath: unref(database).project,
+      policyType: PolicyType.DATA_QUERY,
+    });
+
+    const environment = unref(database).effectiveEnvironment;
+    if (environment) {
+      await store.getOrFetchPolicyByParentAndType({
+        parentPath: environment,
+        policyType: PolicyType.DATA_QUERY,
+      });
+    }
+    ready.value = true;
+  });
+
+  const dataSourceRestriction = computed(() => {
+    const projectLevelPolicy = store.getQueryDataPolicyByParent(
+      unref(database).project
+    );
+    const projectLevelAdminDSRestriction =
+      projectLevelPolicy.adminDataSourceRestriction;
+
+    let envLevelAdminDSRestriction =
+      QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED;
+    const environment = unref(database).effectiveEnvironment;
+    if (environment) {
+      const envLevelPolicy = store.getQueryDataPolicyByParent(environment);
+      envLevelAdminDSRestriction = envLevelPolicy.adminDataSourceRestriction;
+    }
+
+    return {
+      environmentPolicy: envLevelAdminDSRestriction,
+      projectPolicy: projectLevelAdminDSRestriction,
+    };
+  });
+
+  return {
+    ready,
+    dataSourceRestriction,
+  };
+};
+
+export const useEffectiveQueryDataPolicyForProject = (
+  project: MaybeRef<string>
+) => {
+  const store = usePolicyV1Store();
+  const ready = ref(false);
+
+  watchEffect(() => {
+    const projectName = unref(project);
+    // Fetch both workspace-level and project-level DATA_QUERY policies
+    Promise.all([
+      store.getOrFetchPolicyByParentAndType({
+        parentPath: "",
+        policyType: PolicyType.DATA_QUERY,
+      }),
+      store.getOrFetchPolicyByParentAndType({
+        parentPath: projectName,
+        policyType: PolicyType.DATA_QUERY,
+      }),
+    ]).finally(() => (ready.value = true));
+  });
+
+  const policy = computed(() => {
+    const workspacePolicy = formatQueryDataPolicy(
+      store.getQueryDataPolicyByParent("")
+    );
+    const projectPolicy = formatQueryDataPolicy(
+      store.getQueryDataPolicyByParent(unref(project))
+    );
+
+    return {
+      disableCopyData:
+        projectPolicy.disableCopyData || workspacePolicy.disableCopyData,
+      disableExport:
+        projectPolicy.disableExport || workspacePolicy.disableExport,
+      maximumResultRows: Math.min(
+        projectPolicy.maximumResultRows,
+        workspacePolicy.maximumResultRows
+      ),
+      maximumResultSize: Math.min(
+        projectPolicy.maximumResultSize,
+        workspacePolicy.maximumResultSize
+      ),
+      queryTimeoutInSeconds: Math.min(
+        projectPolicy.queryTimeoutInSeconds,
+        workspacePolicy.queryTimeoutInSeconds
+      ),
+    };
+  });
+
   return {
     policy,
     ready,

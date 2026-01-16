@@ -1,9 +1,16 @@
-import { computed, type MaybeRef, unref } from "vue";
+import { computed, type MaybeRef, unref, watchEffect } from "vue";
 import { useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 export const useSemanticType = (semanticTypeId: MaybeRef<string>) => {
   const settingV1Store = useSettingV1Store();
+
+  watchEffect(async () => {
+    await settingV1Store.getOrFetchSettingByName(
+      Setting_SettingName.SEMANTIC_TYPES,
+      /* silent */ true
+    );
+  });
 
   const semanticTypeList = computed(() => {
     const setting = settingV1Store.getSettingByName(

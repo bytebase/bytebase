@@ -227,8 +227,8 @@ import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
+import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
@@ -244,8 +244,8 @@ import {
   featureToRef,
   hasFeature,
   pushNotification,
-  useActuatorV1Store,
   useCurrentUserV1,
+  useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
@@ -278,7 +278,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const actuatorStore = useActuatorV1Store();
+const settingV1Store = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
@@ -295,7 +295,7 @@ const editNameTextField = ref<InstanceType<typeof NInput>>();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const passwordRestrictionSetting = computed(
-  () => actuatorStore.restriction.passwordRestriction
+  () => settingV1Store.workspaceProfile.passwordRestriction
 );
 
 const keyboardHandler = (e: KeyboardEvent) => {
@@ -431,6 +431,11 @@ const saveEdit = async () => {
           regenerateTempMfaSecret: false,
         })
       );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
     }
   } catch (error) {
     pushNotification({
@@ -465,7 +470,7 @@ const enable2FA = () => {
 
 const disable2FA = () => {
   if (
-    actuatorStore.restriction.require2fa &&
+    settingV1Store.workspaceProfile.require2fa &&
     !hasWorkspacePermissionV2("bb.policies.update")
   ) {
     pushNotification({

@@ -2,38 +2,44 @@ package mysql
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strings"
 	"testing"
-	"time"
 
 	// Import MySQL driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
+//nolint:tparallel
 func TestGetDatabaseDefinition(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping MySQL testcontainer test in short mode")
 	}
+
+	ctx := context.Background()
+
+	// Start shared MySQL container for all subtests
+	container, err := testcontainer.GetTestMySQLContainer(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() { container.Close(ctx) })
+
 	type testCase struct {
-		description  string
-		databaseName string
-		originalDDL  string
+		description string
+		originalDDL string
 	}
 
 	testCases := []testCase{
 		{
-			description:  "Basic tables with various column types",
-			databaseName: "test_basic",
+			description: "Basic tables with various column types",
 			originalDDL: `
 CREATE TABLE users (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -60,8 +66,7 @@ CREATE TABLE posts (
 `,
 		},
 		{
-			description:  "Generated columns and complex indexes",
-			databaseName: "test_generated",
+			description: "Generated columns and complex indexes",
 			originalDDL: `
 CREATE TABLE products (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -86,8 +91,7 @@ CREATE TABLE inventory (
 `,
 		},
 		{
-			description:  "Views and triggers",
-			databaseName: "test_views_triggers",
+			description: "Views and triggers",
 			originalDDL: `
 CREATE TABLE orders (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -125,8 +129,7 @@ END;
 `,
 		},
 		{
-			description:  "Stored procedures and functions",
-			databaseName: "test_routines",
+			description: "Stored procedures and functions",
 			originalDDL: `
 CREATE TABLE accounts (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -181,8 +184,7 @@ DELIMITER ;
 `,
 		},
 		{
-			description:  "Partitioned tables",
-			databaseName: "test_partitions",
+			description: "Partitioned tables",
 			originalDDL: `
 -- RANGE partition
 CREATE TABLE sales (
@@ -250,8 +252,7 @@ CREATE TABLE order_archive (
 `,
 		},
 		{
-			description:  "Events",
-			databaseName: "test_events",
+			description: "Events",
 			originalDDL: `
 CREATE TABLE daily_stats (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -273,8 +274,7 @@ DO
 `,
 		},
 		{
-			description:  "Character sets and collations",
-			databaseName: "test_charset",
+			description: "Character sets and collations",
 			originalDDL: `
 CREATE TABLE translations (
 	id INT PRIMARY KEY AUTO_INCREMENT,
@@ -287,28 +287,27 @@ CREATE TABLE translations (
 		},
 	}
 
-	if testing.Short() {
-		t.Skip("Skipping MySQL testcontainer test in short mode")
-	}
-
-	ctx := context.Background()
-
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			// Start MySQL container
-			container, err := testcontainer.GetTestMySQLContainer(ctx)
+			t.Parallel()
+
+			// Create unique test databases for parallel execution
+			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			newDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+
+			// Create initial test database
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
 			require.NoError(t, err)
-			defer container.Close(ctx)
 
-			// Create test database
-			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", tc.databaseName))
+			// Step 1: Initialize the database schema and get metadata A
+			driverA, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), testDBName)
+			require.NoError(t, err)
+			defer driverA.Close(ctx)
+
+			_, err = driverA.Execute(ctx, tc.originalDDL, db.ExecuteOptions{})
 			require.NoError(t, err)
 
-			host := container.GetHost()
-			port := container.GetPort()
-
-			// Step 1: Initialize the database schema
-			metadataA, err := initializeAndSyncDatabase(ctx, host, port, "root", "root-password", tc.databaseName, tc.originalDDL)
+			metadataA, err := driverA.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Call GetDatabaseDefinition to generate the database definition X
@@ -320,13 +319,19 @@ CREATE TABLE translations (
 			require.NoError(t, err)
 			require.NotEmpty(t, definitionX)
 
-			// Step 3: Create a new database to run the database definition X
-			newDBName := fmt.Sprintf("%s_recreated", tc.databaseName)
-			metadataB, err := createDatabaseAndSync(ctx, host, port, "root", "root-password", tc.databaseName, newDBName, definitionX)
+			// Step 3: Create a new database and apply the generated DDL
+			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newDBName))
 			require.NoError(t, err)
-			defer func() {
-				dropDatabase(ctx, host, port, "root", "root-password", tc.databaseName, newDBName)
-			}()
+
+			driverB, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), newDBName)
+			require.NoError(t, err)
+			defer driverB.Close(ctx)
+
+			_, err = driverB.Execute(ctx, definitionX, db.ExecuteOptions{})
+			require.NoError(t, err)
+
+			metadataB, err := driverB.SyncDBSchema(ctx)
+			require.NoError(t, err)
 
 			// Step 4: Compare the database metadata A and B, should be the same
 			normalizeMetadata(metadataA)
@@ -442,17 +447,21 @@ CREATE TABLE project_member (
 	// Start MySQL container
 	container, err := testcontainer.GetTestMySQLContainer(ctx)
 	require.NoError(t, err)
-	defer container.Close(ctx)
+	t.Cleanup(func() { container.Close(ctx) })
 
 	// Create test database
 	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", databaseName))
 	require.NoError(t, err)
 
-	host := container.GetHost()
-	port := container.GetPort()
-
 	// Step 1: Initialize the database schema
-	metadataA, err := initializeAndSyncDatabase(ctx, host, port, "root", "root-password", databaseName, originalDDL)
+	driverA, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), databaseName)
+	require.NoError(t, err)
+	defer driverA.Close(ctx)
+
+	_, err = driverA.Execute(ctx, originalDDL, db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	metadataA, err := driverA.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
 	// Step 2: Generate definition
@@ -465,11 +474,18 @@ CREATE TABLE project_member (
 
 	// Step 3: Create new database and apply definition
 	newDBName := fmt.Sprintf("%s_recreated", databaseName)
-	metadataB, err := createDatabaseAndSync(ctx, host, port, "root", "root-password", databaseName, newDBName, definitionX)
+	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", newDBName))
 	require.NoError(t, err)
-	defer func() {
-		dropDatabase(ctx, host, port, "root", "root-password", databaseName, newDBName)
-	}()
+
+	driverB, err := createMySQLDriver(ctx, container.GetHost(), container.GetPort(), newDBName)
+	require.NoError(t, err)
+	defer driverB.Close(ctx)
+
+	_, err = driverB.Execute(ctx, definitionX, db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	metadataB, err := driverB.SyncDBSchema(ctx)
+	require.NoError(t, err)
 
 	// Compare
 	normalizeMetadata(metadataA)
@@ -482,109 +498,5 @@ CREATE TABLE project_member (
 
 	if diff := cmp.Diff(metadataA, metadataB, opts...); diff != "" {
 		t.Errorf("Metadata mismatch (-want +got):\n%s", diff)
-	}
-}
-
-// initializeAndSyncDatabase creates a database connection, executes DDL, and returns the metadata
-func initializeAndSyncDatabase(ctx context.Context, host, port, username, password, database, ddl string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create driver instance
-	driver := &mysqldb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
-			Host:     host,
-			Port:     port,
-			Database: database,
-		},
-		Password: password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  database,
-		},
-	}
-
-	// Open connection
-	openedDriver, err := driver.Open(ctx, storepb.Engine_MYSQL, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Execute DDL
-	_, err = openedDriver.Execute(ctx, ddl, db.ExecuteOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for schema to be created
-	time.Sleep(500 * time.Millisecond)
-
-	// Sync metadata
-	mysqlDriver, ok := openedDriver.(*mysqldb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to mysql.Driver")
-	}
-
-	return mysqlDriver.SyncDBSchema(ctx)
-}
-
-// createDatabaseAndSync creates a new database, applies DDL, and returns the metadata
-func createDatabaseAndSync(ctx context.Context, host, port, username, password, sourceDB, targetDB, ddl string) (*storepb.DatabaseSchemaMetadata, error) {
-	// First create the new database
-	driver := &mysqldb.Driver{}
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
-			Host:     host,
-			Port:     port,
-			Database: sourceDB,
-		},
-		Password: password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  sourceDB,
-		},
-	}
-
-	openedDriver, err := driver.Open(ctx, storepb.Engine_MYSQL, config)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = openedDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE `%s`", targetDB), db.ExecuteOptions{})
-	openedDriver.Close(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Now connect to the new database and apply DDL
-	return initializeAndSyncDatabase(ctx, host, port, username, password, targetDB, ddl)
-}
-
-// dropDatabase drops a database
-func dropDatabase(ctx context.Context, host, port, username, password, sourceDB, targetDB string) {
-	driver := &mysqldb.Driver{}
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: username,
-			Host:     host,
-			Port:     port,
-			Database: sourceDB,
-		},
-		Password: password,
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "8.0",
-			DatabaseName:  sourceDB,
-		},
-	}
-
-	if openedDriver, err := driver.Open(ctx, storepb.Engine_MYSQL, config); err == nil {
-		_, _ = openedDriver.Execute(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", targetDB), db.ExecuteOptions{})
-		openedDriver.Close(ctx)
 	}
 }

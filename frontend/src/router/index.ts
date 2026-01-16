@@ -8,12 +8,12 @@ import {
 import {
   hasFeature,
   useAuthStore,
-  useActuatorV1Store,
   useRouterStore,
   useCurrentUserV1,
   useProjectV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
+  useSettingV1Store,
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { isAuthRelatedRoute } from "@/utils/auth";
@@ -97,9 +97,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const actuatorStore = useActuatorV1Store();
   const authStore = useAuthStore();
   const routerStore = useRouterStore();
+  const settingV1Store = useSettingV1Store();
 
   // Allow access to 2FA setup and password reset for logged-in users
   if (
@@ -197,7 +197,7 @@ router.beforeEach((to, from, next) => {
   const currentUserV1 = useCurrentUserV1();
   if (
     hasFeature(PlanFeature.FEATURE_TWO_FA) &&
-    actuatorStore.restriction.require2fa &&
+    settingV1Store.workspaceProfile.require2fa &&
     currentUserV1.value &&
     !currentUserV1.value.mfaEnabled &&
     to.name !== AUTH_2FA_SETUP_MODULE // Prevent redirect loop

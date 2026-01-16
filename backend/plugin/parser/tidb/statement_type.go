@@ -4,11 +4,12 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func GetStatementTypes(asts []base.AST) ([]string, error) {
-	sqlTypeSet := make(map[string]bool)
+func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
+	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, ast := range asts {
 		tidbAST, ok := GetTiDBAST(ast)
 		if !ok {
@@ -18,7 +19,7 @@ func GetStatementTypes(asts []base.AST) ([]string, error) {
 		t := getStatementType(node)
 		sqlTypeSet[t] = true
 	}
-	var sqlTypes []string
+	var sqlTypes []storepb.StatementType
 	for sqlType := range sqlTypeSet {
 		sqlTypes = append(sqlTypes, sqlType)
 	}
@@ -26,46 +27,46 @@ func GetStatementTypes(asts []base.AST) ([]string, error) {
 }
 
 // getStatementType returns the type of statement.
-func getStatementType(stmt tidbast.StmtNode) string {
+func getStatementType(stmt tidbast.StmtNode) storepb.StatementType {
 	switch v := stmt.(type) {
 	// DDL statements
 	case *tidbast.CreateDatabaseStmt:
-		return "CREATE_DATABASE"
+		return storepb.StatementType_CREATE_DATABASE
 	case *tidbast.CreateTableStmt:
-		return "CREATE_TABLE"
+		return storepb.StatementType_CREATE_TABLE
 	case *tidbast.CreateViewStmt:
-		return "CREATE_VIEW"
+		return storepb.StatementType_CREATE_VIEW
 	case *tidbast.CreateIndexStmt:
-		return "CREATE_INDEX"
+		return storepb.StatementType_CREATE_INDEX
 
 	case *tidbast.DropDatabaseStmt:
-		return "DROP_DATABASE"
+		return storepb.StatementType_DROP_DATABASE
 	case *tidbast.DropTableStmt:
 		if v.IsView {
-			return "DROP_VIEW"
+			return storepb.StatementType_DROP_VIEW
 		}
-		return "DROP_TABLE"
+		return storepb.StatementType_DROP_TABLE
 	case *tidbast.DropIndexStmt:
-		return "DROP_INDEX"
+		return storepb.StatementType_DROP_INDEX
 
 	case *tidbast.AlterDatabaseStmt:
-		return "ALTER_DATABASE"
+		return storepb.StatementType_ALTER_DATABASE
 	case *tidbast.AlterTableStmt:
-		return "ALTER_TABLE"
+		return storepb.StatementType_ALTER_TABLE
 
 	case *tidbast.TruncateTableStmt:
-		return "TRUNCATE"
+		return storepb.StatementType_TRUNCATE
 	case *tidbast.RenameTableStmt:
-		return "RENAME"
+		return storepb.StatementType_RENAME
 
 	// DML statements
 	case *tidbast.DeleteStmt:
-		return "DELETE"
+		return storepb.StatementType_DELETE
 	case *tidbast.InsertStmt:
-		return "INSERT"
+		return storepb.StatementType_INSERT
 	case *tidbast.UpdateStmt:
-		return "UPDATE"
+		return storepb.StatementType_UPDATE
 	}
 
-	return "UNKNOWN"
+	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 }

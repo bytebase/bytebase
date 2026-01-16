@@ -22,12 +22,13 @@
           :support-roles="supportRoles"
           :database-resources="databaseResources"
         />
+        <IssueLabels :project="project" v-model:value="labels" />
       </div>
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
-          <NButton quaternary @click="$emit('close')">{{
-            $t("common.cancel")
-          }}</NButton>
+          <NButton quaternary @click="$emit('close')">
+            {{ $t("common.cancel") }}
+          </NButton>
           <NButton
             type="primary"
             :disabled="!allowCreate"
@@ -50,6 +51,7 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClientConnect } from "@/connect";
@@ -103,13 +105,20 @@ const binding = computed(() => {
 });
 
 const formRef = ref<InstanceType<typeof AddProjectMemberForm>>();
+const labels = ref<string[]>([]);
 
 const project = computed(() =>
   projectStore.getProjectByName(props.projectName)
 );
 
 const allowCreate = computed(() => {
-  return formRef.value?.allowConfirm;
+  if (!formRef.value?.allowConfirm) {
+    return false;
+  }
+  if (project.value.forceIssueLabels && labels.value.length === 0) {
+    return false;
+  }
+  return true;
 });
 
 const doCreateIssue = async () => {
@@ -154,6 +163,7 @@ const doCreateIssue = async () => {
     description: binding.condition?.description,
     type: NewIssue_Type.GRANT_REQUEST,
     grantRequest,
+    labels: labels.value,
   });
 
   const request = create(CreateIssueRequestSchema, {

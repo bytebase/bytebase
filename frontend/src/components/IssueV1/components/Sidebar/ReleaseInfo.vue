@@ -12,7 +12,7 @@
         'line-through opacity-60': release.state === State.DELETED,
       }"
     >
-      {{ release.title || release.name }}
+      {{ releaseId }}
     </a>
   </div>
 </template>
@@ -38,4 +38,9 @@ const releaseName = computed(() => {
 const { release, ready } = useReleaseByName(
   computed(() => releaseName.value || "")
 );
+
+const releaseId = computed(() => {
+  const parts = release.value.name.split("/");
+  return parts[parts.length - 1] || release.value.name;
+});
 </script>

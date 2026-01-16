@@ -15,7 +15,7 @@ const environmentV1Routes: RouteRecordRaw[] = [
     props: { content: true },
     meta: {
       title: () => t("common.environment"),
-      requiredPermissionList: () => ["bb.settings.get", "bb.policies.get"],
+      requiredPermissionList: () => ["bb.settings.getEnvironment"],
     },
   },
 ];

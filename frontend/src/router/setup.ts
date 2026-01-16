@@ -14,7 +14,13 @@ const setupRoutes: RouteRecordRaw[] = [
         name: SETUP_MODULE,
         meta: {
           title: () => t("setup.self"),
-          requiredPermissionList: () => ["bb.settings.get", "bb.settings.set"],
+          requiredPermissionList: () => [
+            "bb.settings.get",
+            "bb.settings.setWorkspaceProfile",
+            "bb.projects.create",
+            "bb.roles.list",
+            "bb.workspaces.getIamPolicy",
+          ],
         },
         component: () => import("@/views/Setup/Setup.vue"),
       },

@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -16,21 +17,22 @@ func TestCheck(t *testing.T) {
 		Email: "test@example.com",
 	}
 
-	roles, err := loadPredefinedRoles()
-	require.NoError(t, err)
-	rolePermissions := make(map[string]map[Permission]bool)
-	for _, role := range roles {
+	rolePermissions := make(map[string]map[permission.Permission]bool)
+	for _, role := range store.PredefinedRoles {
 		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
+	}
+	getPermissions := func(role string) map[permission.Permission]bool {
+		return rolePermissions[role]
 	}
 
 	tests := []struct {
-		permission   Permission
+		permission   permission.Permission
 		policy       *storepb.IamPolicy
 		groupMembers map[string]map[string]bool
 		want         bool
 	}{
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -43,7 +45,7 @@ func TestCheck(t *testing.T) {
 			want:         false,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -56,7 +58,7 @@ func TestCheck(t *testing.T) {
 			want:         true,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -69,7 +71,7 @@ func TestCheck(t *testing.T) {
 			want:         false,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -82,7 +84,7 @@ func TestCheck(t *testing.T) {
 			want:         true,
 		},
 		{
-			permission: PermissionInstancesCreate,
+			permission: permission.InstancesCreate,
 			policy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
@@ -100,7 +102,13 @@ func TestCheck(t *testing.T) {
 		}}
 
 	for i, test := range tests {
-		got := check(testUser, test.permission, test.policy, rolePermissions, test.groupMembers)
+		getGroupMembers := func(groupName string) map[string]bool {
+			if test.groupMembers == nil {
+				return nil
+			}
+			return test.groupMembers[groupName]
+		}
+		got := check(testUser, test.permission, test.policy, getPermissions, getGroupMembers)
 		if got != test.want {
 			require.Equal(t, test.want, got, i)
 		}

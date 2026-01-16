@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, usePolicyV1Store } from "@/store";
+import { useDatabaseV1Store, useDataSourceRestrictionPolicy } from "@/store";
 import type {
   ComposedDatabase,
   QueryDataSourceType,
@@ -19,11 +19,8 @@ import {
   DataSourceType,
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  DataSourceQueryPolicy_Restriction,
-  PolicyType,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { QueryDataPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
+import { wrapRefAsPromise } from "@/utils";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const NEW_WORKSHEET_TITLE = "new worksheet";
@@ -130,54 +127,24 @@ export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
   return database && isValidDatabaseName(database.name);
 };
 
-export const getAdminDataSourceRestrictionOfDatabase = (
-  database: ComposedDatabase
-) => {
-  const policyStore = usePolicyV1Store();
-  const projectLevelPolicy = policyStore.getPolicyByParentAndType({
-    parentPath: database.project,
-    policyType: PolicyType.DATA_SOURCE_QUERY,
-  });
-  const projectLevelAdminDSRestriction =
-    projectLevelPolicy?.policy?.case === "dataSourceQueryPolicy"
-      ? projectLevelPolicy.policy.value.adminDataSourceRestriction
-      : undefined;
+const getDataSourceBehavior = async (database: ComposedDatabase) => {
+  const { ready, dataSourceRestriction } =
+    useDataSourceRestrictionPolicy(database);
+  await wrapRefAsPromise(ready, /* expected */ true);
 
-  let envLevelPolicy: Policy | undefined;
-  if (database.effectiveEnvironment) {
-    envLevelPolicy = policyStore.getPolicyByParentAndType({
-      parentPath: database.effectiveEnvironment,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
-    });
-  }
-
-  const envLevelAdminDSRestriction =
-    envLevelPolicy?.policy?.case === "dataSourceQueryPolicy"
-      ? envLevelPolicy.policy.value.adminDataSourceRestriction
-      : undefined;
-  return {
-    environmentPolicy:
-      envLevelAdminDSRestriction ??
-      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-    projectPolicy:
-      projectLevelAdminDSRestriction ??
-      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-  };
-};
-
-const getDataSourceBehavior = (database: ComposedDatabase) => {
-  const restriction = getAdminDataSourceRestrictionOfDatabase(database);
   let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
   if (
-    restriction.environmentPolicy ===
-      DataSourceQueryPolicy_Restriction.DISALLOW ||
-    restriction.projectPolicy === DataSourceQueryPolicy_Restriction.DISALLOW
+    dataSourceRestriction.value.environmentPolicy ===
+      QueryDataPolicy_Restriction.DISALLOW ||
+    dataSourceRestriction.value.projectPolicy ===
+      QueryDataPolicy_Restriction.DISALLOW
   ) {
     behavior = "RO";
   } else if (
-    restriction.environmentPolicy ===
-      DataSourceQueryPolicy_Restriction.FALLBACK ||
-    restriction.projectPolicy === DataSourceQueryPolicy_Restriction.FALLBACK
+    dataSourceRestriction.value.environmentPolicy ===
+      QueryDataPolicy_Restriction.FALLBACK ||
+    dataSourceRestriction.value.projectPolicy ===
+      QueryDataPolicy_Restriction.FALLBACK
   ) {
     behavior = "FALLBACK";
   } else {
@@ -186,7 +153,7 @@ const getDataSourceBehavior = (database: ComposedDatabase) => {
   return behavior;
 };
 
-export const getValidDataSourceByPolicy = (
+export const getValidDataSourceByPolicy = async (
   database: ComposedDatabase,
   type?: QueryDataSourceType
 ) => {
@@ -197,7 +164,7 @@ export const getValidDataSourceByPolicy = (
     (ds) => ds.type === DataSourceType.READ_ONLY
   );
 
-  const behavior = getDataSourceBehavior(database);
+  const behavior = await getDataSourceBehavior(database);
 
   switch (behavior) {
     case "ALLOW_ADMIN":

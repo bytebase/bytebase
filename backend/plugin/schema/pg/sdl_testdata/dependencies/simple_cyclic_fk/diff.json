@@ -1,0 +1,35 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 0,
+  "details": {
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "employees",
+        "columnChanges": 3,
+        "indexChanges": 0,
+        "constraintChanges": 1,
+        "foreignKeyChanges": 1,
+        "foreignKeys": [
+          {
+            "action": "CREATE",
+            "name": "fk_manager",
+            "columns": ["manager_id"],
+            "referencedSchema": "public",
+            "referencedTable": "employees",
+            "referencedColumns": ["id"],
+            "onDelete": "SET NULL",
+            "selfReferencing": true
+          }
+        ]
+      }
+    ]
+  }
+}

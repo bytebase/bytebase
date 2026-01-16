@@ -24,6 +24,10 @@ type IamPolicyMessage struct {
 	Etag   string
 }
 
+func getIamPolicyCacheKey(resourceType storepb.Policy_Resource, resourceID string) string {
+	return fmt.Sprintf("iam/%s/%s", resourceType, resourceID)
+}
+
 // generateEtag generates etag for the given body.
 func generateEtag(t time.Time) string {
 	return fmt.Sprintf("%d", t.UnixMilli())
@@ -31,9 +35,14 @@ func generateEtag(t time.Time) string {
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
 	resourceType := storepb.Policy_WORKSPACE
-	return s.getIamPolicy(ctx, &FindPolicyMessage{
+	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, ""), policy)
+	return policy, nil
 }
 
 type PatchIamPolicyMessage struct {
@@ -93,16 +102,42 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		return nil, err
 	}
 
+	// Invalidate IAM policy cache after mutation.
+	s.iamPolicyCache.Remove(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, ""))
+
 	return s.GetWorkspaceIamPolicy(ctx)
 }
 
 func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
 	resourceType := storepb.Policy_PROJECT
 	resource := common.FormatProject(projectID)
-	return s.getIamPolicy(ctx, &FindPolicyMessage{
+	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_PROJECT, projectID), policy)
+	return policy, nil
+}
+
+// GetWorkspaceIamPolicySnapshot returns the workspace IAM policy with snapshot reads (with cache).
+func (s *Store) GetWorkspaceIamPolicySnapshot(ctx context.Context) (*IamPolicyMessage, error) {
+	key := getIamPolicyCacheKey(storepb.Policy_WORKSPACE, "")
+	if v, ok := s.iamPolicyCache.Get(key); ok {
+		return v, nil
+	}
+	return s.GetWorkspaceIamPolicy(ctx)
+}
+
+// GetProjectIamPolicySnapshot returns the project IAM policy with snapshot reads (with cache).
+func (s *Store) GetProjectIamPolicySnapshot(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
+	key := getIamPolicyCacheKey(storepb.Policy_PROJECT, projectID)
+	if v, ok := s.iamPolicyCache.Get(key); ok {
+		return v, nil
+	}
+	return s.GetProjectIamPolicy(ctx, projectID)
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
@@ -168,11 +203,14 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 }
 
 type EffectiveQueryDataPolicy struct {
-	MaximumResultSize        int64
-	MaximumResultRows        int32
-	DisableCopyData          bool
-	DisableExport            bool
-	MaxQueryTimeoutInSeconds int64
+	MaximumResultSize          int64
+	MaximumResultRows          int32
+	DisableCopyData            bool
+	DisableExport              bool
+	MaxQueryTimeoutInSeconds   int64
+	AdminDataSourceRestriction storepb.QueryDataPolicy_Restriction
+	DisallowDDL                bool
+	DisallowDML                bool
 }
 
 func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQueryDataPolicy {
@@ -190,11 +228,14 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	}
 
 	return &EffectiveQueryDataPolicy{
-		MaximumResultSize:        maximumResultSize,
-		MaximumResultRows:        maximumResultRows,
-		MaxQueryTimeoutInSeconds: timeoutInSeconds,
-		DisableCopyData:          policy.GetDisableCopyData(),
-		DisableExport:            policy.GetDisableExport(),
+		MaximumResultSize:          maximumResultSize,
+		MaximumResultRows:          maximumResultRows,
+		MaxQueryTimeoutInSeconds:   timeoutInSeconds,
+		DisableCopyData:            policy.GetDisableCopyData(),
+		DisableExport:              policy.GetDisableExport(),
+		AdminDataSourceRestriction: policy.GetAdminDataSourceRestriction(),
+		DisallowDDL:                policy.GetDisallowDdl(),
+		DisallowDML:                policy.GetDisallowDml(),
 	}
 }
 
@@ -215,12 +256,21 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, project string)
 	maximumResultRows := min(formatPorjectPolicy.MaximumResultRows, formatWorkspacePolicy.MaximumResultRows)
 	maximumTimeout := min(formatPorjectPolicy.MaxQueryTimeoutInSeconds, formatWorkspacePolicy.MaxQueryTimeoutInSeconds)
 
+	// For AdminDataSourceRestriction, project policy takes precedence over workspace
+	adminRestriction := formatPorjectPolicy.AdminDataSourceRestriction
+	if adminRestriction == storepb.QueryDataPolicy_RESTRICTION_UNSPECIFIED {
+		adminRestriction = formatWorkspacePolicy.AdminDataSourceRestriction
+	}
+
 	return &EffectiveQueryDataPolicy{
-		DisableCopyData:          formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
-		DisableExport:            formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
-		MaximumResultSize:        maximumResultSize,
-		MaximumResultRows:        maximumResultRows,
-		MaxQueryTimeoutInSeconds: maximumTimeout,
+		DisableCopyData:            formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
+		DisableExport:              formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
+		MaximumResultSize:          maximumResultSize,
+		MaximumResultRows:          maximumResultRows,
+		MaxQueryTimeoutInSeconds:   maximumTimeout,
+		AdminDataSourceRestriction: adminRestriction,
+		DisallowDDL:                formatPorjectPolicy.DisallowDDL || formatWorkspacePolicy.DisallowDDL,
+		DisallowDML:                formatPorjectPolicy.DisallowDML || formatWorkspacePolicy.DisallowDML,
 	}, nil
 }
 
@@ -418,12 +468,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 		}
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	// We will always return the resource regardless of its deleted state.
 	find.ShowAll = true
 	policies, err := s.ListPolicies(ctx, find)
@@ -441,10 +485,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d policies with filter %+v, expect 1", len(policies), find)}
 	}
 	policy := policies[0]
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 

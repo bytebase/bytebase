@@ -7,6 +7,7 @@ import type { EditorPanelViewState } from "./tabViewState";
 
 export type SQLEditorTabStatus =
   | "DIRTY" // edited
+  | "SAVING" // auto-saving in progress
   | "CLEAN"; // saved to a remote sheet
 
 export type SQLEditorTabMode = "WORKSHEET" | "ADMIN";

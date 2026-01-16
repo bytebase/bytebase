@@ -1,4 +1,3 @@
-import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import semver from "semver";
@@ -16,7 +15,6 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
-import { RestrictionSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
@@ -77,8 +75,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const isDemo = computed(() => serverInfo.value?.demo);
 
-  const isDebug = computed(() => serverInfo.value?.debug || false);
-
   const isDocker = computed(() => serverInfo.value?.docker || false);
 
   const isSaaSMode = computed(() => serverInfo.value?.saas || false);
@@ -92,10 +88,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     const url = serverInfo.value?.externalUrl ?? "";
     return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
   });
-
-  const restriction = computed(
-    () => serverInfo.value?.restriction ?? create(RestrictionSchema, {})
-  );
 
   const hasNewRelease = computed(() => {
     return (
@@ -115,6 +107,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const totalInstanceCount = computed(
     () => serverInfo.value?.totalInstanceCount ?? 0
   );
+
+  const replicaCount = computed(() => serverInfo.value?.replicaCount ?? 1);
 
   const inactiveUserCount = computed(() => {
     return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
@@ -187,18 +181,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     setServerInfo(info);
     resourcePackage.value = pkg;
     return info;
-  };
-
-  const patchDebug = async ({ debug }: { debug: boolean }) => {
-    const info = await actuatorServiceClientConnect.updateActuatorInfo({
-      actuator: {
-        debug,
-      },
-      updateMask: {
-        paths: ["debug"],
-      },
-    });
-    setServerInfo(info);
   };
 
   const fetchLatestRelease = async (): Promise<Release | undefined> => {
@@ -287,15 +269,14 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     gitCommitBE,
     gitCommitFE,
     isDemo,
-    isDebug,
     isDocker,
     isSaaSMode,
     needAdminSetup,
     needConfigureExternalUrl,
     hasNewRelease,
-    restriction,
     activatedInstanceCount,
     totalInstanceCount,
+    replicaCount,
     inactiveUserCount,
     quickStartEnabled,
     // Actions
@@ -303,7 +284,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     setLogo,
     setServerInfo,
     fetchServerInfo,
-    patchDebug,
     fetchLatestRelease,
     tryToRemindRelease,
     tryToRemindRefresh,

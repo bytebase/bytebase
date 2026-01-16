@@ -112,10 +112,6 @@
         "title": "数据库变更日志",
         "desc": "跟踪所有数据库 schema 和数据更改。"
       },
-      "FEATURE_SCHEMA_DRIFT_DETECTION": {
-        "title": "Schema 偏差检测",
-        "desc": "检测带外 schema 更改并报告差异。"
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "发布策略",
         "desc": "控制 schema 变更任务是否需要手动发布。"

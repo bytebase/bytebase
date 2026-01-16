@@ -1,0 +1,125 @@
+- statement: CREATE TABLE t1 (id INT);
+  want:
+    - CREATE_TABLE
+- statement: CREATE VIEW v1 AS SELECT * FROM t1;
+  want:
+    - CREATE_VIEW
+- statement: CREATE INDEX idx_name ON t1(name);
+  want:
+    - CREATE_INDEX
+- statement: CREATE SEQUENCE seq1;
+  want:
+    - CREATE_SEQUENCE
+- statement: CREATE SCHEMA schema1;
+  want:
+    - CREATE_SCHEMA
+- statement: CREATE FUNCTION func1() RETURNS INT AS $$ BEGIN RETURN 1; END; $$ LANGUAGE plpgsql;
+  want:
+    - CREATE_FUNCTION
+- statement: DROP TABLE t1;
+  want:
+    - DROP_TABLE
+- statement: DROP INDEX idx_name;
+  want:
+    - DROP_INDEX
+- statement: DROP SCHEMA schema1;
+  want:
+    - DROP_SCHEMA
+- statement: DROP SEQUENCE seq1;
+  want:
+    - DROP_SEQUENCE
+- statement: DROP EXTENSION postgis;
+  want:
+    - DROP_EXTENSION
+- statement: DROP DATABASE testdb;
+  want:
+    - DROP_DATABASE
+- statement: DROP TYPE custom_type;
+  want:
+    - DROP_TYPE
+- statement: DROP TRIGGER trig1 ON t1;
+  want:
+    - DROP_TRIGGER
+- statement: DROP VIEW v1;
+  want:
+    - DROP_TABLE
+- statement: DROP FUNCTION func1();
+  want:
+    - DROP_FUNCTION
+- statement: CREATE TYPE custom_type AS ENUM ('a', 'b', 'c');
+  want:
+    - CREATE_TYPE
+- statement: ALTER TABLE t1 ADD COLUMN name VARCHAR(100);
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 ADD CONSTRAINT pk_id PRIMARY KEY (id);
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 DROP COLUMN name;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 DROP CONSTRAINT pk_id;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 ALTER COLUMN name TYPE TEXT;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 ALTER COLUMN name DROP DEFAULT;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 ALTER COLUMN name DROP NOT NULL;
+  want:
+    - ALTER_TABLE
+- statement: ALTER VIEW v1 OWNER TO user1;
+  want:
+    - ALTER_VIEW
+- statement: ALTER TABLE t1 ENABLE ROW LEVEL SECURITY;
+  want:
+    - ALTER_TABLE
+- statement: ALTER SEQUENCE seq1 RESTART WITH 100;
+  want:
+    - ALTER_SEQUENCE
+- statement: INSERT INTO t1 (id) VALUES (1);
+  want:
+    - INSERT
+- statement: UPDATE t1 SET name = 'test' WHERE id = 1;
+  want:
+    - UPDATE
+- statement: DELETE FROM t1 WHERE id = 1;
+  want:
+    - DELETE
+- statement: COMMENT ON TABLE t1 IS 'test table';
+  want:
+    - COMMENT
+- statement: |-
+    CREATE TABLE t1 (id INT);
+    CREATE INDEX idx_id ON t1(id);
+    INSERT INTO t1 (id) VALUES (1);
+  want:
+    - CREATE_TABLE
+    - CREATE_INDEX
+    - INSERT
+- statement: ALTER TABLE t1 RENAME TO t2;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 RENAME COLUMN old_name TO new_name;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 RENAME old_name TO new_name;
+  want:
+    - ALTER_TABLE
+- statement: ALTER TABLE t1 RENAME CONSTRAINT old_constraint TO new_constraint;
+  want:
+    - ALTER_TABLE
+- statement: ALTER INDEX idx_old RENAME TO idx_new;
+  want:
+    - RENAME_INDEX
+- statement: ALTER SCHEMA old_schema RENAME TO new_schema;
+  want:
+    - RENAME_SCHEMA
+- statement: ALTER SEQUENCE seq_old RENAME TO seq_new;
+  want:
+    - RENAME_SEQUENCE
+- statement: ALTER VIEW v_old RENAME TO v_new;
+  want:
+    - ALTER_VIEW

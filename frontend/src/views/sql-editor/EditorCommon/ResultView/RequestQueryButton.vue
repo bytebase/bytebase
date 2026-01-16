@@ -25,7 +25,7 @@ import {
   isValidDatabaseName,
   PresetRoleType,
 } from "@/types";
-import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -56,7 +56,10 @@ const available = computed(() => {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(database.value);
+  return (
+    database.value.projectEntity.allowRequestRole &&
+    hasProjectPermissionV2(database.value.projectEntity, "bb.issues.create")
+  );
 });
 
 const onClick = (e: MouseEvent) => {

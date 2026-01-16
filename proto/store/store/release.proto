@@ -7,8 +7,6 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message ReleasePayload {
-  string title = 1;
-
   repeated File files = 2;
 
   VCSSource vcs_source = 3;

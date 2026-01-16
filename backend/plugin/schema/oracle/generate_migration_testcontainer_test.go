@@ -2,32 +2,26 @@ package oracle
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	oracledb "github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // TestGenerateMigrationWithTestcontainer tests the generate migration function
 // by applying migrations and rollback to verify the schema can be restored.
+//
+//nolint:tparallel
 func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping Oracle testcontainer test in short mode")
@@ -35,52 +29,12 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Use Oracle Free image (Oracle 23c Free) slim version
-	imageName := "gvenzl/oracle-free:slim"
+	// Get Oracle container from testcontainer utility
+	container := testcontainer.GetTestOracleContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
 
-	// Start Oracle container
-	req := testcontainers.ContainerRequest{
-		Image: imageName,
-		Env: map[string]string{
-			"ORACLE_PASSWORD":   "test123",
-			"APP_USER":          "testuser",
-			"APP_USER_PASSWORD": "testpass",
-		},
-		ExposedPorts: []string{"1521/tcp"},
-		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").
-			WithStartupTimeout(10 * time.Minute),
-		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.ShmSize = 1 * 1024 * 1024 * 1024 // 1GB shared memory
-		},
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		// Get detailed logs for debugging
-		if container != nil {
-			logs, logErr := container.Logs(ctx)
-			if logErr == nil {
-				buf := make([]byte, 10000)
-				n, _ := logs.Read(buf)
-				t.Logf("Container logs on failure: %s", string(buf[:n]))
-			}
-		}
-		require.NoError(t, err, "Failed to start Oracle container")
-	}
-	defer func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}()
-
-	// Get connection details
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "1521")
-	require.NoError(t, err)
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
 
 	// Test cases with various schema changes
 	testCases := []struct {
@@ -1758,50 +1712,38 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
-			// Step 1: Initialize the database schema and get schema result A
-			portInt, err := strconv.Atoi(port.Port())
-			require.NoError(t, err)
-			testDB, err := openTestDatabase(host, portInt, "testuser", "testpass")
-			require.NoError(t, err)
-			defer testDB.Close()
+			t.Parallel()
 
-			// Set current schema to TESTUSER
-			_, err = testDB.Exec("ALTER SESSION SET CURRENT_SCHEMA = TESTUSER")
-			require.NoError(t, err)
+			// Create unique Oracle user for this test (Oracle users are schemas)
+			// Use UUID to ensure uniqueness and avoid name collisions
+			testUser := fmt.Sprintf("U_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 
-			// Clean up any existing objects
-			// Drop procedures
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'PROCEDURE') LOOP EXECUTE IMMEDIATE 'DROP PROCEDURE ' || c.object_name; END LOOP; END;")
-			// Drop packages (must be before functions/procedures that might be in packages)
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'PACKAGE') LOOP EXECUTE IMMEDIATE 'DROP PACKAGE ' || c.object_name; END LOOP; END;")
-			// Drop functions
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT object_name FROM user_objects WHERE object_type = 'FUNCTION') LOOP EXECUTE IMMEDIATE 'DROP FUNCTION ' || c.object_name; END LOOP; END;")
-			// Drop types
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT type_name FROM user_types) LOOP EXECUTE IMMEDIATE 'DROP TYPE ' || c.type_name || ' FORCE'; END LOOP; END;")
-			// Drop materialized views
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT mview_name FROM user_mviews) LOOP EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW ' || c.mview_name; END LOOP; END;")
-			// Drop views
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT view_name FROM user_views) LOOP EXECUTE IMMEDIATE 'DROP VIEW ' || c.view_name; END LOOP; END;")
-			// Drop tables (with CASCADE CONSTRAINTS to handle foreign keys)
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE 'DROP TABLE ' || c.table_name || ' CASCADE CONSTRAINTS'; END LOOP; END;")
-			// Drop sequences (excluding system-generated ones)
-			_, _ = testDB.Exec("BEGIN FOR c IN (SELECT sequence_name FROM user_sequences WHERE sequence_name NOT LIKE 'ISEQ$$_%') LOOP EXECUTE IMMEDIATE 'DROP SEQUENCE ' || c.sequence_name; END LOOP; END;")
+			// Create user using shared SYSTEM connection
+			require.NoError(t, createOracleUser(systemDB, testUser))
+
+			// Connect as the test user
+			driver, err := createOracleDriver(ctx, container.GetHost(), container.GetPort(), testUser)
+			require.NoError(t, err)
+			defer driver.Close(ctx)
 
 			// Execute initial schema
-			if err := executeStatements(testDB, tc.initialSchema); err != nil {
+			if err := executeStatements(ctx, driver, tc.initialSchema); err != nil {
 				t.Fatalf("Failed to execute initial schema: %v", err)
 			}
 
-			schemaA, err := getSyncMetadataForGenerateMigration(ctx, host, portInt)
+			// Get schema metadata A
+			schemaA, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 2: Do some migration and get schema result B
-			if err := executeStatements(testDB, tc.migrationDDL); err != nil {
+			if err := executeStatements(ctx, driver, tc.migrationDDL); err != nil {
 				t.Fatalf("Failed to execute migration DDL: %v", err)
 			}
 
-			schemaB, err := getSyncMetadataForGenerateMigration(ctx, host, portInt)
+			// Get schema metadata B
+			schemaB, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 3: Call generate migration to get the rollback DDL
@@ -1818,11 +1760,12 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 			require.NoError(t, err)
 
 			// Step 4: Run rollback DDL and get schema result C
-			if err := executeStatements(testDB, rollbackDDL); err != nil {
+			if err := executeStatements(ctx, driver, rollbackDDL); err != nil {
 				t.Fatalf("Failed to execute rollback DDL: %v", err)
 			}
 
-			schemaC, err := getSyncMetadataForGenerateMigration(ctx, host, portInt)
+			// Get schema metadata C
+			schemaC, err := driver.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Step 5: Compare schema result A and C to ensure they are the same
@@ -1839,121 +1782,6 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 			}
 		})
 	}
-}
-
-// openTestDatabase opens a connection to the test Oracle database
-func openTestDatabase(host string, port int, username, password string) (*sql.DB, error) {
-	dsn := fmt.Sprintf("oracle://%s:%s@%s:%d/FREEPDB1", username, password, host, port)
-	db, err := sql.Open("oracle", dsn)
-	if err != nil {
-		return nil, err
-	}
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-// executeStatements executes multiple SQL statements, handling both regular DDL and PL/SQL blocks
-func executeStatements(db *sql.DB, statements string) error {
-	// Set current schema to TESTUSER before executing any statements
-	if _, err := db.Exec("ALTER SESSION SET CURRENT_SCHEMA = TESTUSER"); err != nil {
-		return errors.Wrapf(err, "failed to set current schema")
-	}
-
-	// Use plsql.SplitSQL to properly split Oracle SQL statements
-	stmts, err := plsqlparser.SplitSQL(statements)
-	if err != nil {
-		return errors.Wrapf(err, "failed to split SQL statements")
-	}
-
-	// Execute each statement
-	for _, singleSQL := range stmts {
-		stmt := strings.TrimSpace(singleSQL.Text)
-		if stmt == "" {
-			continue
-		}
-
-		// Skip statements that contain only comments
-		// Strip all comment lines and check if there's actual SQL
-		lines := strings.Split(stmt, "\n")
-		hasSQL := false
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if trimmed != "" && !strings.HasPrefix(trimmed, "--") {
-				hasSQL = true
-				break
-			}
-		}
-		if !hasSQL {
-			continue
-		}
-
-		// Execute the statement
-		if _, err := db.Exec(stmt); err != nil {
-			// Handle Oracle-specific issues where materialized views are misclassified as tables
-			if strings.Contains(err.Error(), "must use DROP MATERIALIZED VIEW") {
-				// Try to fix the statement by replacing DROP TABLE with DROP MATERIALIZED VIEW
-				if strings.HasPrefix(strings.ToUpper(stmt), "DROP TABLE") {
-					fixedStmt := strings.Replace(stmt, "DROP TABLE", "DROP MATERIALIZED VIEW", 1)
-					if _, retryErr := db.Exec(fixedStmt); retryErr == nil {
-						continue // Successfully executed with corrected statement
-					}
-				}
-			}
-			// Handle system-generated virtual column indexes that cannot be manually created
-			if strings.Contains(err.Error(), "invalid identifier") && strings.Contains(stmt, "SYS_NC") {
-				// Skip statements that reference system-generated virtual columns
-				continue
-			}
-			return errors.Wrapf(err, "failed to execute statement: %s", stmt)
-		}
-	}
-
-	return nil
-}
-
-// getSyncMetadataForGenerateMigration retrieves metadata from the live database using Driver.SyncDBSchema
-func getSyncMetadataForGenerateMigration(ctx context.Context, host string, port int) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create a driver instance using the oracle package
-	driver := &oracledb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:        storepb.DataSourceType_ADMIN,
-			Username:    "testuser",
-			Host:        host,
-			Port:        fmt.Sprintf("%d", port),
-			Database:    "",
-			ServiceName: "FREEPDB1",
-		},
-		Password: "testpass",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "23.0",     // Oracle 23c Free
-			DatabaseName:  "TESTUSER", // Oracle schema names are uppercase
-		},
-	}
-
-	// Open connection using the driver
-	openedDriver, err := driver.Open(ctx, storepb.Engine_ORACLE, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Use SyncDBSchema to get the metadata
-	oracleDriver, ok := openedDriver.(*oracledb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to oracle.Driver")
-	}
-
-	metadata, err := oracleDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
 }
 
 // normalizeMetadataForComparison normalizes metadata to ignore differences that don't affect schema equality

@@ -2,34 +2,29 @@ package pg
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	pgdb "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 // TestGetDatabaseDefinitionWithTestcontainer tests the get_database_definition function
 // by comparing metadata from a database created using the original DDL versus
 // metadata from a database created using the generated DDL.
+//
+//nolint:tparallel
 func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Get PostgreSQL container from testcontainer.go
 	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	// Get the database connection
-	db := pgContainer.GetDB()
+	t.Cleanup(func() { pgContainer.Close(ctx) })
 
 	// Test cases with various PostgreSQL features
 	testCases := []struct {
@@ -407,26 +402,24 @@ CREATE TABLE cities (
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create first database with original DDL
-			dbNameA := fmt.Sprintf("test_a_%s", tc.name)
-			_, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameA))
-			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbNameA))
-			}()
+			t.Parallel()
 
-			// Connect to database A
-			testDBA, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s sslmode=disable",
-				pgContainer.GetHost(), pgContainer.GetPort(), dbNameA))
+			// Create first database with original DDL using unique name
+			dbNameA := fmt.Sprintf("test_a_%s_%d", strings.ReplaceAll(tc.name, "-", "_"), time.Now().UnixNano()%1000000)
+			_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameA))
 			require.NoError(t, err)
-			defer testDBA.Close()
+
+			// Create driver for database A
+			driverA, err := createPgDriver(ctx, pgContainer.GetHost(), pgContainer.GetPort(), dbNameA)
+			require.NoError(t, err)
+			defer driverA.Close(ctx)
 
 			// Execute the original DDL
-			_, err = testDBA.Exec(tc.ddl)
+			_, err = driverA.GetDB().ExecContext(ctx, tc.ddl)
 			require.NoError(t, err)
 
 			// Get metadata A using Driver.SyncDBSchema
-			metadataA, err := getDBSyncMetadata(ctx, pgContainer, dbNameA)
+			metadataA, err := driverA.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Generate database definition using GetDatabaseDefinition
@@ -434,74 +427,28 @@ CREATE TABLE cities (
 			require.NoError(t, err)
 			require.NotEmpty(t, generatedDDL, "generated DDL should not be empty")
 
-			// Create second database and apply generated DDL
-			dbNameB := fmt.Sprintf("test_b_%s", tc.name)
-			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameB))
+			// Create second database and apply generated DDL using unique name
+			dbNameB := fmt.Sprintf("test_b_%s_%d", strings.ReplaceAll(tc.name, "-", "_"), time.Now().UnixNano()%1000000)
+			_, err = pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameB))
 			require.NoError(t, err)
-			defer func() {
-				_, _ = db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbNameB))
-			}()
 
-			// Connect to database B
-			testDBB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s sslmode=disable",
-				pgContainer.GetHost(), pgContainer.GetPort(), dbNameB))
+			// Create driver for database B
+			driverB, err := createPgDriver(ctx, pgContainer.GetHost(), pgContainer.GetPort(), dbNameB)
 			require.NoError(t, err)
-			defer testDBB.Close()
+			defer driverB.Close(ctx)
 
 			// Execute the generated DDL
-			_, err = testDBB.Exec(generatedDDL)
+			_, err = driverB.GetDB().ExecContext(ctx, generatedDDL)
 			require.NoError(t, err, "failed to execute generated DDL: %s", generatedDDL)
 
 			// Get metadata B using Driver.SyncDBSchema
-			metadataB, err := getDBSyncMetadata(ctx, pgContainer, dbNameB)
+			metadataB, err := driverB.SyncDBSchema(ctx)
 			require.NoError(t, err)
 
 			// Compare metadata A and B
 			compareFullMetadata(t, metadataA, metadataB)
 		})
 	}
-}
-
-// getDBSyncMetadata retrieves metadata from the live database using Driver.SyncDBSchema
-func getDBSyncMetadata(ctx context.Context, container *testcontainer.Container, dbName string) (*storepb.DatabaseSchemaMetadata, error) {
-	// Create a driver instance using the pg package
-	driver := &pgdb.Driver{}
-
-	// Create connection config
-	config := db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Type:     storepb.DataSourceType_ADMIN,
-			Username: "postgres",
-			Host:     container.GetHost(),
-			Port:     container.GetPort(),
-			Database: dbName,
-		},
-		Password: "root-password",
-		ConnectionContext: db.ConnectionContext{
-			EngineVersion: "16.0", // PostgreSQL 16
-			DatabaseName:  dbName,
-		},
-	}
-
-	// Open connection using the driver
-	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
-	if err != nil {
-		return nil, err
-	}
-	defer openedDriver.Close(ctx)
-
-	// Use SyncDBSchema to get the metadata
-	pgDriver, ok := openedDriver.(*pgdb.Driver)
-	if !ok {
-		return nil, errors.New("failed to cast to pg.Driver")
-	}
-
-	metadata, err := pgDriver.SyncDBSchema(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
 }
 
 // compareFullMetadata compares all aspects of database metadata

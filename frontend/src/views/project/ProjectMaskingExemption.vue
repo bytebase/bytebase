@@ -22,7 +22,12 @@
         <PermissionGuardWrapper
           v-slot="slotProps"
           :project="project"
-          :permissions="['bb.policies.create', 'bb.databases.list']"
+          :permissions="[
+            'bb.policies.createMaskingExemptionPolicy',
+            'bb.policies.updateMaskingExemptionPolicy',
+            'bb.databases.list',
+            'bb.databaseCatalogs.get'
+          ]"
         >
           <NButton
             type="primary"
@@ -53,7 +58,7 @@
     </div>
     <MaskingExceptionUserTable
       size="medium"
-      :disabled="false"
+      :disabled="!hasPermission"
       :project="project"
       :show-database-column="true"
       :filter-access-user="filterAccessUser"
@@ -81,6 +86,7 @@ import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/pr
 import { hasFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
   searchText: string;
@@ -100,6 +106,13 @@ const router = useRouter();
 
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
+);
+
+const hasPermission = computed(() =>
+  hasProjectPermissionV2(
+    project.value,
+    "bb.policies.updateMaskingExemptionPolicy"
+  )
 );
 
 const hasSensitiveDataFeature = computed(() => {

@@ -80,32 +80,24 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Wrap(err, "failed to ensure baseline changelog")
 	}
 
-	// Mark database as not drifted since we're about to sync it
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Drifted = false
-		}},
-	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
-	}
-
 	// Execute migration based on task type
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
-		// Parse release name to get project ID and release UID
-		_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
+		// Parse release name to get project ID and release ID
+		projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse release name %q", releaseName)
 		}
 
 		// Fetch the release
-		release, err := exec.store.GetReleaseByUID(ctx, releaseUID)
+		release, err := exec.store.GetRelease(ctx, &store.FindReleaseMessage{
+			ProjectID: &projectID,
+			ReleaseID: &releaseID,
+		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get release %d", releaseUID)
+			return nil, errors.Wrapf(err, "failed to get release %s", releaseID)
 		}
 		if release == nil {
-			return nil, errors.Errorf("release %d not found", releaseUID)
+			return nil, errors.Errorf("release %s not found", releaseID)
 		}
 
 		// Switch based on release type
@@ -135,7 +127,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 }
 
 // ensureBaselineChangelog creates a baseline changelog if this is the first migration for the database.
-func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, instance *store.InstanceMessage) error {
+func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, _ *store.InstanceMessage) error {
 	// Check if this database has any existing changelogs
 	limit := 1
 	existingChangelogs, err := exec.store.ListChangelogs(ctx, &store.FindChangelogMessage{
@@ -160,9 +152,8 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 			Status:         store.ChangelogStatusDone,
 			SyncHistoryUID: &baselineSyncHistoryUID,
 			Payload: &storepb.ChangelogPayload{
-				Type:        storepb.ChangelogPayload_BASELINE,
-				GitCommit:   exec.profile.GitCommit,
-				DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+				Type:      storepb.ChangelogPayload_BASELINE,
+				GitCommit: exec.profile.GitCommit,
 			},
 		})
 		if err != nil {
@@ -246,10 +237,9 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:     common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			Type:        storepb.ChangelogPayload_MIGRATE,
-			GitCommit:   exec.profile.GitCommit,
-			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			Type:      storepb.ChangelogPayload_MIGRATE,
+			GitCommit: exec.profile.GitCommit,
 		},
 	})
 	if err != nil {
@@ -356,10 +346,9 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:     common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			Type:        storepb.ChangelogPayload_MIGRATE,
-			GitCommit:   exec.profile.GitCommit,
-			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			Type:      storepb.ChangelogPayload_MIGRATE,
+			GitCommit: exec.profile.GitCommit,
 		},
 	})
 	if err != nil {
@@ -465,10 +454,9 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:     taskRunName,
-			Type:        storepb.ChangelogPayload_MIGRATE,
-			GitCommit:   exec.profile.GitCommit,
-			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+			TaskRun:   taskRunName,
+			Type:      storepb.ChangelogPayload_MIGRATE,
+			GitCommit: exec.profile.GitCommit,
 		},
 	})
 	if err != nil {
@@ -686,10 +674,9 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:     common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			Type:        storepb.ChangelogPayload_SDL,
-			GitCommit:   exec.profile.GitCommit,
-			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			Type:      storepb.ChangelogPayload_SDL,
+			GitCommit: exec.profile.GitCommit,
 		},
 	})
 	if err != nil {
@@ -1158,9 +1145,12 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 			if err == nil && task != nil {
 				// Get the release from the task
 				if releaseName := task.Payload.GetRelease(); releaseName != "" {
-					_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
+					projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
 					if err == nil {
-						release, err := s.GetReleaseByUID(ctx, releaseUID)
+						release, err := s.GetRelease(ctx, &store.FindReleaseMessage{
+							ProjectID: &projectID,
+							ReleaseID: &releaseID,
+						})
 						if err == nil && release != nil {
 							// For SDL/declarative releases, there should be exactly one file
 							if len(release.Payload.Files) == 1 {

@@ -142,9 +142,6 @@ func (x *Policy) Equal(y *Policy) bool {
 	if !x.GetTagPolicy().Equal(y.GetTagPolicy()) {
 		return false
 	}
-	if !x.GetDataSourceQueryPolicy().Equal(y.GetDataSourceQueryPolicy()) {
-		return false
-	}
 	if !x.GetQueryDataPolicy().Equal(y.GetQueryDataPolicy()) {
 		return false
 	}
@@ -198,6 +195,15 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 		return false
 	}
 	if x.DisableCopyData != y.DisableCopyData {
+		return false
+	}
+	if x.AdminDataSourceRestriction != y.AdminDataSourceRestriction {
+		return false
+	}
+	if x.DisallowDdl != y.DisallowDdl {
+		return false
+	}
+	if x.DisallowDml != y.DisallowDml {
 		return false
 	}
 	return true
@@ -301,25 +307,6 @@ func (x *TagPolicy) Equal(y *TagPolicy) bool {
 		if x.Tags[k] != y.Tags[k] {
 			return false
 		}
-	}
-	return true
-}
-
-func (x *DataSourceQueryPolicy) Equal(y *DataSourceQueryPolicy) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.AdminDataSourceRestriction != y.AdminDataSourceRestriction {
-		return false
-	}
-	if x.DisallowDdl != y.DisallowDdl {
-		return false
-	}
-	if x.DisallowDml != y.DisallowDml {
-		return false
 	}
 	return true
 }

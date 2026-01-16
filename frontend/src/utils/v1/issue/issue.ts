@@ -109,11 +109,12 @@ export const generateIssueTitle = (
  * - Grant request issues: ALWAYS use new layout
  * - Create database issues: ALWAYS use new layout
  * - Data export issues: ALWAYS use new layout
+ * - Issues without rollout: ALWAYS use new layout (legacy UI cannot display them)
  * - Database changing issues: Use new layout ONLY when enabledNewLayout is true
  */
 export const shouldUseNewIssueLayout = (
   issue: { type?: Issue_Type; name?: string },
-  plan?: Plan | { specs?: Array<{ config?: { case?: string } }> },
+  plan?: Plan,
   enabledNewLayout = true
 ): boolean => {
   // Grant request issues always use new layout
@@ -140,6 +141,11 @@ export const shouldUseNewIssueLayout = (
     return true;
   }
 
+  // Issues without rollout must use new layout (legacy UI cannot display them)
+  if (plan && plan.hasRollout === false) {
+    return true;
+  }
+
   // For database changing issues, respect the layout preference
   return enabledNewLayout;
 };
@@ -154,7 +160,7 @@ export const shouldUseNewIssueLayout = (
  */
 export const getIssueRoute = (
   issue: { type?: Issue_Type; name: string; title?: string },
-  plan?: Plan | { specs?: Array<{ config?: { case?: string } }> },
+  plan?: Plan,
   enabledNewLayout = true
 ): {
   name: string;

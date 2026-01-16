@@ -461,7 +461,7 @@ func (*PlanCheckRunResult_Result_SqlReviewReport_) isPlanCheckRunResult_Result_R
 type PlanCheckRunResult_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// statement_types are the types of statements found in the SQL.
-	StatementTypes   []string          `protobuf:"bytes,1,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
+	StatementTypes   []StatementType   `protobuf:"varint,1,rep,packed,name=statement_types,json=statementTypes,proto3,enum=bytebase.store.StatementType" json:"statement_types,omitempty"`
 	AffectedRows     int64             `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
 	ChangedResources *ChangedResources `protobuf:"bytes,3,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -498,7 +498,7 @@ func (*PlanCheckRunResult_Result_SqlSummaryReport) Descriptor() ([]byte, []int) 
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
-func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetStatementTypes() []string {
+func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetStatementTypes() []StatementType {
 	if x != nil {
 		return x.StatementTypes
 	}
@@ -576,10 +576,10 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xe3\x06\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\x82\a\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xf1\x05\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\x90\x06\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
@@ -588,9 +588,9 @@ const file_store_plan_check_run_proto_rawDesc = "" +
 	"\x06target\x18\a \x01(\tR\x06target\x121\n" +
 	"\x04type\x18\b \x01(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x04type\x12j\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v2:.bytebase.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12g\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xaf\x01\n" +
-	"\x10SqlSummaryReport\x12'\n" +
-	"\x0fstatement_types\x18\x01 \x03(\tR\x0estatementTypes\x12#\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xce\x01\n" +
+	"\x10SqlSummaryReport\x12F\n" +
+	"\x0fstatement_types\x18\x01 \x03(\x0e2\x1d.bytebase.store.StatementTypeR\x0estatementTypes\x12#\n" +
 	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x12M\n" +
 	"\x11changed_resources\x18\x03 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResources\x1a\x8f\x01\n" +
 	"\x0fSqlReviewReport\x12?\n" +
@@ -641,7 +641,8 @@ var file_store_plan_check_run_proto_goTypes = []any{
 	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 7: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
 	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 8: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
 	(Advice_Status)(0),                                 // 9: bytebase.store.Advice.Status
-	(*Position)(nil),                                   // 10: bytebase.store.Position
+	(StatementType)(0),                                 // 10: bytebase.store.StatementType
+	(*Position)(nil),                                   // 11: bytebase.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
 	6,  // 0: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
@@ -652,14 +653,15 @@ var file_store_plan_check_run_proto_depIdxs = []int32{
 	0,  // 5: bytebase.store.PlanCheckRunResult.Result.type:type_name -> bytebase.store.PlanCheckType
 	7,  // 6: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
 	8,  // 7: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	2,  // 8: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
-	10, // 9: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
-	10, // 10: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	10, // 8: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.statement_types:type_name -> bytebase.store.StatementType
+	2,  // 9: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
+	11, // 10: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
+	11, // 11: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_check_run_proto_init() }

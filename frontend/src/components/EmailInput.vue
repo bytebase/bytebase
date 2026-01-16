@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import { NInput, NInputGroup, NInputGroupLabel, NSelect } from "naive-ui";
 import { computed, reactive, watch, watchEffect } from "vue";
-import { useActuatorV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 
 interface LocalState {
   // The full email value.
@@ -62,17 +62,16 @@ const state: LocalState = reactive({
   shortValue: props.value.split("@")[0],
   domain: props.value.split("@")[1],
 });
-const actuatorStore = useActuatorV1Store();
+const settingV1Store = useSettingV1Store();
 
 const enforceDomain = computed(() => {
   return (
-    (actuatorStore.restriction.enforceIdentityDomain ?? false) ||
-    props.showDomain
+    settingV1Store.workspaceProfile.enforceIdentityDomain || props.showDomain
   );
 });
 
 const domainSelectOptions = computed(() => {
-  const domains = (actuatorStore.restriction.domains ?? []).filter(
+  const domains = settingV1Store.workspaceProfile.domains.filter(
     (domain) => domain && domain.trim() !== ""
   );
   if (domains.length === 0 && props.fallbackDomain) {

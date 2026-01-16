@@ -38,16 +38,23 @@ func TestGetStatementType(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, test := range tests {
-		asts, err := base.Parse(storepb.Engine_MYSQL, test.Statement)
+		stmts, err := base.ParseStatements(storepb.Engine_MYSQL, test.Statement)
 		a.NoError(err)
+		asts := base.ExtractASTs(stmts)
 
 		sqlType, err := GetStatementTypes(asts)
 		a.NoError(err)
 
+		// Convert enum to string for comparison
+		sqlTypeStrings := make([]string, len(sqlType))
+		for j, t := range sqlType {
+			sqlTypeStrings[j] = t.String()
+		}
+
 		if record {
-			tests[i].Want = sqlType
+			tests[i].Want = sqlTypeStrings
 		} else {
-			a.Equal(test.Want, sqlType)
+			a.Equal(test.Want, sqlTypeStrings)
 		}
 	}
 

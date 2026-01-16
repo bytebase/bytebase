@@ -1,5 +1,13 @@
 <template>
   <div class="flex flex-col gap-y-2">
+    <NAlert
+      v-if="!hideHint"
+      type="info"
+      closable
+      @close="dismissHint"
+    >
+      {{ $t("issue.subtitle") }}
+    </NAlert>
     <IssueSearch
       v-model:params="state.params"
       :components="['searchbox', 'time-range', 'presets', 'status']"
@@ -25,6 +33,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NAlert } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
@@ -34,6 +43,7 @@ import {
   useCurrentUserV1,
   useIssueV1Store,
   useRefreshIssueList,
+  useUIStateStore,
 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import {
@@ -65,6 +75,13 @@ const me = useCurrentUserV1();
 const issueStore = useIssueV1Store();
 const issuePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
+
+const uiStateStore = useUIStateStore();
+const HINT_KEY = "issue.hint-dismissed";
+const hideHint = computed(() => uiStateStore.getIntroStateByKey(HINT_KEY));
+const dismissHint = () => {
+  uiStateStore.saveIntroStateByKey({ key: HINT_KEY, newState: true });
+};
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
@@ -135,15 +152,9 @@ const fetchIssueList = async ({
   };
 };
 
-// Skip the first watch trigger since PagedTable already fetches on mount
-let isFirstFilterWatch = true;
 watch(
   () => JSON.stringify(mergedIssueFilter.value),
   () => {
-    if (isFirstFilterWatch) {
-      isFirstFilterWatch = false;
-      return;
-    }
     issuePagedTable.value?.refresh();
   }
 );

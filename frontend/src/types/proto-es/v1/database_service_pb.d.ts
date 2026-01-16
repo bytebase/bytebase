@@ -123,7 +123,6 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * - instance: the instance full name in "instances/{id}" format, support "==" operator.
    * - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
    * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-   * - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
    * - table: filter by the database table, support "==" and ".matches()" operator.
    * - labels.{key}: the database label, support "==" and "in" operators.
    *
@@ -137,7 +136,6 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * engine in ["MYSQL", "POSTGRES"]
    * !(engine in ["MYSQL", "POSTGRES"])
    * exclude_unassigned == true
-   * drifted == true
    * table == "sample"
    * table.matches("sam")
    * labels.environment == "production"
@@ -623,13 +621,6 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * @generated from field: bool backup_available = 10;
    */
   backupAvailable: boolean;
-
-  /**
-   * The schema is drifted from the source of truth.
-   *
-   * @generated from field: bool drifted = 11;
-   */
-  drifted: boolean;
 };
 
 /**
@@ -2950,13 +2941,15 @@ export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsR
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filter:
-   * status: the changelog status, support "==" operation. check Changelog.Status for available values.
-   * type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+   * - status: the changelog status, support "==" operation. check Changelog.Status for available values.
+   * - type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+   * - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    *
    * Example:
    * status == "DONE"
    * type in ["BASELINE", "MIGRATE"]
    * status == "FAILED" && type == "SDL"
+   * create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
    *
    * @generated from field: string filter = 5;
    */

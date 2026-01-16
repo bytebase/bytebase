@@ -5,7 +5,7 @@
     :loading="isLoadingNextPage"
     :filterable="true"
     :clearable="true"
-    :remote="true"
+    :remote="remote"
     :virtual-scroll="true"
     :multiple="multiple"
     :value="value"
@@ -53,6 +53,7 @@ import type { ResourceSelectOption, SelectSize } from "./types";
 
 const props = withDefaults(
   defineProps<{
+    remote?: boolean;
     placeholder?: string;
     multiple?: boolean;
     disabled?: boolean;
@@ -82,6 +83,7 @@ const props = withDefaults(
     filterable?: boolean;
   }>(),
   {
+    remote: true,
     fallbackOption: false,
     consistentMenuWidth: true,
     filterable: true,
@@ -100,10 +102,17 @@ const searchText = ref("");
 const show = ref(false);
 const rawOptions = ref([]) as Ref<ResourceSelectOption<T>[]>;
 
-const appendDataToRawList = (data: ResourceSelectOption<T>[]) => {
+const appendDataToRawList = (
+  data: ResourceSelectOption<T>[],
+  unshift: boolean = false
+) => {
   for (const item of data) {
     if (!rawOptions.value.find((raw) => raw.value === item.value)) {
-      rawOptions.value.unshift(item);
+      if (unshift) {
+        rawOptions.value.unshift(item);
+      } else {
+        rawOptions.value.push(item);
+      }
     }
   }
 };
@@ -116,7 +125,7 @@ watch(
   ],
   ([additionalOptions, isLoadingNextPage, searchText]) => {
     if (!isLoadingNextPage && !searchText) {
-      appendDataToRawList(additionalOptions);
+      appendDataToRawList(additionalOptions, true);
     }
   },
   { deep: true }

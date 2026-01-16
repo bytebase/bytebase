@@ -132,7 +132,7 @@ const scimTokenFieldRef = ref<HTMLInputElement | null>(null);
 const $dialog = useDialog();
 
 const hasPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.set")
+  hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile")
 );
 
 const workspaceId = computed(() => {
@@ -151,7 +151,7 @@ const scimUrl = computed(() => {
 });
 
 const scimToken = computed(() => {
-  return settingV1Store.workspaceProfileSetting?.directorySyncToken ?? "";
+  return settingV1Store.workspaceProfile.directorySyncToken;
 });
 
 const handleSelect = (component: HTMLInputElement | null) => {

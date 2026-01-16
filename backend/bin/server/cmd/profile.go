@@ -27,7 +27,6 @@ func getBaseProfile(dataDir string) *config.Profile {
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())
-	config.RuntimeDebug.Store(flags.debug)
 	config.RuntimeMemoryProfileThreshold.Store(flags.memoryProfileThreshold)
 	return config
 }

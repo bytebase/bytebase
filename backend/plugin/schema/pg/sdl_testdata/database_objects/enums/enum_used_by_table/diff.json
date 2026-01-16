@@ -1,0 +1,31 @@
+{
+  "hasDifferences": true,
+  "summary": "Table changes: 1, Enum type changes: 1",
+  "tableChanges": 1,
+  "viewChanges": 0,
+  "functionChanges": 0,
+  "schemaChanges": 0,
+  "sequenceChanges": 0,
+  "enumTypeChanges": 1,
+  "details": {
+    "enumTypes": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "enumName": "order_status",
+        "values": ["pending", "confirmed", "shipped", "delivered"]
+      }
+    ],
+    "tables": [
+      {
+        "action": "CREATE",
+        "schemaName": "public",
+        "tableName": "orders",
+        "columnChanges": 4,
+        "indexChanges": 0,
+        "constraintChanges": 1,
+        "foreignKeyChanges": 0
+      }
+    ]
+  }
+}

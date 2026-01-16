@@ -3,24 +3,38 @@
     <div class="text-left lg:w-1/4">
       <div class="flex items-center gap-x-2">
         <h1 class="text-2xl font-bold">
-          {{ $t("settings.general.workspace.audit-log-stdout.self") }}
+          {{ $t("settings.general.workspace.log") }}
         </h1>
         <FeatureBadge :feature="PlanFeature.FEATURE_AUDIT_LOG" />
       </div>
     </div>
-    <div class="flex-1 lg:px-4">
+
+    <div class="flex-1 lg:px-4 flex flex-col gap-y-6">
+      <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.enableAuditLogStdout"
+            :text="true"
+            :disabled="!allowEdit || !hasAuditLogFeature"
+          />
+          <span class="text-sm">
+            {{ $t("settings.general.workspace.audit-log-stdout.enable") }}
+          </span>
+        </div>
+        <div class="mt-1 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.audit-log-stdout.description") }}
+        </div>
+      </div>
+
       <div class="flex items-center gap-x-2">
         <Switch
-          v-model:value="state.enableAuditLogStdout"
+          v-model:value="state.enableDebug"
           :text="true"
-          :disabled="!allowEdit || !hasAuditLogFeature"
+          :disabled="!allowEdit"
         />
         <span class="text-sm">
-          {{ $t("settings.general.workspace.audit-log-stdout.enable") }}
+          {{ $t("settings.general.workspace.enable-debug.enable") }}
         </span>
-      </div>
-      <div class="mt-1 text-sm text-gray-400">
-        {{ $t("settings.general.workspace.audit-log-stdout.description") }}
       </div>
     </div>
   </div>
@@ -39,6 +53,7 @@ import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
   enableAuditLogStdout: boolean;
+  enableDebug: boolean;
 }
 
 defineProps<{
@@ -50,8 +65,8 @@ const hasAuditLogFeature = featureToRef(PlanFeature.FEATURE_AUDIT_LOG);
 
 const getInitialState = (): LocalState => {
   return {
-    enableAuditLogStdout:
-      settingV1Store.workspaceProfileSetting?.enableAuditLogStdout ?? false,
+    enableAuditLogStdout: settingV1Store.workspaceProfile.enableAuditLogStdout,
+    enableDebug: settingV1Store.workspaceProfile.enableDebug,
   };
 };
 
@@ -69,12 +84,16 @@ const revert = () => {
 const update = async () => {
   const payload: Partial<WorkspaceProfileSetting> = {
     enableAuditLogStdout: state.enableAuditLogStdout,
+    enableDebug: state.enableDebug,
   };
 
   await settingV1Store.updateWorkspaceProfile({
     payload,
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile.enable_audit_log_stdout"],
+      paths: [
+        "value.workspace_profile.enable_audit_log_stdout",
+        "value.workspace_profile.enable_debug",
+      ],
     }),
   });
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div v-if="allowGetSQLReviewPolicy" class="flex flex-col gap-y-2">
     <div class="flex items-center gap-x-2">
       <label class="font-medium">
         {{ $t("sql-review.title") }}
@@ -18,18 +18,26 @@
         v-if="pendingSelectReviewPolicy"
         class="inline-flex items-center gap-x-2"
       >
-        <Switch
-          v-if="allowEditSQLReviewPolicy"
-          v-model:value="enforceSQLReviewPolicy"
-          :text="true"
-        />
-        <span
-          class="textlabel normal-link text-accent!"
-          @click="onSQLReviewPolicyClick"
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.reviewConfigs.update',
+          ]"
         >
-          {{ pendingSelectReviewPolicy.name }}
+          <Switch
+            v-model:value="enforceSQLReviewPolicy"
+            :text="true"
+            :disabled="slotProps.disabled"
+          />
+        </PermissionGuardWrapper>
+        <div
+          class="flex items-center space-x-1"
+        >
+          <span class="textlabel normal-link text-accent!" @click="onSQLReviewPolicyClick">
+            {{ pendingSelectReviewPolicy.name }}
+          </span>
           <NButton
-            v-if="allowEditSQLReviewTag"
+            v-if="hasUpdatePolicyPermission"
             quaternary
             size="tiny"
             @click.stop="onReviewPolicyRemove"
@@ -38,17 +46,24 @@
               <XIcon class="w-4 h-auto" />
             </template>
           </NButton>
-        </span>
+        </div>
       </div>
-      <NButton
-        v-else-if="allowEditSQLReviewTag"
-        @click.prevent="showReviewSelectPanel = true"
+      <PermissionGuardWrapper
+        v-else
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.policies.update',
+          'bb.reviewConfigs.list'
+        ]"
       >
-        {{ $t("sql-review.configure-policy") }}
-      </NButton>
-      <span v-else class="textinfolabel">
-        {{ $t("sql-review.no-policy-set") }}
-      </span>
+        <NButton
+          :disabled="slotProps.disabled"
+          @click.prevent="showReviewSelectPanel = true"
+        >
+          {{ $t("sql-review.configure-policy") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
   </div>
 
@@ -66,43 +81,71 @@ import { CircleQuestionMarkIcon, XIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import { useReviewPolicyByResource, useSQLReviewStore } from "@/store";
 import {
-  environmentNamePrefix,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
+  useProjectV1Store,
+  useReviewPolicyByResource,
+  useSQLReviewStore,
+} from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "@/types";
-import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { isValidProjectName } from "@/types";
+import {
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  sqlReviewPolicySlug,
+} from "@/utils";
 import SQLReviewPolicySelectPanel from "./SQLReviewPolicySelectPanel.vue";
 
 const props = defineProps<{
   resource: string;
-  allowEdit: boolean;
 }>();
 
 const router = useRouter();
 const reviewStore = useSQLReviewStore();
 const showReviewSelectPanel = ref<boolean>(false);
 const pendingSelectReviewPolicy = ref<SQLReviewPolicy | undefined>(undefined);
+const projectStore = useProjectV1Store();
 
-const scope = computed(() => {
+const project = computed(() => {
   if (props.resource.startsWith(projectNamePrefix)) {
-    return t("settings.general.workspace.query-data-policy.environment-scope");
+    const proj = projectStore.getProjectByName(props.resource);
+    if (!isValidProjectName(proj.name)) {
+      return undefined;
+    }
+    return proj;
   }
-  if (props.resource.startsWith(environmentNamePrefix)) {
-    return t("settings.general.workspace.query-data-policy.project-scope");
+  return undefined;
+});
+
+const hasGetPolicyPermission = computed(() => {
+  if (project.value) {
+    return hasProjectPermissionV2(project.value, "bb.policies.get");
   }
-  return "";
+  return hasWorkspacePermissionV2("bb.policies.get");
+});
+
+const hasUpdatePolicyPermission = computed(() => {
+  if (project.value) {
+    return hasProjectPermissionV2(project.value, "bb.policies.update");
+  }
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const tooltip = computed(() => {
-  if (!scope.value) {
-    return "";
+  if (project.value) {
+    return t("sql-review.tooltip-for-resource", {
+      scope: t(
+        "settings.general.workspace.query-data-policy.environment-scope"
+      ),
+    });
   }
-  return t("sql-review.tooltip-for-resource", { scope: scope.value });
+  return t("sql-review.tooltip-for-resource", {
+    scope: t("settings.general.workspace.query-data-policy.project-scope"),
+  });
 });
 
 const sqlReviewPolicy = useReviewPolicyByResource(
@@ -117,12 +160,11 @@ const resetState = () => {
 
 watchEffect(resetState);
 
-const allowEditSQLReviewPolicy = computed(() => {
-  return props.allowEdit && hasWorkspacePermissionV2("bb.reviewConfigs.update");
-});
-
-const allowEditSQLReviewTag = computed(() => {
-  return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
+const allowGetSQLReviewPolicy = computed(() => {
+  return (
+    hasWorkspacePermissionV2("bb.reviewConfigs.get") &&
+    hasGetPolicyPermission.value
+  );
 });
 
 const onReviewPolicySelect = (review: SQLReviewPolicy) => {

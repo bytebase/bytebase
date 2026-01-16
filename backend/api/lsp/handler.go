@@ -9,18 +9,17 @@ import (
 	"time"
 
 	lsp "github.com/bytebase/lsp-protocol"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type Method string
@@ -57,9 +56,8 @@ func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam
 		user:                 user,
 		tokenExpiry:          tokenExpiry,
 		iamManager:           iamManager,
-		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond),                            // 500ms debounce
-		contentCache:         NewContentCache(100),                                                       // Cache up to 100 documents
-		metadataCache:        expirable.NewLRU[string, *model.DatabaseMetadata](128, nil, 5*time.Minute), // Cache up to 128 database metadata with 5min TTL
+		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
+		contentCache:         NewContentCache(100),                            // Cache up to 100 documents
 	}
 	return lspHandler{Handler: jsonrpc2.HandlerWithError(handler.handle)}
 }
@@ -96,7 +94,6 @@ type Handler struct {
 	// Performance optimizations
 	diagnosticsDebouncer *DiagnosticsDebouncer
 	contentCache         *ContentCache
-	metadataCache        *expirable.LRU[string, *model.DatabaseMetadata]
 }
 
 // ShutDown shuts down the handler.
@@ -232,7 +229,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 
 		// Check bb.databases.getSchema permission
-		ok, err := h.iamManager.CheckPermission(ctx, iam.PermissionDatabasesGetSchema, h.user, database.ProjectID)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.DatabasesGetSchema, h.user, database.ProjectID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}
@@ -241,7 +238,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 	} else if metadata.InstanceID != "" && metadata.DatabaseName == "" {
 		// If only instance is specified, check instance get permission
-		ok, err := h.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, h.user)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, h.user)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}

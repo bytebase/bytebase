@@ -106,10 +106,13 @@ import { useI18n } from "vue-i18n";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  usePolicyV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
+import {
+  useDataSourceRestrictionPolicy,
+  useEffectiveQueryDataPolicyForProject,
+} from "@/store/modules/v1/policy";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
@@ -117,16 +120,9 @@ import {
   DataSource_RedisType,
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  DataSourceQueryPolicy_Restriction,
-  PolicyType,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { QueryDataPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  getAdminDataSourceRestrictionOfDatabase,
-  getValidDataSourceByPolicy,
-  readableDataSourceType,
-} from "@/utils";
+import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 
 defineProps<{
   disabled?: boolean;
@@ -135,15 +131,18 @@ defineProps<{
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
-const policyStore = usePolicyV1Store();
 
 const { redisCommandOption, resultRowsLimit, project } = storeToRefs(
   useSQLEditorStore()
 );
 
+const { policy: effectiveQueryDataPolicy } =
+  useEffectiveQueryDataPolicyForProject(project);
+
+const { dataSourceRestriction } = useDataSourceRestrictionPolicy(database);
+
 const maximumResultRows = computed(() => {
-  return policyStore.getEffectiveQueryDataPolicyForProject(project.value)
-    .maximumResultRows;
+  return effectiveQueryDataPolicy.value.maximumResultRows;
 });
 
 const show = computed(() => {
@@ -156,17 +155,6 @@ const showRedisConfig = computed(() => {
   }
   const instance = database.value.instanceResource;
   return instance.engine === Engine.REDIS;
-});
-
-const adminDataSourceRestriction = computed(() => {
-  if (!database.value) {
-    return {
-      environmentPolicy:
-        DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-      projectPolicy: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-    };
-  }
-  return getAdminDataSourceRestrictionOfDatabase(database.value);
 });
 
 const selectedDataSourceId = computed(() => {
@@ -189,10 +177,10 @@ const dataSourceUnaccessibleReason = (
 ): string | undefined => {
   if (dataSource.type === DataSourceType.ADMIN) {
     if (
-      adminDataSourceRestriction.value.environmentPolicy ===
-        DataSourceQueryPolicy_Restriction.DISALLOW ||
-      adminDataSourceRestriction.value.projectPolicy ===
-        DataSourceQueryPolicy_Restriction.DISALLOW
+      dataSourceRestriction.value.environmentPolicy ===
+        QueryDataPolicy_Restriction.DISALLOW ||
+      dataSourceRestriction.value.projectPolicy ===
+        QueryDataPolicy_Restriction.DISALLOW
     ) {
       return t(
         "sql-editor.query-context.admin-data-source-is-disallowed-to-query"
@@ -203,10 +191,10 @@ const dataSourceUnaccessibleReason = (
     );
     if (
       readOnlyDataSources.length > 0 &&
-      (adminDataSourceRestriction.value.environmentPolicy ===
-        DataSourceQueryPolicy_Restriction.FALLBACK ||
-        adminDataSourceRestriction.value.projectPolicy ===
-          DataSourceQueryPolicy_Restriction.FALLBACK)
+      (dataSourceRestriction.value.environmentPolicy ===
+        QueryDataPolicy_Restriction.FALLBACK ||
+        dataSourceRestriction.value.projectPolicy ===
+          QueryDataPolicy_Restriction.FALLBACK)
     ) {
       return t(
         "sql-editor.query-context.admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available"
@@ -228,34 +216,12 @@ const onDataSourceSelected = (dataSourceId?: string) => {
 
 watch(
   [() => selectedDataSourceId.value, () => database.value],
-  ([current, database]) => {
+  async ([current, database]) => {
     if (!isValidDatabaseName(database.name)) return;
     if (!current) {
-      const fixed = getValidDataSourceByPolicy(database);
+      const fixed = await getValidDataSourceByPolicy(database);
       onDataSourceSelected(fixed);
     }
-  },
-  {
-    immediate: true,
-  }
-);
-
-watch(
-  () => database.value.name,
-  async () => {
-    if (!isValidDatabaseName(database.value.name)) {
-      return;
-    }
-    if (database.value.effectiveEnvironment) {
-      await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: database.value.effectiveEnvironment,
-        policyType: PolicyType.DATA_SOURCE_QUERY,
-      });
-    }
-    await policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: database.value.project,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
-    });
   },
   {
     immediate: true,

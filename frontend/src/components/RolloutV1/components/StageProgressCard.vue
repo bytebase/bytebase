@@ -15,10 +15,15 @@ import { useEnvironmentV1Store } from "@/store";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { useStageStatus } from "./composables/useStageStatus";
 
-const props = defineProps<{
-  stage: Stage;
-  isCreated: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    stage: Stage;
+    isCreated?: boolean;
+  }>(),
+  {
+    isCreated: true,
+  }
+);
 
 const environmentStore = useEnvironmentV1Store();
 

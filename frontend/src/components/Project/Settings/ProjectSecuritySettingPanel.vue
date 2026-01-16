@@ -3,12 +3,10 @@
     <SQLReviewForResource
       ref="sqlReviewForResourceRef"
       :resource="project.name"
-      :allow-edit="allowEdit"
     />
     <AccessControlConfigure
       ref="accessControlConfigureRef"
       :resource="project.name"
-      :allow-edit="allowEdit"
     />
     <QueryDataPolicySetting
       ref="queryDataPolicySettingRef"
@@ -26,7 +24,6 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 defineProps<{
   project: Project;
-  allowEdit: boolean;
 }>();
 
 const accessControlConfigureRef =

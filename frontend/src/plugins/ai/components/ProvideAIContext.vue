@@ -6,7 +6,7 @@
 import { create } from "@bufbuild/protobuf";
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref, toRef } from "vue";
+import { computed, onMounted, reactive, ref, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -32,6 +32,11 @@ const state = reactive<LocalState>({
 });
 
 const settingV1Store = useSettingV1Store();
+
+onMounted(async () => {
+  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI, true);
+});
+
 const aiSetting = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
   if (setting?.value?.value?.case === "ai") {

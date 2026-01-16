@@ -15,7 +15,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -36,6 +38,7 @@ type SettingService struct {
 	store          *store.Store
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
+	iamManager     *iam.Manager
 }
 
 // NewSettingService creates a new setting service.
@@ -43,11 +46,13 @@ func NewSettingService(
 	store *store.Store,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
+	iamManager *iam.Manager,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
+		iamManager:     iamManager,
 	}
 }
 
@@ -81,15 +86,29 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 	if settingName == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
-	apiSettingName, err := convertStringToSettingName(settingName)
+
+	storeSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if isSettingDisallowed(apiSettingName) {
+	if isSettingDisallowed(storeSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
-	setting, err := s.store.GetSetting(ctx, apiSettingName)
+	var perm permission.Permission
+	switch storeSettingName {
+	case storepb.SettingName_ENVIRONMENT:
+		perm = permission.EnvironmentSettingsGet
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		perm = permission.WorkspaceProfileSettingsGet
+	default:
+		perm = permission.SettingsGet
+	}
+	if err := s.checkSettingPermission(ctx, request, perm); err != nil {
+		return nil, err
+	}
+
+	setting, err := s.store.GetSetting(ctx, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
 	}
@@ -118,17 +137,31 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	if settingName == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
-	apiSettingName, err := convertStringToSettingName(settingName)
+	storeSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if isSettingDisallowed(apiSettingName) {
+	if isSettingDisallowed(storeSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
-	existedSetting, err := s.store.GetSetting(ctx, apiSettingName)
+
+	var perm permission.Permission
+	switch storeSettingName {
+	case storepb.SettingName_ENVIRONMENT:
+		perm = permission.EnvironmentSettingsSet
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		perm = permission.WorkspaceProfileSettingsSet
+	default:
+		perm = permission.SettingsSet
+	}
+	if err := s.checkSettingPermission(ctx, request, perm); err != nil {
+		return nil, err
+	}
+
+	existedSetting, err := s.store.GetSetting(ctx, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
 	}
@@ -152,7 +185,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	var resetAuditLogStdout bool
 	var resetClassification bool
 
-	switch apiSettingName {
+	switch storeSettingName {
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
@@ -160,11 +193,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
 		oldSetting, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storeSettingName, err))
 		}
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
+			case "value.workspace_profile.enable_debug":
+				oldSetting.EnableDebug = payload.EnableDebug
+				level := slog.LevelInfo
+				if payload.EnableDebug {
+					level = slog.LevelDebug
+				}
+				log.LogLevel.Set(level)
 			case "value.workspace_profile.disallow_signup":
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
@@ -517,7 +557,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		storeSettingValue = environmentSetting
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", apiSettingName))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", storeSettingName))
 	}
 
 	if request.Msg.ValidateOnly {
@@ -528,7 +568,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	setting, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
-		Name:  apiSettingName,
+		Name:  storeSettingName,
 		Value: storeSettingValue,
 	})
 	if err != nil {
@@ -562,9 +602,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		batchUpdate := []*store.UpdateProjectMessage{}
 		for _, project := range projects {
+			setting := proto.CloneOf(project.Setting)
+			setting.DataClassificationConfigId = classificationID
 			batchUpdate = append(batchUpdate, &store.UpdateProjectMessage{
-				ResourceID:                 project.ResourceID,
-				DataClassificationConfigID: &classificationID,
+				ResourceID: project.ResourceID,
+				Setting:    setting,
 			})
 		}
 		if _, err = s.store.UpdateProjects(ctx, batchUpdate...); err != nil {
@@ -578,6 +620,29 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+func (s *SettingService) checkSettingPermission(ctx context.Context, req connect.AnyRequest, perm permission.Permission) error {
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	ok, err := s.iamManager.CheckPermission(ctx, perm, user)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+	}
+	if !ok {
+		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
+		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
+			Method:              req.Spec().Procedure,
+			RequiredPermissions: []string{string(perm)},
+		}); detailErr == nil {
+			err.AddDetail(detail)
+		}
+		return err
+	}
+	return nil
 }
 
 var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)
@@ -618,9 +683,7 @@ func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
 	if template.Flow == nil {
 		return errors.Errorf("approval template cannot be nil")
 	}
-	if len(template.Flow.Roles) == 0 {
-		return errors.Errorf("approval template cannot have 0 role")
-	}
+	// Empty roles means "no approval required" - issue will be auto-approved
 	return nil
 }
 

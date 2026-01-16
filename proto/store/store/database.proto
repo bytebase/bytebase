@@ -8,12 +8,12 @@ option go_package = "generated-go/store";
 
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
+  reserved 6; // drifted field removed
+
   map<string, string> labels = 1;
   google.protobuf.Timestamp last_sync_time = 2;
   bool backup_available = 3;
   bool datashare = 4;
-  // The schema has drifted from the source of truth.
-  bool drifted = 6;
   // The version of database schema.
   string version = 7;
 }

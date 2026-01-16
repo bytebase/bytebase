@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -130,7 +131,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 
-	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
 	}
 
@@ -169,7 +170,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 
 		// Create a new auth context for create permission check
 		createAuthContext := &common.AuthContext{
-			Permission: iam.Permission(createPerm),
+			Permission: permission.Permission(createPerm),
 			AuthMethod: authContext.AuthMethod,
 			Resources:  authContext.Resources,
 		}
@@ -206,7 +207,7 @@ func hasPath(fieldMask *fieldmaskpb.FieldMask, want string) bool {
 }
 
 func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMethod string, user *store.UserMessage, authContext *common.AuthContext) (bool, []string, error) {
-	if auth.IsAuthenticationAllowed(fullMethod, authContext) {
+	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return true, nil, nil
 	}
 	if authContext.AuthMethod != common.AuthMethodIAM {

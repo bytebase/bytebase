@@ -21,6 +21,7 @@ import { NDataTable } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
+import { getUserEmailInBinding } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
@@ -78,19 +79,18 @@ const onExpand = async (row: DataTableRowData) => {
 const onGroupLoad = async (row: GroupRowData) => {
   const { group } = row;
   const memberUserIds = group.members.map((m) => m.member);
-  await userStore.batchGetOrFetchUsers(memberUserIds);
+  const users = await userStore.batchGetOrFetchUsers(memberUserIds);
 
   const members: UserRowData[] = [];
-  for (const member of group.members) {
-    const user = userStore.getUserByIdentifier(member.member);
-    if (!user) {
-      continue;
-    }
+  for (const user of users) {
+    const member = group.members.find(
+      (m) => m.member === getUserEmailInBinding(user.email)
+    );
     members.push({
       type: "user",
       name: `${group.name}-${user.name}`,
       user,
-      role: member.role,
+      role: member?.role ?? GroupMember_Role.MEMBER,
     });
   }
 

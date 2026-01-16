@@ -86,7 +86,7 @@ import { CheckCircleIcon, XIcon } from "lucide-vue-next";
 import type { Ref } from "vue";
 import { computed, unref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { RouteLocationRaw } from "vue-router";
+import { type RouteLocationRaw, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -121,7 +121,7 @@ const SAMPLE_SHEET_ID = "101";
 
 type IntroItem = {
   name: string | Ref<string>;
-  link?: RouteLocationRaw;
+  link: RouteLocationRaw;
   done: Ref<boolean>;
   click?: () => void;
   hide?: boolean;
@@ -135,6 +135,7 @@ const actuatorStore = useActuatorV1Store();
 const issueStore = useIssueV1Store();
 const worksheetStore = useWorkSheetStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
+const router = useRouter();
 
 const sampleProject = computedAsync(async () => {
   if (!actuatorStore.quickStartEnabled) {
@@ -155,9 +156,6 @@ const sampleIssue = computedAsync(async () => {
   if (!sampleProject.value) {
     return;
   }
-  if (!hasProjectPermissionV2(sampleProject.value, "bb.issues.get")) {
-    return;
-  }
   const issue = await issueStore.fetchIssueByName(
     `${sampleProject.value.name}/issues/${SAMPLE_ISSUE_ID}`,
     {
@@ -172,12 +170,6 @@ const sampleIssue = computedAsync(async () => {
 
 const sampleWorksheet = computedAsync(async () => {
   if (!sampleProject.value) {
-    return;
-  }
-  if (!hasProjectPermissionV2(sampleProject.value, "bb.worksheets.get")) {
-    return;
-  }
-  if (!hasProjectPermissionV2(sampleProject.value, "bb.sql.select")) {
     return;
   }
   const sheet = await worksheetStore.getOrFetchWorksheetByName(
@@ -202,6 +194,7 @@ const introList = computed(() => {
       },
       done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
       hide: !sampleIssue.value,
+      requiredPermissions: ["bb.issues.get", "bb.projects.get"],
     },
     {
       name: computed(() => t("quick-start.query-data")),
@@ -214,6 +207,11 @@ const introList = computed(() => {
       },
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
       hide: !sampleWorksheet.value,
+      requiredPermissions: [
+        "bb.sql.select",
+        "bb.projects.get",
+        "bb.worksheets.get",
+      ],
     },
     {
       name: computed(() => t("quick-start.visit-project")),
@@ -231,7 +229,7 @@ const introList = computed(() => {
       done: computed(() =>
         uiStateStore.getIntroStateByKey("environment.visit")
       ),
-      requiredPermissions: ["bb.settings.get"],
+      requiredPermissions: ["bb.settings.getEnvironment"],
     },
     {
       name: computed(() => t("quick-start.visit-instance")),
@@ -255,16 +253,26 @@ const introList = computed(() => {
         name: WORKSPACE_ROUTE_USERS,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("member.visit")),
+      requiredPermissions: ["bb.workspaces.getIamPolicy", "bb.users.list"],
     },
   ];
 
-  return introList.filter(
-    (item) =>
-      !item.hide &&
-      (item.requiredPermissions ?? []).every((permission) =>
-        hasWorkspacePermissionV2(permission)
-      )
-  );
+  return introList.filter((item) => {
+    if (item.hide) {
+      return false;
+    }
+    const route = router.resolve(item.link);
+    const permissions = item.requiredPermissions ?? [];
+    if (!!route.params["project"] || !!route.params["projectId"]) {
+      if (!sampleProject.value) {
+        return false;
+      }
+      return permissions.every((permission) =>
+        hasProjectPermissionV2(sampleProject.value!, permission)
+      );
+    }
+    return permissions.every(hasWorkspacePermissionV2);
+  });
 });
 
 const showQuickstart = computed(() => {

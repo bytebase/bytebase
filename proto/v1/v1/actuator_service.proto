@@ -5,13 +5,10 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
-import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/setting_service.proto";
 import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -24,18 +21,6 @@ service ActuatorService {
     option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
-  }
-
-  // Updates system configuration settings for the Bytebase instance.
-  // Permissions required: bb.settings.set
-  rpc UpdateActuatorInfo(UpdateActuatorInfoRequest) returns (ActuatorInfo) {
-    option (google.api.http) = {
-      patch: "/v1/actuator/info"
-      body: "actuator"
-    };
-    option (google.api.method_signature) = "actuator,update_mask";
-    option (bytebase.v1.permission) = "bb.settings.set";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Sets up sample data for demonstration and testing purposes.
@@ -80,58 +65,13 @@ message SetupSampleRequest {}
 // Request message for getting actuator information.
 message GetActuatorInfoRequest {}
 
-// Request message for updating actuator information.
-message UpdateActuatorInfoRequest {
-  // The actuator to update.
-  ActuatorInfo actuator = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // If set to true, and the actuator is not found, a new actuator will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 3;
-}
-
 // Request message for deleting cache.
 message DeleteCacheRequest {}
-
-message Restriction {
-  // Whether self-service user signup is disabled.
-  bool disallow_signup = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether two-factor authentication is required for all users.
-  bool require_2fa = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether password-based signin is disabled (except for workspace admins).
-  bool disallow_password_signin = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Password complexity and restriction requirements.
-  WorkspaceProfileSetting.PasswordRestriction password_restriction = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether to display watermark on pages.
-  bool watermark = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The workspace database change mode.
-  DatabaseChangeMode database_change_mode = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-  google.protobuf.Duration inactive_session_timeout = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The workspace domain, e.g., bytebase.com.
-  repeated string domains = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Only user and group from the domains can be created and login.
-  bool enforce_identity_domain = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The max duration for role expired.
-  google.protobuf.Duration maximum_role_expiration = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
 
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  reserved 10, 12, 16, 17;
+  reserved 10, 12, 16, 17, 14;
 
   // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -166,9 +106,6 @@ message ActuatorInfo {
   // The unique identifier for the workspace.
   string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Whether debug mode is enabled.
-  bool debug = 14;
-
   // List of features that are not licensed.
   repeated string unlicensed_features = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -200,11 +137,6 @@ message ActuatorInfo {
   // Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
   bool external_url_from_flag = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The setting of custom announcement
-  Announcement announcement = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether to enable metric collection for the workspace.
-  bool enable_metric_collection = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  Restriction restriction = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The number of active replicas (servers sharing the same database).
+  int32 replica_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

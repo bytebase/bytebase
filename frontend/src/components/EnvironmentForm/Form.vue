@@ -3,7 +3,7 @@
     <div class="flex flex-col gap-y-6">
       <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
         <div for="name" class="flex item-center gap-x-2">
-          <div class="w-4 h-4 relative">
+          <div class="relative ml-1 mr-3">
             <component :is="renderColorPicker()" />
           </div>
           <span for="name" class="font-medium">
@@ -11,11 +11,18 @@
             <RequiredStar />
           </span>
         </div>
-        <NInput
-          v-model:value="state.environment.title"
-          :disabled="!allowEdit"
-          required
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setEnvironment'
+          ]"
+        >
+          <NInput
+            v-model:value="state.environment.title"
+            :disabled="slotProps.disabled"
+            required
+          />
+        </PermissionGuardWrapper>
 
         <ResourceIdField
           ref="resourceIdField"
@@ -24,11 +31,7 @@
           :value="state.environment.id"
           :resource-title="state.environment.title"
           :fetch-resource="
-            (id) =>
-              environmentStore.getOrFetchEnvironmentByName(
-                `${environmentNamePrefix}${id}`,
-                true /* silent */
-              )
+            (id) => getEnvironmentById(id)
           "
         />
       </div>
@@ -49,23 +52,31 @@
             />
           </p>
         </div>
-        <NCheckbox
-          :checked="state.environment.tags.protected === 'protected'"
-          :disabled="!allowEdit"
-          @update:checked="
-            (on: boolean) => {
-              state.environment.tags.protected = on
-                ? 'protected'
-                : 'unprotected';
-            }
-          "
+
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setEnvironment'
+          ]"
         >
-          {{ t("policy.environment-tier.mark-env-as-production") }}
-        </NCheckbox>
+          <NCheckbox
+            :checked="state.environment.tags.protected === 'protected'"
+            :disabled="slotProps.disabled"
+            @update:checked="
+              (on: boolean) => {
+                state.environment.tags.protected = on
+                  ? 'protected'
+                  : 'unprotected';
+              }
+            "
+          >
+            {{ t("policy.environment-tier.mark-env-as-production") }}
+          </NCheckbox>
+        </PermissionGuardWrapper>
       </div>
 
       <div
-        v-if="features.includes('ROLLOUT_POLICY')"
+        v-if="features.includes('ROLLOUT_POLICY') && hasGetPolicyPermission"
         class="flex flex-col gap-y-2"
       >
         <div class="gap-y-1">
@@ -90,7 +101,6 @@
         </div>
         <RolloutPolicyConfig
           v-model:policy="state.rolloutPolicy"
-          :disabled="!allowEdit"
         />
       </div>
 
@@ -98,14 +108,12 @@
         v-if="features.includes('SQL_REVIEW') && !create"
         ref="sqlReviewForResourceRef"
         :resource="`${environmentNamePrefix}${environment.id}`"
-        :allow-edit="allowEdit"
       />
 
       <AccessControlConfigure
         v-if="features.includes('ACCESS_CONTROL') && !create"
         ref="accessControlConfigureRef"
         :resource="`${environmentNamePrefix}${environment.id}`"
-        :allow-edit="allowEdit"
       />
     </div>
 
@@ -153,18 +161,20 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   hasFeature,
   pushNotification,
   useDatabaseV1Store,
-  useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { isValidEnvironmentName } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
@@ -198,19 +208,32 @@ const {
   allowEdit,
   valueChanged,
   missingFeature,
-  hasPermission,
   events,
   resourceIdField,
 } = useEnvironmentFormContext();
-const environmentList = useEnvironmentV1List();
 const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
+
+const hasGetPolicyPermission = computed(() => {
+  return hasWorkspacePermissionV2("bb.policies.get");
+});
 
 const accessControlConfigureRef =
   ref<InstanceType<typeof AccessControlConfigure>>();
 const sqlReviewForResourceRef =
   ref<InstanceType<typeof SQLReviewForResource>>();
+
+const getEnvironmentById = (id: string) => {
+  const environment = environmentStore.getEnvironmentByName(
+    `${environmentNamePrefix}${id}`,
+    false /* not fallback */
+  );
+  if (!isValidEnvironmentName(environment.name)) {
+    return Promise.resolve(undefined);
+  }
+  return Promise.resolve(environment);
+};
 
 watch(
   () => [
@@ -231,7 +254,7 @@ const hasEnvironmentPolicyFeature = computed(() =>
 );
 
 const allowArchive = computed(() => {
-  return hasPermission("bb.settings.set") && environmentList.value.length > 1;
+  return allowEdit.value && environmentStore.environmentList.length > 1;
 });
 
 const fetchInstances = async () => {
@@ -241,6 +264,7 @@ const fetchInstances = async () => {
       filter: {
         environment: environment.value.name,
       },
+      silent: true,
     });
     return resp.instances;
   } catch {
@@ -256,6 +280,7 @@ const fetchDatabases = async () => {
       filter: {
         environment: environment.value.name,
       },
+      silent: true,
     });
     return resp.databases;
   } catch {
@@ -284,6 +309,7 @@ const renderColorPicker = () => {
       class="w-full! h-full!"
       modes={["hex"]}
       showAlpha={false}
+      disabled={!allowEdit.value}
       value={state.value.environment.color || "#4f46e5"}
       renderLabel={() => (
         <div

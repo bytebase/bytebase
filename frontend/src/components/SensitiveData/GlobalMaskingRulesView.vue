@@ -24,7 +24,7 @@
       <PermissionGuardWrapper
         v-else
         v-slot="slotProps"
-        :permissions="['bb.policies.update']"
+        :permissions="['bb.policies.updateMaskingRulePolicy']"
       >
         <div class="flex items-center gap-x-2">
           <NButton
@@ -135,7 +135,12 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
-import { featureToRef, pushNotification, usePolicyV1Store } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  usePolicyV1Store,
+  useSettingV1Store,
+} from "@/store";
 import type {
   MaskingRulePolicy_MaskingRule,
   Policy,
@@ -146,6 +151,7 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
@@ -190,8 +196,9 @@ const state = reactive<LocalState>({
 
 const policyStore = usePolicyV1Store();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.updateMaskingRulePolicy");
 });
+
 const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 const layout = {
   mainContainerRef: ref<HTMLDivElement>(),
@@ -219,6 +226,17 @@ const updateList = async () => {
 
 onMounted(async () => {
   await updateList();
+  const settingV1Store = useSettingV1Store();
+  await Promise.all([
+    settingV1Store.getOrFetchSettingByName(
+      Setting_SettingName.SEMANTIC_TYPES,
+      true
+    ),
+    settingV1Store.getOrFetchSettingByName(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    ),
+  ]);
 });
 
 const addNewRule = () => {

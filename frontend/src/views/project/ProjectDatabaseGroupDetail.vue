@@ -17,9 +17,7 @@
         v-slot="slotProps"
         :project="project"
         :permissions="[
-          'bb.issues.create',
-          'bb.plans.create',
-          'bb.rollouts.create',
+          ...PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE
         ]"
       >
         <NTooltip
@@ -80,6 +78,7 @@ import {
 } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE } from "@/utils";
 
 interface LocalState {
   editing: boolean;

@@ -7,7 +7,7 @@ export const issueReviewActionDisplayName = (action: IssueReviewAction) => {
     case "APPROVE":
       return t("common.approve");
     case "SEND_BACK":
-      return t("custom-approval.issue-review.send-back");
+      return t("common.reject");
     case "RE_REQUEST":
       return t("custom-approval.issue-review.re-request-review");
   }

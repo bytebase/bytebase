@@ -8,15 +8,9 @@
     </div>
     <main v-else-if="changelog" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
-      <div class="pb-6 border-b border-block-border">
         <div class="flex flex-col gap-y-4">
-          <!-- Rollout Title -->
-          <h2 v-if="changelog.planTitle && taskFullLink" class="text-2xl font-semibold">
-            <router-link :to="taskFullLink" class="text-main hover:text-accent transition-colors">
-              {{ changelog.planTitle }}
-            </router-link>
-          </h2>
-          <h2 v-else-if="changelog.planTitle" class="text-2xl font-semibold text-main">
+          <!-- Plan Title -->
+          <h2 v-if="changelog.planTitle" class="text-2xl font-semibold text-main">
             {{ changelog.planTitle }}
           </h2>
 
@@ -32,12 +26,39 @@
             </span>
           </div>
         </div>
-      </div>
 
       <div class="flex flex-col gap-y-6">
+        <!-- Task Run Logs Section -->
+        <div v-if="changelog.taskRun" class="flex flex-col gap-y-2">
+          <div class="flex items-center justify-between">
+            <p class="text-lg text-main">
+              {{ $t("issue.task-run.logs") }}
+            </p>
+            <router-link
+              v-if="taskFullLink"
+              :to="taskFullLink"
+              class="flex items-center gap-x-1 text-sm text-control-light hover:text-accent transition-colors"
+            >
+              {{ $t("common.show-more") }}
+              <ArrowUpRightIcon class="w-4 h-4" />
+            </router-link>
+          </div>
+          <TaskRunLogViewer
+            v-if="changelog?.taskRun && showTaskRunLogs"
+            :task-run-name="changelog.taskRun"
+          />
+          <div v-else class="text-sm text-control-light">
+            {{ $t("common.no-data") }}
+          </div>
+        </div>
+
+        <!-- Schema Snapshot Section -->
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
           <p class="flex items-center text-lg text-main capitalize gap-x-2">
             Schema {{ $t("common.snapshot") }}
+            <span v-if="formattedSchemaSize" class="text-sm font-normal text-control-light">
+              ({{ formattedSchemaSize }})
+            </span>
             <CopyButton size="small" :content="changelogSchema" />
           </p>
           <div class="flex flex-row items-center justify-between gap-x-2">
@@ -61,7 +82,7 @@
               </div>
             </div>
             <NButton
-              v-if="allowRollback && state.showDiff"
+              v-if="allowRollback"
               size="small"
               @click="handleRollback"
             >
@@ -94,12 +115,14 @@
 </template>
 
 <script lang="ts" setup>
+import { ArrowUpRightIcon } from "lucide-vue-next";
 import { NButton, NSwitch } from "naive-ui";
 import { computed, reactive, unref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
+import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_SYNC_SCHEMA } from "@/router/dashboard/projectV1";
 import {
@@ -114,8 +137,13 @@ import {
   Changelog_Type,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
-import { extractProjectResourceName, wrapRefAsPromise } from "@/utils";
+import {
+  bytesToString,
+  extractProjectResourceName,
+  wrapRefAsPromise,
+} from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
+import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
 interface LocalState {
@@ -140,7 +168,7 @@ const state = reactive<LocalState>({
 });
 
 const { database, ready } = useDatabaseV1ByName(props.database);
-const { allowAlterSchema } = useDatabaseDetailContext();
+const { allowAlterSchema, isDefaultProject } = useDatabaseDetailContext();
 
 const changelogName = computed(() => {
   return `${props.database}/changelogs/${props.changelogId}`;
@@ -177,6 +205,13 @@ const changelogSchema = computed(() => {
   return changelog.value.schema;
 });
 
+const formattedSchemaSize = computed(() => {
+  if (!changelog.value || !changelog.value.schemaSize) {
+    return "";
+  }
+  return bytesToString(Number(changelog.value.schemaSize));
+});
+
 const showSchemaSnapshot = computed(() => {
   return true;
 });
@@ -198,13 +233,32 @@ const previousSchema = computed((): string => {
 });
 
 // Allow rollback for completed MIGRATE changelogs when user has alter schema permission
+// and the database engine supports schema diff rollback
 const allowRollback = computed((): boolean => {
-  if (!changelog.value || !allowAlterSchema.value) {
+  if (isDefaultProject.value) {
+    return false;
+  }
+  if (!changelog.value || !allowAlterSchema.value || !database.value) {
+    return false;
+  }
+  // Check if engine supports schema diff rollback (GenerateMigration in backend)
+  if (
+    !instanceV1SupportsSchemaRollback(database.value.instanceResource.engine)
+  ) {
     return false;
   }
   return (
     changelog.value.type === Changelog_Type.MIGRATE &&
     changelog.value.status === Changelog_Status.DONE
+  );
+});
+
+// Only show task run logs for completed or failed changelogs
+const showTaskRunLogs = computed(() => {
+  if (!changelog.value?.taskRun) return false;
+  return (
+    changelog.value.status === Changelog_Status.DONE ||
+    changelog.value.status === Changelog_Status.FAILED
   );
 });
 
@@ -252,6 +306,11 @@ watch(
       } catch (error) {
         console.error("Failed to fetch previous changelog:", error);
         state.previousChangelog = undefined;
+      }
+
+      // Show diff by default for MIGRATE changelogs
+      if (changelog.value.type === Changelog_Type.MIGRATE) {
+        state.showDiff = true;
       }
     }
 

@@ -218,7 +218,8 @@ func GetOracleContainer(ctx context.Context) (retC *Container, retErr error) {
 	}
 
 	// Oracle connection string format: oracle://username:password@host:port/service_name
-	dsn := fmt.Sprintf("oracle://testuser:testpass@%s:%s/FREEPDB1", host, port.Port())
+	// Use SYSTEM account for privileged operations (like creating users), similar to MySQL root
+	dsn := fmt.Sprintf("oracle://system:test123@%s:%s/FREEPDB1", host, port.Port())
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
 		return nil, err

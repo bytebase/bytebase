@@ -112,10 +112,6 @@
         "title": "Nhật ký thay đổi cơ sở dữ liệu",
         "desc": "Theo dõi tất cả các thay đổi schema và dữ liệu của cơ sở dữ liệu."
       },
-      "FEATURE_SCHEMA_DRIFT_DETECTION": {
-        "title": "Phát hiện độ lệch schema",
-        "desc": "Phát hiện các thay đổi schema ngoài luồng và báo cáo sự khác biệt."
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "Chính sách triển khai",
         "desc": "Kiểm soát việc tác vụ thay đổi schema có yêu cầu triển khai thủ công hay không."

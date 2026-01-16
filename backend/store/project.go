@@ -22,12 +22,11 @@ import (
 
 // ProjectMessage is the message for project.
 type ProjectMessage struct {
-	ResourceID                 string
-	Title                      string
-	Webhooks                   []*ProjectWebhookMessage
-	DataClassificationConfigID string
-	Setting                    *storepb.Project
-	Deleted                    bool
+	ResourceID string
+	Title      string
+	Webhooks   []*ProjectWebhookMessage
+	Setting    *storepb.Project
+	Deleted    bool
 }
 
 func (p *ProjectMessage) GetName() string {
@@ -37,6 +36,7 @@ func (p *ProjectMessage) GetName() string {
 // FindProjectMessage is the message for finding projects.
 type FindProjectMessage struct {
 	ResourceID  *string
+	ResourceIDs []string
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
@@ -48,10 +48,9 @@ type FindProjectMessage struct {
 type UpdateProjectMessage struct {
 	ResourceID string
 
-	Title                      *string
-	DataClassificationConfigID *string
-	Setting                    *storepb.Project
-	Delete                     *bool
+	Title   *string
+	Setting *storepb.Project
+	Delete  *bool
 }
 
 // GetProject gets project by resource ID.
@@ -65,12 +64,6 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	projects, err := s.ListProjects(ctx, find)
 	if err != nil {
 		return nil, err
@@ -83,12 +76,8 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 	}
 	project := projects[0]
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	s.storeProjectCache(project)
-	return projects[0], nil
+	return project, nil
 }
 
 // ListProjects lists all projects.
@@ -99,12 +88,15 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	}
 	defer tx.Rollback()
 
-	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted FROM project WHERE TRUE")
+	q := qb.Q().Space("SELECT resource_id, name, setting, deleted FROM project WHERE TRUE")
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
 	}
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
+	}
+	if len(find.ResourceIDs) > 0 {
+		q.And("resource_id = ANY(?)", find.ResourceIDs)
 	}
 	if !find.ShowDeleted {
 		q.And("deleted = ?", false)
@@ -144,7 +136,6 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		if err := rows.Scan(
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
-			&projectMessage.DataClassificationConfigID,
 			&payload,
 			&projectMessage.Deleted,
 		); err != nil {
@@ -161,16 +152,17 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Fetch webhooks outside the transaction to prevent deadlock when connection pool is exhausted.
 	for _, project := range projectMessages {
 		projectWebhooks, err := s.ListProjectWebhooks(ctx, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
 		if err != nil {
 			return nil, err
 		}
 		project.Webhooks = projectWebhooks
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 
 	for _, project := range projectMessages {
@@ -199,13 +191,12 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 	defer tx.Rollback()
 
 	project := &ProjectMessage{
-		ResourceID:                 create.ResourceID,
-		Title:                      create.Title,
-		DataClassificationConfigID: create.DataClassificationConfigID,
-		Setting:                    create.Setting,
+		ResourceID: create.ResourceID,
+		Title:      create.Title,
+		Setting:    create.Setting,
 	}
-	q := qb.Q().Space("INSERT INTO project (resource_id, name, data_classification_config_id, setting)")
-	q.Space("VALUES (?, ?, ?, ?)", create.ResourceID, create.Title, create.DataClassificationConfigID, payload)
+	q := qb.Q().Space("INSERT INTO project (resource_id, name, setting)")
+	q.Space("VALUES (?, ?, ?)", create.ResourceID, create.Title, payload)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return nil, err
@@ -298,9 +289,6 @@ func updateProjectImpl(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMes
 	}
 	if v := patch.Delete; v != nil {
 		set.Comma("deleted = ?", *v)
-	}
-	if v := patch.DataClassificationConfigID; v != nil {
-		set.Comma("data_classification_config_id = ?", *v)
 	}
 	if v := patch.Setting; v != nil {
 		payload, err := protojson.Marshal(patch.Setting)

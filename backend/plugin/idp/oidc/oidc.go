@@ -9,8 +9,10 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
@@ -201,13 +203,13 @@ type OpenIDConfigurationResponse struct {
 	AuthorizationEndpoint string `json:"authorization_endpoint"`
 }
 
-// openidConfigResponseCache is a cache for the OpenID Configuration Response.
-var openidConfigResponseCache = make(map[string]*OpenIDConfigurationResponse)
+// openidConfigResponseCache is a concurrent-safe LRU cache with TTL for OpenID Configuration responses.
+var openidConfigResponseCache = expirable.NewLRU[string, *OpenIDConfigurationResponse](128, nil, 5*time.Minute)
 
 // GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
 func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConfigurationResponse, error) {
 	// Return from cache if available.
-	if config, found := openidConfigResponseCache[issuer]; found {
+	if config, found := openidConfigResponseCache.Get(issuer); found {
 		return config, nil
 	}
 
@@ -243,6 +245,6 @@ func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConf
 		return nil, errors.Wrapf(err, "unmarshal openid configuration, body: %s", string(b))
 	}
 
-	openidConfigResponseCache[issuer] = &config
+	openidConfigResponseCache.Add(issuer, &config)
 	return &config, nil
 }

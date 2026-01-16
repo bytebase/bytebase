@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { NButton, NPopover, NPopselect, type SelectOption } from "naive-ui";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { ChatAction } from "@/plugins/ai";
@@ -81,6 +81,10 @@ const { t } = useI18n();
 const router = useRouter();
 const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
+
+onMounted(async () => {
+  await settingV1Store.getOrFetchSettingByName(Setting_SettingName.AI, true);
+});
 
 const openAIEnabled = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);

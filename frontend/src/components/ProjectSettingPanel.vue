@@ -12,7 +12,6 @@
           <ProjectGeneralSettingPanel
             ref="projectGeneralSettingPanelRef"
             :project="project"
-            :allow-edit="allowEdit"
           />
         </div>
       </div>
@@ -25,11 +24,15 @@
           </h1>
         </div>
         <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
-          <ProjectSecuritySettingPanel
-            ref="projectSecuritySettingPanelRef"
+          <ComponentPermissionGuard
             :project="project"
-            :allow-edit="allowEdit"
-          />
+            :permissions="['bb.policies.get']"
+          >
+            <ProjectSecuritySettingPanel
+              ref="projectSecuritySettingPanelRef"
+              :project="project"
+            />
+          </ComponentPermissionGuard>
         </div>
       </div>
 
@@ -40,11 +43,19 @@
           </h1>
         </div>
         <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="project"
+            :permissions="[
+              'bb.projects.update'
+            ]"
+          >
           <ProjectIssueRelatedSettingPanel
             ref="projectIssueRelatedSettingPanelRef"
             :project="project"
-            :allow-edit="allowEdit"
+            :allow-edit="!slotProps.disabled"
           />
+          </PermissionGuardWrapper>
         </div>
       </div>
 
@@ -73,6 +84,8 @@
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { pushNotification } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";

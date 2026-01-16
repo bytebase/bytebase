@@ -7,13 +7,12 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   flattenTaskV1List,
   hasProjectPermissionV2,
-  isDatabaseChangeRelatedIssue,
   isDatabaseDataExportIssue,
   isGrantRequestIssue,
 } from "@/utils";
-import { isTaskFinished, projectOfIssue } from "..";
+import { projectOfIssue } from "..";
 
-export type IssueStatusAction = "RESOLVE" | "CLOSE" | "REOPEN";
+export type IssueStatusAction = "CLOSE" | "REOPEN";
 
 export const IssueStatusActionToIssueStatusMap: Record<
   IssueStatusAction,
@@ -21,15 +20,12 @@ export const IssueStatusActionToIssueStatusMap: Record<
 > = {
   CLOSE: IssueStatus.CANCELED,
   REOPEN: IssueStatus.OPEN,
-  RESOLVE: IssueStatus.DONE,
 };
 
-export const PossibleIssueStatusActionMap: Record<
-  IssueStatus,
-  IssueStatusAction[]
-> = {
-  [IssueStatus.OPEN]: ["RESOLVE", "CLOSE"],
-  [IssueStatus.DONE]: ["REOPEN"],
+const PossibleIssueStatusActionMap: Record<IssueStatus, IssueStatusAction[]> = {
+  [IssueStatus.OPEN]: ["CLOSE"],
+  // Done/resolved issues cannot be reopened
+  [IssueStatus.DONE]: [],
   [IssueStatus.CANCELED]: ["REOPEN"],
 
   // Only to make TypeScript compiler happy
@@ -42,15 +38,8 @@ export const getApplicableIssueStatusActionList = (
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
     if (isGrantRequestIssue(issue) || isDatabaseDataExportIssue(issue)) {
-      // Don't show RESOLVE or REOPEN for grantRequest/dataExport issues.
-      if (action === "RESOLVE" || action === "REOPEN") {
-        return false;
-      }
-    }
-    if (isDatabaseChangeRelatedIssue(issue) && action === "RESOLVE") {
-      const tasks = flattenTaskV1List(issue.rolloutEntity);
-      // Ths issue cannot be resolved if some tasks are not finished yet.
-      if (tasks.some((task) => !isTaskFinished(task))) {
+      // Don't show REOPEN for grantRequest/dataExport issues.
+      if (action === "REOPEN") {
         return false;
       }
     }
@@ -64,9 +53,6 @@ export const issueStatusActionDisplayName = (
 ) => {
   let actionText = "";
   switch (action) {
-    case "RESOLVE":
-      actionText = t("issue.batch-transition.resolve");
-      break;
     case "CLOSE":
       actionText = t("issue.batch-transition.close");
       break;
@@ -89,10 +75,6 @@ export const issueStatusActionButtonProps = (
   action: IssueStatusAction
 ): ButtonProps => {
   switch (action) {
-    case "RESOLVE":
-      return {
-        type: "success",
-      };
     case "CLOSE":
       return {
         type: "default",

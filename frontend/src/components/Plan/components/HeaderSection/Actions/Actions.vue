@@ -5,12 +5,17 @@
     <RolloutReadyLink v-if="shouldShowRolloutReadyLink" />
 
     <!-- Primary action: special components for specific actions -->
-    <CreateIssueButton v-if="primaryAction?.id === 'ISSUE_CREATE'" />
+    <CreateIssueButton
+      v-if="primaryAction?.id === 'ISSUE_CREATE'"
+      :disabled="isActionDisabled(primaryAction)"
+      :disabled-reason="getDisabledReason(primaryAction)"
+    />
     <IssueReviewButton
       v-else-if="primaryAction?.id === 'ISSUE_REVIEW'"
-      :can-approve="context.permissions.canApprove"
-      :can-reject="context.permissions.canReject"
+      :can-approve="context.permissions.isApprovalCandidate"
+      :can-reject="context.permissions.isApprovalCandidate"
       :disabled="isActionDisabled(primaryAction)"
+      :disabled-reason="getDisabledReason(primaryAction)"
     />
     <ExportArchiveDownloadAction
       v-else-if="primaryAction?.id === 'EXPORT_DOWNLOAD'"
@@ -142,7 +147,6 @@ const handlePerformAction = async (action: UnifiedAction) => {
   switch (action) {
     case "ISSUE_STATUS_CLOSE":
     case "ISSUE_STATUS_REOPEN":
-    case "ISSUE_STATUS_RESOLVE":
       await handleIssueStatusChange(action as IssueStatusAction);
       break;
     case "PLAN_CLOSE":
@@ -182,11 +186,6 @@ const handleIssueStatusChange = async (action: IssueStatusAction) => {
       title: t("common.reopen"),
       content: t("issue.status-transition.modal.reopen"),
       status: IssueStatus.OPEN,
-    },
-    ISSUE_STATUS_RESOLVE: {
-      title: t("issue.batch-transition.resolve"),
-      content: t("issue.status-transition.modal.resolve"),
-      status: IssueStatus.DONE,
     },
   }[action];
 

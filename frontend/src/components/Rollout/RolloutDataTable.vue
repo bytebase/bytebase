@@ -93,6 +93,7 @@ const columnList = computed(
         key: "stages",
         title: t("rollout.stage.self", 2),
         resizable: true,
+        ellipsis: true,
         render: (rollout) => {
           if (rollout.stages.length === 0) {
             return (

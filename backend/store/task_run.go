@@ -15,11 +15,12 @@ import (
 
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
-	TaskUID     int
-	Environment string // Refer to the task's environment.
-	PlanUID     int64
-	Status      storepb.TaskRun_Status
-	ResultProto *storepb.TaskRunResult
+	TaskUID      int
+	Environment  string // Refer to the task's environment.
+	PlanUID      int64
+	Status       storepb.TaskRun_Status
+	ResultProto  *storepb.TaskRunResult
+	PayloadProto *storepb.TaskRunPayload
 
 	// Output only.
 	ID           int
@@ -66,6 +67,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task_run.started_at,
 			task_run.run_at,
 			task_run.result,
+			task_run.payload,
 			task.plan_id,
 			task.environment,
 			project.resource_id
@@ -117,7 +119,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		var taskRun TaskRunMessage
 		var startedAt, runAt sql.NullTime
 		var statusString string
-		var resultJSON string
+		var resultJSON, payloadJSON string
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorEmail,
@@ -128,6 +130,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			&startedAt,
 			&runAt,
 			&resultJSON,
+			&payloadJSON,
 			&taskRun.PlanUID,
 			&taskRun.Environment,
 			&taskRun.ProjectID,
@@ -151,6 +154,11 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", resultJSON)
 		}
 		taskRun.ResultProto = &resultProto
+		var payloadProto storepb.TaskRunPayload
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadJSON), &payloadProto); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal task run payload: %s", payloadJSON)
+		}
+		taskRun.PayloadProto = &payloadProto
 
 		taskRuns = append(taskRuns, &taskRun)
 	}
@@ -449,4 +457,32 @@ func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.D
 		return 0, errors.Wrapf(err, "failed to fail stale task runs")
 	}
 	return result.RowsAffected()
+}
+
+// UpdateTaskRunPayload updates the payload column for a task run.
+func (s *Store) UpdateTaskRunPayload(ctx context.Context, taskRunID int, payload *storepb.TaskRunPayload) error {
+	payloadBytes, err := protojson.Marshal(payload)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal task run payload")
+	}
+	payloadStr := string(payloadBytes)
+	if payloadStr == "" {
+		payloadStr = "{}"
+	}
+
+	q := qb.Q().Space(`
+		UPDATE task_run
+		SET payload = ?, updated_at = now()
+		WHERE id = ?
+	`, payloadStr, taskRunID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to update task run payload")
+	}
+	return nil
 }

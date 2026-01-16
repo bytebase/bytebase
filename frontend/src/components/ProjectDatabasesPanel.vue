@@ -13,7 +13,10 @@
       <PermissionGuardWrapper
         v-slot="slotProps"
         :project="project"
-        :permissions="['bb.instances.list', 'bb.issues.create', 'bb.plans.create']"
+        :permissions="[
+          'bb.instances.list',
+          ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+        ]"
       >
         <NButton
           type="primary"
@@ -74,6 +77,7 @@ import {
   extractProjectResourceName,
   getValueFromSearchParams,
   getValuesFromSearchParams,
+  PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
 } from "@/utils";
 import AdvancedSearch from "./AdvancedSearch";
 import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchScopeOptions";

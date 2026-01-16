@@ -6,19 +6,23 @@
           {{ title }}
         </h1>
       </div>
-      <span v-if="!allowEdit" class="text-sm text-gray-400">
-        {{ $t("settings.general.workspace.only-admin-can-edit") }}
-      </span>
     </div>
 
     <div class="flex-1 lg:px-4 flex flex-col gap-y-6">
       <div>
         <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="enableWatermark"
-            :text="true"
-            :disabled="!allowEdit || !hasWatermarkFeature"
-          />
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              'bb.settings.setWorkspaceProfile'
+            ]"
+          >
+            <Switch
+              v-model:value="enableWatermark"
+              :text="true"
+              :disabled="slotProps.disabled || !hasWatermarkFeature"
+            />
+          </PermissionGuardWrapper>
           <span class="font-medium">
             {{ $t("settings.general.workspace.watermark.enable") }}
           </span>
@@ -34,11 +38,9 @@
       />
       <MaximumRoleExpirationSetting
         ref="maximumRoleExpirationSettingRef"
-        :allow-edit="allowEdit"
       />
       <DomainRestrictionSetting
         ref="domainRestrictionSettingRef"
-        :allow-edit="allowEdit"
       />
     </div>
   </div>
@@ -48,6 +50,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { computed, ref } from "vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { featureToRef, useSettingV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -58,7 +61,6 @@ import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const settingV1Store = useSettingV1Store();
@@ -78,7 +80,7 @@ const settingRefList = computed(() => [
 ]);
 
 const initEnableWatermark = computed(() => {
-  return settingV1Store.workspaceProfileSetting?.watermark ?? false;
+  return settingV1Store.workspaceProfile.watermark;
 });
 
 const enableWatermark = ref(initEnableWatermark.value);

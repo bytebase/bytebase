@@ -794,7 +794,6 @@ type ListDatabasesRequest struct {
 	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
 	// - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
 	// - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-	// - drifted: should be "true" or "false", show drifted databases if it's true, support "==" operator.
 	// - table: filter by the database table, support "==" and ".matches()" operator.
 	// - labels.{key}: the database label, support "==" and "in" operators.
 	//
@@ -808,7 +807,6 @@ type ListDatabasesRequest struct {
 	// engine in ["MYSQL", "POSTGRES"]
 	// !(engine in ["MYSQL", "POSTGRES"])
 	// exclude_unassigned == true
-	// drifted == true
 	// table == "sample"
 	// table.matches("sam")
 	// labels.environment == "production"
@@ -1653,10 +1651,8 @@ type Database struct {
 	InstanceResource *InstanceResource `protobuf:"bytes,9,opt,name=instance_resource,json=instanceResource,proto3" json:"instance_resource,omitempty"`
 	// The database is available for DML prior backup.
 	BackupAvailable bool `protobuf:"varint,10,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
-	// The schema is drifted from the source of truth.
-	Drifted       bool `protobuf:"varint,11,opt,name=drifted,proto3" json:"drifted,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Database) Reset() {
@@ -1755,13 +1751,6 @@ func (x *Database) GetInstanceResource() *InstanceResource {
 func (x *Database) GetBackupAvailable() bool {
 	if x != nil {
 		return x.BackupAvailable
-	}
-	return false
-}
-
-func (x *Database) GetDrifted() bool {
-	if x != nil {
-		return x.Drifted
 	}
 	return false
 }
@@ -5168,13 +5157,15 @@ type ListChangelogsRequest struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Supported filter:
-	// status: the changelog status, support "==" operation. check Changelog.Status for available values.
-	// type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+	// - status: the changelog status, support "==" operation. check Changelog.Status for available values.
+	// - type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+	// - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	//
 	// Example:
 	// status == "DONE"
 	// type in ["BASELINE", "MIGRATE"]
 	// status == "FAILED" && type == "SDL"
+	// create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
 	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5652,7 +5643,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xd8\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xb9\x05\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
@@ -5664,8 +5655,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06labels\x18\b \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +
 	"\x11instance_resource\x18\t \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
 	"\x10backup_available\x18\n" +
-	" \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x12\x1d\n" +
-	"\adrifted\x18\v \x01(\bB\x03\xe0A\x03R\adrifted\x1a9\n" +
+	" \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +

@@ -78,13 +78,17 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
             // Throw retry error (not original) - let other handlers deal with it
             throw retryError;
           }
-        } else if (code === Code.PermissionDenied) {
+        } else if (
+          code === Code.PermissionDenied &&
+          router.currentRoute.value.name !== WORKSPACE_ROUTE_403
+        ) {
           const errorDetail = extractPermissionDeniedDetail(error);
           router.push({
             name: WORKSPACE_ROUTE_403,
             query: errorDetail
               ? {
-                  method: errorDetail.method,
+                  from: router.currentRoute.value.fullPath,
+                  api: errorDetail.method,
                   permissions: errorDetail.requiredPermissions.join(","),
                   resources: errorDetail.resources.join(","),
                 }

@@ -1,35 +1,84 @@
 <template>
-  <NTooltip :disabled="planCreateErrorList.length === 0" placement="top">
+  <NPopover
+    trigger="manual"
+    placement="bottom"
+    :show="showPopover"
+    @update:show="showPopover = $event"
+  >
     <template #trigger>
-      <NButton
-        type="primary"
-        size="medium"
-        tag="div"
-        :disabled="planCreateErrorList.length > 0 || loading"
-        :loading="loading"
-        @click="doCreatePlan"
-      >
-        {{ loading ? $t("common.creating") : $t("common.create") }}
-      </NButton>
+      <NTooltip :disabled="planCreateErrorList.length === 0" placement="top">
+        <template #trigger>
+          <NButton
+            type="primary"
+            size="medium"
+            tag="div"
+            :disabled="planCreateErrorList.length > 0 || loading"
+            :loading="loading"
+            @click="handleButtonClick"
+          >
+            {{ loading ? $t("common.creating") : $t("common.create") }}
+          </NButton>
+        </template>
+        <template #default>
+          <ErrorList :errors="planCreateErrorList" />
+        </template>
+      </NTooltip>
     </template>
 
     <template #default>
-      <ErrorList :errors="planCreateErrorList" />
+      <div class="w-72 flex flex-col gap-y-3 p-1">
+        <div class="flex flex-col gap-y-1">
+          <div class="font-medium text-control flex items-center gap-x-1">
+            {{ $t("issue.labels") }}
+            <RequiredStar v-if="project.forceIssueLabels" />
+          </div>
+          <IssueLabelSelector
+            :disabled="loading"
+            :selected="selectedLabels"
+            :project="project"
+            :size="'medium'"
+            @update:selected="selectedLabels = $event"
+          />
+        </div>
+        <div class="flex justify-end gap-x-2">
+          <NButton size="small" quaternary @click="showPopover = false">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+            <template #trigger>
+              <NButton
+                type="primary"
+                size="small"
+                :disabled="confirmErrors.length > 0 || loading"
+                :loading="loading"
+                @click="doCreatePlan"
+              >
+                {{ $t("common.confirm") }}
+              </NButton>
+            </template>
+            <template #default>
+              <ErrorList :errors="confirmErrors" />
+            </template>
+          </NTooltip>
+        </div>
+      </div>
     </template>
-  </NTooltip>
+  </NPopover>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { NButton, NTooltip } from "naive-ui";
-import { computed, nextTick, ref } from "vue";
+import { NButton, NPopover, NTooltip } from "naive-ui";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
 import {
   ErrorList,
   useSpecsValidation,
 } from "@/components/Plan/components/common";
 import { getLocalSheetByName, usePlanContext } from "@/components/Plan/logic";
+import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
@@ -68,6 +117,15 @@ const { plan } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const currentUser = useCurrentUserV1();
 const loading = ref(false);
+const showPopover = ref(false);
+const selectedLabels = ref<string[]>([]);
+
+// Reset labels when popover opens
+watch(showPopover, (show) => {
+  if (show) {
+    selectedLabels.value = [];
+  }
+});
 
 // Use the validation hook for all specs
 const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
@@ -93,15 +151,41 @@ const planCreateErrorList = computed(() => {
   return errorList;
 });
 
+// Errors that disable the confirm button in popover (for data export plans)
+const confirmErrors = computed(() => {
+  const list: string[] = [];
+
+  if (project.value.forceIssueLabels && selectedLabels.value.length === 0) {
+    list.push(t("plan.labels-required-for-review"));
+  }
+
+  return list;
+});
+
+const handleButtonClick = () => {
+  if (isDataExportPlan.value) {
+    showPopover.value = true;
+  } else {
+    doCreatePlan();
+  }
+};
+
 const doCreatePlan = async () => {
   // Prevent race condition: check if already creating
   if (loading.value) {
     return;
   }
+
+  // For data export plans, check confirmErrors before proceeding
+  if (isDataExportPlan.value && confirmErrors.value.length > 0) {
+    return;
+  }
+
   loading.value = true;
+  showPopover.value = false;
 
   try {
-    // For data export plans, create plan + issue + rollout and redirect to issue
+    // For data export plans, create plan + issue and redirect to issue
     if (isDataExportPlan.value) {
       await doCreateDataExportIssue();
     } else {
@@ -155,12 +239,12 @@ const doCreateDataExportIssue = async () => {
     return;
   }
 
-  // Create the issue
+  // Create the issue with selected labels
   const issueRequest = create(CreateIssueRequestSchema, {
     parent: project.value.name,
     issue: create(IssueSchema, {
       creator: `users/${currentUser.value.email}`,
-      labels: [],
+      labels: selectedLabels.value,
       plan: createdPlan.name,
       status: IssueStatus.OPEN,
       type: Issue_Type.DATABASE_EXPORT,

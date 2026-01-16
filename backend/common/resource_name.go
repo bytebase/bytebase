@@ -448,28 +448,20 @@ func GetReviewConfigID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-func GetProjectReleaseUID(name string) (string, int64, error) {
+func GetProjectReleaseID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ReleaseNamePrefix)
 	if err != nil {
-		return "", 0, err
+		return "", "", err
 	}
-	releaseUID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
-	}
-	return tokens[0], releaseUID, nil
+	return tokens[0], tokens[1], nil
 }
 
-func GetProjectReleaseUIDFile(name string) (string, int64, string, error) {
+func GetProjectReleaseIDFile(name string) (string, string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ReleaseNamePrefix, FileNamePrefix)
 	if err != nil {
-		return "", 0, "", err
+		return "", "", "", err
 	}
-	releaseUID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return "", 0, "", errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
-	}
-	return tokens[0], releaseUID, tokens[2], nil
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // GetGroupEmail returns the group email.
@@ -586,8 +578,8 @@ func FormatTaskRun(projectID string, planUID int64, stageID string, taskUID, tas
 	return fmt.Sprintf("%s/%s%d", FormatTask(projectID, planUID, stageID, taskUID), TaskRunPrefix, taskRunUID)
 }
 
-func FormatReleaseName(projectID string, releaseUID int64) string {
-	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), ReleaseNamePrefix, releaseUID)
+func FormatReleaseName(projectID string, releaseID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), ReleaseNamePrefix, releaseID)
 }
 
 func FormatReleaseFile(release string, fileID string) string {

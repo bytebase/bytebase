@@ -74,17 +74,16 @@ CREATE TABLE policy (
     resource_type text NOT NULL,
     -- resource: resource name in format like "environments/{environment}", "projects/{project}", etc.
     resource TEXT NOT NULL,
-    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG, DATA_SOURCE_QUERY
+    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG
     -- Enum: Policy.Type (proto/store/store/policy.proto)
     type text NOT NULL,
     -- Stored as different types based on policy type (proto/store/store/policy.proto):
     -- ROLLOUT: RolloutPolicy
     -- MASKING_EXCEPTION: MaskingExceptionPolicy
-    -- QUERY_DATA: QueryDataPolicy
+    -- QUERY_DATA: QueryDataPolicy (includes query limits, export/copy restrictions, DDL/DML restrictions, admin data source restrictions)
     -- MASKING_RULE: MaskingRulePolicy
     -- IAM: IamPolicy
     -- TAG: TagPolicy
-    -- DATA_SOURCE_QUERY: DataSourceQueryPolicy
     payload jsonb NOT NULL DEFAULT '{}',
     inherit_from_parent boolean NOT NULL DEFAULT TRUE
 );
@@ -99,7 +98,6 @@ CREATE TABLE project (
     deleted boolean NOT NULL DEFAULT FALSE,
     name text NOT NULL,
     resource_id text NOT NULL,
-    data_classification_config_id text NOT NULL DEFAULT '',
     -- Stored as Project (proto/store/store/project.proto)
     setting jsonb NOT NULL DEFAULT '{}'
 );
@@ -266,7 +264,9 @@ CREATE TABLE task_run (
     -- result saves the task run result in json format
     -- Stored as TaskRunResult (proto/store/store/task_run.proto)
     result jsonb NOT NULL DEFAULT '{}',
-    replica_id TEXT
+    replica_id TEXT,
+    -- Stored as TaskRunPayload (proto/store/store/task_run.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
@@ -525,9 +525,11 @@ CREATE TABLE release (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
+    release_id text NOT NULL DEFAULT '',
     creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
-    digest text NOT NULL DEFAULT '',
+    train text NOT NULL DEFAULT '',
+    iteration integer NOT NULL DEFAULT 0,
     -- Stored as ReleasePayload (proto/store/store/release.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -535,6 +537,8 @@ CREATE TABLE release (
 ALTER SEQUENCE release_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_release_project ON release(project);
+CREATE UNIQUE INDEX idx_release_project_train_iteration ON release(project, train, iteration);
+CREATE INDEX idx_release_project_release_id ON release(project, release_id);
 
 -- OAuth2 tables
 CREATE TABLE oauth2_client (

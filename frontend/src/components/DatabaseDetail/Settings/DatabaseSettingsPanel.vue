@@ -34,7 +34,6 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDatabaseDetailContext } from "@/components/Database/context";
 import { EnvironmentSelect } from "@/components/v2";
 import {
   environmentNamePrefix,
@@ -45,6 +44,7 @@ import {
 import { type ComposedDatabase } from "@/types";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import { hasProjectPermissionV2 } from "@/utils";
 import Labels from "./components/Labels.vue";
 
 const props = defineProps<{
@@ -61,14 +61,16 @@ const environment = computed(() => {
   );
 });
 
-const { allowUpdateDatabase } = useDatabaseDetailContext();
+const allowUpdateDatabase = computed(() =>
+  hasProjectPermissionV2(props.database.projectEntity, "bb.databases.update")
+);
 
 const handleSelectEnvironment = async (name: string | undefined) => {
   if (name === props.database.effectiveEnvironment) {
     return;
   }
   const databasePatch = cloneDeep(props.database);
-  databasePatch.environment = name;
+  databasePatch.environment = name ?? "";
 
   await databaseStore.updateDatabase(
     create(UpdateDatabaseRequestSchema, {

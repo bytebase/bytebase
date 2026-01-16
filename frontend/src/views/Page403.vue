@@ -1,6 +1,8 @@
 <template>
   <NoPermissionPlaceholder
     class="mx-6 my-2"
+    :path="fromPath"
+    :api="requestAPI"
     :resources="resources"
     :permissions="permissions"
   >
@@ -20,7 +22,7 @@ import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
+import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import type { Permission } from "@/types";
 
@@ -41,6 +43,14 @@ const resources = computed(() => {
     return resources.split(",").filter((r) => r);
   }
   return [];
+});
+
+const fromPath = computed(() => {
+  return route.query.from as string;
+});
+
+const requestAPI = computed(() => {
+  return route.query.api as string;
 });
 
 const goHome = () => {

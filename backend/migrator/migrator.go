@@ -15,6 +15,9 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 const latestSchemaFileName = "migration/LATEST.sql"
@@ -38,6 +41,18 @@ var goMigrations = map[string]GoMigrationFunc{
 
 // MigrateSchema migrates the schema for metadata database.
 func MigrateSchema(ctx context.Context, db *sql.DB) error {
+	// Acquire advisory lock to ensure only one replica runs migrations.
+	// This blocks until the lock is available.
+	lock, err := store.AcquireAdvisoryLock(ctx, db, store.AdvisoryLockKeyMigration)
+	if err != nil {
+		return errors.Wrap(err, "failed to acquire migration lock")
+	}
+	defer func() {
+		if err := lock.Release(); err != nil {
+			slog.Error("Failed to release migration advisory lock", log.BBError(err))
+		}
+	}()
+
 	files, err := getSortedVersionedFiles()
 	if err != nil {
 		return err

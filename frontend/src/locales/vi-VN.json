@@ -207,8 +207,10 @@
     "view-details": "Xem chi tiết",
     "force-verb": "Buộc {verb}",
     "untitled": "Không tiêu đề",
-    "missing-required-permission": "Thiếu quyền cần thiết",
+    "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
+    "only-creator-allowed-action": "Chỉ người tạo mới được phép thực hiện hành động này",
+    "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
     "required-permission": "Quyền hạn cần thiết",
     "resource-not-found": "Không tìm thấy tài nguyên",
     "continue-anyway": "Tiếp tục",
@@ -404,7 +406,8 @@
     "deploy": "Tự lưu trữ",
     "cloud": "Đám mây",
     "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
-    "external-url": "Bytebase chưa được cấu hình --external-url"
+    "external-url": "Bytebase chưa được cấu hình --external-url",
+    "ha-not-licensed": "Phát hiện nhiều bản sao mà không có giấy phép HA. Trình chạy backend đã bị tắt."
   },
   "bbkit": {
     "confirm-button": {
@@ -651,7 +654,6 @@
         "id": "ID không gian làm việc",
         "id-description": "ID không gian làm việc duy nhất, chỉ đọc.",
         "branding": "Thương hiệu",
-        "only-admin-can-edit": "Chỉ quản trị viên không gian làm việc mới có thể cập nhật cài đặt.",
         "logo": "Logo",
         "logo-aspect": "Kích thước logo được đề xuất nên theo tỷ lệ 5:2, ví dụ 100 x 40.",
         "select-logo": "Tải lên một tệp",
@@ -659,6 +661,7 @@
         "logo-upload-tip": "{extension} tối đa {size} MiB",
         "security": "Bảo mật",
         "account": "Tài khoản",
+        "log": "Nhật ký",
         "watermark": {
           "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
           "enable": "Bật hình mờ"
@@ -673,9 +676,11 @@
           "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
         },
         "audit-log-stdout": {
-          "self": "Xuất Nhật ký Kiểm toán",
           "enable": "Bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
           "description": "Xuất nhật ký kiểm toán JSON có cấu trúc vào đầu ra chuẩn để thu thập bởi các bộ tổng hợp nhật ký (Splunk, ELK, Datadog, Loki). Yêu cầu giấy phép TEAM hoặc ENTERPRISE."
+        },
+        "enable-debug": {
+          "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
         },
         "disallow-signup": {
           "enable": "Không cho phép đăng ký tự phục vụ",
@@ -793,8 +798,7 @@
           }
         },
         "announcement": {
-          "self": "Thông báo",
-          "admin-or-dba-can-edit": "Chỉ quản trị viên không gian làm việc hoặc DBA mới có thể cập nhật cài đặt thông báo."
+          "self": "Thông báo"
         },
         "announcement-alert-level": {
           "description": "Cấp độ"
@@ -931,19 +935,19 @@
       "changed-labels": "đã thay đổi nhãn",
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "reopened-issue": "đã mở lại vấn đề",
-      "resolved-issue": "đã giải quyết vấn đề",
-      "canceled-issue": "đã hủy vấn đề",
+      "resolved-issue": "đã hoàn tất vấn đề",
+      "canceled-issue": "đã đóng vấn đề",
       "xxx-automatically": "{verb} tự động"
     }
   },
   "issue": {
     "labels": "Nhãn vấn đề",
+    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
     "create-rollout": "Tạo triển khai",
     "status-transition": {
       "modal": {
-        "resolve": "Giải quyết vấn đề?",
         "reopen": "Mở lại vấn đề?",
         "close": "Đóng vấn đề?"
       },
@@ -1030,7 +1034,6 @@
     "stage-select": {
       "current": "{name} (hiện tại)"
     },
-    "not-allowed-to-operate-unassigned-database": "Không được phép {operation} trên cơ sở dữ liệu chưa được gán.\nTrước tiên, nó cần được chuyển đến một dự án.",
     "migration-mode": {
       "online": {
         "description": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ hàng giờ xuống còn vài giây {link}."
@@ -1052,8 +1055,6 @@
     },
     "batch-transition": {
       "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",
-      "resolve": "Giải quyết",
-      "resolved": "đã giải quyết",
       "reopen": "Mở lại",
       "reopened": "đã mở lại",
       "action-n-issues": "{action} {n} vấn đề | {action} {n} vấn đề",
@@ -1142,15 +1143,8 @@
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{role}\""
     },
-    "schema-drift-detected": {
-      "self": "Đã phát hiện sự trôi dạt của sơ đồ",
-      "description": "Cơ sở dữ liệu được chọn có sự trôi dạt lược đồ. Vui lòng đảm bảo rằng sự trôi dạt này được mong đợi và an toàn để áp dụng."
-    },
     "review": {
       "self": "Ôn tập",
-      "approved": "Tán thành",
-      "rejected": "Vật bị loại bỏ",
-      "under-review": "Đang xem xét",
       "comment-description": "Gửi phản hồi chung mà không cần phê duyệt",
       "approve-description": "Gửi phản hồi và phê duyệt vấn đề này.",
       "reject-description": "Gửi phản hồi và yêu cầu thay đổi"
@@ -1164,6 +1158,7 @@
   },
   "plan": {
     "plans": "Kế hoạch",
+    "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "new-plan": "Kế hoạch mới",
     "add-spec": "Thêm thông số kỹ thuật",
     "select-targets": "Chọn mục tiêu",
@@ -1226,7 +1221,10 @@
       "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
-      "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}"
+      "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}",
+      "missing-backup-schema-postgres": "Tạo schema 'bbdataarchive' trong cơ sở dữ liệu '{database}', sau đó đồng bộ cơ sở dữ liệu",
+      "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu",
+      "missing-backup-database-oracle": "Tạo cơ sở dữ liệu 'BBDATAARCHIVE' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu"
     },
     "ghost": {
       "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",
@@ -1252,10 +1250,6 @@
     "task-execution-notices": "Thông báo thực hiện nhiệm vụ",
     "task-execution-errors": "Lỗi thực hiện tác vụ",
     "no-active-task-to-cancel": "Không có tác vụ nào đang hoạt động để hủy.",
-    "no-runnable-task": "Không có tác vụ nào có thể chạy được.",
-    "automatic-rollout": {
-      "description": "Môi trường này đã bật tính năng triển khai tự động."
-    },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "run-stage": "Chạy tác vụ",
@@ -1268,7 +1262,15 @@
       "view-full-details": "Xem chi tiết đầy đủ",
       "statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn."
     },
-    "no-stages": "Không có giai đoạn nào có sẵn"
+    "no-stages": "Không có giai đoạn nào có sẵn",
+    "no-tasks-created": "Chưa có tác vụ nào được tạo.",
+    "pending-tasks-preview": {
+      "title": "Các nhiệm vụ đang chờ xử lý",
+      "description": "Các tác vụ sau chưa được tạo.",
+      "action": "Xem trước",
+      "task-count": "{count} nhiệm vụ | {count} nhiệm vụ",
+      "no-pending-tasks": "Không có nhiệm vụ nào đang chờ xử lý"
+    }
   },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
@@ -1645,11 +1647,7 @@
     "no-schema-change": "di chuyển này không có thay đổi lược đồ",
     "show-diff": "Hiển thị khác biệt",
     "schema-snapshot-after-change": "Ảnh chụp nhanh lược đồ được ghi lại sau khi áp dụng thay đổi này",
-    "current-schema-empty": "Lược đồ hiện tại trống",
-    "establish-baseline": "Thiết lập đường cơ sở mới",
-    "refreshing": "Đang làm mới nhật ký thay đổi ...",
-    "establish-baseline-description": "Bytebase sẽ sử dụng lược đồ hiện tại làm đường cơ sở mới. Điều này sẽ điều hòa trạng thái lược đồ thực tế với trạng thái lược đồ được ghi lại trong Bytebase và khắc phục độ lệch lược đồ được báo cáo. Bạn chỉ nên thực hiện việc này nếu lược đồ hiện tại phản ánh trạng thái mong muốn.",
-    "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\""
+    "current-schema-empty": "Lược đồ hiện tại trống"
   },
   "database": {
     "labels": "Nhãn cơ sở dữ liệu",
@@ -1761,7 +1759,6 @@
     "engine-not-supported-for-backup": "Sao lưu trước đó không được hỗ trợ cho: {databases}",
     "revision": {
       "self": "Bản sửa đổi",
-      "applied-at": "Đã áp dụng vào",
       "filename": "Tên tệp",
       "import-revision": "Nhập bản sửa đổi",
       "select-source": "Chọn nguồn",
@@ -1793,19 +1790,7 @@
       "version-already-exists": "Phiên bản này đã tồn tại trong cơ sở dữ liệu",
       "delete-confirm-dialog": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
     },
-    "not-found": "Không tìm thấy cơ sở dữ liệu",
-    "drifted": {
-      "self": "Sơ đồ trôi dạt",
-      "schema-drift-detected": {
-        "self": "Đã phát hiện sự trôi dạt của sơ đồ",
-        "description": "Sơ đồ khác với sơ đồ được áp dụng lần cuối. Điều này có thể gây ra lỗi ứng dụng và cần được giải quyết."
-      },
-      "new-baseline": {
-        "self": "Đường cơ sở mới",
-        "successfully-established": "Đã thiết lập thành công đường cơ sở mới"
-      },
-      "view-diff": "Xem sự khác biệt"
-    }
+    "not-found": "Không tìm thấy cơ sở dữ liệu"
   },
   "project": {
     "filter-projects": "Lọc dự án",
@@ -1938,6 +1923,10 @@
         "require-plan-check-no-error": {
           "self": "Yêu cầu kiểm tra kế hoạch phải đạt trước khi triển khai",
           "description": "Tất cả kiểm tra kế hoạch phải đạt không có lỗi trước khi tạo triển khai."
+        },
+        "allow-request-role": {
+          "self": "Cho phép yêu cầu vai trò",
+          "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án"
         }
       },
       "project-labels": {
@@ -2394,7 +2383,6 @@
     "title": "Đánh giá SQL",
     "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
-    "no-policy-set": "Không có chính sách đánh giá SQL",
     "create-policy": "Tạo chính sách đánh giá SQL",
     "select-review": "Chọn đánh giá SQL",
     "select-review-rules": "Chọn quy tắc đánh giá SQL",
@@ -2689,17 +2677,16 @@
       "approve-issue": "Phê duyệt vấn đề?",
       "generating-approval-flow": "Đang tạo quy trình phê duyệt",
       "approved-issue": "đã phê duyệt vấn đề",
+      "rejected-issue": "đã từ chối vấn đề",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Một số kiểm tra tác vụ không vượt qua",
         "some-task-checks-are-still-running": "Một số kiểm tra tác vụ vẫn đang chạy",
         "x-field-is-required": "{field} là bắt buộc"
       },
-      "send-back": "Gửi lại",
       "send-back-issue": "Gửi lại vấn đề?",
       "re-request-review": "Yêu cầu xem xét lại",
       "re-request-review-issue": "Yêu cầu xem xét lại vấn đề?",
       "re-request-review-success": "Yêu cầu xem xét lại đã được thực hiện thành công.",
-      "sent-back-issue": "Đã gửi lại vấn đề",
       "re-requested-review": "đã yêu cầu xem xét lại vấn đề",
       "approved-by": "Được chấp thuận bởi",
       "rejected-by": "Bị từ chối bởi",
@@ -2770,7 +2757,7 @@
     },
     "project-viewer": {
       "self": "Người xem dự án",
-      "description": "Quyền chỉ đọc để xem thông tin cơ bản của dự án, truy cập cơ sở dữ liệu và bắt đầu các yêu cầu đặc quyền."
+      "description": "Quyền chỉ đọc để xem thông tin cơ bản của dự án và cơ sở dữ liệu; người dùng có thể tự tạo yêu cầu để truy vấn và xuất dữ liệu."
     }
   },
   "database-group": {

@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package bytebase.v1;
 
-import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -139,6 +138,10 @@ message CreateReleaseRequest {
 
   // The release to create.
   Release release = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Train for iteration tracking (template rendered without {iteration}).
+  // Used to group releases and determine the next iteration number.
+  string train = 3;
 }
 
 message UpdateReleaseRequest {
@@ -147,10 +150,6 @@ message UpdateReleaseRequest {
 
   // The list of fields to be updated.
   google.protobuf.FieldMask update_mask = 2;
-
-  // If set to true, and the release is not found, a new release will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 3;
 }
 
 message DeleteReleaseRequest {
@@ -234,9 +233,6 @@ message Release {
   // Format: projects/{project}/releases/{release}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The title of the release.
-  string title = 2 [(buf.validate.field).string.max_len = 200];
-
   // The SQL files included in the release.
   repeated File files = 3;
 
@@ -251,14 +247,8 @@ message Release {
   // The lifecycle state of the release.
   State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The digest of the release.
-  // The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
-  // Whether to provide digest and how to generate it is up to the user.
-  // If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
-  string digest = 8;
-
   // The type of schema change for all files in this release.
-  Type type = 9;
+  Type type = 8;
 
   // The type of schema change.
   enum Type {

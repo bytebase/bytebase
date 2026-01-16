@@ -1,75 +1,60 @@
-import { uniq } from "lodash-es";
+import { StatementType } from "@/types/proto-es/v1/common_pb";
 
-const mysqlSQLTypeList = {
-  DDL: [
-    "CREATE_DATABASE",
-    "CREATE_INDEX",
-    "CREATE_TABLE",
-    "CREATE_VIEW",
-    "CREATE_SEQUENCE",
-    "CREATE_PLACEMENT_POLICY",
-    "DROP_INDEX",
-    "DROP_TABLE",
-    "DROP_SEQUENCE",
-    "DROP_PLACEMENT_POLICY",
-    "DROP_DATABASE",
-    "ALTER_TABLE",
-    "ALTER_SEQUENCE",
-    "ALTER_PLACEMENT_POLICY",
-    "TRUNCATE",
-    "RENAME_TABLE",
-  ] as const,
-  DML: ["INSERT", "UPDATE", "DELETE"] as const,
-} as const;
+// DDL statement types
+const DDL_STATEMENT_TYPES = [
+  StatementType.CREATE_DATABASE,
+  StatementType.CREATE_TABLE,
+  StatementType.CREATE_VIEW,
+  StatementType.CREATE_INDEX,
+  StatementType.CREATE_SEQUENCE,
+  StatementType.CREATE_SCHEMA,
+  StatementType.CREATE_FUNCTION,
+  StatementType.CREATE_TRIGGER,
+  StatementType.CREATE_PROCEDURE,
+  StatementType.CREATE_EVENT,
+  StatementType.CREATE_EXTENSION,
+  StatementType.CREATE_TYPE,
+  StatementType.DROP_DATABASE,
+  StatementType.DROP_TABLE,
+  StatementType.DROP_VIEW,
+  StatementType.DROP_INDEX,
+  StatementType.DROP_SEQUENCE,
+  StatementType.DROP_SCHEMA,
+  StatementType.DROP_FUNCTION,
+  StatementType.DROP_TRIGGER,
+  StatementType.DROP_PROCEDURE,
+  StatementType.DROP_EVENT,
+  StatementType.DROP_EXTENSION,
+  StatementType.DROP_TYPE,
+  StatementType.ALTER_DATABASE,
+  StatementType.ALTER_TABLE,
+  StatementType.ALTER_VIEW,
+  StatementType.ALTER_SEQUENCE,
+  StatementType.ALTER_EVENT,
+  StatementType.ALTER_TYPE,
+  StatementType.ALTER_INDEX,
+  StatementType.TRUNCATE,
+  StatementType.RENAME,
+  StatementType.RENAME_INDEX,
+  StatementType.RENAME_SCHEMA,
+  StatementType.RENAME_SEQUENCE,
+  StatementType.COMMENT,
+] as const;
 
-const pgSQLTypeList = {
-  DDL: [
-    "CREATE_DATABASE",
-    "CREATE_SCHEMA",
-    "CREATE_INDEX",
-    "CREATE_TRIGGER",
-    "CREATE_TYPE",
-    "CREATE_EXTENSION",
-    "CREATE_VIEW",
-    "CREATE_SEQUENCE",
-    "CREATE_TABLE",
-    "CREATE_FUNCTION",
-    "DROP_COLUMN",
-    "DROP_CONSTRAINT",
-    "DROP_DATABASE",
-    "DROP_DEFAULT",
-    "DROP_EXTENSION",
-    "DROP_FUNCTION",
-    "DROP_INDEX",
-    "DROP_NOT_NULL",
-    "DROP_SCHEMA",
-    "DROP_SEQUENCE",
-    "DROP_TABLE",
-    "DROP_TRIGGER",
-    "DROP_TYPE",
-    "ALTER_COLUMN_TYPE",
-    "ALTER_SEQUENCE",
-    "ALTER_VIEW",
-    "ALTER_TABLE",
-    "ALTER_TYPE",
-    "ALTER_TABLE_ADD_COLUMN_LIST",
-    "ALTER_TABLE_ADD_CONSTRAINT",
-    "RENAME_COLUMN",
-    "RENAME_CONSTRAINT",
-    "RENAME_INDEX",
-    "RENAME_SCHEMA",
-    "RENAME_VIEW",
-    "RENAME_TABLE",
-    "TRUNCATE",
-    "RENAME",
-  ] as const,
-  DML: ["INSERT", "UPDATE", "DELETE"] as const,
-} as const;
+// DML statement types
+const DML_STATEMENT_TYPES = [
+  StatementType.INSERT,
+  StatementType.UPDATE,
+  StatementType.DELETE,
+] as const;
 
+// Helper to convert enum values to their string names for display/comparison
+const getStatementTypeName = (type: StatementType): string => {
+  return StatementType[type];
+};
+
+// Export lists with string names for backward compatibility with existing code
 export const SQLTypeList = {
-  DDL: uniq([...mysqlSQLTypeList.DDL, ...pgSQLTypeList.DDL].sort()),
-  DML: uniq([...mysqlSQLTypeList.DML, ...pgSQLTypeList.DML].sort()),
+  DDL: DDL_STATEMENT_TYPES.map(getStatementTypeName),
+  DML: DML_STATEMENT_TYPES.map(getStatementTypeName),
 } as const;
-
-export type SQLTypeDDL = (typeof SQLTypeList.DDL)[number];
-export type SQLTypeDML = (typeof SQLTypeList.DML)[number];

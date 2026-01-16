@@ -25,10 +25,18 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 	for {
 		select {
 		case <-ticker.C:
+			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Pending task runs scheduler skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
 		case <-s.bus.TaskRunTickleChan:
+			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
+				slog.Warn("Pending task runs scheduler skipped due to HA license restriction", log.BBError(err))
+				continue
+			}
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
@@ -40,7 +48,7 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 
 func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 	// Acquire cluster-wide mutex - only one replica runs at a time.
-	lock, acquired, err := s.store.TryAdvisoryLock(ctx, store.AdvisoryLockKeyPendingScheduler)
+	lock, acquired, err := store.TryAdvisoryLock(ctx, s.store.GetDB(), store.AdvisoryLockKeyPendingScheduler)
 	if err != nil {
 		return errors.Wrapf(err, "failed to acquire advisory lock")
 	}
@@ -48,7 +56,11 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 		// Another replica is running, skip this cycle.
 		return nil
 	}
-	defer func() { _ = lock.Release() }()
+	defer func() {
+		if err := lock.Release(); err != nil {
+			slog.Error("Failed to release pending scheduler advisory lock", log.BBError(err))
+		}
+	}()
 
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_PENDING},
@@ -57,7 +69,7 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list pending task runs")
 	}
 
-	// Build context once per cycle
+	// Build context once per cycle.
 	sc, err := newSchedulingContext(ctx, s.store)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create scheduling context")
@@ -95,7 +107,7 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 		return errors.Wrapf(err, "failed to get max parallel limit")
 	}
 	if !sc.checkParallelLimit(task.PlanID, maxParallel) {
-		s.storeParallelLimitCause(taskRun.ID)
+		s.storeParallelLimitCause(ctx, taskRun.ID)
 		return nil
 	}
 
@@ -108,15 +120,20 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	return nil
 }
 
-func (s *Scheduler) storeParallelLimitCause(taskRunID int) {
-	s.bus.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
-		ReportTime: timestamppb.Now(),
-		WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-			Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
-				ParallelTasksLimit: true,
+func (s *Scheduler) storeParallelLimitCause(ctx context.Context, taskRunID int) {
+	payload := &storepb.TaskRunPayload{
+		SchedulerInfo: &storepb.SchedulerInfo{
+			ReportTime: timestamppb.Now(),
+			WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+				Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
+					ParallelTasksLimit: true,
+				},
 			},
 		},
-	})
+	}
+	if err := s.store.UpdateTaskRunPayload(ctx, taskRunID, payload); err != nil {
+		slog.Error("failed to store parallel limit cause", log.BBError(err))
+	}
 }
 
 func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskMessage) (int, error) {
@@ -140,7 +157,10 @@ func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskM
 }
 
 func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
-	s.bus.TaskRunSchedulerInfo.Delete(taskRun.ID)
+	// Clear scheduler info by writing empty payload
+	if err := s.store.UpdateTaskRunPayload(ctx, taskRun.ID, &storepb.TaskRunPayload{}); err != nil {
+		slog.Error("failed to clear scheduler info", log.BBError(err))
+	}
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:      taskRun.ID,

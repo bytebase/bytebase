@@ -12,6 +12,7 @@ export * from "./sheet";
 export * from "./worksheet";
 export * from "./issue";
 export * from "./changelog";
+export * from "./revision";
 export * from "./cel";
 export * from "./advanced-search";
 export * from "./iam";

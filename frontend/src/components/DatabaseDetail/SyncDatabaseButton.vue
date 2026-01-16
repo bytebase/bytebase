@@ -1,14 +1,20 @@
 <template>
-  <div v-if="available">
+  <PermissionGuardWrapper
+    v-if="available"
+    v-slot="slotProps"
+    :project="database.projectEntity"
+    :permissions="['bb.databases.sync']"
+  >
     <NButton
       :text="text"
       :type="type"
+      :disabled="slotProps.disabled"
       :loading="syncingSchema"
       @click="syncDatabaseSchema"
     >
       {{ $t("database.sync-database") }}
     </NButton>
-  </div>
+  </PermissionGuardWrapper>
 </template>
 
 <script setup lang="ts">
@@ -16,6 +22,7 @@ import { ConnectError } from "@connectrpc/connect";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -23,7 +30,6 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
   text: boolean;
@@ -41,14 +47,7 @@ const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 
 const available = computed(() => {
-  if (!isValidDatabaseName(props.database.name)) {
-    return false;
-  }
-
-  return hasProjectPermissionV2(
-    props.database.projectEntity,
-    "bb.databases.sync"
-  );
+  return isValidDatabaseName(props.database.name);
 });
 
 const syncDatabaseSchema = async () => {

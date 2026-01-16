@@ -50,7 +50,6 @@ var (
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
-	parsers                 = make(map[storepb.Engine]ParseFunc)
 	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
 	statementTypeGetters    = make(map[storepb.Engine]GetStatementTypesFunc)
 )
@@ -70,18 +69,13 @@ type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, s
 
 type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
 
-// ParseFunc is the interface for parsing SQL statements and returning []AST.
-// Each parser package is responsible for creating AST instances with the appropriate data.
-// Parser packages can return *ANTLRAST for ANTLR-based parsers or their own concrete types.
-type ParseFunc func(statement string) ([]AST, error)
-
 // ParseStatementsFunc is the interface for parsing SQL statements and returning []ParsedStatement.
 // This is the new unified parsing function that returns complete ParsedStatement objects with AST.
 type ParseStatementsFunc func(statement string) ([]ParsedStatement, error)
 
 // GetStatementTypesFunc returns the types of statements in the ASTs.
 // Statement types include: INSERT, UPDATE, DELETE (DML), CREATE_TABLE, ALTER_TABLE, DROP_TABLE, etc. (DDL).
-type GetStatementTypesFunc func([]AST) ([]string, error)
+type GetStatementTypesFunc func([]AST) ([]storepb.StatementType, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -286,25 +280,6 @@ func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx Restore
 	return f(ctx, rCtx, statement, backupItem)
 }
 
-func RegisterParseFunc(engine storepb.Engine, f ParseFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := parsers[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	parsers[engine] = f
-}
-
-// Parse parses the SQL statement and returns an AST representation.
-// Each parser is responsible for creating []AST instances directly.
-func Parse(engine storepb.Engine, statement string) ([]AST, error) {
-	f, ok := parsers[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(statement)
-}
-
 func RegisterParseStatementsFunc(engine storepb.Engine, f ParseStatementsFunc) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -334,7 +309,7 @@ func RegisterGetStatementTypes(engine storepb.Engine, f GetStatementTypesFunc) {
 }
 
 // GetStatementTypes returns the types of statements in the ASTs.
-func GetStatementTypes(engine storepb.Engine, asts []AST) ([]string, error) {
+func GetStatementTypes(engine storepb.Engine, asts []AST) ([]storepb.StatementType, error) {
 	f, ok := statementTypeGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -368,10 +343,11 @@ func IsAllDML(engine storepb.Engine, statement string) bool {
 }
 
 func isAllDMLImpl(engine storepb.Engine, statement string) bool {
-	asts, err := Parse(engine, statement)
+	stmts, err := ParseStatements(engine, statement)
 	if err != nil {
 		return false
 	}
+	asts := ExtractASTs(stmts)
 	if len(asts) == 0 {
 		return false
 	}
@@ -384,7 +360,7 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 	}
 	for _, t := range types {
 		switch t {
-		case "INSERT", "UPDATE", "DELETE":
+		case storepb.StatementType_INSERT, storepb.StatementType_UPDATE, storepb.StatementType_DELETE:
 			// DML statement, continue
 		default:
 			return false

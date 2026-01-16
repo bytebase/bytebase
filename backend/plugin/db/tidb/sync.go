@@ -326,6 +326,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 
+	// Query check constraint info.
+	checkMap, err := d.getCheckConstraintList(ctx, d.databaseName)
+	if err != nil {
+		return nil, err
+	}
+
 	// Query sequence info.
 	sequences, err := d.getSequenceList(ctx, d.databaseName)
 	if err != nil {
@@ -420,21 +426,22 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			}
 
 			tableMetadata := &storepb.TableMetadata{
-				Name:           tableName,
-				Columns:        columns,
-				ForeignKeys:    foreignKeysMap[key],
-				Engine:         engine,
-				Collation:      collation,
-				RowCount:       rowCount,
-				DataSize:       dataSize,
-				IndexSize:      indexSize,
-				DataFree:       dataFree,
-				CreateOptions:  createOptions,
-				Comment:        comment,
-				Charset:        convertCollationToCharset(collation),
-				Partitions:     partitionTables[key],
-				ShardingInfo:   shardingInfo,
-				PrimaryKeyType: pkType,
+				Name:             tableName,
+				Columns:          columns,
+				ForeignKeys:      foreignKeysMap[key],
+				Engine:           engine,
+				Collation:        collation,
+				RowCount:         rowCount,
+				DataSize:         dataSize,
+				IndexSize:        indexSize,
+				DataFree:         dataFree,
+				CreateOptions:    createOptions,
+				Comment:          comment,
+				Charset:          convertCollationToCharset(collation),
+				Partitions:       partitionTables[key],
+				CheckConstraints: checkMap[key],
+				ShardingInfo:     shardingInfo,
+				PrimaryKeyType:   pkType,
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
@@ -772,6 +779,45 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 	}
 
 	return foreignKeysMap, nil
+}
+
+func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
+	checkQuery := `
+		SELECT
+			tc.TABLE_NAME,
+			cc.CONSTRAINT_NAME,
+			cc.CHECK_CLAUSE
+		FROM information_schema.CHECK_CONSTRAINTS cc
+			JOIN information_schema.TABLE_CONSTRAINTS tc
+				ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+				AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
+	`
+	checkRows, err := d.db.QueryContext(ctx, checkQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkQuery)
+	}
+	defer checkRows.Close()
+
+	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+	for checkRows.Next() {
+		check := &storepb.CheckConstraintMetadata{}
+		var tableName string
+		if err := checkRows.Scan(
+			&tableName,
+			&check.Name,
+			&check.Expression,
+		); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: "", Table: tableName}
+		checkMap[key] = append(checkMap[key], check)
+	}
+	if err := checkRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, checkQuery)
+	}
+
+	return checkMap, nil
 }
 
 func stripSingleQuote(s string) string {

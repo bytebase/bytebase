@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -127,7 +128,7 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	}), nil
 }
 
-func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission iam.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
+func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission permission.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
 	ok, err := iamManager.CheckPermission(ctx, permission, user)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check permission %q", permission)
@@ -241,12 +242,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 	if oldPlan == nil {
 		if req.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionPlansCreate, user, projectID)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.PlansCreate, user, projectID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionPlansCreate))
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.PlansCreate))
 			}
 			return s.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 				Parent: common.FormatProject(projectID),
@@ -269,7 +270,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		if oldPlan.Creator == user.Email {
 			return true, nil
 		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
+		return s.iamManager.CheckPermission(ctx, permission.PlansUpdate, user, oldPlan.ProjectID)
 	}()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
@@ -691,19 +692,22 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 
 	// Validate release existence.
 	if releaseString != "" {
-		releaseProjectID, releaseUID, err := common.GetProjectReleaseUID(releaseString)
+		releaseProjectID, releaseID, err := common.GetProjectReleaseID(releaseString)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid release name %q", releaseString))
+			return nil, errors.Errorf("invalid release name %q", releaseString)
 		}
 		if releaseProjectID != projectID {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID))
+			return nil, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID)
 		}
-		release, err := s.GetReleaseByUID(ctx, releaseUID)
+		release, err := s.GetRelease(ctx, &store.FindReleaseMessage{
+			ProjectID: &releaseProjectID,
+			ReleaseID: &releaseID,
+		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get release %d: %v", releaseUID, err))
+			return nil, errors.Errorf("failed to get release %s: %v", releaseID, err)
 		}
 		if release == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found", releaseUID))
+			return nil, errors.Errorf("release %s not found", releaseID)
 		}
 	}
 	return databaseGroup, nil
@@ -1019,7 +1023,7 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
 		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
 			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
-				StatementTypes: report.SqlSummaryReport.StatementTypes,
+				StatementTypes: convertStatementTypesToV1(report.SqlSummaryReport.StatementTypes),
 				AffectedRows:   report.SqlSummaryReport.AffectedRows,
 			},
 		}
@@ -1045,6 +1049,14 @@ func convertToV1ResultType(t storepb.PlanCheckType) v1pb.PlanCheckRun_Result_Typ
 	default:
 		return v1pb.PlanCheckRun_Result_TYPE_UNSPECIFIED
 	}
+}
+
+func convertStatementTypesToV1(storeTypes []storepb.StatementType) []v1pb.StatementType {
+	result := make([]v1pb.StatementType, len(storeTypes))
+	for i, t := range storeTypes {
+		result[i] = v1pb.StatementType(t)
+	}
+	return result
 }
 
 func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.Advice_Level {

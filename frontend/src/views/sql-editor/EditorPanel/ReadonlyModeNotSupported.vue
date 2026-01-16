@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
+import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import { InstanceV1Name } from "@/components/v2";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import AdminModeButton from "../EditorCommon/AdminModeButton.vue";

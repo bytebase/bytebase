@@ -436,8 +436,10 @@ type Subscription struct {
 	ExpiresTime     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_time,json=expiresTime,proto3" json:"expires_time,omitempty"`
 	Trialing        bool                   `protobuf:"varint,6,opt,name=trialing,proto3" json:"trialing,omitempty"`
 	OrgName         string                 `protobuf:"bytes,7,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Whether high availability (multiple replicas) is enabled.
+	Ha            bool `protobuf:"varint,8,opt,name=ha,proto3" json:"ha,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Subscription) Reset() {
@@ -517,6 +519,13 @@ func (x *Subscription) GetOrgName() string {
 		return x.OrgName
 	}
 	return ""
+}
+
+func (x *Subscription) GetHa() bool {
+	if x != nil {
+		return x.Ha
+	}
+	return false
 }
 
 // PlanConfig represents the configuration for all plans loaded from plan.yaml
@@ -649,7 +658,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x16GetSubscriptionRequest\"Z\n" +
 	"\x19UpdateSubscriptionRequest\x12\x18\n" +
 	"\alicense\x18\x01 \x01(\tR\alicense\x12#\n" +
-	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xb1\x02\n" +
+	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xc6\x02\n" +
 	"\fSubscription\x12.\n" +
 	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x03\xe0A\x03R\x04plan\x12\x19\n" +
 	"\x05seats\x18\x02 \x01(\x05B\x03\xe0A\x03R\x05seats\x12!\n" +
@@ -657,7 +666,8 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x10active_instances\x18\x04 \x01(\x05B\x03\xe0A\x03R\x0factiveInstances\x12B\n" +
 	"\fexpires_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\vexpiresTime\x12\x1f\n" +
 	"\btrialing\x18\x06 \x01(\bB\x03\xe0A\x03R\btrialing\x12\x1e\n" +
-	"\borg_name\x18\a \x01(\tB\x03\xe0A\x03R\aorgName\"\x87\x01\n" +
+	"\borg_name\x18\a \x01(\tB\x03\xe0A\x03R\aorgName\x12\x13\n" +
+	"\x02ha\x18\b \x01(\bB\x03\xe0A\x03R\x02ha\"\x87\x01\n" +
 	"\n" +
 	"PlanConfig\x122\n" +
 	"\x05plans\x18\x01 \x03(\v2\x1c.bytebase.v1.PlanLimitConfigR\x05plans\x12E\n" +

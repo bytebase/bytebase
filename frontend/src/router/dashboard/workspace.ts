@@ -90,7 +90,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
-      requiredPermissionList: () => ["bb.settings.get", "bb.policies.get"],
+      requiredPermissionList: () => ["bb.settings.getEnvironment"],
     },
     components: {
       content: () => import("@/views/EnvironmentDashboard.vue"),
@@ -135,7 +135,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "sql-review",
     meta: {
       title: () => t("sql-review.title"),
-      requiredPermissionList: () => ["bb.policies.get"],
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
@@ -151,7 +150,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_SQL_REVIEW,
         meta: {
           title: () => t("sql-review.title"),
-          requiredPermissionList: () => ["bb.reviewConfigs.list"],
+          requiredPermissionList: () => [
+            "bb.reviewConfigs.list",
+            "bb.policies.get",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceSQLReview.vue"),
         props: true,
@@ -171,7 +173,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
         meta: {
           title: () => t("sql-review.title"),
-          requiredPermissionList: () => ["bb.reviewConfigs.get"],
+          requiredPermissionList: () => [
+            "bb.reviewConfigs.get",
+            "bb.policies.get",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewDetail.vue"),
         props: true,
@@ -238,7 +243,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_GLOBAL_MASKING,
         meta: {
           title: () => t("settings.sidebar.global-masking"),
-          requiredPermissionList: () => ["bb.policies.get"],
+          requiredPermissionList: () => ["bb.policies.getMaskingRulePolicy"],
         },
         component: () => import("@/views/SettingWorkspaceDataMasking.vue"),
         props: true,

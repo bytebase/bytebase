@@ -1,21 +1,35 @@
 <template>
   <div class="flex flex-col items-start gap-y-2">
     <div class="flex flex-col gap-y-2">
-      <div class="flex flex-col gap-y-2">
-        <RoleSelect
-          v-model:value="rolloutPolicy.roles"
-          :disabled="disabled"
-          multiple
-          @update:value="updateRoles(rolloutPolicy.roles)"
-        />
-      </div>
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="[
+          'bb.policies.update'
+        ]"
+      >
+        <div class="flex flex-col gap-y-2">
+          <RoleSelect
+            v-model:value="rolloutPolicy.roles"
+            :disabled="slotProps.disabled"
+            multiple
+            @update:value="updateRoles(rolloutPolicy.roles)"
+          />
+        </div>
+      </PermissionGuardWrapper>
       <div class="w-full inline-flex items-start gap-x-2">
-        <Switch
-          :value="isAutomaticRolloutChecked"
-          :text="true"
-          :disabled="disabled"
-          @update:value="toggleAutomaticRollout($event)"
-        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.policies.update'
+          ]"
+        >
+          <Switch
+            :value="isAutomaticRolloutChecked"
+            :text="true"
+            :disabled="slotProps.disabled"
+            @update:value="toggleAutomaticRollout($event)"
+          />
+        </PermissionGuardWrapper>
         <div class="flex flex-col">
           <span class="textlabel">
             {{ t("policy.rollout.auto") }}
@@ -34,6 +48,7 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import type {
   Policy,
   RolloutPolicy,
@@ -45,7 +60,6 @@ const { t } = useI18n();
 
 const props = defineProps<{
   policy: Policy;
-  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -73,6 +87,7 @@ const update = (rp: RolloutPolicy) => {
     },
   });
 };
+
 const toggleAutomaticRollout = (selected: boolean) => {
   update(
     create(RolloutPolicySchema, {
@@ -81,6 +96,7 @@ const toggleAutomaticRollout = (selected: boolean) => {
     })
   );
 };
+
 const updateRoles = (roles: string[]) => {
   update(
     create(RolloutPolicySchema, {

@@ -9,7 +9,6 @@ import {
 import { t } from "@/plugins/i18n";
 import {
   environmentNamePrefix,
-  useEnvironmentV1List,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -33,7 +32,6 @@ export const useCommonSearchScopeOptions = (
   const projectStore = useProjectV1Store();
   const instanceStore = useInstanceV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const environmentList = useEnvironmentV1List();
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
@@ -102,6 +100,7 @@ export const useCommonSearchScopeOptions = (
               filter: {
                 query: keyword,
               },
+              silent: true,
             })
             .then((resp) => ({
               nextPageToken: resp.nextPageToken,
@@ -139,7 +138,10 @@ export const useCommonSearchScopeOptions = (
         id: "environment",
         title: t("issue.advanced-search.scope.environment.title"),
         description: t("issue.advanced-search.scope.environment.description"),
-        options: [unknownEnvironment(), ...environmentList.value].map((env) => {
+        options: [
+          unknownEnvironment(),
+          ...environmentStore.environmentList,
+        ].map((env) => {
           return {
             value: env.id,
             keywords: [`${environmentNamePrefix}${env.id}`, env.title],
@@ -176,24 +178,6 @@ export const useCommonSearchScopeOptions = (
           };
         }),
         allowMultiple: true,
-      }),
-      drifted: () => ({
-        id: "drifted",
-        title: t("database.drifted.self"),
-        description: t("database.drifted.schema-drift-detected.self"),
-        options: [
-          {
-            value: "true",
-            keywords: ["true"],
-            render: () => "TRUE",
-          },
-          {
-            value: "false",
-            keywords: ["false"],
-            render: () => "FALSE",
-          },
-        ],
-        allowMultiple: false,
       }),
       state: () => ({
         id: "state",

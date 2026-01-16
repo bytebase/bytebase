@@ -10,7 +10,6 @@
     <div class="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
       <WorkspaceMode
         v-model:mode="state.databaseChangeMode"
-        :disabled="!allowEdit"
       />
 
       <div v-if="!isSaaSMode">
@@ -28,25 +27,32 @@
         <div v-if="externalUrlFromFlag" class="mb-2 text-sm text-accent">
           {{ $t("settings.general.workspace.external-url.managed-by-flag") }}
         </div>
-        <NTooltip
-          placement="top-start"
-          :disabled="allowEdit && !externalUrlFromFlag"
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="[
+            'bb.settings.setWorkspaceProfile'
+          ]"
         >
-          <template #trigger>
-            <NInput
-              v-model:value="state.externalUrl"
-              class="mb-4 w-full"
-              :disabled="!allowEdit || isSaaSMode || externalUrlFromFlag"
-            />
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{
-              externalUrlFromFlag
-                ? $t("settings.general.workspace.external-url.cannot-edit-flag")
-                : $t("settings.general.workspace.only-admin-can-edit")
-            }}
-          </span>
-        </NTooltip>
+          <NTooltip
+            placement="top-start"
+            :disabled="slotProps.disabled || !externalUrlFromFlag"
+          >
+            <template #trigger>
+              <NInput
+                v-model:value="state.externalUrl"
+                class="mb-4 w-full"
+                :disabled="slotProps.disabled || isSaaSMode || externalUrlFromFlag"
+              />
+            </template>
+            <span class="text-sm text-gray-400 -translate-y-2">
+              {{
+                externalUrlFromFlag
+                  ? $t("settings.general.workspace.external-url.cannot-edit-flag")
+                  : ''
+              }}
+            </span>
+          </NTooltip>
+        </PermissionGuardWrapper>
       </div>
     </div>
 
@@ -87,6 +93,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { BBModal } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useActuatorV1Store, useSettingV1Store } from "@/store";
@@ -101,23 +108,21 @@ interface LocalState {
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     databaseChangeMode: DatabaseChangeMode.PIPELINE,
-    externalUrl: settingV1Store.workspaceProfileSetting?.externalUrl ?? "",
+    externalUrl: settingV1Store.workspaceProfile.externalUrl,
   };
   if (
-    settingV1Store.workspaceProfileSetting &&
     [DatabaseChangeMode.PIPELINE, DatabaseChangeMode.EDITOR].includes(
-      settingV1Store.workspaceProfileSetting.databaseChangeMode
+      settingV1Store.workspaceProfile.databaseChangeMode
     )
   ) {
     defaultState.databaseChangeMode =
-      settingV1Store.workspaceProfileSetting.databaseChangeMode;
+      settingV1Store.workspaceProfile.databaseChangeMode;
   }
   return defaultState;
 };
 
 const props = defineProps<{
   title: string;
-  allowEdit: boolean;
 }>();
 
 const settingV1Store = useSettingV1Store();

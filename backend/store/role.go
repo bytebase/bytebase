@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -16,7 +17,8 @@ type RoleMessage struct {
 	ResourceID  string
 	Name        string
 	Description string
-	Permissions map[string]bool
+	Permissions map[permission.Permission]bool
+	Predefined  bool
 }
 
 // UpdateRoleMessage is the message for updating roles.
@@ -25,7 +27,7 @@ type UpdateRoleMessage struct {
 
 	Name        *string
 	Description *string
-	Permissions *map[string]bool
+	Permissions *map[permission.Permission]bool
 }
 
 // FindRoleMessage is the message for finding roles.
@@ -106,14 +108,8 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 	return create, nil
 }
 
-// GetRole returns a role by ID.
+// GetRole returns a role by ID with strong/consistent reads (no cache).
 func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessage, error) {
-	if find.ResourceID != nil {
-		if v, ok := s.rolesCache.Get(*find.ResourceID); ok && s.enableCache {
-			return v, nil
-		}
-	}
-
 	roles, err := s.ListRoles(ctx, find)
 	if err != nil {
 		return nil, err
@@ -130,8 +126,24 @@ func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessag
 	return role, nil
 }
 
+// GetRoleSnapshot returns a role by ID with snapshot reads (with cache).
+// Trades consistency for performance.
+func (s *Store) GetRoleSnapshot(ctx context.Context, resourceID string) (*RoleMessage, error) {
+	if v, ok := s.rolesCache.Get(resourceID); ok {
+		return v, nil
+	}
+	return s.GetRole(ctx, &FindRoleMessage{ResourceID: &resourceID})
+}
+
 // ListRoles returns a list of roles.
 func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMessage, error) {
+	// If looking for a specific role, check predefined first
+	if v := find.ResourceID; v != nil {
+		if role := GetPredefinedRole(*v); role != nil {
+			return []*RoleMessage{role}, nil
+		}
+	}
+
 	q := qb.Q().Space(`
 		SELECT
 			resource_id, name, description, permissions
@@ -157,7 +169,7 @@ func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMe
 	var roles []*RoleMessage
 	for rows.Next() {
 		role := &RoleMessage{
-			Permissions: map[string]bool{},
+			Permissions: map[permission.Permission]bool{},
 		}
 		var permissionBytes []byte
 		if err := rows.Scan(&role.ResourceID, &role.Name, &role.Description, &permissionBytes); err != nil {
@@ -176,6 +188,11 @@ func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMe
 
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	// Append predefined roles when listing all roles
+	if find.ResourceID == nil {
+		roles = append(roles, PredefinedRoles...)
 	}
 
 	return roles, nil
@@ -219,7 +236,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 
 	role := &RoleMessage{
 		ResourceID:  patch.ResourceID,
-		Permissions: map[string]bool{},
+		Permissions: map[permission.Permission]bool{},
 	}
 	var permissionBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&role.Name, &role.Description, &permissionBytes); err != nil {
