@@ -757,8 +757,8 @@ func TestActionRolloutCommand(t *testing.T) {
 			Name: database.Name,
 		}))
 		a.NoError(err)
-		a.NotEmpty(updatedDatabase.Msg.SchemaVersion, "Database schema version not set, but rollout completed successfully")
-		a.Equal("00001", updatedDatabase.Msg.SchemaVersion)
+		a.NotEmpty(updatedDatabase.Msg.Release, "Database release not set, but rollout completed successfully")
+		a.Equal(release.Name, updatedDatabase.Msg.Release, "Database release should match the applied release")
 
 		// 6. Verify change history was recorded
 		changelogs, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
@@ -956,8 +956,8 @@ func TestActionRolloutCommand(t *testing.T) {
 			Name: database.Name,
 		}))
 		a.NoError(err)
-		a.NotEmpty(updatedDatabase.Msg.SchemaVersion, "Database schema version not set, but rollout completed successfully")
-		a.Equal("00003", updatedDatabase.Msg.SchemaVersion)
+		a.NotEmpty(updatedDatabase.Msg.Release, "Database release not set, but rollout completed successfully")
+		a.Equal(release.Name, updatedDatabase.Msg.Release, "Database release should match the applied release")
 
 		// 6. Verify change history was recorded
 		// Note: Versioned releases create one MIGRATE changelog for the entire release (not per file)

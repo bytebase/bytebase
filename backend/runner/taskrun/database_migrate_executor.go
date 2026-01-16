@@ -483,7 +483,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	defer driver.Close(ctx)
 
 	var migrationErr error
-	var lastAppliedVersion string
 
 	// Execute unapplied files in order
 	for _, file := range release.Payload.Files {
@@ -549,9 +548,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			migrationErr = errors.Wrapf(err, "failed to create revision for version %s", file.Version)
 			break
 		}
-
-		// Track the last successfully applied version
-		lastAppliedVersion = file.Version
 	}
 
 	// Update changelog after all files are processed
@@ -582,17 +578,15 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		return nil, migrationErr
 	}
 
-	// Update database version to the last successfully applied version
-	if lastAppliedVersion != "" && shouldUpdateVersion(database.Metadata.Version, lastAppliedVersion) {
-		if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: database.DatabaseName,
-			MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-				md.Version = lastAppliedVersion
-			}},
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to update database version to %s", lastAppliedVersion)
-		}
+	// Update database release to the current release
+	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
+			md.Release = task.Payload.GetRelease()
+		}},
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to update database release to %s", release.ReleaseID)
 	}
 
 	return &storepb.TaskRunResult{}, nil
@@ -716,16 +710,16 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		return nil, errors.Wrap(migrationErr, "failed to execute declarative release")
 	}
 
-	// Post migration - update database schema version
+	// Post migration - update database release
 	// Note: Declarative releases do NOT create revisions (they are version-tracked through the database schema itself)
 	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		MetadataUpdates: []func(*storepb.DatabaseMetadata){func(md *storepb.DatabaseMetadata) {
-			md.Version = file.Version
+			md.Release = task.Payload.GetRelease()
 		}},
 	}); err != nil {
-		return nil, errors.Wrapf(err, "failed to update database version for %q", database.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to update database release for %q", database.DatabaseName)
 	}
 
 	return &storepb.TaskRunResult{}, nil
@@ -1200,30 +1194,6 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 	}
 
 	return previousUserSDLText, previousSchema, nil
-}
-
-// shouldUpdateVersion checks if newVersion is greater than currentVersion.
-// Returns true if:
-// - currentVersion is empty
-// - currentVersion is invalid
-// - newVersion is greater than currentVersion
-func shouldUpdateVersion(currentVersion, newVersion string) bool {
-	if currentVersion == "" {
-		// If no current version, always update
-		return true
-	}
-	current, err := model.NewVersion(currentVersion)
-	if err != nil {
-		// If current version is invalid, update with new version
-		return true
-	}
-
-	nv, err := model.NewVersion(newVersion)
-	if err != nil {
-		// If new version is invalid, don't update
-		return false
-	}
-	return current.LessThan(nv)
 }
 
 // computeNeedDump determines if schema dump is needed based on task type and statements.
