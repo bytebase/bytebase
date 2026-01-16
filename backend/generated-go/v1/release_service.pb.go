@@ -7,7 +7,6 @@
 package v1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -262,7 +261,10 @@ type CreateReleaseRequest struct {
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The release to create.
-	Release       *Release `protobuf:"bytes,2,opt,name=release,proto3" json:"release,omitempty"`
+	Release *Release `protobuf:"bytes,2,opt,name=release,proto3" json:"release,omitempty"`
+	// Train for iteration tracking (template rendered without {iteration}).
+	// Used to group releases and determine the next iteration number.
+	Train         string `protobuf:"bytes,3,opt,name=train,proto3" json:"train,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -311,15 +313,19 @@ func (x *CreateReleaseRequest) GetRelease() *Release {
 	return nil
 }
 
+func (x *CreateReleaseRequest) GetTrain() string {
+	if x != nil {
+		return x.Train
+	}
+	return ""
+}
+
 type UpdateReleaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The release to update.
 	Release *Release `protobuf:"bytes,1,opt,name=release,proto3" json:"release,omitempty"`
 	// The list of fields to be updated.
-	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// If set to true, and the release is not found, a new release will be created.
-	// In this situation, `update_mask` is ignored.
-	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
+	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -366,13 +372,6 @@ func (x *UpdateReleaseRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
-}
-
-func (x *UpdateReleaseRequest) GetAllowMissing() bool {
-	if x != nil {
-		return x.AllowMissing
-	}
-	return false
 }
 
 type DeleteReleaseRequest struct {
@@ -613,8 +612,6 @@ type Release struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/releases/{release}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The title of the release.
-	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The SQL files included in the release.
 	Files []*Release_File `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
 	// The version control source of the release.
@@ -624,13 +621,8 @@ type Release struct {
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	// The lifecycle state of the release.
 	State State `protobuf:"varint,7,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
-	// The digest of the release.
-	// The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.
-	// Whether to provide digest and how to generate it is up to the user.
-	// If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.
-	Digest string `protobuf:"bytes,8,opt,name=digest,proto3" json:"digest,omitempty"`
 	// The type of schema change for all files in this release.
-	Type          Release_Type `protobuf:"varint,9,opt,name=type,proto3,enum=bytebase.v1.Release_Type" json:"type,omitempty"`
+	Type          Release_Type `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.Release_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -672,13 +664,6 @@ func (x *Release) GetName() string {
 	return ""
 }
 
-func (x *Release) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
 func (x *Release) GetFiles() []*Release_File {
 	if x != nil {
 		return x.Files
@@ -712,13 +697,6 @@ func (x *Release) GetState() State {
 		return x.State
 	}
 	return State_STATE_UNSPECIFIED
-}
-
-func (x *Release) GetDigest() string {
-	if x != nil {
-		return x.Digest
-	}
-	return ""
 }
 
 func (x *Release) GetType() Release_Type {
@@ -965,7 +943,7 @@ var File_v1_release_service_proto protoreflect.FileDescriptor
 
 const file_v1_release_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/release_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"E\n" +
+	"\x18v1/release_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"E\n" +
 	"\x11GetReleaseRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\x04name\"\xaa\x01\n" +
@@ -978,16 +956,16 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x04 \x01(\bR\vshowDeleted\"p\n" +
 	"\x14ListReleasesResponse\x120\n" +
 	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x81\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x97\x01\n" +
 	"\x14CreateReleaseRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
-	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\"\xad\x01\n" +
+	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12\x14\n" +
+	"\x05train\x18\x03 \x01(\tR\x05train\"\x88\x01\n" +
 	"\x14UpdateReleaseRequest\x123\n" +
 	"\arelease\x18\x01 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"H\n" +
+	"updateMask\"H\n" +
 	"\x14DeleteReleaseRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\x04name\"J\n" +
@@ -1011,19 +989,17 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
 	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xad\x06\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xf5\x05\n" +
 	"\aRelease\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
-	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12/\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12/\n" +
 	"\x05files\x18\x03 \x03(\v2\x19.bytebase.v1.Release.FileR\x05files\x12=\n" +
 	"\n" +
 	"vcs_source\x18\x04 \x01(\v2\x1e.bytebase.v1.Release.VCSSourceR\tvcsSource\x12\x1d\n" +
 	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
-	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
-	"\x06digest\x18\b \x01(\tR\x06digest\x12-\n" +
-	"\x04type\x18\t \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xd1\x01\n" +
+	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12-\n" +
+	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xd1\x01\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +

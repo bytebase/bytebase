@@ -48,9 +48,6 @@ func (x *ReleasePayload) Equal(y *ReleasePayload) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Title != y.Title {
-		return false
-	}
 	if len(x.Files) != len(y.Files) {
 		return false
 	}

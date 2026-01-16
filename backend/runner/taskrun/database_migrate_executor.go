@@ -82,19 +82,22 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 
 	// Execute migration based on task type
 	if releaseName := task.Payload.GetRelease(); releaseName != "" {
-		// Parse release name to get project ID and release UID
-		_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
+		// Parse release name to get project ID and release ID
+		projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse release name %q", releaseName)
 		}
 
 		// Fetch the release
-		release, err := exec.store.GetReleaseByUID(ctx, releaseUID)
+		release, err := exec.store.GetRelease(ctx, &store.FindReleaseMessage{
+			ProjectID: &projectID,
+			ReleaseID: &releaseID,
+		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get release %d", releaseUID)
+			return nil, errors.Wrapf(err, "failed to get release %s", releaseID)
 		}
 		if release == nil {
-			return nil, errors.Errorf("release %d not found", releaseUID)
+			return nil, errors.Errorf("release %s not found", releaseID)
 		}
 
 		// Switch based on release type
@@ -1142,9 +1145,12 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 			if err == nil && task != nil {
 				// Get the release from the task
 				if releaseName := task.Payload.GetRelease(); releaseName != "" {
-					_, releaseUID, err := common.GetProjectReleaseUID(releaseName)
+					projectID, releaseID, err := common.GetProjectReleaseID(releaseName)
 					if err == nil {
-						release, err := s.GetReleaseByUID(ctx, releaseUID)
+						release, err := s.GetRelease(ctx, &store.FindReleaseMessage{
+							ProjectID: &projectID,
+							ReleaseID: &releaseID,
+						})
 						if err == nil && release != nil {
 							// For SDL/declarative releases, there should be exactly one file
 							if len(release.Payload.Files) == 1 {
