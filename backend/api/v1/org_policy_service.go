@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -28,8 +29,6 @@ var (
 		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE, storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 		storepb.Policy_MASKING_RULE:      {storepb.Policy_WORKSPACE},
 		storepb.Policy_MASKING_EXEMPTION: {storepb.Policy_PROJECT},
-		storepb.Policy_IAM:               {storepb.Policy_WORKSPACE},
-		storepb.Policy_DATA_SOURCE_QUERY: {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 	}
 )
 
@@ -260,8 +259,6 @@ func pathMatchType(path string, policyType storepb.Policy_Type) bool {
 		return path == "masking_exemption_policy"
 	case storepb.Policy_TAG:
 		return path == "tag_policy"
-	case storepb.Policy_DATA_SOURCE_QUERY:
-		return path == "data_source_query_policy"
 	case storepb.Policy_QUERY_DATA:
 		return path == "query_data_policy"
 	default:
@@ -484,16 +481,14 @@ func validatePolicyType(policyType storepb.Policy_Type, policyResourceType store
 	if !ok {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown policy type %v", policyType))
 	}
-	for _, rt := range allowedTypes {
-		if rt == policyResourceType {
-			return nil
-		}
+	if slices.Contains(allowedTypes, policyResourceType) {
+		return nil
 	}
 	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("policy %v is not allowed in resource %v", policyType, policyResourceType))
 }
 
 func (s *OrgPolicyService) checkPolicyFeatureGuard(policyType v1pb.PolicyType) error {
-	if policyType == v1pb.PolicyType_DATA_QUERY || policyType == v1pb.PolicyType_DATA_SOURCE_QUERY {
+	if policyType == v1pb.PolicyType_DATA_QUERY {
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return connect.NewError(connect.CodePermissionDenied, err)
 		}
@@ -599,13 +594,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", errors.Wrap(err, "failed to marshal masking exemption policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_DATA_SOURCE_QUERY:
-		payload := convertToDataSourceQueryPayload(policy.GetDataSourceQueryPolicy())
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal data source query policy")
-		}
-		return string(payloadBytes), nil
 	default:
 	}
 
@@ -669,12 +657,6 @@ func convertToPolicy(policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 		policy.Policy = &v1pb.Policy_MaskingExemptionPolicy{
 			MaskingExemptionPolicy: payload,
 		}
-	case storepb.Policy_DATA_SOURCE_QUERY:
-		payload, err := convertToV1PBDataSourceQueryPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
 	default:
 	}
 

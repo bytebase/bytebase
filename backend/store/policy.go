@@ -203,11 +203,14 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 }
 
 type EffectiveQueryDataPolicy struct {
-	MaximumResultSize        int64
-	MaximumResultRows        int32
-	DisableCopyData          bool
-	DisableExport            bool
-	MaxQueryTimeoutInSeconds int64
+	MaximumResultSize          int64
+	MaximumResultRows          int32
+	DisableCopyData            bool
+	DisableExport              bool
+	MaxQueryTimeoutInSeconds   int64
+	AdminDataSourceRestriction storepb.QueryDataPolicy_Restriction
+	DisallowDDL                bool
+	DisallowDML                bool
 }
 
 func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQueryDataPolicy {
@@ -225,11 +228,14 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	}
 
 	return &EffectiveQueryDataPolicy{
-		MaximumResultSize:        maximumResultSize,
-		MaximumResultRows:        maximumResultRows,
-		MaxQueryTimeoutInSeconds: timeoutInSeconds,
-		DisableCopyData:          policy.GetDisableCopyData(),
-		DisableExport:            policy.GetDisableExport(),
+		MaximumResultSize:          maximumResultSize,
+		MaximumResultRows:          maximumResultRows,
+		MaxQueryTimeoutInSeconds:   timeoutInSeconds,
+		DisableCopyData:            policy.GetDisableCopyData(),
+		DisableExport:              policy.GetDisableExport(),
+		AdminDataSourceRestriction: policy.GetAdminDataSourceRestriction(),
+		DisallowDDL:                policy.GetDisallowDdl(),
+		DisallowDML:                policy.GetDisallowDml(),
 	}
 }
 
@@ -250,12 +256,21 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, project string)
 	maximumResultRows := min(formatPorjectPolicy.MaximumResultRows, formatWorkspacePolicy.MaximumResultRows)
 	maximumTimeout := min(formatPorjectPolicy.MaxQueryTimeoutInSeconds, formatWorkspacePolicy.MaxQueryTimeoutInSeconds)
 
+	// For AdminDataSourceRestriction, project policy takes precedence over workspace
+	adminRestriction := formatPorjectPolicy.AdminDataSourceRestriction
+	if adminRestriction == storepb.QueryDataPolicy_RESTRICTION_UNSPECIFIED {
+		adminRestriction = formatWorkspacePolicy.AdminDataSourceRestriction
+	}
+
 	return &EffectiveQueryDataPolicy{
-		DisableCopyData:          formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
-		DisableExport:            formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
-		MaximumResultSize:        maximumResultSize,
-		MaximumResultRows:        maximumResultRows,
-		MaxQueryTimeoutInSeconds: maximumTimeout,
+		DisableCopyData:            formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
+		DisableExport:              formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
+		MaximumResultSize:          maximumResultSize,
+		MaximumResultRows:          maximumResultRows,
+		MaxQueryTimeoutInSeconds:   maximumTimeout,
+		AdminDataSourceRestriction: adminRestriction,
+		DisallowDDL:                formatPorjectPolicy.DisallowDDL || formatWorkspacePolicy.DisallowDDL,
+		DisallowDML:                formatPorjectPolicy.DisallowDML || formatWorkspacePolicy.DisallowDML,
 	}, nil
 }
 

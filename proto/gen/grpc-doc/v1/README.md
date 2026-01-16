@@ -334,7 +334,6 @@
   
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
-    - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
@@ -350,9 +349,9 @@
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
-    - [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
+    - [QueryDataPolicy.Restriction](#bytebase-v1-QueryDataPolicy-Restriction)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
@@ -5672,23 +5671,6 @@ IssueService manages issues for tracking database changes and tasks.
 
 
 
-<a name="bytebase-v1-DataSourceQueryPolicy"></a>
-
-### DataSourceQueryPolicy
-Policy for controlling which data sources can be queried in the SQL editor.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction) |  | Restriction for admin data source queries. |
-| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
-| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
-
-
-
-
-
-
 <a name="bytebase-v1-DeletePolicyRequest"></a>
 
 ### DeletePolicyRequest
@@ -5839,7 +5821,6 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
 | masking_exemption_policy | [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
-| data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
 | enforce | [bool](#bool) |  | Whether the policy is enforced. |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
@@ -5862,6 +5843,9 @@ QueryDataPolicy is the policy configuration for querying data.
 | maximum_result_size | [int64](#int64) |  | The maximum result size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The maximum number of rows to return. The default value is -1, means no limit. |
 | disable_copy_data | [bool](#bool) |  | Disable copying query results. |
+| admin_data_source_restriction | [QueryDataPolicy.Restriction](#bytebase-v1-QueryDataPolicy-Restriction) |  | Restriction for admin data source queries. |
+| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
+| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
 
 
@@ -5936,19 +5920,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
  
 
 
-<a name="bytebase-v1-DataSourceQueryPolicy-Restriction"></a>
-
-### DataSourceQueryPolicy.Restriction
-Restriction level for admin data source access.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESTRICTION_UNSPECIFIED | 0 | Unspecified restriction. |
-| FALLBACK | 1 | Allow querying admin data sources when there is no read-only data source. |
-| DISALLOW | 2 | Disallow querying admin data sources. |
-
-
-
 <a name="bytebase-v1-PolicyResourceType"></a>
 
 ### PolicyResourceType
@@ -5975,8 +5946,20 @@ The type of organizational policy.
 | MASKING_EXEMPTION | 2 | Data masking exemption policy. |
 | ROLLOUT_POLICY | 3 | Rollout deployment policy. |
 | TAG | 4 | Resource tag policy. |
-| DATA_SOURCE_QUERY | 5 | Data source query restrictions policy. |
 | DATA_QUERY | 6 | Query data access policy. |
+
+
+
+<a name="bytebase-v1-QueryDataPolicy-Restriction"></a>
+
+### QueryDataPolicy.Restriction
+Restriction level for admin data source access.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 | Unspecified restriction. |
+| FALLBACK | 1 | Allow querying admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow querying admin data sources. |
 
 
  

@@ -1447,10 +1447,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DataSourceQueryPolicy"><span class="badge">M</span>DataSourceQueryPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.DeletePolicyRequest"><span class="badge">M</span>DeletePolicyRequest</a>
                 </li>
               
@@ -1508,15 +1504,15 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.DataSourceQueryPolicy.Restriction"><span class="badge">E</span>DataSourceQueryPolicy.Restriction</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PolicyResourceType"><span class="badge">E</span>PolicyResourceType</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.PolicyType"><span class="badge">E</span>PolicyType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryDataPolicy.Restriction"><span class="badge">E</span>QueryDataPolicy.Restriction</a>
                 </li>
               
               
@@ -16458,44 +16454,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
 
         
       
-        <h3 id="bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
-        <p>Policy for controlling which data sources can be queried in the SQL editor.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>admin_data_source_restriction</td>
-                  <td><a href="#bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</a></td>
-                  <td></td>
-                  <td><p>Restriction for admin data source queries. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>disallow_ddl</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Disallow running DDL statements in the SQL editor. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>disallow_dml</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Disallow running DML statements in the SQL editor. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.DeletePolicyRequest">DeletePolicyRequest</h3>
         <p></p>
 
@@ -16834,13 +16792,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
-                  <td>data_source_query_policy</td>
-                  <td><a href="#bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>query_data_policy</td>
                   <td><a href="#bytebase.v1.QueryDataPolicy">QueryDataPolicy</a></td>
                   <td></td>
@@ -16913,6 +16864,27 @@ The default value is -1, means no limit. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Disable copying query results. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>admin_data_source_restriction</td>
+                  <td><a href="#bytebase.v1.QueryDataPolicy.Restriction">QueryDataPolicy.Restriction</a></td>
+                  <td></td>
+                  <td><p>Restriction for admin data source queries. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disallow_ddl</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Disallow running DDL statements in the SQL editor. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disallow_dml</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Disallow running DML statements in the SQL editor. </p></td>
                 </tr>
               
             </tbody>
@@ -17057,35 +17029,6 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
-        <h3 id="bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</h3>
-        <p>Restriction level for admin data source access.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>RESTRICTION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified restriction.</p></td>
-              </tr>
-            
-              <tr>
-                <td>FALLBACK</td>
-                <td>1</td>
-                <td><p>Allow querying admin data sources when there is no read-only data source.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DISALLOW</td>
-                <td>2</td>
-                <td><p>Disallow querying admin data sources.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.PolicyResourceType">PolicyResourceType</h3>
         <p>The resource type that a policy can be attached to.</p>
         <table class="enum-table">
@@ -17160,15 +17103,38 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>DATA_SOURCE_QUERY</td>
-                <td>5</td>
-                <td><p>Data source query restrictions policy.</p></td>
-              </tr>
-            
-              <tr>
                 <td>DATA_QUERY</td>
                 <td>6</td>
                 <td><p>Query data access policy.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryDataPolicy.Restriction">QueryDataPolicy.Restriction</h3>
+        <p>Restriction level for admin data source access.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RESTRICTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified restriction.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FALLBACK</td>
+                <td>1</td>
+                <td><p>Allow querying admin data sources when there is no read-only data source.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW</td>
+                <td>2</td>
+                <td><p>Disallow querying admin data sources.</p></td>
               </tr>
             
           </tbody>

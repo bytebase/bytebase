@@ -168,22 +168,28 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}
 	return &v1pb.Policy_QueryDataPolicy{
 		QueryDataPolicy: &v1pb.QueryDataPolicy{
-			Timeout:           payload.Timeout,
-			DisableExport:     payload.DisableExport,
-			MaximumResultSize: payload.MaximumResultSize,
-			MaximumResultRows: payload.MaximumResultRows,
-			DisableCopyData:   payload.DisableCopyData,
+			Timeout:                    payload.Timeout,
+			DisableExport:              payload.DisableExport,
+			MaximumResultSize:          payload.MaximumResultSize,
+			MaximumResultRows:          payload.MaximumResultRows,
+			DisableCopyData:            payload.DisableCopyData,
+			AdminDataSourceRestriction: v1pb.QueryDataPolicy_Restriction(payload.AdminDataSourceRestriction),
+			DisallowDdl:                payload.DisallowDdl,
+			DisallowDml:                payload.DisallowDml,
 		},
 	}, nil
 }
 
 func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
 	return &storepb.QueryDataPolicy{
-		Timeout:           policy.Timeout,
-		DisableExport:     policy.DisableExport,
-		MaximumResultSize: policy.MaximumResultSize,
-		MaximumResultRows: policy.MaximumResultRows,
-		DisableCopyData:   policy.DisableCopyData,
+		Timeout:                    policy.Timeout,
+		DisableExport:              policy.DisableExport,
+		MaximumResultSize:          policy.MaximumResultSize,
+		MaximumResultRows:          policy.MaximumResultRows,
+		DisableCopyData:            policy.DisableCopyData,
+		AdminDataSourceRestriction: storepb.QueryDataPolicy_Restriction(policy.AdminDataSourceRestriction),
+		DisallowDdl:                policy.DisallowDdl,
+		DisallowDml:                policy.DisallowDml,
 	}
 }
 
@@ -286,29 +292,6 @@ func convertToV1PBMaskingExemptionPolicyPayload(policy *storepb.MaskingExemption
 	}
 }
 
-func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSourceQueryPolicy, error) {
-	payload := &storepb.DataSourceQueryPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
-		return nil, err
-	}
-
-	return &v1pb.Policy_DataSourceQueryPolicy{
-		DataSourceQueryPolicy: &v1pb.DataSourceQueryPolicy{
-			AdminDataSourceRestriction: v1pb.DataSourceQueryPolicy_Restriction(payload.AdminDataSourceRestriction),
-			DisallowDdl:                payload.DisallowDdl,
-			DisallowDml:                payload.DisallowDml,
-		},
-	}, nil
-}
-
-func convertToDataSourceQueryPayload(policy *v1pb.DataSourceQueryPolicy) *storepb.DataSourceQueryPolicy {
-	return &storepb.DataSourceQueryPolicy{
-		AdminDataSourceRestriction: storepb.DataSourceQueryPolicy_Restriction(policy.AdminDataSourceRestriction),
-		DisallowDdl:                policy.DisallowDdl,
-		DisallowDml:                policy.DisallowDml,
-	}
-}
-
 func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type, error) {
 	switch pType {
 	case v1pb.PolicyType_ROLLOUT_POLICY:
@@ -321,8 +304,6 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_MASKING_EXEMPTION, nil
 	case v1pb.PolicyType_DATA_QUERY:
 		return storepb.Policy_QUERY_DATA, nil
-	case v1pb.PolicyType_DATA_SOURCE_QUERY:
-		return storepb.Policy_DATA_SOURCE_QUERY, nil
 	default:
 	}
 	return storepb.Policy_TYPE_UNSPECIFIED, errors.Errorf("invalid policy type %v", pType)
@@ -340,8 +321,6 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_MASKING_EXEMPTION
 	case storepb.Policy_QUERY_DATA:
 		return v1pb.PolicyType_DATA_QUERY
-	case storepb.Policy_DATA_SOURCE_QUERY:
-		return v1pb.PolicyType_DATA_SOURCE_QUERY
 	default:
 	}
 	return v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED

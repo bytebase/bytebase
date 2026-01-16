@@ -207,16 +207,6 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x.DisableCopyData != y.DisableCopyData {
 		return false
 	}
-	return true
-}
-
-func (x *DataSourceQueryPolicy) Equal(y *DataSourceQueryPolicy) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
 	if x.AdminDataSourceRestriction != y.AdminDataSourceRestriction {
 		return false
 	}

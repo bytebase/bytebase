@@ -16,7 +16,6 @@ message Policy {
     MASKING_RULE = 4;
     IAM = 5;
     TAG = 6;
-    DATA_SOURCE_QUERY = 7;
   }
 
   enum Resource {
@@ -120,10 +119,7 @@ message QueryDataPolicy {
 
   // Disable copying data.
   bool disable_copy_data = 5;
-}
 
-// DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
-message DataSourceQueryPolicy {
   enum Restriction {
     RESTRICTION_UNSPECIFIED = 0;
     // Allow to query admin data sources when there is no read-only data source.
@@ -131,10 +127,11 @@ message DataSourceQueryPolicy {
     // Disallow to query admin data sources.
     DISALLOW = 2;
   }
-  Restriction admin_data_source_restriction = 1;
+  // Restriction for admin data source queries.
+  Restriction admin_data_source_restriction = 6;
 
   // Disallow running DDL statements in the SQL editor.
-  bool disallow_ddl = 2;
+  bool disallow_ddl = 7;
   // Disallow running DML statements in the SQL editor.
-  bool disallow_dml = 3;
+  bool disallow_dml = 8;
 }

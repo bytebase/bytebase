@@ -19,7 +19,7 @@ import {
   DataSourceType,
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { DataSourceQueryPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
+import { QueryDataPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
 import { wrapRefAsPromise } from "@/utils";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
@@ -135,16 +135,16 @@ const getDataSourceBehavior = async (database: ComposedDatabase) => {
   let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
   if (
     dataSourceRestriction.value.environmentPolicy ===
-      DataSourceQueryPolicy_Restriction.DISALLOW ||
+      QueryDataPolicy_Restriction.DISALLOW ||
     dataSourceRestriction.value.projectPolicy ===
-      DataSourceQueryPolicy_Restriction.DISALLOW
+      QueryDataPolicy_Restriction.DISALLOW
   ) {
     behavior = "RO";
   } else if (
     dataSourceRestriction.value.environmentPolicy ===
-      DataSourceQueryPolicy_Restriction.FALLBACK ||
+      QueryDataPolicy_Restriction.FALLBACK ||
     dataSourceRestriction.value.projectPolicy ===
-      DataSourceQueryPolicy_Restriction.FALLBACK
+      QueryDataPolicy_Restriction.FALLBACK
   ) {
     behavior = "FALLBACK";
   } else {

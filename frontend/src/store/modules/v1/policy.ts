@@ -9,18 +9,16 @@ import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase, MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
 import type {
-  DataSourceQueryPolicy,
   Policy,
   QueryDataPolicy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  DataSourceQueryPolicy_Restriction,
-  DataSourceQueryPolicySchema,
   DeletePolicyRequestSchema,
   GetPolicyRequestSchema,
   PolicyResourceType,
   PolicySchema,
   PolicyType,
+  QueryDataPolicy_Restriction,
   QueryDataPolicySchema,
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
@@ -52,19 +50,6 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
     policyMapByName: new Map(),
   });
 
-  const getDataSourceQueryPolicyByParent = (
-    parent: string
-  ): DataSourceQueryPolicy => {
-    const policy = getPolicyByParentAndType({
-      parentPath: parent,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
-    });
-
-    return policy?.policy?.case === "dataSourceQueryPolicy"
-      ? policy.policy.value
-      : create(DataSourceQueryPolicySchema, {});
-  };
-
   const getQueryDataPolicyByParent = (parent: string): QueryDataPolicy => {
     const policy = getPolicyByParentAndType({
       parentPath: parent,
@@ -80,6 +65,10 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
           timeout: create(DurationSchema, {
             seconds: BigInt(0),
           }),
+          adminDataSourceRestriction:
+            QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+          disallowDdl: false,
+          disallowDml: false,
         });
   };
 
@@ -184,7 +173,6 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
     upsertPolicy,
     deletePolicy,
     getQueryDataPolicyByParent,
-    getDataSourceQueryPolicyByParent,
   };
 });
 
@@ -222,8 +210,6 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
       return [PolicySchema.field.maskingRulePolicy.name];
     case PolicyType.DATA_QUERY:
       return [PolicySchema.field.queryDataPolicy.name];
-    case PolicyType.DATA_SOURCE_QUERY:
-      return [PolicySchema.field.dataSourceQueryPolicy.name];
     case PolicyType.TAG:
       return [PolicySchema.field.tagPolicy.name];
     case PolicyType.POLICY_TYPE_UNSPECIFIED:
@@ -276,32 +262,31 @@ export const useDataSourceRestrictionPolicy = (
   watchEffect(async () => {
     await store.getOrFetchPolicyByParentAndType({
       parentPath: unref(database).project,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
+      policyType: PolicyType.DATA_QUERY,
     });
 
     const environment = unref(database).effectiveEnvironment;
     if (environment) {
       await store.getOrFetchPolicyByParentAndType({
         parentPath: environment,
-        policyType: PolicyType.DATA_SOURCE_QUERY,
+        policyType: PolicyType.DATA_QUERY,
       });
     }
     ready.value = true;
   });
 
   const dataSourceRestriction = computed(() => {
-    const projectLevelPolicy = store.getDataSourceQueryPolicyByParent(
+    const projectLevelPolicy = store.getQueryDataPolicyByParent(
       unref(database).project
     );
     const projectLevelAdminDSRestriction =
       projectLevelPolicy.adminDataSourceRestriction;
 
     let envLevelAdminDSRestriction =
-      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
+      QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED;
     const environment = unref(database).effectiveEnvironment;
     if (environment) {
-      const envLevelPolicy =
-        store.getDataSourceQueryPolicyByParent(environment);
+      const envLevelPolicy = store.getQueryDataPolicyByParent(environment);
       envLevelAdminDSRestriction = envLevelPolicy.adminDataSourceRestriction;
     }
 

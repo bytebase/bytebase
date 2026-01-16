@@ -8561,32 +8561,6 @@ components:
         - AWS_SECRETS_MANAGER
         - GCP_SECRET_MANAGER
         - AZURE_KEY_VAULT
-    bytebase.v1.DataSourceQueryPolicy:
-      type: object
-      properties:
-        adminDataSourceRestriction:
-          title: admin_data_source_restriction
-          description: Restriction for admin data source queries.
-          $ref: '#/components/schemas/bytebase.v1.DataSourceQueryPolicy.Restriction'
-        disallowDdl:
-          type: boolean
-          title: disallow_ddl
-          description: Disallow running DDL statements in the SQL editor.
-        disallowDml:
-          type: boolean
-          title: disallow_dml
-          description: Disallow running DML statements in the SQL editor.
-      title: DataSourceQueryPolicy
-      additionalProperties: false
-      description: Policy for controlling which data sources can be queried in the SQL editor.
-    bytebase.v1.DataSourceQueryPolicy.Restriction:
-      type: string
-      title: Restriction
-      enum:
-        - RESTRICTION_UNSPECIFIED
-        - FALLBACK
-        - DISALLOW
-      description: Restriction level for admin data source access.
     bytebase.v1.DataSourceType:
       type: string
       title: DataSourceType
@@ -12937,13 +12911,6 @@ components:
               $ref: '#/components/schemas/bytebase.v1.PolicyResourceType'
         - oneOf:
             - properties:
-                dataSourceQueryPolicy:
-                  title: data_source_query_policy
-                  $ref: '#/components/schemas/bytebase.v1.DataSourceQueryPolicy'
-              title: data_source_query_policy
-              required:
-                - dataSourceQueryPolicy
-            - properties:
                 maskingExemptionPolicy:
                   title: masking_exemption_policy
                   $ref: '#/components/schemas/bytebase.v1.MaskingExemptionPolicy'
@@ -13010,7 +12977,6 @@ components:
         - MASKING_EXEMPTION
         - ROLLOUT_POLICY
         - TAG
-        - DATA_SOURCE_QUERY
         - DATA_QUERY
       description: The type of organizational policy.
     bytebase.v1.Position:
@@ -13260,9 +13226,29 @@ components:
           type: boolean
           title: disable_copy_data
           description: Disable copying query results.
+        adminDataSourceRestriction:
+          title: admin_data_source_restriction
+          description: Restriction for admin data source queries.
+          $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.Restriction'
+        disallowDdl:
+          type: boolean
+          title: disallow_ddl
+          description: Disallow running DDL statements in the SQL editor.
+        disallowDml:
+          type: boolean
+          title: disallow_dml
+          description: Disallow running DML statements in the SQL editor.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data.
+    bytebase.v1.QueryDataPolicy.Restriction:
+      type: string
+      title: Restriction
+      enum:
+        - RESTRICTION_UNSPECIFIED
+        - FALLBACK
+        - DISALLOW
+      description: Restriction level for admin data source access.
     bytebase.v1.QueryHistory:
       type: object
       properties:
