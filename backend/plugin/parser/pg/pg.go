@@ -18,14 +18,14 @@ func init() {
 // parsePgStatements is the ParseStatementsFunc for PostgreSQL.
 // Returns []ParsedStatement with both text and AST populated.
 func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
-	// First split to get Statement with text and positions
+	// Split once to get Statement with text and positions
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Then parse to get ASTs
-	parseResults, err := ParsePostgreSQL(statement)
+	// Parse using the pre-split statements to avoid double-splitting
+	parseResults, err := parsePostgreSQLStatements(stmts)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,12 @@ func ParsePostgreSQL(sql string) ([]*base.ANTLRAST, error) {
 	if err != nil {
 		return nil, err
 	}
+	return parsePostgreSQLStatements(stmts)
+}
 
+// parsePostgreSQLStatements parses pre-split statements without re-splitting.
+// This is the internal implementation used by both ParsePostgreSQL and parsePgStatements.
+func parsePostgreSQLStatements(stmts []base.Statement) ([]*base.ANTLRAST, error) {
 	var results []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
