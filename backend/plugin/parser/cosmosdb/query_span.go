@@ -17,8 +17,8 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_COSMOSDB, GetQuerySpan)
 }
 
-func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, statement, _, _ string, _ bool) (*base.QuerySpan, error) {
-	return getQuerySpanImpl(statement)
+func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.Statement, _, _ string, _ bool) (*base.QuerySpan, error) {
+	return getQuerySpanImpl(stmt.Text)
 }
 
 func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {

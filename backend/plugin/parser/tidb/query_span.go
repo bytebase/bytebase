@@ -13,12 +13,12 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_TIDB, GetQuerySpan)
 }
 
-func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database, _ string, _ bool) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
 	extractor := newQuerySpanExtractor(database, gCtx)
 
-	querySpan, err := extractor.getQuerySpan(ctx, statement)
+	querySpan, err := extractor.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", statement)
+		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 	return querySpan, nil
 }

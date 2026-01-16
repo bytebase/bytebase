@@ -982,7 +982,7 @@ DatabaseMetadata is the metadata for databases.
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
-| version | [string](#string) |  | The version of database schema. |
+| release | [string](#string) |  | The release that was last applied to this database. Format: projects/{project}/releases/{release_id} |
 
 
 

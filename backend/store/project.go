@@ -82,12 +82,6 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 
 // ListProjects lists all projects.
 func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	q := qb.Q().Space("SELECT resource_id, name, setting, deleted FROM project WHERE TRUE")
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
@@ -118,13 +112,13 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		q.Space("OFFSET ?", *v)
 	}
 
-	sql, args, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, err
 	}
 
 	var projectMessages []*ProjectMessage
-	rows, err := tx.QueryContext(ctx, sql, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,17 +146,24 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	// Fetch webhooks outside the transaction to prevent deadlock when connection pool is exhausted.
-	for _, project := range projectMessages {
-		projectWebhooks, err := s.ListProjectWebhooks(ctx, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
+	// Batch fetch webhooks for all projects in a single query.
+	if len(projectMessages) > 0 {
+		projectIDs := make([]string, 0, len(projectMessages))
+		for _, p := range projectMessages {
+			projectIDs = append(projectIDs, p.ResourceID)
+		}
+		webhooks, err := s.ListProjectWebhooks(ctx, &FindProjectWebhookMessage{ProjectIDs: projectIDs})
 		if err != nil {
 			return nil, err
 		}
-		project.Webhooks = projectWebhooks
+		// Group webhooks by project ID.
+		webhooksByProject := make(map[string][]*ProjectWebhookMessage)
+		for _, w := range webhooks {
+			webhooksByProject[w.ProjectID] = append(webhooksByProject[w.ProjectID], w)
+		}
+		for _, project := range projectMessages {
+			project.Webhooks = webhooksByProject[project.ResourceID]
+		}
 	}
 
 	for _, project := range projectMessages {

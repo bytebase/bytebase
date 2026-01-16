@@ -952,7 +952,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
-		SchemaVersion:        database.Metadata.GetVersion(),
+		Release:              database.Metadata.GetRelease(),
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
 		BackupAvailable:      database.Metadata.GetBackupAvailable(),

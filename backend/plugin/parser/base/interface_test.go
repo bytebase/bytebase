@@ -5,7 +5,7 @@ import "testing"
 func TestTSQLRecognizeExplainType(t *testing.T) {
 	testCases := []struct {
 		spans     []*QuerySpan
-		stmts     []string
+		stmts     []Statement
 		wantSpans []*QuerySpan
 	}{
 		{
@@ -26,12 +26,12 @@ func TestTSQLRecognizeExplainType(t *testing.T) {
 					Type: Select,
 				},
 			},
-			stmts: []string{
-				"SELECT 1",
-				"SET   SHOWPLAN_TEXT ON",
-				"SELECT 2",
-				"SET SHOWPLAN_TEXT        OFF",
-				"SELECT 3",
+			stmts: []Statement{
+				{Text: "SELECT 1"},
+				{Text: "SET   SHOWPLAN_TEXT ON"},
+				{Text: "SELECT 2"},
+				{Text: "SET SHOWPLAN_TEXT        OFF"},
+				{Text: "SELECT 3"},
 			},
 			wantSpans: []*QuerySpan{
 				{
@@ -54,10 +54,10 @@ func TestTSQLRecognizeExplainType(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		TSQLRecognizeExplainType(tc.spans, tc.stmts)
+		tsqlRecognizeExplainType(tc.spans, tc.stmts)
 		for i := range tc.spans {
 			if tc.spans[i].Type != tc.wantSpans[i].Type {
-				t.Errorf("TSQLRecognizeExplainType() = %v, want %v", tc.spans[i].Type, tc.wantSpans[i].Type)
+				t.Errorf("tsqlRecognizeExplainType() = %v, want %v", tc.spans[i].Type, tc.wantSpans[i].Type)
 			}
 		}
 	}

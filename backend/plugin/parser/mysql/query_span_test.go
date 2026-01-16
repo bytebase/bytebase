@@ -66,7 +66,7 @@ func TestGetQuerySpan(t *testing.T) {
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
 				Engine:                  engine,
-			}, tc.Statement, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
+			}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 			resultYaml := result.ToYaml()
 			if record {

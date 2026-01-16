@@ -53,7 +53,7 @@ func TestGetQuerySpan_SystemTable(t *testing.T) {
 			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
-			}, tc.Statement, tc.DefaultDatabase, "", false)
+			}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "", false)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 			resultYaml := result.ToYaml()
 			if record {

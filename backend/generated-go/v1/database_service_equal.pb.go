@@ -325,7 +325,7 @@ func (x *Database) Equal(y *Database) bool {
 	if x.Project != y.Project {
 		return false
 	}
-	if x.SchemaVersion != y.SchemaVersion {
+	if x.Release != y.Release {
 		return false
 	}
 	if p, q := x.Environment, y.Environment; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {

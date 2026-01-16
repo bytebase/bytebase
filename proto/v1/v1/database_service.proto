@@ -443,8 +443,10 @@ message Database {
   // Format: projects/{project}
   string project = 4;
 
-  // The version of database schema.
-  string schema_version = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The release that was last applied to this database.
+  // Format: projects/{project}/releases/{release_id}
+  // Example: projects/my-project/releases/release_20260115-RC00
+  string release = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.

@@ -8598,10 +8598,13 @@ components:
           description: |-
             The project for a database.
              Format: projects/{project}
-        schemaVersion:
+        release:
           type: string
-          title: schema_version
-          description: The version of database schema.
+          title: release
+          description: |-
+            The release that was last applied to this database.
+             Format: projects/{project}/releases/{release_id}
+             Example: projects/my-project/releases/release_20260115-RC00
         environment:
           type:
             - string

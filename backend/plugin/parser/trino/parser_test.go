@@ -181,7 +181,7 @@ func TestGetQuerySpan(t *testing.T) {
 
 			// Special handling for non-SELECT queries that will skip metadata lookup
 			if tc.wantType != base.Select && tc.wantType != base.Explain && tc.wantType != base.SelectInfoSchema {
-				span, err := GetQuerySpan(context.Background(), gCtx, tc.sql, tc.database, tc.schema, true)
+				span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: tc.sql}, tc.database, tc.schema, true)
 				if assert.NoError(t, err) {
 					assert.Equal(t, tc.wantType, span.Type)
 					assert.Empty(t, span.Results, "Results should be empty for non-SELECT queries")
@@ -190,7 +190,7 @@ func TestGetQuerySpan(t *testing.T) {
 			}
 
 			// For SELECT queries, we expect a basic query span with the correct type
-			span, err := GetQuerySpan(context.Background(), gCtx, tc.sql, tc.database, tc.schema, true)
+			span, err := GetQuerySpan(context.Background(), gCtx, base.Statement{Text: tc.sql}, tc.database, tc.schema, true)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tc.wantType, span.Type)
 			}

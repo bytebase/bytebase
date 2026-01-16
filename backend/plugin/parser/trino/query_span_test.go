@@ -156,7 +156,7 @@ func TestGetQuerySpanFromYAML(t *testing.T) {
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
 				Engine:                  storepb.Engine_TRINO,
-			}, tc.Statement, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
+			}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 
 			// Verify the query type is correct

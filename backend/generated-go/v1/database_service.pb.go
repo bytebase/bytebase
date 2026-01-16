@@ -1636,8 +1636,10 @@ type Database struct {
 	// The project for a database.
 	// Format: projects/{project}
 	Project string `protobuf:"bytes,4,opt,name=project,proto3" json:"project,omitempty"`
-	// The version of database schema.
-	SchemaVersion string `protobuf:"bytes,5,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// The release that was last applied to this database.
+	// Format: projects/{project}/releases/{release_id}
+	// Example: projects/my-project/releases/release_20260115-RC00
+	Release string `protobuf:"bytes,5,opt,name=release,proto3" json:"release,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
 	Environment *string `protobuf:"bytes,6,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
@@ -1713,9 +1715,9 @@ func (x *Database) GetProject() string {
 	return ""
 }
 
-func (x *Database) GetSchemaVersion() string {
+func (x *Database) GetRelease() string {
 	if x != nil {
-		return x.SchemaVersion
+		return x.Release
 	}
 	return ""
 }
@@ -5643,13 +5645,13 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xb9\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xac\x05\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
 	"\x14successful_sync_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x12successfulSyncTime\x12\x18\n" +
-	"\aproject\x18\x04 \x01(\tR\aproject\x12*\n" +
-	"\x0eschema_version\x18\x05 \x01(\tB\x03\xe0A\x03R\rschemaVersion\x12*\n" +
+	"\aproject\x18\x04 \x01(\tR\aproject\x12\x1d\n" +
+	"\arelease\x18\x05 \x01(\tB\x03\xe0A\x03R\arelease\x12*\n" +
 	"\venvironment\x18\x06 \x01(\tB\x03\xe0A\x01H\x00R\venvironment\x88\x01\x01\x12=\n" +
 	"\x15effective_environment\x18\a \x01(\tB\x03\xe0A\x03H\x01R\x14effectiveEnvironment\x88\x01\x01\x129\n" +
 	"\x06labels\x18\b \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +

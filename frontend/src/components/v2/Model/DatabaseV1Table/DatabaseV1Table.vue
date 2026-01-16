@@ -132,7 +132,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     minWidth: 140,
     resizable: true,
     hide: props.schemaless,
-    render: (data) => (data as ComposedDatabase).schemaVersion || "-",
+    render: (data) => (data as ComposedDatabase).release || "-",
   };
   const PROJECT: DatabaseDataTableColumn = {
     key: "project",

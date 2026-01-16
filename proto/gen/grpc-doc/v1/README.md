@@ -3356,7 +3356,7 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | state | [State](#bytebase-v1-State) |  | The existence of a database. |
 | successful_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The latest synchronization time. |
 | project | [string](#string) |  | The project for a database. Format: projects/{project} |
-| schema_version | [string](#string) |  | The version of database schema. |
+| release | [string](#string) |  | The release that was last applied to this database. Format: projects/{project}/releases/{release_id} Example: projects/my-project/releases/release_20260115-RC00 |
 | environment | [string](#string) | optional | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | effective_environment | [string](#string) | optional | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |

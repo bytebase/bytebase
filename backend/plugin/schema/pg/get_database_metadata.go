@@ -2863,7 +2863,7 @@ func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *
 				return []string{}, nil
 			},
 		},
-		queryStatement,
+		base.Statement{Text: queryStatement},
 		"", // database
 		schemaName,
 		false, // case sensitive
