@@ -14,8 +14,13 @@
         class="w-4 h-4 text-error"
       />
     </template>
-    <span>{{ riskLevelText }}</span>
-    <span class="opacity-60 ml-1">({{ $t("issue.risk-level.self") }})</span>
+    <div class="flex flex-col gap-1">
+      <div>
+        <span>{{ riskLevelText }}</span>
+        <span class="opacity-60 ml-1">({{ $t("issue.risk-level.self") }})</span>
+      </div>
+      <div v-if="title" class="text-sm opacity-80">{{ title }}</div>
+    </div>
   </NTooltip>
 </template>
 
@@ -28,6 +33,7 @@ import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 
 const props = defineProps<{
   riskLevel: RiskLevel;
+  title?: string;
 }>();
 
 const { t } = useI18n();
