@@ -669,7 +669,7 @@ watch(
   (setting) => {
     state.setting = clone(AppIMSettingSchema, setting);
   },
-  { once: true, immediate: true }
+  { immediate: true }
 );
 
 const isDataChanged = (
