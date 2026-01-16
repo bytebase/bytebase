@@ -19,5 +19,5 @@ export {
   AuditLogStdoutSetting,
   GeneralSetting,
   ProductImprovementSetting,
-  SQLEditorSetting
+  SQLEditorSetting,
 };

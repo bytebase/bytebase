@@ -29,13 +29,11 @@ const queryDataPolicySettingRef =
   ref<InstanceType<typeof QueryDataPolicySetting>>();
 
 const isDirty = computed(() => {
-  return (
-    queryDataPolicySettingRef.value?.isDirty
-  );
+  return queryDataPolicySettingRef.value?.isDirty;
 });
 
 const onUpdate = async () => {
-  await queryDataPolicySettingRef.value?.update()
+  await queryDataPolicySettingRef.value?.update();
 };
 
 defineExpose({
@@ -43,7 +41,7 @@ defineExpose({
   update: onUpdate,
   title: props.title,
   revert: () => {
-    queryDataPolicySettingRef.value?.revert()
+    queryDataPolicySettingRef.value?.revert();
   },
 });
 </script>

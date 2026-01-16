@@ -110,7 +110,9 @@ const props = defineProps<{
 const policyV1Store = usePolicyV1Store();
 
 const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
-const hasRestrictCopyingDataFeature = featureToRef(PlanFeature.FEATURE_RESTRICT_COPYING_DATA)
+const hasRestrictCopyingDataFeature = featureToRef(
+  PlanFeature.FEATURE_RESTRICT_COPYING_DATA
+);
 
 const { ready } = usePolicyByParentAndType(
   computed(() => ({

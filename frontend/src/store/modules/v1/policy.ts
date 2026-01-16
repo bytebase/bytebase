@@ -293,22 +293,23 @@ export const useDataSourceRestrictionPolicy = (
   };
 };
 
-export const useEffectiveQueryDataPolicyForProject = (
-) => {
+export const useEffectiveQueryDataPolicyForProject = () => {
   const store = usePolicyV1Store();
   const ready = ref(false);
 
   watchEffect(() => {
     // Fetch workspace-level DATA_QUERY policies
-    store.getOrFetchPolicyByParentAndType({
+    store
+      .getOrFetchPolicyByParentAndType({
         parentPath: "",
         policyType: PolicyType.DATA_QUERY,
-      }).finally(() => (ready.value = true));
+      })
+      .finally(() => (ready.value = true));
   });
 
-  const policy = computed(() => formatQueryDataPolicy(
-      store.getQueryDataPolicyByParent("")
-    ));
+  const policy = computed(() =>
+    formatQueryDataPolicy(store.getQueryDataPolicyByParent(""))
+  );
 
   return {
     policy,

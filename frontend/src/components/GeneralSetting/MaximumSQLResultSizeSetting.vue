@@ -142,36 +142,36 @@ const allowUpdate = computed(() => {
 });
 
 const updateChange = async () => {
-  const init = initialState()
+  const init = initialState();
   if (init.maximumResultRows !== queryRestriction.value.maximumResultRows) {
     await policyV1Store.upsertPolicy({
-    parentPath: props.resource,
-    policy: {
-      type: PolicyType.DATA_QUERY,
-      resourceType: PolicyResourceType.WORKSPACE,
+      parentPath: props.resource,
       policy: {
-        case: "queryDataPolicy",
-        value: create(QueryDataPolicySchema, {
-          ...props.policy,
-          maximumResultRows: queryRestriction.value.maximumResultRows,
-        }),
+        type: PolicyType.DATA_QUERY,
+        resourceType: PolicyResourceType.WORKSPACE,
+        policy: {
+          case: "queryDataPolicy",
+          value: create(QueryDataPolicySchema, {
+            ...props.policy,
+            maximumResultRows: queryRestriction.value.maximumResultRows,
+          }),
+        },
       },
-    },
-  });
+    });
   }
 
-    if (init.maximumResultSize !== queryRestriction.value.maximumResultSize) {
-await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      dataExportResultSize: BigInt(
-        queryRestriction.value.maximumResultSize * 1024 * 1024
-      ),
-    },
-    updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile.data_export_result_size"],
-    }),
-  });
-    }
+  if (init.maximumResultSize !== queryRestriction.value.maximumResultSize) {
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        dataExportResultSize: BigInt(
+          queryRestriction.value.maximumResultSize * 1024 * 1024
+        ),
+      },
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile.data_export_result_size"],
+      }),
+    });
+  }
 };
 
 const handleInput = (value: number | null, callback: (val: number) => void) => {
