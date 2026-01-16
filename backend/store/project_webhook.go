@@ -30,10 +30,11 @@ type UpdateProjectWebhookMessage struct {
 // FindProjectWebhookMessage is the message for finding project webhooks,
 // if all fields are nil, it will list all project webhooks.
 type FindProjectWebhookMessage struct {
-	ID        *int
-	ProjectID *string
-	URL       *string
-	EventType *storepb.Activity_Type
+	ID         *int
+	ProjectID  *string
+	ProjectIDs []string
+	URL        *string
+	EventType  *storepb.Activity_Type
 }
 
 // CreateProjectWebhook creates an instance of ProjectWebhook.
@@ -89,11 +90,6 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, projectID string, crea
 
 // ListProjectWebhooks lists a list of ProjectWebhook instances.
 func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-
 	q := qb.Q().Space(`
 		SELECT
 			id,
@@ -109,6 +105,9 @@ func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhoo
 	if v := find.ProjectID; v != nil {
 		q.And("project = ?", *v)
 	}
+	if len(find.ProjectIDs) > 0 {
+		q.And("project = ANY(?)", find.ProjectIDs)
+	}
 	if v := find.URL; v != nil {
 		q.And("payload->>'url' = ?", *v)
 	}
@@ -118,13 +117,13 @@ func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhoo
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var projectWebhooks []*ProjectWebhookMessage // Declare it here
+	var projectWebhooks []*ProjectWebhookMessage
 	for rows.Next() {
 		projectWebhook := ProjectWebhookMessage{
 			Payload: &storepb.ProjectWebhook{},
@@ -161,12 +160,7 @@ func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhoo
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	webhooks := projectWebhooks
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-	return webhooks, nil
+	return projectWebhooks, nil
 }
 
 // GetProjectWebhook gets an instance of ProjectWebhook.
