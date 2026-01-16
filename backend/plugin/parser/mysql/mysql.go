@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"log/slog"
 	"regexp"
 	"strings"
 
@@ -27,14 +26,14 @@ func init() {
 // parseMySQLStatements is the ParseStatementsFunc for MySQL, MariaDB, and OceanBase.
 // Returns []ParsedStatement with both text and AST populated.
 func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
-	// First split to get Statement with text and positions
+	// Split once to get Statement with text and positions
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Then parse to get ASTs
-	parseResults, err := ParseMySQL(statement)
+	// Parse using the pre-split statements to avoid double-splitting
+	parseResults, err := parseMySQLStatementsInternal(stmts)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +61,45 @@ func ParseMySQL(statement string) ([]*base.ANTLRAST, error) {
 	if err != nil {
 		return nil, err
 	}
-	list, err := parseInputStream(antlr.NewInputStream(statement), statement)
-	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
-	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
-		slog.Info("split SQL statement timed out", "statement", statement)
+	stmts, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
 	}
-	return list, err
+	return parseMySQLStatementsInternal(stmts)
+}
+
+// parseMySQLStatementsInternal parses pre-split statements without re-splitting.
+// This is the internal implementation used by both ParseMySQL and parseMySQLStatements.
+func parseMySQLStatementsInternal(stmts []base.Statement) ([]*base.ANTLRAST, error) {
+	var result []*base.ANTLRAST
+
+	if len(stmts) > 0 {
+		// Add semicolon to the last statement if needed
+		stmts[len(stmts)-1].Text = mysqlAddSemicolonIfNeeded(stmts[len(stmts)-1].Text)
+	}
+
+	for _, s := range stmts {
+		if s.Empty {
+			continue
+		}
+
+		tree, tokens, err := parseSingleStatement(s.BaseLine(), s.Text)
+		if err != nil {
+			return nil, err
+		}
+
+		if isEmptyStatement(tokens) {
+			continue
+		}
+
+		result = append(result, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(s.BaseLine()) + 1},
+			Tree:          tree,
+			Tokens:        tokens,
+		})
+	}
+
+	return result, nil
 }
 
 // DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
@@ -175,43 +207,6 @@ func mysqlAddSemicolonIfNeeded(sql string) string {
 		return strings.Join(result, "")
 	}
 	return sql
-}
-
-func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ANTLRAST, error) {
-	var result []*base.ANTLRAST
-	lexer := parser.NewMySQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	list, err := splitMySQLStatement(stream, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) > 0 {
-		list[len(list)-1].Text = mysqlAddSemicolonIfNeeded(list[len(list)-1].Text)
-	}
-
-	baseLine := 0
-	for _, s := range list {
-		tree, tokens, err := parseSingleStatement(baseLine, s.Text)
-		if err != nil {
-			return nil, err
-		}
-
-		if isEmptyStatement(tokens) {
-			continue
-		}
-
-		result = append(result, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(s.BaseLine()) + 1},
-			Tree:          tree,
-			Tokens:        tokens,
-		})
-		// s.End.Line is 1-based, but baseLine should be 0-based
-		baseLine = int(s.End.Line) - 1
-	}
-
-	return result, nil
 }
 
 func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
