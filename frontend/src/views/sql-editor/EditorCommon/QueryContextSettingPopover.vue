@@ -112,7 +112,6 @@ import {
 import {
   useDataSourceRestrictionPolicy,
   useEffectiveQueryDataPolicyForProject,
-  usePolicyV1Store,
 } from "@/store/modules/v1/policy";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -121,10 +120,7 @@ import {
   DataSource_RedisType,
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  DataSourceQueryPolicy_Restriction,
-  PolicyType,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { QueryDataPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 
@@ -135,7 +131,6 @@ defineProps<{
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
-const policyStore = usePolicyV1Store();
 
 const { redisCommandOption, resultRowsLimit, project } = storeToRefs(
   useSQLEditorStore()
@@ -183,9 +178,9 @@ const dataSourceUnaccessibleReason = (
   if (dataSource.type === DataSourceType.ADMIN) {
     if (
       dataSourceRestriction.value.environmentPolicy ===
-        DataSourceQueryPolicy_Restriction.DISALLOW ||
+        QueryDataPolicy_Restriction.DISALLOW ||
       dataSourceRestriction.value.projectPolicy ===
-        DataSourceQueryPolicy_Restriction.DISALLOW
+        QueryDataPolicy_Restriction.DISALLOW
     ) {
       return t(
         "sql-editor.query-context.admin-data-source-is-disallowed-to-query"
@@ -197,9 +192,9 @@ const dataSourceUnaccessibleReason = (
     if (
       readOnlyDataSources.length > 0 &&
       (dataSourceRestriction.value.environmentPolicy ===
-        DataSourceQueryPolicy_Restriction.FALLBACK ||
+        QueryDataPolicy_Restriction.FALLBACK ||
         dataSourceRestriction.value.projectPolicy ===
-          DataSourceQueryPolicy_Restriction.FALLBACK)
+          QueryDataPolicy_Restriction.FALLBACK)
     ) {
       return t(
         "sql-editor.query-context.admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available"
@@ -227,33 +222,6 @@ watch(
       const fixed = await getValidDataSourceByPolicy(database);
       onDataSourceSelected(fixed);
     }
-  },
-  {
-    immediate: true,
-  }
-);
-
-watch(
-  () => database.value.name,
-  async () => {
-    if (!isValidDatabaseName(database.value.name)) {
-      return;
-    }
-    const requests = [
-      policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: database.value.project,
-        policyType: PolicyType.DATA_SOURCE_QUERY,
-      }),
-    ];
-    if (database.value.effectiveEnvironment) {
-      requests.push(
-        policyStore.getOrFetchPolicyByParentAndType({
-          parentPath: database.value.effectiveEnvironment,
-          policyType: PolicyType.DATA_SOURCE_QUERY,
-        })
-      );
-    }
-    await Promise.all(requests);
   },
   {
     immediate: true,

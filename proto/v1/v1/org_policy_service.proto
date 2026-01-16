@@ -235,7 +235,6 @@ message Policy {
     MaskingRulePolicy masking_rule_policy = 5;
     MaskingExemptionPolicy masking_exemption_policy = 6;
     TagPolicy tag_policy = 7;
-    DataSourceQueryPolicy data_source_query_policy = 8;
     QueryDataPolicy query_data_policy = 9;
   }
 
@@ -258,8 +257,6 @@ enum PolicyType {
   ROLLOUT_POLICY = 3;
   // Resource tag policy.
   TAG = 4;
-  // Data source query restrictions policy.
-  DATA_SOURCE_QUERY = 5;
   // Query data access policy.
   DATA_QUERY = 6;
 }
@@ -302,6 +299,23 @@ message QueryDataPolicy {
 
   // Disable copying query results.
   bool disable_copy_data = 5;
+
+  // Restriction level for admin data source access.
+  enum Restriction {
+    // Unspecified restriction.
+    RESTRICTION_UNSPECIFIED = 0;
+    // Allow querying admin data sources when there is no read-only data source.
+    FALLBACK = 1;
+    // Disallow querying admin data sources.
+    DISALLOW = 2;
+  }
+  // Restriction for admin data source queries.
+  Restriction admin_data_source_restriction = 6;
+
+  // Disallow running DDL statements in the SQL editor.
+  bool disallow_ddl = 7;
+  // Disallow running DML statements in the SQL editor.
+  bool disallow_dml = 8;
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
@@ -378,24 +392,4 @@ message TagPolicy {
   // tags is the key - value map for resources.
   // for example, the environment resource can have the sql review config tag, like "bb.tag.review_config": "reviewConfigs/{review config resource id}"
   map<string, string> tags = 1;
-}
-
-// Policy for controlling which data sources can be queried in the SQL editor.
-message DataSourceQueryPolicy {
-  // Restriction level for admin data source access.
-  enum Restriction {
-    // Unspecified restriction.
-    RESTRICTION_UNSPECIFIED = 0;
-    // Allow querying admin data sources when there is no read-only data source.
-    FALLBACK = 1;
-    // Disallow querying admin data sources.
-    DISALLOW = 2;
-  }
-  // Restriction for admin data source queries.
-  Restriction admin_data_source_restriction = 1;
-
-  // Disallow running DDL statements in the SQL editor.
-  bool disallow_ddl = 2;
-  // Disallow running DML statements in the SQL editor.
-  bool disallow_dml = 3;
 }

@@ -1772,10 +1772,10 @@ func checkAndGetDataSourceQueriable(
 		return dataSource, nil
 	}
 
-	dataSourceQueryPolicyType := storepb.Policy_DATA_SOURCE_QUERY
+	queryDataPolicyType := storepb.Policy_QUERY_DATA
 
 	// get data source restriction policy for environment
-	var envAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
+	var envAdminDataSourceRestriction v1pb.QueryDataPolicy_Restriction
 	effectiveEnvironmentID := ""
 	if database.EffectiveEnvironmentID != nil {
 		effectiveEnvironmentID = *database.EffectiveEnvironmentID
@@ -1794,44 +1794,44 @@ func checkAndGetDataSourceQueriable(
 		environmentPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
 			ResourceType: &environmentResourceType,
 			Resource:     &environmentResource,
-			Type:         &dataSourceQueryPolicyType,
+			Type:         &queryDataPolicyType,
 		})
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment data source policy with error: %v", err.Error()))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment query data policy with error: %v", err.Error()))
 		}
 		if environmentPolicy != nil {
-			envPayload, err := convertToV1PBDataSourceQueryPolicy(environmentPolicy.Payload)
+			envPayload, err := convertToV1PBQueryDataPolicy(environmentPolicy.Payload)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert environment data source policy payload with error: %v", err.Error()))
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert environment query data policy payload with error: %v", err.Error()))
 			}
-			envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
+			envAdminDataSourceRestriction = envPayload.QueryDataPolicy.GetAdminDataSourceRestriction()
 		}
 	}
 
 	// get data source restriction policy for project
-	var projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
+	var projectAdminDataSourceRestriction v1pb.QueryDataPolicy_Restriction
 	projectResourceType := storepb.Policy_PROJECT
 	projectResource := common.FormatProject(database.ProjectID)
 	projectPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
 		ResourceType: &projectResourceType,
 		Resource:     &projectResource,
-		Type:         &dataSourceQueryPolicyType,
+		Type:         &queryDataPolicyType,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project data source policy with error: %v", err.Error()))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project query data policy with error: %v", err.Error()))
 	}
 	if projectPolicy != nil {
-		projectPayload, err := convertToV1PBDataSourceQueryPolicy(projectPolicy.Payload)
+		projectPayload, err := convertToV1PBQueryDataPolicy(projectPolicy.Payload)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert project data source policy payload with error: %v", err.Error()))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert project query data policy payload with error: %v", err.Error()))
 		}
-		projectAdminDataSourceRestriction = projectPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
+		projectAdminDataSourceRestriction = projectPayload.QueryDataPolicy.GetAdminDataSourceRestriction()
 	}
 
 	// If any of the policy is DISALLOW, then return false.
-	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
+	if envAdminDataSourceRestriction == v1pb.QueryDataPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.QueryDataPolicy_DISALLOW {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data source %q is not queryable", dataSourceID))
-	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
+	} else if envAdminDataSourceRestriction == v1pb.QueryDataPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.QueryDataPolicy_FALLBACK {
 		// If there is any read-only data source, then return false.
 		if ds := GetQueriableDataSource(instance); ds != nil && ds.Type == storepb.DataSourceType_READ_ONLY {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data source %q is not queryable", dataSourceID))
@@ -1864,8 +1864,8 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	}
 	resourceType := storepb.Policy_ENVIRONMENT
 	environmentResource := common.FormatEnvironment(environment.Id)
-	policyType := storepb.Policy_DATA_SOURCE_QUERY
-	dataSourceQueryPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
+	policyType := storepb.Policy_QUERY_DATA
+	queryDataPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &environmentResource,
 		Type:         &policyType,
@@ -1873,10 +1873,10 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	if err != nil {
 		return err
 	}
-	if dataSourceQueryPolicy != nil {
-		policy := &v1pb.DataSourceQueryPolicy{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(dataSourceQueryPolicy.Payload), policy); err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal data source query policy payload"))
+	if queryDataPolicy != nil {
+		policy := &v1pb.QueryDataPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(queryDataPolicy.Payload), policy); err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal query data policy payload"))
 		}
 		switch statementTp {
 		case parserbase.DDL:

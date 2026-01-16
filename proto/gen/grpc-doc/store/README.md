@@ -179,7 +179,6 @@
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
-    - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskingExemptionPolicy](#bytebase-store-MaskingExemptionPolicy)
     - [MaskingExemptionPolicy.Exemption](#bytebase-store-MaskingExemptionPolicy-Exemption)
@@ -191,9 +190,9 @@
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
-    - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
+    - [QueryDataPolicy.Restriction](#bytebase-store-QueryDataPolicy-Restriction)
   
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
@@ -3125,23 +3124,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 
 
 
-<a name="bytebase-store-DataSourceQueryPolicy"></a>
-
-### DataSourceQueryPolicy
-DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction) |  |  |
-| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
-| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
-
-
-
-
-
-
 <a name="bytebase-store-IamPolicy"></a>
 
 ### IamPolicy
@@ -3249,6 +3231,9 @@ QueryDataPolicy is the policy configuration for querying data.
 | maximum_result_size | [int64](#int64) |  | The size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | maximum_result_rows | [int32](#int32) |  | The return rows limit. The default value is -1, means no limit. |
 | disable_copy_data | [bool](#bool) |  | Disable copying data. |
+| admin_data_source_restriction | [QueryDataPolicy.Restriction](#bytebase-store-QueryDataPolicy-Restriction) |  | Restriction for admin data source queries. |
+| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
+| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
 
 
@@ -3304,19 +3289,6 @@ QueryDataPolicy is the policy configuration for querying data.
  
 
 
-<a name="bytebase-store-DataSourceQueryPolicy-Restriction"></a>
-
-### DataSourceQueryPolicy.Restriction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESTRICTION_UNSPECIFIED | 0 |  |
-| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
-| DISALLOW | 2 | Disallow to query admin data sources. |
-
-
-
 <a name="bytebase-store-Policy-Resource"></a>
 
 ### Policy.Resource
@@ -3345,7 +3317,19 @@ QueryDataPolicy is the policy configuration for querying data.
 | MASKING_RULE | 4 |  |
 | IAM | 5 |  |
 | TAG | 6 |  |
-| DATA_SOURCE_QUERY | 7 |  |
+
+
+
+<a name="bytebase-store-QueryDataPolicy-Restriction"></a>
+
+### QueryDataPolicy.Restriction
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RESTRICTION_UNSPECIFIED | 0 |  |
+| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
+| DISALLOW | 2 | Disallow to query admin data sources. |
 
 
  

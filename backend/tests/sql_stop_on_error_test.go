@@ -191,9 +191,9 @@ func TestSQLQueryStopOnError(t *testing.T) {
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
 		Parent: "environments/test",
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DATA_SOURCE_QUERY,
-			Policy: &v1pb.Policy_DataSourceQueryPolicy{
-				DataSourceQueryPolicy: &v1pb.DataSourceQueryPolicy{
+			Type: v1pb.PolicyType_DATA_QUERY,
+			Policy: &v1pb.Policy_QueryDataPolicy{
+				QueryDataPolicy: &v1pb.QueryDataPolicy{
 					DisallowDml: true,
 				},
 			},

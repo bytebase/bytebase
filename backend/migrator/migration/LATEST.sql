@@ -74,17 +74,16 @@ CREATE TABLE policy (
     resource_type text NOT NULL,
     -- resource: resource name in format like "environments/{environment}", "projects/{project}", etc.
     resource TEXT NOT NULL,
-    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG, DATA_SOURCE_QUERY
+    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG
     -- Enum: Policy.Type (proto/store/store/policy.proto)
     type text NOT NULL,
     -- Stored as different types based on policy type (proto/store/store/policy.proto):
     -- ROLLOUT: RolloutPolicy
     -- MASKING_EXCEPTION: MaskingExceptionPolicy
-    -- QUERY_DATA: QueryDataPolicy
+    -- QUERY_DATA: QueryDataPolicy (includes query limits, export/copy restrictions, DDL/DML restrictions, admin data source restrictions)
     -- MASKING_RULE: MaskingRulePolicy
     -- IAM: IamPolicy
     -- TAG: TagPolicy
-    -- DATA_SOURCE_QUERY: DataSourceQueryPolicy
     payload jsonb NOT NULL DEFAULT '{}',
     inherit_from_parent boolean NOT NULL DEFAULT TRUE
 );

@@ -13,7 +13,7 @@
         </span>
       </NTooltip>
     </div>
-    <div>
+    <div class="flex flex-col gap-y-2">
       <div class="w-full inline-flex items-center gap-x-2">
         <PermissionGuardWrapper
           v-slot="slotProps"
@@ -23,7 +23,7 @@
           ]"
         >
           <Switch
-            v-model:value="state.queryDataPolicy.disableCopyData"
+            v-model:value="state.disableCopyData"
             :text="true"
             :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
           />
@@ -46,7 +46,7 @@
               :value="adminDataSourceQueryRestrictionEnabled"
               :text="true"
               :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
-              @update:value="switchDataSourceQueryPolicyEnabled"
+              @update:value="switchAdminDataSourceRestriction"
             />
           </PermissionGuardWrapper>
           <span class="textlabel">{{
@@ -64,13 +64,13 @@
           >
             <NRadioGroup
               v-model:value="
-                state.dataSourceQueryPolicy.adminDataSourceRestriction
+                state.adminDataSourceRestriction
               "
               :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
             >
               <NRadio
                 class="w-full"
-                :value="DataSourceQueryPolicy_Restriction.DISALLOW"
+                :value="QueryDataPolicy_Restriction.DISALLOW"
               >
                 {{
                   t(
@@ -80,7 +80,7 @@
               </NRadio>
               <NRadio
                 class="w-full"
-                :value="DataSourceQueryPolicy_Restriction.FALLBACK"
+                :value="QueryDataPolicy_Restriction.FALLBACK"
               >
                 {{
                   t(
@@ -104,7 +104,7 @@
       </label>
       <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
     </div>
-    <div>
+    <div class="flex flex-col gap-y-2">
       <div class="w-full inline-flex items-center gap-x-2">
         <PermissionGuardWrapper
           v-slot="slotProps"
@@ -114,7 +114,7 @@
           ]"
         >
           <Switch
-            v-model:value="state.dataSourceQueryPolicy.disallowDdl"
+            v-model:value="state.disallowDdl"
             :text="true"
             :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
           />
@@ -132,7 +132,7 @@
           ]"
         >
           <Switch
-            v-model:value="state.dataSourceQueryPolicy.disallowDml"
+            v-model:value="state.disallowDml"
             :text="true"
             :disabled="slotProps.disabled || !hasRestrictQueryDataSourceFeature"
           />
@@ -158,13 +158,10 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { isValidProjectName } from "@/types";
-import type {
-  DataSourceQueryPolicy,
-  QueryDataPolicy,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import type { QueryDataPolicy } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  DataSourceQueryPolicy_Restriction,
   PolicyType,
+  QueryDataPolicy_Restriction,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
@@ -172,11 +169,6 @@ import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
 const { t } = useI18n();
-
-interface LocalState {
-  queryDataPolicy: QueryDataPolicy;
-  dataSourceQueryPolicy: DataSourceQueryPolicy;
-}
 
 const props = defineProps<{
   resource: string;
@@ -217,48 +209,32 @@ const tooltip = computed(() => {
 
 const policyStore = usePolicyV1Store();
 
-const getInitialState = (): LocalState => {
-  return {
-    queryDataPolicy: (() => {
-      const policy = policyStore.getQueryDataPolicyByParent(props.resource);
-      return cloneDeep(policy);
-    })(),
-    dataSourceQueryPolicy: (() => {
-      const policy = policyStore.getDataSourceQueryPolicyByParent(
-        props.resource
-      );
-      return cloneDeep(policy);
-    })(),
-  };
+const getInitialState = (): QueryDataPolicy => {
+  const policy = policyStore.getQueryDataPolicyByParent(props.resource);
+  return cloneDeep(policy);
 };
 
-const state = reactive<LocalState>(getInitialState());
+const state = reactive<QueryDataPolicy>(getInitialState());
 
 watchEffect(async () => {
   if (!hasGetPermission.value) {
     return;
   }
-  await Promise.all([
-    policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: props.resource,
-      policyType: PolicyType.DATA_QUERY,
-    }),
-    policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: props.resource,
-      policyType: PolicyType.DATA_SOURCE_QUERY,
-    }),
-  ]);
+  await policyStore.getOrFetchPolicyByParentAndType({
+    parentPath: props.resource,
+    policyType: PolicyType.DATA_QUERY,
+  });
 
   Object.assign(state, getInitialState());
 });
 
 const adminDataSourceQueryRestrictionEnabled = computed(() => {
   return (
-    state.dataSourceQueryPolicy.adminDataSourceRestriction &&
+    state.adminDataSourceRestriction &&
     [
-      DataSourceQueryPolicy_Restriction.DISALLOW,
-      DataSourceQueryPolicy_Restriction.FALLBACK,
-    ].includes(state.dataSourceQueryPolicy.adminDataSourceRestriction)
+      QueryDataPolicy_Restriction.DISALLOW,
+      QueryDataPolicy_Restriction.FALLBACK,
+    ].includes(state.adminDataSourceRestriction)
   );
 });
 
@@ -278,44 +254,24 @@ const updateQueryDataPolicy = async () => {
       policy: {
         case: "queryDataPolicy",
         value: {
-          ...state.queryDataPolicy,
+          ...state,
         },
       },
     },
   });
 };
 
-const switchDataSourceQueryPolicyEnabled = (on: boolean) => {
-  state.dataSourceQueryPolicy.adminDataSourceRestriction = on
-    ? DataSourceQueryPolicy_Restriction.DISALLOW
-    : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
-};
-
-const updateAdminDataSourceQueryRestrctionPolicy = async () => {
-  await policyStore.upsertPolicy({
-    parentPath: props.resource,
-    policy: {
-      type: PolicyType.DATA_SOURCE_QUERY,
-      policy: {
-        case: "dataSourceQueryPolicy",
-        value: {
-          ...state.dataSourceQueryPolicy,
-        },
-      },
-    },
-  });
+const switchAdminDataSourceRestriction = (on: boolean) => {
+  state.adminDataSourceRestriction = on
+    ? QueryDataPolicy_Restriction.DISALLOW
+    : QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED;
 };
 
 defineExpose({
   isDirty: computed(() => !isEqual(state, getInitialState())),
   update: async () => {
     const initialState = getInitialState();
-    if (
-      !isEqual(state.dataSourceQueryPolicy, initialState.dataSourceQueryPolicy)
-    ) {
-      await updateAdminDataSourceQueryRestrctionPolicy();
-    }
-    if (!isEqual(state.queryDataPolicy, initialState.queryDataPolicy)) {
+    if (!isEqual(state, initialState)) {
       await updateQueryDataPolicy();
     }
   },
