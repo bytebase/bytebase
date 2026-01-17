@@ -203,6 +203,7 @@
     "info": "Thông tin",
     "minutes": "Phút",
     "filter-by-name": "Lọc theo tên",
+    "clear-filters": "Xóa bộ lọc",
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
     "force-verb": "Buộc {verb}",
@@ -2824,7 +2825,8 @@
     "vcs-type": {
       "unspecified": "Không xác định"
     },
-    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
+    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
+    "filter-by-category": "Lọc theo danh mục"
   },
   "export-data": {
     "export-rows": "Xuất số dòng",

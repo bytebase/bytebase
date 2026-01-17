@@ -203,6 +203,7 @@
     "info": "Información",
     "minutes": "Minutos",
     "filter-by-name": "Filtrar por nombre",
+    "clear-filters": "Limpiar filtros",
     "license": "Licencia",
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
@@ -2824,7 +2825,8 @@
     "vcs-type": {
       "unspecified": "No especificado"
     },
-    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps."
+    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
+    "filter-by-category": "Filtrar por categoría"
   },
   "export-data": {
     "export-rows": "Exportar filas",

@@ -203,6 +203,7 @@
     "info": "情報",
     "minutes": "分",
     "filter-by-name": "名前でフィルタリングする",
+    "clear-filters": "フィルタをクリア",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
     "force-verb": "フォース{verb}",
@@ -2824,7 +2825,8 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
+    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
+    "filter-by-category": "カテゴリでフィルタリング"
   },
   "export-data": {
     "export-rows": "エクスポート行数",
