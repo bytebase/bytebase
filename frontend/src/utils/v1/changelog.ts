@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { t } from "@/plugins/i18n";
 import { useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";

@@ -216,7 +216,6 @@
     "resource-not-found": "未找到请求的资源",
     "continue-anyway": "仍要继续",
     "permissions": "权限",
-    "baseline": "基线",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
     "connection": "连接",
@@ -1641,10 +1640,6 @@
   "changelog": {
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
-    "change-type": "类型",
-    "type": {
-      "migrate": "变更"
-    },
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "show-diff": "显示差异",
     "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
