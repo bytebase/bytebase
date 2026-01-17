@@ -117,12 +117,6 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema *model
 	return diff, nil
 }
 
-// applyMinimalChangesToChunks applies minimal changes to the previous SDL chunks based on schema differences
-// This implements the minimal change principle for drift scenarios by directly manipulating chunks
-func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // applyTableChangesToChunk applies minimal column and constraint changes to an existing CREATE TABLE chunk
 // by working with the individual chunk's SQL text instead of the full script's tokenStream
 //
@@ -1608,12 +1602,6 @@ type extendedIndexMetadata struct {
 	TargetType string // "table" or "materialized_view"
 }
 
-// applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
-// This handles creation, modification, and deletion of independent index statements
-func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // formatIndexKey creates a consistent key for index identification
 //
 //nolint:unused
@@ -1844,12 +1832,6 @@ func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
 	}
-}
-
-// applyFunctionChangesToChunks applies minimal changes to CREATE FUNCTION chunks
-// This handles creation, modification, and deletion of function statements
-func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
 }
 
 // formatFunctionKey creates a consistent key for function identification using the full signature
@@ -2183,12 +2165,6 @@ func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 	}
 }
 
-// applySequenceChangesToChunks applies minimal changes to CREATE SEQUENCE chunks
-// This handles creation, modification, and deletion of sequence statements
-func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // formatSequenceKey creates a consistent key for sequence identification
 //
 //nolint:unused
@@ -2254,6 +2230,8 @@ func createSequenceChunk(chunks *schema.SDLChunks, sequence *storepb.SequenceMet
 }
 
 // updateSequenceChunkIfNeeded updates a sequence chunk if the definition has changed
+//
+//nolint:unused
 func updateSequenceChunkIfNeeded(chunks *schema.SDLChunks, currentSequence, previousSequence *storepb.SequenceMetadata, sequenceKey string) error {
 	if currentSequence == nil || previousSequence == nil || chunks == nil {
 		return nil
@@ -2312,6 +2290,8 @@ func updateSequenceChunkIfNeeded(chunks *schema.SDLChunks, currentSequence, prev
 // based on the current sequence metadata from the database
 // syncAlterSequenceStatements synchronizes ALTER SEQUENCE OWNED BY statements in the chunk
 // based on the current OwnerTable and OwnerColumn from sequence metadata
+//
+//nolint:unused
 func syncAlterSequenceStatements(chunk *schema.SDLChunk, sequence *storepb.SequenceMetadata, schemaName string) error {
 	if chunk == nil || sequence == nil {
 		return nil
@@ -2344,6 +2324,8 @@ func syncAlterSequenceStatements(chunk *schema.SDLChunk, sequence *storepb.Seque
 
 // syncCommentStatements synchronizes COMMENT ON SEQUENCE statements in the chunk
 // based on the current Comment field from sequence metadata
+//
+//nolint:unused
 func syncCommentStatements(chunk *schema.SDLChunk, sequence *storepb.SequenceMetadata, schemaName string) error {
 	if chunk == nil || sequence == nil {
 		return nil
@@ -2390,6 +2372,8 @@ func syncObjectCommentStatements(chunk *schema.SDLChunk, comment, objectType, sc
 }
 
 // extractAlterSequenceASTFromSDL parses an ALTER SEQUENCE SDL and extracts the AST node
+//
+//nolint:unused
 func extractAlterSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 	if sdl == "" {
 		return nil, errors.New("empty ALTER SEQUENCE SDL provided")
@@ -2424,6 +2408,8 @@ func extractAlterSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error)
 }
 
 // extractCommentASTFromSDL parses a COMMENT ON SDL and extracts the AST node
+//
+//nolint:unused
 func extractCommentASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 	if sdl == "" {
 		return nil, errors.New("empty COMMENT SDL provided")
@@ -2458,11 +2444,14 @@ func extractCommentASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 }
 
 // alterSequenceExtractor extracts ALTER SEQUENCE statement from AST
+//
+//nolint:unused
 type alterSequenceExtractor struct {
 	*parser.BasePostgreSQLParserListener
 	result **parser.AlterseqstmtContext
 }
 
+//nolint:unused
 func (e *alterSequenceExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtContext) {
 	if *e.result == nil {
 		*e.result = ctx
@@ -2470,11 +2459,14 @@ func (e *alterSequenceExtractor) EnterAlterseqstmt(ctx *parser.AlterseqstmtConte
 }
 
 // commentExtractor extracts COMMENT statement from AST
+//
+//nolint:unused
 type commentExtractor struct {
 	*parser.BasePostgreSQLParserListener
 	result **parser.CommentstmtContext
 }
 
+//nolint:unused
 func (e *commentExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 	if *e.result == nil {
 		*e.result = ctx
@@ -2482,6 +2474,8 @@ func (e *commentExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 }
 
 // deleteSequenceChunk removes a sequence chunk from the chunks
+//
+//nolint:unused
 func deleteSequenceChunk(chunks *schema.SDLChunks, sequenceKey string) {
 	if chunks != nil && chunks.Sequences != nil {
 		delete(chunks.Sequences, sequenceKey)
@@ -2510,6 +2504,8 @@ func generateCreateSequenceSDL(schemaName string, sequence *storepb.SequenceMeta
 }
 
 // sequenceDefinitionsEqual compares two sequence definitions to see if they are equivalent
+//
+//nolint:unused
 func sequenceDefinitionsEqual(sequence1, sequence2 *storepb.SequenceMetadata) bool {
 	// First check everything except comment and owner
 	if !sequenceDefinitionsEqualExcludingCommentAndOwner(sequence1, sequence2) {
@@ -2531,6 +2527,8 @@ func sequenceDefinitionsEqual(sequence1, sequence2 *storepb.SequenceMetadata) bo
 }
 
 // sequenceDefinitionsEqualExcludingCommentAndOwner compares two sequence definitions excluding comments and owner
+//
+//nolint:unused
 func sequenceDefinitionsEqualExcludingCommentAndOwner(sequence1, sequence2 *storepb.SequenceMetadata) bool {
 	if sequence1 == nil && sequence2 == nil {
 		return true
@@ -2593,6 +2591,8 @@ func extractSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 }
 
 // extractSequenceTextFromAST extracts normalized text from sequence AST node using token stream
+//
+//nolint:unused
 func extractSequenceTextFromAST(sequenceAST *parser.CreateseqstmtContext) string {
 	if sequenceAST == nil {
 		return ""
@@ -2614,11 +2614,14 @@ func extractSequenceTextFromAST(sequenceAST *parser.CreateseqstmtContext) string
 }
 
 // sequenceExtractor is a walker to extract CREATE SEQUENCE AST nodes
+//
+//nolint:unused
 type sequenceExtractor struct {
 	parser.BasePostgreSQLParserListener
 	result **parser.CreateseqstmtContext
 }
 
+//nolint:unused
 func (e *sequenceExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
@@ -2631,13 +2634,9 @@ func (e *sequenceExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 
 // applyViewChangesToChunks applies minimal changes to CREATE VIEW chunks
 // This handles creation, modification, and deletion of view statements
-
-// applyMaterializedViewChangesToChunks applies minimal changes to materialized view chunks based on schema metadata
-func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // createMaterializedViewChunk creates a new CREATE MATERIALIZED VIEW chunk and adds it to the chunks
+//
+//nolint:unused
 func createMaterializedViewChunk(chunks *schema.SDLChunks, mv *storepb.MaterializedViewMetadata, mvKey string) error {
 	if mv == nil || chunks == nil {
 		return nil
@@ -2704,6 +2703,8 @@ func createMaterializedViewChunk(chunks *schema.SDLChunks, mv *storepb.Materiali
 }
 
 // updateMaterializedViewChunkIfNeeded updates an existing materialized view chunk if the definition has changed
+//
+//nolint:unused
 func updateMaterializedViewChunkIfNeeded(chunks *schema.SDLChunks, currentMV, previousMV *storepb.MaterializedViewMetadata, mvKey string) error {
 	if currentMV == nil || previousMV == nil || chunks == nil {
 		return nil
@@ -2778,6 +2779,8 @@ func updateMaterializedViewChunkIfNeeded(chunks *schema.SDLChunks, currentMV, pr
 }
 
 // deleteMaterializedViewChunk removes a materialized view chunk from the chunks
+//
+//nolint:unused
 func deleteMaterializedViewChunk(chunks *schema.SDLChunks, mvKey string) {
 	if chunks != nil && chunks.MaterializedViews != nil {
 		delete(chunks.MaterializedViews, mvKey)
@@ -2785,6 +2788,8 @@ func deleteMaterializedViewChunk(chunks *schema.SDLChunks, mvKey string) {
 }
 
 // generateCreateMaterializedViewSDL generates the SDL text for a CREATE MATERIALIZED VIEW statement
+//
+//nolint:unused
 func generateCreateMaterializedViewSDL(schemaName string, mv *storepb.MaterializedViewMetadata) string {
 	if mv == nil {
 		return ""
@@ -2799,6 +2804,8 @@ func generateCreateMaterializedViewSDL(schemaName string, mv *storepb.Materializ
 }
 
 // generateCommentOnMaterializedViewSQL generates a COMMENT ON MATERIALIZED VIEW statement
+//
+//nolint:unused
 func generateCommentOnMaterializedViewSQL(schemaName, mvName, comment string) string {
 	if schemaName == "" {
 		schemaName = "public"
@@ -2808,12 +2815,9 @@ func generateCommentOnMaterializedViewSQL(schemaName, mvName, comment string) st
 	return fmt.Sprintf("COMMENT ON MATERIALIZED VIEW \"%s\".\"%s\" IS '%s';", schemaName, mvName, escapedComment)
 }
 
-// applyEnumTypeChangesToChunks applies minimal changes to enum type chunks based on schema metadata
-func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // createEnumTypeChunk creates a new CREATE TYPE AS ENUM chunk and adds it to the chunks
+//
+//nolint:unused
 func createEnumTypeChunk(chunks *schema.SDLChunks, enumType *storepb.EnumTypeMetadata, enumKey string) error {
 	if enumType == nil || chunks == nil {
 		return nil
@@ -2874,6 +2878,8 @@ func createEnumTypeChunk(chunks *schema.SDLChunks, enumType *storepb.EnumTypeMet
 }
 
 // updateEnumTypeChunkIfNeeded updates an enum type chunk if the definition or comment changed
+//
+//nolint:unused
 func updateEnumTypeChunkIfNeeded(chunks *schema.SDLChunks, currentEnum, previousEnum *storepb.EnumTypeMetadata, enumKey string) error {
 	if currentEnum == nil || previousEnum == nil {
 		return nil
@@ -2933,6 +2939,8 @@ func updateEnumTypeChunkIfNeeded(chunks *schema.SDLChunks, currentEnum, previous
 }
 
 // deleteEnumTypeChunk removes an enum type chunk from the chunks
+//
+//nolint:unused
 func deleteEnumTypeChunk(chunks *schema.SDLChunks, enumKey string) {
 	if chunks != nil && chunks.EnumTypes != nil {
 		delete(chunks.EnumTypes, enumKey)
@@ -2940,6 +2948,8 @@ func deleteEnumTypeChunk(chunks *schema.SDLChunks, enumKey string) {
 }
 
 // enumTypesEqual compares two enum type definitions excluding comments
+//
+//nolint:unused
 func enumTypesEqual(enum1, enum2 *storepb.EnumTypeMetadata) bool {
 	if enum1 == nil || enum2 == nil {
 		return false
@@ -2964,6 +2974,8 @@ func enumTypesEqual(enum1, enum2 *storepb.EnumTypeMetadata) bool {
 }
 
 // generateCreateEnumTypeSDL generates the SDL text for a CREATE TYPE AS ENUM statement
+//
+//nolint:unused
 func generateCreateEnumTypeSDL(schemaName string, enumType *storepb.EnumTypeMetadata) string {
 	if enumType == nil {
 		return ""
@@ -2979,6 +2991,8 @@ func generateCreateEnumTypeSDL(schemaName string, enumType *storepb.EnumTypeMeta
 }
 
 // generateCommentOnTypeSQL generates a COMMENT ON TYPE statement
+//
+//nolint:unused
 func generateCommentOnTypeSQL(schemaName, typeName, comment string) string {
 	if schemaName == "" {
 		schemaName = "public"
@@ -2989,11 +3003,14 @@ func generateCommentOnTypeSQL(schemaName, typeName, comment string) string {
 }
 
 // enumTypeExtractor is a walker to extract CREATE TYPE AS ENUM AST nodes
+//
+//nolint:unused
 type enumTypeExtractor struct {
 	parser.BasePostgreSQLParserListener
 	result **parser.DefinestmtContext
 }
 
+//nolint:unused
 func (e *enumTypeExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
 	// Only extract CREATE TYPE AS ENUM statements
 	if ctx.CREATE() != nil && ctx.TYPE_P() != nil && ctx.AS() != nil && ctx.ENUM_P() != nil {
@@ -3004,24 +3021,23 @@ func (e *enumTypeExtractor) EnterDefinestmt(ctx *parser.DefinestmtContext) {
 }
 
 // materializedViewExtractor is a walker to extract CREATE MATERIALIZED VIEW AST nodes
+//
+//nolint:unused
 type materializedViewExtractor struct {
 	parser.BasePostgreSQLParserListener
 	result **parser.CreatematviewstmtContext
 }
 
+//nolint:unused
 func (e *materializedViewExtractor) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
 	}
 }
 
-// applyColumnCommentChanges applies minimal changes to column comments based on schema metadata
-// This function only updates COMMENT ON COLUMN statements without modifying CREATE TABLE statements
-func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // syncColumnComment synchronizes a single column comment in the chunks
+//
+//nolint:unused
 func syncColumnComment(chunks *schema.SDLChunks, tableKey, columnName, comment string) error {
 	if chunks == nil {
 		return nil
@@ -3074,14 +3090,9 @@ func syncColumnComment(chunks *schema.SDLChunks, tableKey, columnName, comment s
 // processEventTriggerChanges processes event trigger changes between current and previous chunks
 
 // processSchemaChanges processes explicit CREATE SCHEMA statements in the SDL
-
-// applyExtensionChangesToChunks applies minimal changes to extension chunks based on schema differences
-// Extensions are database-level objects (not schema-scoped)
-func applyExtensionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // createExtensionChunk creates a new CREATE EXTENSION chunk and adds it to the chunks
+//
+//nolint:unused
 func createExtensionChunk(chunks *schema.SDLChunks, extension *storepb.ExtensionMetadata) error {
 	if extension == nil || chunks == nil {
 		return nil
@@ -3141,6 +3152,8 @@ func createExtensionChunk(chunks *schema.SDLChunks, extension *storepb.Extension
 }
 
 // updateExtensionChunkIfNeeded updates an extension chunk if the definition or comment changed
+//
+//nolint:unused
 func updateExtensionChunkIfNeeded(chunks *schema.SDLChunks, currentExtension, previousExtension *storepb.ExtensionMetadata) error {
 	if currentExtension == nil || previousExtension == nil {
 		return nil
@@ -3214,6 +3227,8 @@ func updateExtensionChunkIfNeeded(chunks *schema.SDLChunks, currentExtension, pr
 }
 
 // deleteExtensionChunk removes an extension chunk from the chunks map
+//
+//nolint:unused
 func deleteExtensionChunk(chunks *schema.SDLChunks, extensionName string) {
 	if chunks == nil {
 		return
@@ -3222,6 +3237,8 @@ func deleteExtensionChunk(chunks *schema.SDLChunks, extensionName string) {
 }
 
 // generateCreateExtensionSQL generates a CREATE EXTENSION IF NOT EXISTS statement
+//
+//nolint:unused
 func generateCreateExtensionSQL(extension *storepb.ExtensionMetadata) string {
 	if extension == nil {
 		return ""
@@ -3252,6 +3269,8 @@ func generateCreateExtensionSQL(extension *storepb.ExtensionMetadata) string {
 }
 
 // generateCommentOnExtensionSQL generates a COMMENT ON EXTENSION statement
+//
+//nolint:unused
 func generateCommentOnExtensionSQL(extensionName, comment string) string {
 	// Escape single quotes in comment
 	escapedComment := strings.ReplaceAll(comment, "'", "''")
@@ -3259,11 +3278,14 @@ func generateCommentOnExtensionSQL(extensionName, comment string) string {
 }
 
 // extensionExtractor is a walker to extract CREATE EXTENSION AST nodes
+//
+//nolint:unused
 type extensionExtractor struct {
 	parser.BasePostgreSQLParserListener
 	result **parser.CreateextensionstmtContext
 }
 
+//nolint:unused
 func (e *extensionExtractor) EnterCreateextensionstmt(ctx *parser.CreateextensionstmtContext) {
 	if e.result != nil {
 		*e.result = ctx
@@ -3271,6 +3293,8 @@ func (e *extensionExtractor) EnterCreateextensionstmt(ctx *parser.Createextensio
 }
 
 // extensionsEqual compares two extension metadata for equality (excluding comments)
+//
+//nolint:unused
 func extensionsEqual(a, b *storepb.ExtensionMetadata) bool {
 	if a == nil && b == nil {
 		return true
@@ -3313,12 +3337,9 @@ func extractTableNameFromTrigger(ctx *parser.CreatetrigstmtContext) string {
 	return strings.Join(qualifiedNameParts, ".")
 }
 
-// applyTriggerChangesToChunks applies minimal changes to trigger chunks based on schema metadata
-func applyTriggerChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	return nil
-}
-
 // triggerWithContext holds trigger metadata with its schema and table context
+//
+//nolint:unused
 type triggerWithContext struct {
 	trigger    *storepb.TriggerMetadata
 	schemaName string
@@ -3326,6 +3347,8 @@ type triggerWithContext struct {
 }
 
 // createTriggerChunk creates a new CREATE TRIGGER chunk and adds it to the chunks
+//
+//nolint:unused
 func createTriggerChunk(chunks *schema.SDLChunks, triggerCtx *triggerWithContext, triggerKey string) error {
 	if triggerCtx == nil || triggerCtx.trigger == nil || chunks == nil {
 		return nil
@@ -3394,6 +3417,8 @@ func createTriggerChunk(chunks *schema.SDLChunks, triggerCtx *triggerWithContext
 }
 
 // updateTriggerChunkIfNeeded updates an existing trigger chunk if the definition has changed
+//
+//nolint:unused
 func updateTriggerChunkIfNeeded(chunks *schema.SDLChunks, currentTriggerCtx, previousTriggerCtx *triggerWithContext, triggerKey string) error {
 	if currentTriggerCtx == nil || previousTriggerCtx == nil || chunks == nil {
 		return nil
@@ -3471,6 +3496,8 @@ func updateTriggerChunkIfNeeded(chunks *schema.SDLChunks, currentTriggerCtx, pre
 }
 
 // deleteTriggerChunk removes a trigger chunk from the chunks
+//
+//nolint:unused
 func deleteTriggerChunk(chunks *schema.SDLChunks, triggerKey string) {
 	if chunks != nil && chunks.Triggers != nil {
 		delete(chunks.Triggers, triggerKey)
@@ -3478,6 +3505,8 @@ func deleteTriggerChunk(chunks *schema.SDLChunks, triggerKey string) {
 }
 
 // generateCreateTriggerSDL generates the SDL text for a CREATE TRIGGER statement
+//
+//nolint:unused
 func generateCreateTriggerSDL(schemaName, tableName string, trigger *storepb.TriggerMetadata) string {
 	if trigger == nil {
 		return ""
@@ -3492,6 +3521,8 @@ func generateCreateTriggerSDL(schemaName, tableName string, trigger *storepb.Tri
 }
 
 // generateCommentOnTriggerSQL generates a COMMENT ON TRIGGER statement
+//
+//nolint:unused
 func generateCommentOnTriggerSQL(schemaName, tableName, triggerName, comment string) string {
 	if schemaName == "" {
 		schemaName = "public"
@@ -3502,11 +3533,14 @@ func generateCommentOnTriggerSQL(schemaName, tableName, triggerName, comment str
 }
 
 // triggerExtractor extracts CREATE TRIGGER AST nodes
+//
+//nolint:unused
 type triggerExtractor struct {
 	*parser.BasePostgreSQLParserListener
 	result **parser.CreatetrigstmtContext
 }
 
+//nolint:unused
 func (e *triggerExtractor) EnterCreatetrigstmt(ctx *parser.CreatetrigstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
