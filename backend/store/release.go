@@ -24,11 +24,13 @@ type ReleaseMessage struct {
 	At        time.Time
 	Train     string
 	Iteration int32
+	Category  string
 }
 
 type FindReleaseMessage struct {
 	ProjectID   *string
 	ReleaseID   *string
+	Category    *string
 	Limit       *int
 	Offset      *int
 	ShowDeleted bool
@@ -38,8 +40,9 @@ type UpdateReleaseMessage struct {
 	ProjectID string
 	ReleaseID string
 
-	Deleted *bool
-	Payload *storepb.ReleasePayload
+	Deleted  *bool
+	Payload  *storepb.ReleasePayload
+	Category *string
 }
 
 func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creator string) (*ReleaseMessage, error) {
@@ -82,8 +85,10 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 			payload,
 			release_id,
 			train,
-			iteration
+			iteration,
+			category
 		) VALUES (
+			?,
 			?,
 			?,
 			?,
@@ -91,7 +96,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 			?,
 			?
 		) RETURNING id, created_at
-	`, creator, release.ProjectID, p, releaseID, release.Train, nextIteration)
+	`, creator, release.ProjectID, p, releaseID, release.Train, nextIteration, release.Category)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -140,7 +145,8 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			payload,
 			release_id,
 			train,
-			iteration
+			iteration,
+			category
 		FROM release
 		WHERE TRUE
 	`)
@@ -150,6 +156,9 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	}
 	if v := find.ReleaseID; v != nil {
 		q.And("release_id = ?", *v)
+	}
+	if v := find.Category; v != nil {
+		q.And("category = ?", *v)
 	}
 	if !find.ShowDeleted {
 		q.And("deleted = ?", false)
@@ -196,6 +205,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			&r.ReleaseID,
 			&r.Train,
 			&r.Iteration,
+			&r.Category,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
@@ -230,6 +240,9 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		}
 		set.Comma("payload = ?", payload)
 	}
+	if v := update.Category; v != nil {
+		set.Comma("category = ?", *v)
+	}
 
 	if set.Len() == 0 {
 		return nil, errors.New("no update field provided")
@@ -258,4 +271,46 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		ProjectID: &update.ProjectID,
 		ReleaseID: &update.ReleaseID,
 	})
+}
+
+func (s *Store) ListReleaseCategories(ctx context.Context, projectID string) ([]string, error) {
+	query := `
+		SELECT DISTINCT category
+		FROM release
+		WHERE project = $1
+		  AND category != ''
+		  AND deleted = FALSE
+		ORDER BY category ASC
+	`
+
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query rows")
+	}
+	defer rows.Close()
+
+	var categories []string
+	for rows.Next() {
+		var category string
+		if err := rows.Scan(&category); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan row")
+		}
+		categories = append(categories, category)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return categories, nil
 }

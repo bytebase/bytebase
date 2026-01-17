@@ -3883,6 +3883,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Release'
+  /bytebase.v1.ReleaseService/ListReleaseCategories:
+    post:
+      tags:
+        - bytebase.v1.ReleaseService
+      summary: 'Lists all unique categories in a project.  Permissions required: bb.releases.list'
+      description: |-
+        Lists all unique categories in a project.
+         Permissions required: bb.releases.list
+      operationId: bytebase.v1.ReleaseService.ListReleaseCategories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListReleaseCategoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListReleaseCategoriesResponse'
   /bytebase.v1.ReleaseService/ListReleases:
     post:
       tags:
@@ -11623,6 +11661,26 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListProjectsResponse
       additionalProperties: false
+    bytebase.v1.ListReleaseCategoriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: 'Format: projects/{project}'
+      title: ListReleaseCategoriesRequest
+      additionalProperties: false
+    bytebase.v1.ListReleaseCategoriesResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+          title: categories
+          description: The unique category values in the project.
+      title: ListReleaseCategoriesResponse
+      additionalProperties: false
     bytebase.v1.ListReleasesRequest:
       type: object
       properties:
@@ -11651,6 +11709,18 @@ components:
           type: boolean
           title: show_deleted
           description: Show deleted releases if specified.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter releases returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filters:
+             - category: release category, support "==" operator.
+
+             For example:
+             category == "webapp"
       title: ListReleasesRequest
       additionalProperties: false
     bytebase.v1.ListReleasesResponse:
@@ -13657,6 +13727,12 @@ components:
           type: string
           title: name
           description: 'Format: projects/{project}/releases/{release}'
+        category:
+          type: string
+          title: category
+          description: |-
+            Category extracted from release name (e.g., "webapp", "analytics").
+             Set by Bytebase action during release creation.
         files:
           type: array
           items:

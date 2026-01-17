@@ -203,6 +203,7 @@
     "info": "信息",
     "minutes": "分钟",
     "filter-by-name": "按名称过滤",
+    "clear-filters": "清除过滤",
     "license": "证书",
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
@@ -2824,7 +2825,8 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
+    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
+    "filter-by-category": "按类别过滤"
   },
   "export-data": {
     "export-rows": "导出行数",

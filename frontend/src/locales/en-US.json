@@ -203,6 +203,7 @@
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
+    "clear-filters": "Clear filters",
     "license": "License",
     "view-details": "View details",
     "force-verb": "Force {verb}",
@@ -2824,7 +2825,8 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
+    "filter-by-category": "Filter by category"
   },
   "export-data": {
     "export-rows": "Export rows",

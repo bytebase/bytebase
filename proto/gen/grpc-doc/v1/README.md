@@ -460,6 +460,8 @@
     - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
     - [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest)
     - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
+    - [ListReleaseCategoriesRequest](#bytebase-v1-ListReleaseCategoriesRequest)
+    - [ListReleaseCategoriesResponse](#bytebase-v1-ListReleaseCategoriesResponse)
     - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
     - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
     - [Release](#bytebase-v1-Release)
@@ -7630,6 +7632,36 @@ Check result for a single release file on a target database.
 
 
 
+<a name="bytebase-v1-ListReleaseCategoriesRequest"></a>
+
+### ListReleaseCategoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListReleaseCategoriesResponse"></a>
+
+### ListReleaseCategoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| categories | [string](#string) | repeated | The unique category values in the project. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListReleasesRequest"></a>
 
 ### ListReleasesRequest
@@ -7644,6 +7676,11 @@ Check result for a single release file on a target database.
 
 When paginating, all other parameters provided to `ListReleases` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted releases if specified. |
+| filter | [string](#string) |  | Filter is used to filter releases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - category: release category, support &#34;==&#34; operator.
+
+For example: category == &#34;webapp&#34; |
 
 
 
@@ -7675,6 +7712,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| category | [string](#string) |  | Category extracted from release name (e.g., &#34;webapp&#34;, &#34;analytics&#34;). Set by Bytebase action during release creation. |
 | files | [Release.File](#bytebase-v1-Release-File) | repeated | The SQL files included in the release. |
 | vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  | The version control source of the release. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
@@ -7789,6 +7827,7 @@ ReleaseService manages releases for coordinating deployments.
 | DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a release. Permissions required: bb.releases.delete |
 | UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) | Restores a deleted release. Permissions required: bb.releases.undelete |
 | CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) | Validates a release by dry-running checks on target databases. Permissions required: bb.releases.check |
+| ListReleaseCategories | [ListReleaseCategoriesRequest](#bytebase-v1-ListReleaseCategoriesRequest) | [ListReleaseCategoriesResponse](#bytebase-v1-ListReleaseCategoriesResponse) | Lists all unique categories in a project. Permissions required: bb.releases.list |
 
  
 

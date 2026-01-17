@@ -7439,6 +7439,29 @@ paths:
             type: boolean
             title: show_deleted
             description: Show deleted releases if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter releases returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filters:
+             - category: release category, support "==" operator.
+
+             For example:
+             category == "webapp"
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter releases returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filters:
+               - category: release category, support "==" operator.
+
+               For example:
+               category == "webapp"
       responses:
         "200":
           description: Success
@@ -7676,6 +7699,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.CheckReleaseResponse'
+  /v1/projects/{project}/releases:listCategories:
+    get:
+      tags:
+        - ReleaseService
+      summary: ListReleaseCategories
+      description: |-
+        Lists all unique categories in a project.
+         Permissions required: bb.releases.list
+      operationId: ReleaseService_ListReleaseCategories
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListReleaseCategoriesResponse'
   /v1/projects/{project}/rollouts:
     get:
       tags:
@@ -15519,6 +15565,28 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListProjectsResponse
       additionalProperties: false
+    bytebase.v1.ListReleaseCategoriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: 'Format: projects/{project}'
+      title: ListReleaseCategoriesRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListReleaseCategoriesResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+          title: categories
+          description: The unique category values in the project.
+      title: ListReleaseCategoriesResponse
+      additionalProperties: false
     bytebase.v1.ListReleasesRequest:
       type: object
       properties:
@@ -15547,6 +15615,18 @@ components:
           type: boolean
           title: show_deleted
           description: Show deleted releases if specified.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter releases returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filters:
+             - category: release category, support "==" operator.
+
+             For example:
+             category == "webapp"
       title: ListReleasesRequest
       required:
         - parent
@@ -17588,6 +17668,12 @@ components:
           title: name
           description: 'Format: projects/{project}/releases/{release}'
           readOnly: true
+        category:
+          type: string
+          title: category
+          description: |-
+            Category extracted from release name (e.g., "webapp", "analytics").
+             Set by Bytebase action during release creation.
         files:
           type: array
           items:

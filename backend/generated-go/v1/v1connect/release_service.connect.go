@@ -55,6 +55,9 @@ const (
 	// ReleaseServiceCheckReleaseProcedure is the fully-qualified name of the ReleaseService's
 	// CheckRelease RPC.
 	ReleaseServiceCheckReleaseProcedure = "/bytebase.v1.ReleaseService/CheckRelease"
+	// ReleaseServiceListReleaseCategoriesProcedure is the fully-qualified name of the ReleaseService's
+	// ListReleaseCategories RPC.
+	ReleaseServiceListReleaseCategoriesProcedure = "/bytebase.v1.ReleaseService/ListReleaseCategories"
 )
 
 // ReleaseServiceClient is a client for the bytebase.v1.ReleaseService service.
@@ -81,6 +84,9 @@ type ReleaseServiceClient interface {
 	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
+	// Lists all unique categories in a project.
+	// Permissions required: bb.releases.list
+	ListReleaseCategories(context.Context, *connect.Request[v1.ListReleaseCategoriesRequest]) (*connect.Response[v1.ListReleaseCategoriesResponse], error)
 }
 
 // NewReleaseServiceClient constructs a client for the bytebase.v1.ReleaseService service. By
@@ -136,18 +142,25 @@ func NewReleaseServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(releaseServiceMethods.ByName("CheckRelease")),
 			connect.WithClientOptions(opts...),
 		),
+		listReleaseCategories: connect.NewClient[v1.ListReleaseCategoriesRequest, v1.ListReleaseCategoriesResponse](
+			httpClient,
+			baseURL+ReleaseServiceListReleaseCategoriesProcedure,
+			connect.WithSchema(releaseServiceMethods.ByName("ListReleaseCategories")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // releaseServiceClient implements ReleaseServiceClient.
 type releaseServiceClient struct {
-	getRelease      *connect.Client[v1.GetReleaseRequest, v1.Release]
-	listReleases    *connect.Client[v1.ListReleasesRequest, v1.ListReleasesResponse]
-	createRelease   *connect.Client[v1.CreateReleaseRequest, v1.Release]
-	updateRelease   *connect.Client[v1.UpdateReleaseRequest, v1.Release]
-	deleteRelease   *connect.Client[v1.DeleteReleaseRequest, emptypb.Empty]
-	undeleteRelease *connect.Client[v1.UndeleteReleaseRequest, v1.Release]
-	checkRelease    *connect.Client[v1.CheckReleaseRequest, v1.CheckReleaseResponse]
+	getRelease            *connect.Client[v1.GetReleaseRequest, v1.Release]
+	listReleases          *connect.Client[v1.ListReleasesRequest, v1.ListReleasesResponse]
+	createRelease         *connect.Client[v1.CreateReleaseRequest, v1.Release]
+	updateRelease         *connect.Client[v1.UpdateReleaseRequest, v1.Release]
+	deleteRelease         *connect.Client[v1.DeleteReleaseRequest, emptypb.Empty]
+	undeleteRelease       *connect.Client[v1.UndeleteReleaseRequest, v1.Release]
+	checkRelease          *connect.Client[v1.CheckReleaseRequest, v1.CheckReleaseResponse]
+	listReleaseCategories *connect.Client[v1.ListReleaseCategoriesRequest, v1.ListReleaseCategoriesResponse]
 }
 
 // GetRelease calls bytebase.v1.ReleaseService.GetRelease.
@@ -185,6 +198,11 @@ func (c *releaseServiceClient) CheckRelease(ctx context.Context, req *connect.Re
 	return c.checkRelease.CallUnary(ctx, req)
 }
 
+// ListReleaseCategories calls bytebase.v1.ReleaseService.ListReleaseCategories.
+func (c *releaseServiceClient) ListReleaseCategories(ctx context.Context, req *connect.Request[v1.ListReleaseCategoriesRequest]) (*connect.Response[v1.ListReleaseCategoriesResponse], error) {
+	return c.listReleaseCategories.CallUnary(ctx, req)
+}
+
 // ReleaseServiceHandler is an implementation of the bytebase.v1.ReleaseService service.
 type ReleaseServiceHandler interface {
 	// Retrieves a release by name.
@@ -209,6 +227,9 @@ type ReleaseServiceHandler interface {
 	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error)
+	// Lists all unique categories in a project.
+	// Permissions required: bb.releases.list
+	ListReleaseCategories(context.Context, *connect.Request[v1.ListReleaseCategoriesRequest]) (*connect.Response[v1.ListReleaseCategoriesResponse], error)
 }
 
 // NewReleaseServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -260,6 +281,12 @@ func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect.Handler
 		connect.WithSchema(releaseServiceMethods.ByName("CheckRelease")),
 		connect.WithHandlerOptions(opts...),
 	)
+	releaseServiceListReleaseCategoriesHandler := connect.NewUnaryHandler(
+		ReleaseServiceListReleaseCategoriesProcedure,
+		svc.ListReleaseCategories,
+		connect.WithSchema(releaseServiceMethods.ByName("ListReleaseCategories")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.ReleaseService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ReleaseServiceGetReleaseProcedure:
@@ -276,6 +303,8 @@ func NewReleaseServiceHandler(svc ReleaseServiceHandler, opts ...connect.Handler
 			releaseServiceUndeleteReleaseHandler.ServeHTTP(w, r)
 		case ReleaseServiceCheckReleaseProcedure:
 			releaseServiceCheckReleaseHandler.ServeHTTP(w, r)
+		case ReleaseServiceListReleaseCategoriesProcedure:
+			releaseServiceListReleaseCategoriesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -311,4 +340,8 @@ func (UnimplementedReleaseServiceHandler) UndeleteRelease(context.Context, *conn
 
 func (UnimplementedReleaseServiceHandler) CheckRelease(context.Context, *connect.Request[v1.CheckReleaseRequest]) (*connect.Response[v1.CheckReleaseResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.CheckRelease is not implemented"))
+}
+
+func (UnimplementedReleaseServiceHandler) ListReleaseCategories(context.Context, *connect.Request[v1.ListReleaseCategoriesRequest]) (*connect.Response[v1.ListReleaseCategoriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ReleaseService.ListReleaseCategories is not implemented"))
 }

@@ -40,6 +40,9 @@ func (x *ListReleasesRequest) Equal(y *ListReleasesRequest) bool {
 	if x.ShowDeleted != y.ShowDeleted {
 		return false
 	}
+	if x.Filter != y.Filter {
+		return false
+	}
 	return true
 }
 
@@ -210,6 +213,37 @@ func (x *CheckReleaseResponse) Equal(y *CheckReleaseResponse) bool {
 	return true
 }
 
+func (x *ListReleaseCategoriesRequest) Equal(y *ListReleaseCategoriesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
+	}
+	return true
+}
+
+func (x *ListReleaseCategoriesResponse) Equal(y *ListReleaseCategoriesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Categories) != len(y.Categories) {
+		return false
+	}
+	for i := 0; i < len(x.Categories); i++ {
+		if x.Categories[i] != y.Categories[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *Release_File) Equal(y *Release_File) bool {
 	if x == y {
 		return true
@@ -262,6 +296,9 @@ func (x *Release) Equal(y *Release) bool {
 		return x == nil && y == nil
 	}
 	if x.Name != y.Name {
+		return false
+	}
+	if x.Category != y.Category {
 		return false
 	}
 	if len(x.Files) != len(y.Files) {

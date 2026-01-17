@@ -1931,6 +1931,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListReleaseCategoriesRequest"><span class="badge">M</span>ListReleaseCategoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReleaseCategoriesResponse"><span class="badge">M</span>ListReleaseCategoriesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListReleasesRequest"><span class="badge">M</span>ListReleasesRequest</a>
                 </li>
               
@@ -21884,6 +21892,54 @@ Format: projects/{project}/releases/{release} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListReleaseCategoriesRequest">ListReleaseCategoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReleaseCategoriesResponse">ListReleaseCategoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>categories</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The unique category values in the project. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListReleasesRequest">ListReleasesRequest</h3>
         <p></p>
 
@@ -21926,6 +21982,20 @@ the call that provided the page token. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Show deleted releases if specified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter releases returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters:
+- category: release category, support &#34;==&#34; operator.
+
+For example:
+category == &#34;webapp&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -21982,6 +22052,14 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/releases/{release} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>category</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Category extracted from release name (e.g., &#34;webapp&#34;, &#34;analytics&#34;).
+Set by Bytebase action during release creation. </p></td>
                 </tr>
               
                 <tr>
@@ -22283,6 +22361,14 @@ Permissions required: bb.releases.undelete</p></td>
 Permissions required: bb.releases.check</p></td>
               </tr>
             
+              <tr>
+                <td>ListReleaseCategories</td>
+                <td><a href="#bytebase.v1.ListReleaseCategoriesRequest">ListReleaseCategoriesRequest</a></td>
+                <td><a href="#bytebase.v1.ListReleaseCategoriesResponse">ListReleaseCategoriesResponse</a></td>
+                <td><p>Lists all unique categories in a project.
+Permissions required: bb.releases.list</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -22368,6 +22454,16 @@ Permissions required: bb.releases.check</p></td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/releases:check</td>
                 <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListReleaseCategories</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/releases:listCategories</td>
+                <td></td>
               </tr>
               
             

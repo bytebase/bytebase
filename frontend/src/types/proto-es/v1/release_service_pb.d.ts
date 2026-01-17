@@ -68,6 +68,20 @@ export declare type ListReleasesRequest = Message<"bytebase.v1.ListReleasesReque
    * @generated from field: bool show_deleted = 4;
    */
   showDeleted: boolean;
+
+  /**
+   * Filter is used to filter releases returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filters:
+   * - category: release category, support "==" operator.
+   *
+   * For example:
+   * category == "webapp"
+   *
+   * @generated from field: string filter = 5;
+   */
+  filter: string;
 };
 
 /**
@@ -326,6 +340,42 @@ export declare type CheckReleaseResponse_CheckResult = Message<"bytebase.v1.Chec
 export declare const CheckReleaseResponse_CheckResultSchema: GenMessage<CheckReleaseResponse_CheckResult>;
 
 /**
+ * @generated from message bytebase.v1.ListReleaseCategoriesRequest
+ */
+export declare type ListReleaseCategoriesRequest = Message<"bytebase.v1.ListReleaseCategoriesRequest"> & {
+  /**
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ListReleaseCategoriesRequest.
+ * Use `create(ListReleaseCategoriesRequestSchema)` to create a new message.
+ */
+export declare const ListReleaseCategoriesRequestSchema: GenMessage<ListReleaseCategoriesRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListReleaseCategoriesResponse
+ */
+export declare type ListReleaseCategoriesResponse = Message<"bytebase.v1.ListReleaseCategoriesResponse"> & {
+  /**
+   * The unique category values in the project.
+   *
+   * @generated from field: repeated string categories = 1;
+   */
+  categories: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.ListReleaseCategoriesResponse.
+ * Use `create(ListReleaseCategoriesResponseSchema)` to create a new message.
+ */
+export declare const ListReleaseCategoriesResponseSchema: GenMessage<ListReleaseCategoriesResponse>;
+
+/**
  * @generated from message bytebase.v1.Release
  */
 export declare type Release = Message<"bytebase.v1.Release"> & {
@@ -335,6 +385,14 @@ export declare type Release = Message<"bytebase.v1.Release"> & {
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * Category extracted from release name (e.g., "webapp", "analytics").
+   * Set by Bytebase action during release creation.
+   *
+   * @generated from field: string category = 2;
+   */
+  category: string;
 
   /**
    * The SQL files included in the release.
@@ -585,6 +643,17 @@ export declare const ReleaseService: GenService<{
     methodKind: "unary";
     input: typeof CheckReleaseRequestSchema;
     output: typeof CheckReleaseResponseSchema;
+  },
+  /**
+   * Lists all unique categories in a project.
+   * Permissions required: bb.releases.list
+   *
+   * @generated from rpc bytebase.v1.ReleaseService.ListReleaseCategories
+   */
+  listReleaseCategories: {
+    methodKind: "unary";
+    input: typeof ListReleaseCategoriesRequestSchema;
+    output: typeof ListReleaseCategoriesResponseSchema;
   },
 }>;
 
