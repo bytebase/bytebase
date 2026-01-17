@@ -540,7 +540,7 @@ ALTER SEQUENCE release_id_seq RESTART WITH 101;
 CREATE INDEX idx_release_project ON release(project);
 CREATE UNIQUE INDEX idx_release_project_train_iteration ON release(project, train, iteration);
 CREATE INDEX idx_release_project_release_id ON release(project, release_id);
-CREATE INDEX idx_release_category ON release(project, category) WHERE deleted = FALSE;
+CREATE INDEX idx_release_category ON release(project, category);
 
 -- OAuth2 tables
 CREATE TABLE oauth2_client (
