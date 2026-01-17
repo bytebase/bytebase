@@ -1440,14 +1440,6 @@ message Changelog {
   // The title of the plan associated with this changelog's task run.
   // This field is populated by deriving the plan from task_run for display purposes.
   string plan_title = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    BASELINE = 1;
-    MIGRATE = 2;
-    SDL = 3;
-  }
-  Type type = 14;
 }
 
 message GetSchemaStringRequest {

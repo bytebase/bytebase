@@ -152,7 +152,6 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 			Status:         store.ChangelogStatusDone,
 			SyncHistoryUID: &baselineSyncHistoryUID,
 			Payload: &storepb.ChangelogPayload{
-				Type:      storepb.ChangelogPayload_BASELINE,
 				GitCommit: exec.profile.GitCommit,
 			},
 		})
@@ -238,7 +237,6 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			Type:      storepb.ChangelogPayload_MIGRATE,
 			GitCommit: exec.profile.GitCommit,
 		},
 	})
@@ -347,7 +345,6 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			Type:      storepb.ChangelogPayload_MIGRATE,
 			GitCommit: exec.profile.GitCommit,
 		},
 	})
@@ -455,7 +452,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   taskRunName,
-			Type:      storepb.ChangelogPayload_MIGRATE,
 			GitCommit: exec.profile.GitCommit,
 		},
 	})
@@ -669,7 +665,6 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			Type:      storepb.ChangelogPayload_SDL,
 			GitCommit: exec.profile.GitCommit,
 		},
 	})

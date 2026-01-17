@@ -3059,11 +3059,6 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * @generated from field: string plan_title = 15;
    */
   planTitle: string;
-
-  /**
-   * @generated from field: bytebase.v1.Changelog.Type type = 14;
-   */
-  type: Changelog_Type;
 };
 
 /**
@@ -3101,36 +3096,6 @@ export enum Changelog_Status {
  * Describes the enum bytebase.v1.Changelog.Status.
  */
 export declare const Changelog_StatusSchema: GenEnum<Changelog_Status>;
-
-/**
- * @generated from enum bytebase.v1.Changelog.Type
- */
-export enum Changelog_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: BASELINE = 1;
-   */
-  BASELINE = 1,
-
-  /**
-   * @generated from enum value: MIGRATE = 2;
-   */
-  MIGRATE = 2,
-
-  /**
-   * @generated from enum value: SDL = 3;
-   */
-  SDL = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Changelog.Type.
- */
-export declare const Changelog_TypeSchema: GenEnum<Changelog_Type>;
 
 /**
  * @generated from message bytebase.v1.GetSchemaStringRequest

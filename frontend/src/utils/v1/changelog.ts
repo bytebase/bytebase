@@ -4,10 +4,7 @@ import { useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import {
-  Changelog_Type,
-  ChangelogSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+import { ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangelogUID = (name: string) => {
@@ -53,17 +50,4 @@ export const mockLatestChangelog = (
     schema: schema,
     schemaSize: BigInt(new TextEncoder().encode(schema).length),
   });
-};
-
-export const getChangelogChangeType = (type: Changelog_Type) => {
-  switch (type) {
-    case Changelog_Type.SDL:
-      return "SDL";
-    case Changelog_Type.MIGRATE:
-      return t("changelog.type.migrate");
-    case Changelog_Type.BASELINE:
-      return t("common.baseline");
-    default:
-      return "-";
-  }
 };

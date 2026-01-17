@@ -242,7 +242,6 @@
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
-    - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
@@ -3284,7 +3283,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | schema_size | [int64](#int64) |  |  |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
-| type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 
 
@@ -4313,20 +4311,6 @@ ViewMetadata is the metadata for views.
 | PENDING | 1 |  |
 | DONE | 2 |  |
 | FAILED | 3 |  |
-
-
-
-<a name="bytebase-v1-Changelog-Type"></a>
-
-### Changelog.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 |  |
-| MIGRATE | 2 |  |
-| SDL | 3 |  |
 
 
 

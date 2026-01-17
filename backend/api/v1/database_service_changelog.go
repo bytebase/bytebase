@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -45,29 +44,6 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 						return err
 					}
 				}
-			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
-				if variable != "type" {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
-				}
-				rawList, ok := value.([]any)
-				if !ok {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid list value %q for %v", value, variable))
-				}
-				if len(rawList) == 0 {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty list value for filter %v", variable))
-				}
-				typeList := []string{}
-				for _, raw := range rawList {
-					typeStr, ok := raw.(string)
-					if !ok {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("value for type must be a string"))
-					}
-					v1Type := v1pb.Changelog_Type_value[typeStr]
-					storeType := convertToChangelogStoreType(v1pb.Changelog_Type(v1Type))
-					typeList = append(typeList, storeType.String())
-				}
-				find.TypeList = typeList
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				strValue, ok := value.(string)
@@ -79,10 +55,6 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 					v1Status := v1pb.Changelog_Status_value[strValue]
 					storeStatus := convertToChangelogStoreStatus(v1pb.Changelog_Status(v1Status))
 					find.Status = &storeStatus
-				case "type":
-					v1Type := v1pb.Changelog_Type_value[strValue]
-					storeType := convertToChangelogStoreType(v1pb.Changelog_Type(v1Type))
-					find.TypeList = []string{storeType.String()}
 				default:
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
 				}
@@ -222,8 +194,6 @@ func (s *DatabaseService) convertToChangelogs(_ context.Context, d *store.Databa
 }
 
 func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
-	changelogType := convertToChangelogType(c.Payload.GetType())
-
 	cl := &v1pb.Changelog{
 		Name:       common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
 		CreateTime: timestamppb.New(c.CreatedAt),
@@ -231,7 +201,6 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		Schema:     "",
 		SchemaSize: 0,
 		TaskRun:    c.Payload.GetTaskRun(),
-		Type:       changelogType,
 		PlanTitle:  c.PlanTitle,
 	}
 
@@ -266,37 +235,5 @@ func convertToChangelogStoreStatus(s v1pb.Changelog_Status) store.ChangelogStatu
 		return store.ChangelogStatusPending
 	default:
 		return store.ChangelogStatusDone
-	}
-}
-
-func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type {
-	//exhaustive:enforce
-	switch t {
-	case storepb.ChangelogPayload_BASELINE:
-		return v1pb.Changelog_BASELINE
-	case storepb.ChangelogPayload_MIGRATE:
-		return v1pb.Changelog_MIGRATE
-	case storepb.ChangelogPayload_SDL:
-		return v1pb.Changelog_SDL
-	case storepb.ChangelogPayload_TYPE_UNSPECIFIED:
-		return v1pb.Changelog_TYPE_UNSPECIFIED
-	default:
-		return v1pb.Changelog_TYPE_UNSPECIFIED
-	}
-}
-
-func convertToChangelogStoreType(t v1pb.Changelog_Type) storepb.ChangelogPayload_Type {
-	//exhaustive:enforce
-	switch t {
-	case v1pb.Changelog_BASELINE:
-		return storepb.ChangelogPayload_BASELINE
-	case v1pb.Changelog_MIGRATE:
-		return storepb.ChangelogPayload_MIGRATE
-	case v1pb.Changelog_SDL:
-		return storepb.ChangelogPayload_SDL
-	case v1pb.Changelog_TYPE_UNSPECIFIED:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
-	default:
-		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	}
 }

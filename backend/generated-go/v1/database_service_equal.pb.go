@@ -1698,9 +1698,6 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.PlanTitle != y.PlanTitle {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
 	return true
 }
 

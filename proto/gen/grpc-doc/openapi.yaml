@@ -11265,9 +11265,6 @@ components:
             The title of the plan associated with this changelog's task run.
              This field is populated by deriving the plan from task_run for display purposes.
           readOnly: true
-        type:
-          title: type
-          $ref: '#/components/schemas/bytebase.v1.Changelog.Type'
       title: Changelog
       additionalProperties: false
     bytebase.v1.Changelog.Status:
@@ -11278,14 +11275,6 @@ components:
         - PENDING
         - DONE
         - FAILED
-    bytebase.v1.Changelog.Type:
-      type: string
-      title: Type
-      enum:
-        - TYPE_UNSPECIFIED
-        - BASELINE
-        - MIGRATE
-        - SDL
     bytebase.v1.ChangelogView:
       type: string
       title: ChangelogView
