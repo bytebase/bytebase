@@ -530,6 +530,7 @@ CREATE TABLE release (
     created_at timestamptz NOT NULL DEFAULT now(),
     train text NOT NULL DEFAULT '',
     iteration integer NOT NULL DEFAULT 0,
+    category text NOT NULL DEFAULT '',
     -- Stored as ReleasePayload (proto/store/store/release.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -539,6 +540,7 @@ ALTER SEQUENCE release_id_seq RESTART WITH 101;
 CREATE INDEX idx_release_project ON release(project);
 CREATE UNIQUE INDEX idx_release_project_train_iteration ON release(project, train, iteration);
 CREATE INDEX idx_release_project_release_id ON release(project, release_id);
+CREATE INDEX idx_release_category ON release(project, category) WHERE deleted = FALSE;
 
 -- OAuth2 tables
 CREATE TABLE oauth2_client (

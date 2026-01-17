@@ -101,6 +101,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	releaseMessage := &store.ReleaseMessage{
 		ProjectID: project.ResourceID,
 		Train:     req.Msg.Train,
+		Category:  req.Msg.Release.Category,
 		Payload: &storepb.ReleasePayload{
 			VcsSource: convertReleaseVcsSource(req.Msg.Release.VcsSource),
 			Type:      storepb.SchemaChangeType(req.Msg.Release.Type),
@@ -194,6 +195,17 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 		ShowDeleted: req.Msg.ShowDeleted,
 	}
 
+	// Parse filter for category
+	if req.Msg.Filter != "" {
+		category, err := parseCategoryFilter(req.Msg.Filter)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid filter"))
+		}
+		if category != "" {
+			releaseFind.Category = &category
+		}
+	}
+
 	releaseMessages, err := s.store.ListReleases(ctx, releaseFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list releases"))
@@ -284,6 +296,7 @@ func convertToReleases(releases []*store.ReleaseMessage) []*v1pb.Release {
 func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	r := &v1pb.Release{
 		Name:       common.FormatReleaseName(release.ProjectID, release.ReleaseID),
+		Category:   release.Category,
 		Creator:    common.FormatUserEmail(release.Creator),
 		CreateTime: timestamppb.New(release.At),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
@@ -415,5 +428,29 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 				return
 			}
 		}
+	}), nil
+}
+
+func (s *ReleaseService) ListReleaseCategories(ctx context.Context, req *connect.Request[v1pb.ListReleaseCategoriesRequest]) (*connect.Response[v1pb.ListReleaseCategoriesResponse], error) {
+	projectID, err := common.GetProjectID(req.Msg.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
+	}
+
+	categories, err := s.store.ListReleaseCategories(ctx, project.ResourceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list release categories"))
+	}
+
+	return connect.NewResponse(&v1pb.ListReleaseCategoriesResponse{
+		Categories: categories,
 	}), nil
 }
