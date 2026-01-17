@@ -32,7 +32,7 @@ func TestTriggerDiffStructure(t *testing.T) {
 
 	previousSDL := ""
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.Len(t, diff.TableChanges, 1, "Should have one table change")
 
@@ -87,7 +87,7 @@ func TestCreateTriggerExtraction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.sql, "", nil, nil)
+			diff, err := GetSDLDiff(tt.sql, "", nil)
 			require.NoError(t, err)
 
 			totalTriggers := 0
@@ -108,7 +108,7 @@ func TestTriggerCommentExtraction(t *testing.T) {
 		COMMENT ON TRIGGER audit_trigger ON users IS 'Audit log trigger';
 	`
 
-	diff, err := GetSDLDiff(sql, "", nil, nil)
+	diff, err := GetSDLDiff(sql, "", nil)
 	require.NoError(t, err)
 
 	// Check that comment change exists
@@ -135,7 +135,7 @@ func TestDropTriggerMigration(t *testing.T) {
 		CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
 	`
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migration, err := generateMigration(diff)
@@ -162,7 +162,7 @@ func TestCreateTriggerMigrationWithDependencyOrder(t *testing.T) {
 		FOR EACH ROW EXECUTE FUNCTION audit_log();
 	`
 
-	diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+	diff, err := GetSDLDiff(currentSDL, "", nil)
 	require.NoError(t, err)
 
 	migration, err := generateMigration(diff)
@@ -197,7 +197,7 @@ func TestTriggerCommentMigration(t *testing.T) {
 		COMMENT ON TRIGGER audit_trigger ON users IS 'Audit log trigger';
 	`
 
-	diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+	diff, err := GetSDLDiff(currentSDL, "", nil)
 	require.NoError(t, err)
 
 	migration, err := generateMigration(diff)
@@ -275,7 +275,7 @@ func TestStandaloneTriggerDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil)
 			require.NoError(t, err)
 
 			totalTriggers := 0
@@ -308,7 +308,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			CREATE TRIGGER update_trigger BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION log_update();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		totalTriggers := 0
@@ -331,7 +331,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			CREATE TRIGGER event_trigger AFTER INSERT ON app.events FOR EACH ROW EXECUTE FUNCTION app.notify();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		found := false
@@ -355,7 +355,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			EXECUTE FUNCTION check_price();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		migration, err := generateMigration(diff)
@@ -378,7 +378,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			CREATE TRIGGER t2 AFTER UPDATE ON users FOR EACH ROW EXECUTE FUNCTION f();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 
 		// Should have 1 change for t1 (ALTER using CREATE OR REPLACE), none for t2
@@ -405,7 +405,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH ROW EXECUTE FUNCTION log_changes();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		migration, err := generateMigration(diff)
@@ -423,7 +423,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH STATEMENT EXECUTE FUNCTION stmt_trigger();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		migration, err := generateMigration(diff)
@@ -441,7 +441,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			COMMENT ON TRIGGER t2 ON events IS 'Update trigger';
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		// Check both comments are extracted
@@ -466,7 +466,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			CREATE FUNCTION f() RETURNS TRIGGER AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
 		`
 
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 
 		// Should have trigger drop
@@ -490,7 +490,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH ROW EXECUTE FUNCTION check_stock();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		migration, err := generateMigration(diff)
@@ -508,7 +508,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH ROW EXECUTE FUNCTION instead_trigger();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		migration, err := generateMigration(diff)
@@ -526,7 +526,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH ROW EXECUTE FUNCTION test_func();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, "", nil, nil)
+		diff, err := GetSDLDiff(currentSDL, "", nil)
 		require.NoError(t, err)
 
 		migration, err := generateMigration(diff)
@@ -555,7 +555,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH ROW EXECUTE FUNCTION test_func();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 
 		// Should have 1 ALTER action (not DROP + CREATE)
@@ -598,7 +598,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			COMMENT ON TRIGGER audit_trigger ON users IS 'Updated comment';
 		`
 
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 
 		// Trigger itself should NOT have ALTER action (definition unchanged)
@@ -652,7 +652,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			COMMENT ON TRIGGER audit_trigger ON users IS 'New comment';
 		`
 
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 
 		// Trigger should NOT have ALTER action
@@ -704,7 +704,7 @@ func TestTriggerSDLIntegration(t *testing.T) {
 			FOR EACH ROW EXECUTE FUNCTION audit();
 		`
 
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 
 		// Trigger should NOT have ALTER action

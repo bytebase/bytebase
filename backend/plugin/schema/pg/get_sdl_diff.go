@@ -20,7 +20,7 @@ func init() {
 	schema.RegisterGetSDLDiff(storepb.Engine_COCKROACHDB, GetSDLDiff)
 }
 
-func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseMetadata) (*schema.MetadataDiff, error) {
+func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*schema.MetadataDiff, error) {
 	generatedSDL, err := convertDatabaseSchemaToSDL(currentSchema)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert current schema to SDL format for initialization")
@@ -50,14 +50,6 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 		return nil, errors.Wrap(err, "failed to chunk previous SDL text")
 	}
 
-	// Check for drift scenario: when both schemas are provided, apply minimal changes to previousChunks
-	if currentSchema != nil && previousSchema != nil {
-		err = applyMinimalChangesToChunks(previousChunks, currentSchema, previousSchema)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to apply minimal changes to SDL chunks")
-		}
-	}
-
 	// Pre-compute SDL chunks from current database metadata for performance optimization
 	// This avoids repeated calls to convertDatabaseSchemaToSDL and ChunkSDLText during usability checks
 	currentDBSDLChunks, err := buildCurrentDatabaseSDLChunks(currentSchema)
@@ -80,7 +72,7 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 	}
 
 	// Process table changes
-	err = processTableChanges(currentChunks, previousChunks, currentSchema, previousSchema, currentDBSDLChunks, diff)
+	err = processTableChanges(currentChunks, previousChunks, currentSchema, currentDBSDLChunks, diff)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to process table changes")
 	}
@@ -127,204 +119,14 @@ func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previ
 
 // applyMinimalChangesToChunks applies minimal changes to the previous SDL chunks based on schema differences
 // This implements the minimal change principle for drift scenarios by directly manipulating chunks
-func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get table differences between schemas
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Create maps for efficient table lookup using full schema.table identifier
-	currentTables := make(map[string]*storepb.TableMetadata)
-	previousTables := make(map[string]*storepb.TableMetadata)
-
-	// Build current tables map with proper schema qualification
-	for _, schema := range currentMetadata.Schemas {
-		schemaName := schema.Name
-		if schemaName == "" {
-			schemaName = "public" // Default schema for PostgreSQL
-		}
-		for _, table := range schema.Tables {
-			tableKey := schemaName + "." + table.Name
-			currentTables[tableKey] = table
-		}
-	}
-
-	// Build previous tables map with proper schema qualification
-	for _, schema := range previousMetadata.Schemas {
-		schemaName := schema.Name
-		if schemaName == "" {
-			schemaName = "public" // Default schema for PostgreSQL
-		}
-		for _, table := range schema.Tables {
-			tableKey := schemaName + "." + table.Name
-			previousTables[tableKey] = table
-		}
-	}
-
-	// Build existing chunk keys mapping for table operations
-	existingChunkKeys := make(map[string]string) // schema.table -> chunk key
-	for chunkKey, chunk := range previousChunks.Tables {
-		if chunk != nil {
-			existingChunkKeys[chunk.Identifier] = chunkKey
-		}
-	}
-
-	// Build sequences map: schema.table -> sequences for that table
-	tableSequencesMap := make(map[string][]*storepb.SequenceMetadata)
-	for _, schema := range currentMetadata.Schemas {
-		schemaName := schema.Name
-		if schemaName == "" {
-			schemaName = "public"
-		}
-		for _, sequence := range schema.Sequences {
-			if sequence.OwnerTable != "" {
-				tableKey := schemaName + "." + sequence.OwnerTable
-				tableSequencesMap[tableKey] = append(tableSequencesMap[tableKey], sequence)
-			}
-		}
-	}
-
-	// Process table additions: add new tables to chunks
-	for tableKey, currentTable := range currentTables {
-		if _, exists := previousTables[tableKey]; !exists {
-			// Table was added - generate SDL for the new table and parse it to AST
-			var buf strings.Builder
-			schemaName, _ := parseIdentifier(tableKey)
-			// Get sequences for this table
-			tableSequences := tableSequencesMap[tableKey]
-			err := writeCreateTableSDL(&buf, schemaName, currentTable, tableSequences)
-			if err != nil {
-				return errors.Wrapf(err, "failed to generate SDL for new table %s", tableKey)
-			}
-			tableSDL := buf.String()
-
-			// Parse the generated SDL to create AST node
-			parseResults, err := pgparser.ParsePostgreSQL(tableSDL)
-			if err != nil {
-				return errors.Wrapf(err, "failed to parse generated SDL for new table %s", tableKey)
-			}
-
-			// Extract the CREATE TABLE AST node
-			if len(parseResults) != 1 {
-				return errors.Errorf("expected exactly one statement, got %d", len(parseResults))
-			}
-			parseResult := parseResults[0]
-			var createTableNode *parser.CreatestmtContext
-			antlr.ParseTreeWalkerDefault.Walk(&createTableExtractor{
-				result: &createTableNode,
-			}, parseResult.Tree)
-
-			if createTableNode == nil {
-				return errors.Errorf("failed to extract CREATE TABLE AST node for new table %s", tableKey)
-			}
-
-			// Always use schema.table format for all table identifiers
-			chunkKey := tableKey
-
-			// Add the new table chunk with proper AST node
-			previousChunks.Tables[chunkKey] = &schema.SDLChunk{
-				Identifier: chunkKey,
-				ASTNode:    createTableNode,
-			}
-		}
-	}
-
-	// Process table modifications: apply column-level changes using ANTLR rewrite
-	for tableKey, currentTable := range currentTables {
-		if previousTable, exists := previousTables[tableKey]; exists {
-			// Table exists in both schemas - check for column differences
-			if existingKey, chunkExists := existingChunkKeys[tableKey]; chunkExists {
-				if chunk := previousChunks.Tables[existingKey]; chunk != nil {
-					// Get sequences for this table
-					tableSequences := tableSequencesMap[tableKey]
-					// Apply both column and constraint changes to the existing chunk using a single rewriter
-					err := applyTableChangesToChunk(chunk, currentTable, previousTable, tableSequences)
-					if err != nil {
-						return errors.Wrapf(err, "failed to apply table changes to table %s", tableKey)
-					}
-				}
-			}
-		}
-	}
-
-	// Process table deletions: remove dropped tables from chunks
-	for tableKey := range previousTables {
-		if _, exists := currentTables[tableKey]; !exists {
-			// Table was dropped - find the corresponding chunk key and remove it
-			if existingKey, exists := existingChunkKeys[tableKey]; exists {
-				delete(previousChunks.Tables, existingKey)
-			}
-			// If no mapping exists, the table was not in the original chunks,
-			// so there's nothing to delete - this is the expected behavior
-		}
-	}
-
-	// Process standalone index changes: apply minimal changes to index chunks
-	err := applyStandaloneIndexChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply standalone index changes")
-	}
-
-	// Process function changes: apply minimal changes to function chunks
-	err = applyFunctionChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply function changes")
-	}
-
-	// Process sequence changes: apply minimal changes to sequence chunks
-	err = applySequenceChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply sequence changes")
-	}
-
-	// Process view changes: apply minimal changes to view chunks
-	err = applyViewChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply view changes")
-	}
-
-	// Process materialized view changes: apply minimal changes to materialized view chunks
-	err = applyMaterializedViewChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply materialized view changes")
-	}
-
-	// Process enum type changes: apply minimal changes to enum type chunks
-	err = applyEnumTypeChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply enum type changes")
-	}
-
-	// Process extension changes: apply minimal changes to extension chunks
-	// Extensions are database-level objects
-	err = applyExtensionChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply extension changes")
-	}
-
-	// Process trigger changes: apply minimal changes to trigger chunks
-	err = applyTriggerChangesToChunks(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply trigger changes")
-	}
-
-	// Process column comment changes: sync column comments based on metadata
-	err = applyColumnCommentChanges(previousChunks, currentSchema, previousSchema)
-	if err != nil {
-		return errors.Wrap(err, "failed to apply column comment changes")
-	}
-
+func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema *model.DatabaseMetadata) error {
 	return nil
 }
 
 // applyTableChangesToChunk applies minimal column and constraint changes to an existing CREATE TABLE chunk
 // by working with the individual chunk's SQL text instead of the full script's tokenStream
+//
+//nolint:unused
 func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTable *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	if chunk == nil || chunk.ASTNode == nil || currentTable == nil || previousTable == nil {
 		return nil
@@ -422,6 +224,8 @@ func applyTableChangesToChunk(chunk *schema.SDLChunk, currentTable, previousTabl
 }
 
 // applyColumnChanges applies column changes using the provided rewriter without parsing SQL
+//
+//nolint:unused
 func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, currentTable, previousTable *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
 	// Create column maps for efficient lookups
 	currentColumns := make(map[string]*storepb.ColumnMetadata)
@@ -481,6 +285,8 @@ func applyColumnChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.
 }
 
 // applyConstraintChanges applies constraint changes using the provided rewriter without parsing SQL
+//
+//nolint:unused
 func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, currentTable, previousTable *storepb.TableMetadata) error {
 	// Create constraint maps for efficient lookups
 	currentCheckConstraints := make(map[string]*storepb.CheckConstraintMetadata)
@@ -746,6 +552,8 @@ func applyConstraintChanges(rewriter *antlr.TokenStreamRewriter, createStmt *par
 
 // deleteColumnFromAST removes a column definition from the CREATE TABLE statement using token rewriter
 // Improved comma handling: always look for a following comma first, regardless of column position
+//
+//nolint:unused
 func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, _ *parser.CreatestmtContext) error {
 	if columnDef == nil {
 		return errors.New("column definition is nil")
@@ -844,6 +652,8 @@ func deleteColumnFromAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.I
 }
 
 // modifyColumnInAST modifies an existing column definition using token rewriter
+//
+//nolint:unused
 func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.IColumnDefContext, newColumn *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) error {
 	if columnDef == nil || newColumn == nil {
 		return errors.New("column definition or new column metadata is nil")
@@ -865,6 +675,8 @@ func modifyColumnInAST(rewriter *antlr.TokenStreamRewriter, columnDef parser.ICo
 }
 
 // addColumnToAST adds a new column definition to the CREATE TABLE statement
+//
+//nolint:unused
 func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newColumn *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) error {
 	if createStmt == nil || newColumn == nil {
 		return errors.New("create statement or new column metadata is nil")
@@ -910,6 +722,8 @@ func addColumnToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.Crea
 }
 
 // generateColumnSDL generates SDL text for a single column definition using the extracted writeColumnSDL function
+//
+//nolint:unused
 func generateColumnSDL(column *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) string {
 	if column == nil {
 		return ""
@@ -927,6 +741,8 @@ func generateColumnSDL(column *storepb.ColumnMetadata, tableName string, sequenc
 }
 
 // columnsEqual compares two column metadata objects for equality
+//
+//nolint:unused
 func columnsEqual(a, b *storepb.ColumnMetadata) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -1228,6 +1044,8 @@ func convertDatabaseSchemaToSDL(dbMetadata *model.DatabaseMetadata) (string, err
 }
 
 // deleteConstraintFromAST removes a constraint definition from the CREATE TABLE statement using token rewriter
+//
+//nolint:unused
 func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST parser.ITableconstraintContext, _ *parser.CreatestmtContext) error {
 	if constraintAST == nil || rewriter == nil {
 		return errors.New("constraint AST or rewriter is nil")
@@ -1328,6 +1146,8 @@ func deleteConstraintFromAST(rewriter *antlr.TokenStreamRewriter, constraintAST 
 }
 
 // modifyConstraintInAST modifies a constraint definition using token rewriter
+//
+//nolint:unused
 func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST parser.ITableconstraintContext, newConstraint any) error {
 	if constraintAST == nil || rewriter == nil || newConstraint == nil {
 		return errors.New("constraint AST, rewriter, or new constraint is nil")
@@ -1369,6 +1189,8 @@ func modifyConstraintInAST(rewriter *antlr.TokenStreamRewriter, constraintAST pa
 }
 
 // addConstraintToAST adds a new constraint to the CREATE TABLE statement using token rewriter
+//
+//nolint:unused
 func addConstraintToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.CreatestmtContext, newConstraint any) error {
 	if rewriter == nil || createStmt == nil || newConstraint == nil {
 		return errors.New("rewriter, create statement, or new constraint is nil")
@@ -1430,6 +1252,8 @@ func addConstraintToAST(rewriter *antlr.TokenStreamRewriter, createStmt *parser.
 }
 
 // generateCheckConstraintSDL generates SDL text for a check constraint using the existing writeCheckConstraintSDL function
+//
+//nolint:unused
 func generateCheckConstraintSDL(constraint *storepb.CheckConstraintMetadata) string {
 	if constraint == nil {
 		return ""
@@ -1447,6 +1271,8 @@ func generateCheckConstraintSDL(constraint *storepb.CheckConstraintMetadata) str
 }
 
 // generateForeignKeyConstraintSDL generates SDL text for a foreign key constraint using the existing writeForeignKeyConstraintSDL function
+//
+//nolint:unused
 func generateForeignKeyConstraintSDL(constraint *storepb.ForeignKeyMetadata) string {
 	if constraint == nil {
 		return ""
@@ -1464,6 +1290,8 @@ func generateForeignKeyConstraintSDL(constraint *storepb.ForeignKeyMetadata) str
 }
 
 // generateExcludeConstraintSDL generates SDL text for an EXCLUDE constraint using the existing writeExcludeConstraintSDL function
+//
+//nolint:unused
 func generateExcludeConstraintSDL(constraint *storepb.ExcludeConstraintMetadata) string {
 	if constraint == nil {
 		return ""
@@ -1481,6 +1309,8 @@ func generateExcludeConstraintSDL(constraint *storepb.ExcludeConstraintMetadata)
 }
 
 // constraintsEqual compares two check constraint metadata objects for equality
+//
+//nolint:unused
 func constraintsEqual(a, b *storepb.CheckConstraintMetadata) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -1490,6 +1320,8 @@ func constraintsEqual(a, b *storepb.CheckConstraintMetadata) bool {
 }
 
 // fkConstraintsEqual compares two foreign key constraint metadata objects for equality
+//
+//nolint:unused
 func fkConstraintsEqual(a, b *storepb.ForeignKeyMetadata) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -1539,6 +1371,8 @@ func extractForeignKeyDefinitionsWithAST(createStmt *parser.CreatestmtContext) [
 
 // extractExcludeConstraintDefinitionsWithAST extracts EXCLUDE constraint definitions with their AST nodes
 // Note: This is a wrapper around the existing function with a different name for clarity
+//
+//nolint:unused
 func extractExcludeConstraintDefinitionsWithAST(createStmt *parser.CreatestmtContext) []*ExcludeConstraintDefWithAST {
 	return extractExcludeConstraintDefinitionsInOrder(createStmt)
 }
@@ -1556,6 +1390,8 @@ type UniqueKeyDefWithAST struct {
 }
 
 // extractPrimaryKeyDefinitionsInOrder extracts primary key constraint definitions with their AST nodes
+//
+//nolint:unused
 func extractPrimaryKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*PrimaryKeyDefWithAST {
 	var pkDefs []*PrimaryKeyDefWithAST
 
@@ -1610,6 +1446,8 @@ func extractPrimaryKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) [
 }
 
 // extractUniqueKeyDefinitionsInOrder extracts unique key constraint definitions with their AST nodes
+//
+//nolint:unused
 func extractUniqueKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []*UniqueKeyDefWithAST {
 	var ukDefs []*UniqueKeyDefWithAST
 
@@ -1664,6 +1502,8 @@ func extractUniqueKeyDefinitionsInOrder(createStmt *parser.CreatestmtContext) []
 }
 
 // pkConstraintsEqual checks if two primary key constraints are equal
+//
+//nolint:unused
 func pkConstraintsEqual(a, b *storepb.IndexMetadata) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -1689,6 +1529,8 @@ func pkConstraintsEqual(a, b *storepb.IndexMetadata) bool {
 }
 
 // ukConstraintsEqual checks if two unique key constraints are equal
+//
+//nolint:unused
 func ukConstraintsEqual(a, b *storepb.IndexMetadata) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -1714,6 +1556,8 @@ func ukConstraintsEqual(a, b *storepb.IndexMetadata) bool {
 }
 
 // excludeConstraintsEqual compares two EXCLUDE constraint metadata objects for equality
+//
+//nolint:unused
 func excludeConstraintsEqual(a, b *storepb.ExcludeConstraintMetadata) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -1723,6 +1567,8 @@ func excludeConstraintsEqual(a, b *storepb.ExcludeConstraintMetadata) bool {
 }
 
 // generatePrimaryKeyConstraintSDL generates SDL text for a primary key constraint
+//
+//nolint:unused
 func generatePrimaryKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 	if constraint == nil || !constraint.Primary {
 		return ""
@@ -1737,6 +1583,8 @@ func generatePrimaryKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 }
 
 // generateUniqueKeyConstraintSDL generates SDL text for a unique key constraint
+//
+//nolint:unused
 func generateUniqueKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 	if constraint == nil || !constraint.Unique || constraint.Primary || !constraint.IsConstraint {
 		return ""
@@ -1751,6 +1599,8 @@ func generateUniqueKeyConstraintSDL(constraint *storepb.IndexMetadata) string {
 }
 
 // extendedIndexMetadata stores index metadata with table and schema context
+//
+//nolint:unused
 type extendedIndexMetadata struct {
 	*storepb.IndexMetadata
 	SchemaName string
@@ -1761,137 +1611,12 @@ type extendedIndexMetadata struct {
 // applyStandaloneIndexChangesToChunks applies minimal changes to standalone CREATE INDEX chunks
 // This handles creation, modification, and deletion of independent index statements
 func applyStandaloneIndexChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get index differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build index maps for current and previous schemas
-	currentIndexes := make(map[string]*extendedIndexMetadata)
-	previousIndexes := make(map[string]*extendedIndexMetadata)
-
-	// Collect all standalone indexes from current schema (only non-constraint indexes)
-	for _, schema := range currentMetadata.Schemas {
-		// Collect indexes from tables
-		for _, table := range schema.Tables {
-			for _, index := range table.Indexes {
-				// Only include standalone indexes (not constraints like PRIMARY KEY, UNIQUE CONSTRAINT)
-				if !index.IsConstraint && !index.Primary {
-					indexKey := formatIndexKey(schema.Name, index.Name)
-					// Store extended index metadata with table/schema context
-					extendedIndex := &extendedIndexMetadata{
-						IndexMetadata: index,
-						SchemaName:    schema.Name,
-						TableName:     table.Name,
-						TargetType:    "table",
-					}
-					currentIndexes[indexKey] = extendedIndex
-				}
-			}
-		}
-
-		// Collect indexes from materialized views
-		for _, mv := range schema.MaterializedViews {
-			for _, index := range mv.Indexes {
-				// Only include standalone indexes (not constraints)
-				if !index.IsConstraint && !index.Primary {
-					indexKey := formatIndexKey(schema.Name, index.Name)
-					// Store extended index metadata with materialized view/schema context
-					extendedIndex := &extendedIndexMetadata{
-						IndexMetadata: index,
-						SchemaName:    schema.Name,
-						TableName:     mv.Name,
-						TargetType:    "materialized_view",
-					}
-					currentIndexes[indexKey] = extendedIndex
-				}
-			}
-		}
-	}
-
-	// Collect all standalone indexes from previous schema
-	for _, schema := range previousMetadata.Schemas {
-		// Collect indexes from tables
-		for _, table := range schema.Tables {
-			for _, index := range table.Indexes {
-				// Only include standalone indexes (not constraints)
-				if !index.IsConstraint && !index.Primary {
-					indexKey := formatIndexKey(schema.Name, index.Name)
-					extendedIndex := &extendedIndexMetadata{
-						IndexMetadata: index,
-						SchemaName:    schema.Name,
-						TableName:     table.Name,
-						TargetType:    "table",
-					}
-					previousIndexes[indexKey] = extendedIndex
-				}
-			}
-		}
-
-		// Collect indexes from materialized views
-		for _, mv := range schema.MaterializedViews {
-			for _, index := range mv.Indexes {
-				// Only include standalone indexes (not constraints)
-				if !index.IsConstraint && !index.Primary {
-					indexKey := formatIndexKey(schema.Name, index.Name)
-					extendedIndex := &extendedIndexMetadata{
-						IndexMetadata: index,
-						SchemaName:    schema.Name,
-						TableName:     mv.Name,
-						TargetType:    "materialized_view",
-					}
-					previousIndexes[indexKey] = extendedIndex
-				}
-			}
-		}
-	}
-
-	// Process index additions: create new index chunks
-	for indexKey, currentIndex := range currentIndexes {
-		if _, exists := previousIndexes[indexKey]; !exists {
-			// New index - create a chunk for it
-			err := createIndexChunk(previousChunks, currentIndex, indexKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create index chunk for %s", indexKey)
-			}
-		}
-	}
-
-	// Process index modifications: update existing chunks
-	for indexKey, currentIndex := range currentIndexes {
-		if previousIndex, exists := previousIndexes[indexKey]; exists {
-			// Index exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
-			if _, chunkExists := previousChunks.Indexes[indexKey]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateIndexChunkIfNeeded(previousChunks, currentIndex, previousIndex, indexKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update index chunk for %s", indexKey)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this index in SDL
-		}
-	}
-
-	// Process index deletions: remove dropped index chunks
-	for indexKey := range previousIndexes {
-		if _, exists := currentIndexes[indexKey]; !exists {
-			// Index was dropped - remove it from chunks
-			deleteIndexChunk(previousChunks, indexKey)
-		}
-	}
-
 	return nil
 }
 
 // formatIndexKey creates a consistent key for index identification
+//
+//nolint:unused
 func formatIndexKey(schemaName, indexName string) string {
 	if schemaName == "" {
 		schemaName = "public"
@@ -1900,6 +1625,8 @@ func formatIndexKey(schemaName, indexName string) string {
 }
 
 // createIndexChunk creates a new CREATE INDEX chunk and adds it to the chunks
+//
+//nolint:unused
 func createIndexChunk(chunks *schema.SDLChunks, extIndex *extendedIndexMetadata, indexKey string) error {
 	if extIndex == nil || extIndex.IndexMetadata == nil || chunks == nil {
 		return nil
@@ -1959,6 +1686,8 @@ func createIndexChunk(chunks *schema.SDLChunks, extIndex *extendedIndexMetadata,
 }
 
 // updateIndexChunkIfNeeded updates an existing index chunk if the index definition has changed
+//
+//nolint:unused
 func updateIndexChunkIfNeeded(chunks *schema.SDLChunks, currentIndex, previousIndex *extendedIndexMetadata, indexKey string) error {
 	if currentIndex == nil || previousIndex == nil || chunks == nil {
 		return nil
@@ -2021,6 +1750,8 @@ func updateIndexChunkIfNeeded(chunks *schema.SDLChunks, currentIndex, previousIn
 }
 
 // indexDefinitionsEqualExcludingComment compares two index definitions excluding comments
+//
+//nolint:unused
 func indexDefinitionsEqualExcludingComment(index1, index2 *storepb.IndexMetadata) bool {
 	if index1 == nil || index2 == nil {
 		return false
@@ -2053,6 +1784,8 @@ func indexDefinitionsEqualExcludingComment(index1, index2 *storepb.IndexMetadata
 }
 
 // deleteIndexChunk removes an index chunk from the chunks
+//
+//nolint:unused
 func deleteIndexChunk(chunks *schema.SDLChunks, indexKey string) {
 	if chunks != nil && chunks.Indexes != nil {
 		delete(chunks.Indexes, indexKey)
@@ -2060,6 +1793,8 @@ func deleteIndexChunk(chunks *schema.SDLChunks, indexKey string) {
 }
 
 // indexDefinitionsEqual compares two index definitions to see if they are equivalent
+//
+//nolint:unused
 func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
 	// First check everything except comment
 	if !indexDefinitionsEqualExcludingComment(index1, index2) {
@@ -2075,6 +1810,8 @@ func indexDefinitionsEqual(index1, index2 *storepb.IndexMetadata) bool {
 }
 
 // generateCreateIndexSDL generates SDL text for a CREATE INDEX statement using writeIndexSDL
+//
+//nolint:unused
 func generateCreateIndexSDL(extIndex *extendedIndexMetadata) string {
 	if extIndex == nil || extIndex.IndexMetadata == nil {
 		return ""
@@ -2095,11 +1832,14 @@ func generateCreateIndexSDL(extIndex *extendedIndexMetadata) string {
 }
 
 // indexExtractor is a walker to extract CREATE INDEX AST nodes
+//
+//nolint:unused
 type indexExtractor struct {
 	parser.BasePostgreSQLParserListener
 	result **parser.IndexstmtContext
 }
 
+//nolint:unused
 func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	if e.result != nil && *e.result == nil {
 		*e.result = ctx
@@ -2109,77 +1849,12 @@ func (e *indexExtractor) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 // applyFunctionChangesToChunks applies minimal changes to CREATE FUNCTION chunks
 // This handles creation, modification, and deletion of function statements
 func applyFunctionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get function differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build function maps for current and previous schemas
-	currentFunctions := make(map[string]*storepb.FunctionMetadata)
-	previousFunctions := make(map[string]*storepb.FunctionMetadata)
-
-	// Collect all functions from current schema
-	for _, schema := range currentMetadata.Schemas {
-		for _, function := range schema.Functions {
-			functionKey := formatFunctionKey(schema.Name, function)
-			currentFunctions[functionKey] = function
-		}
-	}
-
-	// Collect all functions from previous schema
-	for _, schema := range previousMetadata.Schemas {
-		for _, function := range schema.Functions {
-			functionKey := formatFunctionKey(schema.Name, function)
-			previousFunctions[functionKey] = function
-		}
-	}
-
-	// Process function additions: create new function chunks
-	for functionKey, currentFunction := range currentFunctions {
-		if _, exists := previousFunctions[functionKey]; !exists {
-			// New function - create a chunk for it
-			err := createFunctionChunk(previousChunks, currentFunction, functionKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create function chunk for %s", functionKey)
-			}
-		}
-	}
-
-	// Process function modifications: update existing chunks
-	for functionKey, currentFunction := range currentFunctions {
-		if previousFunction, exists := previousFunctions[functionKey]; exists {
-			// Function exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
-			if _, chunkExists := previousChunks.Functions[functionKey]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateFunctionChunkIfNeeded(previousChunks, currentFunction, previousFunction, functionKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update function chunk for %s", functionKey)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this function in SDL
-		}
-	}
-
-	// Process function deletions: remove dropped function chunks
-	for functionKey := range previousFunctions {
-		if _, exists := currentFunctions[functionKey]; !exists {
-			// Function was dropped - remove it from chunks
-			deleteFunctionChunk(previousChunks, functionKey)
-		}
-	}
-
 	return nil
 }
 
 // formatFunctionKey creates a consistent key for function identification using the full signature
+//
+//nolint:unused
 func formatFunctionKey(schemaName string, function *storepb.FunctionMetadata) string {
 	if schemaName == "" {
 		schemaName = "public"
@@ -2196,6 +1871,8 @@ func formatFunctionKey(schemaName string, function *storepb.FunctionMetadata) st
 }
 
 // extractFunctionSignatureFromDefinition extracts the function signature from its definition
+//
+//nolint:unused
 func extractFunctionSignatureFromDefinition(function *storepb.FunctionMetadata) string {
 	if function == nil || function.Definition == "" {
 		return ""
@@ -2268,6 +1945,8 @@ func extractFunctionSignatureFromAST(ctx *parser.CreatefunctionstmtContext) stri
 }
 
 // createFunctionChunk creates a new CREATE FUNCTION chunk and adds it to the chunks
+//
+//nolint:unused
 func createFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMetadata, functionKey string) error {
 	if function == nil || chunks == nil {
 		return nil
@@ -2314,6 +1993,8 @@ func createFunctionChunk(chunks *schema.SDLChunks, function *storepb.FunctionMet
 }
 
 // updateFunctionChunkIfNeeded updates a function chunk if the definition has changed
+//
+//nolint:unused
 func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, previousFunction *storepb.FunctionMetadata, functionKey string) error {
 	if currentFunction == nil || previousFunction == nil || chunks == nil {
 		return nil
@@ -2364,6 +2045,8 @@ func updateFunctionChunkIfNeeded(chunks *schema.SDLChunks, currentFunction, prev
 // updateFunctionChunk updates an existing function chunk with new definition
 // This function synchronizes the CREATE FUNCTION and COMMENT ON FUNCTION statements
 // deleteFunctionChunk removes a function chunk from the chunks
+//
+//nolint:unused
 func deleteFunctionChunk(chunks *schema.SDLChunks, functionKey string) {
 	if chunks != nil && chunks.Functions != nil {
 		delete(chunks.Functions, functionKey)
@@ -2371,6 +2054,8 @@ func deleteFunctionChunk(chunks *schema.SDLChunks, functionKey string) {
 }
 
 // generateCreateFunctionSDL generates SDL for a CREATE FUNCTION statement
+//
+//nolint:unused
 func generateCreateFunctionSDL(function *storepb.FunctionMetadata) string {
 	if function == nil {
 		return ""
@@ -2386,6 +2071,8 @@ func generateCreateFunctionSDL(function *storepb.FunctionMetadata) string {
 }
 
 // extractFunctionTextFromAST extracts normalized text from function AST node using token stream
+//
+//nolint:unused
 func extractFunctionTextFromAST(functionAST *parser.CreatefunctionstmtContext) string {
 	if functionAST == nil {
 		return ""
@@ -2407,6 +2094,8 @@ func extractFunctionTextFromAST(functionAST *parser.CreatefunctionstmtContext) s
 }
 
 // functionDefinitionsEqual compares two function definitions to see if they are equivalent
+//
+//nolint:unused
 func functionDefinitionsEqual(function1, function2 *storepb.FunctionMetadata) bool {
 	// First check everything except comment
 	if !functionDefinitionsEqualExcludingComment(function1, function2) {
@@ -2422,6 +2111,8 @@ func functionDefinitionsEqual(function1, function2 *storepb.FunctionMetadata) bo
 }
 
 // functionDefinitionsEqualExcludingComment compares two function definitions excluding comments
+//
+//nolint:unused
 func functionDefinitionsEqualExcludingComment(function1, function2 *storepb.FunctionMetadata) bool {
 	if function1 == nil && function2 == nil {
 		return true
@@ -2447,6 +2138,8 @@ func functionDefinitionsEqualExcludingComment(function1, function2 *storepb.Func
 }
 
 // extractFunctionASTFromSDL parses a function SDL and extracts the CREATE FUNCTION AST node
+//
+//nolint:unused
 func extractFunctionASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 	if sdl == "" {
 		return nil, errors.New("empty SDL provided")
@@ -2493,81 +2186,12 @@ func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.Createfunctionst
 // applySequenceChangesToChunks applies minimal changes to CREATE SEQUENCE chunks
 // This handles creation, modification, and deletion of sequence statements
 func applySequenceChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get sequence differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build sequence maps for current and previous schemas
-	currentSequences := make(map[string]*storepb.SequenceMetadata)
-	previousSequences := make(map[string]*storepb.SequenceMetadata)
-
-	// Collect all sequences from current schema
-	for _, schema := range currentMetadata.Schemas {
-		for _, sequence := range schema.Sequences {
-			sequenceKey := formatSequenceKey(schema.Name, sequence.Name)
-			currentSequences[sequenceKey] = sequence
-		}
-	}
-
-	// Collect all sequences from previous schema
-	for _, schema := range previousMetadata.Schemas {
-		for _, sequence := range schema.Sequences {
-			sequenceKey := formatSequenceKey(schema.Name, sequence.Name)
-			previousSequences[sequenceKey] = sequence
-		}
-	}
-
-	// Process sequence additions: create new sequence chunks
-	for sequenceKey, currentSequence := range currentSequences {
-		if _, exists := previousSequences[sequenceKey]; !exists {
-			// Skip sequences owned by tables (e.g., SERIAL columns) - they should be managed by their owner tables
-			if currentSequence.OwnerTable != "" {
-				continue
-			}
-			// New sequence - create a chunk for it
-			err := createSequenceChunk(previousChunks, currentSequence, sequenceKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create sequence chunk for %s", sequenceKey)
-			}
-		}
-	}
-
-	// Process sequence modifications: update existing chunks
-	for sequenceKey, currentSequence := range currentSequences {
-		if previousSequence, exists := previousSequences[sequenceKey]; exists {
-			// Sequence exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
-			if _, chunkExists := previousChunks.Sequences[sequenceKey]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateSequenceChunkIfNeeded(previousChunks, currentSequence, previousSequence, sequenceKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update sequence chunk for %s", sequenceKey)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this sequence in SDL
-		}
-	}
-
-	// Process sequence deletions: remove dropped sequence chunks
-	for sequenceKey := range previousSequences {
-		if _, exists := currentSequences[sequenceKey]; !exists {
-			// Sequence was dropped - remove it from chunks
-			deleteSequenceChunk(previousChunks, sequenceKey)
-		}
-	}
-
 	return nil
 }
 
 // formatSequenceKey creates a consistent key for sequence identification
+//
+//nolint:unused
 func formatSequenceKey(schemaName, sequenceName string) string {
 	if schemaName == "" {
 		schemaName = "public"
@@ -2576,6 +2200,8 @@ func formatSequenceKey(schemaName, sequenceName string) string {
 }
 
 // extractSchemaFromSequenceKey extracts the schema name from a sequence key
+//
+//nolint:unused
 func extractSchemaFromSequenceKey(sequenceKey string) string {
 	parts := strings.SplitN(sequenceKey, ".", 2)
 	if len(parts) >= 1 {
@@ -2585,6 +2211,8 @@ func extractSchemaFromSequenceKey(sequenceKey string) string {
 }
 
 // createSequenceChunk creates a new CREATE SEQUENCE chunk and adds it to the chunks
+//
+//nolint:unused
 func createSequenceChunk(chunks *schema.SDLChunks, sequence *storepb.SequenceMetadata, sequenceKey string) error {
 	if sequence == nil || chunks == nil {
 		return nil
@@ -2727,6 +2355,8 @@ func syncCommentStatements(chunk *schema.SDLChunk, sequence *storepb.SequenceMet
 
 // syncObjectCommentStatements is a generic function to synchronize COMMENT statements for any object type
 // objectType should be "SEQUENCE", "TABLE", "VIEW", "FUNCTION", "INDEX", etc.
+//
+//nolint:unused
 func syncObjectCommentStatements(chunk *schema.SDLChunk, comment, objectType, schemaName, objectName string) error {
 	if chunk == nil {
 		return nil
@@ -2859,6 +2489,8 @@ func deleteSequenceChunk(chunks *schema.SDLChunks, sequenceKey string) {
 }
 
 // generateCreateSequenceSDL generates SDL for a CREATE SEQUENCE statement
+//
+//nolint:unused
 func generateCreateSequenceSDL(schemaName string, sequence *storepb.SequenceMetadata) string {
 	if sequence == nil {
 		return ""
@@ -2927,6 +2559,8 @@ func sequenceDefinitionsEqualExcludingCommentAndOwner(sequence1, sequence2 *stor
 }
 
 // extractSequenceASTFromSDL parses a sequence SDL and extracts the CREATE SEQUENCE AST node
+//
+//nolint:unused
 func extractSequenceASTFromSDL(sdl string) (antlr.ParserRuleContext, error) {
 	if sdl == "" {
 		return nil, errors.New("empty SDL provided")
@@ -3000,72 +2634,6 @@ func (e *sequenceExtractor) EnterCreateseqstmt(ctx *parser.CreateseqstmtContext)
 
 // applyMaterializedViewChangesToChunks applies minimal changes to materialized view chunks based on schema metadata
 func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get materialized view differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build materialized view maps for current and previous schemas
-	currentMaterializedViews := make(map[string]*storepb.MaterializedViewMetadata)
-	previousMaterializedViews := make(map[string]*storepb.MaterializedViewMetadata)
-
-	// Collect all materialized views from current schema
-	for _, schema := range currentMetadata.Schemas {
-		for _, mv := range schema.MaterializedViews {
-			mvKey := formatViewKey(schema.Name, mv.Name)
-			currentMaterializedViews[mvKey] = mv
-		}
-	}
-
-	// Collect all materialized views from previous schema
-	for _, schema := range previousMetadata.Schemas {
-		for _, mv := range schema.MaterializedViews {
-			mvKey := formatViewKey(schema.Name, mv.Name)
-			previousMaterializedViews[mvKey] = mv
-		}
-	}
-
-	// Process materialized view additions: create new materialized view chunks
-	for mvKey, currentMV := range currentMaterializedViews {
-		if _, exists := previousMaterializedViews[mvKey]; !exists {
-			// New materialized view - create a chunk for it
-			err := createMaterializedViewChunk(previousChunks, currentMV, mvKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create materialized view chunk for %s", mvKey)
-			}
-		}
-	}
-
-	// Process materialized view modifications: update existing chunks
-	for mvKey, currentMV := range currentMaterializedViews {
-		if previousMV, exists := previousMaterializedViews[mvKey]; exists {
-			// Materialized view exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			if _, chunkExists := previousChunks.MaterializedViews[mvKey]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateMaterializedViewChunkIfNeeded(previousChunks, currentMV, previousMV, mvKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update materialized view chunk for %s", mvKey)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this materialized view in SDL
-		}
-	}
-
-	// Process materialized view deletions: remove dropped materialized view chunks
-	for mvKey := range previousMaterializedViews {
-		if _, exists := currentMaterializedViews[mvKey]; !exists {
-			// Materialized view was dropped - remove it from chunks
-			deleteMaterializedViewChunk(previousChunks, mvKey)
-		}
-	}
-
 	return nil
 }
 
@@ -3242,72 +2810,6 @@ func generateCommentOnMaterializedViewSQL(schemaName, mvName, comment string) st
 
 // applyEnumTypeChangesToChunks applies minimal changes to enum type chunks based on schema metadata
 func applyEnumTypeChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get enum type differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build enum type maps for current and previous schemas
-	currentEnumTypes := make(map[string]*storepb.EnumTypeMetadata)
-	previousEnumTypes := make(map[string]*storepb.EnumTypeMetadata)
-
-	// Collect all enum types from current schema
-	for _, schema := range currentMetadata.Schemas {
-		for _, enumType := range schema.EnumTypes {
-			enumKey := schema.Name + "." + enumType.Name
-			currentEnumTypes[enumKey] = enumType
-		}
-	}
-
-	// Collect all enum types from previous schema
-	for _, schema := range previousMetadata.Schemas {
-		for _, enumType := range schema.EnumTypes {
-			enumKey := schema.Name + "." + enumType.Name
-			previousEnumTypes[enumKey] = enumType
-		}
-	}
-
-	// Process enum type additions: create new enum type chunks
-	for enumKey, currentEnum := range currentEnumTypes {
-		if _, exists := previousEnumTypes[enumKey]; !exists {
-			// New enum type - create a chunk for it
-			err := createEnumTypeChunk(previousChunks, currentEnum, enumKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create enum type chunk for %s", enumKey)
-			}
-		}
-	}
-
-	// Process enum type modifications: update existing chunks
-	for enumKey, currentEnum := range currentEnumTypes {
-		if previousEnum, exists := previousEnumTypes[enumKey]; exists {
-			// Enum type exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			if _, chunkExists := previousChunks.EnumTypes[enumKey]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateEnumTypeChunkIfNeeded(previousChunks, currentEnum, previousEnum, enumKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update enum type chunk for %s", enumKey)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this enum type in SDL
-		}
-	}
-
-	// Process enum type deletions: remove dropped enum type chunks
-	for enumKey := range previousEnumTypes {
-		if _, exists := currentEnumTypes[enumKey]; !exists {
-			// Enum type was dropped - remove it from chunks
-			deleteEnumTypeChunk(previousChunks, enumKey)
-		}
-	}
-
 	return nil
 }
 
@@ -3516,100 +3018,6 @@ func (e *materializedViewExtractor) EnterCreatematviewstmt(ctx *parser.Createmat
 // applyColumnCommentChanges applies minimal changes to column comments based on schema metadata
 // This function only updates COMMENT ON COLUMN statements without modifying CREATE TABLE statements
 func applyColumnCommentChanges(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get table metadata from schemas
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build table maps for current and previous schemas
-	currentTables := make(map[string]*storepb.TableMetadata)
-	previousTables := make(map[string]*storepb.TableMetadata)
-
-	// Collect all tables from current schema
-	for _, schema := range currentMetadata.Schemas {
-		schemaName := schema.Name
-		if schemaName == "" {
-			schemaName = "public"
-		}
-		for _, table := range schema.Tables {
-			tableKey := schemaName + "." + table.Name
-			currentTables[tableKey] = table
-		}
-	}
-
-	// Collect all tables from previous schema
-	for _, schema := range previousMetadata.Schemas {
-		schemaName := schema.Name
-		if schemaName == "" {
-			schemaName = "public"
-		}
-		for _, table := range schema.Tables {
-			tableKey := schemaName + "." + table.Name
-			previousTables[tableKey] = table
-		}
-	}
-
-	// Initialize ColumnComments map if needed
-	if previousChunks.ColumnComments == nil {
-		previousChunks.ColumnComments = make(map[string]map[string]antlr.ParserRuleContext)
-	}
-
-	// Process tables that exist in both schemas
-	for tableKey, currentTable := range currentTables {
-		previousTable, exists := previousTables[tableKey]
-		if !exists {
-			// Table is new, skip (will be handled by table creation)
-			continue
-		}
-
-		// Build column maps
-		currentColumns := make(map[string]*storepb.ColumnMetadata)
-		previousColumns := make(map[string]*storepb.ColumnMetadata)
-
-		for _, col := range currentTable.Columns {
-			currentColumns[col.Name] = col
-		}
-		for _, col := range previousTable.Columns {
-			previousColumns[col.Name] = col
-		}
-
-		// Process columns that exist in both versions
-		for columnName, currentColumn := range currentColumns {
-			previousColumn, colExists := previousColumns[columnName]
-			if !colExists {
-				// Column is new, skip (will be handled by column addition)
-				continue
-			}
-
-			// Check if comment has changed
-			if currentColumn.Comment != previousColumn.Comment {
-				err := syncColumnComment(previousChunks, tableKey, columnName, currentColumn.Comment)
-				if err != nil {
-					return errors.Wrapf(err, "failed to sync comment for column %s.%s", tableKey, columnName)
-				}
-			}
-		}
-
-		// Process columns that were dropped - remove their comments
-		for columnName := range previousColumns {
-			if _, exists := currentColumns[columnName]; !exists {
-				// Column was dropped - remove its comment
-				if previousChunks.ColumnComments[tableKey] != nil {
-					delete(previousChunks.ColumnComments[tableKey], columnName)
-					if len(previousChunks.ColumnComments[tableKey]) == 0 {
-						delete(previousChunks.ColumnComments, tableKey)
-					}
-				}
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -3670,68 +3078,6 @@ func syncColumnComment(chunks *schema.SDLChunks, tableKey, columnName, comment s
 // applyExtensionChangesToChunks applies minimal changes to extension chunks based on schema differences
 // Extensions are database-level objects (not schema-scoped)
 func applyExtensionChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get extension differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build extension maps for current and previous schemas
-	// Extensions are database-level, stored directly in DatabaseSchemaMetadata
-	currentExtensions := make(map[string]*storepb.ExtensionMetadata)
-	previousExtensions := make(map[string]*storepb.ExtensionMetadata)
-
-	// Collect all extensions from current schema
-	for _, extension := range currentMetadata.Extensions {
-		// Extension key is just the name (database-level, no schema prefix)
-		currentExtensions[extension.Name] = extension
-	}
-
-	// Collect all extensions from previous schema
-	for _, extension := range previousMetadata.Extensions {
-		previousExtensions[extension.Name] = extension
-	}
-
-	// Process extension additions: create new extension chunks
-	for extensionName, currentExtension := range currentExtensions {
-		if _, exists := previousExtensions[extensionName]; !exists {
-			// New extension - create a chunk for it
-			err := createExtensionChunk(previousChunks, currentExtension)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create extension chunk for %s", extensionName)
-			}
-		}
-	}
-
-	// Process extension modifications: update existing chunks
-	for extensionName, currentExtension := range currentExtensions {
-		if previousExtension, exists := previousExtensions[extensionName]; exists {
-			// Extension exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			if _, chunkExists := previousChunks.Extensions[extensionName]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateExtensionChunkIfNeeded(previousChunks, currentExtension, previousExtension)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update extension chunk for %s", extensionName)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this extension in SDL
-		}
-	}
-
-	// Process extension deletions: remove dropped extension chunks
-	for extensionName := range previousExtensions {
-		if _, exists := currentExtensions[extensionName]; !exists {
-			// Extension was dropped - remove it from chunks
-			deleteExtensionChunk(previousChunks, extensionName)
-		}
-	}
-
 	return nil
 }
 
@@ -3969,96 +3315,6 @@ func extractTableNameFromTrigger(ctx *parser.CreatetrigstmtContext) string {
 
 // applyTriggerChangesToChunks applies minimal changes to trigger chunks based on schema metadata
 func applyTriggerChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata) error {
-	if currentSchema == nil || previousSchema == nil || previousChunks == nil {
-		return nil
-	}
-
-	// Get trigger differences by comparing schema metadata
-	currentMetadata := currentSchema.GetProto()
-	previousMetadata := previousSchema.GetProto()
-	if currentMetadata == nil || previousMetadata == nil {
-		return nil
-	}
-
-	// Build trigger maps for current and previous schemas
-	// Key format: schema.table.trigger_name (table-scoped)
-	currentTriggers := make(map[string]*triggerWithContext)
-	previousTriggers := make(map[string]*triggerWithContext)
-
-	// Collect all triggers from current schema
-	for _, schemaObj := range currentMetadata.Schemas {
-		schemaName := schemaObj.Name
-		if schemaName == "" {
-			schemaName = "public"
-		}
-		for _, table := range schemaObj.Tables {
-			for _, trigger := range table.Triggers {
-				// Use table-scoped identifier: schema.table.trigger_name
-				triggerKey := schemaName + "." + table.Name + "." + trigger.Name
-				currentTriggers[triggerKey] = &triggerWithContext{
-					trigger:    trigger,
-					schemaName: schemaName,
-					tableName:  table.Name,
-				}
-			}
-		}
-	}
-
-	// Collect all triggers from previous schema
-	for _, schemaObj := range previousMetadata.Schemas {
-		schemaName := schemaObj.Name
-		if schemaName == "" {
-			schemaName = "public"
-		}
-		for _, table := range schemaObj.Tables {
-			for _, trigger := range table.Triggers {
-				// Use table-scoped identifier: schema.table.trigger_name
-				triggerKey := schemaName + "." + table.Name + "." + trigger.Name
-				previousTriggers[triggerKey] = &triggerWithContext{
-					trigger:    trigger,
-					schemaName: schemaName,
-					tableName:  table.Name,
-				}
-			}
-		}
-	}
-
-	// Process trigger additions: create new trigger chunks
-	for triggerKey, currentTrigger := range currentTriggers {
-		if _, exists := previousTriggers[triggerKey]; !exists {
-			// New trigger - create a chunk for it
-			err := createTriggerChunk(previousChunks, currentTrigger, triggerKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create trigger chunk for %s", triggerKey)
-			}
-		}
-	}
-
-	// Process trigger modifications: update existing chunks
-	for triggerKey, currentTrigger := range currentTriggers {
-		if previousTrigger, exists := previousTriggers[triggerKey]; exists {
-			// Trigger exists in both metadata
-			// Only update if chunk exists in SDL (user explicitly defined it)
-			// If chunk doesn't exist, skip - we don't force-add database objects that user didn't define
-			if _, chunkExists := previousChunks.Triggers[triggerKey]; chunkExists {
-				// Chunk exists - update if needed
-				err := updateTriggerChunkIfNeeded(previousChunks, currentTrigger, previousTrigger, triggerKey)
-				if err != nil {
-					return errors.Wrapf(err, "failed to update trigger chunk for %s", triggerKey)
-				}
-			}
-			// If chunk doesn't exist, skip - user didn't define this trigger in SDL
-		}
-	}
-
-	// Process trigger deletions: remove dropped trigger chunks
-	for triggerKey := range previousTriggers {
-		if _, exists := currentTriggers[triggerKey]; !exists {
-			// Trigger was dropped - remove it from chunks
-			deleteTriggerChunk(previousChunks, triggerKey)
-		}
-	}
-
 	return nil
 }
 

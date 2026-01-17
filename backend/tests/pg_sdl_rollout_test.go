@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
@@ -258,57 +257,6 @@ CREATE TABLE "public"."posts" (
 			len(result.ExecutedStatements),
 			strings.Join(result.ExecutedStatements, "\n---\n"))
 	})
-
-	t.Run("DriftDetection", func(t *testing.T) {
-		a := require.New(t)
-
-		// Create unique database name
-		dbName := fmt.Sprintf("sdl_drift_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
-
-		// Create database directly in PostgreSQL
-		_, err := pgContainer.db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
-		a.NoError(err)
-
-		// Create database in Bytebase
-		err = ctl.createDatabase(ctx, ctl.project, instance, nil, dbName, "postgres")
-		a.NoError(err)
-
-		// Get database
-		databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
-			Name: fmt.Sprintf("%s/databases/%s", instance.Name, dbName),
-		}))
-		a.NoError(err)
-		database := databaseResp.Msg
-
-		// Create initial schema via SDL
-		initialSDL := `CREATE TABLE "public"."users" (
-    "id" serial NOT NULL,
-    "name" varchar(255) NOT NULL,
-    CONSTRAINT "pk_users" PRIMARY KEY ("id")
-);`
-
-		_, err = executeSDLRolloutWithResult(ctx, ctl, database, initialSDL)
-		a.NoError(err)
-
-		// Introduce drift by directly modifying the database
-		directExecuteSQL(pgContainer, database, `ALTER TABLE "public"."users" ADD COLUMN "email" varchar(255);`)
-		_, err = ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{
-			Name: database.Name,
-		}))
-		a.NoError(err)
-
-		// Verify drift was introduced
-		a.True(verifyColumnExists(ctx, ctl, database, "users", "email"))
-
-		// Re-apply original SDL to fix drift
-		result, err := executeSDLRolloutWithResult(ctx, ctl, database, initialSDL)
-		a.NoError(err)
-		a.NotEmpty(result.ExecutedStatements, "Expected statements to fix drift")
-
-		// Verify drift was fixed (email column should be removed)
-		a.False(verifyColumnExists(ctx, ctl, database, "users", "email"))
-		a.Equal(2, getTableColumnCount(ctx, ctl, database, "users"))
-	})
 }
 
 // executeSDLRolloutWithResult performs a complete SDL rollout and returns the result including executed SQL.
@@ -500,25 +448,4 @@ func getTableColumnCount(ctx context.Context, ctl *controller, database *v1pb.Da
 		}
 	}
 	return 0
-}
-
-// directExecuteSQL executes SQL directly on the database (for drift tests).
-func directExecuteSQL(pgContainer *Container, database *v1pb.Database, sqlStmt string) {
-	// Extract database name from resource name
-	parts := strings.Split(database.Name, "/")
-	dbName := parts[len(parts)-1]
-
-	// Connect to the specific database
-	connStr := fmt.Sprintf("host=%s port=%s user=postgres password=root-password dbname=%s sslmode=disable",
-		pgContainer.host, pgContainer.port, dbName)
-	db, err := sql.Open("pgx", connStr)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		panic(err)
-	}
 }

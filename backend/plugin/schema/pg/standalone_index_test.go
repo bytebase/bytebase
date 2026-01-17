@@ -119,7 +119,7 @@ func TestStandaloneCreateIndexSupport(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -272,7 +272,7 @@ func TestStandaloneIndexIntegrationWithTableChanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -477,7 +477,7 @@ CREATE INDEX "idx_employees_name" ON "company"."employees" (name);
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousUserSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 

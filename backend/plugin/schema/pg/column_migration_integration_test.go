@@ -387,7 +387,7 @@ ALTER TABLE "public"."documents" ALTER COLUMN "content" SET DEFAULT '';
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Step 1: Get SDL diff using AST-only mode (no metadata extraction)
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 

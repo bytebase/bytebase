@@ -270,7 +270,7 @@ CREATE TABLE "public"."users" (
 );`
 
 		// Get SDL diff (simulates bb rollout behavior)
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -324,7 +324,7 @@ CREATE TABLE "public"."users" (
 );`
 
 		// Get SDL diff
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -363,7 +363,7 @@ CREATE TABLE "public"."users" (
 );`
 
 		// Get SDL diff
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -664,7 +664,7 @@ func TestEnumTypeCommentChanges(t *testing.T) {
 COMMENT ON TYPE "public"."status_type" IS 'User status enum';`
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 

@@ -204,7 +204,7 @@ func TestTableConstraintsSDLDiff(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tc.currentSDL, tc.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tc.currentSDL, tc.previousSDL, nil)
 			require.NoError(t, err, "GetSDLDiff should not return error")
 			tc.validate(t, diff)
 		})

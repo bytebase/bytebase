@@ -204,7 +204,7 @@ func TestFunctionSDLDiffAndMigrationIntegration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Step 1: Get SDL diff using AST-only mode (no metadata extraction)
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -284,7 +284,7 @@ func TestFunctionMigrationASTOnlyModeValidation(t *testing.T) {
 	`
 
 	// Get diff without metadata extraction
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -332,7 +332,7 @@ func TestOverloadedFunctionSignatureHandling(t *testing.T) {
 	`
 
 	// Get diff without metadata extraction (AST-only mode)
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -424,7 +424,7 @@ func TestProcedureDropMigration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -599,7 +599,7 @@ func TestDropProcedureShouldNotAffectFunctionComment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 

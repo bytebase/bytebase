@@ -79,7 +79,7 @@ COMMENT ON TABLE "public"."users" IS 'User information table';
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 
 			migrationSQL, err := generateMigration(diff)
@@ -163,7 +163,7 @@ COMMENT ON COLUMN "public"."users"."name" IS 'User full name';
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 
 			migrationSQL, err := generateMigration(diff)
@@ -201,7 +201,7 @@ CREATE TABLE "public"."users" (
 CREATE VIEW "public"."active_users" AS SELECT * FROM users;
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -223,7 +223,7 @@ COMMENT ON SEQUENCE "public"."user_id_seq" IS 'Sequence for user IDs';
 CREATE SEQUENCE "public"."user_id_seq" AS integer START WITH 1 INCREMENT BY 1;
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -257,7 +257,7 @@ END;
 $$;
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -280,7 +280,7 @@ COMMENT ON SCHEMA "app" IS 'Application schema';
 CREATE SCHEMA "app";
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -341,7 +341,7 @@ comment';
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 
 			migrationSQL, err := generateMigration(diff)
@@ -372,7 +372,7 @@ CREATE TABLE "public"."users" (
 COMMENT ON TABLE "public"."users" IS 'Old comment';
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	// Should have no table changes
@@ -410,7 +410,7 @@ CREATE TABLE "public"."users" (
 COMMENT ON TABLE "public"."users" IS 'Basic user table';
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	// Should have table change
@@ -445,7 +445,7 @@ COMMENT ON FUNCTION "public"."calculate_tax"(numeric) IS 'Calculate 10% tax';
 
 	previousSDL := ``
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -540,7 +540,7 @@ CREATE TABLE "public"."test_r_table" (
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 
 			migrationSQL, err := generateMigration(diff)
@@ -600,20 +600,6 @@ COMMENT ON VIEW "public"."test_view" IS 'A view that combines test_table and tes
 
 	// Create mock schemas with view metadata
 	// Previous schema: no views
-	previousSchema := model.NewDatabaseMetadata(
-		&storepb.DatabaseSchemaMetadata{
-			Name: "testdb",
-			Schemas: []*storepb.SchemaMetadata{
-				{
-					Name: "public",
-				},
-			},
-		},
-		[]byte{},
-		&storepb.DatabaseConfig{},
-		storepb.Engine_POSTGRES,
-		false,
-	)
 
 	// Current schema: includes view with comment
 	currentSchema := model.NewDatabaseMetadata(
@@ -646,7 +632,7 @@ JOIN
 		false,
 	)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -682,7 +668,7 @@ CREATE TABLE "public"."products" (
 );
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -709,7 +695,7 @@ COMMENT ON TABLE "public"."users" IS 'User information table';
 `
 	previousSDL := ``
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -741,7 +727,7 @@ CREATE TABLE "public"."users" (
 );
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -776,7 +762,7 @@ CREATE TABLE "public"."users" (
 );
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -816,7 +802,7 @@ CREATE TABLE "public"."users" (
 COMMENT ON COLUMN "public"."users"."name" IS 'User name';
 `
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -896,7 +882,7 @@ COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 
 			migrationSQL, err := generateMigration(diff)
@@ -935,40 +921,6 @@ COMMENT ON INDEX "public"."idx_products_name" IS 'Index for product name lookup'
 `
 
 	// Previous schema: table with columns but no indexes
-	previousSchema := model.NewDatabaseMetadata(
-		&storepb.DatabaseSchemaMetadata{
-			Name: "testdb",
-			Schemas: []*storepb.SchemaMetadata{
-				{
-					Name: "public",
-					Tables: []*storepb.TableMetadata{
-						{
-							Name: "products",
-							Columns: []*storepb.ColumnMetadata{
-								{
-									Name:     "id",
-									Type:     "integer",
-									Nullable: false,
-								},
-								{
-									Name: "name",
-									Type: "text",
-								},
-								{
-									Name: "price",
-									Type: "numeric",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		[]byte{},
-		&storepb.DatabaseConfig{},
-		storepb.Engine_POSTGRES,
-		false,
-	)
 
 	// Current schema: includes index with comment
 	currentSchema := model.NewDatabaseMetadata(
@@ -1014,7 +966,7 @@ COMMENT ON INDEX "public"."idx_products_name" IS 'Index for product name lookup'
 		false,
 	)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)
@@ -1052,36 +1004,6 @@ COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
 `
 
 	// Previous schema: table but no sequences
-	previousSchema := model.NewDatabaseMetadata(
-		&storepb.DatabaseSchemaMetadata{
-			Name: "testdb",
-			Schemas: []*storepb.SchemaMetadata{
-				{
-					Name: "public",
-					Tables: []*storepb.TableMetadata{
-						{
-							Name: "products",
-							Columns: []*storepb.ColumnMetadata{
-								{
-									Name:     "id",
-									Type:     "integer",
-									Nullable: false,
-								},
-								{
-									Name: "name",
-									Type: "text",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		[]byte{},
-		&storepb.DatabaseConfig{},
-		storepb.Engine_POSTGRES,
-		false,
-	)
 
 	// Current schema: table and sequence with comment
 	currentSchema := model.NewDatabaseMetadata(
@@ -1124,7 +1046,7 @@ COMMENT ON SEQUENCE "public"."product_id_seq" IS 'Product ID sequence';
 		false,
 	)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 
 	migrationSQL, err := generateMigration(diff)

@@ -209,11 +209,11 @@ func ChunkSDLText(sdlText string) (*schema.SDLChunks, error) {
 Add a call to process the new object type:
 
 ```go
-func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseSchema) (*schema.MetadataDiff, error) {
+func GetSDLDiff(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*schema.MetadataDiff, error) {
     // ... parse SDL ...
 
     // Process table changes
-    err = processTableChanges(currentChunks, previousChunks, currentSchema, previousSchema, currentDBSDLChunks, diff)
+    err = processTableChanges(currentChunks, previousChunks, currentSchema, currentDBSDLChunks, diff)
     if err != nil {
         return nil, errors.Wrap(err, "failed to process table changes")
     }
@@ -459,94 +459,6 @@ func buildDroppedObjectsSet(diff *schema.MetadataDiff) map[string]bool {
 The comment processing system needs to know which objects are being created or dropped to avoid:
 - Generating comment changes for newly created objects (comments are already in CREATE statement)
 - Generating comment changes for dropped objects (comments are automatically removed with the object)
-
----
-
-### 2.5 Implement Drift Handling (REQUIRED)
-
-Drift handling synchronizes SDL chunks with actual database state when they differ. **This is mandatory for all object types.**
-
-This is needed when:
-- User's SDL file doesn't match database state
-- Auto-sync is enabled
-- Database schema differs from SDL (drift detection)
-
-**Without this implementation, the object type will not work correctly in drift scenarios.**
-
-**File**: `backend/plugin/schema/pg/get_sdl_diff.go`
-
-```go
-func applyMaterializedViewChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
-    // Build maps of current and previous materialized views from database metadata
-    currentMVs := make(map[string]*storepb.MaterializedViewMetadata)
-    for _, schema := range currentSchema.Schemas {
-        for _, mv := range schema.MaterializedViews {
-            key := schema.Name + "." + mv.Name
-            currentMVs[key] = mv
-        }
-    }
-
-    previousMVs := make(map[string]*storepb.MaterializedViewMetadata)
-    for _, schema := range previousSchema.Schemas {
-        for _, mv := range schema.MaterializedViews {
-            key := schema.Name + "." + mv.Name
-            previousMVs[key] = mv
-        }
-    }
-
-    // Handle additions: objects exist in DB but not in SDL chunks
-    for key, mv := range currentMVs {
-        if _, exists := previousMVs[key]; !exists {
-            if err := createMaterializedViewChunk(previousChunks, mv); err != nil {
-                return err
-            }
-        }
-    }
-
-    // Handle updates: objects exist in both but differ
-    for key, currentMV := range currentMVs {
-        if previousMV, exists := previousMVs[key]; exists {
-            if err := updateMaterializedViewChunkIfNeeded(previousChunks, currentMV, previousMV); err != nil {
-                return err
-            }
-        }
-    }
-
-    // Handle deletions: objects exist in SDL but not in DB
-    for key := range previousMVs {
-        if _, exists := currentMVs[key]; !exists {
-            deleteMaterializedViewChunk(previousChunks, key)
-        }
-    }
-
-    return nil
-}
-```
-
-Then call it in `applyMinimalChangesToChunks`:
-
-```go
-func applyMinimalChangesToChunks(previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseSchema) error {
-    // Process table changes
-    if err := applyTableChangesToChunks(previousChunks, currentSchema, previousSchema); err != nil {
-        return errors.Wrap(err, "failed to apply table changes")
-    }
-
-    // Process view changes
-    if err := applyViewChangesToChunks(previousChunks, currentSchema, previousSchema); err != nil {
-        return errors.Wrap(err, "failed to apply view changes")
-    }
-
-    // Process materialized view changes
-    if err := applyMaterializedViewChangesToChunks(previousChunks, currentSchema, previousSchema); err != nil {  // ✅ Add
-        return errors.Wrap(err, "failed to apply materialized view changes")
-    }
-
-    // ... other object types ...
-
-    return nil
-}
-```
 
 ---
 
@@ -1466,7 +1378,7 @@ func TestMaterializedViewSDLDiff(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+            diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
             require.NoError(t, err)
             require.NotNil(t, diff)
 
@@ -1645,7 +1557,7 @@ func TestMaterializedViewCommentMigrationGeneration(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+            diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
             require.NoError(t, err)
             require.NotNil(t, diff)
 
@@ -1769,7 +1681,7 @@ func TestMaterializedViewDependencyOrder(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+            diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
             require.NoError(t, err)
             require.NotNil(t, diff)
 
@@ -2080,8 +1992,6 @@ Use this checklist to ensure complete implementation:
 - [ ] Registered in `processCommentChanges`
 - [ ] Registered in `buildCreatedObjectsSet`
 - [ ] Registered in `buildDroppedObjectsSet`
-- [ ] **Drift handling implemented (`applyXXXChangesToChunks`) - REQUIRED**
-- [ ] **Drift handler called in `applyMinimalChangesToChunks` - REQUIRED**
 
 #### Migration Generation - CREATE
 - [ ] Comment type registered in `differ.go`
@@ -2131,7 +2041,7 @@ Use this checklist to ensure complete implementation:
 Adding a new database object to SDL mode requires changes in **6 major phases**:
 
 1. **Parser**: Extract AST nodes and associate COMMENT statements
-2. **SDL Diff**: Detect CREATE/DROP/MODIFY and comment-only changes + **Drift handling (REQUIRED)**
+2. **SDL Diff**: Detect CREATE/DROP/MODIFY and comment-only changes
 3. **Migration Generation**: Add to topological sort with **AST-only dependency extraction** (both CREATE and DROP!)
 4. **SDL Output**: Generate single-file and multi-file SDL formats
 5. **Testing**: Comprehensive tests including dependency ordering
@@ -2148,20 +2058,10 @@ Without this, migrations will have wrong ordering in `bb rollout` (SDL mode), le
 
 Always implement and test dependency ordering with the `TestXXXDependencyOrder` test!
 
-### 2. Drift handling implementation (REQUIRED!)
-> **`applyXXXChangesToChunks` function and call in `applyMinimalChangesToChunks`**
-
-Without this, the object type will not work correctly when:
-- User's SDL file doesn't match database state
-- Auto-sync is enabled
-- Database schema differs from SDL (drift detection)
-
-All other object types (tables, views, functions, sequences, materialized views) implement drift handling. Your new object type must too.
-
-### 3. Archive schema filter (MOST CRITICAL - Breaks production!)
+### 2. Archive schema filter (CRITICAL - Breaks production!)
 > **Add object to `FilterPostgresArchiveSchema` in `differ.go`**
 
-This is **the #1 mistake** that:
+This is **a critical mistake** that:
 - ✅ Passes all unit tests
 - ✅ Works correctly in SDL parsing and diff calculation
 - ❌ **Silently fails in production `bb rollout`**

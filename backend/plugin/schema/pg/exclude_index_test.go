@@ -42,20 +42,14 @@ CREATE INDEX idx_employee_shifts_time ON "public"."employee_shifts" USING gist (
 CREATE INDEX idx_employee_shifts_type ON "public"."employee_shifts" (shift_type);
 `
 
-	previousDBMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    "testdb",
-		Schemas: []*storepb.SchemaMetadata{},
-	}
-
 	currentDBMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    "testdb",
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -152,15 +146,9 @@ CREATE TABLE "public"."meetings" (
 		},
 	}
 
-	previousDBMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    "testdb",
-		Schemas: []*storepb.SchemaMetadata{},
-	}
-
-	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 
 	ddl, err := generateMigration(diff)
@@ -205,20 +193,14 @@ CREATE INDEX idx_order_summary_month ON "public"."order_summary" (order_month);
 CREATE UNIQUE INDEX idx_order_summary_unique ON "public"."order_summary" (customer_id, order_month);
 `
 
-	previousDBMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    "testdb",
-		Schemas: []*storepb.SchemaMetadata{},
-	}
-
 	currentDBMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    "testdb",
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -282,20 +264,14 @@ CREATE TABLE "public"."orders" (
 CREATE INDEX idx_orders_customer ON "public"."orders" (customer_id);
 `
 
-	previousDBMetadata := &storepb.DatabaseSchemaMetadata{
-		Name:    "testdb",
-		Schemas: []*storepb.SchemaMetadata{},
-	}
-
 	currentDBMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    "testdb",
 		Schemas: []*storepb.SchemaMetadata{},
 	}
 
-	previousSchema := model.NewDatabaseMetadata(previousDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 	currentSchema := model.NewDatabaseMetadata(currentDBMetadata, nil, nil, storepb.Engine_POSTGRES, false)
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema, previousSchema)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
