@@ -105,8 +105,26 @@ const { t } = useI18n();
 
 const pagedProjectTableRef = ref<ComponentExposed<typeof PagedProjectTable>>();
 
-// Add label to the available scopes for filtering projects
-const scopeOptions = useCommonSearchScopeOptions(["label", "state"]);
+// Add label and state to the available scopes for filtering projects
+// Filter state options based on permissions
+const scopeOptions = computed(() => {
+  const baseOptions = useCommonSearchScopeOptions(["label", "state"]).value;
+
+  // If user doesn't have undelete permission, remove DELETED and ALL from state scope
+  if (!hasWorkspacePermissionV2("bb.projects.undelete")) {
+    return baseOptions.map(scope => {
+      if (scope.id === "state" && scope.options) {
+        return {
+          ...scope,
+          options: scope.options.filter(opt => opt.value === "ACTIVE")
+        };
+      }
+      return scope;
+    });
+  }
+
+  return baseOptions;
+});
 
 // Extract labels from the search scopes
 const selectedLabels = computed(() => {
