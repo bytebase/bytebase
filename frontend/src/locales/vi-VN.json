@@ -1826,8 +1826,7 @@
         "view-doc": "Xem tài liệu của {destination}"
       },
       "deletion": {
-        "btn-text": "Xóa webhook này",
-        "confirm-title": "Xóa webhook '{title}' và tất cả lịch sử thực thi của nó?"
+        "confirm-title": "Xóa webhook '{title}'?"
       },
       "direct-messages": "Tin nhắn trực tiếp",
       "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",

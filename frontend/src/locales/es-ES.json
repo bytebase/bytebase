@@ -1826,8 +1826,7 @@
         "view-doc": "Ver documentación de {destination}"
       },
       "deletion": {
-        "btn-text": "Eliminar este webhook",
-        "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
+        "confirm-title": "¿Eliminar el webhook '{title}'?"
       },
       "direct-messages": "Mensajes directos",
       "direct-messages-tip": "Bytebase recurrirá a la publicación de mensajes de webhook si no hay usuarios coincidentes o si falla la entrega del mensaje.",

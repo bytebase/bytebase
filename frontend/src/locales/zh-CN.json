@@ -1826,8 +1826,7 @@
         "view-doc": "{destination} 的官方文档"
       },
       "deletion": {
-        "btn-text": "删除这个 webhook",
-        "confirm-title": "删除 webhook '{title}' 以及所有的执行历史?"
+        "confirm-title": "删除 webhook '{title}'?"
       },
       "direct-messages": "私信通知",
       "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",

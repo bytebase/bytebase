@@ -1826,8 +1826,7 @@
         "view-doc": "{destination} の公式ドキュメント"
       },
       "deletion": {
-        "btn-text": "この Webhook を削除します",
-        "confirm-title": "Webhook '{title}' とすべての実行履歴を削除しますか?"
+        "confirm-title": "Webhook '{title}' を削除しますか?"
       },
       "direct-messages": "プライベートメッセージ通知",
       "direct-messages-tip": "一致するユーザーがいない場合、またはメッセージの配信が失敗した場合、Bytebase は webhook メッセージの投稿にフォールバックします。",
