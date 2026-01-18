@@ -1826,8 +1826,7 @@
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
-        "btn-text": "Delete this webhook",
-        "confirm-title": "Delete webhook '{title}' and all its execution history?"
+        "confirm-title": "Delete webhook '{title}'?"
       },
       "direct-messages": "Direct messages",
       "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
