@@ -191,8 +191,13 @@ export const useCommonSearchScopeOptions = (
           },
           {
             value: "DELETED",
-            keywords: ["deleted", "DELETED"],
-            render: () => t("common.deleted"),
+            keywords: ["archived", "ARCHIVED", "deleted", "DELETED"],
+            render: () => t("common.archived"),
+          },
+          {
+            value: "ALL",
+            keywords: ["all", "ALL"],
+            render: () => t("common.all"),
           },
         ],
         allowMultiple: false,

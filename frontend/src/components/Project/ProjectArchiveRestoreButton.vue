@@ -39,7 +39,6 @@ import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
 import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteButton.vue";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_WORKSPACE_ARCHIVE } from "@/router/dashboard/workspaceSetting";
 import { useProjectV1Store } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -76,8 +75,8 @@ const archiveOrRestoreProject = async (archive: boolean) => {
 const hardDeleteProject = async (resource: string) => {
   await projectV1Store.deleteProject(resource);
   router.replace({
-    name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
-    hash: "#PROJECT",
+    name: PROJECT_V1_ROUTE_DASHBOARD,
+    query: { q: "state:DELETED" },
   });
 };
 </script>
