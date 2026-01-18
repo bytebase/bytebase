@@ -26,9 +26,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
   if (instance.title === unknownInstance().title) {
     name = extractInstanceResourceName(instance.name);
   }
-  if ((instance as Instance).state === State.DELETED) {
-    name += ` (${t("common.archived")})`;
-  } else if (
+  if (
     isValidInstanceName(instance.name) &&
     !instance.activation &&
     store.currentPlan !== PlanType.FREE

@@ -13,11 +13,7 @@ export function projectV1Name(project: Project) {
     return "Unassigned";
   }
 
-  const parts = [project.title];
-  if (project.state === State.DELETED) {
-    parts.push("(Archived)");
-  }
-  return parts.join(" ");
+  return project.title;
 }
 
 export function filterProjectV1ListByKeyword<T extends Project>(
