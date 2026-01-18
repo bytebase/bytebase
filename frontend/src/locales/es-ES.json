@@ -422,7 +422,6 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
-      "sure-to-archive": "¿Estás seguro de archivar?",
       "sure-to-abandon": "¿Estás seguro de abandonar?",
       "cannot-undo": "Esta acción no se puede deshacer.",
       "can-undo": "Podrás deshacer esta acción más tarde."
@@ -2812,7 +2811,6 @@
     "title": "Liberar",
     "releases": "Lanzamientos",
     "files": "Archivos",
-    "abandon-this-release": "Abandonar este lanzamiento",
     "total-files": "Total de {count} archivos",
     "change-tip": "Este cambio está configurado para usar una versión. Los cambios en la base de datos se ejecutarán mediante las sentencias SQL de los archivos de la versión seleccionada.",
     "not-found": "Extraviado",

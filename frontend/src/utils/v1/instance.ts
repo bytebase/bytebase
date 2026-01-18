@@ -7,7 +7,7 @@ import {
   languageOfEngineV1,
   unknownInstance,
 } from "@/types";
-import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed
 import type {
   Instance,

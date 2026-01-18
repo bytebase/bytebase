@@ -422,7 +422,6 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "Are you sure to delete?",
-      "sure-to-archive": "Are you sure to archive?",
       "sure-to-abandon": "Are you sure to abandon?",
       "cannot-undo": "You cannot undo this action.",
       "can-undo": "You can undo this action later."
@@ -2812,7 +2811,6 @@
     "title": "Release",
     "releases": "Releases",
     "files": "Files",
-    "abandon-this-release": "Abandon this release",
     "total-files": "Total {count} files",
     "change-tip": "This change is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
     "not-found": "Not found",
