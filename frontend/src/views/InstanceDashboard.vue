@@ -75,9 +75,9 @@
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
@@ -105,6 +105,8 @@ import { isValidInstanceName } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  buildSearchParamsBySearchText,
+  buildSearchTextBySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
   hasWorkspacePermissionV2,
@@ -127,6 +129,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
+const route = useRoute();
 const router = useRouter();
 const pagedInstanceTableRef = ref<InstanceType<typeof PagedInstanceTable>>();
 
@@ -245,6 +248,12 @@ onMounted(() => {
     });
   }
 
+  // Initialize params from URL query
+  const queryString = route.query.q as string;
+  if (queryString) {
+    state.params = buildSearchParamsBySearchText(queryString);
+  }
+
   if (!uiStateStore.getIntroStateByKey("instance.visit")) {
     uiStateStore.saveIntroStateByKey({
       key: "instance.visit",
@@ -252,6 +261,23 @@ onMounted(() => {
     });
   }
 });
+
+// Sync params to URL query when params change
+watch(
+  () => state.params,
+  (params) => {
+    const queryString = buildSearchTextBySearchParams(params);
+    const currentQuery = route.query.q as string;
+
+    // Only update URL if query string has actually changed
+    if (queryString !== currentQuery) {
+      router.replace({
+        query: queryString ? { q: queryString } : {},
+      });
+    }
+  },
+  { deep: true }
+);
 
 const remainingInstanceCount = computed((): number => {
   return Math.max(

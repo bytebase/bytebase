@@ -59,9 +59,9 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch, {
   useCommonSearchScopeOptions,
 } from "@/components/AdvancedSearch";
@@ -73,6 +73,8 @@ import { useProjectV1Store, useUIStateStore } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
+  buildSearchParamsBySearchText,
+  buildSearchTextBySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
   hasWorkspacePermissionV2,
@@ -98,6 +100,7 @@ const state = reactive<LocalState>({
   selectedProjects: new Set(),
 });
 
+const route = useRoute();
 const router = useRouter();
 const projectStore = useProjectV1Store();
 
@@ -175,6 +178,12 @@ onMounted(() => {
     });
   }
 
+  // Initialize params from URL query
+  const queryString = route.query.q as string;
+  if (queryString) {
+    state.params = buildSearchParamsBySearchText(queryString);
+  }
+
   const uiStateStore = useUIStateStore();
   if (!uiStateStore.getIntroStateByKey("project.visit")) {
     uiStateStore.saveIntroStateByKey({
@@ -183,6 +192,23 @@ onMounted(() => {
     });
   }
 });
+
+// Sync params to URL query when params change
+watch(
+  () => state.params,
+  (params) => {
+    const queryString = buildSearchTextBySearchParams(params);
+    const currentQuery = route.query.q as string;
+
+    // Only update URL if query string has actually changed
+    if (queryString !== currentQuery) {
+      router.replace({
+        query: queryString ? { q: queryString } : {},
+      });
+    }
+  },
+  { deep: true }
+);
 
 const handleCreated = async (project: Project) => {
   if (props.onRowClick) {
