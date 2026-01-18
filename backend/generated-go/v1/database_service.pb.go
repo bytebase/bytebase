@@ -5108,12 +5108,10 @@ type ListChangelogsRequest struct {
 	//
 	// Supported filter:
 	// - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-	// - type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
 	// - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	//
 	// Example:
 	// status == "DONE"
-	// type in ["BASELINE", "MIGRATE"]
 	// status == "FAILED" && type == "SDL"
 	// create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
 	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
