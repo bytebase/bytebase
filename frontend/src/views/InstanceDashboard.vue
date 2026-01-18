@@ -7,18 +7,11 @@
       :description="instanceCountAttention"
     />
     <div class="px-4 flex items-center gap-x-2">
-      <NSelect
-        v-model:value="state.selectedState"
-        :options="stateFilterOptions"
-        :consistent-menu-width="false"
-        class="!w-32"
-      />
       <AdvancedSearch
         v-model:params="state.params"
         :autofocus="false"
         :placeholder="$t('instance.filter-instance-name')"
         :scope-options="scopeOptions"
-        class="flex-1"
       />
       <PermissionGuardWrapper
         v-slot="slotProps"
@@ -81,8 +74,8 @@
 
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NSelect } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { NButton } from "naive-ui";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
@@ -123,7 +116,6 @@ interface LocalState {
   showCreateDrawer: boolean;
   showFeatureModal: boolean;
   selectedInstance: Set<string>;
-  selectedState: State | "ALL";
 }
 
 const props = defineProps<{
@@ -146,7 +138,6 @@ const state = reactive<LocalState>({
   showCreateDrawer: false,
   showFeatureModal: false,
   selectedInstance: new Set(),
-  selectedState: State.ACTIVE,
 });
 
 const onInstanceCreated = (instance: Instance) => {
@@ -183,6 +174,13 @@ const selectedLabels = computed(() => {
   return getValuesFromSearchParams(state.params, "label");
 });
 
+const selectedState = computed(() => {
+  const stateValue = getValueFromSearchParams(state.params, "state");
+  if (stateValue === "DELETED") return State.DELETED;
+  if (stateValue === "ALL") return undefined; // undefined = show all
+  return State.ACTIVE; // default
+});
+
 const filter = computed(() => ({
   environment: selectedEnvironment.value,
   host: selectedHost.value,
@@ -190,7 +188,7 @@ const filter = computed(() => ({
   query: state.params.query,
   engines: selectedEngines.value,
   labels: selectedLabels.value,
-  state: state.selectedState === "ALL" ? undefined : state.selectedState,
+  state: selectedState.value,
 }));
 
 const showCreateInstanceDrawer = () => {
@@ -204,8 +202,8 @@ const showCreateInstanceDrawer = () => {
 };
 
 const scopeOptions = computed((): ScopeOption[] => {
-  return [
-    ...useCommonSearchScopeOptions(["environment", "engine", "label"]).value,
+  const baseOptions = [
+    ...useCommonSearchScopeOptions(["environment", "engine", "label", "state"]).value,
     {
       id: "host",
       title: t("instance.advanced-search.scope.host.title"),
@@ -219,31 +217,31 @@ const scopeOptions = computed((): ScopeOption[] => {
       options: [],
     },
   ];
-});
 
-const stateFilterOptions = computed(() => {
-  const options = [
-    { label: t("common.active"), value: State.ACTIVE },
-    { label: t("common.all"), value: "ALL" as const },
-  ];
-
-  if (hasWorkspacePermissionV2("bb.instances.undelete")) {
-    // Insert archived option before "All"
-    options.splice(1, 0, {
-      label: t("common.archived"),
-      value: State.DELETED,
+  // If user doesn't have undelete permission, remove DELETED and ALL from state scope
+  if (!hasWorkspacePermissionV2("bb.instances.undelete")) {
+    return baseOptions.map(scope => {
+      if (scope.id === "state" && scope.options) {
+        return {
+          ...scope,
+          options: scope.options.filter(opt => opt.value === "ACTIVE")
+        };
+      }
+      return scope;
     });
   }
 
-  return options;
+  return baseOptions;
 });
 
 onMounted(() => {
+  // Migrate old URL format (?state=archived) to new format (?q=state:archived)
   const queryState = router.currentRoute.value.query.state as string;
-  if (queryState === "archived") {
-    state.selectedState = State.DELETED;
-  } else if (queryState === "all") {
-    state.selectedState = "ALL";
+  if (queryState === "archived" || queryState === "all") {
+    const stateValue = queryState === "archived" ? "deleted" : "all";
+    router.replace({
+      query: { q: `state:${stateValue}` },
+    });
   }
 
   if (!uiStateStore.getIntroStateByKey("instance.visit")) {
@@ -278,19 +276,6 @@ const instanceCountAttention = computed((): string => {
 
   return `${status} ${upgrade}`;
 });
-
-watch(
-  () => state.selectedState,
-  (newState) => {
-    const query: Record<string, string> = {};
-    if (newState === State.DELETED) {
-      query.state = "archived";
-    } else if (newState === "ALL") {
-      query.state = "all";
-    }
-    router.replace({ query });
-  }
-);
 
 const selectedInstanceList = computed(() => {
   return [...state.selectedInstance]
