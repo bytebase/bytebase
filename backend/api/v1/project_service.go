@@ -374,17 +374,23 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		return nil, err
 	}
 
-	// Handle purge (hard delete) of soft-deleted project
+	// Handle purge (hard delete)
 	if req.Msg.Purge {
-		// Following AIP-165, purge only works on already soft-deleted projects
-		if !project.Deleted {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be soft-deleted before it can be purged", req.Msg.Name))
-		}
 		if project.ResourceID == common.DefaultProjectID {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 		}
 
-		// Permanently delete the project and all related resources
+		// If project is not already soft-deleted, soft-delete it first
+		if !project.Deleted {
+			if _, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
+				ResourceID: project.ResourceID,
+				Delete:     &deletePatch,
+			}); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+		}
+
+		// Permanently delete the project and all related resources (moves databases to default project)
 		if err := s.store.DeleteProject(ctx, project.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
 		}
@@ -392,7 +398,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
-	// Regular soft delete flow
+	// Regular soft delete (archive) flow
 	if project.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Name))
 	}
@@ -400,34 +406,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be deleted"))
 	}
 
-	// Resources prevent project deletion.
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID, ShowDeleted: true})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	// We don't move the sheet to default project because BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-	if req.Msg.Force {
-		if len(databases) > 0 {
-			defaultProject := common.DefaultProjectID
-			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProject}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-		}
-		// We don't close the issues because they might be open still.
-	} else {
-		// Return the open issue error first because that's more important than transferring out databases.
-		openIssues, err := s.store.ListIssues(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []storepb.Issue_Status{storepb.Issue_OPEN}})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if len(openIssues) > 0 {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("resolve all open issues before deleting the project"))
-		}
-		if len(databases) > 0 {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("transfer all databases to the default project before deleting the project"))
-		}
-	}
-
+	// For archive (soft delete), just mark the project as deleted without touching databases or issues
 	if _, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
@@ -465,6 +444,46 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("names cannot be empty"))
 	}
 
+	// Handle purge (hard delete)
+	if request.Msg.Purge {
+		var projectsToPurge []*store.ProjectMessage
+		for _, name := range request.Msg.Names {
+			project, err := s.getProjectMessage(ctx, name)
+			if err != nil {
+				return nil, err
+			}
+			if project.ResourceID == common.DefaultProjectID {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
+			}
+			projectsToPurge = append(projectsToPurge, project)
+		}
+
+		// Soft-delete projects that aren't already deleted
+		var projectsToSoftDelete []*store.UpdateProjectMessage
+		for _, project := range projectsToPurge {
+			if !project.Deleted {
+				projectsToSoftDelete = append(projectsToSoftDelete, &store.UpdateProjectMessage{
+					ResourceID: project.ResourceID,
+					Delete:     &deletePatch,
+				})
+			}
+		}
+		if len(projectsToSoftDelete) > 0 {
+			if _, err := s.store.UpdateProjects(ctx, projectsToSoftDelete...); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+		}
+
+		// Permanently delete all projects (moves databases to default project)
+		for _, project := range projectsToPurge {
+			if err := s.store.DeleteProject(ctx, project.ResourceID); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to purge project %q", project.Title))
+			}
+		}
+		return connect.NewResponse(&emptypb.Empty{}), nil
+	}
+
+	// Regular soft delete (archive) flow
 	// Phase 1: Load all projects and check permissions
 	var projects []*store.ProjectMessage
 	for _, name := range request.Msg.Names {
@@ -481,67 +500,8 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		projects = append(projects, project)
 	}
 
-	// Phase 2: Check dependencies for all projects if force is false
-	if !request.Msg.Force {
-		var blockedProjects []string
-		for _, project := range projects {
-			// Check for open issues
-			openIssues, err := s.store.ListIssues(ctx, &store.FindIssueMessage{
-				ProjectIDs: &[]string{project.ResourceID},
-				StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			if len(openIssues) > 0 {
-				blockedProjects = append(blockedProjects, project.ResourceID)
-				continue
-			}
-
-			// Check for databases
-			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
-				ProjectID:   &project.ResourceID,
-				ShowDeleted: true,
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			if len(databases) > 0 {
-				blockedProjects = append(blockedProjects, project.ResourceID)
-			}
-		}
-
-		if len(blockedProjects) > 0 {
-			return nil, connect.NewError(connect.CodeFailedPrecondition,
-				errors.Errorf("the following projects have open issues or databases and cannot be deleted: %v. Use force=true to move databases to default project",
-					blockedProjects))
-		}
-	} else {
-		// Phase 3: Execute deletions
-		// If force is true, we need to move databases to default project
-		var dbs []*store.DatabaseMessage
-		for _, project := range projects {
-			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
-				ProjectID:   &project.ResourceID,
-				ShowDeleted: true,
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			dbs = append(dbs, databases...)
-		}
-		if len(dbs) > 0 {
-			defaultProject := common.DefaultProjectID
-			// Note: BatchUpdateDatabases already uses transactions internally
-			if _, err := s.store.BatchUpdateDatabases(ctx, dbs, &store.BatchUpdateDatabases{
-				ProjectID: &defaultProject,
-			}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-		}
-	}
-
-	// Phase 4: Mark all projects as deleted.
+	// Phase 2: Mark all projects as deleted (soft delete/archive)
+	// No need to check for databases or issues - they remain in the archived project
 	var updatePatches []*store.UpdateProjectMessage
 	for _, project := range projects {
 		updatePatches = append(updatePatches, &store.UpdateProjectMessage{

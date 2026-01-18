@@ -678,16 +678,13 @@ type DeleteProjectRequest struct {
 	// The name of the project to delete.
 	// Format: projects/{project}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// If set to true, any databases from this project will be moved to default project.
-	// Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-	// Open issues will remain open but associated with the deleted project.
-	// If set to false, the operation will fail if the project has databases or open issues.
-	Force bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
 	// If set to true, permanently purge the soft-deleted project and all related resources.
 	// This operation is irreversible. Following AIP-165, this should only be used for
 	// administrative cleanup of old soft-deleted projects.
 	// The project must already be soft-deleted for this to work.
-	Purge         bool `protobuf:"varint,3,opt,name=purge,proto3" json:"purge,omitempty"`
+	// When purge=true, all databases will be moved to the default project before deletion.
+	// When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
+	Purge         bool `protobuf:"varint,2,opt,name=purge,proto3" json:"purge,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -727,13 +724,6 @@ func (x *DeleteProjectRequest) GetName() string {
 		return x.Name
 	}
 	return ""
-}
-
-func (x *DeleteProjectRequest) GetForce() bool {
-	if x != nil {
-		return x.Force
-	}
-	return false
 }
 
 func (x *DeleteProjectRequest) GetPurge() bool {
@@ -794,11 +784,13 @@ type BatchDeleteProjectsRequest struct {
 	// The names of the projects to delete.
 	// Format: projects/{project}
 	Names []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
-	// If set to true, any databases from this project will be moved to default project.
-	// Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-	// Open issues will remain open but associated with the deleted project.
-	// If set to false, the operation will fail if the project has databases or open issues.
-	Force         bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
+	// If set to true, permanently purge the soft-deleted projects and all related resources.
+	// This operation is irreversible. Following AIP-165, this should only be used for
+	// administrative cleanup of old soft-deleted projects.
+	// All projects must already be soft-deleted for this to work.
+	// When purge=true, all databases will be moved to the default project before deletion.
+	// When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged.
+	Purge         bool `protobuf:"varint,2,opt,name=purge,proto3" json:"purge,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -840,9 +832,9 @@ func (x *BatchDeleteProjectsRequest) GetNames() []string {
 	return nil
 }
 
-func (x *BatchDeleteProjectsRequest) GetForce() bool {
+func (x *BatchDeleteProjectsRequest) GetPurge() bool {
 	if x != nil {
-		return x.Force
+		return x.Purge
 	}
 	return false
 }
@@ -1620,19 +1612,18 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\aproject\x18\x01 \x01(\v2\x14.bytebase.v1.ProjectB\x03\xe0A\x02R\aproject\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"t\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"^\n" +
 	"\x14DeleteProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\x12\x14\n" +
-	"\x05purge\x18\x03 \x01(\bR\x05purge\"J\n" +
+	"\x05purge\x18\x02 \x01(\bR\x05purge\"J\n" +
 	"\x16UndeleteProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x04name\"f\n" +
 	"\x1aBatchDeleteProjectsRequest\x122\n" +
 	"\x05names\x18\x01 \x03(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x05names\x12\x14\n" +
-	"\x05force\x18\x02 \x01(\bR\x05force\"I\n" +
+	"\x05purge\x18\x02 \x01(\bR\x05purge\"I\n" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +

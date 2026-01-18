@@ -41,6 +41,7 @@
     "environment-name": "Tên môi trường",
     "archive": "Lưu trữ",
     "archived": "Đã lưu trữ",
+    "restored": "Restored",
     "no-license": "Không có giấy phép",
     "logout": "Đăng xuất",
     "close": "Đóng",
@@ -254,7 +255,14 @@
     "line": "Dòng",
     "column": "Cột",
     "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
-    "unlimited": "Không giới hạn"
+    "unlimited": "Không giới hạn",
+    "danger-zone": "Danger Zone",
+    "archive-resource": "Archive {type}",
+    "delete-resource": "Delete {type}",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "archive-description": "Mark \"{name}\" as archived and read-only.",
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -1928,7 +1936,9 @@
       "project-labels": {
         "self": "Nhãn dự án",
         "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)"
-      }
+      },
+      "confirm-archive-project": "Archiving \"{name}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
+      "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone."
     },
     "members": {
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
@@ -1960,7 +1970,6 @@
         "success": "Đã lưu trữ thành công {count} dự án | Đã lưu trữ thành công {count} dự án",
         "error": "Không lưu trữ được dự án"
       },
-      "force-archive-description": "Buộc lưu trữ ngay cả khi dự án có cơ sở dữ liệu (cơ sở dữ liệu sẽ được chuyển đến dự án mặc định)",
       "projects-to-archive": "Dự án để lưu trữ",
       "resource-warning": {
         "title": "Dự án có nguồn lực",
