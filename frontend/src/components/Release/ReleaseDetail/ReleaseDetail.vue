@@ -8,9 +8,6 @@
       :show-selection="false"
       @row-click="(_, file) => (state.selectedReleaseFile = file)"
     />
-    <div class="pl-2 opacity-80">
-      <ReleaseArchiveRestoreButton />
-    </div>
   </div>
 
   <Drawer
@@ -39,7 +36,6 @@ import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
 import BasicInfo from "./BasicInfo.vue";
 import { provideReleaseDetailContext } from "./context";
 import NavBar from "./NavBar";
-import ReleaseArchiveRestoreButton from "./ReleaseArchiveRestoreButton.vue";
 import ReleaseFileTable from "./ReleaseFileTable";
 import ReleaseFileDetailPanel from "./ReleaseFileTable/ReleaseFileDetailPanel.vue";
 
