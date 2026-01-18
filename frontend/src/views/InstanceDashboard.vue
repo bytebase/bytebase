@@ -7,11 +7,18 @@
       :description="instanceCountAttention"
     />
     <div class="px-4 flex items-center gap-x-2">
+      <NSelect
+        v-model:value="state.selectedState"
+        :options="stateFilterOptions"
+        :consistent-menu-width="false"
+        class="!w-32"
+      />
       <AdvancedSearch
         v-model:params="state.params"
         :autofocus="false"
         :placeholder="$t('instance.filter-instance-name')"
         :scope-options="scopeOptions"
+        class="flex-1"
       />
       <PermissionGuardWrapper
         v-slot="slotProps"
@@ -74,7 +81,7 @@
 
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NSelect } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -102,11 +109,12 @@ import {
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import {
   getValueFromSearchParams,
   getValuesFromSearchParams,
+  hasWorkspacePermissionV2,
   type SearchParams,
 } from "@/utils";
 
@@ -115,6 +123,7 @@ interface LocalState {
   showCreateDrawer: boolean;
   showFeatureModal: boolean;
   selectedInstance: Set<string>;
+  selectedState: State | "ALL";
 }
 
 const props = defineProps<{
@@ -137,6 +146,7 @@ const state = reactive<LocalState>({
   showCreateDrawer: false,
   showFeatureModal: false,
   selectedInstance: new Set(),
+  selectedState: State.ACTIVE,
 });
 
 const onInstanceCreated = (instance: Instance) => {
@@ -180,6 +190,7 @@ const filter = computed(() => ({
   query: state.params.query,
   engines: selectedEngines.value,
   labels: selectedLabels.value,
+  state: state.selectedState === "ALL" ? undefined : state.selectedState,
 }));
 
 const showCreateInstanceDrawer = () => {
@@ -208,6 +219,23 @@ const scopeOptions = computed((): ScopeOption[] => {
       options: [],
     },
   ];
+});
+
+const stateFilterOptions = computed(() => {
+  const options = [
+    { label: t("common.active"), value: State.ACTIVE },
+    { label: t("common.all"), value: "ALL" as const },
+  ];
+
+  if (hasWorkspacePermissionV2("bb.instances.undelete")) {
+    // Insert archived option before "All"
+    options.splice(1, 0, {
+      label: t("common.archived"),
+      value: State.DELETED,
+    });
+  }
+
+  return options;
 });
 
 onMounted(() => {
