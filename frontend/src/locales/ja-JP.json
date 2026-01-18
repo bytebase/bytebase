@@ -41,6 +41,7 @@
     "environment-name": "環境名",
     "archive": "アーカイブ",
     "archived": "アーカイブ済み",
+    "restored": "Restored",
     "no-license": "ライセンスがありません",
     "logout": "サインアウト",
     "close": "閉じる",
@@ -254,7 +255,14 @@
     "line": "行",
     "column": "列",
     "apply-to-database": "データベースに適用",
-    "unlimited": "無制限"
+    "unlimited": "無制限",
+    "danger-zone": "Danger Zone",
+    "archive-resource": "Archive {type}",
+    "delete-resource": "Delete {type}",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "archive-description": "Mark \"{name}\" as archived and read-only.",
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1928,7 +1936,9 @@
       "project-labels": {
         "self": "プロジェクトラベル",
         "description": "キーバリューラベルでプロジェクトを整理（最大64個）"
-      }
+      },
+      "confirm-archive-project": "Archiving \"{name}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
+      "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone."
     },
     "members": {
       "description": "プロジェクト メンバーの役割により、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
@@ -1960,7 +1970,6 @@
         "success": "{count} 件のプロジェクトを正常にアーカイブしました | {count} 件のプロジェクトを正常にアーカイブしました",
         "error": "プロジェクトをアーカイブできませんでした"
       },
-      "force-archive-description": "プロジェクトにデータベースがある場合でも強制的にアーカイブします (データベースはデフォルトのプロジェクトに移動されます)",
       "projects-to-archive": "アーカイブするプロジェクト",
       "resource-warning": {
         "title": "リソースのあるプロジェクト",

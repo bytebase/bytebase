@@ -5115,21 +5115,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: force
-          in: query
-          description: |-
-            If set to true, any databases from this project will be moved to default project.
-             Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-             Open issues will remain open but associated with the deleted project.
-             If set to false, the operation will fail if the project has databases or open issues.
-          schema:
-            type: boolean
-            title: force
-            description: |-
-              If set to true, any databases from this project will be moved to default project.
-               Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-               Open issues will remain open but associated with the deleted project.
-               If set to false, the operation will fail if the project has databases or open issues.
         - name: purge
           in: query
           description: |-
@@ -5137,6 +5122,8 @@ paths:
              This operation is irreversible. Following AIP-165, this should only be used for
              administrative cleanup of old soft-deleted projects.
              The project must already be soft-deleted for this to work.
+             When purge=true, all databases will be moved to the default project before deletion.
+             When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
           schema:
             type: boolean
             title: purge
@@ -5145,6 +5132,8 @@ paths:
                This operation is irreversible. Following AIP-165, this should only be used for
                administrative cleanup of old soft-deleted projects.
                The project must already be soft-deleted for this to work.
+               When purge=true, all databases will be moved to the default project before deletion.
+               When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
       responses:
         "200":
           description: Success
@@ -10719,14 +10708,16 @@ components:
           description: |-
             The names of the projects to delete.
              Format: projects/{project}
-        force:
+        purge:
           type: boolean
-          title: force
+          title: purge
           description: |-
-            If set to true, any databases from this project will be moved to default project.
-             Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-             Open issues will remain open but associated with the deleted project.
-             If set to false, the operation will fail if the project has databases or open issues.
+            If set to true, permanently purge the soft-deleted projects and all related resources.
+             This operation is irreversible. Following AIP-165, this should only be used for
+             administrative cleanup of old soft-deleted projects.
+             All projects must already be soft-deleted for this to work.
+             When purge=true, all databases will be moved to the default project before deletion.
+             When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged.
       title: BatchDeleteProjectsRequest
       required:
         - names
@@ -12709,14 +12700,6 @@ components:
           description: |-
             The name of the project to delete.
              Format: projects/{project}
-        force:
-          type: boolean
-          title: force
-          description: |-
-            If set to true, any databases from this project will be moved to default project.
-             Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-             Open issues will remain open but associated with the deleted project.
-             If set to false, the operation will fail if the project has databases or open issues.
         purge:
           type: boolean
           title: purge
@@ -12725,6 +12708,8 @@ components:
              This operation is irreversible. Following AIP-165, this should only be used for
              administrative cleanup of old soft-deleted projects.
              The project must already be soft-deleted for this to work.
+             When purge=true, all databases will be moved to the default project before deletion.
+             When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
       title: DeleteProjectRequest
       required:
         - name

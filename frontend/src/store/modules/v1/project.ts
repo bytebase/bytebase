@@ -261,10 +261,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     upsertProjectsCache([project]);
     return response;
   };
-  const archiveProject = async (project: Project, force = false) => {
+  const archiveProject = async (project: Project) => {
     const request = create(DeleteProjectRequestSchema, {
       name: project.name,
-      force,
+      purge: false,
     });
     await projectServiceClientConnect.deleteProject(request);
     project.state = State.DELETED;
@@ -278,10 +278,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await projectServiceClientConnect.deleteProject(request);
     projectMapByName.delete(project);
   };
-  const batchDeleteProjects = async (projectNames: string[], force = false) => {
+  const batchDeleteProjects = async (projectNames: string[]) => {
     const request = create(BatchDeleteProjectsRequestSchema, {
       names: projectNames,
-      force,
+      purge: false,
     });
     await projectServiceClientConnect.batchDeleteProjects(request);
     // Update local cache - mark all projects as deleted

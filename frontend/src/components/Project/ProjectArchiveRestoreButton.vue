@@ -14,15 +14,7 @@
         :confirm-description="$t('project.settings.archive.description')"
         :require-confirm="true"
         @confirm="archiveOrRestoreProject(true)"
-      >
-        <div class="mt-3">
-          <NCheckbox v-model:checked="force">
-            <div class="text-sm font-normal text-control-light">
-              {{ $t("instance.force-archive-description") }}
-            </div>
-          </NCheckbox>
-        </div>
-      </BBButtonConfirm>
+      />
     </template>
     <template v-else-if="project.state === State.DELETED">
       <BBButtonConfirm
@@ -42,8 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { NCheckbox } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
 import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteButton.vue";
@@ -60,7 +51,6 @@ const props = defineProps<{
 
 const projectV1Store = useProjectV1Store();
 const router = useRouter();
-const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   if (props.project.state === State.ACTIVE) {
@@ -71,7 +61,7 @@ const allowArchiveOrRestore = computed(() => {
 
 const archiveOrRestoreProject = async (archive: boolean) => {
   if (archive) {
-    await projectV1Store.archiveProject(props.project, force.value);
+    await projectV1Store.archiveProject(props.project);
   } else {
     await projectV1Store.restoreProject(props.project);
   }
