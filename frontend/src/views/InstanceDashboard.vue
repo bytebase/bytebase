@@ -82,7 +82,7 @@
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
@@ -239,6 +239,13 @@ const stateFilterOptions = computed(() => {
 });
 
 onMounted(() => {
+  const queryState = router.currentRoute.value.query.state as string;
+  if (queryState === "archived") {
+    state.selectedState = State.DELETED;
+  } else if (queryState === "all") {
+    state.selectedState = "ALL";
+  }
+
   if (!uiStateStore.getIntroStateByKey("instance.visit")) {
     uiStateStore.saveIntroStateByKey({
       key: "instance.visit",
@@ -271,6 +278,19 @@ const instanceCountAttention = computed((): string => {
 
   return `${status} ${upgrade}`;
 });
+
+watch(
+  () => state.selectedState,
+  (newState) => {
+    const query: Record<string, string> = {};
+    if (newState === State.DELETED) {
+      query.state = "archived";
+    } else if (newState === "ALL") {
+      query.state = "all";
+    }
+    router.replace({ query });
+  }
+);
 
 const selectedInstanceList = computed(() => {
   return [...state.selectedInstance]

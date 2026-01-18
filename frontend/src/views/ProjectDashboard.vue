@@ -68,7 +68,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -170,6 +170,13 @@ const handleBatchOperation = () => {
 };
 
 onMounted(() => {
+  const queryState = router.currentRoute.value.query.state as string;
+  if (queryState === "archived") {
+    state.selectedState = State.DELETED;
+  } else if (queryState === "all") {
+    state.selectedState = "ALL";
+  }
+
   const uiStateStore = useUIStateStore();
   if (!uiStateStore.getIntroStateByKey("project.visit")) {
     uiStateStore.saveIntroStateByKey({
@@ -189,4 +196,19 @@ const handleCreated = async (project: Project) => {
   router.push(url);
   state.showCreateDrawer = false;
 };
+
+// Sync state changes to URL query
+watch(
+  () => state.selectedState,
+  (newState) => {
+    const query: Record<string, string> = {};
+    if (newState === State.DELETED) {
+      query.state = "archived";
+    } else if (newState === "ALL") {
+      query.state = "all";
+    }
+    // Update URL without creating a new history entry
+    router.replace({ query });
+  }
+);
 </script>
