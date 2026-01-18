@@ -36,7 +36,6 @@ import {
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import {
-  SETTING_ROUTE_WORKSPACE_ARCHIVE,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
@@ -223,11 +222,6 @@ export const useDashboardSidebar = () => {
           {
             title: t("settings.sidebar.subscription"),
             name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-            type: "route",
-          },
-          {
-            title: t("common.archived"),
-            name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
             type: "route",
           },
         ],
