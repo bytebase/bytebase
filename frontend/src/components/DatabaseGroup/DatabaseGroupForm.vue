@@ -45,19 +45,6 @@
       </div>
     </div>
 
-    <div v-if="!isCreating && allowDelete" class="py-6 border-t">
-      <BBButtonConfirm
-        :type="'DELETE'"
-        :button-text="$t('database-group.delete-group')"
-        :ok-text="$t('common.delete')"
-        :confirm-title="
-          $t('database-group.delete-group', { name: databaseGroup?.title })
-        "
-        :require-confirm="true"
-        @confirm="doDelete"
-      />
-    </div>
-
     <div v-if="!readonly" class="sticky bottom-0 z-10">
       <div
         class="flex justify-end w-full py-4 border-t border-block-border bg-white gap-x-3"
@@ -77,8 +64,6 @@ import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import { BBButtonConfirm } from "@/bbkit";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -88,10 +73,6 @@ import {
   validateSimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import {
-  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-  PROJECT_V1_ROUTE_DATABASE_GROUPS,
-} from "@/router/dashboard/projectV1";
 import { pushNotification, useDBGroupStore } from "@/store";
 import {
   databaseGroupNamePrefix,
@@ -109,7 +90,6 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
-  hasProjectPermissionV2,
 } from "@/utils";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
@@ -141,13 +121,8 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(emptySimpleExpr()),
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const router = useRouter();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
-
-const allowDelete = computed(() => {
-  return hasProjectPermissionV2(props.project, "bb.databaseGroups.delete");
-});
 
 watchEffect(async () => {
   const databaseGroup = props.databaseGroup;
@@ -172,19 +147,6 @@ watchEffect(async () => {
     }
   }
 });
-
-const doDelete = async () => {
-  const databaseGroup = props.databaseGroup as DatabaseGroup;
-  await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
-  if (
-    router.currentRoute.value.name === PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
-  ) {
-    router.replace({
-      name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-    });
-  }
-  emit("dismiss");
-};
 
 const allowConfirm = computed(() => {
   return (

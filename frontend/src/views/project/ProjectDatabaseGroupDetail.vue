@@ -51,6 +51,19 @@
           {{ $t("common.configure") }}
         </NButton>
       </PermissionGuardWrapper>
+
+      <NDropdown
+        v-if="dropdownOptions.length > 0"
+        trigger="click"
+        :options="dropdownOptions"
+        @select="handleDropdownSelect"
+      >
+        <NButton size="small" quaternary class="px-1!">
+          <template #icon>
+            <EllipsisVerticalIcon class="w-4 h-4" />
+          </template>
+        </NButton>
+      </NDropdown>
     </div>
 
     <DatabaseGroupForm
@@ -63,22 +76,34 @@
 </template>
 
 <script lang="ts" setup>
-import { EditIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { EditIcon, EllipsisVerticalIcon } from "lucide-vue-next";
+import type { DropdownOption } from "naive-ui";
+import { NButton, NDropdown, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { useBodyLayoutContext } from "@/layouts/common";
-import { featureToRef, useDBGroupStore, useProjectByName } from "@/store";
+import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
+import {
+  featureToRef,
+  useDBGroupStore,
+  useGracefulRequest,
+  useProjectByName,
+} from "@/store";
 import {
   databaseGroupNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE } from "@/utils";
+import {
+  hasProjectPermissionV2,
+  PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
+} from "@/utils";
 
 interface LocalState {
   editing: boolean;
@@ -94,6 +119,9 @@ const dbGroupStore = useDBGroupStore();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
+const { t } = useI18n();
+const dialog = useDialog();
+const router = useRouter();
 const state = reactive<LocalState>({
   editing: false,
 });
@@ -113,6 +141,45 @@ const hasMatchedDatabases = computed(
 const hasDatabaseGroupFeature = featureToRef(
   PlanFeature.FEATURE_DATABASE_GROUPS
 );
+
+const allowDelete = computed(() => {
+  return hasProjectPermissionV2(project.value, "bb.databaseGroups.delete");
+});
+
+const dropdownOptions = computed((): DropdownOption[] => {
+  if (!allowDelete.value) {
+    return [];
+  }
+  return [
+    {
+      key: "delete",
+      label: t("common.delete"),
+    },
+  ];
+});
+
+const handleDropdownSelect = (key: string) => {
+  if (key === "delete" && databaseGroup.value) {
+    dialog.warning({
+      title: t("database-group.delete-group", {
+        name: databaseGroup.value.title,
+      }),
+      content: t("common.cannot-undo-this-action"),
+      negativeText: t("common.cancel"),
+      positiveText: t("common.delete"),
+      onPositiveClick: () => {
+        useGracefulRequest(async () => {
+          await dbGroupStore.deleteDatabaseGroup(
+            databaseGroupResourceName.value
+          );
+          router.push({
+            name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+          });
+        });
+      },
+    });
+  }
+};
 
 watchEffect(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {
