@@ -283,7 +283,7 @@ COMMENT ON TABLE "public"."users" IS 'To be removed';
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Description: %s", tt.description)
 
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -445,7 +445,7 @@ COMMENT ON VIEW "public"."active_users" IS 'Old view comment';
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Description: %s", tt.description)
 
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -541,7 +541,7 @@ $$`,
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Description: %s", tt.description)
 
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -619,7 +619,7 @@ COMMENT ON SEQUENCE "public"."user_id_seq" IS 'Old sequence comment';
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Description: %s", tt.description)
 
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, tt.currentSchema)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 

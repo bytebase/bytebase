@@ -21,64 +21,11 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ChangelogPayload_Type int32
-
-const (
-	ChangelogPayload_TYPE_UNSPECIFIED ChangelogPayload_Type = 0
-	ChangelogPayload_BASELINE         ChangelogPayload_Type = 1
-	ChangelogPayload_MIGRATE          ChangelogPayload_Type = 2
-	ChangelogPayload_SDL              ChangelogPayload_Type = 3
-)
-
-// Enum value maps for ChangelogPayload_Type.
-var (
-	ChangelogPayload_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "BASELINE",
-		2: "MIGRATE",
-		3: "SDL",
-	}
-	ChangelogPayload_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"BASELINE":         1,
-		"MIGRATE":          2,
-		"SDL":              3,
-	}
-)
-
-func (x ChangelogPayload_Type) Enum() *ChangelogPayload_Type {
-	p := new(ChangelogPayload_Type)
-	*p = x
-	return p
-}
-
-func (x ChangelogPayload_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ChangelogPayload_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_changelog_proto_enumTypes[0].Descriptor()
-}
-
-func (ChangelogPayload_Type) Type() protoreflect.EnumType {
-	return &file_store_changelog_proto_enumTypes[0]
-}
-
-func (x ChangelogPayload_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ChangelogPayload_Type.Descriptor instead.
-func (ChangelogPayload_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_changelog_proto_rawDescGZIP(), []int{0, 0}
-}
-
 type ChangelogPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun       string                `protobuf:"bytes,1,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
-	Type          ChangelogPayload_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.ChangelogPayload_Type" json:"type,omitempty"`
-	GitCommit     string                `protobuf:"bytes,6,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
+	TaskRun       string `protobuf:"bytes,1,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	GitCommit     string `protobuf:"bytes,6,opt,name=git_commit,json=gitCommit,proto3" json:"git_commit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -120,13 +67,6 @@ func (x *ChangelogPayload) GetTaskRun() string {
 	return ""
 }
 
-func (x *ChangelogPayload) GetType() ChangelogPayload_Type {
-	if x != nil {
-		return x.Type
-	}
-	return ChangelogPayload_TYPE_UNSPECIFIED
-}
-
 func (x *ChangelogPayload) GetGitCommit() string {
 	if x != nil {
 		return x.GitCommit
@@ -138,17 +78,11 @@ var File_store_changelog_proto protoreflect.FileDescriptor
 
 const file_store_changelog_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/changelog.proto\x12\x0ebytebase.store\"\xcf\x01\n" +
+	"\x15store/changelog.proto\x12\x0ebytebase.store\"R\n" +
 	"\x10ChangelogPayload\x12\x19\n" +
-	"\btask_run\x18\x01 \x01(\tR\ataskRun\x129\n" +
-	"\x04type\x18\x05 \x01(\x0e2%.bytebase.store.ChangelogPayload.TypeR\x04type\x12\x1d\n" +
+	"\btask_run\x18\x01 \x01(\tR\ataskRun\x12\x1d\n" +
 	"\n" +
-	"git_commit\x18\x06 \x01(\tR\tgitCommit\"@\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bBASELINE\x10\x01\x12\v\n" +
-	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03J\x04\b\a\x10\bB\x91\x01\n" +
+	"git_commit\x18\x06 \x01(\tR\tgitCommitJ\x04\b\a\x10\bB\x91\x01\n" +
 	"\x12com.bytebase.storeB\x0eChangelogProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -163,19 +97,16 @@ func file_store_changelog_proto_rawDescGZIP() []byte {
 	return file_store_changelog_proto_rawDescData
 }
 
-var file_store_changelog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_changelog_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_changelog_proto_goTypes = []any{
-	(ChangelogPayload_Type)(0), // 0: bytebase.store.ChangelogPayload.Type
-	(*ChangelogPayload)(nil),   // 1: bytebase.store.ChangelogPayload
+	(*ChangelogPayload)(nil), // 0: bytebase.store.ChangelogPayload
 }
 var file_store_changelog_proto_depIdxs = []int32{
-	0, // 0: bytebase.store.ChangelogPayload.type:type_name -> bytebase.store.ChangelogPayload.Type
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_store_changelog_proto_init() }
@@ -188,14 +119,13 @@ func file_store_changelog_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_changelog_proto_rawDesc), len(file_store_changelog_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_changelog_proto_goTypes,
 		DependencyIndexes: file_store_changelog_proto_depIdxs,
-		EnumInfos:         file_store_changelog_proto_enumTypes,
 		MessageInfos:      file_store_changelog_proto_msgTypes,
 	}.Build()
 	File_store_changelog_proto = out.File

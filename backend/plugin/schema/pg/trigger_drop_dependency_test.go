@@ -81,7 +81,7 @@ func TestDropTriggerDependencyOrder(t *testing.T) {
 	currentSDL := ``
 
 	// Generate diff and migration (AST-only mode)
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	// Debug: print diff information
@@ -192,7 +192,7 @@ func TestCreateTriggerDependencyOrder(t *testing.T) {
 	`
 
 	// Generate diff and migration (AST-only mode)
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	// Debug: print diff information
@@ -276,7 +276,7 @@ func TestSameTriggerNameOnDifferentTables(t *testing.T) {
 	previousSDL := ``
 
 	// Generate diff and migration (AST-only mode)
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 
 	// Debug: print diff information

@@ -103,7 +103,7 @@ $function$;`,
 	t.Logf("Current SDL (procedure removed):\n%s", currentSDL)
 
 	// Step 4: Generate diff and migration
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err, "Failed to generate SDL diff")
 
 	// Log the diff for debugging

@@ -31,10 +31,8 @@ const (
 	MigrationSchemaMissing  Code = 201
 	MigrationAlreadyApplied Code = 202
 	MigrationOutOfOrder     Code = 203
-	// MigrationBaselineMissing is no longer used.
-	// MigrationBaselineMissing Code = 204.
-	MigrationPending Code = 205
-	MigrationFailed  Code = 206
+	MigrationPending        Code = 205
+	MigrationFailed         Code = 206
 
 	// 301 task error.
 	TaskTimingNotAllowed Code = 301

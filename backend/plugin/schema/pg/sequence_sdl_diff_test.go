@@ -330,7 +330,7 @@ func TestSequenceSDLDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 

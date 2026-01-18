@@ -10,13 +10,5 @@ message ChangelogPayload {
   // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 1;
 
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    BASELINE = 1;
-    MIGRATE = 2;
-    SDL = 3;
-  }
-  Type type = 5;
-
   string git_commit = 6;
 }

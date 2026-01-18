@@ -23,10 +23,7 @@ import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResource
 import { useChangelogStore, useDatabaseV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import {
-  Changelog_Status,
-  Changelog_Type,
-} from "@/types/proto-es/v1/database_service_pb";
+import { Changelog_Status } from "@/types/proto-es/v1/database_service_pb";
 import {
   isValidChangelogName,
   mockLatestChangelog,
@@ -41,11 +38,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "update:value", value: string | undefined): void;
 }>();
-
-const ALLOWED_CHANGELOG_TYPES: Changelog_Type[] = [
-  Changelog_Type.BASELINE,
-  Changelog_Type.MIGRATE,
-];
 
 const changelogStore = useChangelogStore();
 const databaseStore = useDatabaseV1Store();
@@ -83,10 +75,7 @@ const handleSearch = async (params: {
       parent: props.database,
       pageToken: params.pageToken,
       pageSize: params.pageSize,
-      filter: [
-        `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
-        `type in [${ALLOWED_CHANGELOG_TYPES.map((t) => `"${Changelog_Type[t]}"`).join(", ")}]`,
-      ].join(" && "),
+      filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
     }
   );
 
@@ -128,9 +117,6 @@ const renderSchemaVersionLabel = (
         class="text-control-light"
         date={getDateForPbTimestampProtoEs(resource.createTime)}
       />
-      <NTag round size="small">
-        {Changelog_Type[resource.type]}
-      </NTag>
       {resource.planTitle && (
         <NTag round size="small">
           {resource.planTitle}

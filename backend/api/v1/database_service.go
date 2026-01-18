@@ -361,7 +361,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				Status:         store.ChangelogStatusDone,
 				SyncHistoryUID: &syncHistory,
 				Payload: &storepb.ChangelogPayload{
-					Type:      storepb.ChangelogPayload_BASELINE,
 					GitCommit: s.profile.GitCommit,
 				}}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create changelog")

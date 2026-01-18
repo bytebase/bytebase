@@ -301,7 +301,7 @@ CREATE TABLE schema_b.table_b(
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Get SDL diff
-			diff, err := GetSDLDiff(tt.currentSDLText, tt.previousUserSDLText, tt.currentSchema, nil)
+			diff, err := GetSDLDiff(tt.currentSDLText, tt.previousUserSDLText, tt.currentSchema)
 			require.NoError(t, err, "GetSDLDiff should not return error")
 			require.NotNil(t, diff, "Diff should not be nil")
 

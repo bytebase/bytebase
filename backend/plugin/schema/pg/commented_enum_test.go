@@ -131,7 +131,7 @@ COMMENT ON TYPE "public"."user_role_enum" IS 'User role types';
 	previousSDL := ""
 	currentSDL := fileContent
 
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err, "GetSDLDiff should not fail with commented SQL: %v", err)
 	require.NotNil(t, diff)
 

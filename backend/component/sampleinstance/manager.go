@@ -297,7 +297,6 @@ func (m *Manager) generateInstance(
 		Status:         store.ChangelogStatusDone,
 		SyncHistoryUID: &syncHistory,
 		Payload: &storepb.ChangelogPayload{
-			Type:      storepb.ChangelogPayload_BASELINE,
 			GitCommit: m.profile.GitCommit,
 		},
 	}); err != nil {

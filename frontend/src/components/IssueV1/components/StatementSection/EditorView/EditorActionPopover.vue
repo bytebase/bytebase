@@ -49,7 +49,6 @@ const shouldShowInstanceRoleSelect = computed(() => {
   if (engine !== Engine.POSTGRES) {
     return false;
   }
-  // Only works for DDL/DML, exclude creating database and schema baseline.
   if (selectedTask.value.type !== Task_Type.DATABASE_MIGRATE) {
     return false;
   }

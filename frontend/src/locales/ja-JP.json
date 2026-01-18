@@ -216,7 +216,6 @@
     "resource-not-found": "リソースが見つかりません",
     "continue-anyway": "まだ続けたい",
     "permissions": "権限",
-    "baseline": "ベースライン",
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
@@ -1641,10 +1640,6 @@
   "changelog": {
     "self": "変更履歴",
     "select": "スキーマのバージョンは、Bytebase を通じてスキーマの変更が実行されるたびに記録されます。",
-    "change-type": "タイプ",
-    "type": {
-      "migrate": "マイグレート"
-    },
     "no-schema-change": "この変更ではスキーマの変更はありません",
     "show-diff": "違いを表示",
     "schema-snapshot-after-change": "この変更を完了した後のスキーマのスナップショット",

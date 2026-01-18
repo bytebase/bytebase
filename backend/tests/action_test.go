@@ -966,17 +966,8 @@ func TestActionRolloutCommand(t *testing.T) {
 			Parent: database.Name,
 		}))
 		a.NoError(err)
-		// Expect at least 1 changelog (MIGRATE), possibly 2 if BASELINE was created
+		// Expect at least 1 changelog for the versioned release
 		a.GreaterOrEqual(len(changelogs.Msg.Changelogs), 1, "Expected at least 1 changelog for the versioned release")
-		// Verify at least one MIGRATE changelog exists
-		foundMigrateChangelog := false
-		for _, changelog := range changelogs.Msg.Changelogs {
-			if changelog.Type == v1pb.Changelog_MIGRATE {
-				foundMigrateChangelog = true
-				break
-			}
-		}
-		a.True(foundMigrateChangelog, "Expected to find at least one MIGRATE changelog")
 
 		revisions, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
 			Parent: database.Name,
