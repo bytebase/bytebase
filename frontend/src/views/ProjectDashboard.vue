@@ -61,7 +61,6 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AdvancedSearch, {
   useCommonSearchScopeOptions,
@@ -101,7 +100,6 @@ const state = reactive<LocalState>({
 
 const router = useRouter();
 const projectStore = useProjectV1Store();
-const { t } = useI18n();
 
 const pagedProjectTableRef = ref<ComponentExposed<typeof PagedProjectTable>>();
 
@@ -112,11 +110,11 @@ const scopeOptions = computed(() => {
 
   // If user doesn't have undelete permission, remove DELETED and ALL from state scope
   if (!hasWorkspacePermissionV2("bb.projects.undelete")) {
-    return baseOptions.map(scope => {
+    return baseOptions.map((scope) => {
       if (scope.id === "state" && scope.options) {
         return {
           ...scope,
-          options: scope.options.filter(opt => opt.value === "ACTIVE")
+          options: scope.options.filter((opt) => opt.value === "ACTIVE"),
         };
       }
       return scope;

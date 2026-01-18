@@ -203,7 +203,8 @@ const showCreateInstanceDrawer = () => {
 
 const scopeOptions = computed((): ScopeOption[] => {
   const baseOptions = [
-    ...useCommonSearchScopeOptions(["environment", "engine", "label", "state"]).value,
+    ...useCommonSearchScopeOptions(["environment", "engine", "label", "state"])
+      .value,
     {
       id: "host",
       title: t("instance.advanced-search.scope.host.title"),
@@ -220,11 +221,11 @@ const scopeOptions = computed((): ScopeOption[] => {
 
   // If user doesn't have undelete permission, remove DELETED and ALL from state scope
   if (!hasWorkspacePermissionV2("bb.instances.undelete")) {
-    return baseOptions.map(scope => {
+    return baseOptions.map((scope) => {
       if (scope.id === "state" && scope.options) {
         return {
           ...scope,
-          options: scope.options.filter(opt => opt.value === "ACTIVE")
+          options: scope.options.filter((opt) => opt.value === "ACTIVE"),
         };
       }
       return scope;
