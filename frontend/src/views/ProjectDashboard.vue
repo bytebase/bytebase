@@ -171,7 +171,7 @@ onMounted(() => {
   // Migrate old URL format (?state=archived) to new format (?q=state:archived)
   const queryState = router.currentRoute.value.query.state as string;
   if (queryState === "archived" || queryState === "all") {
-    const stateValue = queryState === "archived" ? "deleted" : "all";
+    const stateValue = queryState === "archived" ? "DELETED" : "ALL";
     router.replace({
       query: { q: `state:${stateValue}` },
     });
