@@ -143,7 +143,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
           orderBy: params.orderBy,
-          showDeleted: params.filter?.state === State.DELETED ? true : false,
+          showDeleted: params.filter?.state !== State.ACTIVE,
         });
         const connectResponse = await projectServiceClientConnect.listProjects(
           request,
@@ -159,7 +159,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
           orderBy: params.orderBy,
-          showDeleted: params.filter?.state === State.DELETED ? true : false,
+          showDeleted: params.filter?.state !== State.ACTIVE,
         });
         const connectResponse =
           await projectServiceClientConnect.searchProjects(request, {

@@ -311,7 +311,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       pageToken: params.pageToken,
       orderBy: params.orderBy,
       filter: getListInstanceFilter(params.filter ?? {}),
-      showDeleted: params.filter?.state === State.DELETED ? true : false,
+      showDeleted: params.filter?.state !== State.ACTIVE,
     });
     const response = await instanceServiceClientConnect.listInstances(request, {
       contextValues: createContextValues().set(silentContextKey, params.silent),
