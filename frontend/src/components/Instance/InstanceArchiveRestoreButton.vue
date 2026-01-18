@@ -112,7 +112,7 @@ const hardDeleteInstance = async (resource: string) => {
   await instanceStore.deleteInstance(resource);
   router.replace({
     name: INSTANCE_ROUTE_DASHBOARD,
-    query: { state: "archived" },
+    query: { q: "state:DELETED" },
   });
 };
 </script>
