@@ -48,8 +48,8 @@ const dropdownOptions = computed((): DropdownOption[] => {
   if (release.value.state === State.ACTIVE) {
     return [
       {
-        key: "archive",
-        label: t("common.archive"),
+        key: "abandon",
+        label: t("common.abandon"),
       },
     ];
   } else if (release.value.state === State.DELETED) {
@@ -64,9 +64,9 @@ const dropdownOptions = computed((): DropdownOption[] => {
 });
 
 const handleDropdownSelect = async (key: string) => {
-  if (key === "archive") {
+  if (key === "abandon") {
     dialog.warning({
-      title: t("bbkit.confirm-button.sure-to-archive"),
+      title: t("bbkit.confirm-button.sure-to-abandon"),
       content: t("bbkit.confirm-button.can-undo"),
       negativeText: t("common.cancel"),
       positiveText: t("common.confirm"),

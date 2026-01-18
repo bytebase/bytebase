@@ -1,24 +1,25 @@
 <template>
   <div
     v-if="isValidReleaseName(release.name) && ready"
-    class="w-full text-sm text-control-light flex gap-x-1 items-center"
+    class="w-full text-sm text-control-light flex gap-x-2 items-center"
   >
     <PackageIcon class="w-5 h-auto shrink-0" />
     <a
       :href="`/${release.name}`"
       target="_blank"
       class="normal-link truncate"
-      :class="{
-        'line-through opacity-60': release.state === State.DELETED,
-      }"
     >
       {{ releaseId }}
     </a>
+    <NTag v-if="release.state === State.DELETED" size="small" type="default">
+      {{ $t("common.abandoned") }}
+    </NTag>
   </div>
 </template>
 
 <script setup lang="ts">
 import { PackageIcon } from "lucide-vue-next";
+import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { specForTask, useIssueContext } from "@/components/IssueV1";
 import { useReleaseByName } from "@/store";
