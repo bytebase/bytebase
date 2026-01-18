@@ -76,7 +76,7 @@ const hardDeleteProject = async (resource: string) => {
   await projectV1Store.deleteProject(resource);
   router.replace({
     name: PROJECT_V1_ROUTE_DASHBOARD,
-    query: { state: "archived" },
+    query: { q: "state:archived" },
   });
 };
 </script>
