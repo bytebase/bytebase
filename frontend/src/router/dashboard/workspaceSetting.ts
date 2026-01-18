@@ -7,7 +7,6 @@ export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
 export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
 export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
 export const SETTING_ROUTE_WORKSPACE_SUBSCRIPTION = `${SETTING_ROUTE_WORKSPACE}.subscription`;
-export const SETTING_ROUTE_WORKSPACE_ARCHIVE = `${SETTING_ROUTE_WORKSPACE}.archive`;
 
 const workspaceSettingRoutes: RouteRecordRaw[] = [
   {
@@ -55,19 +54,6 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
-        props: true,
-      },
-      {
-        path: "archive",
-        name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
-        meta: {
-          title: () => t("common.archived"),
-          requiredPermissionList: () => [
-            "bb.projects.list",
-            "bb.instances.list",
-          ],
-        },
-        component: () => import("@/views/Archive.vue"),
         props: true,
       },
     ],
