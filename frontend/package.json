@@ -128,7 +128,7 @@
     "ts-node": "^10.9.2",
     "typescript": "5.9.3",
     "unified": "^11.0.5",
-    "unplugin-icons": "22.5.0",
+    "unplugin-icons": "23.0.1",
     "unplugin-vue-components": "29.2.0",
     "vite": "7.3.1",
     "vite-bundle-visualizer": "^1.2.1",
