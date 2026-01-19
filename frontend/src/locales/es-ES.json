@@ -20,6 +20,7 @@
     "sign-in-as-admin": "Iniciar sesión como administrador",
     "sign-up": "Registrarse",
     "email": "Correo electrónico",
+    "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +).",
     "username": "Nombre de usuario",
     "password": "Contraseña",
     "save": "Guardar",

@@ -20,6 +20,7 @@
     "sign-in-as-admin": "管理者としてサインイン",
     "sign-up": "登録する",
     "email": "メールアドレス",
+    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
     "username": "ユーザー名",
     "password": "パスワード",
     "save": "保存",

@@ -122,6 +122,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		// Normalize email to lowercase as Bytebase requires lowercase emails
 		normalizedEmail := normalizeEmail(scimUser.UserName)
+		if !common.IsValidEmail(normalizedEmail) {
+			return c.String(http.StatusBadRequest, fmt.Sprintf("email %q contains non-ASCII characters", scimUser.UserName))
+		}
 		user, err := s.store.GetUserByEmail(ctx, normalizedEmail)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get user %s, error %v", scimUser.UserName, err))
@@ -207,6 +210,10 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 			// Normalize email to lowercase for consistent lookup
 			normalizedEmail := normalizeEmail(expr.Value)
+			if !common.IsValidEmail(normalizedEmail) {
+				slog.Warn("skipping filter with non-ASCII email", slog.String("key", expr.Key), slog.String("value", expr.Value))
+				continue
+			}
 			find.Email = &normalizedEmail
 		}
 
@@ -322,6 +329,10 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				}
 				// Normalize email to lowercase as Bytebase requires lowercase emails
 				normalizedEmail := normalizeEmail(email)
+				if !common.IsValidEmail(normalizedEmail) {
+					slog.Warn("skipping userName with non-ASCII email", slog.String("operation", op.OP), slog.String("value", email))
+					continue
+				}
 				updateUser.Email = &normalizedEmail
 			case "active":
 				active, ok := op.Value.(bool)
@@ -346,7 +357,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				}
 				if userName, ok := valueMap["userName"].(string); ok {
 					normalizedEmail := normalizeEmail(userName)
-					updateUser.Email = &normalizedEmail
+					if !common.IsValidEmail(normalizedEmail) {
+						slog.Warn("skipping userName with non-ASCII email", slog.String("operation", op.OP), slog.String("value", userName))
+					} else {
+						updateUser.Email = &normalizedEmail
+					}
 				}
 				if active, ok := valueMap["active"].(bool); ok {
 					isDelete := !active
@@ -789,6 +804,9 @@ func (s *Service) getGroupMember(ctx context.Context, memberValue any) (*storepb
 // Used by both POST (when user exists) and PUT operations.
 func (s *Service) updateUserFromSCIM(ctx context.Context, user *store.UserMessage, scimUser *SCIMUser, source string) (*store.UserMessage, error) {
 	normalizedEmail := normalizeEmail(scimUser.UserName)
+	if !common.IsValidEmail(normalizedEmail) {
+		return nil, errors.Errorf("email %q contains non-ASCII characters", scimUser.UserName)
+	}
 	deleted := !scimUser.Active
 	patch := &store.UpdateUserMessage{
 		Delete:  &deleted,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/mail"
 	"regexp"
 	"strings"
 	"time"
@@ -830,7 +829,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.
-		if err := validateEmail(email); err != nil {
+		if err := common.ValidateEmail(email); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
 		}
 		return nil
@@ -846,7 +845,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	}
 
 	// Check if the email is valid.
-	if err := validateEmail(email); err != nil {
+	if err := common.ValidateEmail(email); err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
 	}
 	// Domain restrictions are not applied to service account.
@@ -865,16 +864,6 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 		if !ok {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %q does not belong to domains %v", email, allowedDomains))
 		}
-	}
-	return nil
-}
-
-func validateEmail(email string) error {
-	if email != strings.ToLower(email) {
-		return errors.New("email should be lowercase")
-	}
-	if _, err := mail.ParseAddress(email); err != nil {
-		return err
 	}
 	return nil
 }
