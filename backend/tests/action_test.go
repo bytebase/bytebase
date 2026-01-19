@@ -692,7 +692,6 @@ func TestActionRolloutCommand(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", migrationFile,
-			"--release-title", "Test Release",
 			"--target-stage", "environments/prod",
 			"--output", outputFile,
 		)
@@ -838,7 +837,6 @@ func TestActionRolloutCommand(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", filepath.Join(testDataDir, "0000*.sql"),
-			"--release-title", "Multi-file Release",
 			"--target-stage", "environments/prod",
 			"--output", outputFile,
 		)
@@ -1034,7 +1032,6 @@ func TestActionRolloutCommand(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", filepath.Join(testDataDir, "v*.sql"),
-			"--release-title", "Version Order Test",
 			"--target-stage", "environments/prod",
 		)
 		a.NoError(err, "Rollout command should succeed")
@@ -1111,7 +1108,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Declarative Release V1",
 			"--target-stage", "environments/prod",
 			"--output", outputFile,
 			"--declarative",
@@ -1181,7 +1177,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Initial Schema",
 			"--target-stage", "environments/prod",
 			"--declarative",
 		)
@@ -1221,7 +1216,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Evolved Schema",
 			"--target-stage", "environments/prod",
 			"--declarative",
 		)
@@ -1294,7 +1288,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Idempotent Release 1",
 			"--target-stage", "environments/prod",
 			"--output", outputFile1,
 			"--declarative",
@@ -1317,7 +1310,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Idempotent Release 2",
 			"--target-stage", "environments/prod",
 			"--output", outputFile2,
 			"--declarative",
@@ -1345,7 +1337,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Idempotent Release 3",
 			"--target-stage", "environments/prod",
 			"--output", outputFile3,
 			"--declarative",
@@ -1460,7 +1451,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", fmt.Sprintf("%s,%s", database1.Name, database2.Name),
 			"--file-pattern", schemaFile,
-			"--release-title", "Multi-DB Declarative Release",
 			"--target-stage", "environments/prod",
 			"--declarative",
 		)
@@ -1534,7 +1524,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", databaseGroup.Msg.Name,
 			"--file-pattern", schemaFile,
-			"--release-title", "Declarative Group Release",
 			"--target-stage", "environments/prod",
 			"--declarative",
 		)
@@ -1607,7 +1596,6 @@ func TestActionRolloutDeclarativeMode(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", filepath.Join(testDataDir, "*.sql"),
-			"--release-title", "Multiple Declarative Files Release",
 			"--target-stage", "environments/prod",
 			"--declarative",
 		)
@@ -1768,7 +1756,6 @@ func TestActionErrorScenarios(t *testing.T) {
 			"--project", ctl.project.Name,
 			"--targets", database.Name,
 			"--file-pattern", filepath.Join(testDataDir, "*.nonexistent"),
-			"--release-title", "Empty Release",
 			"--target-stage", "environments/prod",
 		)
 

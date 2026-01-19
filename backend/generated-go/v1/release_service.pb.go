@@ -278,11 +278,17 @@ type CreateReleaseRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The release to create.
 	Release *Release `protobuf:"bytes,2,opt,name=release,proto3" json:"release,omitempty"`
-	// Train for iteration tracking (template rendered without {iteration}).
-	// Used to group releases and determine the next iteration number.
-	Train         string `protobuf:"bytes,3,opt,name=train,proto3" json:"train,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Template for release ID generation.
+	// Available variables: {date}, {time}, {timestamp}, {iteration}.
+	// Example: "release_{date}-RC{iteration}" generates "release_20260119-RC00".
+	// Default: "release_{date}-RC{iteration}".
+	ReleaseIdTemplate string `protobuf:"bytes,3,opt,name=release_id_template,json=releaseIdTemplate,proto3" json:"release_id_template,omitempty"`
+	// Timezone for {date} and {time} variables in the template.
+	// Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
+	// Default: "UTC".
+	ReleaseIdTimezone string `protobuf:"bytes,4,opt,name=release_id_timezone,json=releaseIdTimezone,proto3" json:"release_id_timezone,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CreateReleaseRequest) Reset() {
@@ -329,9 +335,16 @@ func (x *CreateReleaseRequest) GetRelease() *Release {
 	return nil
 }
 
-func (x *CreateReleaseRequest) GetTrain() string {
+func (x *CreateReleaseRequest) GetReleaseIdTemplate() string {
 	if x != nil {
-		return x.Train
+		return x.ReleaseIdTemplate
+	}
+	return ""
+}
+
+func (x *CreateReleaseRequest) GetReleaseIdTimezone() string {
+	if x != nil {
+		return x.ReleaseIdTimezone
 	}
 	return ""
 }
@@ -1073,12 +1086,13 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x06filter\x18\x05 \x01(\tR\x06filter\"p\n" +
 	"\x14ListReleasesResponse\x120\n" +
 	"\breleases\x18\x01 \x03(\v2\x14.bytebase.v1.ReleaseR\breleases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x97\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xe1\x01\n" +
 	"\x14CreateReleaseRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
-	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12\x14\n" +
-	"\x05train\x18\x03 \x01(\tR\x05train\"\x88\x01\n" +
+	"\arelease\x18\x02 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12.\n" +
+	"\x13release_id_template\x18\x03 \x01(\tR\x11releaseIdTemplate\x12.\n" +
+	"\x13release_id_timezone\x18\x04 \x01(\tR\x11releaseIdTimezone\"\x88\x01\n" +
 	"\x14UpdateReleaseRequest\x123\n" +
 	"\arelease\x18\x01 \x01(\v2\x14.bytebase.v1.ReleaseB\x03\xe0A\x02R\arelease\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +

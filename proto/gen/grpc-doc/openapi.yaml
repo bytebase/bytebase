@@ -7469,17 +7469,34 @@ paths:
           required: true
           schema:
             type: string
-        - name: train
+        - name: releaseIdTemplate
           in: query
           description: |-
-            Train for iteration tracking (template rendered without {iteration}).
-             Used to group releases and determine the next iteration number.
+            Template for release ID generation.
+             Available variables: {date}, {time}, {timestamp}, {iteration}.
+             Example: "release_{date}-RC{iteration}" generates "release_20260119-RC00".
+             Default: "release_{date}-RC{iteration}".
           schema:
             type: string
-            title: train
+            title: release_id_template
             description: |-
-              Train for iteration tracking (template rendered without {iteration}).
-               Used to group releases and determine the next iteration number.
+              Template for release ID generation.
+               Available variables: {date}, {time}, {timestamp}, {iteration}.
+               Example: "release_{date}-RC{iteration}" generates "release_20260119-RC00".
+               Default: "release_{date}-RC{iteration}".
+        - name: releaseIdTimezone
+          in: query
+          description: |-
+            Timezone for {date} and {time} variables in the template.
+             Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
+             Default: "UTC".
+          schema:
+            type: string
+            title: release_id_timezone
+            description: |-
+              Timezone for {date} and {time} variables in the template.
+               Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
+               Default: "UTC".
       requestBody:
         description: The release to create.
         content:
@@ -11736,12 +11753,21 @@ components:
           title: release
           description: The release to create.
           $ref: '#/components/schemas/bytebase.v1.Release'
-        train:
+        releaseIdTemplate:
           type: string
-          title: train
+          title: release_id_template
           description: |-
-            Train for iteration tracking (template rendered without {iteration}).
-             Used to group releases and determine the next iteration number.
+            Template for release ID generation.
+             Available variables: {date}, {time}, {timestamp}, {iteration}.
+             Example: "release_{date}-RC{iteration}" generates "release_20260119-RC00".
+             Default: "release_{date}-RC{iteration}".
+        releaseIdTimezone:
+          type: string
+          title: release_id_timezone
+          description: |-
+            Timezone for {date} and {time} variables in the template.
+             Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
+             Default: "UTC".
       title: CreateReleaseRequest
       required:
         - parent

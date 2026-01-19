@@ -158,9 +158,16 @@ message CreateReleaseRequest {
   // The release to create.
   Release release = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // Train for iteration tracking (template rendered without {iteration}).
-  // Used to group releases and determine the next iteration number.
-  string train = 3;
+  // Template for release ID generation.
+  // Available variables: {date}, {time}, {timestamp}, {iteration}.
+  // Example: "release_{date}-RC{iteration}" generates "release_20260119-RC00".
+  // Default: "release_{date}-RC{iteration}".
+  string release_id_template = 3;
+
+  // Timezone for {date} and {time} variables in the template.
+  // Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
+  // Default: "UTC".
+  string release_id_timezone = 4;
 }
 
 message UpdateReleaseRequest {

@@ -80,7 +80,10 @@ func (x *CreateReleaseRequest) Equal(y *CreateReleaseRequest) bool {
 	if !x.Release.Equal(y.Release) {
 		return false
 	}
-	if x.Train != y.Train {
+	if x.ReleaseIdTemplate != y.ReleaseIdTemplate {
+		return false
+	}
+	if x.ReleaseIdTimezone != y.ReleaseIdTimezone {
 		return false
 	}
 	return true

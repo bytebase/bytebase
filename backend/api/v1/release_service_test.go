@@ -1,4 +1,4 @@
-package command
+package v1
 
 import (
 	"testing"
