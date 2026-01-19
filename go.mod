@@ -66,7 +66,7 @@ require (
 	github.com/lestrrat-go/jwx/v3 v3.0.13
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
-	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/microsoft/go-mssqldb v1.9.6
 	github.com/modelcontextprotocol/go-sdk v1.1.0
 	github.com/nyaruka/phonenumbers v1.6.7
