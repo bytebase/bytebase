@@ -124,7 +124,7 @@
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "rollup": "4.55.2",
-    "tailwindcss": "4.1.17",
+    "tailwindcss": "4.1.18",
     "ts-node": "^10.9.2",
     "typescript": "5.9.3",
     "unified": "^11.0.5",
