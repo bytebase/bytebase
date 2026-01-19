@@ -9,12 +9,13 @@
       {{ $t("instance.no-environment") }}
     </BBAttention>
 
-    <div class="flex items-center gap-x-2">
-      <EngineIcon :engine="instance.engine" custom-class="h-6!" />
-      <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
-    </div>
-
     <NTabs :value="state.selectedTab" @update:value="onTabChange">
+      <template #prefix>
+        <div class="flex items-center gap-x-2 mr-4">
+          <EngineIcon :engine="instance.engine" custom-class="h-6!" />
+          <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
+        </div>
+      </template>
       <template #suffix>
         <div class="flex items-center gap-x-2">
           <InstanceSyncButton
