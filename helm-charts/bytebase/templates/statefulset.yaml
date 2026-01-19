@@ -45,6 +45,7 @@ spec:
       labels:
         app: bytebase
     spec:
+      serviceAccountName: {{ template "bytebase.serviceAccountName" . }}
       {{- if $externalPgEscapePgPassword }}
       # If user specify the externalPgEscapePgPassword, we should escape the password in the PG_URL in the shell,
       # because the password may comes from a secret, which is invisible in helm.
