@@ -73,7 +73,7 @@
     "vscode": "npm:@codingame/monaco-vscode-extension-api@21.6.0",
     "vscode-languageclient": "9.0.1",
     "vscode-ws-jsonrpc": "3.5.0",
-    "vue": "3.5.25",
+    "vue": "3.5.26",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.65"
   },
