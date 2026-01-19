@@ -46,7 +46,7 @@
     "is-chinese": "^2.0.0",
     "js-yaml": "4.1.1",
     "jszip": "^3.10.1",
-    "lodash-es": "4.17.21",
+    "lodash-es": "4.17.22",
     "lossless-json": "^4.3.0",
     "lucide-static": "^0.562.0",
     "lucide-vue-next": "^0.562.0",
