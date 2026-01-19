@@ -209,7 +209,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 	policy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
 			{
-				Role: common.FormatRole(common.ProjectOwner),
+				Role: common.FormatRole(ProjectOwnerRole),
 				Members: []string{
 					common.FormatUserEmail(creator.Email),
 				},
