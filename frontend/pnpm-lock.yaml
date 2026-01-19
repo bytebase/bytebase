@@ -11,8 +11,8 @@ importers:
   .:
     dependencies:
       '@buf/googleapis_googleapis.bufbuild_es':
-        specifier: 2.9.0-20251009205305-72c8614f3bd0.1
-        version: 2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.10.2)
+        specifier: 2.10.2-20251126203132-004180b77378.1
+        version: 2.10.2-20251126203132-004180b77378.1(@bufbuild/protobuf@2.10.2)
       '@bufbuild/protobuf':
         specifier: 2.10.2
         version: 2.10.2
@@ -996,10 +996,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.9.0-20251009205305-72c8614f3bd0.1':
-    resolution: {tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.9.0-20251009205305-72c8614f3bd0.1.tgz}
+  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20251126203132-004180b77378.1':
+    resolution: {tarball: https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.10.2-20251126203132-004180b77378.1.tgz}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.9.0
+      '@bufbuild/protobuf': ^2.10.2
 
   '@bufbuild/protobuf@2.10.2':
     resolution: {integrity: sha512-uFsRXwIGyu+r6AMdz+XijIIZJYpoWeYzILt5yZ2d3mCjQrWUTVpVD9WL/jZAbvp+Ed04rOhrsk7FiTcEDseB5A==}
@@ -5848,7 +5848,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.8':
     optional: true
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.9.0-20251009205305-72c8614f3bd0.1(@bufbuild/protobuf@2.10.2)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20251126203132-004180b77378.1(@bufbuild/protobuf@2.10.2)':
     dependencies:
       '@bufbuild/protobuf': 2.10.2
 
