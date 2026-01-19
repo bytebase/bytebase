@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -160,6 +161,25 @@ func ValidatePhone(phone string) error {
 		return errors.New("invalid phone number")
 	}
 	return nil
+}
+
+// emailRegex is based on the WHATWG HTML spec for valid email addresses.
+// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+// Modified to only allow lowercase letters since Bytebase requires lowercase emails.
+var emailRegex = regexp.MustCompile(`^[a-z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$`)
+
+// ValidateEmail validates the email address using WHATWG HTML spec.
+// Only lowercase ASCII letters, digits, and standard email symbols are allowed.
+func ValidateEmail(email string) error {
+	if !emailRegex.MatchString(email) {
+		return errors.New("invalid email address")
+	}
+	return nil
+}
+
+// IsValidEmail returns true if the email is valid per WHATWG HTML spec.
+func IsValidEmail(email string) bool {
+	return emailRegex.MatchString(email)
 }
 
 // SanitizeUTF8String returns a copy of the string s with each run of invalid or unprintable UTF-8 byte sequences

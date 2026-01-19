@@ -20,6 +20,7 @@
     "sign-in-as-admin": "Đăng nhập với tư cách quản trị viên",
     "sign-up": "Đăng ký",
     "email": "Email",
+    "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +).",
     "username": "Tên người dùng",
     "password": "Mật khẩu",
     "save": "Lưu",

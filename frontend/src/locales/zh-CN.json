@@ -20,6 +20,7 @@
     "sign-in-as-admin": "以管理员身份登录",
     "sign-up": "注册",
     "email": "邮箱",
+    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。",
     "username": "用户名",
     "password": "密码",
     "save": "保存",

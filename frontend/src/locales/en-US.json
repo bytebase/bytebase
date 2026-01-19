@@ -20,6 +20,7 @@
     "sign-in-as-admin": "Sign in as administrator",
     "sign-up": "Sign up",
     "email": "Email",
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
     "username": "Username",
     "password": "Password",
     "save": "Save",
