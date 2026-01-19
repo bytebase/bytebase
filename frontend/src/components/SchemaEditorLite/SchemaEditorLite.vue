@@ -8,7 +8,7 @@
       :min="0.15"
       :max="0.4"
       :default-size="0.25"
-      :resize-trigger-size="1"
+      :resize-trigger-size="3"
     >
       <template #1>
         <Aside
