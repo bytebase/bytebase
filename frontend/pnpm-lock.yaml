@@ -158,8 +158,8 @@ importers:
         specifier: 11.0.1
         version: 11.0.1
       sql-formatter:
-        specifier: 15.6.10
-        version: 15.6.10
+        specifier: 15.7.0
+        version: 15.7.0
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -4844,8 +4844,8 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
-  sql-formatter@15.6.10:
-    resolution: {integrity: sha512-0bJOPQrRO/JkjQhiThVayq0hOKnI1tHI+2OTkmT7TGtc6kqS+V7kveeMzRW+RNQGxofmTmet9ILvztyuxv0cJQ==}
+  sql-formatter@15.7.0:
+    resolution: {integrity: sha512-o2yiy7fYXK1HvzA8P6wwj8QSuwG3e/XcpWht/jIxkQX99c0SVPw0OXdLSV9fHASPiYB09HLA0uq8hokGydi/QA==}
     hasBin: true
 
   stackback@0.0.2:
@@ -11227,7 +11227,7 @@ snapshots:
     dependencies:
       vue: 3.5.25(typescript@5.9.3)
 
-  sql-formatter@15.6.10:
+  sql-formatter@15.7.0:
     dependencies:
       argparse: 2.0.1
       nearley: 2.20.1
