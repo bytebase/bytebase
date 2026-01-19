@@ -1,5 +1,8 @@
 <template>
-  <slot></slot>
+  <slot v-if="ready"></slot>
+  <div v-else class="flex items-center justify-center h-screen">
+    <BBSpin />
+  </div>
   <template v-if="!isAuthRoute && authStore.isLoggedIn">
     <!-- Do not show the modal when the user is in auth related pages. -->
     <SigninModal v-if="authStore.unauthenticatedOccurred" />
@@ -10,6 +13,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import InactiveRemindModal from "@/views/auth/InactiveRemindModal.vue";
 import SigninModal from "@/views/auth/SigninModal.vue";
@@ -34,6 +38,7 @@ const authStore = useAuthStore();
 const currentUser = useCurrentUserV1();
 const workspaceStore = useWorkspaceV1Store();
 const roleStore = useRoleStore();
+const ready = ref(false);
 
 const authCheckIntervalId = ref<NodeJS.Timeout>();
 
@@ -94,15 +99,21 @@ watch(
   () => authStore.isLoggedIn,
   async () => {
     if (!authStore.isLoggedIn || !currentUser.value) {
+      ready.value = true;
       return;
     }
 
-    await Promise.all([
-      workspaceStore.fetchIamPolicy(),
-      roleStore.fetchRoleList(),
-      // we only care about the groups for the current user.
-      batchGetOrFetchGroups(currentUser.value.groups),
-    ]);
+    ready.value = false;
+    try {
+      await Promise.all([
+        workspaceStore.fetchIamPolicy(),
+        roleStore.fetchRoleList(),
+        // we only care about the groups for the current user.
+        batchGetOrFetchGroups(currentUser.value.groups),
+      ]);
+    } finally {
+      ready.value = true;
+    }
   },
   {
     immediate: true,
