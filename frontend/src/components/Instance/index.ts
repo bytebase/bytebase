@@ -1,3 +1,1 @@
-import InstanceArchiveRestoreButton from "./InstanceArchiveRestoreButton.vue";
-
-export { InstanceArchiveRestoreButton };
+// This file is intentionally empty after removing InstanceArchiveRestoreButton

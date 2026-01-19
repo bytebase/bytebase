@@ -497,11 +497,6 @@
         />
       </div>
     </div>
-
-    <InstanceArchiveRestoreButton
-      v-if="!hideArchiveRestore && !isCreating && instance"
-      :instance="instance"
-    />
   </div>
 </template>
 
@@ -522,7 +517,6 @@ import {
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
-import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import { LabelListEditor } from "@/components/Label";
 import RequiredStar from "@/components/RequiredStar.vue";
 import {
@@ -571,10 +565,6 @@ import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import SyncDatabases from "./SyncDatabases.vue";
-
-defineProps<{
-  hideArchiveRestore?: boolean;
-}>();
 
 const context = useInstanceFormContext();
 const {

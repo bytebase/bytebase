@@ -14,6 +14,7 @@
         <EngineIcon :engine="instance.engine" custom-class="h-6!" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
+      <InstanceActionDropdown :instance="instance" />
     </div>
 
     <NTabs :value="state.selectedTab" @update:value="onTabChange">
@@ -44,7 +45,7 @@
       </template>
       <NTabPane name="overview" :tab="$t('common.overview')">
         <InstanceForm ref="instanceFormRef" class="-mt-2" :instance="instance">
-          <InstanceFormBody :hide-archive-restore="hideArchiveRestore" />
+          <InstanceFormBody />
           <InstanceFormButtons class="sticky bottom-0 z-10" />
         </InstanceForm>
       </NTabPane>
@@ -111,6 +112,7 @@ import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useComm
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { EngineIcon } from "@/components/Icon";
+import InstanceActionDropdown from "@/components/Instance/InstanceActionDropdown.vue";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import {
   InstanceForm,
@@ -167,7 +169,6 @@ interface LocalState {
 
 const props = defineProps<{
   instanceId: string;
-  hideArchiveRestore?: boolean;
 }>();
 
 defineOptions({

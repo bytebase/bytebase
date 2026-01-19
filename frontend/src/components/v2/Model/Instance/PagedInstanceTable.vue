@@ -25,10 +25,18 @@ import { type InstanceFilter, useInstanceV1Store } from "@/store";
 import { type Instance } from "@/types/proto-es/v1/instance_service_pb";
 import InstanceV1Table from "./InstanceV1Table";
 
-const props = defineProps<{
-  filter?: InstanceFilter;
-  sessionKey: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    filter?: InstanceFilter;
+    sessionKey: string;
+    showExternalLink?: boolean;
+    showActions?: boolean;
+  }>(),
+  {
+    showExternalLink: true,
+    showActions: false,
+  }
+);
 
 const instanceStore = useInstanceV1Store();
 const instancePagedTable = ref<ComponentExposed<typeof PagedTable<Instance>>>();

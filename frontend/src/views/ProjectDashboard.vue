@@ -37,6 +37,7 @@
         :footer-class="'mx-4'"
         :prevent-default="!!onRowClick"
         :show-selection="true"
+        :show-actions="true"
         :selected-project-names="selectedProjectNames"
         @update:selected-project-names="updateSelectedProjects"
         @row-click="onRowClick"
