@@ -52,7 +52,7 @@
     "lucide-vue-next": "^0.555.0",
     "markdown-it": "^14.1.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@21.6.0",
-    "monaco-languageclient": "10.4.0",
+    "monaco-languageclient": "10.5.0",
     "naive-ui": "2.43.2",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.19.0",
