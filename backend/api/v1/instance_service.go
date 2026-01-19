@@ -435,8 +435,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 
 	// Regular soft delete flow
+	// Idempotent: if already deleted, return success
 	if instance.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
+		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
@@ -486,8 +487,10 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, err
 	}
+	// Idempotent: if already active, return the instance
 	if !instance.Deleted {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is active", req.Msg.Name))
+		result := convertInstanceMessage(instance)
+		return connect.NewResponse(result), nil
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
