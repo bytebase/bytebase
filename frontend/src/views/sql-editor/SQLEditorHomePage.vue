@@ -32,7 +32,7 @@
       :size="hideSidebar ? 0 : state.sizebarSize"
       :min="0.1"
       :max="0.4"
-      :resize-trigger-size="1"
+      :resize-trigger-size="3"
       @update:size="size => state.sizebarSize = size"
     >
       <template #1>

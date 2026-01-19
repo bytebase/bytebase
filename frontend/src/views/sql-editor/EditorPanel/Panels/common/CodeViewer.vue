@@ -31,7 +31,7 @@
     :size="editorPanelSize.size"
     :min="editorPanelSize.min"
     :max="editorPanelSize.max"
-    :resize-trigger-size="1"
+    :resize-trigger-size="3"
     @update:size="handleEditorPanelResize"
   >
     <template #1>
