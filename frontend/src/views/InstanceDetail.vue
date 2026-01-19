@@ -32,37 +32,16 @@
       </NTabPane>
       <NTabPane name="databases" :tab="$t('common.databases')">
         <div class="flex flex-col gap-y-2">
-          <div
-            class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
-          >
-            <AdvancedSearch
-              v-model:params="state.params"
-              class="flex-1"
-              :autofocus="false"
-              :placeholder="$t('database.filter-database')"
-              :scope-options="scopeOptions"
-            />
-            <PermissionGuardWrapper
-              v-if="allowCreateDatabase && instance.state === State.ACTIVE"
-              v-slot="slotProps"
-              :permissions="[
-                ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
-              ]"
-            >
-              <NButton
-                type="primary"
-                :disabled="slotProps.disabled"
-                @click.prevent="createDatabase"
-              >
-                <template #icon>
-                  <PlusIcon class="h-4 w-4" />
-                </template>
-                {{ $t("instance.new-database") }}
-              </NButton>
-            </PermissionGuardWrapper>
-          </div>
+          <AdvancedSearch
+            v-model:params="state.params"
+            :autofocus="false"
+            :placeholder="$t('database.filter-database')"
+            :scope-options="scopeOptions"
+          />
           <DatabaseOperations
             :databases="selectedDatabases"
+            :instance-name="instance.name"
+            :on-create-database="allowCreateDatabase && instance.state === State.ACTIVE ? createDatabase : undefined"
             @refresh="() => pagedDatabaseTableRef?.refresh()"
             @update="
               (databases) => pagedDatabaseTableRef?.updateCache(databases)
@@ -100,8 +79,7 @@
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import { PlusIcon } from "lucide-vue-next";
-import { NButton, NTabPane, NTabs } from "naive-ui";
+import { NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -118,7 +96,6 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer, InstanceRoleTable } from "@/components/v2";
 import {
   DatabaseOperations,
@@ -150,7 +127,6 @@ import {
   getValuesFromSearchParams,
   instanceV1HasCreateDatabase,
   instanceV1Name,
-  PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
 } from "@/utils";
 
 const instanceHashList = ["overview", "databases", "users"] as const;
