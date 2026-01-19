@@ -68,7 +68,7 @@ func NewSQLService(
 
 // AdminExecute executes the SQL statement.
 func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStream[v1pb.AdminExecuteRequest, v1pb.AdminExecuteResponse]) error {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE); err == nil {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE); err != nil {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	}
 	var driver db.Driver
