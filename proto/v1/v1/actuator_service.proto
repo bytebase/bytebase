@@ -9,6 +9,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/setting_service.proto";
 import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -67,6 +68,17 @@ message GetActuatorInfoRequest {}
 
 // Request message for deleting cache.
 message DeleteCacheRequest {}
+
+message Restriction {
+  // Whether self-service user signup is disabled.
+  bool disallow_signup = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether password-based signin is disabled (except for workspace admins).
+  bool disallow_password_signin = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Password complexity and restriction requirements.
+  WorkspaceProfileSetting.PasswordRestriction password_restriction = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
 
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
@@ -139,4 +151,6 @@ message ActuatorInfo {
 
   // The number of active replicas (servers sharing the same database).
   int32 replica_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  Restriction restriction = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

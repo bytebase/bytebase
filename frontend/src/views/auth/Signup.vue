@@ -48,7 +48,7 @@
             v-model:password="state.password"
             v-model:password-confirm="state.passwordConfirm"
             :show-learn-more="false"
-            :password-restriction="workspaceProfile.passwordRestriction"
+            :password-restriction="serverInfo?.restriction?.passwordRestriction"
           />
 
           <div>
@@ -148,7 +148,7 @@ import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useActuatorV1Store, useAuthStore, useSettingV1Store } from "@/store";
+import { useActuatorV1Store, useAuthStore } from "@/store";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
@@ -164,7 +164,6 @@ interface LocalState {
 }
 
 const actuatorStore = useActuatorV1Store();
-const settingV1Store = useSettingV1Store();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const state = reactive<LocalState>({
@@ -177,8 +176,7 @@ const state = reactive<LocalState>({
   isLoading: false,
 });
 
-const { needAdminSetup } = storeToRefs(actuatorStore);
-const { workspaceProfile } = storeToRefs(settingV1Store);
+const { needAdminSetup, serverInfo } = storeToRefs(actuatorStore);
 
 const allowSignup = computed(() => {
   return (
@@ -188,7 +186,7 @@ const allowSignup = computed(() => {
     !userPasswordRef.value?.passwordHint &&
     !userPasswordRef.value?.passwordMismatch &&
     state.acceptTermsAndPolicy &&
-    !workspaceProfile.value.disallowSignup
+    !serverInfo.value?.restriction?.disallowSignup
   );
 });
 
