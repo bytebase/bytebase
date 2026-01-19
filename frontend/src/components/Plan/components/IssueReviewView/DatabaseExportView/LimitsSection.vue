@@ -20,7 +20,7 @@ import { DEFAULT_MAX_RESULT_SIZE_IN_MB, useSettingV1Store } from "@/store";
 const settingStore = useSettingV1Store();
 
 const maximumResultSize = computed(() => {
-  let size = settingStore.workspaceProfile.dataExportResultSize;
+  let size = settingStore.workspaceProfile.sqlResultSize;
   if (size <= 0) {
     size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
   }

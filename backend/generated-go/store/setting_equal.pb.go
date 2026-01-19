@@ -146,7 +146,7 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.EnableDebug != y.EnableDebug {
 		return false
 	}
-	if x.DataExportResultSize != y.DataExportResultSize {
+	if x.SqlResultSize != y.SqlResultSize {
 		return false
 	}
 	return true

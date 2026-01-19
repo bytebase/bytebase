@@ -284,11 +284,11 @@ message RolloutPolicy {
 // QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 message QueryDataPolicy {
   // workspace-level policy
-  // The query timeout duration.
+  // The query timeout duration in the SQL editor.
   google.protobuf.Duration timeout = 1;
 
   // workspace-level policy
-  // The maximum number of rows to return.
+  // The maximum number of rows to return in the SQL editor.
   // The default value is -1, means no limit.
   int32 maximum_result_rows = 2;
 
@@ -297,7 +297,7 @@ message QueryDataPolicy {
   bool disable_export = 3;
 
   // workspace-level policy
-  // Disable copying query results.
+  // Disable copying query results in the SQL editor.
   bool disable_copy_data = 4;
 
   // workspace-level policy

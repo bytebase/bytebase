@@ -120,7 +120,7 @@ const policyV1Store = usePolicyV1Store();
 const settingV1Store = useSettingV1Store();
 
 const initialState = () => {
-  let size = settingV1Store.workspaceProfile.dataExportResultSize;
+  let size = settingV1Store.workspaceProfile.sqlResultSize;
   if (size <= 0) {
     size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
   }
@@ -163,12 +163,12 @@ const updateChange = async () => {
   if (init.maximumResultSize !== queryRestriction.value.maximumResultSize) {
     await settingV1Store.updateWorkspaceProfile({
       payload: {
-        dataExportResultSize: BigInt(
+        sqlResultSize: BigInt(
           queryRestriction.value.maximumResultSize * 1024 * 1024
         ),
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile.data_export_result_size"],
+        paths: ["value.workspace_profile.sql_result_size"],
       }),
     });
   }

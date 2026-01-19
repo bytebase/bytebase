@@ -304,7 +304,7 @@ export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
 export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   /**
    * workspace-level policy
-   * The query timeout duration.
+   * The query timeout duration in the SQL editor.
    *
    * @generated from field: google.protobuf.Duration timeout = 1;
    */
@@ -312,7 +312,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
-   * The maximum number of rows to return.
+   * The maximum number of rows to return in the SQL editor.
    * The default value is -1, means no limit.
    *
    * @generated from field: int32 maximum_result_rows = 2;
@@ -329,7 +329,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
-   * Disable copying query results.
+   * Disable copying query results in the SQL editor.
    *
    * @generated from field: bool disable_copy_data = 4;
    */

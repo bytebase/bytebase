@@ -732,17 +732,17 @@ func (x *RolloutPolicy) GetRoles() []string {
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// workspace-level policy
-	// The query timeout duration.
+	// The query timeout duration in the SQL editor.
 	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// workspace-level policy
-	// The maximum number of rows to return.
+	// The maximum number of rows to return in the SQL editor.
 	// The default value is -1, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,2,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
 	// workspace-level policy
 	// Disable data export in the SQL editor.
 	DisableExport bool `protobuf:"varint,3,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// workspace-level policy
-	// Disable copying query results.
+	// Disable copying query results in the SQL editor.
 	DisableCopyData bool `protobuf:"varint,4,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
 	// workspace-level policy
 	// Allow using the admin data source to query in the SQL editor.

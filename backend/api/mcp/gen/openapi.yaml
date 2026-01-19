@@ -13267,7 +13267,7 @@ components:
           title: timeout
           description: |-
             workspace-level policy
-             The query timeout duration.
+             The query timeout duration in the SQL editor.
           $ref: '#/components/schemas/google.protobuf.Duration'
         maximumResultRows:
           type: integer
@@ -13275,7 +13275,7 @@ components:
           format: int32
           description: |-
             workspace-level policy
-             The maximum number of rows to return.
+             The maximum number of rows to return in the SQL editor.
              The default value is -1, means no limit.
         disableExport:
           type: boolean
@@ -13288,7 +13288,7 @@ components:
           title: disable_copy_data
           description: |-
             workspace-level policy
-             Disable copying query results.
+             Disable copying query results in the SQL editor.
         allowAdminDataSource:
           type: boolean
           title: allow_admin_data_source
@@ -17641,14 +17641,14 @@ components:
           type: boolean
           title: enable_debug
           description: Whether debug mode is enabled.
-        dataExportResultSize:
+        sqlResultSize:
           type:
             - integer
             - string
-          title: data_export_result_size
+          title: sql_result_size
           format: int64
           description: |-
-            The maximum result size limit in bytes.
+            The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.
              The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
       title: WorkspaceProfileSetting
       additionalProperties: false

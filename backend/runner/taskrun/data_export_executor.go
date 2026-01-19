@@ -160,7 +160,7 @@ func (exec *DataExportExecutor) executeExport(
 	}
 
 	// 2. Get query restrictions from workspace policy
-	maximumSQLResultSize := exec.getDataExportResultSizeLimit(ctx)
+	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
@@ -196,11 +196,11 @@ func (exec *DataExportExecutor) executeExport(
 	return exec.formatAndZipResults(ctx, results, instance, database, format, statement)
 }
 
-// getDataExportResultSizeLimit gets the export result size limit.
-func (exec *DataExportExecutor) getDataExportResultSizeLimit(
+// getSQLResultSizeLimit gets the sql result size limit.
+func (exec *DataExportExecutor) getSQLResultSizeLimit(
 	ctx context.Context,
 ) int64 {
-	maximumResultSize, err := exec.store.GetDataExportResultSize(ctx)
+	maximumResultSize, err := exec.store.GetSQLResultSize(ctx)
 	if err != nil {
 		slog.Error("failed to get the query data policy", log.BBError(err))
 		return common.DefaultMaximumSQLResultSize

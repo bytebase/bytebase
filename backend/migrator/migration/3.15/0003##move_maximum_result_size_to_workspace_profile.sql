@@ -1,12 +1,12 @@
 -- Move maximum_result_size from QUERY_DATA policy to WORKSPACE_PROFILE setting
 -- This migration moves the data export result size limit from the workspace-level
--- QUERY_DATA policy to the WORKSPACE_PROFILE setting (as dataExportResultSize)
+-- QUERY_DATA policy to the WORKSPACE_PROFILE setting (as sqlResultSize)
 
 -- Step 1: Update or insert WORKSPACE_PROFILE setting with the maximumResultSize from QUERY_DATA policy
 INSERT INTO setting (name, value)
 SELECT
     'WORKSPACE_PROFILE',
-    jsonb_build_object('dataExportResultSize', (p.payload->>'maximumResultSize')::bigint)
+    jsonb_build_object('sqlResultSize', (p.payload->>'maximumResultSize')::bigint)
 FROM policy p
 WHERE p.resource_type = 'WORKSPACE'
     AND p.type = 'QUERY_DATA'
@@ -16,7 +16,7 @@ ON CONFLICT (name)
 DO UPDATE SET
     value = CASE
         WHEN setting.value IS NULL OR setting.value = '{}'::jsonb THEN
-            jsonb_build_object('dataExportResultSize', (
+            jsonb_build_object('sqlResultSize', (
                 SELECT (payload->>'maximumResultSize')::bigint
                 FROM policy
                 WHERE resource_type = 'WORKSPACE'
@@ -26,7 +26,7 @@ DO UPDATE SET
                 LIMIT 1
             ))
         ELSE
-            setting.value || jsonb_build_object('dataExportResultSize', (
+            setting.value || jsonb_build_object('sqlResultSize', (
                 SELECT (payload->>'maximumResultSize')::bigint
                 FROM policy
                 WHERE resource_type = 'WORKSPACE'

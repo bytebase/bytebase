@@ -238,7 +238,7 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context) (*EffectiveQuer
 
 	formatWorkspacePolicy := formatEffectiveQueryDataPolicy(workspacePolicy)
 
-	maximumResultSize, err := s.GetDataExportResultSize(ctx)
+	maximumResultSize, err := s.GetSQLResultSize(ctx)
 	if err != nil {
 		return nil, err
 	}

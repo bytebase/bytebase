@@ -460,11 +460,11 @@ type WorkspaceProfileSetting struct {
 	AccessTokenDuration *durationpb.Duration `protobuf:"bytes,18,opt,name=access_token_duration,json=accessTokenDuration,proto3" json:"access_token_duration,omitempty"`
 	// Whether debug mode is enabled.
 	EnableDebug bool `protobuf:"varint,19,opt,name=enable_debug,json=enableDebug,proto3" json:"enable_debug,omitempty"`
-	// The maximum result size limit in bytes.
+	// The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-	DataExportResultSize int64 `protobuf:"varint,20,opt,name=data_export_result_size,json=dataExportResultSize,proto3" json:"data_export_result_size,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	SqlResultSize int64 `protobuf:"varint,20,opt,name=sql_result_size,json=sqlResultSize,proto3" json:"sql_result_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -630,9 +630,9 @@ func (x *WorkspaceProfileSetting) GetEnableDebug() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetDataExportResultSize() int64 {
+func (x *WorkspaceProfileSetting) GetSqlResultSize() int64 {
 	if x != nil {
-		return x.DataExportResultSize
+		return x.SqlResultSize
 	}
 	return 0
 }
@@ -2405,7 +2405,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicense\"\x9e\x0f\n" +
+	"\alicense\x18\x03 \x01(\tR\alicense\"\x8f\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2427,8 +2427,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12n\n" +
 	"\x14password_restriction\x18\x11 \x01(\v2;.bytebase.store.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
-	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x125\n" +
-	"\x17data_export_result_size\x18\x14 \x01(\x03R\x14dataExportResultSize\x1a\xdd\x01\n" +
+	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
+	"\x0fsql_result_size\x18\x14 \x01(\x03R\rsqlResultSize\x1a\xdd\x01\n" +
 	"\fAnnouncement\x12U\n" +
 	"\x05level\x18\x01 \x01(\x0e2?.bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
