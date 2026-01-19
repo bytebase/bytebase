@@ -1969,7 +1969,15 @@
         "success": "Successfully archived {count} project | Successfully archived {count} projects",
         "error": "Failed to archive projects"
       },
+      "delete": {
+        "title": "Delete {count} Project? | Delete {count} Projects?",
+        "description": "This will permanently delete the selected projects and move all databases to the default project.",
+        "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed.",
+        "success": "Successfully deleted {count} project | Successfully deleted {count} projects",
+        "error": "Failed to delete projects"
+      },
       "projects-to-archive": "Projects to archive",
+      "projects-to-delete": "Projects to delete",
       "resource-warning": {
         "title": "Projects with Resources",
         "description": "The following projects contain databases or open issues:"
