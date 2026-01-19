@@ -4,6 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
+import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { UserType } from "./user_service_pb";
 import type { State } from "./common_pb";
@@ -88,6 +89,38 @@ export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest
  * Use `create(DeleteCacheRequestSchema)` to create a new message.
  */
 export declare const DeleteCacheRequestSchema: GenMessage<DeleteCacheRequest>;
+
+/**
+ * @generated from message bytebase.v1.Restriction
+ */
+export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
+  /**
+   * Whether self-service user signup is disabled.
+   *
+   * @generated from field: bool disallow_signup = 1;
+   */
+  disallowSignup: boolean;
+
+  /**
+   * Whether password-based signin is disabled (except for workspace admins).
+   *
+   * @generated from field: bool disallow_password_signin = 2;
+   */
+  disallowPasswordSignin: boolean;
+
+  /**
+   * Password complexity and restriction requirements.
+   *
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 3;
+   */
+  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
+};
+
+/**
+ * Describes the message bytebase.v1.Restriction.
+ * Use `create(RestrictionSchema)` to create a new message.
+ */
+export declare const RestrictionSchema: GenMessage<Restriction>;
 
 /**
  * System information and configuration for the Bytebase instance.
@@ -228,6 +261,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 replica_count = 24;
    */
   replicaCount: number;
+
+  /**
+   * @generated from field: bytebase.v1.Restriction restriction = 25;
+   */
+  restriction?: Restriction;
 };
 
 /**

@@ -6345,6 +6345,9 @@ components:
           title: replica_count
           format: int32
           description: The number of active replicas (servers sharing the same database).
+        restriction:
+          title: restriction
+          $ref: '#/components/schemas/bytebase.v1.Restriction'
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -13821,6 +13824,23 @@ components:
       title: ResourcePackage
       additionalProperties: false
       description: Custom branding resources for the Bytebase instance.
+    bytebase.v1.Restriction:
+      type: object
+      properties:
+        disallowSignup:
+          type: boolean
+          title: disallow_signup
+          description: Whether self-service user signup is disabled.
+        disallowPasswordSignin:
+          type: boolean
+          title: disallow_password_signin
+          description: Whether password-based signin is disabled (except for workspace admins).
+        passwordRestriction:
+          title: password_restriction
+          description: Password complexity and restriction requirements.
+          $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction'
+      title: Restriction
+      additionalProperties: false
     bytebase.v1.ReviewConfig:
       type: object
       properties:
@@ -18713,6 +18733,10 @@ components:
          documentation for additional information.
 security: []
 tags:
+  - name: bytebase.v1.IssueService
+    description: IssueService manages issues for tracking database changes and tasks.
+  - name: bytebase.v1.SettingService
+    description: SettingService manages workspace-level settings and configurations.
   - name: bytebase.v1.UserService
     description: UserService manages user accounts and authentication.
   - name: bytebase.v1.ActuatorService
@@ -18737,8 +18761,6 @@ tags:
     description: GroupService manages user groups for organizing users and permissions.
   - name: bytebase.v1.IdentityProviderService
     description: IdentityProviderService manages external identity providers for SSO authentication.
-  - name: bytebase.v1.IssueService
-    description: IssueService manages issues for tracking database changes and tasks.
   - name: bytebase.v1.OrgPolicyService
     description: OrgPolicyService manages organizational policies at various resource levels.
   - name: bytebase.v1.SQLService
@@ -18757,8 +18779,6 @@ tags:
     description: RoleService manages workspace roles and permissions.
   - name: bytebase.v1.RolloutService
     description: RolloutService manages the execution of deployment plans.
-  - name: bytebase.v1.SettingService
-    description: SettingService manages workspace-level settings and configurations.
   - name: bytebase.v1.SheetService
     description: SheetService manages SQL scripts and saved queries.
   - name: bytebase.v1.SubscriptionService

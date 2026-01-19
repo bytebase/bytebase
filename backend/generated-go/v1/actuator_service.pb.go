@@ -218,6 +218,69 @@ func (*DeleteCacheRequest) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{4}
 }
 
+type Restriction struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether self-service user signup is disabled.
+	DisallowSignup bool `protobuf:"varint,1,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
+	// Whether password-based signin is disabled (except for workspace admins).
+	DisallowPasswordSignin bool `protobuf:"varint,2,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	// Password complexity and restriction requirements.
+	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,3,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *Restriction) Reset() {
+	*x = Restriction{}
+	mi := &file_v1_actuator_service_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Restriction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Restriction) ProtoMessage() {}
+
+func (x *Restriction) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_actuator_service_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Restriction.ProtoReflect.Descriptor instead.
+func (*Restriction) Descriptor() ([]byte, []int) {
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Restriction) GetDisallowSignup() bool {
+	if x != nil {
+		return x.DisallowSignup
+	}
+	return false
+}
+
+func (x *Restriction) GetDisallowPasswordSignin() bool {
+	if x != nil {
+		return x.DisallowPasswordSignin
+	}
+	return false
+}
+
+func (x *Restriction) GetPasswordRestriction() *WorkspaceProfileSetting_PasswordRestriction {
+	if x != nil {
+		return x.PasswordRestriction
+	}
+	return nil
+}
+
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 type ActuatorInfo struct {
@@ -259,14 +322,15 @@ type ActuatorInfo struct {
 	// Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
 	ExternalUrlFromFlag bool `protobuf:"varint,23,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
 	// The number of active replicas (servers sharing the same database).
-	ReplicaCount  int32 `protobuf:"varint,24,opt,name=replica_count,json=replicaCount,proto3" json:"replica_count,omitempty"`
+	ReplicaCount  int32        `protobuf:"varint,24,opt,name=replica_count,json=replicaCount,proto3" json:"replica_count,omitempty"`
+	Restriction   *Restriction `protobuf:"bytes,25,opt,name=restriction,proto3" json:"restriction,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
 	*x = ActuatorInfo{}
-	mi := &file_v1_actuator_service_proto_msgTypes[5]
+	mi := &file_v1_actuator_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -278,7 +342,7 @@ func (x *ActuatorInfo) String() string {
 func (*ActuatorInfo) ProtoMessage() {}
 
 func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[5]
+	mi := &file_v1_actuator_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -291,7 +355,7 @@ func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ActuatorInfo) GetVersion() string {
@@ -427,6 +491,13 @@ func (x *ActuatorInfo) GetReplicaCount() int32 {
 	return 0
 }
 
+func (x *ActuatorInfo) GetRestriction() *Restriction {
+	if x != nil {
+		return x.Restriction
+	}
+	return nil
+}
+
 // User statistics by type and state.
 type ActuatorInfo_StatUser struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -442,7 +513,7 @@ type ActuatorInfo_StatUser struct {
 
 func (x *ActuatorInfo_StatUser) Reset() {
 	*x = ActuatorInfo_StatUser{}
-	mi := &file_v1_actuator_service_proto_msgTypes[6]
+	mi := &file_v1_actuator_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -454,7 +525,7 @@ func (x *ActuatorInfo_StatUser) String() string {
 func (*ActuatorInfo_StatUser) ProtoMessage() {}
 
 func (x *ActuatorInfo_StatUser) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[6]
+	mi := &file_v1_actuator_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -467,7 +538,7 @@ func (x *ActuatorInfo_StatUser) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo_StatUser.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo_StatUser) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{5, 0}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{6, 0}
 }
 
 func (x *ActuatorInfo_StatUser) GetUserType() UserType {
@@ -495,13 +566,17 @@ var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/user_service.proto\"\x1b\n" +
+	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"\x1b\n" +
 	"\x19GetResourcePackageRequest\"%\n" +
 	"\x0fResourcePackage\x12\x12\n" +
 	"\x04logo\x18\x01 \x01(\fR\x04logo\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
 	"\x16GetActuatorInfoRequest\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xdd\a\n" +
+	"\x12DeleteCacheRequest\"\xec\x01\n" +
+	"\vRestriction\x12,\n" +
+	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
+	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
+	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\"\x9e\b\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -523,7 +598,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x14total_instance_count\x18\x15 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
 	"\renable_sample\x18\x16 \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
 	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12(\n" +
-	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x1a~\n" +
+	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12?\n" +
+	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x1a~\n" +
 	"\bStatUser\x122\n" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -548,38 +624,42 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 	return file_v1_actuator_service_proto_rawDescData
 }
 
-var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_actuator_service_proto_goTypes = []any{
-	(*GetResourcePackageRequest)(nil), // 0: bytebase.v1.GetResourcePackageRequest
-	(*ResourcePackage)(nil),           // 1: bytebase.v1.ResourcePackage
-	(*SetupSampleRequest)(nil),        // 2: bytebase.v1.SetupSampleRequest
-	(*GetActuatorInfoRequest)(nil),    // 3: bytebase.v1.GetActuatorInfoRequest
-	(*DeleteCacheRequest)(nil),        // 4: bytebase.v1.DeleteCacheRequest
-	(*ActuatorInfo)(nil),              // 5: bytebase.v1.ActuatorInfo
-	(*ActuatorInfo_StatUser)(nil),     // 6: bytebase.v1.ActuatorInfo.StatUser
-	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
-	(UserType)(0),                     // 8: bytebase.v1.UserType
-	(State)(0),                        // 9: bytebase.v1.State
-	(*emptypb.Empty)(nil),             // 10: google.protobuf.Empty
+	(*GetResourcePackageRequest)(nil),                   // 0: bytebase.v1.GetResourcePackageRequest
+	(*ResourcePackage)(nil),                             // 1: bytebase.v1.ResourcePackage
+	(*SetupSampleRequest)(nil),                          // 2: bytebase.v1.SetupSampleRequest
+	(*GetActuatorInfoRequest)(nil),                      // 3: bytebase.v1.GetActuatorInfoRequest
+	(*DeleteCacheRequest)(nil),                          // 4: bytebase.v1.DeleteCacheRequest
+	(*Restriction)(nil),                                 // 5: bytebase.v1.Restriction
+	(*ActuatorInfo)(nil),                                // 6: bytebase.v1.ActuatorInfo
+	(*ActuatorInfo_StatUser)(nil),                       // 7: bytebase.v1.ActuatorInfo.StatUser
+	(*WorkspaceProfileSetting_PasswordRestriction)(nil), // 8: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	(*timestamppb.Timestamp)(nil),                       // 9: google.protobuf.Timestamp
+	(UserType)(0),                                       // 10: bytebase.v1.UserType
+	(State)(0),                                          // 11: bytebase.v1.State
+	(*emptypb.Empty)(nil),                               // 12: google.protobuf.Empty
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
-	7,  // 0: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
-	6,  // 1: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
-	8,  // 2: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
-	9,  // 3: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State
-	3,  // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	2,  // 5: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
-	4,  // 6: bytebase.v1.ActuatorService.DeleteCache:input_type -> bytebase.v1.DeleteCacheRequest
-	0,  // 7: bytebase.v1.ActuatorService.GetResourcePackage:input_type -> bytebase.v1.GetResourcePackageRequest
-	5,  // 8: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	10, // 9: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
-	10, // 10: bytebase.v1.ActuatorService.DeleteCache:output_type -> google.protobuf.Empty
-	1,  // 11: bytebase.v1.ActuatorService.GetResourcePackage:output_type -> bytebase.v1.ResourcePackage
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	8,  // 0: bytebase.v1.Restriction.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	9,  // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
+	7,  // 2: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
+	5,  // 3: bytebase.v1.ActuatorInfo.restriction:type_name -> bytebase.v1.Restriction
+	10, // 4: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
+	11, // 5: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State
+	3,  // 6: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	2,  // 7: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
+	4,  // 8: bytebase.v1.ActuatorService.DeleteCache:input_type -> bytebase.v1.DeleteCacheRequest
+	0,  // 9: bytebase.v1.ActuatorService.GetResourcePackage:input_type -> bytebase.v1.GetResourcePackageRequest
+	6,  // 10: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	12, // 11: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
+	12, // 12: bytebase.v1.ActuatorService.DeleteCache:output_type -> google.protobuf.Empty
+	1,  // 13: bytebase.v1.ActuatorService.GetResourcePackage:output_type -> bytebase.v1.ResourcePackage
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_actuator_service_proto_init() }
@@ -589,6 +669,7 @@ func file_v1_actuator_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
+	file_v1_setting_service_proto_init()
 	file_v1_user_service_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -596,7 +677,7 @@ func file_v1_actuator_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_actuator_service_proto_rawDesc), len(file_v1_actuator_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
