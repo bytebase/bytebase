@@ -20,7 +20,7 @@ Creates a new release and initiates a rollout issue in the specified Bytebase `-
 If a `--plan` is specified, it rolls out that specific plan.
 Otherwise, it applies the SQL files matching the `--file-pattern` to the defined `--targets`.
 The rollout will proceed up to the specified `--target-stage`.
-It uses global flags for connection and file discovery (unless a plan is specified), and specific flags like `--release-title` to name the created resources in Bytebase.
+The release is named using the `--release-id-template` flag.
 
 ## Configuration
 
@@ -103,9 +103,6 @@ These flags are specific to the `check` subcommand (`bytebase-action check`).
 ### `rollout` Command Specific Flags
 
 These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
-
--   **`--release-title`**: The title of the release created in Bytebase.
-    -   Default: The current timestamp in RFC3339 format (e.g., `2025-04-25T17:32:07+08:00`).
 
 -   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion.
     -   Format: `environments/{environment}`

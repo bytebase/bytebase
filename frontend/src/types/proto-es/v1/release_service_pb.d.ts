@@ -135,12 +135,23 @@ export declare type CreateReleaseRequest = Message<"bytebase.v1.CreateReleaseReq
   release?: Release;
 
   /**
-   * Train for iteration tracking (template rendered without {iteration}).
-   * Used to group releases and determine the next iteration number.
+   * Template for release ID generation.
+   * Available variables: {date}, {time}, {timestamp}, {iteration}.
+   * Example: "release_{date}-RC{iteration}" generates "release_20260119-RC00".
+   * Default: "release_{date}-RC{iteration}".
    *
-   * @generated from field: string train = 3;
+   * @generated from field: string release_id_template = 3;
    */
-  train: string;
+  releaseIdTemplate: string;
+
+  /**
+   * Timezone for {date} and {time} variables in the template.
+   * Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
+   * Default: "UTC".
+   *
+   * @generated from field: string release_id_timezone = 4;
+   */
+  releaseIdTimezone: string;
 };
 
 /**

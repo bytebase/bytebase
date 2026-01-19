@@ -8354,7 +8354,8 @@ Check result for a single release file on a target database.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
 | release | [Release](#bytebase-v1-Release) |  | The release to create. |
-| train | [string](#string) |  | Train for iteration tracking (template rendered without {iteration}). Used to group releases and determine the next iteration number. |
+| release_id_template | [string](#string) |  | Template for release ID generation. Available variables: {date}, {time}, {timestamp}, {iteration}. Example: &#34;release_{date}-RC{iteration}&#34; generates &#34;release_20260119-RC00&#34;. Default: &#34;release_{date}-RC{iteration}&#34;. |
+| release_id_timezone | [string](#string) |  | Timezone for {date} and {time} variables in the template. Must be a valid IANA timezone (e.g., &#34;UTC&#34;, &#34;America/Los_Angeles&#34;). Default: &#34;UTC&#34;. |
 
 
 

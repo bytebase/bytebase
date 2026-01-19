@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"slices"
+	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
@@ -101,9 +103,25 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		}
 	}
 
+	// Set defaults for release ID template and timezone if not provided.
+	releaseIDTemplate := req.Msg.ReleaseIdTemplate
+	if releaseIDTemplate == "" {
+		releaseIDTemplate = "release_{date}-RC{iteration}"
+	}
+	releaseIDTimezone := req.Msg.ReleaseIdTimezone
+	if releaseIDTimezone == "" {
+		releaseIDTimezone = "UTC"
+	}
+
+	// Compute train from template and timezone.
+	train, err := renderTrain(releaseIDTemplate, releaseIDTimezone, time.Now())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to render train"))
+	}
+
 	releaseMessage := &store.ReleaseMessage{
 		ProjectID: project.ResourceID,
-		Train:     req.Msg.Train,
+		Train:     train,
 		Category:  req.Msg.Release.Category,
 		Payload: &storepb.ReleasePayload{
 			VcsSource: convertReleaseVcsSource(req.Msg.Release.VcsSource),
@@ -507,4 +525,49 @@ func extractCategoryFromExpr(expr celast.Expr) (string, error) {
 	default:
 		return "", errors.Errorf("unsupported expression type")
 	}
+}
+
+func renderTrain(template, timezone string, t time.Time) (string, error) {
+	// Validate template
+	if err := validateTemplate(template); err != nil {
+		return "", err
+	}
+
+	// Validate timezone
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return "", errors.Wrapf(err, "invalid timezone: %s", timezone)
+	}
+
+	now := t.In(loc)
+
+	train := template
+	train = strings.ReplaceAll(train, "{date}", now.Format("20060102"))
+	train = strings.ReplaceAll(train, "{time}", now.Format("1504"))
+	train = strings.ReplaceAll(train, "{timestamp}", now.Format("20060102_1504"))
+	train = strings.ReplaceAll(train, "{iteration}", "")
+
+	return train, nil
+}
+
+func validateTemplate(template string) error {
+	// Must contain {iteration}
+	if !strings.Contains(template, "{iteration}") {
+		return errors.New("template must contain {iteration} placeholder")
+	}
+
+	// {iteration} must be at the end of the template
+	if !strings.HasSuffix(template, "{iteration}") {
+		return errors.New("{iteration} must be at the end of the template")
+	}
+
+	// Must contain at least one time variable
+	hasTimeVar := strings.Contains(template, "{date}") ||
+		strings.Contains(template, "{time}") ||
+		strings.Contains(template, "{timestamp}")
+	if !hasTimeVar {
+		return errors.New("template must contain at least one of: {date}, {time}, {timestamp}")
+	}
+
+	return nil
 }
