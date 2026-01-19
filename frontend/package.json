@@ -87,7 +87,7 @@
     "@tailwindcss/forms": "0.5.11",
     "@tailwindcss/typography": "0.5.19",
     "@tailwindcss/vite": "^4.1.17",
-    "@tsconfig/node24": "24.0.0",
+    "@tsconfig/node24": "24.0.4",
     "@types/crypto-js": "^4.2.2",
     "@types/d3-shape": "^3.1.7",
     "@types/downloadjs": "1.4.6",
