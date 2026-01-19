@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/bigquery v1.72.0
 	cloud.google.com/go/cloudsqlconn v1.19.0
 	cloud.google.com/go/secretmanager v1.16.0
-	cloud.google.com/go/spanner v1.86.1
+	cloud.google.com/go/spanner v1.87.0
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
@@ -97,9 +97,9 @@ require (
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/text v0.32.0
 	google.golang.org/api v0.257.0
-	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217
-	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217
+	google.golang.org/genproto v0.0.0-20260114163908-3f89685c29c3
+	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/inf.v0 v0.9.1
@@ -280,10 +280,10 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.121.6 // indirect
+	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
-	cloud.google.com/go/longrunning v0.7.0 // indirect
+	cloud.google.com/go/longrunning v0.8.0 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.1 // indirect
