@@ -313,6 +313,22 @@ const workspaceRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/SettingWorkspaceRole.vue"),
         props: true,
       },
+    ],
+  },
+  {
+    path: "integration",
+    meta: {
+      title: () => t("settings.sidebar.integration"),
+    },
+    components: {
+      content: () => import("@/layouts/SettingLayout.vue"),
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
+    children: [
       {
         path: "im",
         name: WORKSPACE_ROUTE_IM,
