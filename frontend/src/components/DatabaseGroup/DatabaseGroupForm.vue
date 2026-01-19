@@ -40,7 +40,11 @@
           />
         </div>
         <div class="col-span-2">
-          <MatchedDatabaseView :project="project.name" :expr="state.expr" />
+          <MatchedDatabaseView
+            :project="project.name"
+            :expr="state.expr"
+            :matched-database-names="readonly ? matchedDatabaseNames : undefined"
+          />
         </div>
       </div>
     </div>
@@ -147,6 +151,10 @@ const isCreating = computed(() => props.databaseGroup === undefined);
 
 const allowDelete = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.databaseGroups.delete");
+});
+
+const matchedDatabaseNames = computed(() => {
+  return props.databaseGroup?.matchedDatabases.map((db) => db.name) ?? [];
 });
 
 watchEffect(async () => {
