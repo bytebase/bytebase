@@ -373,7 +373,7 @@ importers:
         version: 3.1.5(typescript@5.9.3)
       ws:
         specifier: ^8.18.2
-        version: 8.18.3
+        version: 8.19.0
 
 packages:
 
@@ -4894,8 +4894,8 @@ packages:
   write-stream@0.4.3:
     resolution: {integrity: sha512-IJrvkhbAnj89W/GAVdVgbnPiVw5Ntg/B4tc/MUCIEwj/g6JIww1DWJyB/yBMT3yw2/TkT6IUZ0+IYef3flEw8A==}
 
-  ws@8.18.3:
-    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+  ws@8.19.0:
+    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -8498,7 +8498,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 15.1.0
-      ws: 8.18.3
+      ws: 8.19.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -10195,7 +10195,7 @@ snapshots:
     dependencies:
       readable-stream: 0.0.4
 
-  ws@8.18.3: {}
+  ws@8.19.0: {}
 
   xml-name-validator@4.0.0: {}
 
