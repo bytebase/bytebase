@@ -1940,7 +1940,6 @@
       "edit": "メンバーの編集 - {member}",
       "view-by-members": "メンバー別に見る",
       "view-by-roles": "役割ごとに表示",
-      "cannot-remove-last-owner": "プロジェクトの最後の所有者を削除できません",
       "revoke-role-from-user": "「{user}」{role} のロールを削除します",
       "never-expires": "有効期限が切れることはありません",
       "role-description": "役割の説明",

@@ -1940,7 +1940,6 @@
       "edit": "Chỉnh sửa thành viên - {member}",
       "view-by-members": "Xem theo thành viên",
       "view-by-roles": "Xem theo vai trò",
-      "cannot-remove-last-owner": "Không thể xóa chủ sở hữu cuối cùng của một dự án",
       "revoke-role-from-user": "Thu hồi '{role}' từ '{user}'",
       "never-expires": "Không bao giờ",
       "role-description": "Mô tả vai trò",
