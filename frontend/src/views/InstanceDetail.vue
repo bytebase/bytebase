@@ -19,24 +19,6 @@
           v-if="instance.state === State.ACTIVE"
           @sync-schema="syncSchema"
         />
-        <PermissionGuardWrapper
-          v-if="allowCreateDatabase && instance.state === State.ACTIVE"
-          v-slot="slotProps"
-          :permissions="[
-            ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
-          ]"
-        >
-          <NButton
-            type="primary"
-            :disabled="slotProps.disabled"
-            @click.prevent="createDatabase"
-          >
-            <template #icon>
-              <PlusIcon class="h-4 w-4" />
-            </template>
-            {{ $t("instance.new-database") }}
-          </NButton>
-        </PermissionGuardWrapper>
         <InstanceActionDropdown :instance="instance" />
       </div>
     </div>
@@ -60,6 +42,24 @@
               :placeholder="$t('database.filter-database')"
               :scope-options="scopeOptions"
             />
+            <PermissionGuardWrapper
+              v-if="allowCreateDatabase && instance.state === State.ACTIVE"
+              v-slot="slotProps"
+              :permissions="[
+                ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+              ]"
+            >
+              <NButton
+                type="primary"
+                :disabled="slotProps.disabled"
+                @click.prevent="createDatabase"
+              >
+                <template #icon>
+                  <PlusIcon class="h-4 w-4" />
+                </template>
+                {{ $t("instance.new-database") }}
+              </NButton>
+            </PermissionGuardWrapper>
           </div>
           <DatabaseOperations
             :databases="selectedDatabases"
