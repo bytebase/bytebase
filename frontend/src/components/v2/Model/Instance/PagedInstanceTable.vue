@@ -11,6 +11,8 @@
         :loading="loading"
         :instance-list="list"
         :sorters="sorters"
+        :show-external-link="showExternalLink"
+        :show-actions="showActions"
         @update:sorters="onSortersUpdate"
       />
     </template>
