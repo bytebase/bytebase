@@ -295,7 +295,7 @@ importers:
         version: 10.4.23(postcss@8.5.6)
       code-inspector-plugin:
         specifier: ^1.3.0
-        version: 1.3.0
+        version: 1.3.6
       dotenv:
         specifier: ^17.0.0
         version: 17.2.3
@@ -966,23 +966,23 @@ packages:
   '@bufbuild/protobuf@2.10.2':
     resolution: {integrity: sha512-uFsRXwIGyu+r6AMdz+XijIIZJYpoWeYzILt5yZ2d3mCjQrWUTVpVD9WL/jZAbvp+Ed04rOhrsk7FiTcEDseB5A==}
 
-  '@code-inspector/core@1.3.0':
-    resolution: {integrity: sha512-sfGc8zxZtt4VMHFSRv/TLZpPAZIHupb3Cx76ItUAsAFpufDL3CfLu0bYCnd8azE9QbuVmf2C9BBUEK4mlEB0ow==}
+  '@code-inspector/core@1.3.6':
+    resolution: {integrity: sha512-bSxf/PWDPY6rv9EFf0mJvTnLnz3927PPrpX6BmQcRKQab+Ez95yRqrVZY8IcBUpaqA/k3etA5rZ1qkN0V4ERtw==}
 
-  '@code-inspector/esbuild@1.3.0':
-    resolution: {integrity: sha512-xm6ojmFGafk5sUA9J+eaayUCs286Me8OpwxVwfbtC1hJ56oOX/wfvt8dZwgdkumkmWRRfRQu2Vt4Cx0QAwMnpQ==}
+  '@code-inspector/esbuild@1.3.6':
+    resolution: {integrity: sha512-s35dseBXI2yqfX6ZK29Ix941jaE/4KPlZZeMk6B5vDahj75FDUfVxQ7ORy4cX2hyz8CmlOycsY/au5mIvFpAFg==}
 
-  '@code-inspector/mako@1.3.0':
-    resolution: {integrity: sha512-ZZiDWy70jSL0LJeYH6R2FbQopSc5vNUm27z7lvMtOuY9XR26/4JIW0KdGVIYFZ+v2BsQP5lesxkMaoLHbFnc5A==}
+  '@code-inspector/mako@1.3.6':
+    resolution: {integrity: sha512-FJvuTElOi3TUCWTIaYTFYk2iTUD6MlO51SC8SYfwmelhuvnOvTMa2TkylInX16OGb4f7sGNLRj2r+7NNx/gqpw==}
 
-  '@code-inspector/turbopack@1.3.0':
-    resolution: {integrity: sha512-ltpAUGEMwldMhoLp1pgzDiJg+NHinj6MuMgMy5Ayg7hrlYFcXDl18C2KmXdI2C806+QNG0dwN565B+D7MYu6pw==}
+  '@code-inspector/turbopack@1.3.6':
+    resolution: {integrity: sha512-pfXgvZCn4/brpTvqy8E0HTe6V/ksVKEPQo697Nt5k22kBnlEM61UT3rI2Art+fDDEMPQTxVOFpdbwCKSLwMnmQ==}
 
-  '@code-inspector/vite@1.3.0':
-    resolution: {integrity: sha512-V0lZz8uWE1dExIEuAzXKD2AeoX+w10PykD7zvXlGf6DFzP1VGYY7YPFSeSW7PQh6qdiPQ8GXOvHLvWn6JRTNxQ==}
+  '@code-inspector/vite@1.3.6':
+    resolution: {integrity: sha512-vXYvzGc0S1NR4p3BeD1Xx2170OnyecZD0GtebLlTiHw/cetzlrBHVpbkIwIEzzzpTYYshwwDt8ZbuvdjmqhHgw==}
 
-  '@code-inspector/webpack@1.3.0':
-    resolution: {integrity: sha512-aszKu+5LDS8WwBYbK/q0EdC4MJGJ07UyIptovSxqkJOOdhElpuNha74UpHoKa7w21mpHBuuqQlg+PY1CMtCMgA==}
+  '@code-inspector/webpack@1.3.6':
+    resolution: {integrity: sha512-bi/+vsym9d6NXQQ++Phk74VLMiVoGKjgPHr445j/D43URG8AN8yYa+gRDBEDcZx4B128dihrVMxEO8+OgWGjTw==}
 
   '@codingame/esbuild-import-meta-url-plugin@1.0.3':
     resolution: {integrity: sha512-SAIOsWZteIWYAk04BCqQ+ugu8KiJm8EplQbMvxJl905uZv3r+21+XjtGg/zzrbxlVAY1cP+hGAG7z7sBPmy63w==}
@@ -2784,8 +2784,8 @@ packages:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
 
-  code-inspector-plugin@1.3.0:
-    resolution: {integrity: sha512-EaeaSWjkJ8AqgzpqpqkSa+gEa0UQVUAzHm5iLHAoUGB3fkjHOA8S/4MQ0ByxIqss7HjR5fQfgnyRSuf8iS/GMw==}
+  code-inspector-plugin@1.3.6:
+    resolution: {integrity: sha512-ddTg8embDqLZxKEdSNOm+/0YnVVgWKr10+Bu2qFqQDObj/3twGh0Z23TIz+5/URxfRhTPbp2sUSpWlw78piJbQ==}
 
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
@@ -3626,8 +3626,8 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  launch-ide@1.2.1:
-    resolution: {integrity: sha512-L2NK8PXqNb6xikVWVwsA/qvTKCWBdQc6LU2woP7h1pZxvJU0QonRu2scL3NiB+3ZkkeoHD8Zl0rd8eFqRPXnLA==}
+  launch-ide@1.4.0:
+    resolution: {integrity: sha512-c2mcqZy7mNhzXiWoBFV0lDsEOfpSFGqqxKubPffhqcnv3GV0xpeGcHWLxYFm+jz1/5VAKp796QkyVV4++07eiw==}
 
   level-codec@9.0.2:
     resolution: {integrity: sha512-UyIwNb1lJBChJnGfjmO0OR+ezh2iVu1Kas3nvBS/BzGnx79dv6g7unpKIDNPMhfdTEGoc7mC8uAu51XEtX+FHQ==}
@@ -5837,45 +5837,45 @@ snapshots:
 
   '@bufbuild/protobuf@2.10.2': {}
 
-  '@code-inspector/core@1.3.0':
+  '@code-inspector/core@1.3.6':
     dependencies:
       '@vue/compiler-dom': 3.5.27
       chalk: 4.1.2
       dotenv: 16.6.1
-      launch-ide: 1.2.1
+      launch-ide: 1.4.0
       portfinder: 1.0.38
     transitivePeerDependencies:
       - supports-color
 
-  '@code-inspector/esbuild@1.3.0':
+  '@code-inspector/esbuild@1.3.6':
     dependencies:
-      '@code-inspector/core': 1.3.0
+      '@code-inspector/core': 1.3.6
     transitivePeerDependencies:
       - supports-color
 
-  '@code-inspector/mako@1.3.0':
+  '@code-inspector/mako@1.3.6':
     dependencies:
-      '@code-inspector/core': 1.3.0
+      '@code-inspector/core': 1.3.6
     transitivePeerDependencies:
       - supports-color
 
-  '@code-inspector/turbopack@1.3.0':
+  '@code-inspector/turbopack@1.3.6':
     dependencies:
-      '@code-inspector/core': 1.3.0
-      '@code-inspector/webpack': 1.3.0
+      '@code-inspector/core': 1.3.6
+      '@code-inspector/webpack': 1.3.6
     transitivePeerDependencies:
       - supports-color
 
-  '@code-inspector/vite@1.3.0':
+  '@code-inspector/vite@1.3.6':
     dependencies:
-      '@code-inspector/core': 1.3.0
+      '@code-inspector/core': 1.3.6
       chalk: 4.1.1
     transitivePeerDependencies:
       - supports-color
 
-  '@code-inspector/webpack@1.3.0':
+  '@code-inspector/webpack@1.3.6':
     dependencies:
-      '@code-inspector/core': 1.3.0
+      '@code-inspector/core': 1.3.6
     transitivePeerDependencies:
       - supports-color
 
@@ -7883,14 +7883,14 @@ snapshots:
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
 
-  code-inspector-plugin@1.3.0:
+  code-inspector-plugin@1.3.6:
     dependencies:
-      '@code-inspector/core': 1.3.0
-      '@code-inspector/esbuild': 1.3.0
-      '@code-inspector/mako': 1.3.0
-      '@code-inspector/turbopack': 1.3.0
-      '@code-inspector/vite': 1.3.0
-      '@code-inspector/webpack': 1.3.0
+      '@code-inspector/core': 1.3.6
+      '@code-inspector/esbuild': 1.3.6
+      '@code-inspector/mako': 1.3.6
+      '@code-inspector/turbopack': 1.3.6
+      '@code-inspector/vite': 1.3.6
+      '@code-inspector/webpack': 1.3.6
       chalk: 4.1.1
     transitivePeerDependencies:
       - supports-color
@@ -8752,7 +8752,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  launch-ide@1.2.1:
+  launch-ide@1.4.0:
     dependencies:
       chalk: 4.1.2
       dotenv: 16.6.1
