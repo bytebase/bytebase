@@ -80,7 +80,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
     "@codingame/esbuild-import-meta-url-plugin": "^1.0.3",
-    "@iconify/json": "2.2.414",
+    "@iconify/json": "2.2.430",
     "@intlify/eslint-plugin-vue-i18n": "^4.0.0",
     "@intlify/unplugin-vue-i18n": "11.0.1",
     "@rollup/plugin-yaml": "4.1.2",
