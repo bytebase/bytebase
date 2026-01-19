@@ -443,6 +443,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
+		slog.Debug("post group", slog.String("source", detectSCIMSource(c)), slog.String("id", scimGroup.ExternalID), slog.String("email", scimGroup.Email))
+
 		// SCIM sync group process:
 		// - Azure: POST group without members, then PATCH to add members
 		// - Okta: May POST group with members directly
@@ -456,9 +458,14 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			members = append(members, member)
 		}
 
+		email := scimGroup.Email
+		if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
+			email = scimGroup.ExternalID
+		}
+
 		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
 			ID:    scimGroup.ExternalID,
-			Email: scimGroup.Email,
+			Email: email,
 			Title: scimGroup.DisplayName,
 			Payload: &storepb.GroupPayload{
 				Source:  source,
