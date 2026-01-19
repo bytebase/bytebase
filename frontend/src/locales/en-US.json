@@ -109,7 +109,7 @@
     "confirm": "Confirm",
     "learn-more": "Learn more",
     "troubleshoot": "Troubleshoot",
-    "schema-version": "Schema version",
+    "release": "Release",
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
@@ -1703,14 +1703,10 @@
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
-      "schema-history-version": "Schema History Version",
       "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "source-schema": "Source schema",
-      "schema-version": {
-        "self": "Schema version"
-      },
       "target-databases": "Target databases",
       "with-diff": "With diff",
       "no-diff": "No diff",

@@ -109,7 +109,7 @@
     "confirm": "確認する",
     "learn-more": "もっと詳しく知る",
     "troubleshoot": "トラブルシューティング",
-    "schema-version": "スキーマのバージョン",
+    "release": "リリース",
     "Default": "デフォルト",
     "definition": "意味",
     "empty": "空欄",
@@ -1703,14 +1703,10 @@
     "sync-schema": {
       "title": "データベーステーブルの同期",
       "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",
-      "schema-history-version": "スキーマの履歴バージョン",
       "copy-schema": "スキーマテキストを貼り付け",
       "select-source-schema": "ソーススキーマの選択",
       "select-target-databases": "ターゲットデータベースを選択してください",
       "source-schema": "ソーススキーマ",
-      "schema-version": {
-        "self": "スキーマのバージョン"
-      },
       "target-databases": "ターゲットデータベース",
       "with-diff": "違い",
       "no-diff": "変わりはない",

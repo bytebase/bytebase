@@ -128,8 +128,8 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     ),
   };
   const SCHEMA_VERSION: DatabaseDataTableColumn = {
-    key: "schema-version",
-    title: t("common.schema-version"),
+    key: "release",
+    title: t("common.release"),
     minWidth: 140,
     resizable: true,
     hide: props.schemaless,
