@@ -1969,7 +1969,15 @@
         "success": "Proyecto {count} archivado correctamente | Proyectos {count} archivados correctamente",
         "error": "No se pudieron archivar los proyectos"
       },
+      "delete": {
+        "title": "¿Eliminar {count} Proyecto? | ¿Eliminar {count} Proyectos?",
+        "description": "Esto eliminará permanentemente los proyectos seleccionados y moverá todas las bases de datos al proyecto predeterminado.",
+        "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente.",
+        "success": "Proyecto {count} eliminado correctamente | Proyectos {count} eliminados correctamente",
+        "error": "No se pudieron eliminar los proyectos"
+      },
       "projects-to-archive": "Proyectos para archivar",
+      "projects-to-delete": "Proyectos para eliminar",
       "resource-warning": {
         "title": "Proyectos con recursos",
         "description": "Los siguientes proyectos contienen bases de datos o problemas abiertos:"

@@ -1969,7 +1969,15 @@
         "success": "Đã lưu trữ thành công {count} dự án | Đã lưu trữ thành công {count} dự án",
         "error": "Không lưu trữ được dự án"
       },
+      "delete": {
+        "title": "Xóa {count} Dự án? | Xóa {count} Dự án?",
+        "description": "Thao tác này sẽ xóa vĩnh viễn các dự án đã chọn và chuyển tất cả cơ sở dữ liệu sang dự án mặc định.",
+        "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn.",
+        "success": "Đã xóa thành công {count} dự án | Đã xóa thành công {count} dự án",
+        "error": "Không xóa được dự án"
+      },
       "projects-to-archive": "Dự án để lưu trữ",
+      "projects-to-delete": "Dự án để xóa",
       "resource-warning": {
         "title": "Dự án có nguồn lực",
         "description": "Các dự án sau đây chứa cơ sở dữ liệu hoặc các vấn đề chưa giải quyết:"
