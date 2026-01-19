@@ -29,12 +29,6 @@ const (
 	// MaximumAdvicePerStatus is the maximum number of advice that can be returned per status.
 	MaximumAdvicePerStatus = 50
 	MaximumLintExplainSize = 10
-
-	// MinimumCompletedPlanCheckRun is the minimum number required to generate approval flow.
-	MinimumCompletedPlanCheckRun = 5
-
-	// ExternalURLPlaceholder is the docs link to configure --external-url.
-	ExternalURLPlaceholder = "https://docs.bytebase.com/get-started/self-host/external-url"
 )
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

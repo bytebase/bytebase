@@ -1087,7 +1087,7 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 			return err
 		}
 
-		if binding.Role != fmt.Sprintf("roles/%s", common.ProjectOwner) && maximumRoleExpiration != nil {
+		if binding.Role != fmt.Sprintf("roles/%s", store.ProjectOwnerRole) && maximumRoleExpiration != nil {
 			// Only validate when maximumRoleExpiration is set and the role is not project owner.
 			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRoleExpiration); err != nil {
 				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate expiration for binding %v", binding.Role))

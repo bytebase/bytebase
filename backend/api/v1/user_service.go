@@ -308,7 +308,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		// The first end user should be workspace admin.
 		updateRole := &store.PatchIamPolicyMessage{
 			Member: common.FormatUserEmail(user.Email),
-			Roles:  []string{common.FormatRole(common.WorkspaceAdmin)},
+			Roles:  []string{common.FormatRole(store.WorkspaceAdminRole)},
 		}
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -615,7 +615,7 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 }
 
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, user *store.UserMessage) (bool, error) {
-	workspaceAdminRole := common.FormatRole(common.WorkspaceAdmin)
+	workspaceAdminRole := common.FormatRole(store.WorkspaceAdminRole)
 	userMember := common.FormatUserEmail(user.Email)
 
 	for _, binding := range policy.GetBindings() {
@@ -957,5 +957,5 @@ func isUserWorkspaceAdmin(ctx context.Context, stores *store.Store, user *store.
 		return false, err
 	}
 	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, workspacePolicy.Policy)
-	return roles[common.FormatRole(common.WorkspaceAdmin)], nil
+	return roles[common.FormatRole(store.WorkspaceAdminRole)], nil
 }
