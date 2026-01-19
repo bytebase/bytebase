@@ -10,9 +10,14 @@ import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {
   const settingStore = useSettingV1Store();
-  return settingStore.classification[0].levels.map<
-    ResourceSelectOption<unknown>
-  >((level) => ({
+  if (settingStore.classification.length === 0) {
+    return [];
+  }
+  const config = settingStore.classification[0];
+  if (!config?.levels) {
+    return [];
+  }
+  return config.levels.map<ResourceSelectOption<unknown>>((level) => ({
     label: level.title,
     value: level.id,
   }));
