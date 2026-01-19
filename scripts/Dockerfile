@@ -10,7 +10,7 @@ COPY . .
 RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-docker
 
-FROM golang:1.25.5-alpine3.23 AS backend
+FROM golang:1.25.6-alpine3.23 AS backend
 ARG VERSION
 ARG GIT_COMMIT
 ARG RELEASE="release"
