@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2 px-6" v-bind="$attrs">
+  <div class="w-full flex flex-col gap-y-2 px-6" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
     <BBAttention
       v-if="!instance.environment"
@@ -9,7 +9,7 @@
       {{ $t("instance.no-environment") }}
     </BBAttention>
 
-    <div class="flex items-center gap-x-2">
+    <div class="w-full flex items-center justify-start gap-x-2">
       <EngineIcon :engine="instance.engine" custom-class="h-6!" />
       <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
     </div>
