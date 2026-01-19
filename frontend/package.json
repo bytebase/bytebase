@@ -137,7 +137,7 @@
     "vscode-textmate": "^9.3.0",
     "vue-component-type-helpers": "^3.1.5",
     "vue-i18n": "11.2.8",
-    "vue-router": "4.6.3",
+    "vue-router": "4.6.4",
     "vue-tsc": "3.2.2",
     "ws": "^8.18.2"
   },
