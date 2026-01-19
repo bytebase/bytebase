@@ -109,7 +109,7 @@
     "confirm": "确认",
     "learn-more": "了解更多",
     "troubleshoot": "排查问题",
-    "schema-version": "Schema 版本",
+    "release": "Release",
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
@@ -1703,14 +1703,10 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
-      "schema-history-version": "Schema 历史版本",
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "source-schema": "源 Schema",
-      "schema-version": {
-        "self": "Schema 版本"
-      },
       "target-databases": "目标数据库",
       "with-diff": "有差异",
       "no-diff": "无差异",

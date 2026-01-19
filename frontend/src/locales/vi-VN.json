@@ -109,7 +109,7 @@
     "confirm": "Xác nhận",
     "learn-more": "Tìm hiểu thêm",
     "troubleshoot": "Khắc phục sự cố",
-    "schema-version": "Phiên bản lược đồ",
+    "release": "Release",
     "Default": "Mặc định",
     "definition": "Định nghĩa",
     "empty": "Trống",
@@ -1703,14 +1703,10 @@
     "sync-schema": {
       "title": "Đồng bộ lược đồ",
       "description": "Bytebase hỗ trợ đồng bộ hóa một lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
-      "schema-history-version": "Phiên bản lịch sử lược đồ",
       "copy-schema": "Sao chép lược đồ",
       "select-source-schema": "Chọn lược đồ nguồn",
       "select-target-databases": "Chọn cơ sở dữ liệu đích",
       "source-schema": "Lược đồ nguồn",
-      "schema-version": {
-        "self": "Phiên bản lược đồ"
-      },
       "target-databases": "Cơ sở dữ liệu đích",
       "with-diff": "Với khác biệt",
       "no-diff": "Không có khác biệt",

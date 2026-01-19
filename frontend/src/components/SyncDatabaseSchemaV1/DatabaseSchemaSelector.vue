@@ -27,7 +27,7 @@
       class="w-full flex flex-col gap-y-2"
     >
       <div class="text-sm">
-        {{ $t("database.sync-schema.schema-version.self") }}
+        {{ $t("common.changelog") }}
         <div class="textinfolabel">
         {{ t("changelog.select") }}
       </div>

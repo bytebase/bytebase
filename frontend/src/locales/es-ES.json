@@ -109,7 +109,7 @@
     "confirm": "Confirmar",
     "learn-more": "Aprender más",
     "troubleshoot": "Solucionar problemas",
-    "schema-version": "Versión de esquema",
+    "release": "Release",
     "Default": "Predeterminado",
     "definition": "Definición",
     "empty": "Vacío",
@@ -1703,14 +1703,10 @@
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
-      "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "source-schema": "Esquema de origen",
-      "schema-version": {
-        "self": "Versión de esquema"
-      },
       "target-databases": "Bases de datos de destino",
       "with-diff": "Con diff",
       "no-diff": "Sin diff",
