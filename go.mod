@@ -35,7 +35,7 @@ require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
-	github.com/coreos/go-oidc v2.4.0+incompatible
+	github.com/coreos/go-oidc v2.5.0+incompatible
 	github.com/databricks/databricks-sdk-go v0.93.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/elastic/go-elasticsearch/v7 v7.13.1
