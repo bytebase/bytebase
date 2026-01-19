@@ -4,7 +4,6 @@ import { uniq } from "lodash-es";
 import type { Ref } from "vue";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useIssueContext } from "@/components/IssueV1";
 import { tryUsePlanContext } from "@/components/Plan/logic";
 import { issueServiceClientConnect } from "@/connect";
 import {
@@ -48,7 +47,6 @@ export function useApprovalStep(
   const { t } = useI18n();
   const { project } = useCurrentProjectV1();
   const planContext = tryUsePlanContext();
-  const issueContext = planContext ? undefined : useIssueContext();
   const currentUser = useCurrentUserV1();
   const userStore = useUserStore();
   const roleStore = useRoleStore();
@@ -105,8 +103,6 @@ export function useApprovalStep(
       await issueServiceClientConnect.requestIssue(request);
       if (planContext) {
         planContext.events.emit("status-changed", { eager: true });
-      } else {
-        issueContext?.events.emit("status-changed", { eager: true });
       }
 
       pushNotification({

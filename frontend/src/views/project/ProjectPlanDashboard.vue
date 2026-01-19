@@ -80,7 +80,6 @@ import { getLocalSheetByName, targetsForSpec } from "@/components/Plan";
 import AddSpecDrawer from "@/components/Plan/components/AddSpecDrawer.vue";
 import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentProjectV1,
@@ -113,7 +112,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const me = useCurrentUserV1();
-const { enabledNewLayout } = useIssueLayoutVersion();
 const { project, ready } = useCurrentProjectV1();
 const userStore = useUserStore();
 const showAddSpecDrawer = ref(false);
@@ -264,17 +262,9 @@ const planSearchParams = computed(() => {
 });
 
 const mergedPlanFind = computed(() => {
-  const defaultFind = enabledNewLayout.value
-    ? {}
-    : // Default find for legacy layout.
-      {
-        hasIssue: false,
-        hasRollout: false,
-      };
   return buildPlanFindBySearchParams(planSearchParams.value, {
     // Only show change database plans.
     specType: "change_database_config",
-    ...defaultFind,
   });
 });
 

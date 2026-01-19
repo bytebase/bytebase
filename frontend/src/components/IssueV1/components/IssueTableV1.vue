@@ -49,7 +49,6 @@ import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActio
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useUserStore } from "@/store";
 import {
   type ComposedIssue,
@@ -61,8 +60,8 @@ import {
   getHighlightHTMLByRegExp,
   getIssueRoute,
   humanizeTs,
+  projectOfIssue,
 } from "@/utils";
-import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {
   getValidIssueLabels,
 } from "./IssueLabelSelector.vue";
@@ -94,7 +93,6 @@ const props = withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
-const { enabledNewLayout } = useIssueLayoutVersion();
 const state = reactive<LocalState>({
   selectedIssueNameList: new Set(),
 });
@@ -254,7 +252,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 });
 
 const issueUrl = (issue: ComposedIssue) => {
-  const issueRoute = getIssueRoute(issue, undefined, enabledNewLayout.value);
+  const issueRoute = getIssueRoute(issue);
   const route = router.resolve({
     name: issueRoute.name,
     params: issueRoute.params,

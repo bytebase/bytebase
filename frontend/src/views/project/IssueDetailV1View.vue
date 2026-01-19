@@ -19,7 +19,6 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { usePlanContextWithIssue } from "@/components/Plan";
 import { DatabaseChangeView } from "@/components/Plan/components/IssueReviewView/DatabaseChangeView";
@@ -27,10 +26,7 @@ import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/Dat
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
 import GrantRequestView from "@/components/Plan/components/IssueReviewView/GrantRequestView.vue";
 import IssueBaseLayout from "@/components/Plan/components/IssueReviewView/IssueBaseLayout.vue";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
-import { issueV1Slug } from "@/utils";
 
 enum IssueType {
   CREATE_DATABASE = "CREATE_DATABASE",
@@ -39,15 +35,12 @@ enum IssueType {
   DATABASE_CHANGE = "DATABASE_CHANGE",
 }
 
-const props = defineProps<{
+defineProps<{
   projectId: string;
   issueId: string;
 }>();
 
-const router = useRouter();
-const route = useRoute();
 const { plan, issue } = usePlanContextWithIssue();
-const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
 
 const issueType = computed(() => {
@@ -65,30 +58,6 @@ const issueType = computed(() => {
 });
 
 onMounted(() => {
-  // Redirect to legacy layout for database change issues when new layout is disabled
-  const usesNewLayoutOnly =
-    issueType.value === IssueType.CREATE_DATABASE ||
-    issueType.value === IssueType.EXPORT_DATA ||
-    issueType.value === IssueType.GRANT_REQUEST;
-
-  // Only redirect to legacy UI if:
-  // 1. New layout is disabled
-  // 2. Issue type is not new-layout-only
-  // 3. Rollout exists (legacy UI cannot display issues without rollout)
-  if (!enabledNewLayout.value && !usesNewLayoutOnly && plan.value.hasRollout) {
-    router.replace({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: props.projectId,
-        issueSlug: issueV1Slug(
-          `projects/${props.projectId}/issues/${props.issueId}`,
-          "issue"
-        ),
-      },
-      query: route.query,
-    });
-    return;
-  }
   isLoading.value = false;
 });
 </script>

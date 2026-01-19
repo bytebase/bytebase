@@ -62,7 +62,7 @@ import { useI18n } from "vue-i18n";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { isUnfinishedResolvedTask as checkUnfinishedResolvedTask } from "../logic";
+import { isUnfinishedResolvedTask as checkUnfinishedResolvedTask } from "@/utils";
 
 export type SizeType = "small" | "normal";
 

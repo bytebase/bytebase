@@ -67,7 +67,6 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import {
@@ -84,6 +83,7 @@ import {
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidInstanceName } from "@/types/v1/instance";
+import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/utils";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { usePlanContext } from "../..";
 

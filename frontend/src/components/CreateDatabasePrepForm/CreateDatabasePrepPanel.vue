@@ -190,7 +190,7 @@ import {
   InstanceSelect,
   ProjectSelect,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentProjectV1,
@@ -410,7 +410,7 @@ const create = async () => {
       { skipRollout: true }
     );
     router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(createdIssue.name),
         issueId: extractIssueUID(createdIssue.name),

@@ -42,7 +42,7 @@ import { CheckIcon, CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { TaskSpinner } from "@/components/IssueV1/components/common";
+import TaskSpinner from "@/components/misc/TaskSpinner.vue";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Type,

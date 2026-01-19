@@ -1,10 +1,6 @@
 import type { LocationQueryRaw } from "vue-router";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { router } from "@/router";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
   useDBGroupStore,
@@ -23,7 +19,6 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
   const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
   const projectStore = useProjectV1Store();
-  const { enabledNewLayout } = useIssueLayoutVersion();
 
   const databaseNames: string[] = [];
   for (const target of targets) {
@@ -43,62 +38,41 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
   // Fetch project to check enforce_issue_title setting
   const projectEntity = await projectStore.getOrFetchProjectByName(project);
 
-  if (enabledNewLayout.value) {
-    // New CI/CD layout: navigate to plan detail page
-    const query: LocationQueryRaw = {
-      template: type,
-    };
+  // Navigate to plan detail page
+  const query: LocationQueryRaw = {
+    template: type,
+  };
 
-    if (isDatabaseGroup) {
-      const databaseGroupName = targets[0];
-      query.databaseGroupName = databaseGroupName;
-      // Only set title from generated if enforceIssueTitle is false.
-      if (!projectEntity.enforceIssueTitle) {
-        query.name = generateIssueTitle(type, [
-          extractDatabaseGroupName(databaseGroupName),
-        ]);
-      }
-    } else {
-      query.databaseList = targets.join(",");
-      // Only set title from generated if enforceIssueTitle is false.
-      if (!projectEntity.enforceIssueTitle) {
-        query.name = generateIssueTitle(
-          type,
-          targets.map((db) => {
-            const { databaseName } = extractDatabaseResourceName(db);
-            return databaseName;
-          })
-        );
-      }
-    }
-
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project),
-        planId: "create",
-        specId: "placeholder",
-      },
-      query,
-    });
-  } else {
-    // Legacy layout: navigate to issue detail page
-    const query: LocationQueryRaw = {
-      template: type,
-      databaseList: targets.join(","),
-    };
+  if (isDatabaseGroup) {
+    const databaseGroupName = targets[0];
+    query.databaseGroupName = databaseGroupName;
     // Only set title from generated if enforceIssueTitle is false.
     if (!projectEntity.enforceIssueTitle) {
-      query.name = generateIssueTitle(type, databaseNames);
+      query.name = generateIssueTitle(type, [
+        extractDatabaseGroupName(databaseGroupName),
+      ]);
     }
-
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(project),
-        issueSlug: "create",
-      },
-      query,
-    });
+  } else {
+    query.databaseList = targets.join(",");
+    // Only set title from generated if enforceIssueTitle is false.
+    if (!projectEntity.enforceIssueTitle) {
+      query.name = generateIssueTitle(
+        type,
+        targets.map((db) => {
+          const { databaseName } = extractDatabaseResourceName(db);
+          return databaseName;
+        })
+      );
+    }
   }
+
+  router.push({
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(project),
+      planId: "create",
+      specId: "placeholder",
+    },
+    query,
+  });
 };

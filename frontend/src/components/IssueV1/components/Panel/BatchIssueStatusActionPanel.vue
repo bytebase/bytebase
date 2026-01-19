@@ -43,7 +43,7 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="flex justify-end gap-x-3">
+      <div v-if="action" class="flex justify-end gap-x-2">
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>
@@ -63,17 +63,17 @@ import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { IssueStatusAction } from "@/components/IssueV1/logic";
-import {
-  IssueStatusActionToIssueStatusMap,
-  issueStatusActionButtonProps,
-  issueStatusActionDisplayName,
-} from "@/components/IssueV1/logic";
 import { issueServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import CommonDrawer from "./CommonDrawer.vue";
+import type { IssueStatusAction } from "./issueStatusAction";
+import {
+  IssueStatusActionToIssueStatusMap,
+  issueStatusActionButtonProps,
+  issueStatusActionDisplayName,
+} from "./issueStatusAction";
 
 type LocalState = {
   loading: boolean;
