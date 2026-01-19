@@ -9,22 +9,20 @@
       {{ $t("instance.no-environment") }}
     </BBAttention>
 
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-x-2">
-        <EngineIcon :engine="instance.engine" custom-class="h-6!" />
-        <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
-      </div>
-      <InstanceActionDropdown :instance="instance" />
+    <div class="flex items-center gap-x-2">
+      <EngineIcon :engine="instance.engine" custom-class="h-6!" />
+      <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
     </div>
 
     <NTabs :value="state.selectedTab" @update:value="onTabChange">
       <template #suffix>
-        <div v-if="instance.state === State.ACTIVE" class="flex items-center gap-x-2">
+        <div class="flex items-center gap-x-2">
           <InstanceSyncButton
+            v-if="instance.state === State.ACTIVE"
             @sync-schema="syncSchema"
           />
           <PermissionGuardWrapper
-            v-if="allowCreateDatabase"
+            v-if="allowCreateDatabase && instance.state === State.ACTIVE"
             v-slot="slotProps"
             :permissions="[
               ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
@@ -41,6 +39,7 @@
               {{ $t("instance.new-database") }}
             </NButton>
           </PermissionGuardWrapper>
+          <InstanceActionDropdown :instance="instance" />
         </div>
       </template>
       <NTabPane name="overview" :tab="$t('common.overview')">
