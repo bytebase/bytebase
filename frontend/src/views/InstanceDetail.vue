@@ -9,39 +9,39 @@
       {{ $t("instance.no-environment") }}
     </BBAttention>
 
-    <div class="flex items-center gap-x-2">
-      <EngineIcon :engine="instance.engine" custom-class="h-6!" />
-      <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-x-2">
+        <EngineIcon :engine="instance.engine" custom-class="h-6!" />
+        <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
+      </div>
+      <div class="flex items-center gap-x-2">
+        <InstanceSyncButton
+          v-if="instance.state === State.ACTIVE"
+          @sync-schema="syncSchema"
+        />
+        <PermissionGuardWrapper
+          v-if="allowCreateDatabase && instance.state === State.ACTIVE"
+          v-slot="slotProps"
+          :permissions="[
+            ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+          ]"
+        >
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click.prevent="createDatabase"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("instance.new-database") }}
+          </NButton>
+        </PermissionGuardWrapper>
+        <InstanceActionDropdown :instance="instance" />
+      </div>
     </div>
 
     <NTabs :value="state.selectedTab" @update:value="onTabChange">
-      <template #suffix>
-        <div class="flex items-center gap-x-2">
-          <InstanceSyncButton
-            v-if="instance.state === State.ACTIVE"
-            @sync-schema="syncSchema"
-          />
-          <PermissionGuardWrapper
-            v-if="allowCreateDatabase && instance.state === State.ACTIVE"
-            v-slot="slotProps"
-            :permissions="[
-              ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
-            ]"
-          >
-            <NButton
-              type="primary"
-              :disabled="slotProps.disabled"
-              @click.prevent="createDatabase"
-            >
-              <template #icon>
-                <PlusIcon class="h-4 w-4" />
-              </template>
-              {{ $t("instance.new-database") }}
-            </NButton>
-          </PermissionGuardWrapper>
-          <InstanceActionDropdown :instance="instance" />
-        </div>
-      </template>
       <NTabPane name="overview" :tab="$t('common.overview')">
         <InstanceForm ref="instanceFormRef" class="-mt-2" :instance="instance">
           <InstanceFormBody />
