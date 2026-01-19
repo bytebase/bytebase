@@ -109,6 +109,9 @@ interface LocalState {
 const props = defineProps<{
   project: string;
   expr: ConditionGroupExpr;
+  // When provided (in readonly mode), skip the validateOnly API call
+  // and use these pre-fetched matched database names directly
+  matchedDatabaseNames?: string[];
 }>();
 
 const { t } = useI18n();
@@ -234,10 +237,14 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 
   state.loading = true;
   try {
-    const matchedDatabaseList = await dbGroupStore.fetchDatabaseGroupMatchList({
-      projectName: props.project,
-      expr: props.expr,
-    });
+    // When matchedDatabaseNames is provided (readonly mode), use it directly
+    // instead of calling createDatabaseGroup with validateOnly
+    const matchedDatabaseList = props.matchedDatabaseNames
+      ? props.matchedDatabaseNames
+      : await dbGroupStore.fetchDatabaseGroupMatchList({
+          projectName: props.project,
+          expr: props.expr,
+        });
 
     state.matchingError = undefined;
     state.databaseMatchLists = getInitialState();
@@ -251,7 +258,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 }, DEBOUNCE_SEARCH_DELAY);
 
 watch(
-  [() => props.project, () => props.expr],
+  [() => props.project, () => props.expr, () => props.matchedDatabaseNames],
   () => updateDatabaseMatchingState(),
   { deep: true, immediate: true }
 );
