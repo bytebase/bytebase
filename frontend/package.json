@@ -66,7 +66,7 @@
     "scrollparent": "^2.1.0",
     "semver": "7.7.3",
     "slug": "11.0.1",
-    "sql-formatter": "15.6.10",
+    "sql-formatter": "15.6.12",
     "tailwind-merge": "^3.4.0",
     "uuid": "13.0.0",
     "vdirs": "^0.1.8",

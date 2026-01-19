@@ -4,8 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-pnpmfileChecksum: sha256-D+Oiltjq0mI5+T73et/+VdZYEDWjB/193i1+mwbpq0Y=
-
 importers:
 
   .:
@@ -158,8 +156,8 @@ importers:
         specifier: 11.0.1
         version: 11.0.1
       sql-formatter:
-        specifier: 15.6.10
-        version: 15.6.10
+        specifier: 15.6.12
+        version: 15.6.12
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -4829,8 +4827,8 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
-  sql-formatter@15.6.10:
-    resolution: {integrity: sha512-0bJOPQrRO/JkjQhiThVayq0hOKnI1tHI+2OTkmT7TGtc6kqS+V7kveeMzRW+RNQGxofmTmet9ILvztyuxv0cJQ==}
+  sql-formatter@15.6.12:
+    resolution: {integrity: sha512-mkpF+RG402P66VMsnQkWewTRzDBWfu9iLbOfxaW/nAKOS/2A9MheQmcU5cmX0D0At9azrorZwpvcBRNNBozACQ==}
     hasBin: true
 
   stackback@0.0.2:
@@ -5062,6 +5060,8 @@ packages:
       '@svgx/core': ^1.0.1
       '@vue/compiler-sfc': ^3.0.2 || ^2.7.0
       svelte: ^3.0.0 || ^4.0.0 || ^5.0.0
+      vue-template-compiler: ^2.6.12
+      vue-template-es2015-compiler: ^1.9.0
     peerDependenciesMeta:
       '@svgr/core':
         optional: true
@@ -5070,6 +5070,10 @@ packages:
       '@vue/compiler-sfc':
         optional: true
       svelte:
+        optional: true
+      vue-template-compiler:
+        optional: true
+      vue-template-es2015-compiler:
         optional: true
 
   unplugin-utils@0.3.1:
@@ -11200,7 +11204,7 @@ snapshots:
     dependencies:
       vue: 3.5.25(typescript@5.9.3)
 
-  sql-formatter@15.6.10:
+  sql-formatter@15.6.12:
     dependencies:
       argparse: 2.0.1
       nearley: 2.20.1
