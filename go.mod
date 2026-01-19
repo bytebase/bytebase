@@ -70,7 +70,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.9.6
 	github.com/modelcontextprotocol/go-sdk v1.1.0
 	github.com/nyaruka/phonenumbers v1.6.7
-	github.com/opensearch-project/opensearch-go/v4 v4.5.0
+	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/paulmach/orb v0.12.0
 	github.com/pb33f/libopenapi v0.31.2
 	github.com/pingcap/tidb v1.1.0-beta.0.20241125141335-ec8b81b98edc
