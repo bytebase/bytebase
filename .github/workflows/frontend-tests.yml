@@ -22,7 +22,7 @@ jobs:
           version: '10.28.1'
       - uses: actions/setup-node@v6
         with:
-          node-version: '24.11.1'
+          node-version: '24.13.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - name: Install dependencies
@@ -44,7 +44,7 @@ jobs:
           version: '10.28.1'
       - uses: actions/setup-node@v6
         with:
-          node-version: '24.11.1'
+          node-version: '24.13.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - name: Install dependencies
