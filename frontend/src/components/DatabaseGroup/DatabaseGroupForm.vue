@@ -40,7 +40,11 @@
           />
         </div>
         <div class="col-span-2">
-          <MatchedDatabaseView :project="project.name" :expr="state.expr" />
+          <MatchedDatabaseView
+            :project="project.name"
+            :expr="state.expr"
+            :matched-database-names="readonly ? matchedDatabaseNames : undefined"
+          />
         </div>
       </div>
     </div>
@@ -123,6 +127,10 @@ const state = reactive<LocalState>({
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
+
+const matchedDatabaseNames = computed(() => {
+  return props.databaseGroup?.matchedDatabases.map((db) => db.name) ?? [];
+});
 
 watchEffect(async () => {
   const databaseGroup = props.databaseGroup;
