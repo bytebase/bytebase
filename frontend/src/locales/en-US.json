@@ -1940,7 +1940,6 @@
       "edit": "Edit member - {member}",
       "view-by-members": "View by members",
       "view-by-roles": "View by roles",
-      "cannot-remove-last-owner": "Cannot remove the last owner of a project",
       "revoke-role-from-user": "Revoke '{role}' from '{user}'",
       "never-expires": "Never",
       "role-description": "Role description",

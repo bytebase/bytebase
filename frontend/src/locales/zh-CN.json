@@ -1940,7 +1940,6 @@
       "edit": "编辑成员 - {member}",
       "view-by-members": "按成员查看",
       "view-by-roles": "按角色查看",
-      "cannot-remove-last-owner": "无法移除项目的最后一个所有者",
       "revoke-role-from-user": "删除'{user}'{role}的角色",
       "never-expires": "永不过期",
       "role-description": "角色描述",

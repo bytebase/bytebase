@@ -577,13 +577,8 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
-	existProjectOwner, err := validateIAMPolicy(ctx, s.store, req.Msg.Policy, oldIamPolicyMsg)
-	if err != nil {
+	if err := validateIAMPolicy(ctx, s.store, req.Msg.Policy, oldIamPolicyMsg); err != nil {
 		return nil, err
-	}
-	// Must contain one owner binding.
-	if !existProjectOwner {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("IAM Policy must have at least one binding with %s", common.ProjectOwner))
 	}
 
 	policy, err := convertToStoreIamPolicy(req.Msg.Policy)
@@ -1031,17 +1026,17 @@ func validateIAMPolicy(
 	stores *store.Store,
 	policy *v1pb.IamPolicy,
 	oldPolicyMessage *store.IamPolicyMessage,
-) (bool, error) {
+) error {
 	if policy == nil {
-		return false, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
 	}
 	if len(policy.Bindings) == 0 {
-		return false, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
 	workspaceProfileSetting, err := stores.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
+		return connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
 	var maximumRoleExpiration *durationpb.Duration
 	if workspaceProfileSetting != nil {
@@ -1050,7 +1045,7 @@ func validateIAMPolicy(
 
 	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{})
 	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}
 
 	existingBindings := make(map[string]bool)
@@ -1059,14 +1054,10 @@ func validateIAMPolicy(
 		existingBindings[identifier] = true
 	}
 
-	existProjectOwner := false
 	bindings := []*v1pb.Binding{}
 	for _, binding := range policy.Bindings {
 		if len(binding.Members) == 0 {
 			continue
-		}
-		if binding.Role == fmt.Sprintf("roles/%s", common.ProjectOwner) {
-			existProjectOwner = true
 		}
 
 		identifier := getBindingIdentifier(binding.Role, binding.Condition)
@@ -1075,7 +1066,7 @@ func validateIAMPolicy(
 		}
 	}
 
-	return existProjectOwner, validateBindings(bindings, roleMessages, maximumRoleExpiration)
+	return validateBindings(bindings, roleMessages, maximumRoleExpiration)
 }
 
 func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maximumRoleExpiration *durationpb.Duration) error {
