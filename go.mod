@@ -62,7 +62,8 @@ require (
 	github.com/jackc/pgtype v1.14.4
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/labstack/echo-contrib v0.17.4
-	github.com/labstack/echo/v4 v4.15.0
+	github.com/labstack/echo/v4 v4.13.3
+	github.com/labstack/echo/v5 v5.0.0
 	github.com/lestrrat-go/jwx/v3 v3.0.13
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
