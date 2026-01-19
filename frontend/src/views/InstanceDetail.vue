@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-2" v-bind="$attrs">
+  <div class="flex flex-col gap-y-2 px-6" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
     <BBAttention
       v-if="!instance.environment"
