@@ -7,7 +7,7 @@ import {
   languageOfEngineV1,
   unknownInstance,
 } from "@/types";
-import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 // Using proto-es types directly, no conversions needed
 import type {
   Instance,
@@ -26,9 +26,7 @@ export function instanceV1Name(instance: Instance | InstanceResource) {
   if (instance.title === unknownInstance().title) {
     name = extractInstanceResourceName(instance.name);
   }
-  if ((instance as Instance).state === State.DELETED) {
-    name += ` (${t("common.archived")})`;
-  } else if (
+  if (
     isValidInstanceName(instance.name) &&
     !instance.activation &&
     store.currentPlan !== PlanType.FREE

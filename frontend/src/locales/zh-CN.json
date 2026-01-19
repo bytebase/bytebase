@@ -41,6 +41,8 @@
     "environment-name": "环境名",
     "archive": "归档",
     "archived": "已归档",
+    "abandon": "废弃",
+    "abandoned": "已废弃",
     "restored": "Restored",
     "no-license": "无证书",
     "logout": "登出",
@@ -420,7 +422,7 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "确定要删除吗？",
-      "sure-to-archive": "确定要归档吗？",
+      "sure-to-abandon": "确定要废弃吗？",
       "cannot-undo": "此操作无法撤销。",
       "can-undo": "此操作可以撤销。"
     }
@@ -1826,8 +1828,7 @@
         "view-doc": "{destination} 的官方文档"
       },
       "deletion": {
-        "btn-text": "删除这个 webhook",
-        "confirm-title": "删除 webhook '{title}' 以及所有的执行历史?"
+        "confirm-title": "删除 webhook '{title}'?"
       },
       "direct-messages": "私信通知",
       "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",
@@ -2810,7 +2811,6 @@
     "title": "发布包",
     "releases": "发布包",
     "files": "文件",
-    "archive-this-release": "归档此发布",
     "total-files": "共 {count} 个文件",
     "change-tip": "此变更项已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
     "not-found": "未找到",

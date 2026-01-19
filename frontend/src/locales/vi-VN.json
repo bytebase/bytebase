@@ -41,6 +41,8 @@
     "environment-name": "Tên môi trường",
     "archive": "Lưu trữ",
     "archived": "Đã lưu trữ",
+    "abandon": "Hủy bỏ",
+    "abandoned": "Đã hủy bỏ",
     "restored": "Restored",
     "no-license": "Không có giấy phép",
     "logout": "Đăng xuất",
@@ -420,7 +422,7 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?",
-      "sure-to-archive": "Bạn có chắc chắn muốn lưu trữ?",
+      "sure-to-abandon": "Bạn có chắc chắn muốn hủy bỏ?",
       "cannot-undo": "Bạn không thể hoàn tác hành động này.",
       "can-undo": "Bạn có thể hoàn tác hành động này sau."
     }
@@ -1826,8 +1828,7 @@
         "view-doc": "Xem tài liệu của {destination}"
       },
       "deletion": {
-        "btn-text": "Xóa webhook này",
-        "confirm-title": "Xóa webhook '{title}' và tất cả lịch sử thực thi của nó?"
+        "confirm-title": "Xóa webhook '{title}'?"
       },
       "direct-messages": "Tin nhắn trực tiếp",
       "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",
@@ -2810,7 +2811,6 @@
     "title": "Giải phóng",
     "releases": "Bản phát hành",
     "files": "Tệp",
-    "archive-this-release": "Lưu trữ bản phát hành này",
     "total-files": "Tổng số {count} tệp",
     "change-tip": "Kế hoạch này được cấu hình để sử dụng bản phát hành. Các thay đổi cơ sở dữ liệu sẽ được thực hiện bằng các câu lệnh SQL từ các tệp phát hành đã chọn.",
     "not-found": "Không tìm thấy",

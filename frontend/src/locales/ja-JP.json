@@ -41,6 +41,8 @@
     "environment-name": "環境名",
     "archive": "アーカイブ",
     "archived": "アーカイブ済み",
+    "abandon": "破棄",
+    "abandoned": "破棄済み",
     "restored": "Restored",
     "no-license": "ライセンスがありません",
     "logout": "サインアウト",
@@ -420,7 +422,7 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "本当に削除してもよろしいですか?",
-      "sure-to-archive": "本当にアーカイブしますか?",
+      "sure-to-abandon": "本当に破棄しますか?",
       "cannot-undo": "この操作は元に戻すことができません。",
       "can-undo": "この操作は後で元に戻すことができます。"
     }
@@ -1826,8 +1828,7 @@
         "view-doc": "{destination} の公式ドキュメント"
       },
       "deletion": {
-        "btn-text": "この Webhook を削除します",
-        "confirm-title": "Webhook '{title}' とすべての実行履歴を削除しますか?"
+        "confirm-title": "Webhook '{title}' を削除しますか?"
       },
       "direct-messages": "プライベートメッセージ通知",
       "direct-messages-tip": "一致するユーザーがいない場合、またはメッセージの配信が失敗した場合、Bytebase は webhook メッセージの投稿にフォールバックします。",
@@ -2810,7 +2811,6 @@
     "title": "リリース",
     "releases": "リリース",
     "files": "ファイル",
-    "archive-this-release": "このリリースをアーカイブする",
     "total-files": "合計 {count} ファイル",
     "change-tip": "この変更はリリースを使用するように設定されています。データベースの変更は、選択したリリースファイルのSQL文を使用して実行されます。",
     "not-found": "配信パケットが到着していません",

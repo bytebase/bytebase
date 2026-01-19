@@ -41,6 +41,8 @@
     "environment-name": "Environment Name",
     "archive": "Archive",
     "archived": "Archived",
+    "abandon": "Abandon",
+    "abandoned": "Abandoned",
     "restored": "Restored",
     "no-license": "No license",
     "logout": "Logout",
@@ -420,7 +422,7 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "Are you sure to delete?",
-      "sure-to-archive": "Are you sure to archive?",
+      "sure-to-abandon": "Are you sure to abandon?",
       "cannot-undo": "You cannot undo this action.",
       "can-undo": "You can undo this action later."
     }
@@ -1826,8 +1828,7 @@
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
-        "btn-text": "Delete this webhook",
-        "confirm-title": "Delete webhook '{title}' and all its execution history?"
+        "confirm-title": "Delete webhook '{title}'?"
       },
       "direct-messages": "Direct messages",
       "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
@@ -2810,7 +2811,6 @@
     "title": "Release",
     "releases": "Releases",
     "files": "Files",
-    "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
     "change-tip": "This change is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
     "not-found": "Not found",

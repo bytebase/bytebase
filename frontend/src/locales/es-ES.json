@@ -41,6 +41,8 @@
     "environment-name": "Nombre del entorno",
     "archive": "Archivo",
     "archived": "Archivada",
+    "abandon": "Abandonar",
+    "abandoned": "Abandonado",
     "restored": "Restored",
     "no-license": "Sin licencia",
     "logout": "Cerrar sesión",
@@ -420,7 +422,7 @@
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
-      "sure-to-archive": "¿Estás seguro de archivar?",
+      "sure-to-abandon": "¿Estás seguro de abandonar?",
       "cannot-undo": "Esta acción no se puede deshacer.",
       "can-undo": "Podrás deshacer esta acción más tarde."
     }
@@ -1826,8 +1828,7 @@
         "view-doc": "Ver documentación de {destination}"
       },
       "deletion": {
-        "btn-text": "Eliminar este webhook",
-        "confirm-title": "¿Eliminar el '{title}' del webhook y todo su historial de ejecución?"
+        "confirm-title": "¿Eliminar el webhook '{title}'?"
       },
       "direct-messages": "Mensajes directos",
       "direct-messages-tip": "Bytebase recurrirá a la publicación de mensajes de webhook si no hay usuarios coincidentes o si falla la entrega del mensaje.",
@@ -2810,7 +2811,6 @@
     "title": "Liberar",
     "releases": "Lanzamientos",
     "files": "Archivos",
-    "archive-this-release": "Archivar este comunicado",
     "total-files": "Total de {count} archivos",
     "change-tip": "Este cambio está configurado para usar una versión. Los cambios en la base de datos se ejecutarán mediante las sentencias SQL de los archivos de la versión seleccionada.",
     "not-found": "Extraviado",

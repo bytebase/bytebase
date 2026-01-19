@@ -1,11 +1,25 @@
 <template>
   <FormLayout :title="create ? $t('project.webhook.creation.title') : ''">
     <template v-if="!create" #title>
-      <div class="flex flex-row gap-x-2 items-center">
-        <WebhookTypeIcon :type="props.webhook.type" class="h-6 w-6" />
-        <h3 class="text-lg leading-6 font-medium text-main">
-          {{ props.webhook.title }}
-        </h3>
+      <div class="flex flex-row justify-between items-center">
+        <div class="flex flex-row gap-x-2 items-center">
+          <WebhookTypeIcon :type="props.webhook.type" class="h-6 w-6" />
+          <h3 class="text-lg leading-6 font-medium text-main">
+            {{ props.webhook.title }}
+          </h3>
+        </div>
+        <NDropdown
+          v-if="allowEdit"
+          trigger="click"
+          :options="dropdownOptions"
+          @select="handleDropdownSelect"
+        >
+          <NButton size="small" quaternary class="px-1!">
+            <template #icon>
+              <EllipsisVerticalIcon class="w-4 h-4" />
+            </template>
+          </NButton>
+        </NDropdown>
       </div>
       <NDivider />
     </template>
@@ -186,24 +200,7 @@
       </div>
     </template>
     <template #footer>
-      <div
-        class="flex"
-        :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
-      >
-        <BBButtonConfirm
-          v-if="!create && allowEdit"
-          :type="'DELETE'"
-          :button-text="$t('project.webhook.deletion.btn-text')"
-          :ok-text="$t('common.delete')"
-          :confirm-title="
-            $t('project.webhook.deletion.confirm-title', {
-              title: webhook.title,
-            })
-          "
-          :confirm-description="$t('common.cannot-undo-this-action')"
-          :require-confirm="true"
-          @confirm="deleteWebhook"
-        />
+      <div class="flex justify-end">
         <div class="flex items-center gap-x-3">
           <NButton v-if="create" @click.prevent="cancel">
             {{ $t("common.cancel") }}
@@ -239,20 +236,23 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
-import { InfoIcon } from "lucide-vue-next";
+import { EllipsisVerticalIcon, InfoIcon } from "lucide-vue-next";
+import type { DropdownOption } from "naive-ui";
 import {
   NButton,
   NCheckbox,
   NDivider,
+  NDropdown,
   NInput,
   NRadio,
   NRadioGroup,
   NTooltip,
+  useDialog,
 } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAttention, BBButtonConfirm } from "@/bbkit";
+import { BBAttention } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { MissingExternalURLAttention } from "@/components/v2/Form";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
@@ -300,6 +300,7 @@ const props = withDefaults(
 
 const router = useRouter();
 const { t } = useI18n();
+const dialog = useDialog();
 
 const settingStore = useSettingV1Store();
 const projectStore = useProjectV1Store();
@@ -399,6 +400,31 @@ const toggleEvent = (type: Activity_Type, on: boolean) => {
     }
   }
   state.webhook.notificationTypes.sort();
+};
+
+const dropdownOptions = computed((): DropdownOption[] => {
+  return [
+    {
+      key: "delete",
+      label: t("common.delete"),
+    },
+  ];
+});
+
+const handleDropdownSelect = (key: string) => {
+  if (key === "delete") {
+    dialog.warning({
+      title: t("project.webhook.deletion.confirm-title", {
+        title: state.webhook.title,
+      }),
+      content: t("common.cannot-undo-this-action"),
+      negativeText: t("common.cancel"),
+      positiveText: t("common.delete"),
+      onPositiveClick: () => {
+        deleteWebhook();
+      },
+    });
+  }
 };
 
 const cancel = () => {
