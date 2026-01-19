@@ -154,6 +154,11 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		EnableSample:        hasSampleInstances,
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
+		Restriction: &v1pb.Restriction{
+			PasswordRestriction:    convertToPasswordRestrictionSetting(setting.GetPasswordRestriction()),
+			DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
+			DisallowPasswordSignin: setting.DisallowPasswordSignin,
+		},
 	}
 
 	stats, err := s.store.StatUsers(ctx)

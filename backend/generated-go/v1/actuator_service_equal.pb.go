@@ -56,6 +56,25 @@ func (x *DeleteCacheRequest) Equal(y *DeleteCacheRequest) bool {
 	return true
 }
 
+func (x *Restriction) Equal(y *Restriction) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.DisallowSignup != y.DisallowSignup {
+		return false
+	}
+	if x.DisallowPasswordSignin != y.DisallowPasswordSignin {
+		return false
+	}
+	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
+		return false
+	}
+	return true
+}
+
 func (x *ActuatorInfo_StatUser) Equal(y *ActuatorInfo_StatUser) bool {
 	if x == y {
 		return true
@@ -147,6 +166,9 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		return false
 	}
 	if x.ReplicaCount != y.ReplicaCount {
+		return false
+	}
+	if !x.Restriction.Equal(y.Restriction) {
 		return false
 	}
 	return true
