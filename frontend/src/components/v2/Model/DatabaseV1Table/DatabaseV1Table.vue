@@ -34,6 +34,7 @@ import {
 } from "@/components/v2/Model/cells";
 import type { ComposedDatabase } from "@/types";
 import { hostPortOfInstanceV1 } from "@/utils";
+import { extractReleaseUID } from "@/utils/v1/release";
 import { mapSorterStatus } from "../utils";
 
 type DatabaseDataTableColumn = DataTableColumn<ComposedDatabase> & {
@@ -127,12 +128,15 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     ),
   };
   const SCHEMA_VERSION: DatabaseDataTableColumn = {
-    key: "schema-version",
-    title: t("common.schema-version"),
+    key: "release",
+    title: t("common.release"),
     minWidth: 140,
     resizable: true,
     hide: props.schemaless,
-    render: (data) => (data as ComposedDatabase).release || "-",
+    render: (data) => {
+      const release = (data as ComposedDatabase).release;
+      return release ? extractReleaseUID(release) : "-";
+    },
   };
   const PROJECT: DatabaseDataTableColumn = {
     key: "project",

@@ -109,7 +109,7 @@
     "confirm": "確認する",
     "learn-more": "もっと詳しく知る",
     "troubleshoot": "トラブルシューティング",
-    "schema-version": "スキーマのバージョン",
+    "release": "リリース",
     "Default": "デフォルト",
     "definition": "意味",
     "empty": "空欄",
@@ -1363,10 +1363,8 @@
     "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
     "successfully-archived-instance": "インスタンス '{0}' を正常にアーカイブしました。",
     "successfully-synced-schema-for-instance-instance-value-name": "インスタンス '{0}' のスキーマが正常に同期されました。",
-    "archive-this-instance": "このインスタンスをアーカイブする",
     "archive-instance-instance-name": "インスタンス '{0}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
-    "restore-this-instance": "インスタンスを復元する",
     "restore": "復元する",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{0}' を通常の状態に復元しますか?",
     "account-locator": "アカウントロケーター",
@@ -1692,14 +1690,10 @@
     "sync-schema": {
       "title": "データベーステーブルの同期",
       "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",
-      "schema-history-version": "スキーマの履歴バージョン",
       "copy-schema": "スキーマテキストを貼り付け",
       "select-source-schema": "ソーススキーマの選択",
       "select-target-databases": "ターゲットデータベースを選択してください",
       "source-schema": "ソーススキーマ",
-      "schema-version": {
-        "self": "スキーマのバージョン"
-      },
       "target-databases": "ターゲットデータベース",
       "with-diff": "違い",
       "no-diff": "変わりはない",
@@ -1958,7 +1952,15 @@
         "success": "{count} 件のプロジェクトを正常にアーカイブしました | {count} 件のプロジェクトを正常にアーカイブしました",
         "error": "プロジェクトをアーカイブできませんでした"
       },
+      "delete": {
+        "title": "{count} 件のプロジェクトを削除しますか? | {count} 件のプロジェクトを削除しますか?",
+        "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
+        "warning": "この操作は元に戻せません。問題、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。",
+        "success": "{count} 件のプロジェクトを正常に削除しました | {count} 件のプロジェクトを正常に削除しました",
+        "error": "プロジェクトを削除できませんでした"
+      },
       "projects-to-archive": "アーカイブするプロジェクト",
+      "projects-to-delete": "削除するプロジェクト",
       "resource-warning": {
         "title": "リソースのあるプロジェクト",
         "description": "次のプロジェクトには、データベースまたは未解決の問題が含まれています。"

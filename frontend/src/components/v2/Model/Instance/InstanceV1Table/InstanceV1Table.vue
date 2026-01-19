@@ -34,6 +34,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import EllipsisText from "@/components/EllipsisText.vue";
+import InstanceActionDropdown from "@/components/Instance/InstanceActionDropdown.vue";
 import { InstanceV1Name } from "@/components/v2";
 import { LabelsCell } from "@/components/v2/Model/cells";
 import { useEnvironmentV1Store } from "@/store";
@@ -63,6 +64,7 @@ const props = withDefaults(
     disabledSelectedInstanceNames?: Set<string>;
     showAddress?: boolean;
     showExternalLink?: boolean;
+    showActions?: boolean;
     onClick?: (instance: Instance, e: MouseEvent) => void;
     sorters?: DataTableSortState[];
   }>(),
@@ -72,6 +74,7 @@ const props = withDefaults(
     onClick: undefined,
     showAddress: true,
     showExternalLink: true,
+    showActions: false,
     disabledSelectedInstanceNames: () => new Set(),
     defaultExpandDataSource: () => [],
     selectedInstanceNames: () => [],
@@ -209,6 +212,22 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     width: 100,
     render: (instance) => (instance.activation ? "Y" : ""),
   };
+  const ACTIONS: InstanceDataTableColumn = {
+    key: "actions",
+    title: "",
+    width: 50,
+    hide: !props.showActions,
+    render: (instance) => (
+      <div
+        class="flex justify-end"
+        onClick={(e: MouseEvent) => {
+          e.stopPropagation();
+        }}
+      >
+        <InstanceActionDropdown instance={instance} />
+      </div>
+    ),
+  };
 
   const columns: InstanceDataTableColumn[] = [
     SELECTION,
@@ -218,6 +237,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     LABELS,
     EXTERNAL_LINK,
     LICENSE,
+    ACTIONS,
   ].filter((column) => !column.hide);
   return mapSorterStatus(columns, props.sorters);
 });

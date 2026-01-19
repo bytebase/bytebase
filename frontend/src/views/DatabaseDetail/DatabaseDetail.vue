@@ -67,16 +67,16 @@
               <InstanceV1Name :instance="database.instanceResource" />
             </dd>
             <dt v-if="database.release" class="sr-only">
-              {{ $t("common.version") }}
+              {{ $t("common.release") }}
             </dt>
             <dd
               v-if="database.release"
               class="flex items-center text-sm md:mr-4"
             >
               <span class="ml-1 textlabel"
-                >{{ $t("common.version") }}&nbsp;-&nbsp;</span
+                >{{ $t("common.release") }}&nbsp;-&nbsp;</span
               >
-              <span>{{ database.release }}</span>
+              <span>{{ extractReleaseUID(database.release) }}</span>
             </dd>
             <SQLEditorButtonV1
               v-if="allowQuery"
@@ -260,6 +260,7 @@ import {
   isDatabaseV1Queryable,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
 } from "@/utils";
+import { extractReleaseUID } from "@/utils/v1/release";
 
 const databaseHashList = [
   "overview",

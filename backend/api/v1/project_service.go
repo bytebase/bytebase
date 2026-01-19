@@ -399,11 +399,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 	}
 
 	// Regular soft delete (archive) flow
-	if project.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Name))
-	}
 	if project.ResourceID == common.DefaultProjectID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be deleted"))
+	}
+	// Idempotent: if already deleted, return success
+	if project.Deleted {
+		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
 	// For archive (soft delete), just mark the project as deleted without touching databases or issues
@@ -423,8 +424,9 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, err
 	}
+	// Idempotent: if already active, return the project
 	if !project.Deleted {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q is active", req.Msg.Name))
+		return connect.NewResponse(convertToProject(project)), nil
 	}
 
 	projects, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
@@ -491,11 +493,12 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		if err != nil {
 			return nil, err
 		}
-		if project.Deleted {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has already been deleted", name))
-		}
 		if project.ResourceID == common.DefaultProjectID {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("default project cannot be deleted"))
+		}
+		// Idempotent: skip already deleted projects
+		if project.Deleted {
+			continue
 		}
 		projects = append(projects, project)
 	}
@@ -510,8 +513,10 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		})
 	}
 
-	if _, err := s.store.UpdateProjects(ctx, updatePatches...); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	if len(updatePatches) > 0 {
+		if _, err := s.store.UpdateProjects(ctx, updatePatches...); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil

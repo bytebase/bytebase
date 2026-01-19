@@ -109,7 +109,7 @@
     "confirm": "Xác nhận",
     "learn-more": "Tìm hiểu thêm",
     "troubleshoot": "Khắc phục sự cố",
-    "schema-version": "Phiên bản lược đồ",
+    "release": "Release",
     "Default": "Mặc định",
     "definition": "Định nghĩa",
     "empty": "Trống",
@@ -1363,10 +1363,8 @@
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{0}'.",
     "successfully-synced-schema-for-instance-instance-value-name": "Đã đồng bộ hóa thành công lược đồ cho phiên bản '{0}'.",
-    "archive-this-instance": "Lưu trữ phiên bản này",
     "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
-    "restore-this-instance": "Khôi phục phiên bản này",
     "restore": "Khôi phục",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{0}' về trạng thái bình thường?",
     "account-locator": "Định vị tài khoản",
@@ -1692,14 +1690,10 @@
     "sync-schema": {
       "title": "Đồng bộ lược đồ",
       "description": "Bytebase hỗ trợ đồng bộ hóa một lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
-      "schema-history-version": "Phiên bản lịch sử lược đồ",
       "copy-schema": "Sao chép lược đồ",
       "select-source-schema": "Chọn lược đồ nguồn",
       "select-target-databases": "Chọn cơ sở dữ liệu đích",
       "source-schema": "Lược đồ nguồn",
-      "schema-version": {
-        "self": "Phiên bản lược đồ"
-      },
       "target-databases": "Cơ sở dữ liệu đích",
       "with-diff": "Với khác biệt",
       "no-diff": "Không có khác biệt",
@@ -1958,7 +1952,15 @@
         "success": "Đã lưu trữ thành công {count} dự án | Đã lưu trữ thành công {count} dự án",
         "error": "Không lưu trữ được dự án"
       },
+      "delete": {
+        "title": "Xóa {count} Dự án? | Xóa {count} Dự án?",
+        "description": "Thao tác này sẽ xóa vĩnh viễn các dự án đã chọn và chuyển tất cả cơ sở dữ liệu sang dự án mặc định.",
+        "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn.",
+        "success": "Đã xóa thành công {count} dự án | Đã xóa thành công {count} dự án",
+        "error": "Không xóa được dự án"
+      },
       "projects-to-archive": "Dự án để lưu trữ",
+      "projects-to-delete": "Dự án để xóa",
       "resource-warning": {
         "title": "Dự án có nguồn lực",
         "description": "Các dự án sau đây chứa cơ sở dữ liệu hoặc các vấn đề chưa giải quyết:"

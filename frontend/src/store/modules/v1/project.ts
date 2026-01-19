@@ -297,6 +297,17 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
     upsertProjectsCache(projects);
   };
+  const batchPurgeProjects = async (projectNames: string[]) => {
+    const request = create(BatchDeleteProjectsRequestSchema, {
+      names: projectNames,
+      purge: true,
+    });
+    await projectServiceClientConnect.batchDeleteProjects(request);
+    // Remove from local cache
+    for (const name of projectNames) {
+      projectMapByName.delete(name);
+    }
+  };
   const restoreProject = async (project: Project) => {
     const request = create(UndeleteProjectRequestSchema, {
       name: project.name,
@@ -315,6 +326,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     archiveProject,
     deleteProject,
     batchDeleteProjects,
+    batchPurgeProjects,
     restoreProject,
     updateProjectCache,
     fetchProjectList,

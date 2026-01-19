@@ -13,6 +13,7 @@
         :selected-project-names="selectedProjectNames"
         :show-selection="showSelection"
         :show-labels="showLabels"
+        :show-actions="showActions"
         :keyword="filter.query"
         :sorters="sorters"
         @update:selected-project-names="updateSelectedProjectNames"
@@ -37,11 +38,13 @@ const props = withDefaults(
     selectedProjectNames?: string[];
     showSelection?: boolean;
     showLabels?: boolean;
+    showActions?: boolean;
   }>(),
   {
     selectedProjectNames: () => [],
     showSelection: false,
     showLabels: true,
+    showActions: false,
   }
 );
 

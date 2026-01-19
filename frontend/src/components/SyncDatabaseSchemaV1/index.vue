@@ -34,7 +34,7 @@
           >
             <NRadio
               :value="SourceSchemaType.SCHEMA_HISTORY_VERSION"
-              :label="$t('database.sync-schema.schema-history-version')"
+              :label="$t('common.changelog')"
             />
             <NRadio
               :value="SourceSchemaType.RAW_SQL"

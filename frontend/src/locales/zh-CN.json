@@ -109,7 +109,7 @@
     "confirm": "确认",
     "learn-more": "了解更多",
     "troubleshoot": "排查问题",
-    "schema-version": "Schema 版本",
+    "release": "Release",
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
@@ -1363,10 +1363,8 @@
     "successfully-restored-instance": "已成功恢复实例“{0}”。",
     "successfully-archived-instance": "成功归档实例'{0}'。",
     "successfully-synced-schema-for-instance-instance-value-name": "成功为实例'{0}'同步 schema 。",
-    "archive-this-instance": "归档该实例",
     "archive-instance-instance-name": "归档实例'{0}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
-    "restore-this-instance": "恢复该实例",
     "restore": "恢复",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{0}'到正常状态?",
     "account-locator": "账户定位符",
@@ -1692,14 +1690,10 @@
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
-      "schema-history-version": "Schema 历史版本",
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "source-schema": "源 Schema",
-      "schema-version": {
-        "self": "Schema 版本"
-      },
       "target-databases": "目标数据库",
       "with-diff": "有差异",
       "no-diff": "无差异",
@@ -1958,7 +1952,15 @@
         "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
         "error": "无法存档项目"
       },
+      "delete": {
+        "title": "删除 {count} 个项目？| 删除 {count} 个项目？",
+        "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
+        "warning": "此操作无法撤消。包括问题、配置和历史记录在内的所有项目数据将被永久删除。",
+        "success": "成功删除 {count} 个项目 | 成功删除 {count} 个项目",
+        "error": "无法删除项目"
+      },
       "projects-to-archive": "要存档的项目",
+      "projects-to-delete": "要删除的项目",
       "resource-warning": {
         "title": "项目与资源",
         "description": "以下项目包含数据库或未解决的问题："

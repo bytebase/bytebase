@@ -27,6 +27,7 @@ import {
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import ProjectActionDropdown from "@/components/Project/ProjectActionDropdown.vue";
 import { LabelsCell, ProjectNameCell } from "@/components/v2/Model/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
@@ -55,6 +56,8 @@ const props = withDefaults(
     showSelection?: boolean;
     // Whether to show labels column (hidden in dropdowns for cleaner UI)
     showLabels?: boolean;
+    // Whether to show actions dropdown
+    showActions?: boolean;
     sorters?: DataTableSortState[];
   }>(),
   {
@@ -64,6 +67,7 @@ const props = withDefaults(
     selectedProjectNames: () => [],
     showSelection: false,
     showLabels: true,
+    showActions: false,
   }
 );
 
@@ -154,6 +158,22 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         hide: !props.showLabels,
         render: (project) => (
           <LabelsCell labels={project.labels} showCount={3} placeholder="-" />
+        ),
+      },
+      {
+        key: "actions",
+        title: "",
+        width: 50,
+        hide: !props.showActions,
+        render: (project) => (
+          <div
+            class="flex justify-end"
+            onClick={(e: MouseEvent) => {
+              e.stopPropagation();
+            }}
+          >
+            <ProjectActionDropdown project={project} />
+          </div>
         ),
       },
     ] as ProjectDataTableColumn[]

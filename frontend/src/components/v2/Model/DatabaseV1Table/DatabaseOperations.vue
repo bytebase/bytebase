@@ -106,6 +106,7 @@ import {
   ChevronsDownIcon,
   DownloadIcon,
   PencilIcon,
+  PlusIcon,
   RefreshCcwIcon,
   SquareStackIcon,
   TagIcon,
@@ -149,6 +150,7 @@ import {
   extractProjectResourceName,
   generateIssueTitle,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
+  PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
 } from "@/utils";
 
@@ -172,8 +174,10 @@ const props = withDefaults(
   defineProps<{
     databases: ComposedDatabase[];
     projectName?: string;
+    instanceName?: string;
+    onCreateDatabase?: () => void;
   }>(),
-  { projectName: "" }
+  { projectName: "", instanceName: "", onCreateDatabase: undefined }
 );
 
 const state = reactive<LocalState>({
@@ -240,6 +244,7 @@ const selectedDatabaseNameList = computed(() => {
 
 const operations = computed(() => {
   return [
+    "CREATE-DATABASE",
     "CHANGE-DATABASE",
     "EXPORT-DATA",
     "SYNC-SCHEMA",
@@ -380,6 +385,17 @@ const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   for (const operation of operations.value) {
     switch (operation) {
+      case "CREATE-DATABASE":
+        if (props.instanceName && props.onCreateDatabase) {
+          resp.push({
+            icon: h(PlusIcon),
+            text: t("instance.new-database"),
+            disabled: false,
+            click: props.onCreateDatabase,
+            requiredPermissions: [...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE],
+          });
+        }
+        break;
       case "CHANGE-DATABASE":
         if (operationsInProjectDetail.value && !isInDefaultProject.value) {
           resp.push({

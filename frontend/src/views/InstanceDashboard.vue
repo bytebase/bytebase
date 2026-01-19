@@ -42,6 +42,8 @@
         :footer-class="'mx-4'"
         :on-click="onRowClick"
         :selected-instance-names="Array.from(state.selectedInstance)"
+        :show-external-link="false"
+        :show-actions="true"
         @update:selected-instance-names="
           (list: string[]) => (state.selectedInstance = new Set(list))
         "

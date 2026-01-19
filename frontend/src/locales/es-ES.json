@@ -109,7 +109,7 @@
     "confirm": "Confirmar",
     "learn-more": "Aprender más",
     "troubleshoot": "Solucionar problemas",
-    "schema-version": "Versión de esquema",
+    "release": "Release",
     "Default": "Predeterminado",
     "definition": "Definición",
     "empty": "Vacío",
@@ -1363,10 +1363,8 @@
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
     "successfully-archived-instance": "Se archivó exitosamente la instancia '{0}'.",
     "successfully-synced-schema-for-instance-instance-value-name": "Esquema sincronizado con éxito para la instancia '{0}'.",
-    "archive-this-instance": "Archivar esta instancia",
     "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
-    "restore-this-instance": "Restaurar esta instancia",
     "restore": "Restaurar",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{0}' al estado normal?",
     "account-locator": "Localizadora de cuentas",
@@ -1692,14 +1690,10 @@
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
-      "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "source-schema": "Esquema de origen",
-      "schema-version": {
-        "self": "Versión de esquema"
-      },
       "target-databases": "Bases de datos de destino",
       "with-diff": "Con diff",
       "no-diff": "Sin diff",
@@ -1958,7 +1952,15 @@
         "success": "Proyecto {count} archivado correctamente | Proyectos {count} archivados correctamente",
         "error": "No se pudieron archivar los proyectos"
       },
+      "delete": {
+        "title": "¿Eliminar {count} Proyecto? | ¿Eliminar {count} Proyectos?",
+        "description": "Esto eliminará permanentemente los proyectos seleccionados y moverá todas las bases de datos al proyecto predeterminado.",
+        "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente.",
+        "success": "Proyecto {count} eliminado correctamente | Proyectos {count} eliminados correctamente",
+        "error": "No se pudieron eliminar los proyectos"
+      },
       "projects-to-archive": "Proyectos para archivar",
+      "projects-to-delete": "Proyectos para eliminar",
       "resource-warning": {
         "title": "Proyectos con recursos",
         "description": "Los siguientes proyectos contienen bases de datos o problemas abiertos:"
