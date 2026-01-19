@@ -6,7 +6,7 @@ import { head } from "lodash-es";
 import { useRoute, useRouter } from "vue-router";
 import { usePlanContext } from "@/components/Plan";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { extractIssueUID } from "@/utils";
@@ -29,7 +29,7 @@ const isDatabaseChangePlan = plan.value.specs.some(
 
 if (hasIssue && isDatabaseChangePlan) {
   router.replace({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: route.params.projectId,
       issueId: extractIssueUID(plan.value.issue),

@@ -21,8 +21,8 @@ import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
+  extractIssueUID,
   extractProjectResourceName,
-  issueV1Slug,
   isValidIssueName,
 } from "@/utils";
 
@@ -62,7 +62,7 @@ const gotoIssuePage = async () => {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(issue.name),
-      issueSlug: issueV1Slug(issue.name, issue.title),
+      issueId: extractIssueUID(issue.name),
     },
   });
   window.open(route.href, "_blank");

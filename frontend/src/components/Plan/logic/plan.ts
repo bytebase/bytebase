@@ -1,5 +1,4 @@
 import { head } from "lodash-es";
-import { mockDatabase } from "@/components/IssueV1/logic/utils";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import {
   isValidDatabaseGroupName,
@@ -10,6 +9,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { mockDatabase } from "@/utils";
 
 export const databaseForSpec = (project: Project, spec: Plan_Spec) => {
   const targets = targetsForSpec(spec);

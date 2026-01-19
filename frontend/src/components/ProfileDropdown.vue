@@ -15,13 +15,12 @@
 
 <script lang="tsx" setup>
 import type { DropdownOption } from "naive-ui";
-import { NDropdown, NSwitch } from "naive-ui";
+import { NDropdown } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useLanguage } from "@/composables/useLanguage";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
@@ -86,8 +85,6 @@ const resetQuickstart = () => {
   });
   showDropdown.value = false;
 };
-
-const { enabledNewLayout, toggleLayout } = useIssueLayoutVersion();
 
 const toggleLocale = (lang: string) => {
   setLocale(lang);
@@ -318,24 +315,6 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     render() {
       return <Version tooltipProps={{ placement: "left" }} />;
-    },
-  },
-  {
-    key: "enable-new-layout",
-    type: "render",
-    render() {
-      return (
-        <div class="menu-item">
-          <div class="flex flex-row items-center gap-x-2 justify-between">
-            <span>{t("issue.new-layout")}</span>
-            <NSwitch
-              size="small"
-              value={enabledNewLayout.value}
-              onUpdate:value={toggleLayout}
-            />
-          </div>
-        </div>
-      );
     },
   },
   {

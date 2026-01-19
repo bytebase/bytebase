@@ -166,7 +166,7 @@ import { ErrorList } from "@/components/Plan/components/common";
 import { usePlanContext } from "@/components/Plan/logic";
 import { issueServiceClientConnect } from "@/connect";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
 } from "@/router/dashboard/projectV1";
 import {
@@ -381,7 +381,7 @@ const handlePostActionNavigation = (
   // For APPROVE (not last) and REJECT, redirect to issue page
   nextTick(() => {
     router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(issueValue.name),
         issueId: extractIssueUID(issueValue.name),

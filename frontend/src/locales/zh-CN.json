@@ -163,7 +163,6 @@
     "load-more": "加载更多",
     "rows-per-page": "每页行数",
     "access-denied": "拒绝访问",
-    "restart": "重启",
     "want-help": "加入用户群",
     "operation": "操作",
     "discard-changes": "取消修改",
@@ -210,7 +209,6 @@
     "clear-filters": "清除过滤",
     "license": "证书",
     "view-details": "查看详情",
-    "force-verb": "强制{verb}",
     "untitled": "未命名",
     "missing-required-permission": "缺少必需的权限 {permissions}",
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
@@ -238,8 +236,6 @@
     "title": "标题",
     "text-wrap": "文本折行",
     "catalog": "Catalog",
-    "summary": "总结",
-    "errors": "错误",
     "removed": "已移除",
     "submit": "提交",
     "draft": "草稿",
@@ -275,7 +271,6 @@
     "description": "检测到过时版本。请刷新页面。"
   },
   "task": {
-    "current-task": "当前任务",
     "checking": "检查中…",
     "check-result": {
       "title-general": "检查结果"
@@ -304,13 +299,10 @@
       "pending": "待执行",
       "not-started": "未开始"
     },
-    "skip": "跳过",
     "task-checks": "任务检查项",
     "prior-backup": "预备份受影响数据",
-    "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
     "execution-time": "执行时间",
     "run-checks": "运行检查",
-    "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
     "skip-task": "跳过任务 | 跳过任务",
     "run-task": "运行任务 | 运行任务",
@@ -353,10 +345,6 @@
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
     "prior-backup-tips": "提前备份受影响的数据。仅适用于数据变更（UPDATE、DELETE），不适用于结构变更。",
-    "database-create": {
-      "created": "已创建",
-      "pending": "待创建"
-    },
     "executed-by": "执行者",
     "affected-rows": "影响行数",
     "type": {
@@ -961,15 +949,8 @@
       "modal": {
         "reopen": "重开工单？",
         "close": "关闭工单？"
-      },
-      "warning": {
-        "some-previous-stages-are-not-done": "存在之前的阶段尚未完成。"
-      },
-      "error": {
-        "some-tasks-are-still-running": "部分任务仍在运行"
       }
     },
-    "add-some-description": "添加一些描述…",
     "leave-a-comment": "发表一条评论…",
     "no-description-provided": "未提供描述",
     "comment-editor": {
@@ -1042,24 +1023,17 @@
       "creator": "创建人",
       "current-approver": "当前审批人"
     },
-    "stage-select": {
-      "current": "{name}（当前）"
-    },
     "migration-mode": {
       "online": {
         "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
     },
-    "new-issue": "@:common.new@:common.issue",
-    "action-to-current-stage": "{action}当前阶段",
     "upload-sql": "上传 SQL",
     "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
     "overwrite-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "transaction-mode": {
       "label": "事务模式",
-      "on": "开启",
-      "off": "关闭",
       "on-tooltip": "将所有语句包装在单个事务中（BEGIN/COMMIT）。",
       "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。",
       "execution-order-note": "非事务性语句将最后执行。"
@@ -1073,8 +1047,7 @@
       "close": "关闭"
     },
     "approval-flow": {
-      "self": "审批流",
-      "pre-issue-created-tips": "在工单创建后，系统将根据工单的类型和风险等级自动匹配相应的自定义审批。"
+      "self": "审批流"
     },
     "risk-level": {
       "self": "风险等级",
@@ -1082,8 +1055,6 @@
       "moderate": "中风险",
       "high": "高风险"
     },
-    "awaiting-rollout": "等待发布",
-    "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
     "grant-request": {
       "details": "请求详细",
@@ -1095,7 +1066,6 @@
       "custom-date": "自定义日期",
       "custom-date-placeholder": "选择到期日期和时间"
     },
-    "review-sent-back": "审核被退回",
     "action-anyway": "仍要{action}",
     "sql-check": {
       "sql-checks": "SQL 检查项",
@@ -1106,14 +1076,9 @@
       "sql-review-violations": "违反的 SQL 审核规则"
     },
     "error": {
-      "you-don-have-privilege-to-edit-this-issue": "您没有权限编辑此工单",
-      "you-are-not-allowed-to-perform-this-action": "您无权执行此操作",
-      "cannot-close-issue-with-running-tasks": "无法关闭还存在运行中任务的工单",
       "statement-cannot-be-modified": "工单创建后，语句将无法修改"
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
-    "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
-    "missing-sql-statement": "SQL 语句缺失。",
     "data-export": {
       "options": "配置项",
       "limits": "限制",
@@ -1161,11 +1126,8 @@
       "reject-description": "提交反馈并要求修改"
     },
     "approval": {
-      "rejected-error": "此工单已被退回。",
-      "pending-error": "此工单正在等待审批。",
       "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
-    },
-    "new-layout": "使用新版 CI/CD 页面"
+    }
   },
   "plan": {
     "plans": "变更计划",
@@ -1218,9 +1180,6 @@
     },
     "options": {
       "self": "配置项",
-      "applies-to-all-tasks": "适用于所有任务",
-      "applies-to-some-tasks": "适用于部分任务 {count}/{total}",
-      "split-into-multiple-issues-tip": "如果您想为每个任务设置不同的配置项，请拆分成多个工单。",
       "no-options-available": "暂无可配置项"
     },
     "editor": {
@@ -1258,9 +1217,7 @@
   "rollout": {
     "rollouts": "发布任务",
     "bypass-stage-requirements": "绕过提醒",
-    "task-execution-notices": "任务执行提醒",
     "task-execution-errors": "任务执行警告",
-    "no-active-task-to-cancel": "没有要取消的任务。",
     "stage": {
       "self": "阶段 | 阶段",
       "run-stage": "运行任务",
@@ -2682,7 +2639,6 @@
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
     },
     "issue-review": {
-      "approve-issue": "批准工单？",
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
       "rejected-issue": "驳回工单",
@@ -2691,9 +2647,7 @@
         "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
         "x-field-is-required": "{field}为必填项"
       },
-      "send-back-issue": "退回工单？",
       "re-request-review": "请求再次审批",
-      "re-request-review-issue": "请求再次审批工单？",
       "re-request-review-success": "已成功请求再次审批",
       "re-requested-review": "再次请求审批工单",
       "approved-by": "已批准",

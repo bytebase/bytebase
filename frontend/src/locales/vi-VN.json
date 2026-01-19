@@ -163,7 +163,6 @@
     "load-more": "Tải thêm",
     "rows-per-page": "Số dòng mỗi trang",
     "access-denied": "Truy cập bị từ chối",
-    "restart": "Khởi động lại",
     "want-help": "Cần trợ giúp",
     "operation": "Thao tác",
     "discard-changes": "Hủy thay đổi",
@@ -210,7 +209,6 @@
     "clear-filters": "Xóa bộ lọc",
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
-    "force-verb": "Buộc {verb}",
     "untitled": "Không tiêu đề",
     "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
@@ -238,8 +236,6 @@
     "title": "Tiêu đề",
     "text-wrap": "Ngắt dòng văn bản",
     "catalog": "Danh mục",
-    "summary": "Tóm tắt",
-    "errors": "Lỗi",
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
     "draft": "Bản nháp",
@@ -275,7 +271,6 @@
     "description": "Đã phát hiện phiên bản lỗi thời. Vui lòng làm mới trang."
   },
   "task": {
-    "current-task": "Nhiệm vụ hiện tại",
     "checking": "Đang kiểm tra...",
     "check-result": {
       "title-general": "Kết quả kiểm tra"
@@ -304,13 +299,10 @@
       "pending": "Đang chờ",
       "not-started": "Chưa bắt đầu"
     },
-    "skip": "Bỏ qua",
     "task-checks": "Kiểm tra tác vụ",
     "prior-backup": "Sao lưu trước",
-    "skip-failed-in-current-stage": "Bỏ qua các tác vụ thất bại trong giai đoạn hiện tại",
     "execution-time": "Thời gian thực thi",
     "run-checks": "Chạy kiểm tra",
-    "action-all-tasks-in-current-stage": "{action} tất cả các tác vụ trong giai đoạn hiện tại",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
     "skip-task": "Bỏ qua nhiệm vụ | Bỏ qua nhiệm vụ",
     "run-task": "Chạy tác vụ | Chạy tác vụ",
@@ -353,10 +345,6 @@
       "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến."
     },
     "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn. Chỉ áp dụng cho thay đổi dữ liệu (UPDATE, DELETE), không áp dụng cho thay đổi cấu trúc.",
-    "database-create": {
-      "created": "Đã tạo",
-      "pending": "Đang chờ xử lý"
-    },
     "executed-by": "Được thực hiện bởi",
     "affected-rows": "Hàng bị ảnh hưởng",
     "type": {
@@ -961,15 +949,8 @@
       "modal": {
         "reopen": "Mở lại vấn đề?",
         "close": "Đóng vấn đề?"
-      },
-      "warning": {
-        "some-previous-stages-are-not-done": "Một số giai đoạn trước chưa được thực hiện."
-      },
-      "error": {
-        "some-tasks-are-still-running": "Một số tác vụ vẫn đang chạy"
       }
     },
-    "add-some-description": "Thêm mô tả...",
     "leave-a-comment": "Để lại bình luận...",
     "no-description-provided": "Không có mô tả nào được cung cấp",
     "comment-editor": {
@@ -1042,24 +1023,17 @@
       "creator": "Người tạo",
       "current-approver": "Người phê duyệt hiện tại"
     },
-    "stage-select": {
-      "current": "{name} (hiện tại)"
-    },
     "migration-mode": {
       "online": {
         "description": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ hàng giờ xuống còn vài giây {link}."
       }
     },
-    "new-issue": "@:common.new @:common.issue",
-    "action-to-current-stage": "{action} giai đoạn hiện tại",
     "upload-sql": "Tải lên SQL",
     "statement-from-sheet-warning": "Do kích thước SQL vượt quá, nó đã bị cắt bớt để hiển thị và chỉnh sửa bị vô hiệu hóa. Bạn có thể tải lên một tệp SQL mới để ghi đè nó.",
     "overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
     "upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
     "transaction-mode": {
       "label": "Chế độ giao dịch",
-      "on": "Bật",
-      "off": "Tắt",
       "on-tooltip": "Gói tất cả các câu lệnh trong một giao dịch duy nhất (BEGIN/COMMIT).",
       "off-tooltip": "Thực thi các câu lệnh riêng lẻ trong chế độ tự động commit. Các câu lệnh được commit ngay lập tức và không thể khôi phục nếu câu lệnh sau đó thất bại.",
       "execution-order-note": "Các câu lệnh không liên quan đến giao dịch sẽ được thực hiện cuối cùng."
@@ -1073,8 +1047,7 @@
       "close": "Đóng"
     },
     "approval-flow": {
-      "self": "Quy trình phê duyệt",
-      "pre-issue-created-tips": "Sau khi một vấn đề được tạo, Bytebase sẽ tự động khớp với phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của vấn đề."
+      "self": "Quy trình phê duyệt"
     },
     "risk-level": {
       "self": "Mức độ rủi ro",
@@ -1082,8 +1055,6 @@
       "moderate": "Trung bình",
       "high": "Cao"
     },
-    "awaiting-rollout": "Đang chờ triển khai",
-    "waiting-for-review": "Đang chờ xem xét",
     "issue-name": "Tên vấn đề",
     "grant-request": {
       "details": "Yêu cầu chi tiết",
@@ -1095,7 +1066,6 @@
       "custom-date": "Ngày tùy chỉnh",
       "custom-date-placeholder": "Chọn ngày và giờ hết hạn"
     },
-    "review-sent-back": "Đánh giá đã gửi lại",
     "action-anyway": "{action} bằng mọi cách",
     "sql-check": {
       "sql-checks": "Kiểm tra SQL",
@@ -1106,14 +1076,9 @@
       "sql-review-violations": "Vi phạm đánh giá SQL"
     },
     "error": {
-      "you-don-have-privilege-to-edit-this-issue": "Bạn không có quyền chỉnh sửa vấn đề này",
-      "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này",
-      "cannot-close-issue-with-running-tasks": "Không thể đóng vấn đề với các tác vụ đang chạy",
       "statement-cannot-be-modified": "Không thể sửa đổi câu lệnh sau khi vấn đề được tạo"
     },
     "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Hoàn tất\" nhưng một số tác vụ của nó không được thực hiện thành công.",
-    "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
-    "missing-sql-statement": "Thiếu câu lệnh SQL",
     "data-export": {
       "options": "Tùy chọn",
       "limits": "Giới hạn",
@@ -1161,11 +1126,8 @@
       "reject-description": "Gửi phản hồi và yêu cầu thay đổi"
     },
     "approval": {
-      "rejected-error": "Đã từ chối phê duyệt vấn đề.",
-      "pending-error": "Đang chờ phê duyệt vấn đề.",
       "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
-    },
-    "new-layout": "Bố cục CI/CD mới"
+    }
   },
   "plan": {
     "plans": "Kế hoạch",
@@ -1218,9 +1180,6 @@
     },
     "options": {
       "self": "Tùy chọn",
-      "applies-to-all-tasks": "Áp dụng cho tất cả các nhiệm vụ",
-      "applies-to-some-tasks": "Áp dụng cho một số tác vụ {count}/{total}",
-      "split-into-multiple-issues-tip": "Nếu bạn muốn cấu hình các tùy chọn khác nhau cho mỗi tác vụ, vui lòng chia thành nhiều vấn đề.",
       "no-options-available": "Không có tùy chọn nào khả dụng"
     },
     "editor": {
@@ -1258,9 +1217,7 @@
   "rollout": {
     "rollouts": "Triển khai",
     "bypass-stage-requirements": "Bỏ qua cảnh báo",
-    "task-execution-notices": "Thông báo thực hiện nhiệm vụ",
     "task-execution-errors": "Lỗi thực hiện tác vụ",
-    "no-active-task-to-cancel": "Không có tác vụ nào đang hoạt động để hủy.",
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "run-stage": "Chạy tác vụ",
@@ -2682,7 +2639,6 @@
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },
     "issue-review": {
-      "approve-issue": "Phê duyệt vấn đề?",
       "generating-approval-flow": "Đang tạo quy trình phê duyệt",
       "approved-issue": "đã phê duyệt vấn đề",
       "rejected-issue": "đã từ chối vấn đề",
@@ -2691,9 +2647,7 @@
         "some-task-checks-are-still-running": "Một số kiểm tra tác vụ vẫn đang chạy",
         "x-field-is-required": "{field} là bắt buộc"
       },
-      "send-back-issue": "Gửi lại vấn đề?",
       "re-request-review": "Yêu cầu xem xét lại",
-      "re-request-review-issue": "Yêu cầu xem xét lại vấn đề?",
       "re-request-review-success": "Yêu cầu xem xét lại đã được thực hiện thành công.",
       "re-requested-review": "đã yêu cầu xem xét lại vấn đề",
       "approved-by": "Được chấp thuận bởi",

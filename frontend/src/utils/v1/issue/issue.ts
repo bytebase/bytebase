@@ -1,20 +1,34 @@
+import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import slug from "slug";
 import { t } from "@/plugins/i18n";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-} from "@/router/dashboard/projectV1";
-import { type ComposedIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+  projectNamePrefix,
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useInstanceResourceByName,
+  useProjectV1Store,
+} from "@/store";
+import {
+  type ComposedDatabase,
+  type ComposedIssue,
+  EMPTY_ID,
+  isValidDatabaseName,
+  UNKNOWN_ID,
+  unknownDatabase,
+} from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  type Issue,
+  Issue_Type,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractProjectResourceName } from "../project";
-
-export const issueV1Slug = (name: string, title: string = "issue") => {
-  return [slug(title), extractIssueUID(name)].join("-");
-};
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { extractDatabaseResourceName, extractProjectResourceName } from "..";
 
 export const extractIssueUID = (name: string) => {
   const pattern = /(?:^|\/)issues\/(\d+)(?:$|\/)/;
@@ -103,89 +117,135 @@ export const generateIssueTitle = (
 };
 
 /**
- * Determines whether an issue should use the new CICD layout route.
+ * Gets the route name and params for an issue.
  *
- * Rules:
- * - Grant request issues: ALWAYS use new layout
- * - Create database issues: ALWAYS use new layout
- * - Data export issues: ALWAYS use new layout
- * - Issues without rollout: ALWAYS use new layout (legacy UI cannot display them)
- * - Database changing issues: Use new layout ONLY when enabledNewLayout is true
- */
-export const shouldUseNewIssueLayout = (
-  issue: { type?: Issue_Type; name?: string },
-  plan?: Plan,
-  enabledNewLayout = true
-): boolean => {
-  // Grant request issues always use new layout
-  if (issue.type === Issue_Type.GRANT_REQUEST) {
-    return true;
-  }
-
-  // Check if it's a create database or export data plan
-  if (plan?.specs) {
-    const isCreatingDatabasePlan = plan.specs.every(
-      (spec) => spec.config?.case === "createDatabaseConfig"
-    );
-    const isExportDataPlan = plan.specs.every(
-      (spec) => spec.config?.case === "exportDataConfig"
-    );
-
-    if (isCreatingDatabasePlan || isExportDataPlan) {
-      return true;
-    }
-  }
-
-  // Database export issue type always uses new layout
-  if (issue.type === Issue_Type.DATABASE_EXPORT) {
-    return true;
-  }
-
-  // Issues without rollout must use new layout (legacy UI cannot display them)
-  if (plan && plan.hasRollout === false) {
-    return true;
-  }
-
-  // For database changing issues, respect the layout preference
-  return enabledNewLayout;
-};
-
-/**
- * Gets the appropriate route name and params for an issue based on its type and layout settings.
- *
- * @param issue - The issue object (must have name, and optionally type)
- * @param plan - Optional plan object to check for create database or export data specs
- * @param enabledNewLayout - Whether the new layout is enabled (default: true)
+ * @param issue - The issue object (must have name)
  * @returns Route configuration with name and params
  */
-export const getIssueRoute = (
-  issue: { type?: Issue_Type; name: string; title?: string },
-  plan?: Plan,
-  enabledNewLayout = true
-): {
+export const getIssueRoute = (issue: {
   name: string;
-  params: { projectId: string; issueSlug?: string; issueId?: string };
+}): {
+  name: string;
+  params: { projectId: string; issueId: string };
 } => {
   const projectId = extractProjectResourceName(issue.name);
-  const useNewLayout = shouldUseNewIssueLayout(issue, plan, enabledNewLayout);
+  return {
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId,
+      issueId: extractIssueUID(issue.name),
+    },
+  };
+};
 
-  if (useNewLayout) {
-    // Use new CICD layout route with numeric issueId
-    return {
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-      params: {
-        projectId,
-        issueId: extractIssueUID(issue.name),
-      },
-    };
-  } else {
-    // Use legacy route with issueSlug
-    return {
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId,
-        issueSlug: issueV1Slug(issue.name, issue.title || "issue"),
-      },
-    };
+export const projectOfIssue = (issue: Issue): Project => {
+  return useProjectV1Store().getProjectByName(
+    `${projectNamePrefix}${extractProjectResourceName(issue.name)}`
+  );
+};
+
+export const isUnfinishedResolvedTask = (issue: ComposedIssue | undefined) => {
+  if (!issue) {
+    return false;
   }
+  if (!isValidIssueName(issue.name)) {
+    return false;
+  }
+  if (issue.status !== IssueStatus.DONE) {
+    return false;
+  }
+  return flattenTaskV1List(issue.rolloutEntity).some((task) => {
+    return ![Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
+  });
+};
+
+export const mockDatabase = (projectEntity: Project, database: string) => {
+  // Database not found, it's probably NOT_FOUND (maybe dropped actually)
+  // Mock a database using all known resources
+  const db = unknownDatabase();
+  db.project = projectEntity.name;
+
+  db.name = database;
+  const { instance, databaseName } = extractDatabaseResourceName(db.name);
+  db.databaseName = databaseName;
+  db.instance = instance;
+  const { instance: instanceFromStore } = useInstanceResourceByName(instance);
+  // Create InstanceResource from the instance data
+  const instanceData = instanceFromStore.value;
+  db.instanceResource = create(InstanceResourceSchema, {
+    name: instanceData.name,
+    engine: instanceData.engine,
+    title: instanceData.title,
+    activation: instanceData.activation ?? true,
+    dataSources: instanceData.dataSources ?? [],
+    environment: instanceData.environment,
+    engineVersion: instanceData.engineVersion ?? "",
+  });
+  db.environment = db.instanceResource.environment;
+  db.effectiveEnvironment = db.instanceResource.environment;
+  db.effectiveEnvironmentEntity = useEnvironmentV1Store().getEnvironmentByName(
+    db.instanceResource.environment ?? ""
+  );
+  db.state = State.DELETED;
+  return db;
+};
+
+export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
+  project: Project,
+  task: Task,
+  plan?: Plan
+) => {
+  const coreDatabaseInfo = (
+    instanceName: string,
+    databaseName: string
+  ): ComposedDatabase => {
+    const name = `${instanceName}/databases/${databaseName}`;
+    const maybeExistedDatabase = useDatabaseV1Store().getDatabaseByName(name);
+    if (isValidDatabaseName(maybeExistedDatabase.name)) {
+      return maybeExistedDatabase;
+    }
+
+    const environmentStore = useEnvironmentV1Store();
+    const { instance: instanceFromStore } =
+      useInstanceResourceByName(instanceName);
+    // Create InstanceResource from the instance data
+    const instanceData = instanceFromStore.value;
+    const instanceResource = create(InstanceResourceSchema, {
+      name: instanceData.name,
+      engine: instanceData.engine,
+      title: instanceData.title,
+      activation: instanceData.activation ?? true,
+      dataSources: instanceData.dataSources ?? [],
+      environment: instanceData.environment,
+      engineVersion: instanceData.engineVersion ?? "",
+    });
+    const effectiveEnvironmentEntity = environmentStore.getEnvironmentByName(
+      instanceResource.environment ?? ""
+    );
+    return {
+      ...unknownDatabase(),
+      name,
+      databaseName,
+      instance: instanceName,
+      project: project.name,
+      projectEntity: project,
+      effectiveEnvironment: instanceResource.environment,
+      effectiveEnvironmentEntity: effectiveEnvironmentEntity,
+      instanceResource,
+    };
+  };
+
+  if (task.payload?.case === "databaseCreate") {
+    const instance = task.target;
+    // Get database name from plan spec
+    const spec = plan?.specs?.find((s) => s.id === task.specId);
+    const createConfig =
+      spec?.config?.case === "createDatabaseConfig"
+        ? spec.config.value
+        : undefined;
+    const databaseName = createConfig?.database || "";
+    return coreDatabaseInfo(instance, databaseName);
+  }
+
+  return unknownDatabase();
 };

@@ -1,7 +1,5 @@
 import { last } from "lodash-es";
 import { useI18n } from "vue-i18n";
-import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1";
-import { mockDatabase } from "@/components/IssueV1/logic/utils";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import { useDatabaseV1Store } from "@/store";
 import {
@@ -25,7 +23,11 @@ import {
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { flattenTaskV1List } from "./issue";
+import {
+  extractCoreDatabaseInfoFromDatabaseCreateTask,
+  flattenTaskV1List,
+  mockDatabase,
+} from "./issue";
 
 export const extractPlanUIDFromRolloutName = (name: string) => {
   const pattern = /(?:^|\/)plans\/([^/]+)\/rollout(?:$|\/)/;

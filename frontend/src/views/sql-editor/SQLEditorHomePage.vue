@@ -70,11 +70,7 @@ import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
   useSQLEditorStore,
@@ -119,7 +115,6 @@ useEmitteryEventListener(
   editorEvents,
   "alter-schema",
   async ({ databaseName, schema, table }) => {
-    const { enabledNewLayout } = useIssueLayoutVersion();
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
     const exampleSQL = ["ALTER TABLE"];
     if (table) {
@@ -135,24 +130,15 @@ useEmitteryEventListener(
       databaseList: database.name,
       sql: exampleSQL.join(" "),
     };
-    const route = enabledNewLayout.value
-      ? router.resolve({
-          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(database.project),
-            planId: "create",
-            specId: "placeholder",
-          },
-          query,
-        })
-      : router.resolve({
-          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(database.project),
-            issueSlug: "create",
-          },
-          query,
-        });
+    const route = router.resolve({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(database.project),
+        planId: "create",
+        specId: "placeholder",
+      },
+      query,
+    });
     window.open(route.fullPath, "_blank");
   }
 );

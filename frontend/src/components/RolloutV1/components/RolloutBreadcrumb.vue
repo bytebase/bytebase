@@ -22,7 +22,7 @@ import { useI18n } from "vue-i18n";
 import { type RouteLocationRaw, RouterLink, useRoute } from "vue-router";
 import { usePlanContext } from "@/components/Plan/logic";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
@@ -96,7 +96,7 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     items.push({
       label: `${t("common.issue")} #${issueUID.value}`,
       route: {
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: { projectId: projectId.value, issueId: issueUID.value },
       },
       clickable: true,

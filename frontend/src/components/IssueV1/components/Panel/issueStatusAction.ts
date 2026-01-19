@@ -1,16 +1,8 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  flattenTaskV1List,
-  hasProjectPermissionV2,
-  isDatabaseDataExportIssue,
-  isGrantRequestIssue,
-} from "@/utils";
-import { projectOfIssue } from "..";
+import { isDatabaseDataExportIssue, isGrantRequestIssue } from "@/utils";
 
 export type IssueStatusAction = "CLOSE" | "REOPEN";
 
@@ -84,27 +76,4 @@ export const issueStatusActionButtonProps = (
         type: "default",
       };
   }
-};
-
-export const allowUserToApplyIssueStatusAction = (
-  issue: ComposedIssue,
-  action: IssueStatusAction
-): [boolean /** ok */, string /** reason */] => {
-  const user = useCurrentUserV1();
-  const project = projectOfIssue(issue);
-  // User does not have permission to update the issue and is not the creator of the issue.
-  if (
-    !hasProjectPermissionV2(project, "bb.issues.update") &&
-    extractUserId(issue.creator) !== user.value.email
-  ) {
-    return [false, t("issue.error.you-don-have-privilege-to-edit-this-issue")];
-  }
-  if (action === "CLOSE") {
-    const tasks = flattenTaskV1List(issue.rolloutEntity);
-    // The issue cannot be closed if some tasks are running.
-    if (tasks.some((task) => task.status === Task_Status.RUNNING)) {
-      return [false, t("issue.error.cannot-close-issue-with-running-tasks")];
-    }
-  }
-  return [true, ""];
 };

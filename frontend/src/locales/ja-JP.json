@@ -163,7 +163,6 @@
     "load-more": "もっと読み込む",
     "rows-per-page": "ページあたりの行数",
     "access-denied": "アクセスが拒否されました",
-    "restart": "再起動",
     "want-help": "ユーザーグループに参加する",
     "operation": "操作",
     "discard-changes": "変更をキャンセルする",
@@ -210,7 +209,6 @@
     "clear-filters": "フィルタをクリア",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
-    "force-verb": "フォース{verb}",
     "untitled": "名前のない",
     "missing-required-permission": "必要な権限がありません {permissions}",
     "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
@@ -238,8 +236,6 @@
     "title": "タイトル",
     "text-wrap": "テキストの折り返し",
     "catalog": "カタログ",
-    "summary": "まとめ",
-    "errors": "エラー",
     "removed": "削除されました",
     "submit": "提出する",
     "draft": "下書き",
@@ -275,7 +271,6 @@
     "description": "古いバージョンが検出されました。ページを更新してください。"
   },
   "task": {
-    "current-task": "現在のタスク",
     "checking": "検査中…",
     "check-result": {
       "title-general": "テスト結果"
@@ -304,13 +299,10 @@
       "pending": "保留中",
       "not-started": "開始されていません"
     },
-    "skip": "飛び越える",
     "task-checks": "タスクのチェック項目",
     "prior-backup": "影響を受けるデータの事前バックアップ",
-    "skip-failed-in-current-stage": "現在のステージで失敗したタスクをスキップします",
     "execution-time": "実行時間",
     "run-checks": "実行チェック",
-    "action-all-tasks-in-current-stage": "{action}現在のステージのすべてのタスク",
     "cancel-task": "タスクをキャンセルする",
     "skip-task": "タスクをスキップ | タスクをスキップ",
     "run-task": "タスクを実行 | タスクを実行",
@@ -353,10 +345,6 @@
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
     "prior-backup-tips": "影響を受けるデータを事前にバックアップします。データ変更（UPDATE、DELETE）のみに適用され、スキーマ変更には適用されません。",
-    "database-create": {
-      "created": "作成済み",
-      "pending": "保留中"
-    },
     "executed-by": "実行者",
     "affected-rows": "影響を受けた行数",
     "type": {
@@ -961,15 +949,8 @@
       "modal": {
         "reopen": "イシューを再開しますか?",
         "close": "問題を閉じますか?"
-      },
-      "warning": {
-        "some-previous-stages-are-not-done": "以前のステージの一部が完了していません。"
-      },
-      "error": {
-        "some-tasks-are-still-running": "一部のタスクはまだ実行中です"
       }
     },
-    "add-some-description": "説明を追加してください…",
     "leave-a-comment": "コメントを残す…",
     "no-description-provided": "説明なし",
     "comment-editor": {
@@ -1042,24 +1023,17 @@
       "creator": "作成者",
       "current-approver": "現在の承認者"
     },
-    "stage-select": {
-      "current": "{name} (現在)"
-    },
     "migration-mode": {
       "online": {
         "description": "gh-ostをベースにしています。大規模なテーブルの場合、テーブルのロック時間を数時間から数秒 {link} に短縮できます。"
       }
     },
-    "new-issue": "@:common.new@:common.issue",
-    "action-to-current-stage": "{action}現在の段階",
     "upload-sql": "SQLのアップロード",
     "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
     "overwrite-current-statement": "現在の SQL ステートメントを上書きする",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
     "transaction-mode": {
       "label": "トランザクションモード",
-      "on": "オン",
-      "off": "オフ",
       "on-tooltip": "すべてのステートメントを単一のトランザクション（BEGIN/COMMIT）でラップします。",
       "off-tooltip": "自動コミットモードで個別にステートメントを実行します。ステートメントは即座にコミットされ、後続のステートメントが失敗してもロールバックできません。",
       "execution-order-note": "非トランザクション ステートメントは最後に実行されます。"
@@ -1073,8 +1047,7 @@
       "close": "閉じる"
     },
     "approval-flow": {
-      "self": "承認の流れ",
-      "pre-issue-created-tips": "イシューが作成されると、システムはイシューのタイプとリスク レベルに基づいて、対応するカスタム承認を自動的に照合します。"
+      "self": "承認の流れ"
     },
     "risk-level": {
       "self": "リスクレベル",
@@ -1082,8 +1055,6 @@
       "moderate": "適度",
       "high": "高い"
     },
-    "awaiting-rollout": "リリース待ち",
-    "waiting-for-review": "モデレート済み",
     "issue-name": "イシュー名",
     "grant-request": {
       "details": "リクエストの詳細",
@@ -1095,7 +1066,6 @@
       "custom-date": "カスタム日付",
       "custom-date-placeholder": "有効期限と時刻を選択します"
     },
-    "review-sent-back": "レビューが返されました",
     "action-anyway": "まだ {action} が必要です",
     "sql-check": {
       "sql-checks": "SQLチェック項目",
@@ -1106,14 +1076,9 @@
       "sql-review-violations": "SQL監査ルール違反"
     },
     "error": {
-      "you-don-have-privilege-to-edit-this-issue": "このイシューを編集する権限がありません",
-      "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません",
-      "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません",
       "statement-cannot-be-modified": "問題の作成後にステートメントを変更することはできません"
     },
     "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
-    "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
-    "missing-sql-statement": "SQL ステートメントが欠落しています。",
     "data-export": {
       "options": "設定項目",
       "limits": "制限",
@@ -1161,11 +1126,8 @@
       "reject-description": "フィードバックを送信して変更をリクエストする"
     },
     "approval": {
-      "rejected-error": "問題の承認が拒否されました。",
-      "pending-error": "問題の承認が保留中です。",
       "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
-    },
-    "new-layout": "新しいCI/CDレイアウト"
+    }
   },
   "plan": {
     "plans": "予定",
@@ -1218,9 +1180,6 @@
     },
     "options": {
       "self": "オプション",
-      "applies-to-all-tasks": "すべてのタスクに適用",
-      "applies-to-some-tasks": "一部のタスクに適用されます {count}/{total}",
-      "split-into-multiple-issues-tip": "タスクごとに異なるオプションを設定する場合は、複数の問題に分割してください。",
       "no-options-available": "利用可能なオプションはありません"
     },
     "editor": {
@@ -1258,9 +1217,7 @@
   "rollout": {
     "rollouts": "ロールアウト",
     "bypass-stage-requirements": "バイパス警告",
-    "task-execution-notices": "タスク実行通知",
     "task-execution-errors": "タスク実行エラー",
-    "no-active-task-to-cancel": "キャンセルするアクティブなタスクはありません。",
     "stage": {
       "self": "ステージ | ステージ",
       "run-stage": "タスクを実行",
@@ -2682,7 +2639,6 @@
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     },
     "issue-review": {
-      "approve-issue": "イシューを承認しますか?",
       "generating-approval-flow": "承認フローが生成されています",
       "approved-issue": "イシューを承認する",
       "rejected-issue": "イシューを却下した",
@@ -2691,9 +2647,7 @@
         "some-task-checks-are-still-running": "確認すべき実行中のタスクがまだあります",
         "x-field-is-required": "{field}は必須です"
       },
-      "send-back-issue": "イシューを却下しますか?",
       "re-request-review": "再度承認をリクエストする",
-      "re-request-review-issue": "イシューの承認を再度リクエストしますか?",
       "re-request-review-success": "レビューの再リクエストが完了しました",
       "re-requested-review": "イシューの承認を再度リクエストします",
       "approved-by": "承認者",

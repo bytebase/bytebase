@@ -50,12 +50,12 @@ import { computed, reactive, ref } from "vue";
 import { TooltipButton } from "@/components/v2";
 import { refreshIssueList } from "@/store";
 import type { ComposedIssue } from "@/types";
-import type { IssueStatusAction } from "../logic";
+import { BatchIssueStatusActionPanel } from "./Panel";
+import type { IssueStatusAction } from "./Panel/issueStatusAction";
 import {
   getApplicableIssueStatusActionList,
   issueStatusActionDisplayName,
-} from "../logic";
-import { BatchIssueStatusActionPanel } from "./Panel";
+} from "./Panel/issueStatusAction";
 
 type LocalState = {
   isRequesting: boolean;
