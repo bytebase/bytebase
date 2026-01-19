@@ -443,17 +443,9 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					DatabaseName: database.DatabaseName,
 				})
 				if err == nil && dbMetadata != nil {
-					// Get previous SDL from latest revision
-					var previousUserSDL string
-					if len(revisions) > 0 {
-						// Get sheet statement from revision
-						sheetSha256 := revisions[0].Payload.SheetSha256
-						if sheetSha256 != "" {
-							if sheet, err := s.store.GetSheetFull(ctx, sheetSha256); err == nil {
-								previousUserSDL = sheet.Statement
-							}
-						}
-					}
+					// Get previous SDL from the database's release field (last applied release)
+					// Returns empty string if no previous release exists (initialization scenario)
+					previousUserSDL := getPreviousSDLForDatabase(ctx, s.store, database)
 
 					// Combine all SDL files into single text
 					var combinedCurrentSDL strings.Builder
@@ -463,7 +455,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					}
 
 					// Generate diff
-					schemaDiff, err := schema.GetSDLDiff(pengine, combinedCurrentSDL.String(), previousUserSDL, dbMetadata, nil)
+					schemaDiff, err := schema.GetSDLDiff(pengine, combinedCurrentSDL.String(), previousUserSDL, dbMetadata)
 					if err == nil {
 						// Filter out bbdataarchive schema changes for Postgres
 						schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
@@ -760,4 +752,52 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.
 		// For unsupported engines, return empty list (skip check)
 		return []statementTypeWithPosition{}, nil
 	}
+}
+
+// getPreviousSDLForDatabase retrieves the previous SDL text from the database's last applied release.
+// Returns empty string if no previous release exists or if there are any errors loading it.
+func getPreviousSDLForDatabase(ctx context.Context, s *store.Store, database *store.DatabaseMessage) string {
+	// Get the previous SDL text from the database's release field
+	if database.Metadata == nil || database.Metadata.Release == "" {
+		return ""
+	}
+
+	// Parse release name to get project ID and release ID
+	projectID, releaseID, err := common.GetProjectReleaseID(database.Metadata.Release)
+	if err != nil {
+		slog.Warn("Failed to parse release name, treating as initialization", "release", database.Metadata.Release, "error", err)
+		return ""
+	}
+
+	// Load the release
+	release, err := s.GetRelease(ctx, &store.FindReleaseMessage{
+		ProjectID: &projectID,
+		ReleaseID: &releaseID,
+	})
+	if err != nil {
+		slog.Warn("Failed to get release, treating as initialization", "project", projectID, "release", releaseID, "error", err)
+		return ""
+	}
+	if release == nil {
+		slog.Warn("Release not found, treating as initialization", "project", projectID, "release", releaseID)
+		return ""
+	}
+
+	// For SDL/declarative releases, combine all files
+	var combinedSDL strings.Builder
+	for _, file := range release.Payload.Files {
+		sheet, err := s.GetSheetFull(ctx, file.SheetSha256)
+		if err != nil {
+			slog.Warn("Failed to get sheet, treating as initialization", "sha256", file.SheetSha256, "error", err)
+			return ""
+		}
+		if sheet == nil {
+			slog.Warn("Sheet not found, treating as initialization", "sha256", file.SheetSha256)
+			return ""
+		}
+		combinedSDL.WriteString(sheet.Statement)
+		combinedSDL.WriteString("\n\n")
+	}
+
+	return combinedSDL.String()
 }

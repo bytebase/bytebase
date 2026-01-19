@@ -38,15 +38,22 @@ func TestArchiveProject(t *testing.T) {
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	t.Run("ArchiveProjectWithDatbase", func(_ *testing.T) {
+	t.Run("ArchiveProjectWithDatabase", func(_ *testing.T) {
 		databaseName := "db1"
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 		a.NoError(err)
 
+		// Archive (purge=false) should succeed even with databases
 		_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{
 			Name: ctl.project.Name,
 		}))
-		a.Error(err)
+		a.NoError(err)
+
+		// Restore the project for the next test
+		_, err = ctl.projectServiceClient.UndeleteProject(ctx, connect.NewRequest(&v1pb.UndeleteProjectRequest{
+			Name: ctl.project.Name,
+		}))
+		a.NoError(err)
 	})
 
 	t.Run("ArchiveProjectWithOpenIssue", func(_ *testing.T) {
@@ -79,9 +86,10 @@ func TestArchiveProject(t *testing.T) {
 		}))
 		a.NoError(err)
 
+		// Archive (purge=false) should succeed even with open issues
 		_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{
 			Name: ctl.project.Name,
 		}))
-		a.ErrorContains(err, "resolve all open issues before deleting the project")
+		a.NoError(err)
 	})
 }

@@ -18,7 +18,6 @@
           <div class="flex items-center gap-x-3 text-sm text-control-light">
             <div class="flex items-center gap-x-2">
               <ChangelogStatusIcon :status="changelog.status" />
-              <span>{{ getChangelogChangeType(changelog.type) }}</span>
             </div>
             <span v-if="formattedCreateTime">•</span>
             <span v-if="formattedCreateTime">
@@ -134,7 +133,6 @@ import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
-  Changelog_Type,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -142,7 +140,6 @@ import {
   extractProjectResourceName,
   wrapRefAsPromise,
 } from "@/utils";
-import { getChangelogChangeType } from "@/utils/v1/changelog";
 import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
@@ -221,7 +218,7 @@ const allowShowDiff = computed((): boolean => {
   if (!changelog.value) {
     return false;
   }
-  return changelog.value.type === Changelog_Type.MIGRATE;
+  return true;
 });
 
 // Get the previous changelog's schema as the "before" state for diff
@@ -247,10 +244,7 @@ const allowRollback = computed((): boolean => {
   ) {
     return false;
   }
-  return (
-    changelog.value.type === Changelog_Type.MIGRATE &&
-    changelog.value.status === Changelog_Status.DONE
-  );
+  return changelog.value.status === Changelog_Status.DONE;
 });
 
 // Only show task run logs for completed or failed changelogs
@@ -308,10 +302,8 @@ watch(
         state.previousChangelog = undefined;
       }
 
-      // Show diff by default for MIGRATE changelogs
-      if (changelog.value.type === Changelog_Type.MIGRATE) {
-        state.showDiff = true;
-      }
+      // Show diff by default for all changelogs
+      state.showDiff = true;
     }
 
     state.loading = false;

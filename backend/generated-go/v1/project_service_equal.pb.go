@@ -198,9 +198,6 @@ func (x *DeleteProjectRequest) Equal(y *DeleteProjectRequest) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Force != y.Force {
-		return false
-	}
 	if x.Purge != y.Purge {
 		return false
 	}
@@ -235,7 +232,7 @@ func (x *BatchDeleteProjectsRequest) Equal(y *BatchDeleteProjectsRequest) bool {
 			return false
 		}
 	}
-	if x.Force != y.Force {
+	if x.Purge != y.Purge {
 		return false
 	}
 	return true

@@ -2386,7 +2386,7 @@ CREATE TABLE table2 (
 	dbMetadata := model.NewDatabaseMetadata(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, dbMetadata, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbMetadata)
 	require.NoError(t, err)
 
 	// Generate migration SQL with topological sorting
@@ -2475,7 +2475,7 @@ SELECT id, info, created_at, updated_at FROM table_base;
 	dbMetadata := model.NewDatabaseMetadata(currentSchema, nil, nil, storepb.Engine_POSTGRES, false)
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, dbMetadata, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, dbMetadata)
 	require.NoError(t, err)
 
 	// Generate migration SQL with topological sorting

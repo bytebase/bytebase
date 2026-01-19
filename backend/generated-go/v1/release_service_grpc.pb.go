@@ -20,13 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ReleaseService_GetRelease_FullMethodName      = "/bytebase.v1.ReleaseService/GetRelease"
-	ReleaseService_ListReleases_FullMethodName    = "/bytebase.v1.ReleaseService/ListReleases"
-	ReleaseService_CreateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/CreateRelease"
-	ReleaseService_UpdateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/UpdateRelease"
-	ReleaseService_DeleteRelease_FullMethodName   = "/bytebase.v1.ReleaseService/DeleteRelease"
-	ReleaseService_UndeleteRelease_FullMethodName = "/bytebase.v1.ReleaseService/UndeleteRelease"
-	ReleaseService_CheckRelease_FullMethodName    = "/bytebase.v1.ReleaseService/CheckRelease"
+	ReleaseService_GetRelease_FullMethodName            = "/bytebase.v1.ReleaseService/GetRelease"
+	ReleaseService_ListReleases_FullMethodName          = "/bytebase.v1.ReleaseService/ListReleases"
+	ReleaseService_CreateRelease_FullMethodName         = "/bytebase.v1.ReleaseService/CreateRelease"
+	ReleaseService_UpdateRelease_FullMethodName         = "/bytebase.v1.ReleaseService/UpdateRelease"
+	ReleaseService_DeleteRelease_FullMethodName         = "/bytebase.v1.ReleaseService/DeleteRelease"
+	ReleaseService_UndeleteRelease_FullMethodName       = "/bytebase.v1.ReleaseService/UndeleteRelease"
+	ReleaseService_CheckRelease_FullMethodName          = "/bytebase.v1.ReleaseService/CheckRelease"
+	ReleaseService_ListReleaseCategories_FullMethodName = "/bytebase.v1.ReleaseService/ListReleaseCategories"
 )
 
 // ReleaseServiceClient is the client API for ReleaseService service.
@@ -57,6 +58,9 @@ type ReleaseServiceClient interface {
 	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(ctx context.Context, in *CheckReleaseRequest, opts ...grpc.CallOption) (*CheckReleaseResponse, error)
+	// Lists all unique categories in a project.
+	// Permissions required: bb.releases.list
+	ListReleaseCategories(ctx context.Context, in *ListReleaseCategoriesRequest, opts ...grpc.CallOption) (*ListReleaseCategoriesResponse, error)
 }
 
 type releaseServiceClient struct {
@@ -137,6 +141,16 @@ func (c *releaseServiceClient) CheckRelease(ctx context.Context, in *CheckReleas
 	return out, nil
 }
 
+func (c *releaseServiceClient) ListReleaseCategories(ctx context.Context, in *ListReleaseCategoriesRequest, opts ...grpc.CallOption) (*ListReleaseCategoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListReleaseCategoriesResponse)
+	err := c.cc.Invoke(ctx, ReleaseService_ListReleaseCategories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations must embed UnimplementedReleaseServiceServer
 // for forward compatibility.
@@ -165,6 +179,9 @@ type ReleaseServiceServer interface {
 	// Validates a release by dry-running checks on target databases.
 	// Permissions required: bb.releases.check
 	CheckRelease(context.Context, *CheckReleaseRequest) (*CheckReleaseResponse, error)
+	// Lists all unique categories in a project.
+	// Permissions required: bb.releases.list
+	ListReleaseCategories(context.Context, *ListReleaseCategoriesRequest) (*ListReleaseCategoriesResponse, error)
 	mustEmbedUnimplementedReleaseServiceServer()
 }
 
@@ -195,6 +212,9 @@ func (UnimplementedReleaseServiceServer) UndeleteRelease(context.Context, *Undel
 }
 func (UnimplementedReleaseServiceServer) CheckRelease(context.Context, *CheckReleaseRequest) (*CheckReleaseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckRelease not implemented")
+}
+func (UnimplementedReleaseServiceServer) ListReleaseCategories(context.Context, *ListReleaseCategoriesRequest) (*ListReleaseCategoriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListReleaseCategories not implemented")
 }
 func (UnimplementedReleaseServiceServer) mustEmbedUnimplementedReleaseServiceServer() {}
 func (UnimplementedReleaseServiceServer) testEmbeddedByValue()                        {}
@@ -343,6 +363,24 @@ func _ReleaseService_CheckRelease_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReleaseService_ListReleaseCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReleaseCategoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReleaseServiceServer).ListReleaseCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReleaseService_ListReleaseCategories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReleaseServiceServer).ListReleaseCategories(ctx, req.(*ListReleaseCategoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReleaseService_ServiceDesc is the grpc.ServiceDesc for ReleaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -377,6 +415,10 @@ var ReleaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckRelease",
 			Handler:    _ReleaseService_CheckRelease_Handler,
+		},
+		{
+			MethodName: "ListReleaseCategories",
+			Handler:    _ReleaseService_ListReleaseCategories_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

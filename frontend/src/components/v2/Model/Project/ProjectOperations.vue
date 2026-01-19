@@ -35,15 +35,8 @@
     @ok="handleBatchArchive"
     @cancel="state.showArchiveConfirm = false"
   >
-    <!-- Force Archive Option -->
+    <!-- Project List -->
     <div class="flex flex-col gap-y-3">
-      <NCheckbox v-model:checked="state.force">
-        <div class="text-sm font-normal text-control-light">
-          {{ $t("project.batch.force-archive-description") }}
-        </div>
-      </NCheckbox>
-
-      <!-- Project List -->
       <div class="max-h-40 overflow-y-auto border rounded-sm p-2 bg-gray-50">
         <div class="text-xs font-medium text-gray-600 mb-2">
           {{ $t("project.batch.projects-to-archive") }}:
@@ -89,7 +82,7 @@
 
 <script setup lang="tsx">
 import { ArchiveIcon, CheckIcon } from "lucide-vue-next";
-import { NAlert, NButton, NCheckbox } from "naive-ui";
+import { NAlert, NButton } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -109,7 +102,6 @@ interface Action {
 interface LocalState {
   loading: boolean;
   showArchiveConfirm: boolean;
-  force: boolean;
 }
 
 const props = defineProps<{
@@ -125,7 +117,6 @@ const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
   loading: false,
   showArchiveConfirm: false,
-  force: false,
 });
 
 // For now, we'll assume no projects have resources - this would need to be enhanced
@@ -159,8 +150,7 @@ const handleBatchArchive = async () => {
 
     // Use the batch delete API
     await projectStore.batchDeleteProjects(
-      props.projectList.map((p) => p.name),
-      state.force
+      props.projectList.map((p) => p.name)
     );
 
     pushNotification({
@@ -172,7 +162,6 @@ const handleBatchArchive = async () => {
     });
 
     state.showArchiveConfirm = false;
-    state.force = false;
     emit("update");
   } catch (error: unknown) {
     const err = error as { message?: string };

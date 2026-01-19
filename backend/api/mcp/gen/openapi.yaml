@@ -3883,6 +3883,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Release'
+  /bytebase.v1.ReleaseService/ListReleaseCategories:
+    post:
+      tags:
+        - bytebase.v1.ReleaseService
+      summary: 'Lists all unique categories in a project.  Permissions required: bb.releases.list'
+      description: |-
+        Lists all unique categories in a project.
+         Permissions required: bb.releases.list
+      operationId: bytebase.v1.ReleaseService.ListReleaseCategories
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListReleaseCategoriesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListReleaseCategoriesResponse'
   /bytebase.v1.ReleaseService/ListReleases:
     post:
       tags:
@@ -7013,14 +7051,16 @@ components:
           description: |-
             The names of the projects to delete.
              Format: projects/{project}
-        force:
+        purge:
           type: boolean
-          title: force
+          title: purge
           description: |-
-            If set to true, any databases from this project will be moved to default project.
-             Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-             Open issues will remain open but associated with the deleted project.
-             If set to false, the operation will fail if the project has databases or open issues.
+            If set to true, permanently purge the soft-deleted projects and all related resources.
+             This operation is irreversible. Following AIP-165, this should only be used for
+             administrative cleanup of old soft-deleted projects.
+             All projects must already be soft-deleted for this to work.
+             When purge=true, all databases will be moved to the default project before deletion.
+             When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged.
       title: BatchDeleteProjectsRequest
       additionalProperties: false
     bytebase.v1.BatchDeparseRequest:
@@ -7524,9 +7564,6 @@ components:
           description: |-
             The title of the plan associated with this changelog's task run.
              This field is populated by deriving the plan from task_run for display purposes.
-        type:
-          title: type
-          $ref: '#/components/schemas/bytebase.v1.Changelog.Type'
       title: Changelog
       additionalProperties: false
     bytebase.v1.Changelog.Status:
@@ -7537,14 +7574,6 @@ components:
         - PENDING
         - DONE
         - FAILED
-    bytebase.v1.Changelog.Type:
-      type: string
-      title: Type
-      enum:
-        - TYPE_UNSPECIFIED
-        - BASELINE
-        - MIGRATE
-        - SDL
     bytebase.v1.ChangelogView:
       type: string
       title: ChangelogView
@@ -8896,14 +8925,6 @@ components:
           description: |-
             The name of the project to delete.
              Format: projects/{project}
-        force:
-          type: boolean
-          title: force
-          description: |-
-            If set to true, any databases from this project will be moved to default project.
-             Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-             Open issues will remain open but associated with the deleted project.
-             If set to false, the operation will fail if the project has databases or open issues.
         purge:
           type: boolean
           title: purge
@@ -8912,6 +8933,8 @@ components:
              This operation is irreversible. Following AIP-165, this should only be used for
              administrative cleanup of old soft-deleted projects.
              The project must already be soft-deleted for this to work.
+             When purge=true, all databases will be moved to the default project before deletion.
+             When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
       title: DeleteProjectRequest
       additionalProperties: false
     bytebase.v1.DeleteReleaseRequest:
@@ -10948,12 +10971,10 @@ components:
 
              Supported filter:
              - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-             - type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
              - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 
              Example:
              status == "DONE"
-             type in ["BASELINE", "MIGRATE"]
              status == "FAILED" && type == "SDL"
              create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
       title: ListChangelogsRequest
@@ -11623,6 +11644,26 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListProjectsResponse
       additionalProperties: false
+    bytebase.v1.ListReleaseCategoriesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: 'Format: projects/{project}'
+      title: ListReleaseCategoriesRequest
+      additionalProperties: false
+    bytebase.v1.ListReleaseCategoriesResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+          title: categories
+          description: The unique category values in the project.
+      title: ListReleaseCategoriesResponse
+      additionalProperties: false
     bytebase.v1.ListReleasesRequest:
       type: object
       properties:
@@ -11651,6 +11692,18 @@ components:
           type: boolean
           title: show_deleted
           description: Show deleted releases if specified.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter releases returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filters:
+             - category: release category, support "==" operator.
+
+             For example:
+             category == "webapp"
       title: ListReleasesRequest
       additionalProperties: false
     bytebase.v1.ListReleasesResponse:
@@ -13668,6 +13721,12 @@ components:
           type: string
           title: name
           description: 'Format: projects/{project}/releases/{release}'
+        category:
+          type: string
+          title: category
+          description: |-
+            Category extracted from release name (e.g., "webapp", "analytics").
+             Set by Bytebase action during release creation.
         files:
           type: array
           items:

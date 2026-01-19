@@ -13,9 +13,6 @@ func (x *ChangelogPayload) Equal(y *ChangelogPayload) bool {
 	if x.TaskRun != y.TaskRun {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
 	if x.GitCommit != y.GitCommit {
 		return false
 	}

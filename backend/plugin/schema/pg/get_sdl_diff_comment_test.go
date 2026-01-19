@@ -106,7 +106,7 @@ COMMENT ON TABLE users IS 'Same comment';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -204,7 +204,7 @@ COMMENT ON COLUMN users.email IS 'Email address';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -246,7 +246,7 @@ COMMENT ON VIEW user_view IS 'User view description';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -285,7 +285,7 @@ COMMENT ON SEQUENCE user_id_seq IS 'User ID sequence';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -332,7 +332,7 @@ COMMENT ON FUNCTION add_numbers(INT, INT) IS 'Adds two numbers';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -386,7 +386,7 @@ COMMENT ON COLUMN users.name IS 'User name';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -439,7 +439,7 @@ COMMENT ON COLUMN users.name IS 'User name';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -504,7 +504,7 @@ COMMENT ON COLUMN users.name IS 'New name';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -545,7 +545,7 @@ COMMENT ON TABLE users IS 'New comment';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -596,7 +596,7 @@ Line 2';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -651,7 +651,7 @@ COMMENT ON COLUMN myschema.users.name IS 'User name';`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 

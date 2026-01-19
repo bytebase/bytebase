@@ -290,7 +290,7 @@ CREATE TABLE "public"."users" (
 );`
 
 		// Get SDL diff (simulates bb rollout initialization)
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -338,7 +338,7 @@ CREATE TABLE "public"."users" (
 );`
 
 		// Get SDL diff (simulates bb rollout behavior)
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -385,7 +385,7 @@ CREATE TABLE "public"."users" (
 );`
 
 		// Get SDL diff
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -416,7 +416,7 @@ CREATE TABLE "public"."users" (
 		currentSDL := `CREATE EXTENSION IF NOT EXISTS "uuid-ossp" VERSION '1.1';`
 
 		// Get SDL diff
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
@@ -455,7 +455,7 @@ func TestExtensionCommentChanges(t *testing.T) {
 COMMENT ON EXTENSION "uuid-ossp" IS 'UUID generation functions';`
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -515,7 +515,7 @@ CREATE TABLE "public"."email_addresses" (
 );`
 
 	// Get SDL diff
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -630,7 +630,7 @@ func TestExtensionRoundtripNoDiff(t *testing.T) {
 		// STEP 3: Compare user SDL (previous) vs dumped SDL (current)
 		// This is what happens in bb rollout when user doesn't change anything
 		// Pass currentSchema so usability check can work
-		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema, nil)
+		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema)
 		require.NoError(t, err)
 
 		// CRITICAL: There should be NO extension changes!
@@ -672,7 +672,7 @@ func TestExtensionRoundtripNoDiff(t *testing.T) {
 		dumpedSDL, err := getSDLFormat(metadata)
 		require.NoError(t, err)
 
-		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema, nil)
+		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema)
 		require.NoError(t, err)
 
 		require.Equal(t, 0, len(diff.ExtensionChanges), "No changes for extension with version")
@@ -699,7 +699,7 @@ COMMENT ON EXTENSION "citext" IS 'Case-insensitive text type';`
 		dumpedSDL, err := getSDLFormat(metadata)
 		require.NoError(t, err)
 
-		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema, nil)
+		diff, err := GetSDLDiff(dumpedSDL, userSDL, currentSchema)
 		require.NoError(t, err)
 
 		require.Equal(t, 0, len(diff.ExtensionChanges), "No changes for extension with comment")

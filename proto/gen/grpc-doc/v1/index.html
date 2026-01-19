@@ -1096,10 +1096,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Changelog.Type"><span class="badge">E</span>Changelog.Type</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ChangelogView"><span class="badge">E</span>ChangelogView</a>
                 </li>
               
@@ -1928,6 +1924,14 @@
               
                 <li>
                   <a href="#bytebase.v1.GetReleaseRequest"><span class="badge">M</span>GetReleaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReleaseCategoriesRequest"><span class="badge">M</span>ListReleaseCategoriesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReleaseCategoriesResponse"><span class="badge">M</span>ListReleaseCategoriesResponse</a>
                 </li>
               
                 <li>
@@ -9627,13 +9631,6 @@ A maximum of 1000 databases can be modified in a batch. </p></td>
 This field is populated by deriving the plan from task_run for display purposes. </p></td>
                 </tr>
               
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.Changelog.Type">Changelog.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -11181,12 +11178,10 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values.
-- type: the changelog type, support &#34;in&#34; and &#34;==&#34; operation. check Changelog.Type for available values.
 - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 
 Example:
 status == &#34;DONE&#34;
-type in [&#34;BASELINE&#34;, &#34;MIGRATE&#34;]
 status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34;
 create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; </p></td>
                 </tr>
@@ -12659,41 +12654,6 @@ In this situation, `update_mask` is ignored. </p></td>
             
               <tr>
                 <td>FAILED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.Changelog.Type">Changelog.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BASELINE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SDL</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -20398,13 +20358,15 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>force</td>
+                  <td>purge</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If set to true, any databases from this project will be moved to default project.
-Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-Open issues will remain open but associated with the deleted project.
-If set to false, the operation will fail if the project has databases or open issues. </p></td>
+                  <td><p>If set to true, permanently purge the soft-deleted projects and all related resources.
+This operation is irreversible. Following AIP-165, this should only be used for
+administrative cleanup of old soft-deleted projects.
+All projects must already be soft-deleted for this to work.
+When purge=true, all databases will be moved to the default project before deletion.
+When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged. </p></td>
                 </tr>
               
             </tbody>
@@ -20517,23 +20479,15 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>force</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, any databases from this project will be moved to default project.
-Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-Open issues will remain open but associated with the deleted project.
-If set to false, the operation will fail if the project has databases or open issues. </p></td>
-                </tr>
-              
-                <tr>
                   <td>purge</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set to true, permanently purge the soft-deleted project and all related resources.
 This operation is irreversible. Following AIP-165, this should only be used for
 administrative cleanup of old soft-deleted projects.
-The project must already be soft-deleted for this to work. </p></td>
+The project must already be soft-deleted for this to work.
+When purge=true, all databases will be moved to the default project before deletion.
+When purge=false (soft delete/archive), the project and its databases/issues remain unchanged. </p></td>
                 </tr>
               
             </tbody>
@@ -21889,6 +21843,54 @@ Format: projects/{project}/releases/{release} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListReleaseCategoriesRequest">ListReleaseCategoriesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReleaseCategoriesResponse">ListReleaseCategoriesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>categories</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The unique category values in the project. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListReleasesRequest">ListReleasesRequest</h3>
         <p></p>
 
@@ -21931,6 +21933,20 @@ the call that provided the page token. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Show deleted releases if specified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter releases returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters:
+- category: release category, support &#34;==&#34; operator.
+
+For example:
+category == &#34;webapp&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -21987,6 +22003,14 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/releases/{release} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>category</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Category extracted from release name (e.g., &#34;webapp&#34;, &#34;analytics&#34;).
+Set by Bytebase action during release creation. </p></td>
                 </tr>
               
                 <tr>
@@ -22288,6 +22312,14 @@ Permissions required: bb.releases.undelete</p></td>
 Permissions required: bb.releases.check</p></td>
               </tr>
             
+              <tr>
+                <td>ListReleaseCategories</td>
+                <td><a href="#bytebase.v1.ListReleaseCategoriesRequest">ListReleaseCategoriesRequest</a></td>
+                <td><a href="#bytebase.v1.ListReleaseCategoriesResponse">ListReleaseCategoriesResponse</a></td>
+                <td><p>Lists all unique categories in a project.
+Permissions required: bb.releases.list</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -22373,6 +22405,16 @@ Permissions required: bb.releases.check</p></td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/releases:check</td>
                 <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListReleaseCategories</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/releases:listCategories</td>
+                <td></td>
               </tr>
               
             

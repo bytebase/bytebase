@@ -11,14 +11,13 @@ import (
 
 func TestParseChangelogFilter(t *testing.T) {
 	tests := []struct {
-		name         string
-		filter       string
-		wantStatus   *store.ChangelogStatus
-		wantTypeList []string
-		wantAfter    *time.Time
-		wantBefore   *time.Time
-		wantErr      bool
-		errContains  string
+		name        string
+		filter      string
+		wantStatus  *store.ChangelogStatus
+		wantAfter   *time.Time
+		wantBefore  *time.Time
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name:   "empty filter",
@@ -28,16 +27,6 @@ func TestParseChangelogFilter(t *testing.T) {
 			name:       "status filter",
 			filter:     `status == "DONE"`,
 			wantStatus: ptr(store.ChangelogStatusDone),
-		},
-		{
-			name:         "type filter with equals",
-			filter:       `type == "MIGRATE"`,
-			wantTypeList: []string{"MIGRATE"},
-		},
-		{
-			name:         "type filter with in",
-			filter:       `type in ["BASELINE", "MIGRATE"]`,
-			wantTypeList: []string{"BASELINE", "MIGRATE"},
 		},
 		{
 			name:      "create_time greater than or equal",
@@ -60,12 +49,6 @@ func TestParseChangelogFilter(t *testing.T) {
 			filter:     `status == "DONE" && create_time >= "2024-01-01T00:00:00Z"`,
 			wantStatus: ptr(store.ChangelogStatusDone),
 			wantAfter:  ptr(mustParseTime(t, "2024-01-01T00:00:00Z")),
-		},
-		{
-			name:         "combined type and time filter",
-			filter:       `type in ["BASELINE", "MIGRATE"] && create_time <= "2024-12-31T23:59:59Z"`,
-			wantTypeList: []string{"BASELINE", "MIGRATE"},
-			wantBefore:   ptr(mustParseTime(t, "2024-12-31T23:59:59Z")),
 		},
 		{
 			name:        "invalid time format",
@@ -110,9 +93,6 @@ func TestParseChangelogFilter(t *testing.T) {
 			if tt.wantStatus != nil {
 				require.NotNil(t, find.Status)
 				require.Equal(t, *tt.wantStatus, *find.Status)
-			}
-			if tt.wantTypeList != nil {
-				require.Equal(t, tt.wantTypeList, find.TypeList)
 			}
 			if tt.wantAfter != nil {
 				require.NotNil(t, find.CreatedAtAfter)

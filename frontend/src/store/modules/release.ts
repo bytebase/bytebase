@@ -27,13 +27,15 @@ export const useReleaseStore = defineStore("release", () => {
   const fetchReleasesByProject = async (
     project: string,
     pagination?: Pagination,
-    showDeleted?: boolean
+    showDeleted?: boolean,
+    filter?: string
   ) => {
     const request = create(ListReleasesRequestSchema, {
       parent: project,
       pageSize: pagination?.pageSize,
       pageToken: pagination?.pageToken || "",
       showDeleted: Boolean(showDeleted),
+      filter: filter || "",
     });
     const resp = await releaseServiceClientConnect.listReleases(request);
     const releases = resp.releases;

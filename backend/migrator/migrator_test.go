@@ -12,8 +12,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.15.0"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.15/0002##move_maximum_result_size_to_workspace_profile.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.15.3"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.15/0003##move_maximum_result_size_to_workspace_profile.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {

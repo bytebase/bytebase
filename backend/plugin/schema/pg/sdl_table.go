@@ -10,7 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema, previousSchema *model.DatabaseMetadata, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) error {
+func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, currentSchema *model.DatabaseMetadata, currentDBSDLChunks *currentDatabaseSDLChunks, diff *schema.MetadataDiff) error {
 	// Process current table chunks to find created and modified tables
 	for _, currentChunk := range currentChunks.Tables {
 		schemaName, tableName := parseIdentifier(currentChunk.Identifier)
@@ -34,7 +34,7 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 					return errors.Errorf("expected CreatestmtContext for current table %s", currentChunk.Identifier)
 				}
 
-				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, previousSchema, currentDBSDLChunks, currentChunk.Identifier)
+				columnChanges := processColumnChanges(oldASTNode, newASTNode, currentSchema, currentDBSDLChunks, currentChunk.Identifier)
 				foreignKeyChanges := processForeignKeyChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 				checkConstraintChanges := processCheckConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
 				excludeConstraintChanges := processExcludeConstraintChanges(oldASTNode, newASTNode, currentDBSDLChunks, currentChunk.Identifier)
@@ -169,13 +169,13 @@ func processTableChanges(currentChunks, previousChunks *schema.SDLChunks, curren
 // processColumnChanges analyzes column changes between old and new table definitions
 // Following the same pattern as processTableChanges: compare text first, then analyze differences
 // If schemas are nil, operates in AST-only mode without metadata extraction
-func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema, previousSchema *model.DatabaseMetadata, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ColumnDiff {
+func processColumnChanges(oldTable, newTable *parser.CreatestmtContext, currentSchema *model.DatabaseMetadata, currentDBSDLChunks *currentDatabaseSDLChunks, tableIdentifier string) []*schema.ColumnDiff {
 	if oldTable == nil || newTable == nil {
 		return []*schema.ColumnDiff{}
 	}
 
 	// Detect AST-only mode: when both schemas are nil, operate without metadata extraction
-	astOnlyMode := currentSchema == nil && previousSchema == nil
+	astOnlyMode := currentSchema == nil
 
 	// Step 1: Extract all column definitions with their AST nodes for text comparison
 	oldColumns := extractColumnDefinitionsWithAST(oldTable)

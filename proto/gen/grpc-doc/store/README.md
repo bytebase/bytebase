@@ -38,8 +38,6 @@
 - [store/changelog.proto](#store_changelog-proto)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
   
-    - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
-  
 - [store/database.proto](#store_database-proto)
     - [BoundingBox](#bytebase-store-BoundingBox)
     - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
@@ -809,7 +807,6 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
 
 
@@ -817,20 +814,6 @@ Metadata about the request.
 
 
  
-
-
-<a name="bytebase-store-ChangelogPayload-Type"></a>
-
-### ChangelogPayload.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 |  |
-| MIGRATE | 2 |  |
-| SDL | 3 |  |
-
 
  
 

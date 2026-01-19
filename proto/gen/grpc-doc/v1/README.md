@@ -242,7 +242,6 @@
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
-    - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
@@ -460,6 +459,8 @@
     - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
     - [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest)
     - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
+    - [ListReleaseCategoriesRequest](#bytebase-v1-ListReleaseCategoriesRequest)
+    - [ListReleaseCategoriesResponse](#bytebase-v1-ListReleaseCategoriesResponse)
     - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
     - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
     - [Release](#bytebase-v1-Release)
@@ -3282,7 +3283,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | schema_size | [int64](#int64) |  |  |
 | task_run | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | plan_title | [string](#string) |  | The title of the plan associated with this changelog&#39;s task run. This field is populated by deriving the plan from task_run for display purposes. |
-| type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 
 
@@ -3856,9 +3856,9 @@ When paginating, all other parameters provided must match the call that provided
 | view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
 | filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - type: the changelog type, support &#34;in&#34; and &#34;==&#34; operation. check Changelog.Type for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 
-Example: status == &#34;DONE&#34; type in [&#34;BASELINE&#34;, &#34;MIGRATE&#34;] status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
+Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
 
 
 
@@ -4311,20 +4311,6 @@ ViewMetadata is the metadata for views.
 | PENDING | 1 |  |
 | DONE | 2 |  |
 | FAILED | 3 |  |
-
-
-
-<a name="bytebase-v1-Changelog-Type"></a>
-
-### Changelog.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 |  |
-| MIGRATE | 2 |  |
-| SDL | 3 |  |
 
 
 
@@ -7113,7 +7099,7 @@ Activity types for webhook notifications.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | names | [string](#string) | repeated | The names of the projects to delete. Format: projects/{project} |
-| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted projects and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted projects. All projects must already be soft-deleted for this to work. When purge=true, all databases will be moved to the default project before deletion. When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged. |
 
 
 
@@ -7177,8 +7163,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the project to delete. Format: projects/{project} |
-| force | [bool](#bool) |  | If set to true, any databases from this project will be moved to default project. Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project. Open issues will remain open but associated with the deleted project. If set to false, the operation will fail if the project has databases or open issues. |
-| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted project and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted projects. The project must already be soft-deleted for this to work. |
+| purge | [bool](#bool) |  | If set to true, permanently purge the soft-deleted project and all related resources. This operation is irreversible. Following AIP-165, this should only be used for administrative cleanup of old soft-deleted projects. The project must already be soft-deleted for this to work. When purge=true, all databases will be moved to the default project before deletion. When purge=false (soft delete/archive), the project and its databases/issues remain unchanged. |
 
 
 
@@ -7634,6 +7619,36 @@ Check result for a single release file on a target database.
 
 
 
+<a name="bytebase-v1-ListReleaseCategoriesRequest"></a>
+
+### ListReleaseCategoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListReleaseCategoriesResponse"></a>
+
+### ListReleaseCategoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| categories | [string](#string) | repeated | The unique category values in the project. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListReleasesRequest"></a>
 
 ### ListReleasesRequest
@@ -7648,6 +7663,11 @@ Check result for a single release file on a target database.
 
 When paginating, all other parameters provided to `ListReleases` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted releases if specified. |
+| filter | [string](#string) |  | Filter is used to filter releases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - category: release category, support &#34;==&#34; operator.
+
+For example: category == &#34;webapp&#34; |
 
 
 
@@ -7679,6 +7699,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| category | [string](#string) |  | Category extracted from release name (e.g., &#34;webapp&#34;, &#34;analytics&#34;). Set by Bytebase action during release creation. |
 | files | [Release.File](#bytebase-v1-Release-File) | repeated | The SQL files included in the release. |
 | vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  | The version control source of the release. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
@@ -7793,6 +7814,7 @@ ReleaseService manages releases for coordinating deployments.
 | DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a release. Permissions required: bb.releases.delete |
 | UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) | Restores a deleted release. Permissions required: bb.releases.undelete |
 | CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) | Validates a release by dry-running checks on target databases. Permissions required: bb.releases.check |
+| ListReleaseCategories | [ListReleaseCategoriesRequest](#bytebase-v1-ListReleaseCategoriesRequest) | [ListReleaseCategoriesResponse](#bytebase-v1-ListReleaseCategoriesResponse) | Lists all unique categories in a project. Permissions required: bb.releases.list |
 
  
 

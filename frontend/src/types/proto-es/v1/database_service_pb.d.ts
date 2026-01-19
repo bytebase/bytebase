@@ -2944,12 +2944,10 @@ export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsR
    *
    * Supported filter:
    * - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-   * - type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
    * - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    *
    * Example:
    * status == "DONE"
-   * type in ["BASELINE", "MIGRATE"]
    * status == "FAILED" && type == "SDL"
    * create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
    *
@@ -3059,11 +3057,6 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * @generated from field: string plan_title = 15;
    */
   planTitle: string;
-
-  /**
-   * @generated from field: bytebase.v1.Changelog.Type type = 14;
-   */
-  type: Changelog_Type;
 };
 
 /**
@@ -3101,36 +3094,6 @@ export enum Changelog_Status {
  * Describes the enum bytebase.v1.Changelog.Status.
  */
 export declare const Changelog_StatusSchema: GenEnum<Changelog_Status>;
-
-/**
- * @generated from enum bytebase.v1.Changelog.Type
- */
-export enum Changelog_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: BASELINE = 1;
-   */
-  BASELINE = 1,
-
-  /**
-   * @generated from enum value: MIGRATE = 2;
-   */
-  MIGRATE = 2,
-
-  /**
-   * @generated from enum value: SDL = 3;
-   */
-  SDL = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Changelog.Type.
- */
-export declare const Changelog_TypeSchema: GenEnum<Changelog_Type>;
 
 /**
  * @generated from message bytebase.v1.GetSchemaStringRequest

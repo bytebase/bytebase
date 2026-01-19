@@ -7,6 +7,9 @@ import (
 	"slices"
 
 	"connectrpc.com/connect"
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -101,6 +104,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	releaseMessage := &store.ReleaseMessage{
 		ProjectID: project.ResourceID,
 		Train:     req.Msg.Train,
+		Category:  req.Msg.Release.Category,
 		Payload: &storepb.ReleasePayload{
 			VcsSource: convertReleaseVcsSource(req.Msg.Release.VcsSource),
 			Type:      storepb.SchemaChangeType(req.Msg.Release.Type),
@@ -194,6 +198,17 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 		ShowDeleted: req.Msg.ShowDeleted,
 	}
 
+	// Parse filter for category
+	if req.Msg.Filter != "" {
+		category, err := parseCategoryFilter(req.Msg.Filter)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid filter"))
+		}
+		if category != "" {
+			releaseFind.Category = &category
+		}
+	}
+
 	releaseMessages, err := s.store.ListReleases(ctx, releaseFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list releases"))
@@ -284,6 +299,7 @@ func convertToReleases(releases []*store.ReleaseMessage) []*v1pb.Release {
 func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	r := &v1pb.Release{
 		Name:       common.FormatReleaseName(release.ProjectID, release.ReleaseID),
+		Category:   release.Category,
 		Creator:    common.FormatUserEmail(release.Creator),
 		CreateTime: timestamppb.New(release.At),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
@@ -416,4 +432,79 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 			}
 		}
 	}), nil
+}
+
+func (s *ReleaseService) ListReleaseCategories(ctx context.Context, req *connect.Request[v1pb.ListReleaseCategoriesRequest]) (*connect.Response[v1pb.ListReleaseCategoriesResponse], error) {
+	projectID, err := common.GetProjectID(req.Msg.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
+	}
+
+	categories, err := s.store.ListReleaseCategories(ctx, project.ResourceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list release categories"))
+	}
+
+	return connect.NewResponse(&v1pb.ListReleaseCategoriesResponse{
+		Categories: categories,
+	}), nil
+}
+
+// parseCategoryFilter parses CEL filter expression and extracts the category value.
+// Supports: category == "value"
+func parseCategoryFilter(filter string) (string, error) {
+	if filter == "" {
+		return "", nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create CEL environment")
+	}
+
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return "", errors.Errorf("failed to parse filter: %v", iss.String())
+	}
+
+	category, err := extractCategoryFromExpr(ast.NativeRep().Expr())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to extract category")
+	}
+
+	return category, nil
+}
+
+// extractCategoryFromExpr walks the CEL AST to extract the category value.
+func extractCategoryFromExpr(expr celast.Expr) (string, error) {
+	switch expr.Kind() {
+	case celast.CallKind:
+		call := expr.AsCall()
+		functionName := call.FunctionName()
+
+		// Handle: category == "value"
+		if functionName == celoperators.Equals {
+			variable, value := getVariableAndValueFromExpr(expr)
+			if variable == "category" {
+				if categoryValue, ok := value.(string); ok {
+					return categoryValue, nil
+				}
+				return "", errors.Errorf("category value must be a string, got %T", value)
+			}
+			return "", errors.Errorf("unsupported filter variable: %s", variable)
+		}
+
+		return "", errors.Errorf("unsupported operator: %s (only '==' is supported)", functionName)
+
+	default:
+		return "", errors.Errorf("unsupported expression type")
+	}
 }

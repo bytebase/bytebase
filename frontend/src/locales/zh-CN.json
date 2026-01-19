@@ -41,6 +41,7 @@
     "environment-name": "环境名",
     "archive": "归档",
     "archived": "已归档",
+    "restored": "Restored",
     "no-license": "无证书",
     "logout": "登出",
     "close": "关闭",
@@ -203,6 +204,7 @@
     "info": "信息",
     "minutes": "分钟",
     "filter-by-name": "按名称过滤",
+    "clear-filters": "清除过滤",
     "license": "证书",
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
@@ -215,7 +217,6 @@
     "resource-not-found": "未找到请求的资源",
     "continue-anyway": "仍要继续",
     "permissions": "权限",
-    "baseline": "基线",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
     "connection": "连接",
@@ -254,7 +255,14 @@
     "line": "行",
     "column": "列",
     "apply-to-database": "应用到数据库",
-    "unlimited": "无限制"
+    "unlimited": "无限制",
+    "danger-zone": "Danger Zone",
+    "archive-resource": "Archive {type}",
+    "delete-resource": "Delete {type}",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "archive-description": "Mark \"{name}\" as archived and read-only.",
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1638,10 +1646,6 @@
   "changelog": {
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
-    "change-type": "类型",
-    "type": {
-      "migrate": "变更"
-    },
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "show-diff": "显示差异",
     "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
@@ -1930,7 +1934,9 @@
       "project-labels": {
         "self": "项目标签",
         "description": "用键值标签组织项目（最多64个）"
-      }
+      },
+      "confirm-archive-project": "Archiving \"{name}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
+      "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone."
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
@@ -1962,7 +1968,6 @@
         "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
         "error": "无法存档项目"
       },
-      "force-archive-description": "即使项目有数据库也强制存档（数据库将被移动到默认项目）",
       "projects-to-archive": "要存档的项目",
       "resource-warning": {
         "title": "项目与资源",
@@ -2822,7 +2827,8 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
+    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
+    "filter-by-category": "按类别过滤"
   },
   "export-data": {
     "export-rows": "导出行数",

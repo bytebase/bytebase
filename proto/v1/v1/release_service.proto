@@ -87,6 +87,15 @@ service ReleaseService {
     option (bytebase.v1.permission) = "bb.releases.check";
     option (bytebase.v1.auth_method) = IAM;
   }
+
+  // Lists all unique categories in a project.
+  // Permissions required: bb.releases.list
+  rpc ListReleaseCategories(ListReleaseCategoriesRequest) returns (ListReleaseCategoriesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/releases:listCategories"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.releases.list";
+    option (bytebase.v1.auth_method) = IAM;
+  }
 }
 
 message GetReleaseRequest {
@@ -118,6 +127,16 @@ message ListReleasesRequest {
 
   // Show deleted releases if specified.
   bool show_deleted = 4;
+
+  // Filter is used to filter releases returned in the list.
+  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+  //
+  // Supported filters:
+  // - category: release category, support "==" operator.
+  //
+  // For example:
+  // category == "webapp"
+  string filter = 5;
 }
 
 message ListReleasesResponse {
@@ -224,6 +243,19 @@ message CheckReleaseResponse {
   RiskLevel risk_level = 3;
 }
 
+message ListReleaseCategoriesRequest {
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+}
+
+message ListReleaseCategoriesResponse {
+  // The unique category values in the project.
+  repeated string categories = 1;
+}
+
 message Release {
   option (google.api.resource) = {
     type: "bytebase.com/Release"
@@ -232,6 +264,10 @@ message Release {
 
   // Format: projects/{project}/releases/{release}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Category extracted from release name (e.g., "webapp", "analytics").
+  // Set by Bytebase action during release creation.
+  string category = 2;
 
   // The SQL files included in the release.
   repeated File files = 3;

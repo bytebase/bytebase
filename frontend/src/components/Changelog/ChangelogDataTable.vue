@@ -20,11 +20,8 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
-import {
-  Changelog_Status,
-  Changelog_Type,
-} from "@/types/proto-es/v1/database_service_pb";
-import { changelogLink, getChangelogChangeType } from "@/utils/v1/changelog";
+import { Changelog_Status } from "@/types/proto-es/v1/database_service_pb";
+import { changelogLink } from "@/utils/v1/changelog";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
@@ -93,13 +90,6 @@ const columnList = computed(() => {
       },
       render: (changelog) => changelog.planTitle || "-",
     },
-    {
-      key: "type",
-      title: t("changelog.change-type"),
-      width: 120,
-      resizable: true,
-      render: (changelog) => getChangelogChangeType(changelog.type),
-    },
   ];
   return columns.filter((col) => !col.hide);
 });
@@ -123,11 +113,6 @@ const rowProps = (changelog: Changelog) => {
 };
 
 const allowToSelectChangelog = (changelog: Changelog) => {
-  return (
-    changelog.status === Changelog_Status.DONE &&
-    (changelog.type === Changelog_Type.BASELINE ||
-      changelog.type === Changelog_Type.MIGRATE ||
-      changelog.type === Changelog_Type.SDL)
-  );
+  return changelog.status === Changelog_Status.DONE;
 };
 </script>

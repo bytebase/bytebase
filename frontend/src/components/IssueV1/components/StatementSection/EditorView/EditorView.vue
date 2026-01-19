@@ -287,7 +287,6 @@ const allowEditStatementWhenCreating = computed(() => {
 /**
  * to set the MonacoEditor as readonly
  * This happens when
- * - BASELINE issue
  * - Not in edit mode
  * - Disallowed to edit statement
  */

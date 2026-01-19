@@ -137,7 +137,7 @@ CREATE TABLE table_c (id INTEGER PRIMARY KEY);
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Step 1: Get SDL diff using AST-only mode (no metadata extraction)
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -203,7 +203,7 @@ func TestTableMigrationASTOnlyModeValidation(t *testing.T) {
 	`
 
 	// Get diff without metadata extraction
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -245,7 +245,7 @@ func TestMultipleTablesHandling(t *testing.T) {
 	`
 
 	// Get diff without metadata extraction (AST-only mode)
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -308,7 +308,7 @@ func TestComplexTableWithConstraintsAndIndexes(t *testing.T) {
 	`
 
 	// Get diff in AST-only mode
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -514,7 +514,7 @@ ALTER TABLE "public"."orders" ADD CONSTRAINT "fk_customer" FOREIGN KEY (customer
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Get diff in AST-only mode (nil schemas for AST-only)
-			diff, err := GetSDLDiff(test.currentSDL, test.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(test.currentSDL, test.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -591,7 +591,7 @@ func TestTableConstraintComplexChanges(t *testing.T) {
 	`
 
 	// Get diff in AST-only mode
-	diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+	diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, diff)
 
@@ -858,7 +858,7 @@ func TestCreateTableWithTableConstraintsIntegration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Step 1: Get SDL diff using AST-only mode (no metadata extraction)
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err)
 			require.NotNil(t, diff)
 
@@ -1034,7 +1034,7 @@ CREATE INDEX idx_orders_complex ON orders (customer_id, status, total_amount DES
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Get diff in AST-only mode (no metadata extraction)
-			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil, nil)
+			diff, err := GetSDLDiff(tt.currentSDL, tt.previousSDL, nil)
 			require.NoError(t, err, "GetSDLDiff should not return error")
 			require.NotNil(t, diff, "diff should not be nil")
 

@@ -75,9 +75,9 @@
 <script lang="tsx" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
@@ -102,11 +102,14 @@ import {
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  buildSearchParamsBySearchText,
+  buildSearchTextBySearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
+  hasWorkspacePermissionV2,
   type SearchParams,
 } from "@/utils";
 
@@ -126,6 +129,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
+const route = useRoute();
 const router = useRouter();
 const pagedInstanceTableRef = ref<InstanceType<typeof PagedInstanceTable>>();
 
@@ -173,6 +177,13 @@ const selectedLabels = computed(() => {
   return getValuesFromSearchParams(state.params, "label");
 });
 
+const selectedState = computed(() => {
+  const stateValue = getValueFromSearchParams(state.params, "state");
+  if (stateValue === "DELETED") return State.DELETED;
+  if (stateValue === "ALL") return undefined; // undefined = show all
+  return State.ACTIVE; // default
+});
+
 const filter = computed(() => ({
   environment: selectedEnvironment.value,
   host: selectedHost.value,
@@ -180,6 +191,7 @@ const filter = computed(() => ({
   query: state.params.query,
   engines: selectedEngines.value,
   labels: selectedLabels.value,
+  state: selectedState.value,
 }));
 
 const showCreateInstanceDrawer = () => {
@@ -193,8 +205,9 @@ const showCreateInstanceDrawer = () => {
 };
 
 const scopeOptions = computed((): ScopeOption[] => {
-  return [
-    ...useCommonSearchScopeOptions(["environment", "engine", "label"]).value,
+  const baseOptions = [
+    ...useCommonSearchScopeOptions(["environment", "engine", "label", "state"])
+      .value,
     {
       id: "host",
       title: t("instance.advanced-search.scope.host.title"),
@@ -208,9 +221,39 @@ const scopeOptions = computed((): ScopeOption[] => {
       options: [],
     },
   ];
+
+  // If user doesn't have undelete permission, remove DELETED and ALL from state scope
+  if (!hasWorkspacePermissionV2("bb.instances.undelete")) {
+    return baseOptions.map((scope) => {
+      if (scope.id === "state" && scope.options) {
+        return {
+          ...scope,
+          options: scope.options.filter((opt) => opt.value === "ACTIVE"),
+        };
+      }
+      return scope;
+    });
+  }
+
+  return baseOptions;
 });
 
 onMounted(() => {
+  // Migrate old URL format (?state=archived) to new format (?q=state:archived)
+  const queryState = router.currentRoute.value.query.state as string;
+  if (queryState === "archived" || queryState === "all") {
+    const stateValue = queryState === "archived" ? "DELETED" : "ALL";
+    router.replace({
+      query: { q: `state:${stateValue}` },
+    });
+  }
+
+  // Initialize params from URL query
+  const queryString = route.query.q as string;
+  if (queryString) {
+    state.params = buildSearchParamsBySearchText(queryString);
+  }
+
   if (!uiStateStore.getIntroStateByKey("instance.visit")) {
     uiStateStore.saveIntroStateByKey({
       key: "instance.visit",
@@ -218,6 +261,23 @@ onMounted(() => {
     });
   }
 });
+
+// Sync params to URL query when params change
+watch(
+  () => state.params,
+  (params) => {
+    const queryString = buildSearchTextBySearchParams(params);
+    const currentQuery = route.query.q as string;
+
+    // Only update URL if query string has actually changed
+    if (queryString !== currentQuery) {
+      router.replace({
+        query: queryString ? { q: queryString } : {},
+      });
+    }
+  },
+  { deep: true }
+);
 
 const remainingInstanceCount = computed((): number => {
   return Math.max(

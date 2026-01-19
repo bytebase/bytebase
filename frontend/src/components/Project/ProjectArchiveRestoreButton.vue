@@ -14,15 +14,7 @@
         :confirm-description="$t('project.settings.archive.description')"
         :require-confirm="true"
         @confirm="archiveOrRestoreProject(true)"
-      >
-        <div class="mt-3">
-          <NCheckbox v-model:checked="force">
-            <div class="text-sm font-normal text-control-light">
-              {{ $t("instance.force-archive-description") }}
-            </div>
-          </NCheckbox>
-        </div>
-      </BBButtonConfirm>
+      />
     </template>
     <template v-else-if="project.state === State.DELETED">
       <BBButtonConfirm
@@ -42,13 +34,11 @@
 </template>
 
 <script setup lang="ts">
-import { NCheckbox } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
 import ResourceHardDeleteButton from "@/components/v2/Button/ResourceHardDeleteButton.vue";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_WORKSPACE_ARCHIVE } from "@/router/dashboard/workspaceSetting";
 import { useProjectV1Store } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -60,7 +50,6 @@ const props = defineProps<{
 
 const projectV1Store = useProjectV1Store();
 const router = useRouter();
-const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   if (props.project.state === State.ACTIVE) {
@@ -71,7 +60,7 @@ const allowArchiveOrRestore = computed(() => {
 
 const archiveOrRestoreProject = async (archive: boolean) => {
   if (archive) {
-    await projectV1Store.archiveProject(props.project, force.value);
+    await projectV1Store.archiveProject(props.project);
   } else {
     await projectV1Store.restoreProject(props.project);
   }
@@ -86,8 +75,8 @@ const archiveOrRestoreProject = async (archive: boolean) => {
 const hardDeleteProject = async (resource: string) => {
   await projectV1Store.deleteProject(resource);
   router.replace({
-    name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
-    hash: "#PROJECT",
+    name: PROJECT_V1_ROUTE_DASHBOARD,
+    query: { q: "state:DELETED" },
   });
 };
 </script>

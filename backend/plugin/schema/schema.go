@@ -39,7 +39,7 @@ type getProcedureDefinition func(string, *storepb.ProcedureMetadata) (string, er
 type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, error)
 type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
-type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseMetadata) (*MetadataDiff, error)
+type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 
 type GetDefinitionContext struct {
@@ -244,12 +244,12 @@ func RegisterGetSDLDiff(engine storepb.Engine, f getSDLDiff) {
 	getSDLDiffs[engine] = f
 }
 
-func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseMetadata) (*MetadataDiff, error) {
+func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error) {
 	f, ok := getSDLDiffs[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(currentSDLText, previousUserSDLText, currentSchema, previousSchema)
+	return f(currentSDLText, previousUserSDLText, currentSchema)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {

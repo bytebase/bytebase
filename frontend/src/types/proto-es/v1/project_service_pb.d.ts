@@ -340,22 +340,14 @@ export declare type DeleteProjectRequest = Message<"bytebase.v1.DeleteProjectReq
   name: string;
 
   /**
-   * If set to true, any databases from this project will be moved to default project.
-   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-   * Open issues will remain open but associated with the deleted project.
-   * If set to false, the operation will fail if the project has databases or open issues.
-   *
-   * @generated from field: bool force = 2;
-   */
-  force: boolean;
-
-  /**
    * If set to true, permanently purge the soft-deleted project and all related resources.
    * This operation is irreversible. Following AIP-165, this should only be used for
    * administrative cleanup of old soft-deleted projects.
    * The project must already be soft-deleted for this to work.
+   * When purge=true, all databases will be moved to the default project before deletion.
+   * When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
    *
-   * @generated from field: bool purge = 3;
+   * @generated from field: bool purge = 2;
    */
   purge: boolean;
 };
@@ -398,14 +390,16 @@ export declare type BatchDeleteProjectsRequest = Message<"bytebase.v1.BatchDelet
   names: string[];
 
   /**
-   * If set to true, any databases from this project will be moved to default project.
-   * Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.
-   * Open issues will remain open but associated with the deleted project.
-   * If set to false, the operation will fail if the project has databases or open issues.
+   * If set to true, permanently purge the soft-deleted projects and all related resources.
+   * This operation is irreversible. Following AIP-165, this should only be used for
+   * administrative cleanup of old soft-deleted projects.
+   * All projects must already be soft-deleted for this to work.
+   * When purge=true, all databases will be moved to the default project before deletion.
+   * When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged.
    *
-   * @generated from field: bool force = 2;
+   * @generated from field: bool purge = 2;
    */
-  force: boolean;
+  purge: boolean;
 };
 
 /**

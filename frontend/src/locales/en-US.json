@@ -41,6 +41,7 @@
     "environment-name": "Environment Name",
     "archive": "Archive",
     "archived": "Archived",
+    "restored": "Restored",
     "no-license": "No license",
     "logout": "Logout",
     "close": "Close",
@@ -203,6 +204,7 @@
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
+    "clear-filters": "Clear filters",
     "license": "License",
     "view-details": "View details",
     "force-verb": "Force {verb}",
@@ -215,12 +217,18 @@
     "resource-not-found": "Resource not found",
     "continue-anyway": "Continue anyway",
     "permissions": "Permissions",
-    "baseline": "Baseline",
     "leave-without-saving": "Leave without saving?",
     "configure-now": "Configure now",
     "connection": "Connection",
     "resource": "Resource",
     "resources": "Resources",
+    "danger-zone": "Danger Zone",
+    "archive-resource": "Archive {type}",
+    "delete-resource": "Delete {type}",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "archive-description": "Mark \"{name}\" as archived and read-only.",
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "closed": "Closed",
     "refresh": "Refresh",
     "reject": "Reject",
@@ -1638,10 +1646,6 @@
   "changelog": {
     "self": "Changelog",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "change-type": "Type",
-    "type": {
-      "migrate": "Migrate"
-    },
     "no-schema-change": "this migration has no schema change",
     "show-diff": "Show diff",
     "schema-snapshot-after-change": "The schema snapshot recorded after applying this change",
@@ -1865,6 +1869,8 @@
         "title": "Restore project",
         "btn-text": "Restore this @.lower:{'common.project'}"
       },
+      "confirm-archive-project": "Archiving \"{name}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
+      "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "issue-related": {
         "self": "Issue Related",
         "labels": {
@@ -1962,7 +1968,6 @@
         "success": "Successfully archived {count} project | Successfully archived {count} projects",
         "error": "Failed to archive projects"
       },
-      "force-archive-description": "Force archive even if projects have databases (databases will be moved to default project)",
       "projects-to-archive": "Projects to archive",
       "resource-warning": {
         "title": "Projects with Resources",
@@ -2822,7 +2827,8 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
+    "filter-by-category": "Filter by category"
   },
   "export-data": {
     "export-rows": "Export rows",

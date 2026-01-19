@@ -264,7 +264,7 @@ func TestMaterializedViewIndexDependencyOrdering(t *testing.T) {
 		CREATE INDEX "idx_customer_seg_spending" ON "public"."customer_segmentation_mv" (total_spending);`
 
 		// Get SDL diff (simulates bb rollout behavior)
-		diff, err := GetSDLDiff(currentSDL, previousSDL, nil, nil)
+		diff, err := GetSDLDiff(currentSDL, previousSDL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, diff)
 
