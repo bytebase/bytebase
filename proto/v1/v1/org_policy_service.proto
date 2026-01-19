@@ -301,29 +301,12 @@ message QueryDataPolicy {
   bool disable_copy_data = 4;
 
   // workspace-level policy
+  // Allow using the admin data source to query in the SQL editor.
+  // If true, users can select the admin data source or read-only data source
+  // If false,
+  // 1. when read-only data source is configured, users're force to use the read-only data source
+  // 2. otherwise fallback to use the admin data source.
   bool allow_admin_data_source = 5;
-
-  // ===================================
-  // TODO(ed):
-  // plan to deprecate following fields
-  // current scope: env + project
-  // Restriction level for admin data source access.
-  enum Restriction {
-    // Unspecified restriction.
-    RESTRICTION_UNSPECIFIED = 0;
-    // Allow querying admin data sources when there is no read-only data source.
-    FALLBACK = 1;
-    // Disallow querying admin data sources.
-    DISALLOW = 2;
-  }
-  // Restriction for admin data source queries.
-  Restriction admin_data_source_restriction = 6;
-  // current scope: env
-  // Disallow running DDL statements in the SQL editor.
-  bool disallow_ddl = 7;
-  // current scope: env
-  // Disallow running DML statements in the SQL editor.
-  bool disallow_dml = 8;
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

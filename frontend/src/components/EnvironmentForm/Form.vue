@@ -109,12 +109,6 @@
         ref="sqlReviewForResourceRef"
         :resource="`${environmentNamePrefix}${environment.id}`"
       />
-
-      <AccessControlConfigure
-        v-if="features.includes('ACCESS_CONTROL') && !create"
-        ref="accessControlConfigureRef"
-        :resource="`${environmentNamePrefix}${environment.id}`"
-      />
     </div>
 
     <div
@@ -178,7 +172,6 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import SQLReviewForResource from "../SQLReview/components/SQLReviewForResource.vue";
 import { ResourceIdField } from "../v2";
-import AccessControlConfigure from "./AccessControlConfigure.vue";
 import { useEnvironmentFormContext } from "./context";
 import RolloutPolicyConfig from "./RolloutPolicyConfig.vue";
 
@@ -219,8 +212,6 @@ const hasGetPolicyPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.get");
 });
 
-const accessControlConfigureRef =
-  ref<InstanceType<typeof AccessControlConfigure>>();
 const sqlReviewForResourceRef =
   ref<InstanceType<typeof SQLReviewForResource>>();
 
@@ -236,14 +227,11 @@ const getEnvironmentById = (id: string) => {
 };
 
 watch(
-  () => [
-    accessControlConfigureRef.value?.isDirty ?? false,
-    sqlReviewForResourceRef.value?.isDirty ?? false,
-  ],
-  ([d1, d2]) => {
-    if (d1 || d2) {
+  () => sqlReviewForResourceRef.value?.isDirty ?? false,
+  (isDirty) => {
+    if (isDirty) {
       state.value.policyChanged = true;
-    } else if (!d1 && !d2) {
+    } else {
       state.value.policyChanged = false;
     }
   }
@@ -346,19 +334,12 @@ const deleteEnvironment = () => {
   events.emit("delete", state.value.environment);
 };
 
-useEmitteryEventListener(events, "update-access-control", async () => {
-  if (accessControlConfigureRef.value?.isDirty) {
-    await accessControlConfigureRef.value.update();
-  }
-});
-useEmitteryEventListener(events, "revert-access-control", () => {
-  accessControlConfigureRef.value?.revert();
-});
 useEmitteryEventListener(events, "update-sql-review", async () => {
   if (sqlReviewForResourceRef.value?.isDirty) {
     await sqlReviewForResourceRef.value.update();
   }
 });
+
 useEmitteryEventListener(events, "revert-sql-review", () => {
   sqlReviewForResourceRef.value?.revert();
 });

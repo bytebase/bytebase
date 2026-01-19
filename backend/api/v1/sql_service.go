@@ -122,7 +122,6 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			s.store,
 			s.licenseService,
 			request.Limit,
-			database.ProjectID,
 		)
 		queryContext := db.QueryContext{
 			OperatorEmail:        user.Email,
@@ -215,7 +214,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		s.store,
 		s.licenseService,
 		request.Limit,
-		database.ProjectID,
 	)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
@@ -307,14 +305,13 @@ func getEffectiveQueryDataPolicy(
 	stores *store.Store,
 	licenseService *enterprise.LicenseService,
 	limit int32,
-	projectID string,
 ) *store.EffectiveQueryDataPolicy {
 	value := &store.EffectiveQueryDataPolicy{
 		MaximumResultSize: common.DefaultMaximumSQLResultSize,
 		MaximumResultRows: math.MaxInt32,
 	}
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		policy, err := stores.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(projectID))
+		policy, err := stores.GetEffectiveQueryDataPolicy(ctx)
 		if err != nil {
 			slog.Error("failed to get the query data policy", log.BBError(err))
 			return value
@@ -1021,7 +1018,6 @@ func doExport(
 		stores,
 		licenseService,
 		request.Limit,
-		database.ProjectID,
 	)
 	queryContext := db.QueryContext{
 		Limit:                int(queryRestriction.MaximumResultRows),
@@ -1499,11 +1495,6 @@ func (s *SQLService) accessCheck(
 				perm = permission.SQLSelect
 			default:
 			}
-			if span.Type == parserbase.DDL || span.Type == parserbase.DML {
-				if err := checkDataSourceQueryPolicy(ctx, s.store, s.licenseService, database, span.Type); err != nil {
-					return err
-				}
-			}
 		} else if span.Type == parserbase.Select {
 			perm = permission.SQLSelect
 		}
@@ -1724,19 +1715,6 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}), nil
 }
 
-// GetQueriableDataSource try to returns the RO data source, and will returns the admin data source if not exist the RO data source.
-func GetQueriableDataSource(instance *store.InstanceMessage) *storepb.DataSource {
-	if len(instance.Metadata.GetDataSources()) == 0 {
-		return nil
-	}
-	for _, ds := range instance.Metadata.GetDataSources() {
-		if ds.GetType() == storepb.DataSourceType_READ_ONLY {
-			return ds
-		}
-	}
-	return instance.Metadata.DataSources[0]
-}
-
 func checkAndGetDataSourceQueriable(
 	ctx context.Context,
 	storeInstance *store.Store,
@@ -1780,129 +1758,18 @@ func checkAndGetDataSourceQueriable(
 		return dataSource, nil
 	}
 
-	queryDataPolicyType := storepb.Policy_QUERY_DATA
-
-	// get data source restriction policy for environment
-	var envAdminDataSourceRestriction v1pb.QueryDataPolicy_Restriction
-	effectiveEnvironmentID := ""
-	if database.EffectiveEnvironmentID != nil {
-		effectiveEnvironmentID = *database.EffectiveEnvironmentID
-	}
-	if effectiveEnvironmentID != "" {
-		environment, err := storeInstance.GetEnvironmentByID(ctx, effectiveEnvironmentID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment %s with error %v", effectiveEnvironmentID, err.Error()))
-		}
-		if environment == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", effectiveEnvironmentID))
-		}
-
-		environmentResourceType := storepb.Policy_ENVIRONMENT
-		environmentResource := common.FormatEnvironment(environment.Id)
-		environmentPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
-			ResourceType: &environmentResourceType,
-			Resource:     &environmentResource,
-			Type:         &queryDataPolicyType,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environment query data policy with error: %v", err.Error()))
-		}
-		if environmentPolicy != nil {
-			envPayload, err := convertToV1PBQueryDataPolicy(environmentPolicy.Payload)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert environment query data policy payload with error: %v", err.Error()))
-			}
-			envAdminDataSourceRestriction = envPayload.QueryDataPolicy.GetAdminDataSourceRestriction()
-		}
-	}
-
-	// get data source restriction policy for project
-	var projectAdminDataSourceRestriction v1pb.QueryDataPolicy_Restriction
-	projectResourceType := storepb.Policy_PROJECT
-	projectResource := common.FormatProject(database.ProjectID)
-	projectPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
-		ResourceType: &projectResourceType,
-		Resource:     &projectResource,
-		Type:         &queryDataPolicyType,
-	})
+	queryDataPolicy, err := storeInstance.GetEffectiveQueryDataPolicy(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project query data policy with error: %v", err.Error()))
-	}
-	if projectPolicy != nil {
-		projectPayload, err := convertToV1PBQueryDataPolicy(projectPolicy.Payload)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert project query data policy payload with error: %v", err.Error()))
-		}
-		projectAdminDataSourceRestriction = projectPayload.QueryDataPolicy.GetAdminDataSourceRestriction()
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get query data policy with error: %v", err.Error()))
 	}
 
-	// If any of the policy is DISALLOW, then return false.
-	if envAdminDataSourceRestriction == v1pb.QueryDataPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.QueryDataPolicy_DISALLOW {
+	if queryDataPolicy.AllowAdminDataSource {
+		return dataSource, nil
+	}
+
+	ds := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_READ_ONLY)
+	if ds != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data source %q is not queryable", dataSourceID))
-	} else if envAdminDataSourceRestriction == v1pb.QueryDataPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.QueryDataPolicy_FALLBACK {
-		// If there is any read-only data source, then return false.
-		if ds := GetQueriableDataSource(instance); ds != nil && ds.Type == storepb.DataSourceType_READ_ONLY {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("data source %q is not queryable", dataSourceID))
-		}
 	}
-
 	return dataSource, nil
-}
-
-func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, licenseService *enterprise.LicenseService, database *store.DatabaseMessage, statementTp parserbase.QueryType) error {
-	//nolint:nilerr
-	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
-		// If the feature is not enabled, then we don't need to check the policy.
-		// For license backward compatibility.
-		return nil
-	}
-	effectiveEnvironmentID := ""
-	if database.EffectiveEnvironmentID != nil {
-		effectiveEnvironmentID = *database.EffectiveEnvironmentID
-	}
-	if effectiveEnvironmentID == "" {
-		return connect.NewError(connect.CodeNotFound, errors.New("no effective environment found for database"))
-	}
-	environment, err := storeInstance.GetEnvironmentByID(ctx, effectiveEnvironmentID)
-	if err != nil {
-		return err
-	}
-	if environment == nil {
-		return connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", effectiveEnvironmentID))
-	}
-	resourceType := storepb.Policy_ENVIRONMENT
-	environmentResource := common.FormatEnvironment(environment.Id)
-	policyType := storepb.Policy_QUERY_DATA
-	queryDataPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
-		ResourceType: &resourceType,
-		Resource:     &environmentResource,
-		Type:         &policyType,
-	})
-	if err != nil {
-		return err
-	}
-	if queryDataPolicy != nil {
-		policy := &v1pb.QueryDataPolicy{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(queryDataPolicy.Payload), policy); err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal query data policy payload"))
-		}
-		switch statementTp {
-		case parserbase.DDL:
-			if policy.DisallowDdl {
-				return &queryError{
-					err:         connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DDL statement in environment %q", environment.Title)),
-					commandType: v1pb.QueryResult_PermissionDenied_DDL,
-				}
-			}
-		case parserbase.DML:
-			if policy.DisallowDml {
-				return &queryError{
-					err:         connect.NewError(connect.CodePermissionDenied, errors.Errorf("disallow execute DML statement in environment %q", environment.Title)),
-					commandType: v1pb.QueryResult_PermissionDenied_DML,
-				}
-			}
-		default:
-		}
-	}
-	return nil
 }

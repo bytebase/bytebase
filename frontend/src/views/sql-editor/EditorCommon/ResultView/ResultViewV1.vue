@@ -173,7 +173,7 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
-import { computed, ref, toRef, watchEffect } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
@@ -188,8 +188,8 @@ import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseRe
 import { Drawer } from "@/components/v2";
 import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
-  useEffectiveQueryDataPolicyForProject,
   usePolicyV1Store,
+  useQueryDataPolicy,
 } from "@/store/modules/v1/policy";
 import type {
   ComposedDatabase,
@@ -198,7 +198,6 @@ import type {
   SQLResultSetV1,
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
@@ -236,18 +235,7 @@ const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const tabStore = useSQLEditorTabStore();
 
-const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject();
-
-watchEffect(() => {
-  const environment = props.database.effectiveEnvironment;
-  if (environment) {
-    policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: environment,
-      policyType: PolicyType.DATA_QUERY,
-    });
-  }
-});
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
 
 const detail: SQLResultViewContext["detail"] = ref(undefined);
 

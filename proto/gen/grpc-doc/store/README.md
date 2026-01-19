@@ -190,7 +190,6 @@
   
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
-    - [QueryDataPolicy.Restriction](#bytebase-store-QueryDataPolicy-Restriction)
   
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
@@ -3213,10 +3212,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | workspace-level policy Disable exporting data in the SQL editor. |
 | maximum_result_rows | [int32](#int32) |  | workspace-level policy The return rows limit. The default value is -1, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
-| allow_admin_data_source | [bool](#bool) |  | workspace-level policy |
-| admin_data_source_restriction | [QueryDataPolicy.Restriction](#bytebase-store-QueryDataPolicy-Restriction) |  | Restriction for admin data source queries. |
-| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
-| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
+| allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
 
 
 
@@ -3300,19 +3296,6 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | MASKING_RULE | 4 |  |
 | IAM | 5 |  |
 | TAG | 6 |  |
-
-
-
-<a name="bytebase-store-QueryDataPolicy-Restriction"></a>
-
-### QueryDataPolicy.Restriction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESTRICTION_UNSPECIFIED | 0 |  |
-| FALLBACK | 1 | Allow to query admin data sources when there is no read-only data source. |
-| DISALLOW | 2 | Disallow to query admin data sources. |
 
 
  

@@ -17206,39 +17206,16 @@ components:
         allowAdminDataSource:
           type: boolean
           title: allow_admin_data_source
-          description: workspace-level policy
-        adminDataSourceRestriction:
-          title: admin_data_source_restriction
-          description: Restriction for admin data source queries.
-          $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.Restriction'
-        disallowDdl:
-          type: boolean
-          title: disallow_ddl
           description: |-
-            current scope: env
-             Disallow running DDL statements in the SQL editor.
-        disallowDml:
-          type: boolean
-          title: disallow_dml
-          description: |-
-            current scope: env
-             Disallow running DML statements in the SQL editor.
+            workspace-level policy
+             Allow using the admin data source to query in the SQL editor.
+             If true, users can select the admin data source or read-only data source
+             If false,
+             1. when read-only data source is configured, users're force to use the read-only data source
+             2. otherwise fallback to use the admin data source.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
-    bytebase.v1.QueryDataPolicy.Restriction:
-      type: string
-      title: Restriction
-      enum:
-        - RESTRICTION_UNSPECIFIED
-        - FALLBACK
-        - DISALLOW
-      description: |-
-        ===================================
-         TODO(ed):
-         plan to deprecate following fields
-         current scope: env + project
-         Restriction level for admin data source access.
     bytebase.v1.QueryHistory:
       type: object
       properties:

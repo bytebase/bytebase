@@ -1,6 +1,44 @@
 <template>
   <div class="flex-1 flex flex-col gap-y-6">
     <div class="w-full inline-flex items-center gap-x-2">
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="[
+          'bb.policies.update'
+        ]"
+      >
+        <Switch
+          :value="!state.disableExport"
+          :text="true"
+          :disabled="slotProps.disabled || !hasQueryPolicyFeature"
+          @update:value="(val: boolean) => state.disableExport = !val"
+        />
+      </PermissionGuardWrapper>
+      <span class="font-medium">
+        {{ $t("settings.general.workspace.data-export") }}
+      </span>
+      <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
+    </div>
+    <div class="w-full inline-flex items-center gap-x-2">
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :permissions="[
+          'bb.policies.update'
+        ]"
+      >
+        <Switch
+          v-model:value="state.disableCopyData"
+          :text="true"
+          :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
+        />
+      </PermissionGuardWrapper>
+      <span class="textlabel">
+        {{ $t("settings.general.workspace.disable-copy-data") }}
+      </span>
+      <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
+    </div>
+    <div>
+      <div class="w-full inline-flex items-center gap-x-2">
         <PermissionGuardWrapper
           v-slot="slotProps"
           :permissions="[
@@ -8,34 +46,20 @@
           ]"
         >
           <Switch
-            :value="!disableExport"
+            v-model:value="state.allowAdminDataSource"
             :text="true"
             :disabled="slotProps.disabled || !hasQueryPolicyFeature"
-            @update:value="(val: boolean) => disableExport = !val"
-          />
-        </PermissionGuardWrapper>
-        <span class="font-medium">
-          {{ $t("settings.general.workspace.data-export.enable") }}
-        </span>
-      </div>
-    <div class="w-full inline-flex items-center gap-x-2">
-        <PermissionGuardWrapper
-          v-slot="slotProps"
-          :permissions="[
-            'bb.policies.update'
-          ]"
-        >
-          <Switch
-            v-model:value="disableCopyData"
-            :text="true"
-            :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
           />
         </PermissionGuardWrapper>
         <span class="textlabel">
-          {{ t("environment.access-control.disable-copy-data") }}
+          {{ t("settings.general.workspace.allow-admin-data-source.self") }}
         </span>
-        <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
+        <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
       </div>
+      <span class="mt-1 text-sm text-gray-400">
+        {{ t("settings.general.workspace.allow-admin-data-source.description") }}
+      </span>
+    </div>
     <MaximumSQLResultSizeSetting
       ref="maximumSQLResultSizeSettingRef"
       :resource="resource"
@@ -64,7 +88,7 @@
           ]"
         >
           <NInputNumber
-            :value="maxQueryTimeInseconds"
+            :value="state.maxQueryTimeInseconds"
             :disabled="!hasQueryPolicyFeature || slotProps.disabled"
             class="w-60"
             :min="0"
@@ -84,8 +108,9 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { isEqual } from "lodash-es";
 import { NInputNumber } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
 import { t } from "@/plugins/i18n";
@@ -102,6 +127,13 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
+
+interface LocalState {
+  maxQueryTimeInseconds: number;
+  disableExport: boolean;
+  disableCopyData: boolean;
+  allowAdminDataSource: boolean;
+}
 
 const props = defineProps<{
   resource: string;
@@ -125,22 +157,22 @@ const policyPayload = computed(() => {
   return policyV1Store.getQueryDataPolicyByParent(props.resource);
 });
 
-const initialMaxQueryTimeInseconds = computed(() =>
-  Number(policyPayload.value.timeout?.seconds ?? 0)
-);
+const getInitialState = (): LocalState => {
+  return {
+    maxQueryTimeInseconds: Number(policyPayload.value.timeout?.seconds ?? 0),
+    disableExport: policyPayload.value.disableExport,
+    disableCopyData: policyPayload.value.disableCopyData,
+    allowAdminDataSource: policyPayload.value.allowAdminDataSource,
+  };
+};
 
-// limit in seconds.
-const maxQueryTimeInseconds = ref<number>(initialMaxQueryTimeInseconds.value);
-const disableExport = ref(policyPayload.value.disableExport);
-const disableCopyData = ref(policyPayload.value.disableCopyData);
+const state = reactive<LocalState>(getInitialState());
 
 const maximumSQLResultSizeSettingRef =
   ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
 
 const revert = () => {
-  maxQueryTimeInseconds.value = initialMaxQueryTimeInseconds.value;
-  disableExport.value = policyPayload.value.disableExport;
-  disableCopyData.value = policyPayload.value.disableCopyData;
+  Object.assign(state, getInitialState());
   maximumSQLResultSizeSettingRef.value?.revert();
 };
 
@@ -155,9 +187,7 @@ watch(
 
 const isDirty = computed(() => {
   return (
-    maxQueryTimeInseconds.value !== initialMaxQueryTimeInseconds.value ||
-    disableExport.value !== policyPayload.value.disableExport ||
-    disableCopyData.value !== policyPayload.value.disableCopyData ||
+    !isEqual(state, getInitialState()) ||
     maximumSQLResultSizeSettingRef.value?.isDirty
   );
 });
@@ -175,10 +205,11 @@ const updateChange = async () => {
         case: "queryDataPolicy",
         value: create(QueryDataPolicySchema, {
           ...policyPayload.value,
-          disableExport: disableExport.value,
-          disableCopyData: disableCopyData.value,
+          disableExport: state.disableExport,
+          disableCopyData: state.disableCopyData,
+          allowAdminDataSource: state.allowAdminDataSource,
           timeout: create(DurationSchema, {
-            seconds: BigInt(maxQueryTimeInseconds.value),
+            seconds: BigInt(state.maxQueryTimeInseconds),
           }),
         }),
       },
@@ -189,7 +220,7 @@ const updateChange = async () => {
 const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
-  maxQueryTimeInseconds.value = value;
+  state.maxQueryTimeInseconds = value;
 };
 
 defineExpose({

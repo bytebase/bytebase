@@ -676,8 +676,11 @@
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
           "enable": "Activar marca de agua"
         },
-        "data-export": {
-          "enable": "Habilitar la exportación de datos"
+        "data-export": "Habilitar la exportación de datos",
+        "disable-copy-data": "Restringir la copia de datos",
+        "allow-admin-data-source": {
+          "self": "Permitir consultar la fuente de datos de administración",
+          "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración."
         },
         "product-improvement": {
           "self": "Mejora del Producto",
@@ -753,8 +756,7 @@
           },
           "seconds": "Artículos de segunda clase",
           "project-scope": "proyecto",
-          "environment-scope": "ambiente",
-          "tooltip": "También es configurable a nivel {scope}. Bytebase aplicará el valor más estricto."
+          "environment-scope": "ambiente"
         },
         "domain-restriction": {
           "self": "Dominio de espacio de trabajo",
@@ -1559,20 +1561,7 @@
     "reorder": "Reordenar entornos",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
     "production-environment": "Entorno de producción",
-    "access-control": {
-      "title": "Control de Acceso",
-      "disable-copy-data": "Restringir la copia de datos",
-      "restrict-admin-connection": {
-        "self": "Restringir la consulta de la fuente de datos de administración",
-        "disallow": "No permitir la consulta de datos desde la fuente de datos de administración",
-        "fallback": "Permitir la consulta de la fuente de datos de administración si no hay una conexión de solo lectura disponible"
-      }
-    },
-    "statement-execution": {
-      "title": "Ejecución de la declaración",
-      "disallow-ddl": "No permitir la ejecución de sentencias DDL en el editor SQL",
-      "disallow-dml": "No permitir la ejecución de instrucciones DML que modifiquen datos en el Editor SQL"
-    }
+    "statement-execution": {}
   },
   "quick-start": {
     "self": "Inicio rápido",
@@ -2156,8 +2145,7 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador.",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "No se permite realizar consultas a la fuente de datos del administrador cuando la fuente de datos de solo lectura está disponible."
+      "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "manage-connections": "Gestionar las conexiones",
     "view-detail": "Ver detalle",

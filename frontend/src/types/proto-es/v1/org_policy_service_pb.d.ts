@@ -337,33 +337,15 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
+   * Allow using the admin data source to query in the SQL editor.
+   * If true, users can select the admin data source or read-only data source
+   * If false,
+   * 1. when read-only data source is configured, users're force to use the read-only data source
+   * 2. otherwise fallback to use the admin data source.
    *
    * @generated from field: bool allow_admin_data_source = 5;
    */
   allowAdminDataSource: boolean;
-
-  /**
-   * Restriction for admin data source queries.
-   *
-   * @generated from field: bytebase.v1.QueryDataPolicy.Restriction admin_data_source_restriction = 6;
-   */
-  adminDataSourceRestriction: QueryDataPolicy_Restriction;
-
-  /**
-   * current scope: env
-   * Disallow running DDL statements in the SQL editor.
-   *
-   * @generated from field: bool disallow_ddl = 7;
-   */
-  disallowDdl: boolean;
-
-  /**
-   * current scope: env
-   * Disallow running DML statements in the SQL editor.
-   *
-   * @generated from field: bool disallow_dml = 8;
-   */
-  disallowDml: boolean;
 };
 
 /**
@@ -371,43 +353,6 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
  * Use `create(QueryDataPolicySchema)` to create a new message.
  */
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
-
-/**
- * ===================================
- * TODO(ed):
- * plan to deprecate following fields
- * current scope: env + project
- * Restriction level for admin data source access.
- *
- * @generated from enum bytebase.v1.QueryDataPolicy.Restriction
- */
-export enum QueryDataPolicy_Restriction {
-  /**
-   * Unspecified restriction.
-   *
-   * @generated from enum value: RESTRICTION_UNSPECIFIED = 0;
-   */
-  RESTRICTION_UNSPECIFIED = 0,
-
-  /**
-   * Allow querying admin data sources when there is no read-only data source.
-   *
-   * @generated from enum value: FALLBACK = 1;
-   */
-  FALLBACK = 1,
-
-  /**
-   * Disallow querying admin data sources.
-   *
-   * @generated from enum value: DISALLOW = 2;
-   */
-  DISALLOW = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.QueryDataPolicy.Restriction.
- */
-export declare const QueryDataPolicy_RestrictionSchema: GenEnum<QueryDataPolicy_Restriction>;
 
 /**
  * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

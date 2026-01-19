@@ -129,7 +129,7 @@ import {
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
-import { useEffectiveQueryDataPolicyForProject } from "@/store/modules/v1/policy";
+import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
@@ -160,8 +160,7 @@ const showEmpty = ref<boolean>(true);
 const contextMenu = provideResultTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
-const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject();
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
 
 const selectedDatabaseNameList = ref<string[]>([]);
 

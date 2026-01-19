@@ -676,8 +676,11 @@
           "description": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。",
           "enable": "ウォーターマークをオンにする"
         },
-        "data-export": {
-          "enable": "データのエクスポートを有効にする"
+        "data-export": "データのエクスポートを有効にする",
+        "disable-copy-data": "データのコピーを制限する",
+        "allow-admin-data-source": {
+          "self": "管理データソースのクエリを許可する",
+          "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。"
         },
         "product-improvement": {
           "self": "製品改善",
@@ -753,8 +756,7 @@
           },
           "seconds": "秒",
           "project-scope": "プロジェクト",
-          "environment-scope": "環境",
-          "tooltip": "{scope} レベルでも設定可能です。Bytebase は最も厳格な値を適用します。"
+          "environment-scope": "環境"
         },
         "domain-restriction": {
           "self": "ワークスペースドメイン",
@@ -1559,20 +1561,7 @@
     "reorder": "環境の並べ替え",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
     "production-environment": "本番環境",
-    "access-control": {
-      "title": "アクセス制御",
-      "disable-copy-data": "データのコピーを制限する",
-      "restrict-admin-connection": {
-        "self": "管理データソースのクエリを制限する",
-        "disallow": "管理データソースからのデータのクエリを禁止する",
-        "fallback": "読み取り専用接続が利用できない場合は、管理データソースへのクエリを許可する"
-      }
-    },
-    "statement-execution": {
-      "title": "ステートメントの実行",
-      "disallow-ddl": "SQL エディタで DDL ステートメントの実行を禁止する",
-      "disallow-dml": "SQL エディタでデータを変更する DML ステートメントの実行を禁止する"
-    }
+    "statement-execution": {}
   },
   "quick-start": {
     "self": "クイックスタート",
@@ -2156,8 +2145,7 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "読み取り専用データ ソースが使用可能な場合、管理データ ソースはクエリを実行できません。"
+      "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "manage-connections": "接続を管理する",
     "view-detail": "詳細を見る",

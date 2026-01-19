@@ -23,6 +23,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewDataExportExecutor creates a data export task executor.
@@ -90,7 +91,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 	statement := sheet.Statement
 
-	dataSource := apiv1.GetQueriableDataSource(instance)
+	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	creatorUser, err := exec.store.GetUserByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)

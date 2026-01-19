@@ -88,7 +88,7 @@
           <MaxRowCountSelect
             v-model:value="resultRowsLimit"
             :quaternary="true"
-            :maximum-export-count="maximumResultRows"
+            :maximum-export-count="policy.maximumResultRows"
           />
         </div>
       </div>
@@ -109,10 +109,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import {
-  useDataSourceRestrictionPolicy,
-  useEffectiveQueryDataPolicyForProject,
-} from "@/store/modules/v1/policy";
+import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
@@ -120,7 +117,6 @@ import {
   DataSource_RedisType,
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { QueryDataPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
 
@@ -136,14 +132,7 @@ const { redisCommandOption, resultRowsLimit } = storeToRefs(
   useSQLEditorStore()
 );
 
-const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject();
-
-const { dataSourceRestriction } = useDataSourceRestrictionPolicy(database);
-
-const maximumResultRows = computed(() => {
-  return effectiveQueryDataPolicy.value.maximumResultRows;
-});
+const { policy } = useQueryDataPolicy();
 
 const show = computed(() => {
   return tabStore.currentTab?.mode !== "ADMIN";
@@ -175,34 +164,21 @@ const dataSources = computed(() => {
 const dataSourceUnaccessibleReason = (
   dataSource: DataSource
 ): string | undefined => {
-  if (dataSource.type === DataSourceType.ADMIN) {
-    if (
-      dataSourceRestriction.value.environmentPolicy ===
-        QueryDataPolicy_Restriction.DISALLOW ||
-      dataSourceRestriction.value.projectPolicy ===
-        QueryDataPolicy_Restriction.DISALLOW
-    ) {
-      return t(
-        "sql-editor.query-context.admin-data-source-is-disallowed-to-query"
-      );
-    }
-    const readOnlyDataSources = dataSources.value.filter(
-      (ds) => ds.type === DataSourceType.READ_ONLY
-    );
-    if (
-      readOnlyDataSources.length > 0 &&
-      (dataSourceRestriction.value.environmentPolicy ===
-        QueryDataPolicy_Restriction.FALLBACK ||
-        dataSourceRestriction.value.projectPolicy ===
-          QueryDataPolicy_Restriction.FALLBACK)
-    ) {
-      return t(
-        "sql-editor.query-context.admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available"
-      );
-    }
+  if (policy.value.allowAdminDataSource) {
+    return undefined;
+  }
+  if (dataSource.type !== DataSourceType.ADMIN) {
+    return undefined;
   }
 
-  return undefined;
+  const readOnlyDataSources = dataSources.value.filter(
+    (ds) => ds.type === DataSourceType.READ_ONLY
+  );
+  if (readOnlyDataSources.length === 0) {
+    return undefined;
+  }
+
+  return t("sql-editor.query-context.admin-data-source-is-disallowed-to-query");
 };
 
 const onDataSourceSelected = (dataSourceId?: string) => {
@@ -229,8 +205,8 @@ watch(
 );
 
 watchEffect(() => {
-  if (resultRowsLimit.value > maximumResultRows.value) {
-    resultRowsLimit.value = maximumResultRows.value;
+  if (resultRowsLimit.value > policy.value.maximumResultRows) {
+    resultRowsLimit.value = policy.value.maximumResultRows;
   }
 });
 </script>

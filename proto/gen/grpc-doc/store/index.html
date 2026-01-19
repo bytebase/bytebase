@@ -924,10 +924,6 @@
                   <a href="#bytebase.store.Policy.Type"><span class="badge">E</span>Policy.Type</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.QueryDataPolicy.Restriction"><span class="badge">E</span>QueryDataPolicy.Restriction</a>
-                </li>
-              
               
               
             </ul>
@@ -9201,28 +9197,8 @@ Disable copying data. </p></td>
                   <td>allow_admin_data_source</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>workspace-level policy </p></td>
-                </tr>
-              
-                <tr>
-                  <td>admin_data_source_restriction</td>
-                  <td><a href="#bytebase.store.QueryDataPolicy.Restriction">QueryDataPolicy.Restriction</a></td>
-                  <td></td>
-                  <td><p>Restriction for admin data source queries. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>disallow_ddl</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Disallow running DDL statements in the SQL editor. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>disallow_dml</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Disallow running DML statements in the SQL editor. </p></td>
+                  <td><p>workspace-level policy
+Allow using the admin data source to query in the SQL editor. </p></td>
                 </tr>
               
             </tbody>
@@ -9404,35 +9380,6 @@ For example, the environment resource can have the SQL review config tag, such a
                 <td>TAG</td>
                 <td>6</td>
                 <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.QueryDataPolicy.Restriction">QueryDataPolicy.Restriction</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>RESTRICTION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FALLBACK</td>
-                <td>1</td>
-                <td><p>Allow to query admin data sources when there is no read-only data source.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DISALLOW</td>
-                <td>2</td>
-                <td><p>Disallow to query admin data sources.</p></td>
               </tr>
             
           </tbody>

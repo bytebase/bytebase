@@ -123,24 +123,6 @@ message QueryDataPolicy {
   bool disable_copy_data = 5;
 
   // workspace-level policy
+  // Allow using the admin data source to query in the SQL editor.
   bool allow_admin_data_source = 9;
-
-  // ===================================
-  // TODO(ed):
-  // plan to deprecate following fields
-
-  enum Restriction {
-    RESTRICTION_UNSPECIFIED = 0;
-    // Allow to query admin data sources when there is no read-only data source.
-    FALLBACK = 1;
-    // Disallow to query admin data sources.
-    DISALLOW = 2;
-  }
-  // Restriction for admin data source queries.
-  Restriction admin_data_source_restriction = 6;
-
-  // Disallow running DDL statements in the SQL editor.
-  bool disallow_ddl = 7;
-  // Disallow running DML statements in the SQL editor.
-  bool disallow_dml = 8;
 }

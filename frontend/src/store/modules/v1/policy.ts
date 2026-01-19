@@ -6,7 +6,7 @@ import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { orgPolicyServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedDatabase, MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
 import type {
   Policy,
@@ -18,7 +18,6 @@ import {
   PolicyResourceType,
   PolicySchema,
   PolicyType,
-  QueryDataPolicy_Restriction,
   QueryDataPolicySchema,
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
@@ -60,10 +59,6 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
           timeout: create(DurationSchema, {
             seconds: BigInt(0),
           }),
-          adminDataSourceRestriction:
-            QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-          disallowDdl: false,
-          disallowDml: false,
         });
   };
 
@@ -185,6 +180,7 @@ const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
   return {
     disableCopyData: policy.disableCopyData,
     disableExport: policy.disableExport,
+    allowAdminDataSource: policy.allowAdminDataSource,
     maximumResultRows,
     queryTimeoutInSeconds,
   };
@@ -243,57 +239,7 @@ export const usePolicyByParentAndType = (
   };
 };
 
-// TODO(ed): deprecate and use allow_admin_data_source instead.
-export const useDataSourceRestrictionPolicy = (
-  database: MaybeRef<ComposedDatabase>
-) => {
-  const store = usePolicyV1Store();
-  const ready = ref(false);
-
-  watchEffect(async () => {
-    await store.getOrFetchPolicyByParentAndType({
-      parentPath: unref(database).project,
-      policyType: PolicyType.DATA_QUERY,
-    });
-
-    const environment = unref(database).effectiveEnvironment;
-    if (environment) {
-      await store.getOrFetchPolicyByParentAndType({
-        parentPath: environment,
-        policyType: PolicyType.DATA_QUERY,
-      });
-    }
-    ready.value = true;
-  });
-
-  const dataSourceRestriction = computed(() => {
-    const projectLevelPolicy = store.getQueryDataPolicyByParent(
-      unref(database).project
-    );
-    const projectLevelAdminDSRestriction =
-      projectLevelPolicy.adminDataSourceRestriction;
-
-    let envLevelAdminDSRestriction =
-      QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED;
-    const environment = unref(database).effectiveEnvironment;
-    if (environment) {
-      const envLevelPolicy = store.getQueryDataPolicyByParent(environment);
-      envLevelAdminDSRestriction = envLevelPolicy.adminDataSourceRestriction;
-    }
-
-    return {
-      environmentPolicy: envLevelAdminDSRestriction,
-      projectPolicy: projectLevelAdminDSRestriction,
-    };
-  });
-
-  return {
-    ready,
-    dataSourceRestriction,
-  };
-};
-
-export const useEffectiveQueryDataPolicyForProject = () => {
+export const useQueryDataPolicy = () => {
   const store = usePolicyV1Store();
   const ready = ref(false);
 

@@ -676,8 +676,11 @@
           "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
           "enable": "Bật hình mờ"
         },
-        "data-export": {
-          "enable": "Bật xuất dữ liệu"
+        "data-export": "Bật xuất dữ liệu",
+        "disable-copy-data": "Hạn chế sao chép dữ liệu",
+        "allow-admin-data-source": {
+          "self": "Cho phép truy vấn nguồn dữ liệu quản trị",
+          "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị."
         },
         "product-improvement": {
           "self": "Cải thiện Sản phẩm",
@@ -753,8 +756,7 @@
           },
           "seconds": "Giây",
           "project-scope": "dự án",
-          "environment-scope": "môi trường",
-          "tooltip": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ áp dụng giá trị nghiêm ngặt nhất."
+          "environment-scope": "môi trường"
         },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",
@@ -1559,20 +1561,7 @@
     "reorder": "Sắp xếp lại môi trường",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
     "production-environment": "Môi trường sản xuất",
-    "access-control": {
-      "title": "Kiểm soát truy cập",
-      "disable-copy-data": "Hạn chế sao chép dữ liệu",
-      "restrict-admin-connection": {
-        "self": "Hạn chế truy vấn nguồn dữ liệu quản trị",
-        "disallow": "Không cho phép truy vấn dữ liệu từ nguồn dữ liệu quản trị",
-        "fallback": "Cho phép truy vấn nguồn dữ liệu quản trị nếu không có kết nối chỉ đọc nào khả dụng"
-      }
-    },
-    "statement-execution": {
-      "title": "Thực thi câu lệnh",
-      "disallow-ddl": "Không cho phép chạy câu lệnh DDL trong trình soạn thảo SQL",
-      "disallow-dml": "Không cho phép chạy câu lệnh DML sửa đổi dữ liệu trong Trình soạn thảo SQL"
-    }
+    "statement-execution": {}
   },
   "quick-start": {
     "self": "Bắt đầu nhanh",
@@ -2156,8 +2145,7 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn.",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "Nguồn dữ liệu quản trị không được phép truy vấn khi có nguồn dữ liệu chỉ đọc."
+      "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
     "manage-connections": "Quản lý kết nối",
     "view-detail": "Xem chi tiết",

@@ -676,8 +676,11 @@
           "description": "Display watermarks on pages, including username, ID and email.",
           "enable": "Enable watermark"
         },
-        "data-export": {
-          "enable": "Enable data export"
+        "data-export": "Enable data export",
+        "disable-copy-data": "Restrict data copying",
+        "allow-admin-data-source": {
+          "self": "Allow querying the admin data source",
+          "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources."
         },
         "product-improvement": {
           "self": "Product Improvement",
@@ -753,8 +756,7 @@
           },
           "seconds": "Seconds",
           "project-scope": "project",
-          "environment-scope": "environment",
-          "tooltip": "It's also configurable at the {scope} level. Bytebase will apply the most strict value."
+          "environment-scope": "environment"
         },
         "domain-restriction": {
           "self": "Workspace Domain",
@@ -1559,20 +1561,7 @@
     "reorder": "Reorder Environments",
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
-    "access-control": {
-      "title": "Access Control",
-      "disable-copy-data": "Restrict data copying",
-      "restrict-admin-connection": {
-        "self": "Restrict querying admin data sources",
-        "disallow": "Disallow querying data from the admin data source",
-        "fallback": "Allow querying the admin data source if no read-only connection is available"
-      }
-    },
-    "statement-execution": {
-      "title": "Statement execution",
-      "disallow-ddl": "Disallow running DDL statements in the SQL editor",
-      "disallow-dml": "Disallow running data-modifying DML statements in the SQL Editor"
-    }
+    "statement-execution": {}
   },
   "quick-start": {
     "self": "Quickstart",
@@ -2156,8 +2145,7 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query.",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "Admin data source is disallowed to query when read-only data source is available."
+      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
