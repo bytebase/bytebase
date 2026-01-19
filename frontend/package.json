@@ -112,7 +112,7 @@
     "@vue/eslint-config-typescript": "^14.5.0",
     "@vue/test-utils": "2.4.6",
     "@vue/tsconfig": "0.8.1",
-    "autoprefixer": "10.4.22",
+    "autoprefixer": "10.4.23",
     "code-inspector-plugin": "^1.3.0",
     "dotenv": "^17.0.0",
     "eslint": "9.39.1",
