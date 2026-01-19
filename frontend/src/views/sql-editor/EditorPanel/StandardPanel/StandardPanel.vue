@@ -3,7 +3,7 @@
     v-if="!tab || tab.mode === 'WORKSHEET'"
     direction="vertical"
     :max="0.8"
-    :resize-trigger-size="1"
+    :resize-trigger-size="3"
   >
     <template #1>
       <div class="h-full flex flex-col overflow-hidden justify-start items-stretch">
@@ -16,7 +16,7 @@
             :size="editorPanelSize.size"
             :min="editorPanelSize.min"
             :max="editorPanelSize.max"
-            :resize-trigger-size="1"
+            :resize-trigger-size="3"
             @update:size="handleEditorPanelResize"
           >
             <template #1>
