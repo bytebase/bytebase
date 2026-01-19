@@ -1,5 +1,4 @@
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 export const extractProjectResourceName = (name: string) => {
@@ -13,11 +12,7 @@ export function projectV1Name(project: Project) {
     return "Unassigned";
   }
 
-  const parts = [project.title];
-  if (project.state === State.DELETED) {
-    parts.push("(Archived)");
-  }
-  return parts.join(" ");
+  return project.title;
 }
 
 export function filterProjectV1ListByKeyword<T extends Project>(

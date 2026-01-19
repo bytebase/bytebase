@@ -13,7 +13,7 @@
             pane-style="padding: 12px 0 0 0"
           >
             <NTabPane
-              v-if="!workspaceProfile.disallowPasswordSignin"
+              v-if="!serverInfo?.restriction?.disallowPasswordSignin"
               name="standard"
               tab="Standard"
             >
@@ -194,7 +194,6 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useIdentityProviderStore,
-  useSettingV1Store,
 } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -228,7 +227,6 @@ interface LocalState {
 const router = useRouter();
 const route = useRoute();
 const actuatorStore = useActuatorV1Store();
-const settingV1Store = useSettingV1Store();
 const authStore = useAuthStore();
 const identityProviderStore = useIdentityProviderStore();
 
@@ -240,10 +238,10 @@ const state = reactive<LocalState>({
 });
 const initialized = ref(false);
 const { isDemo } = storeToRefs(actuatorStore);
-const { workspaceProfile } = storeToRefs(settingV1Store);
+const { serverInfo } = storeToRefs(actuatorStore);
 
 const disallowSignup = computed(
-  () => !props.allowSignup || workspaceProfile.value.disallowSignup
+  () => !props.allowSignup || serverInfo.value?.restriction?.disallowSignup
 );
 
 const separatedIdentityProviderList = computed(() =>
@@ -259,13 +257,13 @@ const groupedIdentityProviderList = computed(() =>
 
 const showSignInForm = computed(() => {
   return (
-    !workspaceProfile.value.disallowPasswordSignin ||
+    !serverInfo.value?.restriction?.disallowPasswordSignin ||
     groupedIdentityProviderList.value.length > 0
   );
 });
 
 const defaultTabValue = computed(() => {
-  if (!workspaceProfile.value.disallowPasswordSignin) {
+  if (!serverInfo.value?.restriction?.disallowPasswordSignin) {
     return "standard";
   }
   if (groupedIdentityProviderList.value.length > 0) {

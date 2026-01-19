@@ -76,11 +76,11 @@ const columnList = computed(
           const parts = release.name.split("/");
           const releaseName = parts[parts.length - 1] || release.name;
           return (
-            <p class="inline-flex w-full">
+            <p class="inline-flex w-full items-center gap-x-2">
               <span class="shrink truncate">{releaseName}</span>
               {release.state === State.DELETED && (
-                <NTag class="shrink-0" type="warning" size="small" round>
-                  {t("common.archived")}
+                <NTag class="shrink-0" type="default" size="small">
+                  {t("common.abandoned")}
                 </NTag>
               )}
             </p>

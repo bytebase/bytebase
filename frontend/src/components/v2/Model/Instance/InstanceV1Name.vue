@@ -1,35 +1,42 @@
 <template>
-  <component
-    :is="showLink ? 'router-link' : tag"
-    v-bind="bindings"
-    class="inline-flex items-center gap-x-1"
-    :class="[
-      showLink && !plain && 'normal-link',
-      showLink && 'hover:underline',
-    ]"
-  >
-    <InstanceV1EngineIcon
-      v-if="icon && iconPosition === 'prefix'"
-      :instance="instance"
-    />
+  <div class="inline-flex items-center gap-x-2">
+    <component
+      :is="showLink ? 'router-link' : tag"
+      v-bind="bindings"
+      class="inline-flex items-center gap-x-1"
+      :class="[
+        showLink && !plain && 'normal-link',
+        showLink && 'hover:underline',
+      ]"
+    >
+      <InstanceV1EngineIcon
+        v-if="icon && iconPosition === 'prefix'"
+        :instance="instance"
+      />
 
-    <slot name="prefix" />
+      <slot name="prefix" />
 
-    <NEllipsis :disabled="!tooltip" :line-clamp="1" :class="textClass">
-      <HighlightLabelText :text="instanceV1Name(instance)" :keyword="keyword" />
-    </NEllipsis>
+      <NEllipsis :disabled="!tooltip" :line-clamp="1" :class="textClass">
+        <HighlightLabelText :text="instanceV1Name(instance)" :keyword="keyword" />
+      </NEllipsis>
 
-    <InstanceV1EngineIcon
-      v-if="icon && iconPosition === 'suffix'"
-      :instance="instance"
-    />
-  </component>
+      <InstanceV1EngineIcon
+        v-if="icon && iconPosition === 'suffix'"
+        :instance="instance"
+      />
+    </component>
+
+    <NTag v-if="isArchived" size="small" type="default">
+      {{ $t("common.archived") }}
+    </NTag>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   Instance,
   InstanceResource,
@@ -66,6 +73,10 @@ const props = withDefaults(
   }
 );
 const router = useRouter();
+
+const isArchived = computed(() => {
+  return "state" in props.instance && props.instance.state === State.DELETED;
+});
 
 const bindings = computed(() => {
   if (props.link) {

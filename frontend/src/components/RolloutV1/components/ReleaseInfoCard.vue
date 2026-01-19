@@ -1,9 +1,16 @@
 <template>
   <div class="flex flex-col gap-y-2">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-x-1 text-sm font-medium">
+      <div class="flex items-center gap-x-2 text-sm font-medium">
         <PackageIcon class="w-4 h-4" />
         <span :class="compact ? '' : 'text-base'">{{ releaseTitle }}</span>
+        <NTag
+          v-if="release && release.state === State.DELETED"
+          size="small"
+          type="default"
+        >
+          {{ $t("common.abandoned") }}
+        </NTag>
       </div>
       <NButton
         v-if="release && isValidReleaseName(release.name)"
@@ -139,13 +146,13 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import { ExternalLinkIcon, PackageIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { useReleaseByName } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidReleaseName } from "@/types";
-import { VCSType } from "@/types/proto-es/v1/common_pb";
+import { State, VCSType } from "@/types/proto-es/v1/common_pb";
 import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 
 const props = withDefaults(

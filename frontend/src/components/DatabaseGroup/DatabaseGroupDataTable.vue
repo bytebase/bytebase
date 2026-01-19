@@ -19,9 +19,10 @@
 </template>
 
 <script lang="tsx" setup>
-import { ExternalLinkIcon } from "lucide-vue-next";
-import { type DataTableColumn, NDataTable, NEllipsis } from "naive-ui";
-import { computed } from "vue";
+import { EllipsisVerticalIcon, ExternalLinkIcon } from "lucide-vue-next";
+import type { DataTableColumn, DropdownOption } from "naive-ui";
+import { NButton, NDataTable, NDropdown, NEllipsis } from "naive-ui";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
@@ -40,6 +41,7 @@ const props = withDefaults(
     customClick?: boolean;
     showSelection?: boolean;
     showExternalLink?: boolean;
+    showActions?: boolean;
     singleSelection?: boolean;
     pageSize?: number;
     selectedDatabaseGroupNames?: string[];
@@ -54,6 +56,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "row-click", e: MouseEvent, databaseGroup: DatabaseGroup): void;
   (event: "update:selected-database-group-names", val: string[]): void;
+  (event: "delete", databaseGroup: DatabaseGroup): void;
 }>();
 
 const { t } = useI18n();
@@ -119,6 +122,56 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
           >
             <ExternalLinkIcon class="w-4 h-auto" />
           </div>
+        );
+      },
+    },
+    {
+      key: "actions",
+      title: "",
+      width: 48,
+      hide: !props.showActions,
+      render: (data) => {
+        const dropdownOptions: DropdownOption[] = [
+          {
+            key: "delete",
+            label: t("common.delete"),
+          },
+        ];
+
+        return h(
+          "div",
+          {
+            class: "flex justify-end",
+            onClick: (e: Event) => {
+              e.stopPropagation();
+            },
+          },
+          h(
+            NDropdown,
+            {
+              trigger: "click",
+              options: dropdownOptions,
+              onSelect: (key: string) => {
+                if (key === "delete") {
+                  emit("delete", data);
+                }
+              },
+            },
+            {
+              default: () =>
+                h(
+                  NButton,
+                  {
+                    size: "small",
+                    quaternary: true,
+                    class: "px-1!",
+                  },
+                  {
+                    icon: () => h(EllipsisVerticalIcon, { class: "w-4 h-4" }),
+                  }
+                ),
+            }
+          )
         );
       },
     },

@@ -43,9 +43,9 @@ import { useRouter } from "vue-router";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import {
   pushNotification,
+  useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
-  useSettingV1Store,
   useUserStore,
 } from "@/store";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -69,7 +69,7 @@ const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 const router = useRouter();
 
 const passwordRestrictionSetting = computed(
-  () => useSettingV1Store().workspaceProfile.passwordRestriction
+  () => useActuatorV1Store().serverInfo?.restriction?.passwordRestriction
 );
 
 const redirectQuery = computed(() => {
