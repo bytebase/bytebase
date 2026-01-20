@@ -5179,6 +5179,236 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
+  /bytebase.v1.ServiceAccountService/CreateServiceAccount:
+    post:
+      tags:
+        - bytebase.v1.ServiceAccountService
+      summary: 'Creates a new service account.  For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.'
+      description: |-
+        Creates a new service account.
+         For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+         For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
+      operationId: bytebase.v1.ServiceAccountService.CreateServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CreateServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+  /bytebase.v1.ServiceAccountService/DeleteServiceAccount:
+    post:
+      tags:
+        - bytebase.v1.ServiceAccountService
+      summary: 'Deletes a service account.  Permissions required: bb.serviceAccounts.delete'
+      description: |-
+        Deletes a service account.
+         Permissions required: bb.serviceAccounts.delete
+      operationId: bytebase.v1.ServiceAccountService.DeleteServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DeleteServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.ServiceAccountService/GetServiceAccount:
+    post:
+      tags:
+        - bytebase.v1.ServiceAccountService
+      summary: 'Gets a service account by name.  Permissions required: bb.serviceAccounts.get'
+      description: |-
+        Gets a service account by name.
+         Permissions required: bb.serviceAccounts.get
+      operationId: bytebase.v1.ServiceAccountService.GetServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+  /bytebase.v1.ServiceAccountService/ListServiceAccounts:
+    post:
+      tags:
+        - bytebase.v1.ServiceAccountService
+      summary: 'Lists service accounts.  For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.'
+      description: |-
+        Lists service accounts.
+         For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+         For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
+      operationId: bytebase.v1.ServiceAccountService.ListServiceAccounts
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListServiceAccountsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListServiceAccountsResponse'
+  /bytebase.v1.ServiceAccountService/UndeleteServiceAccount:
+    post:
+      tags:
+        - bytebase.v1.ServiceAccountService
+      summary: 'Restores a deleted service account.  Permissions required: bb.serviceAccounts.undelete'
+      description: |-
+        Restores a deleted service account.
+         Permissions required: bb.serviceAccounts.undelete
+      operationId: bytebase.v1.ServiceAccountService.UndeleteServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UndeleteServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+  /bytebase.v1.ServiceAccountService/UpdateServiceAccount:
+    post:
+      tags:
+        - bytebase.v1.ServiceAccountService
+      summary: 'Updates a service account.  Permissions required: bb.serviceAccounts.update'
+      description: |-
+        Updates a service account.
+         Permissions required: bb.serviceAccounts.update
+      operationId: bytebase.v1.ServiceAccountService.UpdateServiceAccount
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateServiceAccountRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
   /bytebase.v1.SettingService/GetSetting:
     post:
       tags:
@@ -5831,6 +6061,236 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.User'
+  /bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity:
+    post:
+      tags:
+        - bytebase.v1.WorkloadIdentityService
+      summary: 'Creates a new workload identity.  For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.'
+      description: |-
+        Creates a new workload identity.
+         For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+         For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
+      operationId: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CreateWorkloadIdentityRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+  /bytebase.v1.WorkloadIdentityService/DeleteWorkloadIdentity:
+    post:
+      tags:
+        - bytebase.v1.WorkloadIdentityService
+      summary: 'Deletes a workload identity.  Permissions required: bb.workloadIdentities.delete'
+      description: |-
+        Deletes a workload identity.
+         Permissions required: bb.workloadIdentities.delete
+      operationId: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DeleteWorkloadIdentityRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.WorkloadIdentityService/GetWorkloadIdentity:
+    post:
+      tags:
+        - bytebase.v1.WorkloadIdentityService
+      summary: 'Gets a workload identity by name.  Permissions required: bb.workloadIdentities.get'
+      description: |-
+        Gets a workload identity by name.
+         Permissions required: bb.workloadIdentities.get
+      operationId: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetWorkloadIdentityRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+  /bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities:
+    post:
+      tags:
+        - bytebase.v1.WorkloadIdentityService
+      summary: 'Lists workload identities.  For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.'
+      description: |-
+        Lists workload identities.
+         For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+         For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
+      operationId: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListWorkloadIdentitiesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorkloadIdentitiesResponse'
+  /bytebase.v1.WorkloadIdentityService/UndeleteWorkloadIdentity:
+    post:
+      tags:
+        - bytebase.v1.WorkloadIdentityService
+      summary: 'Restores a deleted workload identity.  Permissions required: bb.workloadIdentities.undelete'
+      description: |-
+        Restores a deleted workload identity.
+         Permissions required: bb.workloadIdentities.undelete
+      operationId: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UndeleteWorkloadIdentityRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+  /bytebase.v1.WorkloadIdentityService/UpdateWorkloadIdentity:
+    post:
+      tags:
+        - bytebase.v1.WorkloadIdentityService
+      summary: 'Updates a workload identity.  Permissions required: bb.workloadIdentities.update'
+      description: |-
+        Updates a workload identity.
+         Permissions required: bb.workloadIdentities.update
+      operationId: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateWorkloadIdentityRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
   /bytebase.v1.WorksheetService/BatchUpdateWorksheetOrganizer:
     post:
       tags:
@@ -8099,6 +8559,29 @@ components:
              If set to "", no stages are created.
       title: CreateRolloutRequest
       additionalProperties: false
+    bytebase.v1.CreateServiceAccountRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource where this service account will be created.
+             Format: projects/{project} for project-level, empty for workspace-level.
+        serviceAccountId:
+          type: string
+          title: service_account_id
+          description: |-
+            The ID to use for the service account, which will become the final component
+             of the service account's email in the format: {service_account_id}@service.bytebase.com
+             or {service_account_id}@{project-id}.service.bytebase.com
+        serviceAccount:
+          title: service_account
+          description: The service account to create.
+          $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+      title: CreateServiceAccountRequest
+      additionalProperties: false
+      description: Request message for creating a service account.
     bytebase.v1.CreateSheetRequest:
       type: object
       properties:
@@ -8123,6 +8606,29 @@ components:
           $ref: '#/components/schemas/bytebase.v1.User'
       title: CreateUserRequest
       additionalProperties: false
+    bytebase.v1.CreateWorkloadIdentityRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource where this workload identity will be created.
+             Format: projects/{project} for project-level, empty for workspace-level.
+        workloadIdentityId:
+          type: string
+          title: workload_identity_id
+          description: |-
+            The ID to use for the workload identity, which will become the final component
+             of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
+             or {workload_identity_id}@{project-id}.workload.bytebase.com
+        workloadIdentity:
+          title: workload_identity
+          description: The workload identity to create.
+          $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+      title: CreateWorkloadIdentityRequest
+      additionalProperties: false
+      description: Request message for creating a workload identity.
     bytebase.v1.CreateWorksheetRequest:
       type: object
       properties:
@@ -8993,6 +9499,18 @@ components:
              Format: roles/{role}
       title: DeleteRoleRequest
       additionalProperties: false
+    bytebase.v1.DeleteServiceAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the service account to delete.
+             Format: serviceAccounts/{email}
+      title: DeleteServiceAccountRequest
+      additionalProperties: false
+      description: Request message for deleting a service account.
     bytebase.v1.DeleteUserRequest:
       type: object
       properties:
@@ -9004,6 +9522,18 @@ components:
              Format: users/{email}
       title: DeleteUserRequest
       additionalProperties: false
+    bytebase.v1.DeleteWorkloadIdentityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the workload identity to delete.
+             Format: workloadIdentities/{email}
+      title: DeleteWorkloadIdentityRequest
+      additionalProperties: false
+      description: Request message for deleting a workload identity.
     bytebase.v1.DeleteWorksheetRequest:
       type: object
       properties:
@@ -9993,6 +10523,18 @@ components:
           title: schema_string
       title: GetSchemaStringResponse
       additionalProperties: false
+    bytebase.v1.GetServiceAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the service account to retrieve.
+             Format: serviceAccounts/{email}
+      title: GetServiceAccountRequest
+      additionalProperties: false
+      description: Request message for getting a service account.
     bytebase.v1.GetSettingRequest:
       type: object
       properties:
@@ -10069,6 +10611,18 @@ components:
              Format: users/{email}
       title: GetUserRequest
       additionalProperties: false
+    bytebase.v1.GetWorkloadIdentityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the workload identity to retrieve.
+             Format: workloadIdentities/{email}
+      title: GetWorkloadIdentityRequest
+      additionalProperties: false
+      description: Request message for getting a workload identity.
     bytebase.v1.GetWorksheetRequest:
       type: object
       properties:
@@ -11875,6 +12429,58 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListRolloutsResponse
       additionalProperties: false
+    bytebase.v1.ListServiceAccountsRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource.
+             Format: projects/{project} for project-level, empty for workspace-level.
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of service accounts to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 service accounts will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListServiceAccounts` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListServiceAccounts` must match
+             the call that provided the page token.
+        showDeleted:
+          type: boolean
+          title: show_deleted
+          description: Show deleted service accounts if specified.
+      title: ListServiceAccountsRequest
+      additionalProperties: false
+      description: Request message for listing service accounts.
+    bytebase.v1.ListServiceAccountsResponse:
+      type: object
+      properties:
+        serviceAccounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+          title: service_accounts
+          description: The service accounts from the specified request.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
+      title: ListServiceAccountsResponse
+      additionalProperties: false
+      description: Response message for listing service accounts.
     bytebase.v1.ListSettingsRequest:
       type: object
       title: ListSettingsRequest
@@ -11984,6 +12590,58 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListUsersResponse
       additionalProperties: false
+    bytebase.v1.ListWorkloadIdentitiesRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent resource.
+             Format: projects/{project} for project-level, empty for workspace-level.
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of workload identities to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 workload identities will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListWorkloadIdentities` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListWorkloadIdentities` must match
+             the call that provided the page token.
+        showDeleted:
+          type: boolean
+          title: show_deleted
+          description: Show deleted workload identities if specified.
+      title: ListWorkloadIdentitiesRequest
+      additionalProperties: false
+      description: Request message for listing workload identities.
+    bytebase.v1.ListWorkloadIdentitiesResponse:
+      type: object
+      properties:
+        workloadIdentities:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+          title: workload_identities
+          description: The workload identities from the specified request.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
+      title: ListWorkloadIdentitiesResponse
+      additionalProperties: false
+      description: Response message for listing workload identities.
     bytebase.v1.LoginRequest:
       type: object
       properties:
@@ -15040,6 +15698,42 @@ components:
           description: Whether to skip this sequence during schema dump operations.
       title: SequenceMetadata
       additionalProperties: false
+    bytebase.v1.ServiceAccount:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the service account.
+             Format: serviceAccounts/{email}
+        state:
+          title: state
+          description: The state of the service account.
+          $ref: '#/components/schemas/bytebase.v1.State'
+        email:
+          type: string
+          title: email
+          description: |-
+            The email of the service account.
+             For workspace-level: {name}@service.bytebase.com
+             For project-level: {name}@{project-id}.service.bytebase.com
+        title:
+          type: string
+          title: title
+          maxLength: 200
+          description: The display title of the service account.
+        serviceKey:
+          type: string
+          title: service_key
+          description: The service key for authentication. Only returned on creation or key rotation.
+        createTime:
+          title: create_time
+          description: The timestamp when the service account was created.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: ServiceAccount
+      additionalProperties: false
+      description: ServiceAccount represents an API integration account.
     bytebase.v1.SetIamPolicyRequest:
       type: object
       properties:
@@ -16661,6 +17355,18 @@ components:
              Format: projects/{project}/releases/{release}
       title: UndeleteReleaseRequest
       additionalProperties: false
+    bytebase.v1.UndeleteServiceAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the deleted service account.
+             Format: serviceAccounts/{email}
+      title: UndeleteServiceAccountRequest
+      additionalProperties: false
+      description: Request message for restoring a deleted service account.
     bytebase.v1.UndeleteUserRequest:
       type: object
       properties:
@@ -16672,6 +17378,18 @@ components:
              Format: users/{email}
       title: UndeleteUserRequest
       additionalProperties: false
+    bytebase.v1.UndeleteWorkloadIdentityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the deleted workload identity.
+             Format: workloadIdentities/{email}
+      title: UndeleteWorkloadIdentityRequest
+      additionalProperties: false
+      description: Request message for restoring a deleted workload identity.
     bytebase.v1.UpdateDataSourceRequest:
       type: object
       properties:
@@ -17029,6 +17747,26 @@ components:
              In this situation, `update_mask` is ignored.
       title: UpdateRoleRequest
       additionalProperties: false
+    bytebase.v1.UpdateServiceAccountRequest:
+      type: object
+      properties:
+        serviceAccount:
+          title: service_account
+          description: |-
+            The service account to update.
+
+             The service account's `name` field is used to identify the service account to update.
+             Format: serviceAccounts/{email}
+          $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to update.
+             Supported fields: title, service_key (triggers key rotation)
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateServiceAccountRequest
+      additionalProperties: false
+      description: Request message for updating a service account.
     bytebase.v1.UpdateSettingRequest:
       type: object
       properties:
@@ -17123,6 +17861,26 @@ components:
              In this situation, `update_mask` is ignored.
       title: UpdateWebhookRequest
       additionalProperties: false
+    bytebase.v1.UpdateWorkloadIdentityRequest:
+      type: object
+      properties:
+        workloadIdentity:
+          title: workload_identity
+          description: |-
+            The workload identity to update.
+
+             The workload identity's `name` field is used to identify the workload identity to update.
+             Format: workloadIdentities/{email}
+          $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to update.
+             Supported fields: title, workload_identity_config
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateWorkloadIdentityRequest
+      additionalProperties: false
+      description: Request message for updating a workload identity.
     bytebase.v1.UpdateWorksheetOrganizerRequest:
       type: object
       properties:
@@ -17385,6 +18143,42 @@ components:
         - WECOM
         - LARK
       description: Webhook integration type.
+    bytebase.v1.WorkloadIdentity:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the workload identity.
+             Format: workloadIdentities/{email}
+        state:
+          title: state
+          description: The state of the workload identity.
+          $ref: '#/components/schemas/bytebase.v1.State'
+        email:
+          type: string
+          title: email
+          description: |-
+            The email of the workload identity.
+             For workspace-level: {name}@workload.bytebase.com
+             For project-level: {name}@{project-id}.workload.bytebase.com
+        title:
+          type: string
+          title: title
+          maxLength: 200
+          description: The display title of the workload identity.
+        createTime:
+          title: create_time
+          description: The timestamp when the workload identity was created.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        workloadIdentityConfig:
+          title: workload_identity_config
+          description: The workload identity configuration for OIDC token validation.
+          $ref: '#/components/schemas/bytebase.v1.WorkloadIdentityConfig'
+      title: WorkloadIdentity
+      additionalProperties: false
+      description: WorkloadIdentity represents an external CI/CD workload identity.
     bytebase.v1.WorkloadIdentityConfig:
       type: object
       properties:
@@ -18836,10 +19630,14 @@ tags:
     description: RoleService manages workspace roles and permissions.
   - name: bytebase.v1.RolloutService
     description: RolloutService manages the execution of deployment plans.
+  - name: bytebase.v1.ServiceAccountService
+    description: ServiceAccountService manages service accounts for API integrations.
   - name: bytebase.v1.SheetService
     description: SheetService manages SQL scripts and saved queries.
   - name: bytebase.v1.SubscriptionService
     description: SubscriptionService manages enterprise subscriptions and licensing.
+  - name: bytebase.v1.WorkloadIdentityService
+    description: WorkloadIdentityService manages workload identities for external CI/CD integrations.
   - name: bytebase.v1.WorksheetService
     description: WorksheetService manages SQL worksheets for query development.
   - name: bytebase.v1.WorkspaceService

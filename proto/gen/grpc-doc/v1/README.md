@@ -624,6 +624,18 @@
   
     - [RolloutService](#bytebase-v1-RolloutService)
   
+- [v1/service_account_service.proto](#v1_service_account_service-proto)
+    - [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest)
+    - [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest)
+    - [GetServiceAccountRequest](#bytebase-v1-GetServiceAccountRequest)
+    - [ListServiceAccountsRequest](#bytebase-v1-ListServiceAccountsRequest)
+    - [ListServiceAccountsResponse](#bytebase-v1-ListServiceAccountsResponse)
+    - [ServiceAccount](#bytebase-v1-ServiceAccount)
+    - [UndeleteServiceAccountRequest](#bytebase-v1-UndeleteServiceAccountRequest)
+    - [UpdateServiceAccountRequest](#bytebase-v1-UpdateServiceAccountRequest)
+  
+    - [ServiceAccountService](#bytebase-v1-ServiceAccountService)
+  
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
     - [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest)
     - [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse)
@@ -644,6 +656,18 @@
     - [PlanType](#bytebase-v1-PlanType)
   
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
+  
+- [v1/workload_identity_service.proto](#v1_workload_identity_service-proto)
+    - [CreateWorkloadIdentityRequest](#bytebase-v1-CreateWorkloadIdentityRequest)
+    - [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest)
+    - [GetWorkloadIdentityRequest](#bytebase-v1-GetWorkloadIdentityRequest)
+    - [ListWorkloadIdentitiesRequest](#bytebase-v1-ListWorkloadIdentitiesRequest)
+    - [ListWorkloadIdentitiesResponse](#bytebase-v1-ListWorkloadIdentitiesResponse)
+    - [UndeleteWorkloadIdentityRequest](#bytebase-v1-UndeleteWorkloadIdentityRequest)
+    - [UpdateWorkloadIdentityRequest](#bytebase-v1-UpdateWorkloadIdentityRequest)
+    - [WorkloadIdentity](#bytebase-v1-WorkloadIdentity)
+  
+    - [WorkloadIdentityService](#bytebase-v1-WorkloadIdentityService)
   
 - [v1/worksheet_service.proto](#v1_worksheet_service-proto)
     - [BatchUpdateWorksheetOrganizerRequest](#bytebase-v1-BatchUpdateWorksheetOrganizerRequest)
@@ -10169,6 +10193,173 @@ RolloutService manages the execution of deployment plans.
 
 
 
+<a name="v1_service_account_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/service_account_service.proto
+
+
+
+<a name="bytebase-v1-CreateServiceAccountRequest"></a>
+
+### CreateServiceAccountRequest
+Request message for creating a service account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this service account will be created. Format: projects/{project} for project-level, empty for workspace-level. |
+| service_account_id | [string](#string) |  | The ID to use for the service account, which will become the final component of the service account&#39;s email in the format: {service_account_id}@service.bytebase.com or {service_account_id}@{project-id}.service.bytebase.com |
+| service_account | [ServiceAccount](#bytebase-v1-ServiceAccount) |  | The service account to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteServiceAccountRequest"></a>
+
+### DeleteServiceAccountRequest
+Request message for deleting a service account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the service account to delete. Format: serviceAccounts/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetServiceAccountRequest"></a>
+
+### GetServiceAccountRequest
+Request message for getting a service account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the service account to retrieve. Format: serviceAccounts/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListServiceAccountsRequest"></a>
+
+### ListServiceAccountsRequest
+Request message for listing service accounts.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource. Format: projects/{project} for project-level, empty for workspace-level. |
+| page_size | [int32](#int32) |  | The maximum number of service accounts to return. The service may return fewer than this value. If unspecified, at most 10 service accounts will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListServiceAccounts` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListServiceAccounts` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted service accounts if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListServiceAccountsResponse"></a>
+
+### ListServiceAccountsResponse
+Response message for listing service accounts.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| service_accounts | [ServiceAccount](#bytebase-v1-ServiceAccount) | repeated | The service accounts from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ServiceAccount"></a>
+
+### ServiceAccount
+ServiceAccount represents an API integration account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the service account. Format: serviceAccounts/{email} |
+| state | [State](#bytebase-v1-State) |  | The state of the service account. |
+| email | [string](#string) |  | The email of the service account. For workspace-level: {name}@service.bytebase.com For project-level: {name}@{project-id}.service.bytebase.com |
+| title | [string](#string) |  | The display title of the service account. |
+| service_key | [string](#string) |  | The service key for authentication. Only returned on creation or key rotation. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the service account was created. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteServiceAccountRequest"></a>
+
+### UndeleteServiceAccountRequest
+Request message for restoring a deleted service account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted service account. Format: serviceAccounts/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateServiceAccountRequest"></a>
+
+### UpdateServiceAccountRequest
+Request message for updating a service account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| service_account | [ServiceAccount](#bytebase-v1-ServiceAccount) |  | The service account to update.
+
+The service account&#39;s `name` field is used to identify the service account to update. Format: serviceAccounts/{email} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. Supported fields: title, service_key (triggers key rotation) |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ServiceAccountService"></a>
+
+### ServiceAccountService
+ServiceAccountService manages service accounts for API integrations.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateServiceAccount | [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Creates a new service account. For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace. For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project. |
+| GetServiceAccount | [GetServiceAccountRequest](#bytebase-v1-GetServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Gets a service account by name. Permissions required: bb.serviceAccounts.get |
+| ListServiceAccounts | [ListServiceAccountsRequest](#bytebase-v1-ListServiceAccountsRequest) | [ListServiceAccountsResponse](#bytebase-v1-ListServiceAccountsResponse) | Lists service accounts. For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace. For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project. |
+| UpdateServiceAccount | [UpdateServiceAccountRequest](#bytebase-v1-UpdateServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Updates a service account. Permissions required: bb.serviceAccounts.update |
+| DeleteServiceAccount | [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a service account. Permissions required: bb.serviceAccounts.delete |
+| UndeleteServiceAccount | [UndeleteServiceAccountRequest](#bytebase-v1-UndeleteServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Restores a deleted service account. Permissions required: bb.serviceAccounts.undelete |
+
+ 
+
+
+
 <a name="v1_sheet_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -10476,6 +10667,173 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | ----------- | ------------ | ------------- | ------------|
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. Permissions required: None |
 | UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | Updates the enterprise license subscription. Permissions required: bb.settings.set |
+
+ 
+
+
+
+<a name="v1_workload_identity_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/workload_identity_service.proto
+
+
+
+<a name="bytebase-v1-CreateWorkloadIdentityRequest"></a>
+
+### CreateWorkloadIdentityRequest
+Request message for creating a workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this workload identity will be created. Format: projects/{project} for project-level, empty for workspace-level. |
+| workload_identity_id | [string](#string) |  | The ID to use for the workload identity, which will become the final component of the workload identity&#39;s email in the format: {workload_identity_id}@workload.bytebase.com or {workload_identity_id}@{project-id}.workload.bytebase.com |
+| workload_identity | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) |  | The workload identity to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteWorkloadIdentityRequest"></a>
+
+### DeleteWorkloadIdentityRequest
+Request message for deleting a workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the workload identity to delete. Format: workloadIdentities/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetWorkloadIdentityRequest"></a>
+
+### GetWorkloadIdentityRequest
+Request message for getting a workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the workload identity to retrieve. Format: workloadIdentities/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListWorkloadIdentitiesRequest"></a>
+
+### ListWorkloadIdentitiesRequest
+Request message for listing workload identities.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource. Format: projects/{project} for project-level, empty for workspace-level. |
+| page_size | [int32](#int32) |  | The maximum number of workload identities to return. The service may return fewer than this value. If unspecified, at most 10 workload identities will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListWorkloadIdentities` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListWorkloadIdentities` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted workload identities if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListWorkloadIdentitiesResponse"></a>
+
+### ListWorkloadIdentitiesResponse
+Response message for listing workload identities.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| workload_identities | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | repeated | The workload identities from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteWorkloadIdentityRequest"></a>
+
+### UndeleteWorkloadIdentityRequest
+Request message for restoring a deleted workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted workload identity. Format: workloadIdentities/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateWorkloadIdentityRequest"></a>
+
+### UpdateWorkloadIdentityRequest
+Request message for updating a workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| workload_identity | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) |  | The workload identity to update.
+
+The workload identity&#39;s `name` field is used to identify the workload identity to update. Format: workloadIdentities/{email} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. Supported fields: title, workload_identity_config |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkloadIdentity"></a>
+
+### WorkloadIdentity
+WorkloadIdentity represents an external CI/CD workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the workload identity. Format: workloadIdentities/{email} |
+| state | [State](#bytebase-v1-State) |  | The state of the workload identity. |
+| email | [string](#string) |  | The email of the workload identity. For workspace-level: {name}@workload.bytebase.com For project-level: {name}@{project-id}.workload.bytebase.com |
+| title | [string](#string) |  | The display title of the workload identity. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the workload identity was created. |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig) |  | The workload identity configuration for OIDC token validation. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-WorkloadIdentityService"></a>
+
+### WorkloadIdentityService
+WorkloadIdentityService manages workload identities for external CI/CD integrations.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateWorkloadIdentity | [CreateWorkloadIdentityRequest](#bytebase-v1-CreateWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Creates a new workload identity. For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace. For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project. |
+| GetWorkloadIdentity | [GetWorkloadIdentityRequest](#bytebase-v1-GetWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Gets a workload identity by name. Permissions required: bb.workloadIdentities.get |
+| ListWorkloadIdentities | [ListWorkloadIdentitiesRequest](#bytebase-v1-ListWorkloadIdentitiesRequest) | [ListWorkloadIdentitiesResponse](#bytebase-v1-ListWorkloadIdentitiesResponse) | Lists workload identities. For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace. For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project. |
+| UpdateWorkloadIdentity | [UpdateWorkloadIdentityRequest](#bytebase-v1-UpdateWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Updates a workload identity. Permissions required: bb.workloadIdentities.update |
+| DeleteWorkloadIdentity | [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a workload identity. Permissions required: bb.workloadIdentities.delete |
+| UndeleteWorkloadIdentity | [UndeleteWorkloadIdentityRequest](#bytebase-v1-UndeleteWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Restores a deleted workload identity. Permissions required: bb.workloadIdentities.undelete |
 
  
 
