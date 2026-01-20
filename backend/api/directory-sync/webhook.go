@@ -344,7 +344,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			// Azure uses PascalCase (Replace), Okta uses lowercase (replace).
 			opLower := strings.ToLower(op.OP)
 			if opLower != "replace" {
-				slog.Warn("only support replace operation", slog.String("operation", op.OP), slog.String("path", op.Path))
+				slog.Warn("only support replace operation", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 				continue
 			}
 
@@ -417,7 +417,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 				}
 			default:
-				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
+				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 			}
 		}
 
@@ -458,25 +458,50 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			members = append(members, member)
 		}
 
-		email := scimGroup.Email
-		if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
-			email = scimGroup.ExternalID
+		group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(scimGroup.ExternalID))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
 		}
 
-		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
-			ID:    scimGroup.ExternalID,
-			Email: email,
-			Title: scimGroup.DisplayName,
-			Payload: &storepb.GroupPayload{
+		if group == nil {
+			email := scimGroup.Email
+			if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
+				email = scimGroup.ExternalID
+			}
+			newGroup, err := s.store.CreateGroup(ctx, &store.GroupMessage{
+				ID:    scimGroup.ExternalID,
+				Email: email,
+				Title: scimGroup.DisplayName,
+				Payload: &storepb.GroupPayload{
+					Source:  source,
+					Members: members,
+				},
+			})
+			if err != nil {
+				return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
+			}
+			return c.JSON(http.StatusCreated, convertToSCIMGroup(newGroup))
+		}
+
+		patch := &store.UpdateGroupMessage{
+			ID:    group.ID,
+			Title: &scimGroup.DisplayName,
+		}
+		email := scimGroup.Email
+		if email != "" {
+			patch.Email = &email
+		}
+		if len(members) > 0 {
+			patch.Payload = &storepb.GroupPayload{
 				Source:  source,
 				Members: members,
-			},
-		})
-		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
+			}
 		}
-
-		return c.JSON(http.StatusCreated, convertToSCIMGroup(group))
+		updatedGroup, err := s.store.UpdateGroup(ctx, patch)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update group, error %v", err))
+		}
+		return c.JSON(http.StatusCreated, convertToSCIMGroup(updatedGroup))
 	})
 
 	// Get a single group. The group id is the Bytebase group resource id.
@@ -528,7 +553,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse filter, error %v", err))
 		}
 
-		find := &store.FindGroupMessage{}
+		var groupName string
 		for _, expr := range filters {
 			if expr.Operator != v1api.ComparatorTypeEqual {
 				slog.Warn("unsupport filter operation", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
@@ -538,25 +563,19 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				slog.Warn("unsupport filter key", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
 				continue
 			}
-			// externalId can be either the IdP's group ID or group email, depending on customer's attribute mapping.
-			// - Default: objectId/groupId -> externalId (UUID format, no @)
-			// - Legacy mapping: mail -> externalId (email format, contains @)
-			if strings.Contains(expr.Value, "@") {
-				find.Email = &expr.Value
-			} else {
-				find.ID = &expr.Value
-			}
+			groupName = expr.Value
 		}
 
-		groups, err := s.store.ListGroups(ctx, find)
+		group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(groupName))
 		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to list group, error %v`, err))
+			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
+		}
+		if group == nil {
+			return c.JSON(http.StatusOK, response)
 		}
 
-		for _, group := range groups {
-			response.TotalResults++
-			response.Resources = append(response.Resources, convertToSCIMGroup(group))
-		}
+		response.TotalResults++
+		response.Resources = append(response.Resources, convertToSCIMGroup(group))
 
 		return c.JSON(http.StatusOK, response)
 	})
@@ -770,7 +789,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 				}
 			default:
-				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
+				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 			}
 		}
 
