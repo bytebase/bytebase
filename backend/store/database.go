@@ -101,12 +101,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 
 // ListDatabases lists all databases.
 func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	from := qb.Q().Space("db")
 	where := qb.Q().Space("TRUE")
 
@@ -187,7 +181,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 
 	var databases []*DatabaseMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -229,10 +223,6 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		databases = append(databases, databaseMessage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

@@ -72,12 +72,6 @@ func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMes
 
 // ListGroups list all groups.
 func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*GroupMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	with := qb.Q()
 	from := qb.Q().Space("user_group")
 	where := qb.Q().Space("TRUE")
@@ -136,7 +130,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	}
 
 	var groups []*GroupMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -166,9 +160,6 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 		groups = append(groups, &group)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

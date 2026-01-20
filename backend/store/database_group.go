@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -56,12 +55,6 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 
 // ListDatabaseGroups lists database groups.
 func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	q := qb.Q().Space(`
 		SELECT
 			project,
@@ -87,7 +80,7 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	}
 
 	var databaseGroups []*DatabaseGroupMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
@@ -113,10 +106,6 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return databaseGroups, nil
@@ -161,14 +150,9 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to commit ")
-	}
-
 	var updatedDatabaseGroup DatabaseGroupMessage
 	var exprBytes []byte
-	if err := tx.QueryRowContext(
+	if err := s.GetDB().QueryRowContext(
 		ctx,
 		query,
 		args...,
@@ -179,9 +163,6 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 		&exprBytes,
 	); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	var expression expr.Expr
 	if err := common.ProtojsonUnmarshaler.Unmarshal(exprBytes, &expression); err != nil {
