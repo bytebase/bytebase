@@ -145,6 +145,30 @@ func TestJSONParsing(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "JSON primitive string",
+			jsonData:    `"hello world"`,
+			wantColumns: []string{"result"},
+			wantErr:     false,
+		},
+		{
+			name:        "JSON primitive number",
+			jsonData:    `42`,
+			wantColumns: []string{"result"},
+			wantErr:     false,
+		},
+		{
+			name:        "JSON primitive boolean",
+			jsonData:    `true`,
+			wantColumns: []string{"result"},
+			wantErr:     false,
+		},
+		{
+			name:        "JSON primitive null",
+			jsonData:    `null`,
+			wantColumns: []string{"result"},
+			wantErr:     false,
+		},
+		{
 			name:     "invalid JSON",
 			jsonData: `{invalid`,
 			wantErr:  true,
@@ -157,31 +181,34 @@ func TestJSONParsing(t *testing.T) {
 
 			// Simulate the parsing logic from QueryConn
 			var columnNames []string
-			var err error
 
-			// Try to unmarshal as an object first
-			pairs := map[string]any{}
-			if err = json.Unmarshal(respBytes, &pairs); err != nil {
-				// If it fails, try to unmarshal as an array
-				var items []any
-				if err = json.Unmarshal(respBytes, &items); err != nil {
-					// Both failed
-					if !tc.wantErr {
-						t.Fatalf("unexpected error: %v", err)
-					}
-					return
+			// Unmarshal into any to determine type
+			var data any
+			err := json.Unmarshal(respBytes, &data)
+			if err != nil {
+				if !tc.wantErr {
+					t.Fatalf("unexpected error: %v", err)
 				}
-				// Array case
-				columnNames = append(columnNames, "result")
-			} else {
-				// Object case
-				for key := range pairs {
-					columnNames = append(columnNames, key)
-				}
+				return
 			}
 
 			if tc.wantErr {
 				t.Fatal("expected error but got none")
+			}
+
+			// Handle based on type
+			switch v := data.(type) {
+			case map[string]any:
+				// Object case
+				for key := range v {
+					columnNames = append(columnNames, key)
+				}
+			case []any:
+				// Array case
+				columnNames = append(columnNames, "result")
+			default:
+				// Primitive case (string, number, boolean, null)
+				columnNames = append(columnNames, "result")
 			}
 
 			// Verify column count matches

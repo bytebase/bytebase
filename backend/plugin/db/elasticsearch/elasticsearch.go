@@ -467,24 +467,17 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 
 			switch {
 			case strings.Contains(contentType, "application/json"):
-				// Try to unmarshal as an object first
-				pairs := map[string]any{}
-				if err := json.Unmarshal(respBytes, &pairs); err != nil {
-					// If it fails, try to unmarshal as an array (for _cat APIs with format=json)
-					var items []any
-					if err := json.Unmarshal(respBytes, &items); err != nil {
-						return errors.Wrapf(err, "failed to parse json body as object or array")
-					}
-					// Handle array response: create a single column with array data
-					result.ColumnNames = append(result.ColumnNames, "result")
-					bytes, err := json.Marshal(items)
-					if err != nil {
-						return err
-					}
-					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
-				} else {
-					// Handle object response: create columns for each key
-					for key, val := range pairs {
+				// First unmarshal into any to determine the JSON type
+				var data any
+				if err := json.Unmarshal(respBytes, &data); err != nil {
+					return errors.Wrapf(err, "failed to parse json body")
+				}
+
+				// Handle based on the actual type
+				switch v := data.(type) {
+				case map[string]any:
+					// Object response: create one column per key
+					for key, val := range v {
 						result.ColumnNames = append(result.ColumnNames, key)
 						bytes, err := json.Marshal(val)
 						if err != nil {
@@ -492,6 +485,22 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 						}
 						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
 					}
+				case []any:
+					// Array response: create a single column with array data
+					result.ColumnNames = append(result.ColumnNames, "result")
+					bytes, err := json.Marshal(v)
+					if err != nil {
+						return err
+					}
+					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+				default:
+					// Primitive response (string, number, boolean, null): single column
+					result.ColumnNames = append(result.ColumnNames, "result")
+					bytes, err := json.Marshal(v)
+					if err != nil {
+						return err
+					}
+					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
 				}
 			case strings.Contains(contentType, "text/plain"):
 				result.ColumnNames = append(result.ColumnNames, "text/plain")
