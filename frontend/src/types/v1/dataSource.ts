@@ -10,18 +10,11 @@ import {
 export const DATASOURCE_ADMIN_USER_NAME = "bytebase";
 export const DATASOURCE_READONLY_USER_NAME = `${DATASOURCE_ADMIN_USER_NAME}_readonly`;
 
-export const emptyDataSource = () => {
+export const unknownDataSource = () => {
   return create(DataSourceSchema, {
     type: DataSourceType.ADMIN,
     id: uuidv4(),
     authenticationType: DataSource_AuthenticationType.PASSWORD,
     username: DATASOURCE_ADMIN_USER_NAME,
   });
-};
-
-export const unknownDataSource = () => {
-  return {
-    ...emptyDataSource(),
-    title: "<<Unknown data source>>",
-  };
 };

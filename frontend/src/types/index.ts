@@ -10,7 +10,6 @@ export * from "./error";
 export * from "./help";
 export * from "./iam";
 export * from "./id";
-export * from "./issue";
 export * from "./member";
 export * from "./misc";
 export * from "./notification";

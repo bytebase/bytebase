@@ -1,12 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { environmentNamePrefix } from "@/store";
-import { EMPTY_ID, UNKNOWN_ID } from "../const";
+import { UNKNOWN_ID } from "../const";
 import {
   type EnvironmentSetting_Environment,
   EnvironmentSetting_EnvironmentSchema,
 } from "../proto-es/v1/setting_service_pb";
 
-export const EMPTY_ENVIRONMENT_NAME = `environments/${EMPTY_ID}`;
 export const UNKNOWN_ENVIRONMENT_NAME = `environments/${UNKNOWN_ID}`;
 export const NULL_ENVIRONMENT_NAME = "environments/-";
 
@@ -19,9 +18,6 @@ export const unknownEnvironment = (): Environment => {
     ...create(EnvironmentSetting_EnvironmentSchema, {
       name: UNKNOWN_ENVIRONMENT_NAME,
       id: String(UNKNOWN_ID),
-      title: "<<Unknown environment>>",
-      tags: {},
-      color: "",
     }),
     order: 0,
   };
@@ -44,7 +40,6 @@ export const isValidEnvironmentName = (name: unknown): name is string => {
   return (
     typeof name === "string" &&
     /^environments\/.+/.test(name) &&
-    name !== EMPTY_ENVIRONMENT_NAME &&
     name !== UNKNOWN_ENVIRONMENT_NAME &&
     name !== NULL_ENVIRONMENT_NAME
   );

@@ -1,7 +1,7 @@
 import { cloneDeep, first } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
-import { emptyDataSource, UNKNOWN_INSTANCE_NAME } from "@/types";
+import { UNKNOWN_INSTANCE_NAME, unknownDataSource } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
@@ -86,7 +86,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
 
 export const wrapEditDataSource = (ds: DataSource | undefined) => {
   return {
-    ...cloneDeep(ds ?? emptyDataSource()),
+    ...cloneDeep(ds ?? unknownDataSource()),
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",

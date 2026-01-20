@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
-import { EMPTY_ID, UNKNOWN_ID } from "../const";
+import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { Database } from "../proto-es/v1/database_service_pb";
 import { DatabaseSchema$ } from "../proto-es/v1/database_service_pb";
@@ -28,7 +28,6 @@ export const isValidDatabaseName = (name: unknown): name is string => {
     !isNullOrUndefined(instanceName) &&
     !isNullOrUndefined(databaseName) &&
     instanceName !== String(UNKNOWN_ID) &&
-    instanceName !== String(EMPTY_ID) &&
     databaseName !== String(UNKNOWN_ID)
   );
 };

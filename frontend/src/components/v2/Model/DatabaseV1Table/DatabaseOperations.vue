@@ -148,7 +148,7 @@ import {
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
-  generateIssueTitle,
+  generatePlanTitle,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
@@ -256,7 +256,7 @@ const operations = computed(() => {
 });
 
 const generateMultiDb = async (
-  type: "bb.issue.database.update" | "bb.issue.database.data.export"
+  type: "bb.plan.change-database" | "bb.plan.export-data"
 ) => {
   // Fetch project to check enforce_issue_title setting
   const project = await projectStore.getOrFetchProjectByName(
@@ -269,7 +269,7 @@ const generateMultiDb = async (
   };
   // Only set title from generated if enforceIssueTitle is false.
   if (!project.enforceIssueTitle) {
-    query.name = generateIssueTitle(
+    query.name = generatePlanTitle(
       type,
       props.databases.map(
         (db) => extractDatabaseResourceName(db.name).databaseName
@@ -277,7 +277,7 @@ const generateMultiDb = async (
     );
   }
 
-  const isDataExport = type === "bb.issue.database.data.export";
+  const isDataExport = type === "bb.plan.export-data";
   router.push({
     name: isDataExport
       ? PROJECT_V1_ROUTE_PLAN_DETAIL
@@ -412,7 +412,7 @@ const actions = computed((): DatabaseAction[] => {
               !selectedProjectName.value ||
               props.databases.length < 1 ||
               selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-            click: () => generateMultiDb("bb.issue.database.data.export"),
+            click: () => generateMultiDb("bb.plan.export-data"),
             requiredPermissions: [...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE],
           });
         }

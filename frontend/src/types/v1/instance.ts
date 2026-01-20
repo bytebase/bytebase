@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { EMPTY_ID, UNKNOWN_ID } from "../const";
+import { UNKNOWN_ID } from "../const";
 import { Engine, State } from "../proto-es/v1/common_pb";
 import type {
   Instance,
@@ -10,27 +10,21 @@ import {
   InstanceSchema,
 } from "../proto-es/v1/instance_service_pb";
 
-export const EMPTY_INSTANCE_NAME = `instances/${EMPTY_ID}`;
 export const UNKNOWN_INSTANCE_NAME = `instances/${UNKNOWN_ID}`;
 
 export const unknownInstance = (): Instance => {
-  const instance = create(InstanceSchema, {
+  return create(InstanceSchema, {
     name: UNKNOWN_INSTANCE_NAME,
     state: State.ACTIVE,
-    title: "<<Unknown instance>>",
     engine: Engine.MYSQL,
   });
-  return instance;
 };
 
 export const unknownInstanceResource = (): InstanceResource => {
-  const instance = unknownInstance();
   return create(InstanceResourceSchema, {
     name: UNKNOWN_INSTANCE_NAME,
-    engine: instance.engine,
-    title: "<<Unknown instance>>",
+    engine: Engine.MYSQL,
     activation: true,
-    dataSources: [],
   });
 };
 
@@ -38,7 +32,6 @@ export const isValidInstanceName = (name: unknown): name is string => {
   return (
     typeof name === "string" &&
     name.startsWith("instances/") &&
-    name !== EMPTY_INSTANCE_NAME &&
     name !== UNKNOWN_INSTANCE_NAME
   );
 };

@@ -138,7 +138,7 @@ const gotoCreateIssue = async () => {
   const { databaseName } = extractDatabaseResourceName(db.name);
 
   const query = {
-    template: "bb.issue.database.update",
+    template: "bb.plan.change-database",
     name: `[${databaseName}] Change from SQL Editor`,
     databaseList: db.name,
     sqlStorageKey,

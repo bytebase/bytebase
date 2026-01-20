@@ -1,7 +1,3 @@
-// unknown represents an anomaly.
-// Returns as function to avoid caller accidentally mutate it.
-// UNKNOWN_ID means an anomaly, it expects a resource which is missing (e.g. Keyed lookup missing).
+// UNKNOWN_ID is used for placeholder/sentinel values when a resource is missing or not yet selected.
+// Returns as function to avoid caller accidentally mutating it.
 export const UNKNOWN_ID = -1;
-// EMPTY_ID means an expected behavior, it expects no resource (e.g. contains an empty value, using this technic enables
-// us to declare variable as required, which leads to cleaner code)
-export const EMPTY_ID = 0;

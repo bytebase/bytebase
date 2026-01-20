@@ -3,12 +3,9 @@ import { useI18n } from "vue-i18n";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import { useDatabaseV1Store } from "@/store";
 import {
-  EMPTY_ID,
-  EMPTY_TASK_NAME,
-  emptyStage,
-  emptyTask,
   isValidDatabaseName,
   UNKNOWN_ID,
+  UNKNOWN_TASK_NAME,
   unknownDatabase,
   unknownStage,
   unknownTask,
@@ -54,9 +51,7 @@ export const isValidStageName = (name: string | undefined) => {
     return false;
   }
   const stageUID = extractStageUID(name);
-  return (
-    stageUID && stageUID !== String(EMPTY_ID) && stageUID !== String(UNKNOWN_ID)
-  );
+  return stageUID && stageUID !== String(UNKNOWN_ID);
 };
 
 export const extractTaskUID = (name: string) => {
@@ -70,9 +65,7 @@ export const isValidTaskName = (name: string | undefined) => {
     return false;
   }
   const taskUID = extractTaskUID(name);
-  return (
-    taskUID && taskUID !== String(EMPTY_ID) && taskUID !== String(UNKNOWN_ID)
-  );
+  return taskUID && taskUID !== String(UNKNOWN_ID);
 };
 
 export const extractTaskRunUID = (name: string) => {
@@ -149,7 +142,7 @@ export const activeTaskInTaskList = (tasks: Task[]): Task => {
   }
 
   // fallback
-  return last(tasks) ?? emptyTask();
+  return last(tasks) ?? unknownTask();
 };
 
 export const activeTaskInStageV1 = (stage: Stage): Task => {
@@ -158,14 +151,14 @@ export const activeTaskInStageV1 = (stage: Stage): Task => {
 
 export const activeTaskInRollout = (rollout: Rollout | undefined): Task => {
   if (!rollout) {
-    return emptyTask();
+    return unknownTask();
   }
   return activeTaskInTaskList(flattenTaskV1List(rollout));
 };
 
 export const activeStageInRollout = (rollout: Rollout | undefined): Stage => {
   const activeTask = activeTaskInRollout(rollout);
-  if (activeTask.name !== EMPTY_TASK_NAME) {
+  if (activeTask.name !== UNKNOWN_TASK_NAME) {
     const stage = rollout?.stages.find((stage) =>
       stage.tasks.includes(activeTask)
     );
@@ -173,7 +166,7 @@ export const activeStageInRollout = (rollout: Rollout | undefined): Stage => {
       return stage;
     }
   }
-  return emptyStage();
+  return unknownStage();
 };
 
 export const findTaskByName = (

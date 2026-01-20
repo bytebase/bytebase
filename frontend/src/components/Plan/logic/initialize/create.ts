@@ -1,10 +1,9 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { head, includes } from "lodash-es";
+import { head } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { IssueType } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -19,6 +18,8 @@ import { sheetNameForSpec, targetsForSpec } from "../plan";
 import { getLocalSheetByName, getNextLocalSheetUID } from "../sheet";
 import { extractInitialSQLFromQuery } from "./util";
 
+type PlanTemplate = "bb.plan.change-database" | "bb.plan.export-data";
+
 export type InitialSQL = {
   sqlMap?: Record<string, string>;
   sql?: string;
@@ -26,7 +27,7 @@ export type InitialSQL = {
 
 export type CreatePlanParams = {
   project: Project;
-  template: IssueType;
+  template: PlanTemplate;
   query: Record<string, string>;
   initialSQL: InitialSQL;
 };
@@ -46,7 +47,7 @@ export const createPlanSkeleton = async (
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
   );
-  const template = query.template as IssueType | undefined;
+  const template = query.template as PlanTemplate | undefined;
   if (!template) {
     throw new Error(
       "Template is required to create a plan skeleton. Please provide a valid template."
@@ -63,17 +64,6 @@ export const createPlanSkeleton = async (
 };
 
 export const buildPlan = async (params: CreatePlanParams) => {
-  if (
-    !includes(
-      ["bb.issue.database.update", "bb.issue.database.data.export"],
-      params.template
-    )
-  ) {
-    throw new Error(
-      "Unsupported template for plan creation: " + params.template
-    );
-  }
-
   const { project, query } = params;
   const databaseNameList = (query.databaseList ?? "").split(",");
   const plan = createProto(PlanSchema, {
@@ -114,7 +104,7 @@ const buildSpecForTargetsV1 = async (
     id: uuidv4(),
   });
   switch (template) {
-    case "bb.issue.database.update": {
+    case "bb.plan.change-database": {
       spec.config = {
         case: "changeDatabaseConfig",
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
@@ -126,7 +116,7 @@ const buildSpecForTargetsV1 = async (
       };
       break;
     }
-    case "bb.issue.database.data.export": {
+    case "bb.plan.export-data": {
       spec.config = {
         case: "exportDataConfig",
         value: createProto(Plan_ExportDataConfigSchema, {

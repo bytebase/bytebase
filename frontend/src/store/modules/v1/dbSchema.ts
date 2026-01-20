@@ -7,7 +7,7 @@ import { silentContextKey } from "@/connect/context-key";
 // Removed conversion imports as part of Bold Migration Strategy
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
-import { EMPTY_ID, UNKNOWN_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   DatabaseMetadataSchema,
@@ -128,7 +128,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const { databaseName } = extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(EMPTY_ID)
+      databaseName === String(UNKNOWN_ID)
     ) {
       return create(DatabaseMetadataSchema, {
         name: ensureDatabaseMetadataResourceName(
@@ -243,7 +243,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     const { databaseName } = extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(EMPTY_ID)
+      databaseName === String(UNKNOWN_ID)
     ) {
       return create(TableMetadataSchema, {
         name: table,
@@ -424,7 +424,7 @@ export const useMetadata = (
     const { databaseName } = extractDatabaseResourceName(unref(database));
     if (
       databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(EMPTY_ID)
+      databaseName === String(UNKNOWN_ID)
     ) {
       return;
     }

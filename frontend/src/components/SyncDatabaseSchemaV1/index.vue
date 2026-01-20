@@ -99,7 +99,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
-  generateIssueTitle,
+  generatePlanTitle,
   getInstanceResource,
 } from "@/utils";
 import {
@@ -333,7 +333,7 @@ const tryFinishSetup = async () => {
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
   const query: LocationQueryRaw = {
-    template: "bb.issue.database.update",
+    template: "bb.plan.change-database",
     mode: "normal",
   };
   const sqlMap: Record<string, string> = {};
@@ -348,8 +348,8 @@ const tryFinishSetup = async () => {
   const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
   useStorageStore().put(sqlMapStorageKey, sqlMap);
   query.sqlMapStorageKey = sqlMapStorageKey;
-  query.name = generateIssueTitle(
-    "bb.issue.database.update",
+  query.name = generatePlanTitle(
+    "bb.plan.change-database",
     targetDatabaseList.map(
       (db) => extractDatabaseResourceName(db.name).databaseName
     )

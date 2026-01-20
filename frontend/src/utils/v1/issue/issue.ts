@@ -8,12 +8,7 @@ import {
   useInstanceResourceByName,
   useProjectV1Store,
 } from "@/store";
-import {
-  EMPTY_ID,
-  isValidDatabaseName,
-  UNKNOWN_ID,
-  unknownDatabase,
-} from "@/types";
+import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
@@ -39,7 +34,7 @@ export const isValidIssueName = (name: string | undefined) => {
     return false;
   }
   const uid = extractIssueUID(name);
-  return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
+  return uid && uid !== String(UNKNOWN_ID);
 };
 
 export const getRolloutFromPlan = (planName: string): string => {
@@ -75,15 +70,14 @@ export const isDatabaseDataExportIssue = (issue: Issue): boolean => {
   return issue.type === Issue_Type.DATABASE_EXPORT;
 };
 
-export const generateIssueTitle = (
-  type:
-    | "bb.issue.database.update"
-    | "bb.issue.database.data.export"
-    | "bb.issue.grant.request",
-  databaseNameList?: string[],
-  title?: string
-) => {
-  // Create a user friendly default issue name
+/**
+ * Formats an issue title with optional database prefix and timestamp suffix.
+ * This is the base formatting function used by both plans and other issue types.
+ */
+export const formatIssueTitle = (
+  title: string,
+  databaseNameList?: string[]
+): string => {
   const parts: string[] = [];
 
   if (databaseNameList !== undefined) {
@@ -96,25 +90,27 @@ export const generateIssueTitle = (
     }
   }
 
-  if (title) {
-    parts.push(title);
-  } else {
-    if (type.startsWith("bb.issue.database")) {
-      parts.push(
-        type === "bb.issue.database.update"
-          ? t("issue.title.change-database")
-          : t("issue.title.export-data")
-      );
-    } else {
-      parts.push(t("issue.title.request-role"));
-    }
-  }
+  parts.push(title);
 
   const datetime = dayjs().format("@MM-DD HH:mm");
   const tz = "UTC" + dayjs().format("ZZ");
   parts.push(`${datetime} ${tz}`);
 
   return parts.join(" ");
+};
+
+/**
+ * Generates a title for plan-related issues (change database, export data).
+ */
+export const generatePlanTitle = (
+  template: "bb.plan.change-database" | "bb.plan.export-data",
+  databaseNameList?: string[]
+): string => {
+  const title =
+    template === "bb.plan.change-database"
+      ? t("issue.title.change-database")
+      : t("issue.title.export-data");
+  return formatIssueTitle(title, databaseNameList);
 };
 
 /**

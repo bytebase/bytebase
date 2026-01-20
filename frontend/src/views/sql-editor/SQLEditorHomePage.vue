@@ -129,7 +129,7 @@ useEmitteryEventListener(
     }
     const { databaseName: dbName } = extractDatabaseResourceName(database.name);
     const query = {
-      template: "bb.issue.database.update",
+      template: "bb.plan.change-database",
       name: `[${dbName}] Edit schema`,
       databaseList: database.name,
       sql: exampleSQL.join(" "),

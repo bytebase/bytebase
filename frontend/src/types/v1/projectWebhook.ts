@@ -6,7 +6,7 @@ import {
   WebhookSchema,
 } from "../proto-es/v1/project_service_pb";
 
-export const emptyProjectWebhook = () => {
+export const unknownProjectWebhook = () => {
   return createProto(WebhookSchema, {
     type: WebhookType.SLACK,
     notificationTypes: [Activity_Type.ISSUE_CREATED],
