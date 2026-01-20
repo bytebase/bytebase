@@ -162,10 +162,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create message bus")
 	}
 
-	if err := s.store.BackfillIssueTSVector(ctx); err != nil {
-		slog.Warn("failed to backfill issue ts vector", log.BBError(err))
-	}
-
 	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")

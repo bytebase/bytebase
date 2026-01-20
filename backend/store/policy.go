@@ -493,12 +493,6 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 
 // ListPolicies lists all policies.
 func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*PolicyMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	q := qb.Q().Space(`
 		SELECT
 			updated_at,
@@ -530,7 +524,7 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -564,10 +558,6 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
