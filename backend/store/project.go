@@ -205,7 +205,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 		return nil, err
 	}
 
-	policy := &storepb.IamPolicy{
+	iamPolicy := &storepb.IamPolicy{
 		Bindings: []*storepb.Binding{
 			{
 				Role: common.FormatRole(ProjectOwnerRole),
@@ -216,11 +216,11 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 			},
 		},
 	}
-	policyPayload, err := protojson.Marshal(policy)
+	policyPayload, err := protojson.Marshal(iamPolicy)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
+	policyMessage, err := upsertPolicyImpl(ctx, tx, &PolicyMessage{
 		ResourceType:      storepb.Policy_PROJECT,
 		Resource:          common.FormatProject(project.ResourceID),
 		Payload:           string(policyPayload),
@@ -228,7 +228,8 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -236,6 +237,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 		return nil, err
 	}
 
+	s.policyCache.Add(getPolicyCacheKey(policyMessage.ResourceType, policyMessage.Resource, policyMessage.Type), policyMessage)
 	s.storeProjectCache(project)
 	return project, nil
 }

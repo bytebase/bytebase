@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -84,19 +83,9 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id, &plan.CreatedAt, &plan.UpdatedAt); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id, &plan.CreatedAt, &plan.UpdatedAt); err != nil {
 		return nil, errors.Wrap(err, "failed to insert plan")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
 	plan.UID = id
@@ -174,13 +163,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to select plans")
 	}
@@ -212,10 +195,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrap(err, "failed to iterate plans")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
 	return plans, nil
@@ -255,17 +234,11 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
 	plan := PlanMessage{
 		Config: &storepb.PlanConfig{},
 	}
 	var config []byte
-	if err := tx.QueryRowContext(ctx, query, finalArgs...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, finalArgs...).Scan(
 		&plan.UID,
 		&plan.Creator,
 		&plan.CreatedAt,
@@ -280,10 +253,6 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal plan config")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return &plan, nil
