@@ -740,7 +740,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				}
 				email, ok := op.Value.(string)
 				if !ok {
-					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 					continue
 				}
 				updateGroup.Email = &email
@@ -751,10 +751,23 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				}
 				displayName, ok := op.Value.(string)
 				if !ok {
-					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 					continue
 				}
 				updateGroup.Title = &displayName
+			case "externalId":
+				if opLower != "replace" {
+					slog.Warn("unsupport operation type for externalId", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+				externalId, ok := op.Value.(string)
+				if !ok {
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
+					continue
+				}
+				if strings.Contains(externalId, "@") {
+					updateGroup.Email = &externalId
+				}
 			case "":
 				// Empty path with replace operation - Okta sends full resource attributes.
 				// Per RFC 7644 Section 3.5.2.3: If path is omitted, the value must be a complex
