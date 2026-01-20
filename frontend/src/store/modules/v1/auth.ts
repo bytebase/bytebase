@@ -112,11 +112,12 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
 
     setRequireResetPassword(resp.requireResetPassword);
+    const needAdminSetup = actuatorStore.needAdminSetup
     await actuatorStore.fetchServerInfo();
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
-    if (actuatorStore.needAdminSetup) {
+    if (needAdminSetup) {
       actuatorStore.onboardingState.isOnboarding = true;
       return router.replace({
         name: SETUP_MODULE,
