@@ -188,6 +188,10 @@ import { useI18n } from "vue-i18n";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import { projectOfPlan } from "@/components/Plan/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import {
+  CANCELABLE_TASK_STATUSES,
+  RUNNABLE_TASK_STATUSES,
+} from "@/components/RolloutV1/constants/task";
 import { EnvironmentV1Name } from "@/components/v2";
 import { trackPriorBackupOnTaskRun } from "@/composables/usePriorBackupTelemetry";
 import { rolloutServiceClientConnect } from "@/connect";
@@ -208,7 +212,6 @@ import {
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
   ListTaskRunsRequestSchema,
-  Task_Status,
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -246,13 +249,10 @@ const runTimeInMS = ref<number | undefined>(undefined);
 const canRolloutPermission = ref(true);
 
 // Task status filters
-const isRunnable = (task: Task) =>
-  task.status === Task_Status.NOT_STARTED ||
-  task.status === Task_Status.FAILED ||
-  task.status === Task_Status.CANCELED;
+const isRunnable = (task: Task) => RUNNABLE_TASK_STATUSES.includes(task.status);
 
 const isCancellable = (task: Task) =>
-  task.status === Task_Status.PENDING || task.status === Task_Status.RUNNING;
+  CANCELABLE_TASK_STATUSES.includes(task.status);
 
 // Rollout type detection
 const allRolloutTasks = computed(() =>

@@ -1,7 +1,10 @@
 import type { ComputedRef, Ref } from "vue";
 import { computed, ref, watch } from "vue";
+import {
+  CANCELABLE_TASK_STATUSES,
+  RUNNABLE_TASK_STATUSES,
+} from "@/components/RolloutV1/constants/task";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { canRolloutTasks } from "../taskPermissions";
 
 export type TaskAction = "RUN" | "SKIP" | "CANCEL";
@@ -26,16 +29,6 @@ export interface UseTaskActionsReturn {
   closeActionPanel: () => void;
 }
 
-// Statuses that allow run/skip actions
-const RUNNABLE_STATUSES = [
-  Task_Status.NOT_STARTED,
-  Task_Status.CANCELED,
-  Task_Status.FAILED,
-];
-
-// Statuses that allow cancel action
-const CANCELABLE_STATUSES = [Task_Status.PENDING, Task_Status.RUNNING];
-
 export const useTaskActions = (
   task: () => Task,
   stage: () => Stage | undefined
@@ -59,17 +52,20 @@ export const useTaskActions = (
 
   const canRun = computed(
     () =>
-      canPerformActions.value && RUNNABLE_STATUSES.includes(taskStatus.value)
+      canPerformActions.value &&
+      RUNNABLE_TASK_STATUSES.includes(taskStatus.value)
   );
 
   const canSkip = computed(
     () =>
-      canPerformActions.value && RUNNABLE_STATUSES.includes(taskStatus.value)
+      canPerformActions.value &&
+      RUNNABLE_TASK_STATUSES.includes(taskStatus.value)
   );
 
   const canCancel = computed(
     () =>
-      canPerformActions.value && CANCELABLE_STATUSES.includes(taskStatus.value)
+      canPerformActions.value &&
+      CANCELABLE_TASK_STATUSES.includes(taskStatus.value)
   );
 
   const hasActions = computed(
