@@ -104,11 +104,14 @@ import { NButton, NCheckbox, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePlanContext } from "@/components/Plan/logic";
+import {
+  CANCELABLE_TASK_STATUSES,
+  RUNNABLE_TASK_STATUSES,
+} from "@/components/RolloutV1/constants/task";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 import { canRolloutTasks } from "./taskPermissions";
 import type { TaskAction } from "./types";
@@ -175,24 +178,20 @@ const canPerformTaskActions = computed(() => {
 });
 
 const hasRunnableTasks = computed(() => {
-  return props.selectedTasks.some(
-    (task) =>
-      task.status === Task_Status.NOT_STARTED ||
-      task.status === Task_Status.FAILED ||
-      task.status === Task_Status.CANCELED
+  return props.selectedTasks.some((task) =>
+    RUNNABLE_TASK_STATUSES.includes(task.status)
   );
 });
 
 const hasSkippableTasks = computed(() => {
-  return props.selectedTasks.some(
-    (task) => task.status === Task_Status.NOT_STARTED
+  return props.selectedTasks.some((task) =>
+    RUNNABLE_TASK_STATUSES.includes(task.status)
   );
 });
 
 const hasCancellableTasks = computed(() => {
-  return props.selectedTasks.some(
-    (task) =>
-      task.status === Task_Status.PENDING || task.status === Task_Status.RUNNING
+  return props.selectedTasks.some((task) =>
+    CANCELABLE_TASK_STATUSES.includes(task.status)
   );
 });
 
