@@ -402,7 +402,7 @@ func (s *LicenseService) CountActiveReplicas(ctx context.Context) int {
 		count = 1
 	}
 	s.replicaCache.Store(&replicaCacheState{
-		replicaCount: 1,
+		replicaCount: count,
 		loadedAt:     time.Now(),
 	})
 
