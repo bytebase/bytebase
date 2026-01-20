@@ -39,16 +39,8 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to execute")
-	}
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit transaction")
 	}
 	return nil
 }
@@ -193,17 +185,8 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to scan")
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute")
 	}
 
 	return create, nil
