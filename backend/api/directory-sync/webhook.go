@@ -765,13 +765,13 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					slog.Warn("unsupport operation type for externalId", slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
 				}
-				externalId, ok := op.Value.(string)
+				externalID, ok := op.Value.(string)
 				if !ok {
 					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 					continue
 				}
-				if strings.Contains(externalId, "@") {
-					updateGroup.Email = &externalId
+				if strings.Contains(externalID, "@") {
+					updateGroup.Email = &externalID
 				}
 			case "":
 				// Empty path with replace operation - Okta sends full resource attributes.
