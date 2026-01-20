@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -252,20 +251,42 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		s.removeProjectCache(patch.ResourceID)
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	// Prepare arrays for batch update
+	resourceIDs := make([]string, len(patches))
+	titles := make([]*string, len(patches))
+	deleteds := make([]*bool, len(patches))
+	settings := make([]*string, len(patches))
 
-	// Update all projects in the transaction
-	for _, patch := range patches {
-		if err := updateProjectImpl(ctx, tx, patch); err != nil {
-			return nil, err
+	for i, patch := range patches {
+		resourceIDs[i] = patch.ResourceID
+		titles[i] = patch.Title
+		deleteds[i] = patch.Delete
+		if patch.Setting != nil {
+			payload, err := protojson.Marshal(patch.Setting)
+			if err != nil {
+				return nil, err
+			}
+			s := string(payload)
+			settings[i] = &s
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	// Batch update using UPDATE FROM unnest
+	q := qb.Q().Space(`
+		UPDATE project AS p SET
+			name = COALESCE(u.name, p.name),
+			deleted = COALESCE(u.deleted, p.deleted),
+			setting = COALESCE(u.setting::jsonb, p.setting)
+		FROM unnest(?::text[], ?::text[], ?::bool[], ?::text[]) AS u(resource_id, name, deleted, setting)
+		WHERE p.resource_id = u.resource_id
+	`, resourceIDs, titles, deleteds, settings)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -280,40 +301,6 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 	}
 
 	return updatedProjects, nil
-}
-
-func updateProjectImpl(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
-	set := qb.Q()
-
-	if v := patch.Title; v != nil {
-		set.Comma("name = ?", *v)
-	}
-	if v := patch.Delete; v != nil {
-		set.Comma("deleted = ?", *v)
-	}
-	if v := patch.Setting; v != nil {
-		payload, err := protojson.Marshal(patch.Setting)
-		if err != nil {
-			return err
-		}
-		set.Comma("setting = ?", payload)
-	}
-
-	if set.Len() == 0 {
-		return errors.New("no fields to update")
-	}
-
-	q := qb.Q().Space("UPDATE project SET ?", set).
-		Space("WHERE resource_id = ?", patch.ResourceID)
-
-	sql, args, err := q.ToSQL()
-	if err != nil {
-		return err
-	}
-	if _, err := txn.ExecContext(ctx, sql, args...); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *Store) storeProjectCache(project *ProjectMessage) {
