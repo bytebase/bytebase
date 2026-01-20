@@ -4,7 +4,7 @@
       {{ $t("common.databases") }}
     </NBreadcrumbItem>
     <NBreadcrumbItem @click="router.push(databaseV1Url(database))">
-      {{ database.databaseName }}
+      {{ extractDatabaseResourceName(database.name).databaseName }}
     </NBreadcrumbItem>
     <NBreadcrumbItem
       @click="router.push(`${databaseV1Url(database)}#changelog`)"
@@ -32,7 +32,7 @@ import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { ChangelogDetail as ChangelogDetailView } from "@/components/Changelog";
 import { useDatabaseV1ByName } from "@/store";
-import { databaseV1Url } from "@/utils";
+import { databaseV1Url, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
   project: string;

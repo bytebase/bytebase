@@ -137,14 +137,16 @@ import {
   useGracefulRequest,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedDatabase, Permission } from "@/types";
+import type { Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
+  extractDatabaseResourceName,
   extractProjectResourceName,
   generateIssueTitle,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
@@ -170,7 +172,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    databases: ComposedDatabase[];
+    databases: Database[];
     projectName?: string;
     instanceName?: string;
     onCreateDatabase?: () => void;
@@ -188,7 +190,7 @@ const state = reactive<LocalState>({
 
 const emit = defineEmits<{
   (event: "refresh"): void;
-  (event: "update", databases: ComposedDatabase[]): void;
+  (event: "update", databases: Database[]): void;
 }>();
 
 const { t } = useI18n();
@@ -269,7 +271,9 @@ const generateMultiDb = async (
   if (!project.enforceIssueTitle) {
     query.name = generateIssueTitle(
       type,
-      props.databases.map((db) => db.databaseName)
+      props.databases.map(
+        (db) => extractDatabaseResourceName(db.name).databaseName
+      )
     );
   }
 

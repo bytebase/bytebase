@@ -114,12 +114,9 @@ import {
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  type ComposedDatabase,
-  formatEnvironmentName,
-  isValidDatabaseName,
-} from "@/types";
+import { formatEnvironmentName, isValidDatabaseName } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
@@ -281,7 +278,7 @@ const createDatabase = () => {
 
 useTitle(computed(() => instance.value.title));
 
-const selectedDatabases = computed((): ComposedDatabase[] => {
+const selectedDatabases = computed((): Database[] => {
   return state.selectedDatabaseNameList
     .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
     .filter((database) => isValidDatabaseName(database.name));

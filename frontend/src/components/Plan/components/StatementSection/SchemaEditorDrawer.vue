@@ -71,6 +71,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { DEFAULT_VISIBLE_TARGETS } from "../SpecDetailView/context";
 
@@ -137,10 +138,11 @@ const databaseOptions = computed(() => {
     .slice(0, DEFAULT_VISIBLE_TARGETS * (pageIndex + 1))
     .map((dbName) => {
       const db = databaseStore.getDatabaseByName(dbName);
+      const instanceResource = getInstanceResource(db);
       return {
-        label: `${db.databaseName} (${db.instanceResource.title})`,
+        label: `${extractDatabaseResourceName(db.name).databaseName} (${instanceResource.title})`,
         value: db.name,
-        disabled: !engineSupportsSchemaEditor(db.instanceResource.engine),
+        disabled: !engineSupportsSchemaEditor(instanceResource.engine),
       };
     });
 });

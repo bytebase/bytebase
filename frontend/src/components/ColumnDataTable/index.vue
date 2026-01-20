@@ -21,15 +21,19 @@ import {
   useDatabaseCatalog,
   useSubscriptionV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
+  Database,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import {
+  getDatabaseProject,
+  getInstanceResource,
+  hasProjectPermissionV2,
+} from "@/utils";
 import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";
 import SemanticTypeCell from "./SemanticTypeCell.vue";
@@ -41,7 +45,7 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     schema: string;
     table: TableMetadata;
     columnList: ColumnMetadata[];
@@ -58,7 +62,7 @@ const props = withDefaults(
 
 const { t } = useI18n();
 const engine = computed(() => {
-  return props.database.instanceResource.engine;
+  return getInstanceResource(props.database).engine;
 });
 const subscriptionV1Store = useSubscriptionV1Store();
 
@@ -100,7 +104,7 @@ const showCollationColumn = computed(() => {
 
 const hasDatabaseCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
-    props.database.projectEntity,
+    getDatabaseProject(props.database),
     "bb.databaseCatalogs.update"
   );
 });

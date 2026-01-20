@@ -122,14 +122,15 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEngine } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import TableList from "./TableList";
@@ -141,7 +142,7 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     selectedSchemaName: string | undefined;
     searchPattern?: string;
@@ -172,7 +173,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const engine = computed(() => {
-  return props.db.instanceResource.engine;
+  return getDatabaseEngine(props.db);
 });
 const selectedSchema = computed(() => {
   return props.database.schemas.find(

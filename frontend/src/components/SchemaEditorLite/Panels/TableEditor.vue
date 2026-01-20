@@ -161,10 +161,10 @@ import { ArrowLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
@@ -177,7 +177,11 @@ import {
   TablePartitionMetadata_Type,
   TablePartitionMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { instanceV1AllowsReorderColumns, randomString } from "@/utils";
+import {
+  getDatabaseEngine,
+  instanceV1AllowsReorderColumns,
+  randomString,
+} from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import {
@@ -195,7 +199,7 @@ type EditMode = "COLUMNS" | "INDEXES" | "PARTITIONS";
 
 const props = withDefaults(
   defineProps<{
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;
@@ -226,7 +230,7 @@ const {
 } = useSchemaEditorContext();
 
 const engine = computed((): Engine => {
-  return props.db.instanceResource.engine;
+  return getDatabaseEngine(props.db);
 });
 const state = reactive<LocalState>({
   mode: "COLUMNS",

@@ -22,8 +22,8 @@
 import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -31,6 +31,7 @@ import type {
 import {
   bytesToString,
   getHighlightHTMLByRegExp,
+  getInstanceResource,
   hasIndexSizeProperty,
   hasTableEngineProperty,
   instanceV1HasCollationAndCharacterSet,
@@ -40,7 +41,7 @@ import { EllipsisCell } from "../../common";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   tables: TableMetadata[];
@@ -62,7 +63,7 @@ const emit = defineEmits<{
 const { viewState } = useCurrentTabViewStateContext();
 const { t } = useI18n();
 const instanceResource = computed(() => {
-  return props.db.instanceResource;
+  return getInstanceResource(props.db);
 });
 
 const filteredTables = computed(() => {

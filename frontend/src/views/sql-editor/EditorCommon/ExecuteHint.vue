@@ -9,7 +9,7 @@
           <i18n-t keypath="sql-editor.enable-ddl-for-environment">
             <template #environment>
               <EnvironmentV1Name
-                :environment="database.effectiveEnvironmentEntity"
+                :environment="getDatabaseEnvironment(database)"
               />
             </template>
           </i18n-t>
@@ -53,13 +53,18 @@ import {
   useSQLEditorTabStore,
   useStorageStore,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+  getDatabaseEnvironment,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
 withDefaults(
   defineProps<{
-    database?: ComposedDatabase | undefined;
+    database?: Database | undefined;
   }>(),
   { database: undefined }
 );
@@ -130,10 +135,11 @@ const gotoCreateIssue = async () => {
   const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement.value);
+  const { databaseName } = extractDatabaseResourceName(db.name);
 
   const query = {
     template: "bb.issue.database.update",
-    name: `[${db.databaseName}] Change from SQL Editor`,
+    name: `[${databaseName}] Change from SQL Editor`,
     databaseList: db.name,
     sqlStorageKey,
   };

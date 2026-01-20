@@ -5,13 +5,13 @@ import { computed, ref, shallowReactive, unref, watch } from "vue";
 import { projectServiceClientConnect } from "@/connect";
 import {
   ALL_USERS_USER_EMAIL,
-  type ComposedDatabase,
   groupBindingPrefix,
   type MaybeRef,
   type QueryPermission,
   QueryPermissionQueryAny,
 } from "@/types";
 import type { Expr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   GetIamPolicyRequestSchema,
@@ -20,7 +20,7 @@ import {
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { getUserEmailListInBinding } from "@/utils";
+import { getDatabaseProject, getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useRoleStore } from "../role";
 import { useUserStore } from "../user";
@@ -174,14 +174,14 @@ const checkProjectIAMPolicyWithExpr = (
 };
 
 export const checkQuerierPermission = (
-  database: ComposedDatabase,
+  database: Database,
   permissions: QueryPermission[] = QueryPermissionQueryAny,
   schema?: string,
   table?: string
 ) => {
   return checkProjectIAMPolicyWithExpr(
     useCurrentUserV1().value,
-    database.projectEntity,
+    getDatabaseProject(database),
     permissions,
     (expr?: Expr): boolean => {
       // If no condition is set, then return true.

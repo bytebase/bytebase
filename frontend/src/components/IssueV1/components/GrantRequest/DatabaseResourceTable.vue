@@ -17,6 +17,11 @@ import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEnvironment,
+  getInstanceResource,
+} from "@/utils";
 
 const props = defineProps<{
   databaseResourceList: DatabaseResource[];
@@ -29,11 +34,11 @@ defineEmits<{
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 
-const extractDatabaseName = (databaseResource: DatabaseResource) => {
+const getDatabaseName = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
     databaseResource.databaseFullName
   );
-  return database.databaseName;
+  return extractDatabaseResourceName(database.name).databaseName;
 };
 
 const extractTableName = (databaseResource: DatabaseResource) => {
@@ -48,7 +53,7 @@ const extractTableName = (databaseResource: DatabaseResource) => {
   return names.join(".");
 };
 
-const extractComposedDatabase = (databaseResource: DatabaseResource) => {
+const getDatabase = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
     databaseResource.databaseFullName
   );
@@ -74,7 +79,7 @@ const columns = computed((): DataTableColumn<DatabaseResource>[] => {
     {
       title: t("common.database"),
       key: "database",
-      render: (row) => extractDatabaseName(row),
+      render: (row) => getDatabaseName(row),
     },
     {
       title: t("common.table"),
@@ -88,7 +93,7 @@ const columns = computed((): DataTableColumn<DatabaseResource>[] => {
       key: "environment",
       render: (row) => (
         <EnvironmentV1Name
-          environment={extractComposedDatabase(row).effectiveEnvironmentEntity}
+          environment={getDatabaseEnvironment(getDatabase(row))}
         />
       ),
     },
@@ -96,9 +101,7 @@ const columns = computed((): DataTableColumn<DatabaseResource>[] => {
       title: t("common.instance"),
       key: "instance",
       render: (row) => (
-        <InstanceV1Name
-          instance={extractComposedDatabase(row).instanceResource}
-        />
+        <InstanceV1Name instance={getInstanceResource(getDatabase(row))} />
       ),
     },
   ];

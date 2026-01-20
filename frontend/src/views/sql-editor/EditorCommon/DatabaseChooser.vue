@@ -30,7 +30,7 @@
         </template>
       </NPopover>
       <EnvironmentV1Name
-        :environment="database.effectiveEnvironmentEntity"
+        :environment="environment"
         :link="false"
       />
       <ChevronRightIcon class="shrink-0 h-4 w-4 text-control-light" />
@@ -45,7 +45,7 @@
       <ChevronRightIcon class="shrink-0 h-4 w-4 text-control-light" />
       <div class="flex items-center gap-1">
         <DatabaseIcon class="shrink-0" />
-        <span>{{ database.databaseName }}</span>
+        <span>{{ databaseName }}</span>
       </div>
     </div>
     <template v-else>
@@ -58,6 +58,7 @@
 import { ChevronRightIcon, SquareStackIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { DatabaseIcon } from "@/components/Icon";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import {
@@ -66,13 +67,24 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEnvironment,
+  getInstanceResource,
+} from "@/utils";
 import { useSQLEditorContext } from "../context";
 
 const { currentTab, isInBatchMode } = storeToRefs(useSQLEditorTabStore());
 const { showConnectionPanel } = useSQLEditorContext();
 const { projectContextReady } = storeToRefs(useSQLEditorStore());
 
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const { database } = useConnectionOfCurrentSQLEditorTab();
+
+const instance = computed(() => getInstanceResource(database.value));
+const environment = computed(() => getDatabaseEnvironment(database.value));
+const databaseName = computed(
+  () => extractDatabaseResourceName(database.value.name).databaseName
+);
 
 const changeConnection = () => {
   showConnectionPanel.value = true;

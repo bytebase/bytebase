@@ -22,8 +22,8 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   ViewMetadata,
@@ -35,7 +35,7 @@ import CommonCodeEditor from "./CommonCodeEditor.vue";
 import PreviewPane from "./PreviewPane.vue";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   view: ViewMetadata;

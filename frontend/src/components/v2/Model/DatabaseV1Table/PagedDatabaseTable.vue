@@ -28,7 +28,7 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { type DatabaseFilter, useDatabaseV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 import DatabaseV1Table from "./DatabaseV1Table.vue";
 
@@ -49,14 +49,13 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "row-click", e: MouseEvent, val: ComposedDatabase): void;
+  (event: "row-click", e: MouseEvent, val: Database): void;
 }>();
 
 const databaseStore = useDatabaseV1Store();
 const router = useRouter();
 
-const databasePagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedDatabase>>>();
+const databasePagedTable = ref<ComponentExposed<typeof PagedTable<Database>>>();
 
 const fetchDatabases = async ({
   pageToken,
@@ -90,7 +89,7 @@ watch(
   { deep: true }
 );
 
-const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+const handleDatabaseClick = (event: MouseEvent, database: Database) => {
   if (props.customClick) {
     emit("row-click", event, database);
   } else {
@@ -104,7 +103,7 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
 };
 
 defineExpose({
-  updateCache: (databases: ComposedDatabase[]) => {
+  updateCache: (databases: Database[]) => {
     databasePagedTable.value?.updateCache(databases);
   },
   refresh: () => databasePagedTable.value?.refresh(),

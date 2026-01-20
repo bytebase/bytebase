@@ -193,14 +193,15 @@ import {
   usePolicyV1Store,
 } from "@/store/modules/v1/policy";
 import type {
-  ComposedDatabase,
   DatabaseResource,
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { extractDatabaseResourceName } from "@/utils";
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
 import { provideBinaryFormatContext } from "./DataTable/common/binary-format-store";
@@ -215,7 +216,7 @@ type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 const props = withDefaults(
   defineProps<{
     executeParams: SQLEditorQueryParams;
-    database: ComposedDatabase;
+    database: Database;
     resultSet?: SQLResultSetV1;
     loading?: boolean;
     dark?: boolean;
@@ -378,7 +379,7 @@ const handleExportBtnClick = async ({
       {
         content,
         // the download file is always zip file.
-        filename: `${props.database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+        filename: `${extractDatabaseResourceName(props.database.name).databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
       },
     ]);
   } catch (e) {

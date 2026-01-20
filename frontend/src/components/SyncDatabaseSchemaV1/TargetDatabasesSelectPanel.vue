@@ -44,7 +44,7 @@
             <div class="mx-2">
               <ul class="list-disc">
                 <li v-for="db in selectedDatabaseList" :key="db.name">
-                  {{ db.databaseName }}
+                  {{ extractDatabaseResourceName(db.name).databaseName }}
                 </li>
               </ul>
             </div>
@@ -78,6 +78,7 @@ import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
+  extractDatabaseResourceName,
   extractProjectResourceName,
   getValueFromSearchParams,
 } from "@/utils";

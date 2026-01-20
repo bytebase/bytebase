@@ -41,11 +41,18 @@ import {
   useDatabaseCatalog,
   useSettingV1Store,
 } from "@/store/modules";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { bytesToString, hasSchemaProperty } from "@/utils";
+import {
+  bytesToString,
+  getDatabaseProject,
+  getInstanceResource,
+  hasSchemaProperty,
+} from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
@@ -54,7 +61,7 @@ type LocalState = {
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     schemaName?: string;
     tableList: TableMetadata[];
     search?: string;
@@ -94,13 +101,13 @@ watch(
 
 const classificationConfig = computed(() => {
   return settingStore.getProjectClassification(
-    props.database.projectEntity.dataClassificationConfigId
+    getDatabaseProject(props.database).dataClassificationConfigId
   );
 });
 
 const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 
-const engine = computed(() => props.database.instanceResource.engine);
+const engine = computed(() => getInstanceResource(props.database).engine);
 
 const isPostgres = computed(() => engine.value === Engine.POSTGRES);
 

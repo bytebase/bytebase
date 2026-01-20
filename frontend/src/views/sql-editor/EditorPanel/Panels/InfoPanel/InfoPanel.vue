@@ -111,7 +111,7 @@
       </div>
 
       <div
-        v-if="instanceV1SupportsSequence(database.instanceResource)"
+        v-if="instanceV1SupportsSequence(getInstanceResource(database))"
         class="flex flex-col gap-2"
       >
         <div class="flex items-center justify-between">
@@ -143,7 +143,7 @@
       </div>
 
       <div
-        v-if="instanceV1SupportsExternalTable(database.instanceResource)"
+        v-if="instanceV1SupportsExternalTable(getInstanceResource(database))"
         class="flex flex-col gap-2"
       >
         <div class="flex items-center justify-between">
@@ -172,7 +172,7 @@
       </div>
 
       <div
-        v-if="instanceV1SupportsPackage(database.instanceResource)"
+        v-if="instanceV1SupportsPackage(getInstanceResource(database))"
         class="flex flex-col gap-2"
       >
         <div class="flex items-center justify-between">
@@ -215,6 +215,7 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import {
+  getInstanceResource,
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,

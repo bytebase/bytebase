@@ -1,6 +1,6 @@
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   FunctionMetadata,
   ProcedureMetadata,
@@ -10,7 +10,7 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 
 export type EditTarget = {
-  database: ComposedDatabase;
+  database: Database;
   metadata: DatabaseMetadata;
   baselineMetadata: DatabaseMetadata;
 };
@@ -25,7 +25,7 @@ export type CommonTabContext = {
 // Tab context for editing database.
 export type DatabaseTabContext = CommonTabContext & {
   type: "database";
-  database: ComposedDatabase;
+  database: Database;
   metadata: {
     database: DatabaseMetadata;
   };
@@ -35,7 +35,7 @@ export type DatabaseTabContext = CommonTabContext & {
 // Tab context for editing table.
 export type TableTabContext = CommonTabContext & {
   type: "table";
-  database: ComposedDatabase;
+  database: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
@@ -45,7 +45,7 @@ export type TableTabContext = CommonTabContext & {
 
 export type ViewTabContext = CommonTabContext & {
   type: "view";
-  database: ComposedDatabase;
+  database: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
@@ -55,7 +55,7 @@ export type ViewTabContext = CommonTabContext & {
 
 export type ProcedureTabContext = CommonTabContext & {
   type: "procedure";
-  database: ComposedDatabase;
+  database: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
@@ -65,7 +65,7 @@ export type ProcedureTabContext = CommonTabContext & {
 
 export type FunctionTabContext = CommonTabContext & {
   type: "function";
-  database: ComposedDatabase;
+  database: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
@@ -93,7 +93,7 @@ export type EditStatus = "normal" | "created" | "dropped" | "updated";
  * Only tables are selectable rollout objects by now
  */
 export type RolloutObject = {
-  db: ComposedDatabase;
+  db: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;

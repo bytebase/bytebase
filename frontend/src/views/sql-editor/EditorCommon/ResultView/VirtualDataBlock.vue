@@ -73,7 +73,7 @@
 import { NVirtualList } from "naive-ui";
 import { computed, ref } from "vue";
 import { CopyButton } from "@/components/v2";
-import { type ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type {
   MaskingReason,
   QueryRow,
@@ -96,7 +96,7 @@ const props = defineProps<{
   activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
-  database: ComposedDatabase;
+  database: Database;
   search: SearchParams;
 }>();
 

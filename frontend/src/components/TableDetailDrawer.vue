@@ -35,7 +35,7 @@
                     >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
                   >
                   <EnvironmentV1Name
-                    :environment="database.effectiveEnvironmentEntity"
+                    :environment="effectiveEnvironment"
                     icon-class="textinfolabel"
                   />
                 </dd>
@@ -44,7 +44,7 @@
                   <span class="ml-1 textlabel"
                     >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
                   >
-                  <InstanceV1Name :instance="database.instanceResource" />
+                  <InstanceV1Name :instance="instanceResource" />
                 </dd>
                 <dt class="sr-only">{{ $t("common.project") }}</dt>
                 <dd class="flex items-center text-sm md:mr-4">
@@ -52,7 +52,7 @@
                     >{{ $t("common.project") }}&nbsp;-&nbsp;</span
                   >
                   <ProjectV1Name
-                    :project="database.projectEntity"
+                    :project="projectEntity"
                     hash="#databases"
                   />
                 </dd>
@@ -339,6 +339,9 @@ import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import {
   bytesToString,
+  getDatabaseEnvironment,
+  getDatabaseProject,
+  getInstanceResource,
   hasIndexSizeProperty,
   hasProjectPermissionV2,
   hasSchemaProperty,
@@ -432,9 +435,21 @@ const table = computedAsync(
   }
 );
 
+const instanceResource = computed(() => {
+  return getInstanceResource(database.value);
+});
+
+const projectEntity = computed(() => {
+  return getDatabaseProject(database.value);
+});
+
+const effectiveEnvironment = computed(() => {
+  return getDatabaseEnvironment(database.value);
+});
+
 const hasDatabaseCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
-    database.value.projectEntity,
+    projectEntity.value,
     "bb.databaseCatalogs.update"
   );
 });
@@ -499,7 +514,7 @@ const database = computed(() => {
 });
 
 const instanceEngine = computed(() => {
-  return database.value.instanceResource.engine;
+  return instanceResource.value.engine;
 });
 
 const instanceEngineNew = computed(() => {
@@ -516,7 +531,7 @@ const allowQuery = computed(() => {
 const hasPartitionTables = computed(() => {
   return (
     // Only show partition tables for PostgreSQL.
-    database.value.instanceResource.engine === Engine.POSTGRES &&
+    instanceResource.value.engine === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
   );

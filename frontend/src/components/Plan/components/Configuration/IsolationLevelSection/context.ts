@@ -7,6 +7,7 @@ import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { getInstanceResource } from "@/utils";
 import type { IsolationLevel } from "../../StatementSection/directiveUtils";
 
 export const KEY = Symbol(
@@ -53,7 +54,7 @@ export const provideIsolationLevelSettingContext = (refs: {
     // Only show for MySQL/MariaDB/TiDB for now
     const supportedEngines = [Engine.MYSQL, Engine.MARIADB, Engine.TIDB];
     const allDatabasesSupported = databases.value.every((db) =>
-      supportedEngines.includes(db.instanceResource.engine)
+      supportedEngines.includes(getInstanceResource(db).engine)
     );
     if (!allDatabasesSupported) return false;
 

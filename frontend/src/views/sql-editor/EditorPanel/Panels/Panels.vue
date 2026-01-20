@@ -67,6 +67,7 @@ import { isValidDatabaseName } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
+  getInstanceResource,
   nextAnimationFrame,
   type VueClass,
 } from "@/utils";
@@ -140,7 +141,7 @@ useEmitteryEventListener(AIEvents, "run-statement", async ({ statement }) => {
   execute({
     connection,
     statement,
-    engine: database.instanceResource.engine,
+    engine: getInstanceResource(database).engine,
     explain: false,
     selection: tab.value.editorState.selection,
   });

@@ -98,8 +98,8 @@ import {
   TriggerIcon,
 } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -119,7 +119,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;

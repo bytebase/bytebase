@@ -10,7 +10,7 @@ import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
-import { isDev } from "@/utils";
+import { getInstanceResource, isDev } from "@/utils";
 
 interface PriorBackupTelemetryPayload {
   enabled: boolean;
@@ -35,7 +35,7 @@ async function getEngineFromTaskTarget(target: string): Promise<Engine> {
       target,
       true /* silent */
     );
-    return db.instanceResource.engine;
+    return getInstanceResource(db).engine;
   } catch {
     return Engine.ENGINE_UNSPECIFIED;
   }

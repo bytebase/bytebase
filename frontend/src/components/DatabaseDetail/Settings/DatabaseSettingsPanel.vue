@@ -9,10 +9,10 @@
           class="mt-1 max-w-md"
           :value="`${environmentNamePrefix}${environment.id}`"
           :disabled="!allowUpdateDatabase"
-          :clearable="!database.instanceResource.environment"
+          :clearable="!getInstanceResource(database).environment"
           :render-suffix="
             (env: Environment) =>
-              database.instanceResource.environment === env.name
+              getInstanceResource(database).environment === env.name
                 ? `(${$t('common.default')})`
                 : ''
           "
@@ -41,14 +41,18 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
 } from "@/store";
-import { type ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { hasProjectPermissionV2 } from "@/utils";
+import {
+  getDatabaseProject,
+  getInstanceResource,
+  hasProjectPermissionV2,
+} from "@/utils";
 import Labels from "./components/Labels.vue";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const databaseStore = useDatabaseV1Store();
@@ -62,7 +66,10 @@ const environment = computed(() => {
 });
 
 const allowUpdateDatabase = computed(() =>
-  hasProjectPermissionV2(props.database.projectEntity, "bb.databases.update")
+  hasProjectPermissionV2(
+    getDatabaseProject(props.database),
+    "bb.databases.update"
+  )
 );
 
 const handleSelectEnvironment = async (name: string | undefined) => {

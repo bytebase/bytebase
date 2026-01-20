@@ -114,8 +114,8 @@ import { useI18n } from "vue-i18n";
 import { SearchBox } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useDBSchemaV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   FunctionMetadata,
   ProcedureMetadata,
@@ -124,6 +124,7 @@ import type {
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
+  getDatabaseEngine,
   getFixedPrimaryKey,
   getHighlightHTMLByKeyWords,
   isDescendantOf,
@@ -150,30 +151,30 @@ import NodePrefix from "./NodePrefix.vue";
 interface LocalState {
   shouldRelocateTreeNode: boolean;
   schemaNameModalContext?: {
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema?: SchemaMetadata;
   };
   tableNameModalContext?: {
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table?: TableMetadata;
   };
   procedureNameModalContext?: {
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     procedure?: ProcedureMetadata;
   };
   viewNameModalContext?: {
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     view?: ViewMetadata;
   };
   functionNameModalContext?: {
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     function?: FunctionMetadata;
@@ -588,7 +589,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     },
   });
   if (node.type === "database") {
-    const { engine } = node.db.instanceResource;
+    const engine = getDatabaseEngine(node.db);
     if (engineSupportsMultiSchema(engine)) {
       icons.push(menuIcon);
     }
@@ -625,7 +626,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
 
 const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
   const { db } = treeNode;
-  const engine = db.instanceResource.engine;
+  const engine = getDatabaseEngine(db);
   const { schema, table } = treeNode.metadata;
   const flattenTableList = treeNode.metadata.database.schemas.flatMap(
     (schema) => schema.tables

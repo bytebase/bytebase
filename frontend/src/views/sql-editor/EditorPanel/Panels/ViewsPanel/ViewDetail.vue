@@ -81,8 +81,8 @@ import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ColumnIcon, ViewIcon } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   ViewMetadata,
@@ -100,7 +100,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   view: ViewMetadata;

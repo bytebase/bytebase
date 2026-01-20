@@ -5,18 +5,17 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   projectNamePrefix,
   useDatabaseV1Store,
-  useEnvironmentV1Store,
   useInstanceResourceByName,
   useProjectV1Store,
 } from "@/store";
 import {
-  type ComposedDatabase,
   EMPTY_ID,
   isValidDatabaseName,
   UNKNOWN_ID,
   unknownDatabase,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import {
   type Issue,
@@ -164,16 +163,17 @@ export const isUnfinishedResolvedTask = (
   });
 };
 
-export const mockDatabase = (projectEntity: Project, database: string) => {
+export const mockDatabase = (
+  projectEntity: Project,
+  database: string
+): Database => {
   // Database not found, it's probably NOT_FOUND (maybe dropped actually)
   // Mock a database using all known resources
   const db = unknownDatabase();
   db.project = projectEntity.name;
-
   db.name = database;
-  const { instance, databaseName } = extractDatabaseResourceName(db.name);
-  db.databaseName = databaseName;
-  db.instance = instance;
+
+  const { instance } = extractDatabaseResourceName(db.name);
   const { instance: instanceFromStore } = useInstanceResourceByName(instance);
   // Create InstanceResource from the instance data
   const instanceData = instanceFromStore.value;
@@ -188,9 +188,6 @@ export const mockDatabase = (projectEntity: Project, database: string) => {
   });
   db.environment = db.instanceResource.environment;
   db.effectiveEnvironment = db.instanceResource.environment;
-  db.effectiveEnvironmentEntity = useEnvironmentV1Store().getEnvironmentByName(
-    db.instanceResource.environment ?? ""
-  );
   db.state = State.DELETED;
   return db;
 };
@@ -199,18 +196,14 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   project: Project,
   task: Task,
   plan?: Plan
-) => {
-  const coreDatabaseInfo = (
-    instanceName: string,
-    databaseName: string
-  ): ComposedDatabase => {
-    const name = `${instanceName}/databases/${databaseName}`;
+): Database => {
+  const coreDatabaseInfo = (instanceName: string, dbName: string): Database => {
+    const name = `${instanceName}/databases/${dbName}`;
     const maybeExistedDatabase = useDatabaseV1Store().getDatabaseByName(name);
     if (isValidDatabaseName(maybeExistedDatabase.name)) {
       return maybeExistedDatabase;
     }
 
-    const environmentStore = useEnvironmentV1Store();
     const { instance: instanceFromStore } =
       useInstanceResourceByName(instanceName);
     // Create InstanceResource from the instance data
@@ -224,20 +217,12 @@ export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
       environment: instanceData.environment,
       engineVersion: instanceData.engineVersion ?? "",
     });
-    const effectiveEnvironmentEntity = environmentStore.getEnvironmentByName(
-      instanceResource.environment ?? ""
-    );
-    return {
-      ...unknownDatabase(),
-      name,
-      databaseName,
-      instance: instanceName,
-      project: project.name,
-      projectEntity: project,
-      effectiveEnvironment: instanceResource.environment,
-      effectiveEnvironmentEntity: effectiveEnvironmentEntity,
-      instanceResource,
-    };
+    const db = unknownDatabase();
+    db.name = name;
+    db.project = project.name;
+    db.effectiveEnvironment = instanceResource.environment;
+    db.instanceResource = instanceResource;
+    return db;
   };
 
   if (task.payload?.case === "databaseCreate") {

@@ -2,7 +2,7 @@
   <PermissionGuardWrapper
     v-if="available"
     v-slot="slotProps"
-    :project="database.projectEntity"
+    :project="getDatabaseProject(database)"
     :permissions="['bb.databases.sync']"
   >
     <NButton
@@ -28,13 +28,14 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { isValidDatabaseName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { extractDatabaseResourceName, getDatabaseProject } from "@/utils";
 
 const props = defineProps<{
   text: boolean;
   type: "default" | "primary";
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const emit = defineEmits<{
@@ -60,21 +61,23 @@ const syncDatabaseSchema = async () => {
       database: props.database.name,
       skipCache: true,
     });
+    const { databaseName } = extractDatabaseResourceName(props.database.name);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t(
         "db.successfully-synced-schema-for-database-database-value-name",
-        [props.database.databaseName]
+        [databaseName]
       ),
     });
     emit("finish");
   } catch (error) {
+    const { databaseName } = extractDatabaseResourceName(props.database.name);
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("db.failed-to-sync-schema-for-database-database-value-name", [
-        props.database.databaseName,
+        databaseName,
       ]),
       description: (error as ConnectError).message,
     });

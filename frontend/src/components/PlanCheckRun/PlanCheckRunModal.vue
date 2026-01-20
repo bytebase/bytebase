@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { BBModal } from "@/bbkit";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanCheckRun_Result_Type } from "@/types/proto-es/v1/plan_service_pb";
 import PlanCheckRunPanel from "./PlanCheckRunPanel.vue";
@@ -25,7 +25,7 @@ import PlanCheckRunPanel from "./PlanCheckRunPanel.vue";
 defineProps<{
   planCheckRunList: PlanCheckRun[];
   selectedType: PlanCheckRun_Result_Type;
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 defineEmits<{

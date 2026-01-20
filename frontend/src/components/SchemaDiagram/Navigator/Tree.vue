@@ -19,7 +19,11 @@
 <script lang="ts" setup>
 import { NTree, type TreeOption } from "naive-ui";
 import { computed, h } from "vue";
-import { hasSchemaProperty, isDescendantOf } from "@/utils";
+import {
+  getInstanceResource,
+  hasSchemaProperty,
+  isDescendantOf,
+} from "@/utils";
 import { useSchemaDiagramContext } from "../common";
 import { DEFAULT_PADDINGS } from "../common/const";
 import { Label, Prefix, Suffix } from "./TreeNode";
@@ -39,7 +43,7 @@ const context = useSchemaDiagramContext();
 const { selectedSchemas, events, database } = context;
 
 const isFlatTree = computed(() => {
-  return hasSchemaProperty(database.value.instanceResource.engine);
+  return hasSchemaProperty(getInstanceResource(database.value).engine);
 });
 
 const treeData = computed(() => {

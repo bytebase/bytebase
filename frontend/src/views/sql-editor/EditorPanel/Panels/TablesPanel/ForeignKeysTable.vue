@@ -22,19 +22,23 @@ import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
+  Database,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
+import {
+  getHighlightHTMLByRegExp,
+  getInstanceResource,
+  useAutoHeightDataTable,
+} from "@/utils";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
@@ -133,7 +137,7 @@ const columns = computed(() => {
         title: "Match type",
         resizable: true,
         minWidth: 140,
-        hide: props.db.instanceResource.engine !== Engine.POSTGRES,
+        hide: getInstanceResource(props.db).engine !== Engine.POSTGRES,
       },
     ];
   return columns.filter((header) => !header.hide);

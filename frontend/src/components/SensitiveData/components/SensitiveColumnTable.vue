@@ -30,17 +30,21 @@ import {
   useDatabaseCatalogV1Store,
   useSettingV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnCatalog,
   ObjectSchema,
   TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";
-import { autoDatabaseRoute } from "@/utils";
+import {
+  autoDatabaseRoute,
+  getDatabaseProject,
+  getInstanceResource,
+} from "@/utils";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   showOperation: boolean;
   rowClickable: boolean;
   rowSelectable: boolean;
@@ -73,7 +77,7 @@ const databaseCatalog = useDatabaseCatalog(props.database.name, false);
 const classificationConfig = computed(() => {
   return (
     settingStore.getProjectClassification(
-      props.database.projectEntity.dataClassificationConfigId
+      getDatabaseProject(props.database).dataClassificationConfigId
     ) ?? create(DataClassificationSetting_DataClassificationConfigSchema, {})
   );
 });
@@ -145,7 +149,7 @@ const dataTableColumns = computed(() => {
           <ClassificationCell
             classification={item.classificationId}
             classificationConfig={classificationConfig.value}
-            engine={props.database.instanceResource.engine}
+            engine={getInstanceResource(props.database).engine}
             readonly={!props.showOperation || item.disableClassification}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />

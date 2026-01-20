@@ -2,7 +2,6 @@ import { flatten, orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
 import type {
-  ComposedDatabase,
   SQLEditorTreeFactor as Factor,
   SQLEditorTreeNodeTarget as NodeTarget,
   SQLEditorTreeNodeType as NodeType,
@@ -15,10 +14,15 @@ import {
   LeafTreeNodeTypes,
   unknownEnvironment,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { getSemanticLabelValue, groupBy } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getSemanticLabelValue,
+  groupBy,
+} from "@/utils";
 import { useEnvironmentV1Store, useInstanceResourceByName } from "../v1";
 
 export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
@@ -77,7 +81,7 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
   target: NodeTarget<T>
 ) => {
   if (type === "instance" || type === "database") {
-    return (target as Project | InstanceResource | ComposedDatabase).name;
+    return (target as Project | InstanceResource | Database).name;
   }
   if (type === "environment") {
     return formatEnvironmentName((target as Environment).id);
@@ -93,7 +97,7 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
 };
 
 const buildSubTree = (
-  databaseList: ComposedDatabase[],
+  databaseList: Database[],
   parent: TreeNode | undefined,
   factorList: Factor[],
   factorIndex: number
@@ -151,7 +155,7 @@ const sortNodesIfNeeded = (nodes: TreeNode[], factor: Factor) => {
 };
 
 export const buildTreeImpl = (
-  databaseList: ComposedDatabase[],
+  databaseList: Database[],
   factorList: Factor[]
 ): TreeNode[] => {
   return buildSubTree(
@@ -226,7 +230,7 @@ const readableTargetByType = <T extends NodeType>(
     return (target as InstanceResource).title;
   }
   if (type === "database") {
-    return (target as ComposedDatabase).databaseName;
+    return extractDatabaseResourceName((target as Database).name).databaseName;
   }
   return (target as NodeTarget<"label">).value;
 };
@@ -235,12 +239,12 @@ const isLeafNodeType = (type: NodeType) => {
   return LeafTreeNodeTypes.includes(type);
 };
 
-const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
+const getSemanticFactorValue = (db: Database, factor: Factor) => {
   switch (factor) {
     case "environment":
       return db.effectiveEnvironment || unknownEnvironment().name;
     case "instance":
-      return db.instance;
+      return extractDatabaseResourceName(db.name).instance;
   }
 
   const key = extractLabelFactor(factor);

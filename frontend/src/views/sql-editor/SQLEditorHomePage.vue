@@ -76,7 +76,10 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { extractProjectResourceName } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+} from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
 import { useSQLEditorContext } from "./context";
@@ -124,9 +127,10 @@ useEmitteryEventListener(
         exampleSQL.push(`${table}`);
       }
     }
+    const { databaseName: dbName } = extractDatabaseResourceName(database.name);
     const query = {
       template: "bb.issue.database.update",
-      name: `[${database.databaseName}] Edit schema`,
+      name: `[${dbName}] Edit schema`,
       databaseList: database.name,
       sql: exampleSQL.join(" "),
     };

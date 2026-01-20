@@ -36,8 +36,8 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   ProcedureMetadata,
   SchemaMetadata,
@@ -53,7 +53,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   metadata: DatabaseMetadata;
   schema: SchemaMetadata;
   procedure?: ProcedureMetadata;

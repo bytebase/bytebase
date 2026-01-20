@@ -8,7 +8,7 @@
     :bordered="bordered"
     :pagination="pagination"
     :loading="loading"
-    :row-key="(data: ComposedDatabase) => data.name"
+    :row-key="(data: Database) => data.name"
     :checked-row-keys="props.selectedDatabaseNames"
     :row-props="rowProps"
     @update:checked-row-keys="
@@ -32,12 +32,17 @@ import {
   LabelsCell,
   ProjectNameCell,
 } from "@/components/v2/Model/cells";
-import type { ComposedDatabase } from "@/types";
-import { hostPortOfInstanceV1 } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  getDatabaseEnvironment,
+  getDatabaseProject,
+  getInstanceResource,
+  hostPortOfInstanceV1,
+} from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
 import { mapSorterStatus } from "../utils";
 
-type DatabaseDataTableColumn = DataTableColumn<ComposedDatabase> & {
+type DatabaseDataTableColumn = DataTableColumn<Database> & {
   hide?: boolean;
 };
 
@@ -52,7 +57,7 @@ export type Mode =
 const props = withDefaults(
   defineProps<{
     mode?: Mode;
-    databaseList: ComposedDatabase[];
+    databaseList: Database[];
     bordered?: boolean;
     loading?: boolean;
     showSelection?: boolean;
@@ -61,8 +66,8 @@ const props = withDefaults(
     rowClickable?: boolean;
     selectedDatabaseNames?: string[];
     keyword?: string;
-    rowClick?: (e: MouseEvent, val: ComposedDatabase) => void;
-    selectDisabled?: (db: ComposedDatabase) => boolean;
+    rowClick?: (e: MouseEvent, val: Database) => void;
+    selectDisabled?: (db: Database) => boolean;
     pagination?:
       | false
       | {
@@ -79,7 +84,7 @@ const props = withDefaults(
     keyword: undefined,
     selectedDatabaseNames: () => [],
     pagination: false,
-    selectDisabled: (_: ComposedDatabase) => false,
+    selectDisabled: (_: Database) => false,
   }
 );
 
@@ -119,7 +124,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     resizable: true,
     render: (data) => (
       <EnvironmentV1Name
-        environment={data.effectiveEnvironmentEntity}
+        environment={getDatabaseEnvironment(data)}
         link={false}
         showColor={true}
         keyword={props.keyword}
@@ -134,7 +139,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     resizable: true,
     hide: props.schemaless,
     render: (data) => {
-      const release = (data as ComposedDatabase).release;
+      const release = data.release;
       return release ? extractReleaseUID(release) : "-";
     },
   };
@@ -144,7 +149,10 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     resizable: true,
     ellipsis: true,
     render: (data) => (
-      <ProjectNameCell project={data.projectEntity} keyword={props.keyword} />
+      <ProjectNameCell
+        project={getDatabaseProject(data)}
+        keyword={props.keyword}
+      />
     ),
   };
   const INSTANCE: DatabaseDataTableColumn = {
@@ -152,7 +160,11 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.instance"),
     resizable: true,
     render: (data) => (
-      <InstanceV1Name instance={data.instanceResource} link={false} tag="div" />
+      <InstanceV1Name
+        instance={getInstanceResource(data)}
+        link={false}
+        tag="div"
+      />
     ),
   };
   const ADDRESS: DatabaseDataTableColumn = {
@@ -162,7 +174,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     ellipsis: {
       tooltip: true,
     },
-    render: (data) => hostPortOfInstanceV1(data.instanceResource),
+    render: (data) => hostPortOfInstanceV1(getInstanceResource(data)),
   };
   const DATABASE_LABELS: DatabaseDataTableColumn = {
     key: "labels",
@@ -205,7 +217,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   return mapSorterStatus(columns, props.sorters);
 });
 
-const rowProps = (database: ComposedDatabase) => {
+const rowProps = (database: Database) => {
   return {
     style: props.rowClickable ? "cursor: pointer;" : "",
     onClick: (e: MouseEvent) => {

@@ -14,11 +14,11 @@ import {
   useSQLEditorStore,
 } from "@/store";
 import type {
-  ComposedDatabase,
   StatefulSQLEditorTreeFactor as StatefulFactor,
   SQLEditorTreeNode as TreeNode,
 } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   getDefaultPagination,
   isDatabaseV1Queryable,
@@ -56,7 +56,7 @@ export const useSQLEditorTreeByEnvironment = (
 
   const tree = ref<TreeNode[]>([]);
   const showMissingQueryDatabases = ref<boolean>(false);
-  const databaseList = ref<ComposedDatabase[]>([]);
+  const databaseList = ref<Database[]>([]);
   const fetchDataState = ref<{
     loading: boolean;
     nextPageToken?: string;

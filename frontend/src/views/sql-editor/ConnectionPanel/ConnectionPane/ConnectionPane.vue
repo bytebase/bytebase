@@ -235,7 +235,6 @@ import {
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type {
   BatchQueryContext,
-  ComposedDatabase,
   QueryDataSourceType,
   SQLEditorTreeNode,
 } from "@/types";
@@ -248,6 +247,7 @@ import {
   unknownEnvironment,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SearchParams } from "@/utils";
@@ -603,7 +603,7 @@ const connect = (node: SQLEditorTreeNode) => {
   if (node.disabled || node.meta.type !== "database") {
     return;
   }
-  const database = node.meta.target as ComposedDatabase;
+  const database = node.meta.target as Database;
   if (!isDatabaseV1Queryable(database)) {
     return;
   }

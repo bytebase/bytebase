@@ -45,14 +45,14 @@ import { useCurrentTimestamp } from "@/composables/useCurrentTimestamp";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useSQLEditorTabStore } from "@/store";
 import type {
-  ComposedDatabase,
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ResultViewV1 } from "../../EditorCommon/";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   context: SQLEditorDatabaseQueryContext;
 }>();
 

@@ -29,7 +29,7 @@ import { computed } from "vue";
 import { RichEngineName } from "@/components/v2";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { bytesToString } from "@/utils";
+import { bytesToString, getInstanceResource } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
@@ -42,7 +42,8 @@ const dbSchema = useDBSchemaV1Store();
 const databaseStore = useDatabaseV1Store();
 
 const instanceEngine = computed(
-  () => databaseStore.getDatabaseByName(props.database).instanceResource.engine
+  () =>
+    getInstanceResource(databaseStore.getDatabaseByName(props.database)).engine
 );
 
 const tableMetadata = computed(() =>

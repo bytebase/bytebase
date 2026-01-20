@@ -57,7 +57,7 @@ import {
   useCurrentProjectV1,
   useDatabaseV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
   type Plan_Spec,
@@ -66,7 +66,7 @@ import {
 
 const props = defineProps<{
   title?: string;
-  preSelectedDatabases?: ComposedDatabase[];
+  preSelectedDatabases?: Database[];
   preSelectedDatabaseGroup?: string;
 }>();
 

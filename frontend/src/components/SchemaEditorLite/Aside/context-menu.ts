@@ -2,9 +2,9 @@ import Emittery from "emittery";
 import type { DropdownOption } from "naive-ui";
 import { computed, type Ref, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { isDescendantOf } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEngine, isDescendantOf } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import { engineSupportsMultiSchema } from "../spec";
 import type {
@@ -80,7 +80,7 @@ export const useContextMenu = (): ContextMenuContext => {
     if (!node) return [];
     if (typeof node.db === "undefined") return [];
 
-    const { engine } = (node.db as ComposedDatabase).instanceResource;
+    const engine = getDatabaseEngine(node.db as Database);
     if (node.type === "database") {
       if (engineSupportsMultiSchema(engine)) {
         return [

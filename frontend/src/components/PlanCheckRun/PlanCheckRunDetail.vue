@@ -243,7 +243,7 @@ import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { planServiceClientConnect } from "@/connect";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
-import type { ComposedDatabase, RuleTemplateV2 } from "@/types";
+import type { RuleTemplateV2 } from "@/types";
 import {
   convertPolicyRuleToRuleTemplate,
   GeneralErrorCode,
@@ -252,6 +252,7 @@ import {
   ruleTypeToString,
   SQLReviewPolicyErrorCode,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -290,7 +291,7 @@ type LocalState = {
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
   showCodeLocation?: boolean;
-  database?: ComposedDatabase;
+  database?: Database;
 }>();
 
 const { t } = useI18n();
@@ -347,7 +348,7 @@ const getRuleTemplateByType = (type: string) => {
     return;
   }
 
-  if (props.database) {
+  if (props.database?.instanceResource) {
     return ruleTemplateMapV2
       .get(props.database.instanceResource.engine)
       ?.get(typeEnum);
@@ -508,7 +509,7 @@ const reviewPolicy = useReviewPolicyForDatabase(
 );
 
 const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
-  const engine = props.database?.instanceResource.engine;
+  const engine = props.database?.instanceResource?.engine;
   if (isBuiltinRule(type) && engine) {
     const typeEnum = builtinRuleType(type);
     if (!typeEnum) {

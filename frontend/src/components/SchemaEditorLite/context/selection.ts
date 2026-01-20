@@ -1,9 +1,9 @@
 import { pick } from "lodash-es";
 import type { Ref } from "vue";
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   FunctionMetadata,
   ProcedureMetadata,
@@ -34,7 +34,7 @@ export const useSelection = (
 
   const updateTableSelectionImpl = (
     map: Map<string, RolloutObject>,
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -65,7 +65,7 @@ export const useSelection = (
   };
   const updateColumnSelectionImpl = (
     map: Map<string, RolloutObject>,
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -93,7 +93,7 @@ export const useSelection = (
   };
   const updateViewSelectionImpl = (
     map: Map<string, RolloutObject>,
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -115,7 +115,7 @@ export const useSelection = (
   };
   const updateProcedureSelectionImpl = (
     map: Map<string, RolloutObject>,
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -137,7 +137,7 @@ export const useSelection = (
   };
   const updateFunctionSelectionImpl = (
     map: Map<string, RolloutObject>,
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -162,7 +162,7 @@ export const useSelection = (
   };
 
   const getTableSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -206,7 +206,7 @@ export const useSelection = (
     return state;
   };
   const updateTableSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -220,7 +220,7 @@ export const useSelection = (
     emit(updatedMap);
   };
   const getAllTablesSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -245,7 +245,7 @@ export const useSelection = (
     };
   };
   const updateAllTablesSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -269,7 +269,7 @@ export const useSelection = (
     emit(updatedMap);
   };
   const getColumnSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -287,7 +287,7 @@ export const useSelection = (
     return { checked, indeterminate: false };
   };
   const updateColumnSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -302,7 +302,7 @@ export const useSelection = (
     emit(updatedMap);
   };
   const getAllColumnsSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -328,7 +328,7 @@ export const useSelection = (
     };
   };
   const updateAllColumnsSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -354,7 +354,7 @@ export const useSelection = (
   };
 
   const getViewSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -374,7 +374,7 @@ export const useSelection = (
     };
   };
   const updateViewSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -388,7 +388,7 @@ export const useSelection = (
     emit(updatedMap);
   };
   const getAllViewsSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -412,7 +412,7 @@ export const useSelection = (
     };
   };
   const updateAllViewsSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -437,7 +437,7 @@ export const useSelection = (
   };
 
   const getProcedureSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -457,7 +457,7 @@ export const useSelection = (
     };
   };
   const updateProcedureSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -471,7 +471,7 @@ export const useSelection = (
     emit(updatedMap);
   };
   const getAllProceduresSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -495,7 +495,7 @@ export const useSelection = (
     };
   };
   const updateAllProceduresSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -520,7 +520,7 @@ export const useSelection = (
   };
 
   const getFunctionSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -540,7 +540,7 @@ export const useSelection = (
     };
   };
   const updateFunctionSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -554,7 +554,7 @@ export const useSelection = (
     emit(updatedMap);
   };
   const getAllFunctionsSelectionState = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
@@ -578,7 +578,7 @@ export const useSelection = (
     };
   };
   const updateAllFunctionsSelection = (
-    db: ComposedDatabase,
+    db: Database,
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;

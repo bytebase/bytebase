@@ -5,7 +5,7 @@ import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { isNullOrUndefined } from "@/utils";
+import { getInstanceResource, isNullOrUndefined } from "@/utils";
 import { GHOST_AVAILABLE_ENGINES, getGhostEnabledForSpec } from "./common";
 
 export const KEY = Symbol(
@@ -43,7 +43,7 @@ export const provideGhostSettingContext = (refs: {
     return (
       selectedSpec.value &&
       databases.value.every((db) =>
-        GHOST_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+        GHOST_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine)
       ) &&
       !isNullOrUndefined(getGhostEnabledForSpec(selectedSpec.value))
     );

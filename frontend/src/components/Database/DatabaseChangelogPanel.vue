@@ -23,11 +23,13 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import { ChangelogDataTable } from "@/components/Changelog";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useChangelogStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
-import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Changelog,
+  Database,
+} from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const changelogStore = useChangelogStore();

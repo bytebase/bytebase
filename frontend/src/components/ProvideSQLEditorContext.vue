@@ -59,6 +59,7 @@ import {
 } from "@/types";
 import {
   emptySQLEditorConnection,
+  extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
   extractWorksheetConnection,
@@ -225,8 +226,9 @@ const prepareConnectionParams = async () => {
     return false;
   }
   // connected to db
+  const { instance } = extractDatabaseResourceName(database.name);
   const connection = {
-    instance: database.instance,
+    instance,
     database: database.name,
   };
   tabStore.addTab({
@@ -327,12 +329,13 @@ const syncURLWithConnection = () => {
           query.table = table;
           query.schema = schema ?? "";
         }
+        const dbResource = extractDatabaseResourceName(database.name);
         router.replace({
           name: SQL_EDITOR_DATABASE_MODULE,
           params: {
             project: extractProjectResourceName(database.project),
-            instance: extractInstanceResourceName(database.instance),
-            database: database.databaseName,
+            instance: extractInstanceResourceName(dbResource.instance),
+            database: dbResource.databaseName,
           },
           query,
         });

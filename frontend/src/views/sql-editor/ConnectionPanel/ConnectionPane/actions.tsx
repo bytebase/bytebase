@@ -12,7 +12,6 @@ import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSQLEditorTabStore } from "@/store";
 import {
   type BatchQueryContext,
-  type ComposedDatabase,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
   isConnectableSQLEditorTreeNode,
@@ -21,9 +20,12 @@ import {
   type SQLEditorTabMode as TabMode,
   type SQLEditorTreeNode as TreeNode,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
+  extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
+  getInstanceResource,
   hasWorkspacePermissionV2,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
@@ -64,7 +66,7 @@ export const useDropdown = () => {
     const items: DropdownOptionWithTreeNode[] = [];
 
     if (isConnectableSQLEditorTreeNode(node)) {
-      const database = node.meta.target as ComposedDatabase;
+      const database = node.meta.target as Database;
       const instance = instanceOfSQLEditorTreeNode(node);
       if (instance && instanceV1HasReadonlyMode(instance)) {
         items.push({
@@ -112,7 +114,10 @@ export const useDropdown = () => {
       }
     }
     if (type === "database") {
-      const database = target as ComposedDatabase;
+      const database = target as Database;
+      const { instance, databaseName } = extractDatabaseResourceName(
+        database.name
+      );
       items.push({
         key: "view-database-detail",
         label: t("sql-editor.view-database-detail"),
@@ -122,21 +127,21 @@ export const useDropdown = () => {
             name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
             params: {
               projectId: extractProjectResourceName(database.project),
-              instanceId: extractInstanceResourceName(database.instance),
-              databaseName: database.databaseName,
+              instanceId: extractInstanceResourceName(instance),
+              databaseName,
             },
           });
           const url = route.href;
           window.open(url, "_blank");
         },
       });
-      if (instanceV1HasAlterSchema(database.instanceResource)) {
+      if (instanceV1HasAlterSchema(getInstanceResource(database))) {
         items.push({
           key: "alter-schema",
           label: t("database.edit-schema"),
           icon: () => <SquarePenIcon class="w-4 h-4" />,
           onSelect: () => {
-            const db = node.meta.target as ComposedDatabase;
+            const db = node.meta.target as Database;
             editorEvents.emit("alter-schema", {
               databaseName: db.name,
               schema: "",
@@ -170,7 +175,7 @@ export const useDropdown = () => {
 // - when newTab == false && exist current tab: connect to the current tab
 // - otherwise create a new worksheet then open the tab
 export const setConnection = (options: {
-  database?: ComposedDatabase;
+  database?: Database;
   mode?: TabMode;
   newTab: boolean;
   context: SQLEditorContext;
@@ -183,7 +188,9 @@ export const setConnection = (options: {
     context,
   } = options;
   const connection: SQLEditorConnection = {
-    instance: database?.instance ?? "",
+    instance: database
+      ? extractDatabaseResourceName(database.name).instance
+      : "",
     database: database?.name ?? "",
   };
   if (database) {

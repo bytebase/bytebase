@@ -5,16 +5,15 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { extractUserId } from "@/store/modules/v1/common";
-import {
-  type ComposedDatabase,
-  type SQLEditorConnection,
-  UNKNOWN_PROJECT_NAME,
-} from "@/types";
+import { type SQLEditorConnection, UNKNOWN_PROJECT_NAME } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   emptySQLEditorConnection,
+  extractDatabaseResourceName,
+  getInstanceResource,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   isDatabaseV1Queryable,
@@ -91,7 +90,7 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
 
 export const setDefaultDataSourceForConn = (
   conn: SQLEditorConnection,
-  database: ComposedDatabase
+  database: Database
 ) => {
   if (conn.dataSourceId) {
     return;
@@ -99,12 +98,13 @@ export const setDefaultDataSourceForConn = (
 
   // Default connect to the first read-only data source if available.
   // Skip checking env/project policy for now.
+  const instanceResource = getInstanceResource(database);
   const defaultDataSource =
     head(
-      database.instanceResource.dataSources.filter(
+      instanceResource.dataSources.filter(
         (d) => d.type === DataSourceType.READ_ONLY
       )
-    ) || head(database.instanceResource.dataSources);
+    ) || head(instanceResource.dataSources);
   if (defaultDataSource) {
     conn.dataSourceId = defaultDataSource.id;
   }
@@ -122,7 +122,8 @@ export const extractWorksheetConnection = async (worksheet: {
       if (!isDatabaseV1Queryable(database)) {
         return connection;
       }
-      connection.instance = database.instance;
+      const { instance } = extractDatabaseResourceName(database.name);
+      connection.instance = instance;
       connection.database = database.name;
       setDefaultDataSourceForConn(connection, database);
     } catch {

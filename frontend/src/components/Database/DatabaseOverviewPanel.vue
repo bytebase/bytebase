@@ -4,7 +4,7 @@
     <DatabaseOverviewInfo :database="database" class="pb-6" />
 
     <ComponentPermissionGuard
-      :project="database.projectEntity"
+      :project="getDatabaseProject(database)"
       :permissions="['bb.databases.getSchema']"
     >
       <div class="border-t border-block-border pt-6">
@@ -174,9 +174,11 @@ import TableDataTable from "@/components/TableDataTable.vue";
 import TaskTable from "@/components/TaskTable.vue";
 import ViewDataTable from "@/components/ViewDataTable.vue";
 import { useDBSchemaV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
+  getDatabaseEngine,
+  getDatabaseProject,
   hasSchemaProperty,
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
@@ -194,7 +196,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const { t } = useI18n();
@@ -210,7 +212,7 @@ const state = reactive<LocalState>({
 const dbSchemaStore = useDBSchemaV1Store();
 
 const databaseEngine = computed(() => {
-  return props.database.instanceResource.engine;
+  return getDatabaseEngine(props.database);
 });
 
 const hasSchemaPropertyV1 = computed(() => {

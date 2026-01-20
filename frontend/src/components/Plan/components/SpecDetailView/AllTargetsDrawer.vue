@@ -65,6 +65,7 @@ import { BBSpin } from "@/bbkit";
 import { Drawer, DrawerContent, SearchBox } from "@/components/v2";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
+import { extractDatabaseResourceName } from "@/utils";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import { useSelectedSpec } from "./context";
 import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
@@ -102,7 +103,9 @@ const filteredTargets = computed(() => {
   return props.targets.filter((target: string) => {
     if (isValidDatabaseName(target)) {
       const db = databaseStore.getDatabaseByName(target);
-      return db.databaseName.toLowerCase().includes(searchText);
+      return extractDatabaseResourceName(db.name)
+        .databaseName.toLowerCase()
+        .includes(searchText);
     }
     return (target as string).toLocaleLowerCase().includes(searchText);
   });

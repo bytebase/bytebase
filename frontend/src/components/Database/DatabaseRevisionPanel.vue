@@ -39,12 +39,12 @@ import { RevisionDataTable } from "@/components/Revision";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { revisionServiceClientConnect } from "@/connect";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { useDatabaseDetailContext } from "./context";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();

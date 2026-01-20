@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { includes } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { type ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -53,7 +53,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   };
 
   const isShowExecutingHint = ref(false);
-  const executingHintDatabase = ref<ComposedDatabase | undefined>();
+  const executingHintDatabase = ref<Database | undefined>();
 
   return {
     resultRowsLimit,

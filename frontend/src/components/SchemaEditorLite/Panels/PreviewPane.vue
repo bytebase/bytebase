@@ -56,8 +56,8 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { databaseServiceClientConnect } from "@/connect";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
@@ -67,7 +67,7 @@ import { extractGrpcErrorMessage } from "@/utils/connect";
 import { useSchemaEditorContext } from "../context";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   title: string;

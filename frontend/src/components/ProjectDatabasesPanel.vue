@@ -68,8 +68,9 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { type ComposedDatabase, isValidDatabaseName } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
@@ -170,7 +171,7 @@ const filter = computed(() => ({
   drifted: selectedDriftedValue.value,
 }));
 
-const selectedDatabases = computed((): ComposedDatabase[] => {
+const selectedDatabases = computed((): Database[] => {
   return state.selectedDatabaseNames
     .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
     .filter((database) => isValidDatabaseName(database.name));

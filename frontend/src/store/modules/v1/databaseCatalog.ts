@@ -16,7 +16,11 @@ import {
   TableCatalogSchema,
   UpdateDatabaseCatalogRequestSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getDatabaseProject,
+  hasProjectPermissionV2,
+} from "@/utils";
 import { useDatabaseV1Store } from "./database";
 
 type DatabaseCatalogCacheKey = [string /* database catalog resource name */];
@@ -191,7 +195,9 @@ export const useDatabaseCatalog = (
       return;
     }
     const db = await databaseStore.getOrFetchDatabaseByName(unref(database));
-    if (hasProjectPermissionV2(db.projectEntity, "bb.databaseCatalogs.get")) {
+    if (
+      hasProjectPermissionV2(getDatabaseProject(db), "bb.databaseCatalogs.get")
+    ) {
       await store.getOrFetchDatabaseCatalog({
         database: unref(database),
         skipCache: unref(skipCache),

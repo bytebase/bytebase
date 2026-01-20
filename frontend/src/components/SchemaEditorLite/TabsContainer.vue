@@ -64,6 +64,7 @@ import { XIcon } from "lucide-vue-next";
 import { NEllipsis } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { nextTick, ref, watch } from "vue";
+import { extractDatabaseResourceName } from "@/utils";
 import {
   DatabaseIcon,
   FunctionIcon,
@@ -122,7 +123,7 @@ const getTabComputedClassList = (tab: TabContext) => {
 const getTabName = (tab: TabContext) => {
   if (tab.type === "database") {
     const { database } = tab;
-    return database.databaseName;
+    return extractDatabaseResourceName(database.name).databaseName;
   }
   if (tab.type === "table") {
     const {

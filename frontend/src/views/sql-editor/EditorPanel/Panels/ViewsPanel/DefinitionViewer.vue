@@ -47,13 +47,13 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { AIChatToSQL, useAIActions } from "@/plugins/ai";
 import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
-import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { nextAnimationFrame } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { getInstanceResource, nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   code: string;
   format?: boolean;
 }>();
@@ -65,7 +65,7 @@ const emit = defineEmits<{
 
 const { showAIPanel, editorPanelSize, handleEditorPanelResize } =
   useSQLEditorContext();
-const instanceEngine = computed(() => props.db.instanceResource.engine);
+const instanceEngine = computed(() => getInstanceResource(props.db).engine);
 const AIContext = useAIContext();
 const selectedStatement = ref("");
 
@@ -121,7 +121,7 @@ const handleEditorReady = (
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
           statement,
-          props.db.instanceResource.engine
+          getInstanceResource(props.db).engine
         ),
         newChat,
       });
