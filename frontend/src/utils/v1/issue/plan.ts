@@ -1,4 +1,4 @@
-import { EMPTY_ID, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 
 export const sheetNameOfSpec = (spec: Plan_Spec): string => {
@@ -22,9 +22,7 @@ export const isValidPlanName = (name: string | undefined) => {
     return false;
   }
   const planUID = extractPlanUID(name);
-  return Boolean(
-    planUID && planUID !== String(EMPTY_ID) && planUID !== String(UNKNOWN_ID)
-  );
+  return Boolean(planUID && planUID !== String(UNKNOWN_ID));
 };
 
 export const extractPlanCheckRunUID = (name: string) => {

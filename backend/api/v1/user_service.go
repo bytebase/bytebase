@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/mail"
 	"regexp"
 	"strings"
 	"time"
@@ -308,7 +307,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		// The first end user should be workspace admin.
 		updateRole := &store.PatchIamPolicyMessage{
 			Member: common.FormatUserEmail(user.Email),
-			Roles:  []string{common.FormatRole(common.WorkspaceAdmin)},
+			Roles:  []string{common.FormatRole(store.WorkspaceAdminRole)},
 		}
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -615,7 +614,7 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 }
 
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, user *store.UserMessage) (bool, error) {
-	workspaceAdminRole := common.FormatRole(common.WorkspaceAdmin)
+	workspaceAdminRole := common.FormatRole(store.WorkspaceAdminRole)
 	userMember := common.FormatUserEmail(user.Email)
 
 	for _, binding := range policy.GetBindings() {
@@ -830,7 +829,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.
-		if err := validateEmail(email); err != nil {
+		if err := common.ValidateEmail(email); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
 		}
 		return nil
@@ -846,7 +845,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	}
 
 	// Check if the email is valid.
-	if err := validateEmail(email); err != nil {
+	if err := common.ValidateEmail(email); err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
 	}
 	// Domain restrictions are not applied to service account.
@@ -865,16 +864,6 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 		if !ok {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %q does not belong to domains %v", email, allowedDomains))
 		}
-	}
-	return nil
-}
-
-func validateEmail(email string) error {
-	if email != strings.ToLower(email) {
-		return errors.New("email should be lowercase")
-	}
-	if _, err := mail.ParseAddress(email); err != nil {
-		return err
 	}
 	return nil
 }
@@ -957,5 +946,5 @@ func isUserWorkspaceAdmin(ctx context.Context, stores *store.Store, user *store.
 		return false, err
 	}
 	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, workspacePolicy.Policy)
-	return roles[common.FormatRole(common.WorkspaceAdmin)], nil
+	return roles[common.FormatRole(store.WorkspaceAdminRole)], nil
 }

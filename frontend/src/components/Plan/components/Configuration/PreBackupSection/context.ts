@@ -20,6 +20,7 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { getInstanceResource } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 
 const KEY = Symbol(
@@ -64,7 +65,7 @@ export const providePreBackupSettingContext = (refs: {
       // If any of the databases in the spec is not supported, do not show.
       if (
         !databases.value.every((db) =>
-          BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+          BACKUP_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine)
         )
       ) {
         return false;

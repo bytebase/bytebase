@@ -18,7 +18,7 @@
 
 import type { GenEnum, GenExtension, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Duration, FieldOptions, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Duration, FieldMask, FieldOptions, Timestamp } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file buf/validate/validate.proto.
@@ -87,6 +87,27 @@ export declare const RuleSchema: GenMessage<Rule>;
  * @generated from message buf.validate.FieldRules
  */
 export declare type FieldRules = Message<"buf.validate.FieldRules"> & {
+  /**
+   * `cel_expression` is a repeated field CEL expressions. Each expression specifies a validation
+   * rule to be applied to this message. These rules are written in Common Expression Language (CEL) syntax.
+   *
+   * This is a simplified form of the `cel` Rule field, where only `expression` is set. This allows for
+   * simpler syntax when defining CEL Rules where `id` and `message` derived from the `expression`. `id` will
+   * be same as the `expression`.
+   *
+   * For more information, [see our documentation](https://buf.build/docs/protovalidate/schemas/custom-rules/).
+   *
+   * ```proto
+   * message MyMessage {
+   *   // The field `value` must be greater than 42.
+   *   optional int32 value = 1 [(buf.validate.field).cel_expression = "this > 42"];
+   * }
+   * ```
+   *
+   * @generated from field: repeated string cel_expression = 29;
+   */
+  celExpression: string[];
+
   /**
    * `cel` is a repeated field used to represent a textual expression
    * in the Common Expression Language (CEL) syntax. For more information,
@@ -316,6 +337,12 @@ export declare type FieldRules = Message<"buf.validate.FieldRules"> & {
      */
     value: DurationRules;
     case: "duration";
+  } | {
+    /**
+     * @generated from field: buf.validate.FieldMaskRules field_mask = 28;
+     */
+    value: FieldMaskRules;
+    case: "fieldMask";
   } | {
     /**
      * @generated from field: buf.validate.TimestampRules timestamp = 22;
@@ -3087,6 +3114,23 @@ export declare type StringRules = Message<"buf.validate.StringRules"> & {
     case: "hostAndPort";
   } | {
     /**
+     * `ulid` specifies that the field value must be a valid ULID (Universally Unique
+     * Lexicographically Sortable Identifier) as defined by the [ULID specification](https://github.com/ulid/spec).
+     * If the field value isn't a valid ULID, an error message will be generated.
+     *
+     * ```proto
+     * message MyString {
+     *   // value must be a valid ULID
+     *   string value = 1 [(buf.validate.field).string.ulid = true];
+     * }
+     * ```
+     *
+     * @generated from field: bool ulid = 35;
+     */
+    value: boolean;
+    case: "ulid";
+  } | {
+    /**
      * `well_known_regex` specifies a common well-known pattern
      * defined as a regex. If the field value doesn't match the well-known
      * regex, an error message will be generated.
@@ -3281,7 +3325,7 @@ export declare type BytesRules = Message<"buf.validate.BytesRules"> & {
    * the string.
    * If the field value doesn't meet the requirement, an error message is generated.
    *
-   * ```protobuf
+   * ```proto
    * message MyBytes {
    *   // value does not contain \x02\x03
    *   optional bytes value = 1 [(buf.validate.field).bytes.contains = "\x02\x03"];
@@ -3297,7 +3341,7 @@ export declare type BytesRules = Message<"buf.validate.BytesRules"> & {
    * values. If the field value doesn't match any of the specified values, an
    * error message is generated.
    *
-   * ```protobuf
+   * ```proto
    * message MyBytes {
    *   // value must in ["\x01\x02", "\x02\x03", "\x03\x04"]
    *   optional bytes value = 1 [(buf.validate.field).bytes.in = {"\x01\x02", "\x02\x03", "\x03\x04"}];
@@ -3378,6 +3422,25 @@ export declare type BytesRules = Message<"buf.validate.BytesRules"> & {
      */
     value: boolean;
     case: "ipv6";
+  } | {
+    /**
+     * `uuid` ensures that the field `value` encodes the 128-bit UUID data as
+     * defined by [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122#section-4.1.2).
+     * The field must contain exactly 16 bytes
+     * representing the UUID. If the field value isn't a valid UUID, an error
+     * message will be generated.
+     *
+     * ```proto
+     * message MyBytes {
+     *   // value must be a valid UUID
+     *   optional bytes value = 1 [(buf.validate.field).bytes.uuid = true];
+     * }
+     * ```
+     *
+     * @generated from field: bool uuid = 15;
+     */
+    value: boolean;
+    case: "uuid";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -3919,6 +3982,95 @@ export declare type DurationRules = Message<"buf.validate.DurationRules"> & {
  * Use `create(DurationRulesSchema)` to create a new message.
  */
 export declare const DurationRulesSchema: GenMessage<DurationRules>;
+
+/**
+ * FieldMaskRules describe rules applied exclusively to the `google.protobuf.FieldMask` well-known type.
+ *
+ * @generated from message buf.validate.FieldMaskRules
+ */
+export declare type FieldMaskRules = Message<"buf.validate.FieldMaskRules"> & {
+  /**
+   * `const` dictates that the field must match the specified value of the `google.protobuf.FieldMask` type exactly.
+   * If the field's value deviates from the specified value, an error message
+   * will be generated.
+   *
+   * ```proto
+   * message MyFieldMask {
+   *   // value must equal ["a"]
+   *   google.protobuf.FieldMask value = 1 [(buf.validate.field).field_mask.const = {
+   *       paths: ["a"]
+   *   }];
+   * }
+   * ```
+   *
+   * @generated from field: optional google.protobuf.FieldMask const = 1;
+   */
+  const?: FieldMask;
+
+  /**
+   * `in` requires the field value to only contain paths matching specified
+   * values or their subpaths.
+   * If any of the field value's paths doesn't match the rule,
+   * an error message is generated.
+   * See: https://protobuf.dev/reference/protobuf/google.protobuf/#field-mask
+   *
+   * ```proto
+   * message MyFieldMask {
+   *   //  The `value` FieldMask must only contain paths listed in `in`.
+   *   google.protobuf.FieldMask value = 1 [(buf.validate.field).field_mask = {
+   *       in: ["a", "b", "c.a"]
+   *   }];
+   * }
+   * ```
+   *
+   * @generated from field: repeated string in = 2;
+   */
+  in: string[];
+
+  /**
+   * `not_in` requires the field value to not contain paths matching specified
+   * values or their subpaths.
+   * If any of the field value's paths matches the rule,
+   * an error message is generated.
+   * See: https://protobuf.dev/reference/protobuf/google.protobuf/#field-mask
+   *
+   * ```proto
+   * message MyFieldMask {
+   *   //  The `value` FieldMask shall not contain paths listed in `not_in`.
+   *   google.protobuf.FieldMask value = 1 [(buf.validate.field).field_mask = {
+   *       not_in: ["forbidden", "immutable", "c.a"]
+   *   }];
+   * }
+   * ```
+   *
+   * @generated from field: repeated string not_in = 3;
+   */
+  notIn: string[];
+
+  /**
+   * `example` specifies values that the field may have. These values SHOULD
+   * conform to other rules. `example` values will not impact validation
+   * but may be used as helpful guidance on how to populate the given field.
+   *
+   * ```proto
+   * message MyFieldMask {
+   *   google.protobuf.FieldMask value = 1 [
+   *     (buf.validate.field).field_mask.example = { paths: ["a", "b"] },
+   *     (buf.validate.field).field_mask.example = { paths: ["c.a", "d"] },
+   *   ];
+   * }
+   * ```
+   *
+   * @generated from field: repeated google.protobuf.FieldMask example = 4;
+   */
+  example: FieldMask[];
+};
+
+/**
+ * Describes the message buf.validate.FieldMaskRules.
+ * Use `create(FieldMaskRulesSchema)` to create a new message.
+ */
+export declare const FieldMaskRulesSchema: GenMessage<FieldMaskRules>;
 
 /**
  * TimestampRules describe the rules applied exclusively to the `google.protobuf.Timestamp` well-known type.

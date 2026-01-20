@@ -55,6 +55,7 @@
 <script lang="ts" setup>
 import { NButton, NButtonGroup, NTooltip } from "naive-ui";
 import { ref, useSlots } from "vue";
+import { extractDatabaseResourceName } from "@/utils";
 import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 import { useSchemaDiagramContext } from "../common";
 import { ZOOM_RANGE } from "../common/const";
@@ -81,7 +82,8 @@ const renderDummy = () => {
 const handleScreenshot = async () => {
   busy.value = true;
   try {
-    await dummy.value?.capture(`${database.value.databaseName}.png`);
+    const { databaseName } = extractDatabaseResourceName(database.value.name);
+    await dummy.value?.capture(`${databaseName}.png`);
   } catch (err) {
     console.error("Screenshot request failed", err);
   } finally {

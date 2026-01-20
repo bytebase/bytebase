@@ -16,14 +16,16 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
-import type { ViewMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { hasSchemaProperty } from "@/utils";
+import type {
+  Database,
+  ViewMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import { getInstanceResource, hasSchemaProperty } from "@/utils";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     schemaName?: string;
     viewList: ViewMetadata[];
     loading?: boolean;
@@ -36,7 +38,7 @@ const props = withDefaults(
 
 const { t } = useI18n();
 
-const engine = computed(() => props.database.instanceResource.engine);
+const engine = computed(() => getInstanceResource(props.database).engine);
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [

@@ -1,18 +1,16 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
-import type { ComposedDatabase } from "@/types";
 import type {
+  ColumnMetadata,
+  Database,
+  DatabaseMetadata,
+  ForeignKeyMetadata,
   FunctionMetadata,
+  IndexMetadata,
   ProcedureMetadata,
+  SchemaMetadata,
+  TableMetadata,
   TablePartitionMetadata,
   ViewMetadata,
-} from "@/types/proto-es/v1/database_service_pb";
-import {
-  type ColumnMetadata,
-  type DatabaseMetadata,
-  type ForeignKeyMetadata,
-  type IndexMetadata,
-  type SchemaMetadata,
-  type TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   ComparableColumnFields,
@@ -39,7 +37,7 @@ type RichColumnMetadata = RichTableMetadata & {
 
 export class DiffMerge {
   context: SchemaEditorContext;
-  database: ComposedDatabase;
+  database: Database;
   sourceMetadata: DatabaseMetadata;
   targetMetadata: DatabaseMetadata;
   sourceSchemaMap = new Map<string, SchemaMetadata>();
@@ -72,7 +70,7 @@ export class DiffMerge {
     targetMetadata,
   }: {
     context: SchemaEditorContext;
-    database: ComposedDatabase;
+    database: Database;
     sourceMetadata: DatabaseMetadata;
     targetMetadata: DatabaseMetadata;
   }) {
@@ -684,7 +682,7 @@ export class DiffMerge {
 
 // database schema
 const mapSchemas = (
-  database: ComposedDatabase,
+  database: Database,
   schemas: SchemaMetadata[],
   map: Map<string, SchemaMetadata>
 ) => {
@@ -697,7 +695,7 @@ const mapSchemas = (
   });
 };
 const mapTables = (
-  database: ComposedDatabase,
+  database: Database,
   schema: SchemaMetadata,
   tables: TableMetadata[],
   map: Map<string, TableMetadata>
@@ -712,7 +710,7 @@ const mapTables = (
   });
 };
 const mapColumns = (
-  database: ComposedDatabase,
+  database: Database,
   schema: SchemaMetadata,
   table: TableMetadata,
   columns: ColumnMetadata[],
@@ -729,7 +727,7 @@ const mapColumns = (
   });
 };
 const mapTablePartitions = (
-  database: ComposedDatabase,
+  database: Database,
   schema: SchemaMetadata,
   table: TableMetadata,
   partitions: TablePartitionMetadata[],
@@ -746,7 +744,7 @@ const mapTablePartitions = (
   });
 };
 const mapViews = (
-  database: ComposedDatabase,
+  database: Database,
   schema: SchemaMetadata,
   views: ViewMetadata[],
   map: Map<string, ViewMetadata>
@@ -761,7 +759,7 @@ const mapViews = (
   });
 };
 const mapProcedures = (
-  database: ComposedDatabase,
+  database: Database,
   schema: SchemaMetadata,
   procedures: ProcedureMetadata[],
   map: Map<string, ProcedureMetadata>
@@ -776,7 +774,7 @@ const mapProcedures = (
   });
 };
 const mapFunctions = (
-  database: ComposedDatabase,
+  database: Database,
   schema: SchemaMetadata,
   functions: FunctionMetadata[],
   map: Map<string, FunctionMetadata>

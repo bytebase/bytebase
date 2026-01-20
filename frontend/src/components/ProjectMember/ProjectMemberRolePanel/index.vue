@@ -55,25 +55,13 @@
               class="w-full px-2 py-2 flex flex-row justify-start items-center gap-x-1"
             >
               <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
-              <NTooltip
-                :disabled="
-                  allowRemoveRole(role.role) ||
-                  role.role !== PresetRoleType.PROJECT_OWNER
-                "
+              <MiniActionButton
+                type="error"
+                :disabled="!allowRemoveRole(role.role)"
+                @click.prevent="handleDeleteRole(role.role)"
               >
-                <template #trigger>
-                  <MiniActionButton
-                    type="error"
-                    :disabled="!allowRemoveRole(role.role)"
-                    @click.prevent="handleDeleteRole(role.role)"
-                  >
-                    <TrashIcon class="w-4 h-4" />
-                  </MiniActionButton>
-                </template>
-                <div>
-                  {{ $t("project.members.cannot-remove-last-owner") }}
-                </div>
-              </NTooltip>
+                <TrashIcon class="w-4 h-4" />
+              </MiniActionButton>
             </div>
             <NDataTable
               size="small"
@@ -172,8 +160,9 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   checkRoleContainsAnyPermission,
   displayRoleTitle,
+  extractDatabaseResourceName,
+  getInstanceResource,
   hasProjectPermissionV2,
-  memberMapToRolesInProjectIAM,
 } from "@/utils";
 import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
@@ -276,7 +265,7 @@ const getDataTableColumns = (
             return (
               <div class="flex items-center gap-x-1">
                 <InstanceV1Name
-                  instance={database.instanceResource}
+                  instance={getInstanceResource(database)}
                   link={false}
                 />
                 <span>/</span>
@@ -341,30 +330,21 @@ const getDataTableColumns = (
           </MiniActionButton>
           {(roleList.value.find((r) => r.role === role)?.singleBindingList
             ?.length ?? 0) > 1 && (
-            <NTooltip
-              disabled={allowDeleteCondition(singleBinding)}
-              v-slots={{
-                trigger: () => (
-                  <MiniActionButton
-                    type="error"
-                    disabled={!allowDeleteCondition(singleBinding)}
-                    onClick={() => {
-                      const item = roleList.value.find((r) => r.role === role);
-                      if (item) {
-                        const index =
-                          item.singleBindingList.indexOf(singleBinding);
-                        if (index >= 0) {
-                          handleDeleteCondition(item, index);
-                        }
-                      }
-                    }}
-                  >
-                    <TrashIcon class="w-4 h-4" />
-                  </MiniActionButton>
-                ),
-                default: () => t("project.members.cannot-remove-last-owner"),
+            <MiniActionButton
+              type="error"
+              disabled={!allowDeleteCondition(singleBinding)}
+              onClick={() => {
+                const item = roleList.value.find((r) => r.role === role);
+                if (item) {
+                  const index = item.singleBindingList.indexOf(singleBinding);
+                  if (index >= 0) {
+                    handleDeleteCondition(item, index);
+                  }
+                }
               }}
-            />
+            >
+              <TrashIcon class="w-4 h-4" />
+            </MiniActionButton>
           )}
         </div>
       ),
@@ -374,23 +354,12 @@ const getDataTableColumns = (
   return columns;
 };
 
-// To prevent user accidentally removing roles and lock the project permanently, we take following measures:
-// 1. Disallow removing the last OWNER.
-// 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
-const allowRemoveRole = (role: string) => {
+const allowRemoveRole = (_role: string) => {
   if (props.project.state === State.DELETED) {
     return false;
   }
   if (props.binding.type === "groups") {
     return true;
-  }
-
-  if (role === PresetRoleType.PROJECT_OWNER) {
-    const memberMap = memberMapToRolesInProjectIAM(iamPolicy.value, role);
-    // If there is only one owner, disallow removing.
-    if (memberMap.size <= 1) {
-      return false;
-    }
   }
 
   return true;
@@ -524,7 +493,8 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
     return "*";
   }
   const database = extractDatabase(databaseResource);
-  return database.databaseName;
+  const { databaseName } = extractDatabaseResourceName(database.name);
+  return databaseName;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {

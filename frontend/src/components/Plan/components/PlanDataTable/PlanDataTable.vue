@@ -20,7 +20,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
@@ -40,7 +39,6 @@ withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
-const { enabledNewLayout } = useIssueLayoutVersion();
 
 const columnList = computed((): DataTableColumn<Plan>[] => {
   const columns: (DataTableColumn<Plan> & { hide?: boolean })[] = [
@@ -50,8 +48,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       ellipsis: true,
       resizable: true,
       render: (plan) => {
-        const showDraftTag =
-          enabledNewLayout.value && plan.issue === "" && !plan.hasRollout;
+        const showDraftTag = plan.issue === "" && !plan.hasRollout;
         const isDeleted = plan.state === State.DELETED;
         return (
           <div

@@ -13,7 +13,7 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { isValidInstanceName, unknownInstanceResource } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 
 const props = defineProps<{
   queryHistory: QueryHistory;
@@ -22,6 +22,6 @@ const props = defineProps<{
 const instance = computedAsync(async () => {
   const { database } = extractDatabaseResourceName(props.queryHistory.database);
   const d = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
-  return d.instanceResource;
+  return getInstanceResource(d);
 }, unknownInstanceResource());
 </script>

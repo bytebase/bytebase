@@ -56,7 +56,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
 	}
 
-	if _, err := validateIAMPolicy(ctx, s.store, request.Policy, policyMessage); err != nil {
+	if err := validateIAMPolicy(ctx, s.store, request.Policy, policyMessage); err != nil {
 		return nil, err
 	}
 
@@ -64,7 +64,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, err
 	}
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, common.WorkspaceAdmin, iamPolicy)
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, store.WorkspaceAdminRole, iamPolicy)
 	if !containsActiveEndUser(users) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace must have at least one admin"))
 	}

@@ -31,8 +31,10 @@ import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  DatabaseMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import { SchemaMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 
@@ -43,7 +45,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   metadata: DatabaseMetadata;
 }>();
 

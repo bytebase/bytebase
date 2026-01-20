@@ -36,7 +36,13 @@ export const useRecentProjects = () => {
     const projects = [];
     const invalidProjects: string[] = [];
 
-    await projectV1Store.batchGetOrFetchProjects(recentViewProjectNames.value);
+    try {
+      await projectV1Store.batchGetOrFetchProjects(
+        recentViewProjectNames.value
+      );
+    } catch {
+      // Some projects may have failed to fetch (e.g., 404), continue to check individually
+    }
 
     for (const projectName of recentViewProjectNames.value) {
       try {

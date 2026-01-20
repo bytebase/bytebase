@@ -58,16 +58,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import { humanizeDate, instanceV1HasCollationAndCharacterSet } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  getDatabaseEngine,
+  humanizeDate,
+  instanceV1HasCollationAndCharacterSet,
+} from "@/utils";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const databaseEngine = computed(() => {
-  return props.database.instanceResource.engine;
+  return getDatabaseEngine(props.database);
 });
 
 const databaseSchemaMetadata = computed(() => {

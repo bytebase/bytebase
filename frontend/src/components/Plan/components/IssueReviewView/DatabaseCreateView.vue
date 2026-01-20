@@ -32,7 +32,12 @@
             >{{ $t("common.database") }}:</span
           >
           <template v-if="isTaskDone && createdDatabase">
-            <DatabaseV1Name :database="createdDatabase" :link="true" />
+            <router-link
+              :to="databaseV1Url(createdDatabase)"
+              class="normal-link"
+            >
+              {{ extractDatabaseResourceName(createdDatabase.name).databaseName }}
+            </router-link>
             <span class="text-sm text-gray-500"
               >({{ $t("common.created") }})</span
             >
@@ -67,14 +72,9 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
-import {
-  DatabaseV1Name,
-  EnvironmentV1Name,
-  InstanceV1Name,
-} from "@/components/v2";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import {
   useCurrentProjectV1,
   useEnvironmentV1Store,
@@ -84,6 +84,11 @@ import {
 import type { Plan_CreateDatabaseConfig } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidInstanceName } from "@/types/v1/instance";
+import {
+  databaseV1Url,
+  extractCoreDatabaseInfoFromDatabaseCreateTask,
+  extractDatabaseResourceName,
+} from "@/utils";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { usePlanContext } from "../..";
 

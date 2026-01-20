@@ -64,12 +64,6 @@ type UpdateChangelogMessage struct {
 }
 
 func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (int64, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
 	p, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to marshal")
@@ -98,12 +92,8 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 	}
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return id, nil
@@ -130,18 +120,8 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to update")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit")
 	}
 
 	return nil

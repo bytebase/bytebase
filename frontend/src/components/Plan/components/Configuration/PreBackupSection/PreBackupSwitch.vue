@@ -35,6 +35,7 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { targetsForSpec } from "@/components/Plan/logic";
 import { pushNotification } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
 import { usePreBackupSettingContext } from "./context";
 
@@ -48,13 +49,16 @@ const errors = computed(() => {
 
   // Check for unsupported database engines
   const unsupportedEngineDatabases = databases.value.filter(
-    (db) => !BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
+    (db) => !BACKUP_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine)
   );
   if (unsupportedEngineDatabases.length > 0) {
     errors.push(
       t("database.engine-not-supported-for-backup", {
         databases: unsupportedEngineDatabases
-          .map((db) => `${db.databaseName} (${db.instanceResource.engine})`)
+          .map(
+            (db) =>
+              `${extractDatabaseResourceName(db.name).databaseName} (${getInstanceResource(db).engine})`
+          )
           .join(", "),
       })
     );
@@ -63,30 +67,32 @@ const errors = computed(() => {
   // Check for databases with supported engines but missing backup location
   const missingBackupLocationDatabases = databases.value.filter(
     (db) =>
-      BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine) &&
+      BACKUP_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine) &&
       !db.backupAvailable
   );
 
   if (missingBackupLocationDatabases.length > 0) {
     // Group by engine type for clearer messages
     const postgresDBs = missingBackupLocationDatabases.filter(
-      (db) => db.instanceResource.engine === Engine.POSTGRES
+      (db) => getInstanceResource(db).engine === Engine.POSTGRES
     );
-    const mysqlLikeDBs = missingBackupLocationDatabases.filter(
-      (db) =>
-        db.instanceResource.engine === Engine.MYSQL ||
-        db.instanceResource.engine === Engine.TIDB ||
-        db.instanceResource.engine === Engine.MSSQL
-    );
+    const mysqlLikeDBs = missingBackupLocationDatabases.filter((db) => {
+      const engine = getInstanceResource(db).engine;
+      return (
+        engine === Engine.MYSQL ||
+        engine === Engine.TIDB ||
+        engine === Engine.MSSQL
+      );
+    });
     const oracleDBs = missingBackupLocationDatabases.filter(
-      (db) => db.instanceResource.engine === Engine.ORACLE
+      (db) => getInstanceResource(db).engine === Engine.ORACLE
     );
 
     // PostgreSQL: requires schema 'bbdataarchive' within the database
     for (const db of postgresDBs) {
       errors.push(
         t("plan.pre-backup.missing-backup-schema-postgres", {
-          database: db.databaseName,
+          database: extractDatabaseResourceName(db.name).databaseName,
         })
       );
     }
@@ -95,11 +101,9 @@ const errors = computed(() => {
     // Group by instance to avoid duplicate messages
     const mysqlInstanceMap = new Map<string, string>();
     for (const db of mysqlLikeDBs) {
-      if (!mysqlInstanceMap.has(db.instanceResource.name)) {
-        mysqlInstanceMap.set(
-          db.instanceResource.name,
-          db.instanceResource.title
-        );
+      const instanceResource = getInstanceResource(db);
+      if (!mysqlInstanceMap.has(instanceResource.name)) {
+        mysqlInstanceMap.set(instanceResource.name, instanceResource.title);
       }
     }
     for (const [, instanceTitle] of mysqlInstanceMap) {
@@ -114,11 +118,9 @@ const errors = computed(() => {
     // Group by instance to avoid duplicate messages
     const oracleInstanceMap = new Map<string, string>();
     for (const db of oracleDBs) {
-      if (!oracleInstanceMap.has(db.instanceResource.name)) {
-        oracleInstanceMap.set(
-          db.instanceResource.name,
-          db.instanceResource.title
-        );
+      const instanceResource = getInstanceResource(db);
+      if (!oracleInstanceMap.has(instanceResource.name)) {
+        oracleInstanceMap.set(instanceResource.name, instanceResource.title);
       }
     }
     for (const [, instanceTitle] of oracleInstanceMap) {
@@ -152,7 +154,7 @@ const databasesNotMeetingRequirements = computed(() => {
     // Check if database doesn't have backup available
     if (!db.backupAvailable) return true;
     // Check if database engine is not supported
-    if (!BACKUP_AVAILABLE_ENGINES.includes(db.instanceResource.engine)) {
+    if (!BACKUP_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine)) {
       return true;
     }
     return false;
@@ -178,7 +180,7 @@ const tooltipMessage = computed(() => {
     }
     // Otherwise show the databases that don't meet requirements
     const dbNames = databasesNotMeetingRequirements.value
-      .map((db) => db.databaseName)
+      .map((db) => extractDatabaseResourceName(db.name).databaseName)
       .join(", ");
     return t("plan.pre-backup.some-databases-not-meeting-requirements", {
       databases: dbNames,

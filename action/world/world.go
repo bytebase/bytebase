@@ -38,7 +38,6 @@ type World struct {
 	CustomRules string
 
 	// bytebase-action rollout flags
-	ReleaseTitle string // The title of the release
 	// Rollout up to the target-stage.
 	// Format: environments/{environment}
 	TargetStage       string

@@ -23,8 +23,8 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   DependencyColumn,
   SchemaMetadata,
@@ -32,6 +32,7 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   getHighlightHTMLByRegExp,
+  getInstanceResource,
   hasSchemaProperty,
   keyForDependencyColumn,
   useAutoHeightDataTable,
@@ -39,7 +40,7 @@ import {
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   view: ViewMetadata;
@@ -70,7 +71,7 @@ const filteredDependencyColumns = computed(() => {
 });
 
 const columns = computed(() => {
-  const engine = props.db.instanceResource.engine;
+  const engine = getInstanceResource(props.db).engine;
   const columns: (DataTableColumn<DependencyColumn> & { hide?: boolean })[] = [
     {
       key: "schema",

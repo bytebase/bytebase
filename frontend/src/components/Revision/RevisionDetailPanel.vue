@@ -76,8 +76,8 @@ import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogVi
 import { CopyButton } from "@/components/v2";
 import { sheetServiceClientConnect } from "@/connect";
 import { useRevisionStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { bytesToString } from "@/utils";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
@@ -88,7 +88,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   revisionName: string;
 }>();
 

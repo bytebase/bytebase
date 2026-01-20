@@ -467,17 +467,41 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 
 			switch {
 			case strings.Contains(contentType, "application/json"):
-				pairs := map[string]any{}
-				if err := json.Unmarshal(respBytes, &pairs); err != nil {
+				// ElasticSearch/OpenSearch REST APIs return two types of JSON responses:
+				// 1. Objects (most APIs): {"took":5,"hits":{...}}
+				// 2. Arrays (_cat APIs with format=json): [{"index":"test",...}]
+				// They never return primitive types (strings, numbers, booleans, null).
+
+				// First unmarshal into any to determine the JSON type
+				var data any
+				if err := json.Unmarshal(respBytes, &data); err != nil {
 					return errors.Wrapf(err, "failed to parse json body")
 				}
-				for key, val := range pairs {
-					result.ColumnNames = append(result.ColumnNames, key)
-					bytes, err := json.Marshal(val)
+
+				// Handle based on the actual type
+				switch v := data.(type) {
+				case map[string]any:
+					// Object response: create one column per key
+					for key, val := range v {
+						result.ColumnNames = append(result.ColumnNames, key)
+						bytes, err := json.Marshal(val)
+						if err != nil {
+							return err
+						}
+						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+					}
+				case []any:
+					// Array response (e.g., _cat APIs with format=json): create a single column with array data
+					result.ColumnNames = append(result.ColumnNames, "result")
+					bytes, err := json.Marshal(v)
 					if err != nil {
 						return err
 					}
 					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+				default:
+					// ElasticSearch/OpenSearch APIs only return objects or arrays, never primitives.
+					// If we get here, something unexpected happened.
+					return errors.Errorf("unexpected JSON type: %T (expected object or array)", v)
 				}
 			case strings.Contains(contentType, "text/plain"):
 				result.ColumnNames = append(result.ColumnNames, "text/plain")

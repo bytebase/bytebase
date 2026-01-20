@@ -49,7 +49,7 @@ import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
@@ -73,7 +73,7 @@ const isPlanDetailPage = computed(() => {
 });
 
 const isIssueDetailPage = computed(() => {
-  return route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1;
+  return route.name === PROJECT_V1_ROUTE_ISSUE_DETAIL;
 });
 
 const hasSidebar = computed(() => {

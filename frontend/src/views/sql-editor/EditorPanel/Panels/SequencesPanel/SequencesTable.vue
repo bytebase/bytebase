@@ -24,8 +24,8 @@
 import { type DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   SequenceMetadata,
@@ -38,7 +38,7 @@ import { useCurrentTabViewStateContext } from "../../context/viewState";
 type SequenceWithPosition = { sequence: SequenceMetadata; position: number };
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   sequences: SequenceMetadata[];

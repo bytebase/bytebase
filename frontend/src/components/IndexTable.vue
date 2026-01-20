@@ -19,14 +19,17 @@ import { NDataTable } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { IndexMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  IndexMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import { getInstanceResource } from "@/utils";
 
 const props = defineProps({
   database: {
     required: true,
-    type: Object as PropType<ComposedDatabase>,
+    type: Object as PropType<Database>,
   },
   indexList: {
     required: true,
@@ -36,11 +39,11 @@ const props = defineProps({
 
 const { t } = useI18n();
 const showVisibleColumn = computed(() => {
-  const engine = props.database.instanceResource.engine;
+  const engine = getInstanceResource(props.database).engine;
   return engine !== Engine.POSTGRES && engine !== Engine.MONGODB;
 });
 const showCommentColumn = computed(() => {
-  const engine = props.database.instanceResource.engine;
+  const engine = getInstanceResource(props.database).engine;
   return engine !== Engine.MONGODB;
 });
 const columns = computed((): DataTableColumn<IndexMetadata>[] => {

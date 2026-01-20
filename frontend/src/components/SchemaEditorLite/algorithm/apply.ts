@@ -1,6 +1,8 @@
 import { cloneDeep } from "lodash-es";
-import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  DatabaseMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaEditorContext } from "../context";
 
 export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
@@ -14,7 +16,7 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
   } = context;
 
   const applyMetadataEdit = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: DatabaseMetadata
   ) => {
     const response = cloneDeep(metadata);

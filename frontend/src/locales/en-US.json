@@ -20,6 +20,7 @@
     "sign-in-as-admin": "Sign in as administrator",
     "sign-up": "Sign up",
     "email": "Email",
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
     "username": "Username",
     "password": "Password",
     "save": "Save",
@@ -162,7 +163,6 @@
     "load-more": "Load more",
     "rows-per-page": "Rows per page",
     "access-denied": "Access denied",
-    "restart": "Restart",
     "want-help": "Want help",
     "operation": "Operation",
     "discard-changes": "Discard changes",
@@ -209,7 +209,6 @@
     "clear-filters": "Clear filters",
     "license": "License",
     "view-details": "View details",
-    "force-verb": "Force {verb}",
     "untitled": "Untitled",
     "missing-required-permission": "Missing required permissions {permissions}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
@@ -244,8 +243,6 @@
     "title": "Title",
     "text-wrap": "Text Wrap",
     "catalog": "Catalog",
-    "summary": "Summary",
-    "errors": "Errors",
     "removed": "Removed",
     "submit": "Submit",
     "draft": "Draft",
@@ -274,7 +271,6 @@
     "description": "Detect outdated version. Please refresh the page."
   },
   "task": {
-    "current-task": "Current task",
     "checking": "Checking...",
     "check-result": {
       "title-general": "Check result"
@@ -303,13 +299,10 @@
       "pending": "Pending",
       "not-started": "Not started"
     },
-    "skip": "Skip",
     "task-checks": "Task checks",
     "prior-backup": "Prior backup",
-    "skip-failed-in-current-stage": "Skip failed tasks in current stage",
     "execution-time": "Execution time",
     "run-checks": "Run checks",
-    "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
     "skip-task": "Skip task | Skip tasks",
     "run-task": "Run task | Run tasks",
@@ -352,10 +345,6 @@
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
     "prior-backup-tips": "Backup affected data ahead of time. Only applies to data changes (UPDATE, DELETE), not schema changes.",
-    "database-create": {
-      "created": "Created",
-      "pending": "Pending"
-    },
     "executed-by": "Executed by",
     "affected-rows": "Affected rows",
     "type": {
@@ -960,15 +949,8 @@
       "modal": {
         "reopen": "Reopen issue?",
         "close": "Close issue?"
-      },
-      "warning": {
-        "some-previous-stages-are-not-done": "Some previous stages are not done."
-      },
-      "error": {
-        "some-tasks-are-still-running": "Some tasks are still running"
       }
     },
-    "add-some-description": "Add some description...",
     "leave-a-comment": "Leave a comment...",
     "no-description-provided": "No description provided",
     "comment-editor": {
@@ -1041,24 +1023,17 @@
       "creator": "Creator",
       "current-approver": "Current approver"
     },
-    "stage-select": {
-      "current": "{name} (current)"
-    },
     "migration-mode": {
       "online": {
         "description": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds {link}."
       }
     },
-    "new-issue": "@:common.new @:common.issue",
-    "action-to-current-stage": "{action} current stage",
     "upload-sql": "Upload SQL",
     "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "transaction-mode": {
       "label": "Transaction Mode",
-      "on": "ON",
-      "off": "OFF",
       "on-tooltip": "Wraps all statements in a single transaction (BEGIN/COMMIT).",
       "off-tooltip": "Executes statements individually in auto-commit mode. Statements are committed immediately and cannot be rolled back if a later statement fails.",
       "execution-order-note": "Non-transactional statements will be executed last."
@@ -1072,8 +1047,7 @@
       "close": "Close"
     },
     "approval-flow": {
-      "self": "Approval flow",
-      "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval based on the type and risk level of the issue."
+      "self": "Approval flow"
     },
     "risk-level": {
       "self": "Risk level",
@@ -1081,8 +1055,6 @@
       "moderate": "Moderate",
       "high": "High"
     },
-    "awaiting-rollout": "Awaiting rollout",
-    "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
       "details": "Request Details",
@@ -1094,7 +1066,6 @@
       "custom-date": "Custom date",
       "custom-date-placeholder": "Select expiration date and time"
     },
-    "review-sent-back": "Review sent back",
     "action-anyway": "{action} anyway",
     "sql-check": {
       "sql-checks": "SQL checks",
@@ -1105,14 +1076,9 @@
       "sql-review-violations": "SQL Review Violations"
     },
     "error": {
-      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
-      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action",
-      "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks",
       "statement-cannot-be-modified": "Statement cannot be modified after the issue is created"
     },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
-    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
-    "missing-sql-statement": "SQL statement missing.",
     "data-export": {
       "options": "Options",
       "limits": "Limits",
@@ -1160,11 +1126,8 @@
       "reject-description": "Submit feedback and request changes"
     },
     "approval": {
-      "rejected-error": "Issue approval has been rejected.",
-      "pending-error": "Issue approval is pending.",
       "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
-    },
-    "new-layout": "New CI/CD Layout"
+    }
   },
   "plan": {
     "plans": "Plans",
@@ -1217,9 +1180,6 @@
     },
     "options": {
       "self": "Options",
-      "applies-to-all-tasks": "Applies to all tasks",
-      "applies-to-some-tasks": "Applies to some tasks {count}/{total}",
-      "split-into-multiple-issues-tip": "If you want to configure different options for each task, please split into multiple issues.",
       "no-options-available": "No options available"
     },
     "editor": {
@@ -1257,9 +1217,7 @@
   "rollout": {
     "rollouts": "Rollouts",
     "bypass-stage-requirements": "Bypass warnings",
-    "task-execution-notices": "Task execution notices",
     "task-execution-errors": "Task execution errors",
-    "no-active-task-to-cancel": "No active task to cancel.",
     "stage": {
       "self": "Stage | Stages",
       "run-stage": "Run Tasks",
@@ -1927,7 +1885,6 @@
       "edit": "Edit member - {member}",
       "view-by-members": "View by members",
       "view-by-roles": "View by roles",
-      "cannot-remove-last-owner": "Cannot remove the last owner of a project",
       "revoke-role-from-user": "Revoke '{role}' from '{user}'",
       "never-expires": "Never",
       "role-description": "Role description",
@@ -2668,7 +2625,6 @@
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },
     "issue-review": {
-      "approve-issue": "Approve issue?",
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
       "rejected-issue": "rejected issue",
@@ -2677,9 +2633,7 @@
         "some-task-checks-are-still-running": "Some task checks are still running.",
         "x-field-is-required": "{field} is required"
       },
-      "send-back-issue": "Send back issue?",
       "re-request-review": "Re-request review",
-      "re-request-review-issue": "Re-request review issue?",
       "re-request-review-success": "Review re-requested successfully",
       "re-requested-review": "re-requested issue review",
       "approved-by": "Approved by",

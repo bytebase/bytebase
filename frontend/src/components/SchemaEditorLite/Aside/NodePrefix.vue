@@ -11,7 +11,7 @@
     <template v-if="node.type === 'database'">
       <DatabaseIcon class="w-4 h-auto text-gray-400" />
       <span class="text-gray-500">
-        {{ node.db.effectiveEnvironmentEntity.title }}
+        {{ getDatabaseEnvironment(node.db).title }}
       </span>
     </template>
 
@@ -70,6 +70,7 @@ import {
 } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
+import { getDatabaseEnvironment } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import type { TreeNode, TreeNodeForInstance } from "./common";
 import NodeCheckbox from "./NodeCheckbox";

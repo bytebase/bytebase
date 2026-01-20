@@ -100,6 +100,14 @@ func GetGroupByName(ctx context.Context, stores *store.Store, name string) (*sto
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get group %q", name)
 	}
+	if group == nil && find.ID == nil {
+		// The fallback is used to handle the legacy mapping from SCIM sync.
+		// For legacy SCIM sync attribute mapping, the group ExternalID map to Email
+		// If users keep using this legacy mapping, the new group will have empty email, and the email will set as the ID.
+		return stores.GetGroup(ctx, &store.FindGroupMessage{
+			ID: &identifier,
+		})
+	}
 	return group, nil
 }
 

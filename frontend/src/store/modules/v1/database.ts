@@ -5,7 +5,7 @@ import { defineStore } from "pinia";
 import { computed, markRaw, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import type { ComposedDatabase, MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 import {
   isValidDatabaseName,
   isValidEnvironmentName,
@@ -44,7 +44,6 @@ import {
   workspaceNamePrefix,
 } from "./common";
 import { useDBSchemaV1Store } from "./dbSchema";
-import { useEnvironmentV1Store } from "./environment";
 import { useProjectV1Store } from "./project";
 
 export interface DatabaseFilter {
@@ -153,9 +152,9 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
 };
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
-  const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
+  const databaseMapByName = reactive(new Map<string, Database>());
   const dbSchemaStore = useDBSchemaV1Store();
-  const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();
+  const databaseRequestCache = new Map<string, Promise<Database>>();
 
   // Getters
   const databaseList = computed(() => {
@@ -169,7 +168,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
   const removeCacheByInstance = (instance: string) => {
     for (const db of databaseList.value) {
-      if (db.instance === instance) {
+      const { instance: dbInstance } = extractDatabaseResourceName(db.name);
+      if (dbInstance === instance) {
         databaseMapByName.delete(db.name);
         dbSchemaStore.removeCache(db.name);
       }
@@ -185,7 +185,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     orderBy?: string;
     silent?: boolean;
   }): Promise<{
-    databases: ComposedDatabase[];
+    databases: Database[];
     nextPageToken: string;
   }> => {
     if (!isValidParentName(params.parent)) {
@@ -231,7 +231,10 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
   const updateDatabaseInstance = (instance: Instance) => {
     for (const [_, database] of databaseMapByName) {
-      if (database.instance !== instance.name) {
+      const { instance: dbInstance } = extractDatabaseResourceName(
+        database.name
+      );
+      if (dbInstance !== instance.name) {
         continue;
       }
       database.instanceResource = create(InstanceResourceSchema, {
@@ -406,28 +409,25 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   };
 };
 
-export const batchComposeDatabase = async (databaseList: Database[]) => {
-  const environmentV1Store = useEnvironmentV1Store();
+export const batchComposeDatabase = async (
+  databaseList: Database[]
+): Promise<Database[]> => {
   const projectV1Store = useProjectV1Store();
 
+  // Pre-fetch projects for all databases to ensure they're cached
   await projectV1Store.batchGetOrFetchProjects(
     databaseList.map((db) => db.project)
   );
 
   return databaseList.map((db) => {
-    const composed = db as ComposedDatabase;
-    const { databaseName, instance } = extractDatabaseResourceName(db.name);
-
-    composed.databaseName = databaseName;
-    composed.instance = instance;
-    composed.instanceResource = db.instanceResource ?? {
-      ...unknownInstanceResource(),
-      name: instance,
-    };
-    composed.environment = composed.instanceResource.environment;
-    composed.projectEntity = projectV1Store.getProjectByName(db.project);
-    composed.effectiveEnvironmentEntity =
-      environmentV1Store.getEnvironmentByName(db.effectiveEnvironment ?? "");
-    return markRaw(composed);
+    // Ensure instanceResource is populated with a fallback
+    if (!db.instanceResource) {
+      const { instance } = extractDatabaseResourceName(db.name);
+      db.instanceResource = {
+        ...unknownInstanceResource(),
+        name: instance,
+      };
+    }
+    return markRaw(db);
   });
 };

@@ -4,7 +4,7 @@
     exact-active-class=""
     class="font-medium text-main hover:border-b hover:border-b-main"
   >
-    <span>{{ databaseForTask(project, task).databaseName }}</span>
+    <span>{{ databaseName }}</span>
     <span class="ml-1 text-control-placeholder">#{{ taskUID }}</span>
   </router-link>
 </template>
@@ -17,6 +17,7 @@ import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   databaseForTask,
+  extractDatabaseResourceName,
   extractProjectResourceName,
   extractTaskUID,
 } from "@/utils";
@@ -30,6 +31,11 @@ const project = computed(() => {
   return useProjectV1Store().getProjectByName(
     `${projectNamePrefix}${extractProjectResourceName(props.plan.name)}`
   );
+});
+
+const databaseName = computed(() => {
+  const db = databaseForTask(project.value, props.task);
+  return extractDatabaseResourceName(db.name).databaseName;
 });
 
 const taskUID = computed(() => {

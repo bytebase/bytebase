@@ -36,18 +36,19 @@
 import { PenSquareIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { MiniActionButton } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEngine } from "@/utils";
 import { engineSupportsMultiSchema } from "../../../spec";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
@@ -90,7 +91,7 @@ const referencedNameForFk = (fk: ForeignKeyMetadata) => {
     (column) => column.name === fk.referencedColumns[position]
   );
 
-  if (engineSupportsMultiSchema(props.db.instanceResource.engine)) {
+  if (engineSupportsMultiSchema(getDatabaseEngine(props.db))) {
     return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
   } else {
     return `${referencedTable.name}(${referencedColumn?.name})`;

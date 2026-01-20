@@ -5,12 +5,12 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { instanceV1HasAlterSchema } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 
 export type DatabaseDetailContext = {
-  database: Ref<ComposedDatabase>;
+  database: Ref<Database>;
   pagedRevisionTableSessionKey: Ref<string>;
   allowAlterSchema: Ref<boolean>;
   isDefaultProject: Ref<boolean>;
@@ -44,7 +44,7 @@ export const provideDatabaseDetailContext = (
   );
 
   const allowAlterSchema = computed(() => {
-    return instanceV1HasAlterSchema(database.value.instanceResource);
+    return instanceV1HasAlterSchema(getInstanceResource(database.value));
   });
 
   const context: DatabaseDetailContext = {

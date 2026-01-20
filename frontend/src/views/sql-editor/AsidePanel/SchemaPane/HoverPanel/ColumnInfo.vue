@@ -35,6 +35,7 @@ import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite"
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import { getInstanceResource } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
@@ -60,7 +61,8 @@ const columnMetadata = computed(
 );
 
 const instanceEngine = computed(
-  () => databaseStore.getDatabaseByName(props.database).instanceResource.engine
+  () =>
+    getInstanceResource(databaseStore.getDatabaseByName(props.database)).engine
 );
 
 const characterSet = computed(() => {

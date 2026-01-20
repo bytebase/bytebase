@@ -101,12 +101,6 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 
 // ListDatabases lists all databases.
 func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	from := qb.Q().Space("db")
 	where := qb.Q().Space("TRUE")
 
@@ -187,7 +181,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 
 	var databases []*DatabaseMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,10 +226,6 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	for _, database := range databases {
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
 	}
@@ -244,27 +234,6 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 // CreateDatabaseDefault creates a new database in the default project.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err := s.createDatabaseDefaultImpl(ctx, tx, create.ProjectID, create.InstanceID, create); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	// Invalidate an update the cache.
-	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
-	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
-}
-
-// createDatabaseDefault only creates a default database with charset, collation only in the default project.
-func (*Store) createDatabaseDefaultImpl(ctx context.Context, txn *sql.Tx, projectID, instanceID string, create *DatabaseMessage) (int, error) {
 	q := qb.Q().Space(`
 		INSERT INTO db (
 			instance,
@@ -276,22 +245,25 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, txn *sql.Tx, projec
 		ON CONFLICT (instance, name) DO UPDATE SET
 			deleted = EXCLUDED.deleted
 		RETURNING id`,
-		instanceID,
-		projectID,
+		create.InstanceID,
+		create.ProjectID,
 		create.DatabaseName,
 		false,
 	)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var databaseUID int
-	if err := txn.QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
-		return 0, err
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
+		return nil, err
 	}
-	return databaseUID, nil
+
+	// Invalidate and update the cache.
+	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
+	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpsertDatabase upserts a database.
@@ -300,12 +272,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if err != nil {
 		return nil, err
 	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	var environment *string
 	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
@@ -342,10 +308,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 
 	var databaseUID int
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
 		return nil, err
 	}
 
@@ -401,17 +364,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	var databaseUID int
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
 		return nil, err
 	}
 

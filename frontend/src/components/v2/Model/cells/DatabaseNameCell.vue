@@ -9,11 +9,11 @@
 
 <script setup lang="ts">
 import { DatabaseV1Name } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     keyword?: string;
   }>(),
   {

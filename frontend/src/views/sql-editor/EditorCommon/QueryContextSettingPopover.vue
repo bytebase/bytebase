@@ -118,7 +118,11 @@ import {
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import { getValidDataSourceByPolicy, readableDataSourceType } from "@/utils";
+import {
+  getInstanceResource,
+  getValidDataSourceByPolicy,
+  readableDataSourceType,
+} from "@/utils";
 
 defineProps<{
   disabled?: boolean;
@@ -142,7 +146,7 @@ const showRedisConfig = computed(() => {
   if (!database.value) {
     return false;
   }
-  const instance = database.value.instanceResource;
+  const instance = getInstanceResource(database.value);
   return instance.engine === Engine.REDIS;
 });
 
@@ -151,14 +155,14 @@ const selectedDataSourceId = computed(() => {
 });
 
 const selectedDataSource = computed(() => {
-  const instance = database.value.instanceResource;
+  const instance = getInstanceResource(database.value);
   return instance.dataSources.find(
     (ds) => ds.id === selectedDataSourceId.value
   );
 });
 
 const dataSources = computed(() => {
-  return orderBy(database.value.instanceResource.dataSources, "type");
+  return orderBy(getInstanceResource(database.value).dataSources, "type");
 });
 
 const dataSourceUnaccessibleReason = (

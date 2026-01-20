@@ -31,7 +31,7 @@
   <SQLCheckPanel
     v-if="checkResult && advices && showDetailPanel"
     :project="project.name"
-    :database="database"
+    :database="database as Database"
     :advices="advices"
     :affected-rows="checkResult.affectedRows"
     :risk-level="checkResult.riskLevel"
@@ -58,6 +58,7 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import { releaseServiceClientConnect } from "@/connect";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { CheckReleaseResponse } from "@/types/proto-es/v1/release_service_pb";
 import {
   CheckReleaseRequestSchema,

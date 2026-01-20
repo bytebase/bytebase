@@ -33,12 +33,12 @@
             <DatabaseV1Name :database="database" />
             <div class="flex-1 flex flex-row justify-end items-center shrink-0">
               <InstanceV1Name
-                :instance="database.instanceResource"
+                :instance="getInstanceResource(database)"
                 :link="false"
               />
               <EnvironmentV1Name
                 class="ml-1 text-sm text-gray-400 max-w-[124px]"
-                :environment="database.effectiveEnvironmentEntity"
+                :environment="getDatabaseEnvironment(database)"
                 :link="false"
               />
             </div>
@@ -73,22 +73,23 @@ import {
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
+import { DEBOUNCE_SEARCH_DELAY, isValidDatabaseName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  type ComposedDatabase,
-  DEBOUNCE_SEARCH_DELAY,
-  isValidDatabaseName,
-} from "@/types";
-import { getDefaultPagination } from "@/utils";
+  getDatabaseEnvironment,
+  getDefaultPagination,
+  getInstanceResource,
+} from "@/utils";
 
 interface DatabaseMatchList<T> {
   token: T;
   loading: boolean;
   getTotal?: () => number;
-  databaseList: ComposedDatabase[];
+  databaseList: Database[];
   name: "matched" | "unmatched";
   title: string;
   hasNext: (token: T) => boolean;
-  loadMore: (token: T) => Promise<{ databases: ComposedDatabase[]; token: T }>;
+  loadMore: (token: T) => Promise<{ databases: Database[]; token: T }>;
 }
 
 type AnyDatabaseMatchList =
@@ -109,6 +110,9 @@ interface LocalState {
 const props = defineProps<{
   project: string;
   expr: ConditionGroupExpr;
+  // When provided (in readonly mode), skip the validateOnly API call
+  // and use these pre-fetched matched database names directly
+  matchedDatabaseNames?: string[];
 }>();
 
 const { t } = useI18n();
@@ -130,7 +134,7 @@ const loadMoreMatched = async (index: number) => {
 };
 
 const loadMoreUnmatched = async (token: string) => {
-  let unmatched: ComposedDatabase[] = [];
+  let unmatched: Database[] = [];
   let pageToken = token;
   while (true) {
     const { databases, nextPageToken } = await databaseStore.fetchDatabases({
@@ -234,10 +238,14 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 
   state.loading = true;
   try {
-    const matchedDatabaseList = await dbGroupStore.fetchDatabaseGroupMatchList({
-      projectName: props.project,
-      expr: props.expr,
-    });
+    // When matchedDatabaseNames is provided (readonly mode), use it directly
+    // instead of calling createDatabaseGroup with validateOnly
+    const matchedDatabaseList = props.matchedDatabaseNames
+      ? props.matchedDatabaseNames
+      : await dbGroupStore.fetchDatabaseGroupMatchList({
+          projectName: props.project,
+          expr: props.expr,
+        });
 
     state.matchingError = undefined;
     state.databaseMatchLists = getInitialState();
@@ -251,7 +259,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
 }, DEBOUNCE_SEARCH_DELAY);
 
 watch(
-  [() => props.project, () => props.expr],
+  [() => props.project, () => props.expr, () => props.matchedDatabaseNames],
   () => updateDatabaseMatchingState(),
   { deep: true, immediate: true }
 );

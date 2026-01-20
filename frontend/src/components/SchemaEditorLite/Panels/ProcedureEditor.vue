@@ -10,8 +10,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   ProcedureMetadata,
   SchemaMetadata,
@@ -21,7 +21,7 @@ import type { EditStatus } from "../types";
 import CommonCodeEditor from "./CommonCodeEditor.vue";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   procedure: ProcedureMetadata;

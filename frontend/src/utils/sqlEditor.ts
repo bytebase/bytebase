@@ -3,7 +3,6 @@ import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
 import { useDatabaseV1Store, useQueryDataPolicy } from "@/store";
 import type {
-  ComposedDatabase,
   QueryDataSourceType,
   SQLEditorConnection,
   SQLEditorTab,
@@ -15,11 +14,16 @@ import {
   isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   DataSourceType,
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { wrapRefAsPromise } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getInstanceResource,
+} from "./v1/database";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const NEW_WORKSHEET_TITLE = "new worksheet";
@@ -62,7 +66,7 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
 export const getConnectionForSQLEditorTab = (tab?: SQLEditorTab) => {
   const target: {
     instance: InstanceResource | undefined;
-    database: ComposedDatabase | undefined;
+    database: Database | undefined;
   } = {
     instance: undefined,
     database: undefined,
@@ -76,7 +80,7 @@ export const getConnectionForSQLEditorTab = (tab?: SQLEditorTab) => {
       connection.database
     );
     target.database = database;
-    target.instance = database.instanceResource;
+    target.instance = getInstanceResource(database);
   }
   return target;
 };
@@ -101,10 +105,11 @@ export const suggestedTabTitleForSQLEditorConnection = (
 ) => {
   const database = useDatabaseV1Store().getDatabaseByName(conn.database);
   const parts: string[] = [];
+  const { databaseName, instance } = extractDatabaseResourceName(database.name);
   if (isValidDatabaseName(database.name)) {
-    parts.push(database.databaseName);
-  } else if (isValidInstanceName(database.instance)) {
-    parts.push(database.instanceResource.title);
+    parts.push(databaseName);
+  } else if (isValidInstanceName(instance)) {
+    parts.push(getInstanceResource(database).title);
   }
   parts.push(defaultSQLEditorTabTitle());
   return parts.join(" ");
@@ -127,13 +132,14 @@ export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
 };
 
 export const getValidDataSourceByPolicy = async (
-  database: ComposedDatabase,
+  database: Database,
   type?: QueryDataSourceType
 ) => {
-  const adminDataSource = database.instanceResource.dataSources.find(
+  const instanceResource = getInstanceResource(database);
+  const adminDataSource = instanceResource.dataSources.find(
     (ds) => ds.type === DataSourceType.ADMIN
   )!;
-  const readonlyDataSources = database.instanceResource.dataSources.filter(
+  const readonlyDataSources = instanceResource.dataSources.filter(
     (ds) => ds.type === DataSourceType.READ_ONLY
   );
 

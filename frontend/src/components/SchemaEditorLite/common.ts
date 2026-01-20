@@ -4,9 +4,12 @@ import { isEqual } from "lodash-es";
 import { sqlServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { t } from "@/plugins/i18n";
-import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  DatabaseMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { getDatabaseEngine } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { validateDatabaseMetadata } from "./utils";
 
@@ -20,7 +23,7 @@ export const generateDiffDDL = async ({
   sourceMetadata,
   targetMetadata,
 }: {
-  database: ComposedDatabase;
+  database: Database;
   sourceMetadata: DatabaseMetadata;
   targetMetadata: DatabaseMetadata;
 }): Promise<GenerateDiffDDLResult> => {
@@ -46,7 +49,7 @@ export const generateDiffDDL = async ({
     const newRequest = create(DiffMetadataRequestSchema, {
       sourceMetadata: sourceMetadata,
       targetMetadata: targetMetadata,
-      engine: database.instanceResource.engine,
+      engine: getDatabaseEngine(database),
     });
     const diffResponse = await sqlServiceClientConnect.diffMetadata(
       newRequest,

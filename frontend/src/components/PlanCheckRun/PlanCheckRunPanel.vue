@@ -28,7 +28,8 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
+import { getDateForPbTimestampProtoEs } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   type PlanCheckRun,
   PlanCheckRun_Result_Type,
@@ -41,7 +42,7 @@ import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
-  database: ComposedDatabase;
+  database: Database;
   selectedType?: PlanCheckRun_Result_Type;
 }>();
 

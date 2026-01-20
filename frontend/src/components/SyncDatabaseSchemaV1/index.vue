@@ -84,12 +84,8 @@ import { useI18n } from "vue-i18n";
 import { type LocationQueryRaw, useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import {
   useChangelogStore,
@@ -100,7 +96,12 @@ import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractProjectResourceName, generateIssueTitle } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+  generatePlanTitle,
+  getInstanceResource,
+} from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,
   isValidChangelogName,
@@ -189,7 +190,7 @@ const sourceEngine = computed(() => {
     const database = databaseStore.getDatabaseByName(
       changelogSourceSchemaState.databaseName
     );
-    return database.instanceResource.engine;
+    return getInstanceResource(database).engine;
   } else {
     return rawSQLState.engine;
   }
@@ -330,10 +331,9 @@ const tryFinishSetup = async () => {
     return;
   }
 
-  const { enabledNewLayout } = useIssueLayoutVersion();
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
   const query: LocationQueryRaw = {
-    template: "bb.issue.database.update",
+    template: "bb.plan.change-database",
     mode: "normal",
   };
   const sqlMap: Record<string, string> = {};
@@ -348,31 +348,22 @@ const tryFinishSetup = async () => {
   const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
   useStorageStore().put(sqlMapStorageKey, sqlMap);
   query.sqlMapStorageKey = sqlMapStorageKey;
-  query.name = generateIssueTitle(
-    "bb.issue.database.update",
-    targetDatabaseList.map((db) => db.databaseName)
+  query.name = generatePlanTitle(
+    "bb.plan.change-database",
+    targetDatabaseList.map(
+      (db) => extractDatabaseResourceName(db.name).databaseName
+    )
   );
 
-  if (enabledNewLayout.value) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(props.project.name),
-        planId: "create",
-        specId: "placeholder",
-      },
-      query,
-    });
-  } else {
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(props.project.name),
-        issueSlug: "create",
-      },
-      query,
-    });
-  }
+  router.push({
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(props.project.name),
+      planId: "create",
+      specId: "placeholder",
+    },
+    query,
+  });
 };
 
 const cancelSetup = () => {

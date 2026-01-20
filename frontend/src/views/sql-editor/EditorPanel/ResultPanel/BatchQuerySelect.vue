@@ -130,26 +130,31 @@ import {
   useSQLStore,
 } from "@/store";
 import { useQueryDataPolicy } from "@/store/modules/v1/policy";
-import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
+import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import { hexToRgb } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEnvironment,
+  hexToRgb,
+} from "@/utils";
 import ContextMenu from "./ContextMenu.vue";
 import { provideResultTabListContext } from "./context";
 
 const MAX_EXPORT = 20;
 
 type BatchQueryItem = {
-  database: ComposedDatabase;
+  database: Database;
   context: SQLEditorDatabaseQueryContext | undefined;
 };
 
 const props = defineProps<{
-  selectedDatabase: ComposedDatabase | undefined;
+  selectedDatabase: Database | undefined;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:selected-database", db: ComposedDatabase | undefined): void;
+  (event: "update:selected-database", db: Database | undefined): void;
 }>();
 
 const tabStore = useSQLEditorTabStore();
@@ -254,9 +259,9 @@ watch(
   }
 );
 
-const getBackgroundColorRgb = (database: ComposedDatabase) => {
+const getBackgroundColorRgb = (database: Database) => {
   const color = hexToRgb(
-    database.effectiveEnvironmentEntity.color || "#4f46e5"
+    getDatabaseEnvironment(database).color || "#4f46e5"
   ).join(", ");
   return {
     backgroundColor: `rgba(${color}, 0.1)`,
@@ -298,7 +303,7 @@ const handleExportBtnClick = async ({
       contents.push({
         content,
         // the download file is always zip file.
-        filename: `${database.databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+        filename: `${extractDatabaseResourceName(database.name).databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
       });
     } catch (e) {
       pushNotification({

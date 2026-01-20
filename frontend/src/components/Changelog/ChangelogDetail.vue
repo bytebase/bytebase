@@ -138,6 +138,7 @@ import {
 import {
   bytesToString,
   extractProjectResourceName,
+  getInstanceResource,
   wrapRefAsPromise,
 } from "@/utils";
 import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
@@ -240,7 +241,9 @@ const allowRollback = computed((): boolean => {
   }
   // Check if engine supports schema diff rollback (GenerateMigration in backend)
   if (
-    !instanceV1SupportsSchemaRollback(database.value.instanceResource.engine)
+    !instanceV1SupportsSchemaRollback(
+      getInstanceResource(database.value).engine
+    )
   ) {
     return false;
   }

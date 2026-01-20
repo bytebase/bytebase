@@ -112,7 +112,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { emptyProject } from "@/types";
+import { unknownProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import WorkspaceMode from "./WorkspaceMode.vue";
@@ -141,7 +141,7 @@ const state = reactive<LocalState>({
   data: "self-setup",
   mode: DatabaseChangeMode.PIPELINE,
   project: {
-    ...emptyProject(),
+    ...unknownProject(),
     title: "New Project",
   },
   resourceId: "",

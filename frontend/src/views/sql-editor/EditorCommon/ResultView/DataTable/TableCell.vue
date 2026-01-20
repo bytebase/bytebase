@@ -58,10 +58,14 @@ import { ExpandIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
-import { type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { getHighlightHTMLByRegExp, type SearchScope } from "@/utils";
+import {
+  getHighlightHTMLByRegExp,
+  getInstanceResource,
+  type SearchScope,
+} from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import {
@@ -78,7 +82,7 @@ const props = defineProps<{
   colIndex: number;
   allowSelect?: boolean;
   columnType: string; // Column type from QueryResult
-  database: ComposedDatabase;
+  database: Database;
   scope?: SearchScope;
   keyword: string;
 }>();
@@ -133,7 +137,7 @@ useResizeObserver(cellRef, () => {
 
 const clickable = computed(() => {
   if (truncated.value) return true;
-  if (props.database.instanceResource.engine === Engine.MONGODB) {
+  if (getInstanceResource(props.database).engine === Engine.MONGODB) {
     // A cheap way to check JSON string without paying the parsing cost.
     const maybeJSON = String(props.value).trim();
     return (

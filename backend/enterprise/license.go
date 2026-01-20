@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"math"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -117,12 +118,23 @@ func NewConfig(mode common.ReleaseMode) (*Config, error) {
 	}, nil
 }
 
+// replicaActiveWindow is the time window for considering a replica active.
+// Replicas without heartbeats within this window are considered inactive.
+// This should be at least 3x the heartbeat interval (10s) to tolerate missed heartbeats.
+const replicaActiveWindow = 30 * time.Second
+
+type replicaCacheState struct {
+	replicaCount int
+	loadedAt     time.Time
+}
+
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
-	store   *store.Store
-	config  *Config
-	sfGroup singleflight.Group
-	cache   *expirable.LRU[string, *v1pb.Subscription]
+	store        *store.Store
+	config       *Config
+	sfGroup      singleflight.Group
+	cache        *expirable.LRU[string, *v1pb.Subscription]
+	replicaCache atomic.Pointer[replicaCacheState]
 }
 
 // claims creates a struct that will be encoded to a JWT.
@@ -146,11 +158,17 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 		return nil, err
 	}
 
-	return &LicenseService{
+	service := &LicenseService{
 		store:  store,
 		config: config,
-		cache:  expirable.NewLRU[string, *v1pb.Subscription](1, nil, 5*time.Second),
-	}, nil
+		cache:  expirable.NewLRU[string, *v1pb.Subscription](1, nil, 1*time.Minute),
+	}
+	service.replicaCache.Store(&replicaCacheState{
+		replicaCount: 1,
+		loadedAt:     time.Now(),
+	})
+
+	return service, nil
 }
 
 const (
@@ -370,21 +388,26 @@ func (s *LicenseService) GetAuditLogRetentionCutoff() *time.Time {
 // A replica is considered active if it has sent a heartbeat within the last 30 seconds.
 // Returns at least 1 (the current replica is always counted).
 func (s *LicenseService) CountActiveReplicas(ctx context.Context) int {
+	if state := s.replicaCache.Load(); state != nil && time.Since(state.loadedAt) < replicaActiveWindow {
+		return state.replicaCount
+	}
+
 	count, err := s.store.CountActiveReplicas(ctx, replicaActiveWindow)
 	if err != nil {
 		slog.Warn("failed to count active replicas", log.BBError(err))
 		return 1
 	}
+
 	if count < 1 {
-		return 1
+		count = 1
 	}
+	s.replicaCache.Store(&replicaCacheState{
+		replicaCount: count,
+		loadedAt:     time.Now(),
+	})
+
 	return count
 }
-
-// replicaActiveWindow is the time window for considering a replica active.
-// Replicas without heartbeats within this window are considered inactive.
-// This should be at least 3x the heartbeat interval (10s) to tolerate missed heartbeats.
-const replicaActiveWindow = 30 * time.Second
 
 // CheckReplicaLimit checks if the current replica count exceeds the allowed limit.
 // Returns error if HA is not allowed and there are multiple active replicas.

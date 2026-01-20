@@ -6,7 +6,10 @@ import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { instanceV1SupportsTransactionMode } from "@/utils";
+import {
+  getInstanceResource,
+  instanceV1SupportsTransactionMode,
+} from "@/utils";
 
 export const KEY = Symbol(
   "bb.plan.setting.transaction-mode"
@@ -47,7 +50,7 @@ export const provideTransactionModeSettingContext = (refs: {
 
     // Check if all databases support transaction mode
     const allDatabasesSupportTransactionMode = databases.value.every((db) =>
-      instanceV1SupportsTransactionMode(db.instanceResource.engine)
+      instanceV1SupportsTransactionMode(getInstanceResource(db).engine)
     );
     if (!allDatabasesSupportTransactionMode) return false;
 

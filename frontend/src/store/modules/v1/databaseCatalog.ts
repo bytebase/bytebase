@@ -6,7 +6,7 @@ import { databaseCatalogServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
-import { EMPTY_ID, UNKNOWN_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
+import { UNKNOWN_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
   ColumnCatalogSchema,
@@ -16,7 +16,11 @@ import {
   TableCatalogSchema,
   UpdateDatabaseCatalogRequestSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getDatabaseProject,
+  hasProjectPermissionV2,
+} from "@/utils";
 import { useDatabaseV1Store } from "./database";
 
 type DatabaseCatalogCacheKey = [string /* database catalog resource name */];
@@ -47,7 +51,7 @@ export const useDatabaseCatalogV1Store = defineStore(
       const { databaseName } = extractDatabaseResourceName(database);
       if (
         databaseName === String(UNKNOWN_ID) ||
-        databaseName === String(EMPTY_ID)
+        databaseName === String(UNKNOWN_ID)
       ) {
         return create(DatabaseCatalogSchema, {
           name: ensureDatabaseCatalogResourceName(
@@ -98,7 +102,7 @@ export const useDatabaseCatalogV1Store = defineStore(
       const { databaseName } = extractDatabaseResourceName(database);
       if (
         databaseName === String(UNKNOWN_ID) ||
-        databaseName === String(EMPTY_ID)
+        databaseName === String(UNKNOWN_ID)
       ) {
         return create(DatabaseCatalogSchema, {
           name: ensureDatabaseCatalogResourceName(
@@ -186,12 +190,14 @@ export const useDatabaseCatalog = (
     const { databaseName } = extractDatabaseResourceName(unref(database));
     if (
       databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(EMPTY_ID)
+      databaseName === String(UNKNOWN_ID)
     ) {
       return;
     }
     const db = await databaseStore.getOrFetchDatabaseByName(unref(database));
-    if (hasProjectPermissionV2(db.projectEntity, "bb.databaseCatalogs.get")) {
+    if (
+      hasProjectPermissionV2(getDatabaseProject(db), "bb.databaseCatalogs.get")
+    ) {
       await store.getOrFetchDatabaseCatalog({
         database: unref(database),
         skipCache: unref(skipCache),

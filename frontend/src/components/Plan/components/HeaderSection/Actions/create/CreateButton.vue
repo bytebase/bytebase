@@ -81,7 +81,7 @@ import { getLocalSheetByName, usePlanContext } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
@@ -256,7 +256,7 @@ const doCreateDataExportIssue = async () => {
   // Redirect to issue detail page
   nextTick(() => {
     router.replace({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(createdPlan.name),
         issueId: extractIssueUID(createdIssue.name),

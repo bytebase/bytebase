@@ -61,8 +61,8 @@ import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { useProjectV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_SqlReviewReportSchema,
@@ -77,7 +77,7 @@ const props = withDefaults(
   defineProps<{
     project: string;
     advices: Advice[];
-    database?: ComposedDatabase;
+    database?: Database;
     affectedRows?: bigint;
     riskLevel?: RiskLevel;
     overrideTitle?: string;

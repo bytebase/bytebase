@@ -1,7 +1,7 @@
 import type { TreeOption } from "naive-ui";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   FunctionMetadata,
   ProcedureMetadata,
@@ -10,7 +10,12 @@ import type {
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
-import { groupBy } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEngine,
+  getInstanceResource,
+  groupBy,
+} from "@/utils";
 import { keyForResource } from "../context/common";
 import {
   engineSupportsEditFunctions,
@@ -34,7 +39,7 @@ export interface TreeNodeForInstance extends BaseTreeNode {
 
 export interface TreeNodeForDatabase extends BaseTreeNode {
   type: "database";
-  db: ComposedDatabase;
+  db: Database;
   parent?: TreeNodeForInstance;
   metadata: {
     database: DatabaseMetadata;
@@ -46,7 +51,7 @@ export interface TreeNodeForDatabase extends BaseTreeNode {
 
 export interface TreeNodeForSchema extends BaseTreeNode {
   type: "schema";
-  db: ComposedDatabase;
+  db: Database;
   parent?: TreeNodeForDatabase;
   metadata: {
     database: DatabaseMetadata;
@@ -57,7 +62,7 @@ export interface TreeNodeForSchema extends BaseTreeNode {
 
 export interface TreeNodeForTable extends BaseTreeNode {
   type: "table";
-  db: ComposedDatabase;
+  db: Database;
   parent: TreeNodeForGroup<"table">;
   metadata: {
     database: DatabaseMetadata;
@@ -69,7 +74,7 @@ export interface TreeNodeForTable extends BaseTreeNode {
 
 export interface TreeNodeForColumn extends BaseTreeNode {
   type: "column";
-  db: ComposedDatabase;
+  db: Database;
   parent: TreeNodeForTable;
   metadata: {
     database: DatabaseMetadata;
@@ -83,7 +88,7 @@ export interface TreeNodeForColumn extends BaseTreeNode {
 
 export interface TreeNodeForView extends BaseTreeNode {
   type: "view";
-  db: ComposedDatabase;
+  db: Database;
   parent: TreeNodeForGroup<"view">;
   metadata: {
     database: DatabaseMetadata;
@@ -96,7 +101,7 @@ export interface TreeNodeForView extends BaseTreeNode {
 
 export interface TreeNodeForProcedure extends BaseTreeNode {
   type: "procedure";
-  db: ComposedDatabase;
+  db: Database;
   parent: TreeNodeForGroup<"procedure">;
   metadata: {
     database: DatabaseMetadata;
@@ -109,7 +114,7 @@ export interface TreeNodeForProcedure extends BaseTreeNode {
 
 export interface TreeNodeForFunction extends BaseTreeNode {
   type: "function";
-  db: ComposedDatabase;
+  db: Database;
   parent: TreeNodeForGroup<"function">;
   metadata: {
     database: DatabaseMetadata;
@@ -125,7 +130,7 @@ export interface TreeNodeForGroup<T extends GroupNodeType = GroupNodeType>
   extends BaseTreeNode {
   type: "group";
   group: T;
-  db: ComposedDatabase;
+  db: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
@@ -202,10 +207,10 @@ export const useBuildTree = () => {
   ) => {
     const groupedByInstance = groupBy(
       targets,
-      (target) => target.database.instance
+      (target) => extractDatabaseResourceName(target.database.name).instance
     );
     return Array.from(groupedByInstance).map(([key, targets]) => {
-      const instance = targets[0].database.instanceResource;
+      const instance = getInstanceResource(targets[0].database);
       const instanceNode: TreeNodeForInstance = {
         type: "instance",
         key: key,
@@ -231,7 +236,7 @@ export const useBuildTree = () => {
         type: "database",
         key: db.name,
         parent,
-        label: db.databaseName,
+        label: extractDatabaseResourceName(db.name).databaseName,
         isLeaf: false,
         db,
         metadata: {
@@ -253,7 +258,7 @@ export const useBuildTree = () => {
   const buildSchemaNodeList = (
     schemas: SchemaMetadata[],
     map: Map<string, TreeNode>,
-    db: ComposedDatabase,
+    db: Database,
     database: DatabaseMetadata,
     parent: TreeNodeForDatabase | undefined
   ) => {
@@ -292,7 +297,7 @@ export const useBuildTree = () => {
       map.set(tableGroupNode.key, tableGroupNode);
 
       // Views
-      if (engineSupportsEditViews(db.instanceResource.engine)) {
+      if (engineSupportsEditViews(getDatabaseEngine(db))) {
         const viewGroupNode: TreeNodeForGroup<"view"> = {
           type: "group",
           group: "view",
@@ -318,7 +323,7 @@ export const useBuildTree = () => {
         map.set(viewGroupNode.key, viewGroupNode);
       }
       // Procedures
-      if (engineSupportsEditProcedures(db.instanceResource.engine)) {
+      if (engineSupportsEditProcedures(getDatabaseEngine(db))) {
         const procedureGroupNode: TreeNodeForGroup<"procedure"> = {
           type: "group",
           group: "procedure",
@@ -344,7 +349,7 @@ export const useBuildTree = () => {
         map.set(procedureGroupNode.key, procedureGroupNode);
       }
       // Functions
-      if (engineSupportsEditFunctions(db.instanceResource.engine)) {
+      if (engineSupportsEditFunctions(getDatabaseEngine(db))) {
         const functionGroupNode: TreeNodeForGroup<"function"> = {
           type: "group",
           group: "function",

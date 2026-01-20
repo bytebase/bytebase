@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"slices"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -27,7 +27,7 @@ type clientRegistrationResponse struct {
 	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
 }
 
-func (s *Service) handleRegister(c echo.Context) error {
+func (s *Service) handleRegister(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	var req clientRegistrationRequest

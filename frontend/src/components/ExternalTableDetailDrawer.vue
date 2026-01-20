@@ -33,7 +33,7 @@
                     >{{ $t("common.environment") }}&nbsp;-&nbsp;</span
                   >
                   <EnvironmentV1Name
-                    :environment="database.effectiveEnvironmentEntity"
+                    :environment="effectiveEnvironment"
                     icon-class="textinfolabel"
                   />
                 </dd>
@@ -42,7 +42,7 @@
                   <span class="ml-1 textlabel"
                     >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
                   >
-                  <InstanceV1Name :instance="database.instanceResource" />
+                  <InstanceV1Name :instance="instanceResource" />
                 </dd>
                 <dt class="sr-only">{{ $t("common.project") }}</dt>
                 <dd class="flex items-center text-sm md:mr-4">
@@ -50,7 +50,7 @@
                     >{{ $t("common.project") }}&nbsp;-&nbsp;</span
                   >
                   <ProjectV1Name
-                    :project="database.projectEntity"
+                    :project="projectEntity"
                     hash="#databases"
                   />
                 </dd>
@@ -142,6 +142,9 @@ import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
+  getDatabaseEnvironment,
+  getDatabaseProject,
+  getInstanceResource,
   hasProjectPermissionV2,
   hasSchemaProperty,
   isDatabaseV1Queryable,
@@ -194,8 +197,20 @@ const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
 });
 
+const instanceResource = computed(() => {
+  return getInstanceResource(database.value);
+});
+
+const projectEntity = computed(() => {
+  return getDatabaseProject(database.value);
+});
+
+const effectiveEnvironment = computed(() => {
+  return getDatabaseEnvironment(database.value);
+});
+
 const instanceEngine = computed(() => {
-  return database.value.instanceResource.engine;
+  return instanceResource.value.engine;
 });
 
 const allowQuery = computed(() => {

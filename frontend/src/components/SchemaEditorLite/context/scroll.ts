@@ -1,9 +1,9 @@
 import { useMounted } from "@vueuse/core";
 import type { Ref } from "vue";
 import { computed, ref, watch } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -21,7 +21,7 @@ type RichColumnMetadata = RichTableMetadata & {
   // field?: "name" | "type"; // TODO
 };
 type RichMetadataWithDB<T> = {
-  db: ComposedDatabase;
+  db: Database;
   metadata: T;
 };
 

@@ -24,9 +24,9 @@ import type { SelectOption } from "naive-ui";
 import { NSelect, NTag } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, h, ref } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   IndexMetadata,
   SchemaMetadata,
@@ -41,7 +41,7 @@ type ColumnOption = SelectOption & {
 
 const props = defineProps<{
   readonly?: boolean;
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;

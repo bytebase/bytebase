@@ -78,25 +78,25 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { autoProjectRoute } from "@/utils";
+import { autoProjectRoute, extractDatabaseResourceName } from "@/utils";
 import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 
 const props = withDefaults(
   defineProps<{
-    databaseList: ComposedDatabase[];
+    databaseList: Database[];
     selectedDatabaseNames?: string[];
-    onSuccess?: (databases: ComposedDatabase[]) => void;
+    onSuccess?: (databases: Database[]) => void;
   }>(),
   {
     selectedDatabaseNames: () => [],
-    onSuccess: (_: ComposedDatabase[]) => {},
+    onSuccess: (_: Database[]) => {},
   }
 );
 
@@ -198,7 +198,7 @@ const doTransfer = async () => {
       const displayDatabaseName =
         databaseList.length > 1
           ? `${databaseList.length} databases`
-          : `'${databaseList[0].databaseName}'`;
+          : `'${extractDatabaseResourceName(databaseList[0].name).databaseName}'`;
 
       pushNotification({
         module: "bytebase",

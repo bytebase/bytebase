@@ -23,6 +23,7 @@ import type { VNodeChild } from "vue";
 import { computed, toRef } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { EditorPanelView } from "@/types";
+import { extractDatabaseResourceName } from "@/utils";
 import { useActions } from "../../AsidePanel/SchemaPane/actions";
 import { useCurrentTabViewStateContext } from "../../EditorPanel/context/viewState.tsx";
 import { useButton } from "./common";
@@ -59,7 +60,7 @@ const { openNewTab } = useActions();
 
 const handleClick = () => {
   openNewTab({
-    title: `[${database.value.databaseName}] ${props.action.title}`,
+    title: `[${extractDatabaseResourceName(database.value.name).databaseName}] ${props.action.title}`,
     view: props.action.view,
   });
 };

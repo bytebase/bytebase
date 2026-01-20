@@ -5,7 +5,7 @@
     cross
     fullscreen
     :font-size="16"
-    :font-color="`rgba(256, 128, 128, .003)`"
+    :font-color="`rgba(256, 128, 128, .01)`"
     :line-height="16"
     :width="128"
     :height="128"

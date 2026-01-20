@@ -258,11 +258,11 @@ import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import type {
-  ComposedDatabase,
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
 } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryOption_MSSQLExplainFormat,
   QueryOptionSchema,
@@ -273,6 +273,7 @@ import {
   compareQueryRowValues,
   createExplainToken,
   extractSQLRowValuePlain,
+  getInstanceResource,
   isNullOrUndefined,
   type SearchParams,
 } from "@/utils";
@@ -301,7 +302,7 @@ type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
 const props = defineProps<{
   params: SQLEditorQueryParams;
-  database: ComposedDatabase;
+  database: Database;
   result: QueryResult;
   setIndex: number;
   showExport: boolean;
@@ -607,7 +608,7 @@ provideSelectionContext({
   rows: rows,
 });
 
-const engine = computed(() => props.database.instanceResource.engine);
+const engine = computed(() => getInstanceResource(props.database).engine);
 
 const showVisualizeButton = computed((): boolean => {
   return (

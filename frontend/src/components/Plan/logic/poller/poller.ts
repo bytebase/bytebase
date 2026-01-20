@@ -13,7 +13,7 @@ import {
 import { useRoute } from "vue-router";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
@@ -171,7 +171,7 @@ export const provideResourcePoller = () => {
     ];
 
     if (includes(planRoutes, routeName)) return ["plan"];
-    if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName)) {
+    if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL], routeName)) {
       if (planType.value === "CHANGE_DATABASE") {
         return ["plan", "issue"];
       } else {
@@ -340,7 +340,7 @@ export const provideResourcePoller = () => {
           PROJECT_V1_ROUTE_PLAN_DETAIL,
           PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
           PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-          PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+          PROJECT_V1_ROUTE_ISSUE_DETAIL,
         ],
         routeName
       );

@@ -213,7 +213,8 @@
 import { useWindowSize, watchDebounced } from "@vueuse/core";
 import { NPerformantEllipsis, NVirtualList } from "naive-ui";
 import { nextTick, onMounted, onUnmounted, ref } from "vue";
-import { type ComposedDatabase, DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import { type QueryRow } from "@/types/proto-es/v1/sql_service_pb";
 import { type SearchParams } from "@/utils";
@@ -244,7 +245,7 @@ const props = defineProps<{
   activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
-  database: ComposedDatabase;
+  database: Database;
   sortState?: SortState;
   search: SearchParams;
 }>();

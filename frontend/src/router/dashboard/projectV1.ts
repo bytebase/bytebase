@@ -15,7 +15,6 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHB
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_ISSUES}.detail`;
-export const PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 = `${PROJECT_V1_ROUTE_ISSUES}.detail.v1`;
 export const PROJECT_V1_ROUTE_PLANS = `${PROJECT_V1_ROUTE_DASHBOARD}.plan`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.specs`;
@@ -73,7 +72,7 @@ const issueRoutes: RouteRecordRaw[] = [
       },
       {
         path: "issues/:issueId(\\d+)",
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         meta: {
           requiredPermissionList: () => ["bb.issues.get"],
         },
@@ -233,31 +232,28 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "issues",
+        name: PROJECT_V1_ROUTE_ISSUES,
         meta: {
           title: () => t("common.issues"),
+          requiredPermissionList: () => ["bb.issues.list"],
         },
+        component: () => import("@/views/project/ProjectIssueDashboard.vue"),
         props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_ISSUES,
-            meta: {
-              requiredPermissionList: () => ["bb.issues.list"],
-            },
-            component: () =>
-              import("@/views/project/ProjectIssueDashboard.vue"),
-            props: true,
-          },
-          {
-            path: ":issueSlug",
+      },
+      // Redirect legacy issue slug format (e.g., "my-issue-123") to new numeric format
+      {
+        path: "issues/:issueSlug",
+        redirect: (to) => {
+          const { issueSlug, projectId } = to.params;
+          // Extract issue ID from slug (last part after the final hyphen)
+          const match = String(issueSlug).match(/-(\d+)$/);
+          const issueId = match ? match[1] : issueSlug;
+          return {
             name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-            meta: {
-              requiredPermissionList: () => ["bb.issues.get"],
-            },
-            component: () => import("@/views/project/ProjectIssueDetail.vue"),
-            props: true,
-          },
-        ],
+            params: { projectId, issueId },
+            query: to.query,
+          };
+        },
       },
       {
         path: "plans",

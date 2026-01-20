@@ -30,10 +30,10 @@ import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useDBSchemaV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const open = ref<boolean>(false);

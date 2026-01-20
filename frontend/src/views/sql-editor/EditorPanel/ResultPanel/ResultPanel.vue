@@ -96,12 +96,14 @@ import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBSpin } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
-import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
+import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { getDataSourceTypeI18n } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { getInstanceResource } from "@/utils";
 import BatchQuerySelect from "./BatchQuerySelect.vue";
 import DatabaseQueryContext from "./DatabaseQueryContext.vue";
 
-const selectedDatabase = ref<ComposedDatabase>();
+const selectedDatabase = ref<Database>();
 const tabStore = useSQLEditorTabStore();
 const selectedTab = ref<string>();
 const { t } = useI18n();
@@ -243,12 +245,14 @@ const tabName = (context: SQLEditorDatabaseQueryContext) => {
 
 // Cache data sources for better performance
 const dataSourcesMap = computed(() => {
-  if (!selectedDatabase.value?.instanceResource.dataSources) {
+  if (!selectedDatabase.value) {
     return new Map();
   }
-  return new Map(
-    selectedDatabase.value.instanceResource.dataSources.map((ds) => [ds.id, ds])
-  );
+  const instance = getInstanceResource(selectedDatabase.value);
+  if (!instance.dataSources) {
+    return new Map();
+  }
+  return new Map(instance.dataSources.map((ds) => [ds.id, ds]));
 });
 
 const dataSourceInContext = (context: SQLEditorDatabaseQueryContext) => {

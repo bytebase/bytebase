@@ -126,9 +126,7 @@ import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
@@ -139,16 +137,18 @@ import {
   useGracefulRequest,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedDatabase, Permission } from "@/types";
+import type { Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
+  extractDatabaseResourceName,
   extractProjectResourceName,
-  generateIssueTitle,
+  generatePlanTitle,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
@@ -172,7 +172,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    databases: ComposedDatabase[];
+    databases: Database[];
     projectName?: string;
     instanceName?: string;
     onCreateDatabase?: () => void;
@@ -190,7 +190,7 @@ const state = reactive<LocalState>({
 
 const emit = defineEmits<{
   (event: "refresh"): void;
-  (event: "update", databases: ComposedDatabase[]): void;
+  (event: "update", databases: Database[]): void;
 }>();
 
 const { t } = useI18n();
@@ -256,51 +256,39 @@ const operations = computed(() => {
 });
 
 const generateMultiDb = async (
-  type: "bb.issue.database.update" | "bb.issue.database.data.export"
+  type: "bb.plan.change-database" | "bb.plan.export-data"
 ) => {
   // Fetch project to check enforce_issue_title setting
   const project = await projectStore.getOrFetchProjectByName(
     selectedProjectName.value
   );
 
-  const { enabledNewLayout } = useIssueLayoutVersion();
   const query: LocationQueryRaw = {
     template: type,
     databaseList: props.databases.map((db) => db.name).join(","),
   };
   // Only set title from generated if enforceIssueTitle is false.
   if (!project.enforceIssueTitle) {
-    query.name = generateIssueTitle(
+    query.name = generatePlanTitle(
       type,
-      props.databases.map((db) => db.databaseName)
+      props.databases.map(
+        (db) => extractDatabaseResourceName(db.name).databaseName
+      )
     );
   }
 
-  const isDataExport = type === "bb.issue.database.data.export";
-  if (isDataExport || enabledNewLayout.value) {
-    // Use CI/CD UI for data export issues or when new layout is enabled
-    router.push({
-      name: isDataExport
-        ? PROJECT_V1_ROUTE_PLAN_DETAIL
-        : PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(selectedProjectName.value),
-        planId: "create",
-        ...(isDataExport ? {} : { specId: "placeholder" }),
-      },
-      query,
-    });
-  } else {
-    // Legacy UI for database update when new layout is disabled
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-      params: {
-        projectId: extractProjectResourceName(selectedProjectName.value),
-        issueSlug: "create",
-      },
-      query,
-    });
-  }
+  const isDataExport = type === "bb.plan.export-data";
+  router.push({
+    name: isDataExport
+      ? PROJECT_V1_ROUTE_PLAN_DETAIL
+      : PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(selectedProjectName.value),
+      planId: "create",
+      ...(isDataExport ? {} : { specId: "placeholder" }),
+    },
+    query,
+  });
 };
 
 const syncSchema = async () => {
@@ -424,7 +412,7 @@ const actions = computed((): DatabaseAction[] => {
               !selectedProjectName.value ||
               props.databases.length < 1 ||
               selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-            click: () => generateMultiDb("bb.issue.database.data.export"),
+            click: () => generateMultiDb("bb.plan.export-data"),
             requiredPermissions: [...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE],
           });
         }

@@ -16,14 +16,16 @@ import { NDataTable, NPerformantEllipsis } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
-import type { TriggerMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  TriggerMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 
 defineProps({
   database: {
     required: true,
-    type: Object as PropType<ComposedDatabase>,
+    type: Object as PropType<Database>,
   },
   schemaName: {
     type: String,

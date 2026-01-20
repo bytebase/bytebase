@@ -8,7 +8,7 @@
     <span v-html="optionName" />
     <span v-if="database" class="ml-1 text-gray-500 flex flex-row items-center">
       (<InstanceV1Name
-        :instance="database.instanceResource"
+        :instance="getInstanceResource(database)"
         :link="false"
         class="whitespace-nowrap"
       />)
@@ -22,7 +22,11 @@ import { escape } from "lodash-es";
 import { computed, h } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import {
+  getDatabaseEnvironment,
+  getHighlightHTMLByRegExp,
+  getInstanceResource,
+} from "@/utils";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import TableIcon from "~icons/heroicons-outline/table-cells";
 import SchemaIcon from "~icons/heroicons-outline/view-columns";
@@ -44,7 +48,8 @@ const database = computedAsync(() => {
 const environment = computed(() => {
   const { option } = props;
   if (option.level !== "databases") return undefined;
-  return database.value?.effectiveEnvironmentEntity;
+  if (!database.value) return undefined;
+  return getDatabaseEnvironment(database.value);
 });
 
 const Prefix = () => {

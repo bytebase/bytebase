@@ -28,7 +28,6 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 		PersistentPreRunE: rolloutPreRun(w),
 		RunE:              runRollout(w),
 	}
-	cmdRollout.Flags().StringVar(&w.ReleaseTitle, "release-title", "", "The title of the release. Generated from project and current timestamp if not provided.")
 	cmdRollout.Flags().StringVar(&w.TargetStage, "target-stage", "", "Rollout up to the target stage. Format: environments/{environment}.")
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
 	cmdRollout.Flags().StringVar(&w.ReleaseIDTemplate, "release-id-template", "release_{date}-RC{iteration}", "Template for release ID. Available variables: {date}, {time}, {timestamp}, {iteration}")
@@ -36,7 +35,7 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 	return cmdRollout
 }
 
-func rolloutPreRun(w *world.World) func(*cobra.Command, []string) error {
+func rolloutPreRun(_ *world.World) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if p := cmd.Parent(); p != nil {
 			if p.PersistentPreRunE != nil {
@@ -44,9 +43,6 @@ func rolloutPreRun(w *world.World) func(*cobra.Command, []string) error {
 					return err
 				}
 			}
-		}
-		if w.ReleaseTitle == "" {
-			w.ReleaseTitle = fmt.Sprintf("[%s] %s", strings.TrimPrefix(w.Project, "projects/"), time.Now().UTC().Format(time.RFC3339))
 		}
 		return nil
 	}
@@ -86,16 +82,11 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			if w.Declarative {
 				releaseType = v1pb.Release_DECLARATIVE
 			}
-			// Render train from template
-			train, err := renderTrain(w.ReleaseIDTemplate, w.ReleaseIDTimezone, time.Now())
-			if err != nil {
-				return errors.Wrapf(err, "failed to render train")
-			}
 			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
 				Files:     releaseFiles,
 				VcsSource: getVCSSource(w),
 				Type:      releaseType,
-			}, train)
+			}, w.ReleaseIDTemplate, w.ReleaseIDTimezone)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create release")
 			}
@@ -103,8 +94,11 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			release = createReleaseResponse.Name
 			w.OutputMap.Release = release
 
+			// Extract release ID from release name (format: projects/{project}/releases/{release_id})
+			releaseID := strings.TrimPrefix(release, w.Project+"/releases/")
+
 			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{
-				Title: "Release " + w.ReleaseTitle,
+				Title: releaseID,
 				Specs: []*v1pb.Plan_Spec{
 					{
 						Id: uuid.New().String(),
@@ -327,49 +321,4 @@ func getVCSSource(w *world.World) *v1pb.Release_VCSSource {
 	default:
 		return nil
 	}
-}
-
-func renderTrain(template, timezone string, t time.Time) (string, error) {
-	// Validate template
-	if err := validateTemplate(template); err != nil {
-		return "", err
-	}
-
-	// Validate timezone
-	loc, err := time.LoadLocation(timezone)
-	if err != nil {
-		return "", errors.Wrapf(err, "invalid timezone: %s", timezone)
-	}
-
-	now := t.In(loc)
-
-	train := template
-	train = strings.ReplaceAll(train, "{date}", now.Format("20060102"))
-	train = strings.ReplaceAll(train, "{time}", now.Format("1504"))
-	train = strings.ReplaceAll(train, "{timestamp}", now.Format("20060102_1504"))
-	train = strings.ReplaceAll(train, "{iteration}", "")
-
-	return train, nil
-}
-
-func validateTemplate(template string) error {
-	// Must contain {iteration}
-	if !strings.Contains(template, "{iteration}") {
-		return errors.New("template must contain {iteration} placeholder")
-	}
-
-	// {iteration} must be at the end of the template
-	if !strings.HasSuffix(template, "{iteration}") {
-		return errors.New("{iteration} must be at the end of the template")
-	}
-
-	// Must contain at least one time variable
-	hasTimeVar := strings.Contains(template, "{date}") ||
-		strings.Contains(template, "{time}") ||
-		strings.Contains(template, "{timestamp}")
-	if !hasTimeVar {
-		return errors.New("template must contain at least one of: {date}, {time}, {timestamp}")
-	}
-
-	return nil
 }

@@ -6,7 +6,7 @@
     >
       <div class="p-1 flex flex-col gap-y-2">
         <SchemaSelector
-          v-if="hasSchemaProperty(database.instanceResource.engine)"
+          v-if="hasSchemaProperty(instanceEngine)"
           :schemas="databaseMetadata.schemas"
           v-model:value="selectedSchemaNames"
         />
@@ -40,8 +40,8 @@
 
 <script lang="ts" setup>
 import { NInput } from "naive-ui";
-import { reactive } from "vue";
-import { hasSchemaProperty } from "@/utils";
+import { computed, reactive } from "vue";
+import { getInstanceResource, hasSchemaProperty } from "@/utils";
 import { useSchemaDiagramContext } from "../common";
 import SchemaSelector from "./SchemaSelector.vue";
 import Tree from "./Tree.vue";
@@ -58,4 +58,8 @@ const state = reactive<LocalState>({
 
 const { databaseMetadata, selectedSchemaNames, database } =
   useSchemaDiagramContext();
+
+const instanceEngine = computed(
+  () => getInstanceResource(database.value).engine
+);
 </script>

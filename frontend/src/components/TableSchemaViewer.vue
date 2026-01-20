@@ -25,13 +25,15 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
 import { databaseServiceClientConnect } from "@/connect";
-import type { ComposedDatabase } from "@/types";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  GetSchemaStringRequest_ObjectType,
+} from "@/types/proto-es/v1/database_service_pb";
 import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
-import { hasSchemaProperty } from "@/utils";
+import { getInstanceResource, hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   schema?: string;
   object?: string;
   type?: GetSchemaStringRequest_ObjectType;
@@ -40,7 +42,7 @@ const props = defineProps<{
 const schemaString = ref<string | null>(null);
 
 const engine = computed(() => {
-  return props.database.instanceResource.engine;
+  return getInstanceResource(props.database).engine;
 });
 
 const resourceName = computed(() => {

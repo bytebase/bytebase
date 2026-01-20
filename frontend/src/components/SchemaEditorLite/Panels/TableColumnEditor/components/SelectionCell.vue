@@ -10,16 +10,16 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;

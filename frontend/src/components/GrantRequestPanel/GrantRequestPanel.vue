@@ -55,7 +55,7 @@ import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClientConnect } from "@/connect";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
@@ -70,7 +70,7 @@ import {
   displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
-  generateIssueTitle,
+  formatIssueTitle,
 } from "@/utils";
 
 const props = withDefaults(
@@ -149,16 +149,15 @@ const doCreateIssue = async () => {
   const newIssue = create(IssueSchema, {
     title: project.value.enforceIssueTitle
       ? `[${t("issue.title.request-role")}] ${formRef.value?.reason}`
-      : generateIssueTitle(
-          "bb.issue.grant.request",
+      : formatIssueTitle(
+          t("issue.title.request-specific-role", {
+            role: displayRoleTitle(binding.role),
+          }),
           uniq(
             databaseResources?.map(
               (databaseResource) => databaseResource.databaseFullName
             )
-          ),
-          t("issue.title.request-specific-role", {
-            role: displayRoleTitle(binding.role),
-          })
+          )
         ),
     description: binding.condition?.description,
     type: NewIssue_Type.GRANT_REQUEST,
@@ -173,7 +172,7 @@ const doCreateIssue = async () => {
   const response = await issueServiceClientConnect.createIssue(request);
 
   const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(response.name),
       issueId: extractIssueUID(response.name),

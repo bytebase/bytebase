@@ -2,7 +2,7 @@
   <NSplit
     :disabled="!detail"
     :size="detail ? 0.6 : 1"
-    :resize-trigger-size="1"
+    :resize-trigger-size="3"
   >
     <template #1>
       <div class="h-full flex-1 overflow-y-hidden">
@@ -54,8 +54,8 @@ import { type DataTableColumn, NButton, NDataTable, NSplit } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { TriggerIcon } from "@/components/Icon";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -76,7 +76,7 @@ type TriggerWithPosition = {
 };
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;

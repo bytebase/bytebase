@@ -158,11 +158,6 @@ const sampleIssue = computedAsync(async () => {
   }
   const issue = await issueStore.fetchIssueByName(
     `${sampleProject.value.name}/issues/${SAMPLE_ISSUE_ID}`,
-    {
-      // Don't need to fetch the plan and rollout.
-      withPlan: false,
-      withRollout: false,
-    },
     true /* silent */
   );
   return issue;

@@ -32,8 +32,8 @@ import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { InlineInput } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -43,7 +43,7 @@ import { markUUID } from "../common";
 import { NameCell, OperationCell, SelectionCell } from "./components";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   tables: TableMetadata[];

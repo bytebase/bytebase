@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -132,19 +131,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
 		return nil, err
 	}
 
@@ -201,17 +188,7 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -306,13 +283,8 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	}
 
 	var issues []*IssueMessage
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -355,10 +327,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		issues = append(issues, &issue)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -464,78 +432,4 @@ func getTSQuery(text string) string {
 		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
 	}
 	return tsQuery.String()
-}
-
-func (s *Store) BackfillIssueTSVector(ctx context.Context) error {
-	chunkSize := 50
-	offset := 0
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	for {
-		selectQuery := qb.Q().Space(`
-			SELECT
-				issue.id,
-				issue.name,
-				issue.description
-			FROM issue
-			WHERE issue.ts_vector IS NULL
-			ORDER BY issue.id
-			LIMIT ?
-			OFFSET ?`, chunkSize, offset)
-
-		selectSQL, selectArgs, err := selectQuery.ToSQL()
-		if err != nil {
-			return errors.Wrapf(err, "failed to build select sql")
-		}
-
-		var issues []*IssueMessage
-		if err := func() error {
-			rows, err := tx.QueryContext(ctx, selectSQL, selectArgs...)
-			if err != nil {
-				return errors.Wrapf(err, "failed to query")
-			}
-			defer rows.Close()
-			for rows.Next() {
-				var issue IssueMessage
-				if err := rows.Scan(&issue.UID, &issue.Title, &issue.Description); err != nil {
-					return errors.Wrapf(err, "failed to scan")
-				}
-				issues = append(issues, &issue)
-			}
-			if err := rows.Err(); err != nil {
-				return errors.Wrapf(err, "failed to scan")
-			}
-			return nil
-		}(); err != nil {
-			return err
-		}
-
-		if len(issues) == 0 {
-			break
-		}
-		offset += len(issues)
-
-		for _, issue := range issues {
-			tsVector := getTSVector(fmt.Sprintf("%s %s", issue.Title, issue.Description))
-			updateQuery := qb.Q().Space("UPDATE issue SET ts_vector = ? WHERE id = ?", tsVector, issue.UID)
-			updateSQL, updateArgs, err := updateQuery.ToSQL()
-			if err != nil {
-				return errors.Wrapf(err, "failed to build update sql")
-			}
-			if _, err := tx.ExecContext(ctx, updateSQL, updateArgs...); err != nil {
-				return errors.Wrapf(err, "failed to update")
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit")
-	}
-
-	return nil
 }

@@ -33,7 +33,7 @@ import {
   projectNamePrefix,
   rolloutNamePrefix,
 } from "@/store/modules/v1/common";
-import { emptyProject, getDateForPbTimestampProtoEs } from "@/types";
+import { getDateForPbTimestampProtoEs, unknownProject } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
@@ -113,7 +113,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
             return <span>-</span>;
           }
           const mockProject = {
-            ...emptyProject(),
+            ...unknownProject(),
             name: `${projectNamePrefix}${projectResourceId}`,
             title: projectResourceId,
           };

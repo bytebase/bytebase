@@ -4,7 +4,7 @@
       <div class="flex flex-row justify-start items-center gap-x-1">
         <ProjectV1Name
           v-if="showProject"
-          :project="database.projectEntity"
+          :project="getDatabaseProject(database)"
           :link="false"
         />
 
@@ -19,11 +19,11 @@
         >
           <InstanceV1EngineIcon
             v-if="showEngineIcon"
-            :instance="database.instanceResource"
+            :instance="getInstanceResource(database)"
           />
           <InstanceV1Name
             v-if="showInstance"
-            :instance="database.instanceResource"
+            :instance="getInstanceResource(database)"
             :icon="false"
             :link="false"
           />
@@ -37,7 +37,7 @@
         <div class="flex flex-row items-center gap-x-1">
           <EnvironmentV1Name
             v-if="showEnvironment"
-            :environment="database.effectiveEnvironmentEntity"
+            :environment="getDatabaseEnvironment(database)"
             :link="false"
             :show-icon="showProductionEnvironmentIcon"
             text-class="text-control-light"
@@ -54,7 +54,7 @@
     <template #default>
       <InstanceV1Name
         v-if="tooltip === 'instance'"
-        :instance="database.instanceResource"
+        :instance="getInstanceResource(database)"
         :link="false"
       />
     </template>
@@ -64,7 +64,12 @@
 <script setup lang="ts">
 import { ChevronRightIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  getDatabaseEnvironment,
+  getDatabaseProject,
+  getInstanceResource,
+} from "@/utils";
 import DatabaseV1Name from "./DatabaseV1Name.vue";
 import EnvironmentV1Name from "./EnvironmentV1Name.vue";
 import { InstanceV1EngineIcon, InstanceV1Name } from "./Instance";
@@ -72,7 +77,7 @@ import ProjectV1Name from "./ProjectV1Name.vue";
 
 withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     showProject?: boolean;
     showEngineIcon?: boolean;
     showInstance?: boolean;

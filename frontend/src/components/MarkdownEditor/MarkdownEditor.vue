@@ -67,10 +67,7 @@
               @click="onIssueSelect(issue)"
               @mouseenter="() => (state.activeIssueIndex = index)"
             >
-              <IssueStatusIcon
-                :issue-status="issue.status"
-                :task-status="issueTaskStatus(issue)"
-              />
+              <IssueStatusIcon :issue-status="issue.status" />
               <span class="opacity-60">#{{ extractIssueUID(issue.name) }}</span>
               <div class="whitespace-nowrap">
                 <HighlightLabelText
@@ -101,15 +98,10 @@ import { nextTick, onMounted, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { HighlightLabelText } from "@/components/v2";
 import { useIssueV1Store } from "@/store";
-import { type ComposedIssue, DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  activeTaskInRollout,
-  extractIssueUID,
-  isDatabaseChangeRelatedIssue,
-  sizeToFit,
-} from "@/utils";
+import { extractIssueUID, sizeToFit } from "@/utils";
 import IssueStatusIcon from "../IssueV1/components/IssueStatusIcon.vue";
 import { useRenderMarkdown } from "./useRenderMarkdown";
 
@@ -169,7 +161,7 @@ watch(
 const contentTextArea = ref<HTMLTextAreaElement>();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 const issuePanel = ref<HTMLDivElement>();
-const filterIssueList = ref<ComposedIssue[]>([]);
+const filterIssueList = ref<Issue[]>([]);
 
 watch(
   () => filterIssueList.value.length,
@@ -484,7 +476,7 @@ const clearIssuePanel = () => {
 // onIssueSelect will replace the input issue id with the selected issue id.
 // For example, if the text is "#12|" (| is the cursor position), and select the issue with id 1234,
 // we will replace the "#12|" with "#1234 |"
-const onIssueSelect = (issue: ComposedIssue) => {
+const onIssueSelect = (issue: Issue) => {
   if (!contentTextArea.value) {
     return false;
   }
@@ -523,15 +515,6 @@ const onIssueSelect = (issue: ComposedIssue) => {
   });
 
   return;
-};
-
-const issueTaskStatus = (issue: ComposedIssue) => {
-  // For grant request issue, we always show the status as "NOT_STARTED" as task status.
-  if (!isDatabaseChangeRelatedIssue(issue)) {
-    return Task_Status.NOT_STARTED;
-  }
-
-  return activeTaskInRollout(issue.rolloutEntity)?.status;
 };
 
 const adjustIssuePanelWithPosition = useDebounceFn((e?: KeyboardEvent) => {

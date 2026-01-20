@@ -2,7 +2,7 @@
   <div class="w-full flex flex-col gap-y-4">
     <FeatureAttention
       :feature="PlanFeature.FEATURE_DATA_MASKING"
-      :instance="database.instanceResource"
+      :instance="getInstanceResource(database)"
     />
     <div
       class="flex flex-col gap-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
@@ -11,7 +11,7 @@
       <PermissionGuardWrapper
         v-if="!isMaskingForNoSQL"
         v-slot="slotProps"
-        :project="database.projectEntity"
+        :project="getDatabaseProject(database)"
         :permissions="[
           'bb.policies.createMaskingExemptionPolicy',
           'bb.policies.updateMaskingExemptionPolicy',
@@ -32,7 +32,7 @@
               v-else
               :feature="PlanFeature.FEATURE_DATA_MASKING"
               class="text-white"
-              :instance="database.instanceResource"
+              :instance="getInstanceResource(database)"
             />
           </template>
           {{ $t("settings.sensitive-data.grant-access") }}
@@ -54,7 +54,7 @@
   <FeatureModal
     :feature="PlanFeature.FEATURE_DATA_MASKING"
     :open="state.showFeatureModal"
-    :instance="database.instanceResource"
+    :instance="getInstanceResource(database)"
     @cancel="state.showFeatureModal = false"
   />
 
@@ -95,20 +95,25 @@ import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import { featureToRef, useDatabaseCatalog, usePolicyV1Store } from "@/store";
-import { type ComposedDatabase } from "@/types";
 import {
   type ObjectSchema,
   ObjectSchema_Type,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   MaskingExemptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasProjectPermissionV2, instanceV1MaskingForNoSQL } from "@/utils";
+import {
+  getDatabaseProject,
+  getInstanceResource,
+  hasProjectPermissionV2,
+  instanceV1MaskingForNoSQL,
+} from "@/utils";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 interface LocalState {
@@ -130,12 +135,12 @@ const state = reactive<LocalState>({
 });
 
 const isMaskingForNoSQL = computed(() =>
-  instanceV1MaskingForNoSQL(props.database.instanceResource)
+  instanceV1MaskingForNoSQL(getInstanceResource(props.database))
 );
 
 const hasUpdateCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
-    props.database.projectEntity,
+    getDatabaseProject(props.database),
     "bb.databaseCatalogs.update"
   );
 });

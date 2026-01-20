@@ -355,7 +355,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
 	email := strings.ToLower(userInfo.Identifier)
-	if err := validateEmail(email); err != nil {
+	if err := common.ValidateEmail(email); err != nil {
 		// If the email is invalid, we will try to use the domain and identifier to construct the email.
 		domain := extractDomain(idp.Domain)
 		if domain != "" {

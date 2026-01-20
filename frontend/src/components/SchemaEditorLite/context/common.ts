@@ -1,6 +1,6 @@
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   FunctionMetadata,
   ProcedureMetadata,
   SchemaMetadata,
@@ -10,7 +10,7 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 
 export const keyForResource = (
-  database: ComposedDatabase,
+  database: Database,
   metadata: {
     schema?: SchemaMetadata;
     table?: TableMetadata;

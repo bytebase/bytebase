@@ -10,8 +10,6 @@ import type { MaybeRef, ResourceId } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
-  EMPTY_PROJECT_NAME,
-  emptyProject,
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
@@ -101,7 +99,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     );
   };
   const getProjectByName = (name: string) => {
-    if (name === EMPTY_PROJECT_NAME) return emptyProject();
     if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
     if (name === DEFAULT_PROJECT_NAME) return defaultProject();
     return projectMapByName.get(name) ?? unknownProject();

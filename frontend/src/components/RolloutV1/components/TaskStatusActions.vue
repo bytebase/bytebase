@@ -39,6 +39,10 @@ import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
+import {
+  CANCELABLE_TASK_STATUSES,
+  RUNNABLE_TASK_STATUSES,
+} from "@/components/RolloutV1/constants/task";
 import type {
   Rollout,
   Stage,
@@ -153,17 +157,9 @@ const dropdownActions = computed((): TaskStatusAction[] => {
     return [];
   }
 
-  if (
-    [
-      Task_Status.NOT_STARTED,
-      Task_Status.FAILED,
-      Task_Status.CANCELED,
-    ].includes(props.task.status)
-  ) {
+  if (RUNNABLE_TASK_STATUSES.includes(props.task.status)) {
     return ["SKIP"];
-  } else if (
-    [Task_Status.PENDING, Task_Status.RUNNING].includes(props.task.status)
-  ) {
+  } else if (CANCELABLE_TASK_STATUSES.includes(props.task.status)) {
     return ["CANCEL"];
   } else {
     return [];

@@ -72,12 +72,6 @@ func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMes
 
 // ListGroups list all groups.
 func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*GroupMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	with := qb.Q()
 	from := qb.Q().Space("user_group")
 	where := qb.Q().Space("TRUE")
@@ -136,7 +130,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	}
 
 	var groups []*GroupMessage
-	rows, err := tx.QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -166,9 +160,6 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 		groups = append(groups, &group)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -210,18 +201,8 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.ID); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ID); err != nil {
 		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit")
 	}
 
 	if create.Email != "" {
@@ -267,17 +248,11 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
 	var group GroupMessage
 	var payload []byte
 	var email sql.NullString
 
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&group.ID,
 		&email,
 		&group.Title,
@@ -296,10 +271,6 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		group.Email = email.String
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
-	}
-
 	if group.Email != "" {
 		s.groupCache.Add(group.Email, &group)
 		s.groupMembersCache.Remove("groups/" + group.Email)
@@ -309,12 +280,6 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 
 // DeleteGroup deletes a group.
 func (s *Store) DeleteGroup(ctx context.Context, id string) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
 	q := qb.Q().Space("DELETE FROM user_group WHERE id = ? RETURNING email", id)
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -322,12 +287,8 @@ func (s *Store) DeleteGroup(ctx context.Context, id string) error {
 	}
 
 	var email sql.NullString
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&email); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&email); err != nil {
 		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit transaction")
 	}
 
 	if email.Valid && email.String != "" {

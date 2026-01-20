@@ -57,7 +57,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 
 	var o []option.ClientOption
 	if gcpCredential := config.DataSource.GetGcpCredential(); gcpCredential != nil {
-		o = append(o, option.WithCredentialsJSON([]byte(gcpCredential.Content)))
+		o = append(o, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(gcpCredential.Content)))
 	}
 	client, err := bigquery.NewClient(ctx, config.DataSource.Host, o...)
 	if err != nil {

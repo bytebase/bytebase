@@ -2,9 +2,6 @@ import {
   CircleDot,
   Database,
   DownloadIcon,
-  LayoutList,
-  PackageIcon,
-  PlayCircle,
   Settings,
   Users,
   Workflow,
@@ -12,7 +9,6 @@ import {
 import { computed, h, type MaybeRef, unref } from "vue";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { t } from "@/plugins/i18n";
 import {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
@@ -41,63 +37,38 @@ interface ProjectSidebarItem extends SidebarItem {
 
 export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const route = useRoute();
-  const { enabledNewLayout } = useIssueLayoutVersion();
 
   const isDefaultProject = computed((): boolean => {
     return unref(project).name === DEFAULT_PROJECT_NAME;
   });
 
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
-    const cicdRoutes: ProjectSidebarItem[] = enabledNewLayout.value
-      ? [
-          {
-            title: "CI/CD",
-            icon: () => h(Workflow),
-            type: "div",
-            expand: true,
-            hide: isDefaultProject.value,
-            children: [
-              {
-                title: t("plan.plans"),
-                path: PROJECT_V1_ROUTE_PLANS,
-                type: "div",
-              },
-              {
-                title: t("rollout.rollouts"),
-                path: PROJECT_V1_ROUTE_ROLLOUTS,
-                type: "div",
-              },
-              {
-                title: t("release.releases"),
-                path: PROJECT_V1_ROUTE_RELEASES,
-                type: "div",
-              },
-            ],
-          },
-        ]
-      : [
-          {
-            title: t("release.releases"),
-            path: PROJECT_V1_ROUTE_RELEASES,
-            icon: () => h(PackageIcon),
-            type: "div",
-            hide: isDefaultProject.value,
-          },
+    const cicdRoutes: ProjectSidebarItem[] = [
+      {
+        title: "CI/CD",
+        icon: () => h(Workflow),
+        type: "div",
+        expand: true,
+        hide: isDefaultProject.value,
+        children: [
           {
             title: t("plan.plans"),
-            icon: () => h(LayoutList),
             path: PROJECT_V1_ROUTE_PLANS,
             type: "div",
-            hide: isDefaultProject.value,
           },
           {
             title: t("rollout.rollouts"),
             path: PROJECT_V1_ROUTE_ROLLOUTS,
-            icon: () => h(PlayCircle),
             type: "div",
-            hide: isDefaultProject.value,
           },
-        ];
+          {
+            title: t("release.releases"),
+            path: PROJECT_V1_ROUTE_RELEASES,
+            type: "div",
+          },
+        ],
+      },
+    ];
 
     const databaseRoutes: ProjectSidebarItem[] = [
       {
@@ -133,9 +104,8 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         type: "div",
         hide: isDefaultProject.value,
       },
-      ...(enabledNewLayout.value
-        ? [...cicdRoutes, ...databaseRoutes]
-        : [...databaseRoutes, ...cicdRoutes]),
+      ...cicdRoutes,
+      ...databaseRoutes,
       {
         title: t("export-center.self"),
         icon: () => h(DownloadIcon),

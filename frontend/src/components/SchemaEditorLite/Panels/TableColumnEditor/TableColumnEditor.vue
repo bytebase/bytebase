@@ -40,10 +40,10 @@ import {
 } from "@/components/SchemaEditorLite";
 import { InlineInput } from "@/components/v2";
 import { pushNotification } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
@@ -68,7 +68,7 @@ const props = withDefaults(
     show?: boolean;
     readonly: boolean;
     showForeignKey?: boolean;
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;

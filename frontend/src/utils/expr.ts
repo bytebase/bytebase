@@ -16,10 +16,12 @@ import {
   useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
-import { type ComposedDatabase, isValidInstanceName } from "@/types";
+import { isValidInstanceName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
+  extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
@@ -78,7 +80,7 @@ const getProjectIdOption = (proj: Project) => {
   };
 };
 
-const getDatabasFullNameOption = (database: ComposedDatabase) => {
+const getDatabasFullNameOption = (database: Database) => {
   return {
     label: database.name,
     value: database.name,
@@ -112,11 +114,12 @@ const getInstanceIdOption = (ins: Instance) => {
   };
 };
 
-const getDatabaseIdOptions = (databases: ComposedDatabase[]) => {
+const getDatabaseIdOptions = (databases: Database[]) => {
   return databases.map<ResourceSelectOption<unknown>>((database) => {
+    const { databaseName } = extractDatabaseResourceName(database.name);
     return {
-      label: database.databaseName,
-      value: database.databaseName,
+      label: databaseName,
+      value: databaseName,
       render: getRenderOptionFunc({
         name: database.name,
         title: () =>

@@ -15,7 +15,7 @@ import (
 	"connectrpc.com/grpcreflect"
 	"connectrpc.com/validate"
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 

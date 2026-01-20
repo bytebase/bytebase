@@ -31,7 +31,7 @@
     :size="editorPanelSize.size"
     :min="editorPanelSize.min"
     :max="editorPanelSize.max"
-    :resize-trigger-size="1"
+    :resize-trigger-size="3"
     @update:size="handleEditorPanelResize"
   >
     <template #1>
@@ -84,14 +84,18 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { AIChatToSQL, useAIActions } from "@/plugins/ai";
 import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
-import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { nextAnimationFrame, type VueClass } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  getInstanceResource,
+  nextAnimationFrame,
+  type VueClass,
+} from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   title: string;
   code: string;
   headerClass?: VueClass;
@@ -108,7 +112,7 @@ const format = useLocalStorage<boolean>(
   "bb.sql-editor.editor-panel.code-viewer.format",
   false
 );
-const instanceEngine = computed(() => props.db.instanceResource.engine);
+const instanceEngine = computed(() => getInstanceResource(props.db).engine);
 const selectedStatement = ref("");
 
 const formatted = computedAsync(
@@ -163,7 +167,7 @@ const handleEditorReady = (
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
           statement,
-          props.db.instanceResource.engine
+          getInstanceResource(props.db).engine
         ),
         newChat,
       });

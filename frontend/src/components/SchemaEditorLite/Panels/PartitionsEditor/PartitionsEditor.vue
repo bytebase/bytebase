@@ -33,8 +33,8 @@ import { ChevronDownIcon } from "lucide-vue-next";
 import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -64,7 +64,7 @@ const props = withDefaults(
   defineProps<{
     show?: boolean;
     readonly?: boolean;
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;

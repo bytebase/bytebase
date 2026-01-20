@@ -25,7 +25,7 @@
   <SQLCheckPanel
     v-if="showDetailPanel"
     :project="project.name"
-    :database="database"
+    :database="database as Database"
     :advices="advices"
     @close="showDetailPanel = false"
   />
@@ -35,8 +35,9 @@
 import { CheckIcon, CircleAlertIcon, TriangleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
-import { TaskSpinner } from "@/components/IssueV1/components/common";
+import TaskSpinner from "@/components/misc/TaskSpinner.vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanSQLCheckContext } from "./context";

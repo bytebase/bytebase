@@ -12,7 +12,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -63,7 +63,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 }
 
 // handleGetClient returns public client info for the consent page.
-func (s *Service) handleGetClient(c echo.Context) error {
+func (s *Service) handleGetClient(c *echo.Context) error {
 	ctx := c.Request().Context()
 	clientID := c.Param("clientID")
 
@@ -155,14 +155,14 @@ func isLocalhostURI(uri string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
-func oauth2Error(c echo.Context, statusCode int, errorCode, description string) error {
+func oauth2Error(c *echo.Context, statusCode int, errorCode, description string) error {
 	return c.JSON(statusCode, map[string]string{
 		"error":             errorCode,
 		"error_description": description,
 	})
 }
 
-func oauth2ErrorRedirect(c echo.Context, redirectURI, state, errorCode, description string) error {
+func oauth2ErrorRedirect(c *echo.Context, redirectURI, state, errorCode, description string) error {
 	u, err := url.Parse(redirectURI)
 	if err != nil {
 		slog.Error("failed to parse redirect URI for OAuth2 error redirect", slog.String("redirectURI", redirectURI), log.BBError(err))

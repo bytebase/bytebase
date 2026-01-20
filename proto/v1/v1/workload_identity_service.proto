@@ -1,0 +1,215 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
+import "v1/common.proto";
+import "v1/user_service.proto";
+
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
+
+// WorkloadIdentityService manages workload identities for external CI/CD integrations.
+service WorkloadIdentityService {
+  // Creates a new workload identity.
+  // For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+  // For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
+  rpc CreateWorkloadIdentity(CreateWorkloadIdentityRequest) returns (WorkloadIdentity) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/workloadIdentities"
+      body: "workload_identity"
+      additional_bindings: {
+        post: "/v1/workloadIdentities"
+        body: "workload_identity"
+      }
+    };
+    option (google.api.method_signature) = "parent,workload_identity,workload_identity_id";
+    option (bytebase.v1.permission) = "bb.workloadIdentities.create";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Gets a workload identity by name.
+  // Permissions required: bb.workloadIdentities.get
+  rpc GetWorkloadIdentity(GetWorkloadIdentityRequest) returns (WorkloadIdentity) {
+    option (google.api.http) = {get: "/v1/{name=workloadIdentities/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.workloadIdentities.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // Lists workload identities.
+  // For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+  // For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
+  rpc ListWorkloadIdentities(ListWorkloadIdentitiesRequest) returns (ListWorkloadIdentitiesResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/workloadIdentities"
+      additional_bindings: {get: "/v1/workloadIdentities"}
+    };
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.workloadIdentities.list";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // Updates a workload identity.
+  // Permissions required: bb.workloadIdentities.update
+  rpc UpdateWorkloadIdentity(UpdateWorkloadIdentityRequest) returns (WorkloadIdentity) {
+    option (google.api.http) = {
+      patch: "/v1/{workload_identity.name=workloadIdentities/*}"
+      body: "workload_identity"
+    };
+    option (google.api.method_signature) = "workload_identity,update_mask";
+    option (bytebase.v1.permission) = "bb.workloadIdentities.update";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Deletes a workload identity.
+  // Permissions required: bb.workloadIdentities.delete
+  rpc DeleteWorkloadIdentity(DeleteWorkloadIdentityRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=workloadIdentities/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.workloadIdentities.delete";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Restores a deleted workload identity.
+  // Permissions required: bb.workloadIdentities.undelete
+  rpc UndeleteWorkloadIdentity(UndeleteWorkloadIdentityRequest) returns (WorkloadIdentity) {
+    option (google.api.http) = {
+      post: "/v1/{name=workloadIdentities/*}:undelete"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.workloadIdentities.undelete";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+}
+
+// WorkloadIdentity represents an external CI/CD workload identity.
+message WorkloadIdentity {
+  option (google.api.resource) = {
+    type: "bytebase.com/WorkloadIdentity"
+    pattern: "workloadIdentities/{email}"
+  };
+
+  // The name of the workload identity.
+  // Format: workloadIdentities/{email}
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The state of the workload identity.
+  State state = 2;
+
+  // The email of the workload identity.
+  // For workspace-level: {name}@workload.bytebase.com
+  // For project-level: {name}@{project-id}.workload.bytebase.com
+  string email = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The display title of the workload identity.
+  string title = 4 [(buf.validate.field).string.max_len = 200];
+
+  // The timestamp when the workload identity was created.
+  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The workload identity configuration for OIDC token validation.
+  WorkloadIdentityConfig workload_identity_config = 6;
+}
+
+// Request message for creating a workload identity.
+message CreateWorkloadIdentityRequest {
+  // The parent resource where this workload identity will be created.
+  // Format: projects/{project} for project-level, empty for workspace-level.
+  string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Project"}];
+
+  // The ID to use for the workload identity, which will become the final component
+  // of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
+  // or {workload_identity_id}@{project-id}.workload.bytebase.com
+  string workload_identity_id = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The workload identity to create.
+  WorkloadIdentity workload_identity = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Request message for getting a workload identity.
+message GetWorkloadIdentityRequest {
+  // The name of the workload identity to retrieve.
+  // Format: workloadIdentities/{email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/WorkloadIdentity"}
+  ];
+}
+
+// Request message for listing workload identities.
+message ListWorkloadIdentitiesRequest {
+  // The parent resource.
+  // Format: projects/{project} for project-level, empty for workspace-level.
+  string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Project"}];
+
+  // The maximum number of workload identities to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 workload identities will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListWorkloadIdentities` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListWorkloadIdentities` must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  // Show deleted workload identities if specified.
+  bool show_deleted = 4;
+}
+
+// Response message for listing workload identities.
+message ListWorkloadIdentitiesResponse {
+  // The workload identities from the specified request.
+  repeated WorkloadIdentity workload_identities = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request message for updating a workload identity.
+message UpdateWorkloadIdentityRequest {
+  // The workload identity to update.
+  //
+  // The workload identity's `name` field is used to identify the workload identity to update.
+  // Format: workloadIdentities/{email}
+  WorkloadIdentity workload_identity = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  // Supported fields: title, workload_identity_config
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// Request message for deleting a workload identity.
+message DeleteWorkloadIdentityRequest {
+  // The name of the workload identity to delete.
+  // Format: workloadIdentities/{email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/WorkloadIdentity"}
+  ];
+}
+
+// Request message for restoring a deleted workload identity.
+message UndeleteWorkloadIdentityRequest {
+  // The name of the deleted workload identity.
+  // Format: workloadIdentities/{email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/WorkloadIdentity"}
+  ];
+}
