@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -72,14 +72,14 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			// Create server with auth
 			s, err := NewServer(nil, profile, secret)
 			require.NoError(t, err)
-			handler := s.authMiddleware(func(c echo.Context) error {
+			handler := s.authMiddleware(func(c *echo.Context) error {
 				return c.String(http.StatusOK, "success")
 			})
 
 			err = handler(c)
 			if err != nil {
 				// Echo error handler
-				e.HTTPErrorHandler(err, c)
+				echo.DefaultHTTPErrorHandler(true)(c, err)
 			}
 
 			require.Equal(t, tc.expectedStatus, rec.Code)
@@ -103,7 +103,7 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	// A full integration test would require a real store
 	s, err := NewServer(nil, profile, secret)
 	require.NoError(t, err)
-	handler := s.authMiddleware(func(c echo.Context) error {
+	handler := s.authMiddleware(func(c *echo.Context) error {
 		// Verify access token is set in request context
 		ctx := c.Request().Context()
 		token := getAccessToken(ctx)

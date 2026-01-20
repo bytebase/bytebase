@@ -5,17 +5,17 @@ import (
 	"net/http/pprof"
 	"sync/atomic"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 func registerPprof(e *echo.Echo, runtimeDebug *atomic.Bool) {
 	router := e.Group("/debug/pprof")
 	handler := func(h http.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			if !runtimeDebug.Load() {
-				return echo.NewHTTPError(echo.ErrNotFound.Code, "")
+				return echo.NewHTTPError(echo.ErrNotFound.StatusCode(), "")
 			}
-			h.ServeHTTP(c.Response().Writer, c.Request())
+			h.ServeHTTP(c.Response(), c.Request())
 			return nil
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -19,7 +19,7 @@ type revokeRequest struct {
 	ClientSecret  string `form:"client_secret"`
 }
 
-func (s *Service) handleRevoke(c echo.Context) error {
+func (s *Service) handleRevoke(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	var req revokeRequest
@@ -65,7 +65,7 @@ func (s *Service) handleRevoke(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func extractRevokeClientCredentials(c echo.Context, req *revokeRequest) (clientID, clientSecret string) {
+func extractRevokeClientCredentials(c *echo.Context, req *revokeRequest) (clientID, clientSecret string) {
 	// Try Basic auth first
 	authHeader := c.Request().Header.Get("Authorization")
 	if strings.HasPrefix(authHeader, "Basic ") {

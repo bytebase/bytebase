@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -18,7 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func (s *Service) handleAuthorizeGet(c echo.Context) error {
+func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Parse query parameters
@@ -74,7 +74,7 @@ func (s *Service) handleAuthorizeGet(c echo.Context) error {
 	return c.Redirect(http.StatusFound, consentURL)
 }
 
-func (s *Service) handleAuthorizePost(c echo.Context) error {
+func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Parse form values

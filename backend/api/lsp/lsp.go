@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/jsonrpc2"
 
@@ -29,7 +29,7 @@ var (
 	}
 )
 
-func (s *Server) Router(c echo.Context) error {
+func (s *Server) Router(c *echo.Context) error {
 	// Authenticate user before upgrading WebSocket connection
 	accessTokenStr, err := auth.GetTokenFromHeaders(c.Request().Header)
 	if err != nil {
@@ -48,13 +48,6 @@ func (s *Server) Router(c echo.Context) error {
 		return errors.Wrap(err, "could not upgrade to WebSocket")
 	}
 	defer connection.Close()
-	// Register the connection to be closed when the server shuts down.
-	c.Echo().Server.RegisterOnShutdown(func() {
-		err := connection.Close()
-		if err != nil {
-			slog.Error("Failed to close websocket connection", log.BBError(err))
-		}
-	})
 	connectionID := s.connectionCount.Add(1)
 
 	handler, closer := newHandler(s.store, s.profile, s.iamManager, user, tokenExpiry)

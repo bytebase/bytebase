@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo-contrib/prometheus"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo-contrib/echoprometheus"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/pkg/errors"
 
 	connectcors "connectrpc.com/cors"
@@ -34,8 +34,8 @@ func configureEchoRouters(
 
 	if profile.Mode == common.ReleaseModeDev {
 		e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOriginFunc: func(string) (bool, error) {
-				return true, nil
+			UnsafeAllowOriginFunc: func(_ *echo.Context, origin string) (string, bool, error) {
+				return origin, true, nil
 			},
 			AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodOptions},
 			AllowHeaders:     connectcors.AllowedHeaders(),
@@ -48,8 +48,7 @@ func configureEchoRouters(
 		LogURI:    true,
 		LogMethod: true,
 		LogStatus: true,
-		LogError:  true,
-		LogValuesFunc: func(_ echo.Context, values middleware.RequestLoggerValues) error {
+		LogValuesFunc: func(_ *echo.Context, values middleware.RequestLoggerValues) error {
 			if values.Error != nil {
 				slog.Error("echo request logger", "method", values.Method, "uri", values.URI, "status", values.Status, log.BBError(values.Error))
 			}
@@ -57,18 +56,13 @@ func configureEchoRouters(
 		},
 	}))
 
-	e.HideBanner = true
-	e.HidePort = true
-
 	registerPprof(e, &profile.RuntimeDebug)
 
-	p := prometheus.NewPrometheus("api", nil)
-	p.RequestCounterURLLabelMappingFunc = func(c echo.Context) string {
-		return c.Request().URL.Path
-	}
-	p.Use(e)
+	// Prometheus metrics
+	e.Use(echoprometheus.NewMiddleware("api"))
+	e.GET("/metrics", echoprometheus.NewHandler())
 
-	e.GET("/healthz", func(c echo.Context) error {
+	e.GET("/healthz", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
 
@@ -90,7 +84,7 @@ func configureEchoRouters(
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		defer func() {
 			if r := recover(); r != nil {
 				err, ok := r.(error)
@@ -99,7 +93,13 @@ func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				}
 				slog.Error("Middleware PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 
-				c.Error(err)
+				// In Echo v5, send error response directly
+				resp, unwrapErr := echo.UnwrapResponse(c.Response())
+				if unwrapErr == nil && !resp.Committed {
+					_ = c.JSON(http.StatusInternalServerError, map[string]string{
+						"error": "Internal server error",
+					})
+				}
 			}
 		}()
 		return next(c)
@@ -127,7 +127,7 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		"form-action 'self'; " +
 		"frame-ancestors 'self'"
 
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		// Allow popups to maintain window.opener for OAuth flows
 		c.Response().Header().Set("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
 		// Prevent being embedded in iframes from different origins

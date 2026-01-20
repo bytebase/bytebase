@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	v1api "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
@@ -34,7 +34,7 @@ const (
 
 // detectSCIMSource detects the identity provider source based on User-Agent header.
 // Okta sends "Okta SCIM Client" in User-Agent, Azure sends "Azure" or "Microsoft".
-func detectSCIMSource(c echo.Context) string {
+func detectSCIMSource(c *echo.Context) string {
 	userAgent := c.Request().Header.Get("User-Agent")
 	userAgentLower := strings.ToLower(userAgent)
 	if strings.Contains(userAgentLower, "okta") {
@@ -45,7 +45,7 @@ func detectSCIMSource(c echo.Context) string {
 
 // scimAuthMiddleware validates authentication and license for all SCIM endpoints.
 func (s *Service) scimAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusUnauthorized, err.Error())
@@ -68,7 +68,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	// ServiceProviderConfig endpoint allows SCIM clients to discover server capabilities.
 	// This is required by Okta and recommended by the SCIM 2.0 specification.
 	// Docs: https://datatracker.ietf.org/doc/html/rfc7644#section-4
-	g.GET("/workspaces/:workspaceID/ServiceProviderConfig", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/ServiceProviderConfig", func(c *echo.Context) error {
 		config := &ServiceProviderConfig{
 			Schemas: []string{
 				"urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig",
@@ -106,7 +106,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, config)
 	})
 
-	g.POST("/workspaces/:workspaceID/Users", func(c echo.Context) error {
+	g.POST("/workspaces/:workspaceID/Users", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		source := detectSCIMSource(c)
 
@@ -164,7 +164,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	})
 
 	// Get a single user. The user id is the Bytebase user uid.
-	g.GET("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/Users/:userID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		slog.Debug("get user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
 
@@ -186,7 +186,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	// userName maps to userPrincipalName in Azure or login in Okta, which is typically the user's email.
 	// Docs: https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups#get-user-by-query
 	// Docs: https://developer.okta.com/docs/reference/scim/scim-20/
-	g.GET("/workspaces/:workspaceID/Users", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/Users", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		response := &ListUsersResponse{
 			Schemas: []string{
@@ -250,7 +250,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, response)
 	})
 
-	g.DELETE("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
+	g.DELETE("/workspaces/:workspaceID/Users/:userID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		slog.Debug("delete user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
 
@@ -277,7 +277,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 	// PUT replaces the entire user resource. Required by SCIM 2.0 (RFC 7644 Section 3.5.1).
 	// Body format is same as POST (full SCIMUser object).
-	g.PUT("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
+	g.PUT("/workspaces/:workspaceID/Users/:userID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		slog.Debug("put user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
 
@@ -311,7 +311,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, convertToSCIMUser(updatedUser))
 	})
 
-	g.PATCH("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
+	g.PATCH("/workspaces/:workspaceID/Users/:userID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		slog.Debug("patch user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
 
@@ -434,7 +434,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, convertToSCIMUser(updatedUser))
 	})
 
-	g.POST("/workspaces/:workspaceID/Groups", func(c echo.Context) error {
+	g.POST("/workspaces/:workspaceID/Groups", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		source := detectSCIMSource(c)
 
@@ -510,7 +510,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	})
 
 	// Get a single group. The group id is the Bytebase group resource id.
-	g.GET("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/Groups/:groupID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		slog.Debug("get group", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("groupID")))
 
@@ -536,7 +536,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	//   - Legacy mapping: mail -> externalId (for backward compatibility)
 	// Docs: https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups#get-group-by-query
 	// Docs: https://developer.okta.com/docs/reference/scim/scim-20/
-	g.GET("/workspaces/:workspaceID/Groups", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/Groups", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		response := &ListGroupsResponse{
 			Schemas: []string{
@@ -585,7 +585,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, response)
 	})
 
-	g.DELETE("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+	g.DELETE("/workspaces/:workspaceID/Groups/:groupID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		slog.Debug("delete group", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("groupID")))
 
@@ -615,7 +615,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 	// PUT replaces the entire group resource. Required by SCIM 2.0 (RFC 7644 Section 3.5.1).
 	// Body format is same as POST (full SCIMGroup object).
-	g.PUT("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+	g.PUT("/workspaces/:workspaceID/Groups/:groupID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		source := detectSCIMSource(c)
 		slog.Debug("put group", slog.String("source", source), slog.String("id", c.Param("groupID")))
@@ -655,7 +655,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, convertToSCIMGroup(updatedGroup))
 	})
 
-	g.PATCH("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+	g.PATCH("/workspaces/:workspaceID/Groups/:groupID", func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		source := detectSCIMSource(c)
 		slog.Debug("patch group", slog.String("source", source), slog.String("id", c.Param("groupID")))
@@ -825,7 +825,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	})
 }
 
-func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
+func (s *Service) validRequestURL(ctx context.Context, c *echo.Context) error {
 	authorization := strings.TrimPrefix(c.Request().Header.Get("Authorization"), "Bearer ")
 	if authorization == "" {
 		return errors.Errorf("missing authorization token")
@@ -856,7 +856,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 	return nil
 }
 
-func (s *Service) getUser(ctx context.Context, c echo.Context) (*store.UserMessage, error) {
+func (s *Service) getUser(ctx context.Context, c *echo.Context) (*store.UserMessage, error) {
 	uid, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
 		return nil, errors.Errorf("failed to parse user id %v, error %v", c.Param("userID"), err)
@@ -869,7 +869,7 @@ func (s *Service) getUser(ctx context.Context, c echo.Context) (*store.UserMessa
 	return user, nil
 }
 
-func (s *Service) getGroup(ctx context.Context, c echo.Context) (*store.GroupMessage, error) {
+func (s *Service) getGroup(ctx context.Context, c *echo.Context) (*store.GroupMessage, error) {
 	groupName, err := decodeGroupIdentifier(c.Param("groupID"))
 	if err != nil {
 		return nil, errors.Errorf("failed to parse group %v, error %v", c.Param("groupID"), err)

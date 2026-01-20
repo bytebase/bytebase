@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -91,7 +91,7 @@ func getResourcesForMySQL(
 		DatabaseName: &databaseName,
 	})
 	if err != nil {
-		if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
+		if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.StatusCode() == echo.ErrNotFound.StatusCode() {
 			return nil, nil
 		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))

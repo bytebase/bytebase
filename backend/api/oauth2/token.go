@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -32,7 +32,7 @@ type tokenResponse struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-func (s *Service) handleToken(c echo.Context) error {
+func (s *Service) handleToken(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	var req tokenRequest
@@ -73,7 +73,7 @@ func (s *Service) handleToken(c echo.Context) error {
 	}
 }
 
-func (*Service) extractClientCredentials(c echo.Context, req *tokenRequest) (clientID, clientSecret string) {
+func (*Service) extractClientCredentials(c *echo.Context, req *tokenRequest) (clientID, clientSecret string) {
 	// Try Basic auth first
 	authHeader := c.Request().Header.Get("Authorization")
 	if strings.HasPrefix(authHeader, "Basic ") {
@@ -89,7 +89,7 @@ func (*Service) extractClientCredentials(c echo.Context, req *tokenRequest) (cli
 	return req.ClientID, req.ClientSecret
 }
 
-func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAuth2ClientMessage, req *tokenRequest) error {
+func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OAuth2ClientMessage, req *tokenRequest) error {
 	ctx := c.Request().Context()
 
 	// Validate grant type is allowed
@@ -153,7 +153,7 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 	return s.issueTokens(c, client, user.Email)
 }
 
-func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2ClientMessage, req *tokenRequest) error {
+func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2ClientMessage, req *tokenRequest) error {
 	ctx := c.Request().Context()
 
 	// Validate grant type is allowed
@@ -205,7 +205,7 @@ func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2Cl
 	return s.issueTokens(c, client, user.Email)
 }
 
-func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage, userEmail string) error {
+func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage, userEmail string) error {
 	ctx := c.Request().Context()
 
 	// Generate access token (JWT)

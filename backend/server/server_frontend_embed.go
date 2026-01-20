@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 
 	"github.com/bytebase/bytebase/backend/common"
 )
@@ -92,7 +92,7 @@ func embedFrontend(e *echo.Echo) {
 	}))
 
 	g.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			c.Response().Header().Set(echo.HeaderCacheControl, "max-age=31536000, immutable")
 			return next(c)
 		}
