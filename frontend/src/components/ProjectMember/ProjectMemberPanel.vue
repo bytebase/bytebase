@@ -39,20 +39,27 @@
               </NButton>
             </div>
           </PermissionGuardWrapper>
-          <NButton
+          <PermissionGuardWrapper
             v-if="shouldShowRequestRoleButton"
-            type="primary"
-            :disabled="!hasRequestRoleFeature"
-            @click="state.showRequestRolePanel = true"
+            v-slot="slotProps"
+            :project="project"
+            :permissions="['bb.issues.create']"
           >
-            <template #icon>
-              <ShieldUserIcon v-if="hasRequestRoleFeature" class="w-4 h-4"  />
-              <FeatureBadge v-else :clickable="false" :feature="PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW" />
-            </template>
-            {{ $t("issue.title.request-role") }}
-          </NButton>
+            <NButton
+              type="primary"
+              :disabled="slotProps.disabled || !hasRequestRoleFeature"
+              @click="state.showRequestRolePanel = true"
+            >
+              <template #icon>
+                <ShieldUserIcon v-if="hasRequestRoleFeature" class="w-4 h-4" />
+                <FeatureBadge v-else :clickable="false" :feature="PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW" />
+              </template>
+              {{ $t("issue.title.request-role") }}
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
+
       <NTabPane name="users">
         <template #tab>
           <p class="text-base font-medium leading-7 text-main">
@@ -128,17 +135,12 @@ import {
   extractUserId,
   pushNotification,
   useCurrentUserV1,
-  usePermissionStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useSubscriptionV1Store,
   useWorkspaceV1Store,
 } from "@/store";
-import {
-  groupBindingPrefix,
-  PRESET_WORKSPACE_ROLES,
-  PresetRoleType,
-} from "@/types";
+import { groupBindingPrefix, PRESET_WORKSPACE_ROLES } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -183,14 +185,8 @@ const state = reactive<LocalState>({
   showRequestRolePanel: false,
 });
 
-const permissionStore = usePermissionStore();
 const workspaceStore = useWorkspaceV1Store();
 const subscriptionStore = useSubscriptionV1Store();
-
-const isProjectOwner = computed(() => {
-  const roles = permissionStore.currentRoleListInProjectV1(props.project);
-  return roles.includes(PresetRoleType.PROJECT_OWNER);
-});
 
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
@@ -202,10 +198,7 @@ const hasRequestRoleFeature = computed(() =>
 
 const shouldShowRequestRoleButton = computed(() => {
   return (
-    !isProjectOwner.value &&
-    props.project.allowSelfApproval &&
-    hasProjectPermissionV2(props.project, "bb.issues.create") &&
-    hasWorkspacePermissionV2("bb.roles.list")
+    props.project.allowSelfApproval && hasWorkspacePermissionV2("bb.roles.list")
   );
 });
 
