@@ -341,15 +341,18 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		updateUser := &store.UpdateUserMessage{}
 		for _, op := range patch.Operations {
 			// SCIM PATCH operations are case-insensitive per RFC 7644.
-			// Azure uses PascalCase (Replace), Okta uses lowercase (replace).
+			// Azure uses PascalCase (Add/Replace), Okta uses lowercase (add/replace).
 			opLower := strings.ToLower(op.OP)
-			if opLower != "replace" {
-				slog.Warn("only support replace operation", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
+			// Support both "add" and "replace" operations for user attributes.
+			// Per RFC 7644, "add" sets the value if not present, "replace" overwrites.
+			// For simplicity, we treat them the same since we're just updating user fields.
+			if opLower != "add" && opLower != "replace" {
+				slog.Warn("unsupported operation type", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 				continue
 			}
 
 			switch op.Path {
-			case "displayName":
+			case "displayName", "name.formatted":
 				displayName, ok := op.Value.(string)
 				if !ok {
 					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
@@ -417,7 +420,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 				}
 			default:
-				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
+				// Silently ignore other valid SCIM attributes that Bytebase doesn't use
+				// (e.g., externalId, name.givenName, name.familyName, preferredLanguage, addresses, phoneNumbers, etc.)
+				slog.Debug("ignoring unsupported user patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
 			}
 		}
 
