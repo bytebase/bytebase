@@ -69,7 +69,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/microsoft/go-mssqldb v1.9.6
 	github.com/modelcontextprotocol/go-sdk v1.2.0
-	github.com/nyaruka/phonenumbers v1.6.7
+	github.com/nyaruka/phonenumbers v1.6.8
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/paulmach/orb v0.12.0
 	github.com/pb33f/libopenapi v0.31.2
