@@ -3,6 +3,8 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -121,6 +123,113 @@ func TestURLConstructionWithQueryParams(t *testing.T) {
 
 			// Critical: Verify no URL encoding of the '?' character
 			assert.NotContains(t, fullURL.String(), "%3F", "URL should not contain encoded question mark")
+		})
+	}
+}
+
+func TestQueryWithMockServer(t *testing.T) {
+	// This test uses a mock HTTP server to test various JSON response types
+	// including primitives which real ElasticSearch APIs rarely return
+	testCases := []struct {
+		name             string
+		responseBody     string
+		wantColumns      []string
+		wantRowCount     int
+		wantFirstColName string
+	}{
+		{
+			name:             "object response",
+			responseBody:     `{"took":5,"hits":{"total":100}}`,
+			wantColumns:      []string{"took", "hits"},
+			wantRowCount:     1,
+			wantFirstColName: "", // Order not guaranteed for maps
+		},
+		{
+			name:             "array response",
+			responseBody:     `[{"index":"test1"},{"index":"test2"}]`,
+			wantColumns:      []string{"result"},
+			wantRowCount:     1,
+			wantFirstColName: "result",
+		},
+		{
+			name:             "primitive string",
+			responseBody:     `"hello world"`,
+			wantColumns:      []string{"result"},
+			wantRowCount:     1,
+			wantFirstColName: "result",
+		},
+		{
+			name:             "primitive number",
+			responseBody:     `12345`,
+			wantColumns:      []string{"result"},
+			wantRowCount:     1,
+			wantFirstColName: "result",
+		},
+		{
+			name:             "primitive boolean",
+			responseBody:     `true`,
+			wantColumns:      []string{"result"},
+			wantRowCount:     1,
+			wantFirstColName: "result",
+		},
+		{
+			name:             "primitive null",
+			responseBody:     `null`,
+			wantColumns:      []string{"result"},
+			wantRowCount:     1,
+			wantFirstColName: "result",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mock server
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(tc.responseBody))
+			}))
+			defer server.Close()
+
+			// Parse server URL
+			u, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
+			// Create driver and connect
+			ctx := context.Background()
+			driver := &Driver{}
+			config := db.ConnectionConfig{
+				DataSource: &storepb.DataSource{
+					Host:               u.Hostname(),
+					Port:               u.Port(),
+					Username:           "",
+					Password:           "",
+					AuthenticationType: storepb.DataSource_PASSWORD,
+				},
+				Password: "",
+			}
+
+			d, err := driver.Open(ctx, storepb.Engine_ELASTICSEARCH, config)
+			require.NoError(t, err)
+			defer d.Close(ctx)
+
+			// Execute query
+			results, err := d.QueryConn(ctx, nil, "GET /test", db.QueryContext{})
+			require.NoError(t, err)
+			require.NotNil(t, results)
+			require.Len(t, results, 1)
+
+			result := results[0]
+			assert.Equal(t, len(tc.wantColumns), len(result.ColumnNames), "column count should match")
+			assert.Equal(t, tc.wantRowCount, len(result.Rows), "row count should match")
+
+			if tc.wantFirstColName != "" {
+				assert.Equal(t, tc.wantFirstColName, result.ColumnNames[0], "first column name should match")
+			}
+
+			// Verify we have at least one value
+			require.Greater(t, len(result.Rows), 0)
+			require.Greater(t, len(result.Rows[0].Values), 0)
 		})
 	}
 }
