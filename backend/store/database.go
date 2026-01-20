@@ -375,7 +375,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 }
 
 // BatchUpdateDatabases update databases in batch.
-func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) ([]*DatabaseMessage, error) {
+func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) error {
 	set := qb.Q()
 
 	if update.ProjectID != nil {
@@ -389,7 +389,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		}
 	}
 	if set.Len() == 0 {
-		return nil, errors.New("no update field specified")
+		return errors.New("no update field specified")
 	}
 
 	where := qb.Q()
@@ -408,55 +408,35 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	}
 
 	if where.Len() == 0 {
-		return nil, errors.Errorf("empty where")
+		return errors.Errorf("empty where")
 	}
 
 	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return err
 	}
 
-	var updatedDatabases []*DatabaseMessage
+	// Invalidate cache for updated databases
 	for _, database := range databases {
-		updatedDatabase := *database
-		// Update cache for project field.
-		if update.ProjectID != nil {
-			updatedDatabase.ProjectID = *update.ProjectID
-		}
-		// Update cache for environment field and effective environment field.
-		if update.EnvironmentID != nil {
-			updatedDatabase.EnvironmentID = update.EnvironmentID
-			if *update.EnvironmentID == "" {
-				instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
-				if err != nil {
-					// Should not reach here.
-					return nil, err
-				}
-				updatedDatabase.EffectiveEnvironmentID = instance.EnvironmentID
-			} else {
-				updatedDatabase.EffectiveEnvironmentID = update.EnvironmentID
-			}
-		}
-		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
-		updatedDatabases = append(updatedDatabases, &updatedDatabase)
+		s.databaseCache.Remove(getDatabaseCacheKey(database.InstanceID, database.DatabaseName))
 	}
-	return updatedDatabases, nil
+	return nil
 }
 
 func GetListDatabaseFilter(filter string) (*qb.Query, error) {

@@ -243,9 +243,9 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 }
 
 // UpdateProjects updates projects in a single transaction.
-func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMessage) ([]*ProjectMessage, error) {
+func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMessage) error {
 	if len(patches) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	// Remove all projects from cache first
@@ -266,7 +266,7 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		if patch.Setting != nil {
 			payload, err := protojson.Marshal(patch.Setting)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			s := string(payload)
 			settings[i] = &s
@@ -285,24 +285,14 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return nil, err
+		return err
 	}
 
-	// Fetch and return all updated projects
-	var updatedProjects []*ProjectMessage
-	for _, patch := range patches {
-		project, err := s.GetProject(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
-		if err != nil {
-			return nil, err
-		}
-		updatedProjects = append(updatedProjects, project)
-	}
-
-	return updatedProjects, nil
+	return nil
 }
 
 func (s *Store) storeProjectCache(project *ProjectMessage) {
