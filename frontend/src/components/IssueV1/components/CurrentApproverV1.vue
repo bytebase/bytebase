@@ -58,7 +58,7 @@ import {
   userNamePrefix,
   useUserStore,
 } from "@/store";
-import { type ComposedIssue } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_ApprovalStatus,
   Issue_Approver_Status,
@@ -66,7 +66,7 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 
 const props = defineProps<{
-  issue: ComposedIssue;
+  issue: Issue;
 }>();
 
 const me = useCurrentUserV1();

@@ -65,7 +65,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
-import type { ComposedIssue } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { BatchUpdateIssuesStatusRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import CommonDrawer from "./CommonDrawer.vue";
 import type { IssueStatusAction } from "./issueStatusAction";
@@ -80,7 +80,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  issueList: ComposedIssue[];
+  issueList: Issue[];
   action?: IssueStatusAction;
 }>();
 

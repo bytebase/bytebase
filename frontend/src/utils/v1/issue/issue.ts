@@ -11,7 +11,6 @@ import {
 } from "@/store";
 import {
   type ComposedDatabase,
-  type ComposedIssue,
   EMPTY_ID,
   isValidDatabaseName,
   UNKNOWN_ID,
@@ -57,20 +56,23 @@ const DATABASE_RELATED_TASK_TYPE_LIST = [
   Task_Type.DATABASE_MIGRATE,
 ];
 
-export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {
+export const isDatabaseChangeRelatedIssue = (
+  issue: Issue,
+  rollout: Rollout | undefined
+): boolean => {
   return (
     Boolean(issue.plan) &&
-    flattenTaskV1List(issue.rolloutEntity).some((task) => {
+    flattenTaskV1List(rollout).some((task) => {
       return DATABASE_RELATED_TASK_TYPE_LIST.includes(task.type);
     })
   );
 };
 
-export const isGrantRequestIssue = (issue: ComposedIssue): boolean => {
+export const isGrantRequestIssue = (issue: Issue): boolean => {
   return issue.type === Issue_Type.GRANT_REQUEST;
 };
 
-export const isDatabaseDataExportIssue = (issue: ComposedIssue): boolean => {
+export const isDatabaseDataExportIssue = (issue: Issue): boolean => {
   return issue.type === Issue_Type.DATABASE_EXPORT;
 };
 
@@ -144,7 +146,10 @@ export const projectOfIssue = (issue: Issue): Project => {
   );
 };
 
-export const isUnfinishedResolvedTask = (issue: ComposedIssue | undefined) => {
+export const isUnfinishedResolvedTask = (
+  issue: Issue | undefined,
+  rollout: Rollout | undefined
+) => {
   if (!issue) {
     return false;
   }
@@ -154,7 +159,7 @@ export const isUnfinishedResolvedTask = (issue: ComposedIssue | undefined) => {
   if (issue.status !== IssueStatus.DONE) {
     return false;
   }
-  return flattenTaskV1List(issue.rolloutEntity).some((task) => {
+  return flattenTaskV1List(rollout).some((task) => {
     return ![Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
   });
 };

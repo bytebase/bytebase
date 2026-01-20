@@ -1,6 +1,6 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import type { ComposedIssue } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { isDatabaseDataExportIssue, isGrantRequestIssue } from "@/utils";
 
@@ -25,7 +25,7 @@ const PossibleIssueStatusActionMap: Record<IssueStatus, IssueStatusAction[]> = {
 };
 
 export const getApplicableIssueStatusActionList = (
-  issue: ComposedIssue
+  issue: Issue
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {

@@ -79,7 +79,7 @@ import {
   useRefreshIssueList,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedIssue } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
@@ -137,8 +137,7 @@ watch(
 );
 
 const issueStore = useIssueV1Store();
-const issuePagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
+const issuePagedTable = ref<ComponentExposed<typeof PagedTable<Issue>>>();
 
 const dataExportIssueSearchParams = computed(() => {
   // Default scopes with type.
