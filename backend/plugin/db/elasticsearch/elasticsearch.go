@@ -467,17 +467,31 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 
 			switch {
 			case strings.Contains(contentType, "application/json"):
+				// Try to unmarshal as an object first
 				pairs := map[string]any{}
 				if err := json.Unmarshal(respBytes, &pairs); err != nil {
-					return errors.Wrapf(err, "failed to parse json body")
-				}
-				for key, val := range pairs {
-					result.ColumnNames = append(result.ColumnNames, key)
-					bytes, err := json.Marshal(val)
+					// If it fails, try to unmarshal as an array (for _cat APIs with format=json)
+					var items []any
+					if err := json.Unmarshal(respBytes, &items); err != nil {
+						return errors.Wrapf(err, "failed to parse json body as object or array")
+					}
+					// Handle array response: create a single column with array data
+					result.ColumnNames = append(result.ColumnNames, "result")
+					bytes, err := json.Marshal(items)
 					if err != nil {
 						return err
 					}
 					row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+				} else {
+					// Handle object response: create columns for each key
+					for key, val := range pairs {
+						result.ColumnNames = append(result.ColumnNames, key)
+						bytes, err := json.Marshal(val)
+						if err != nil {
+							return err
+						}
+						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
+					}
 				}
 			case strings.Contains(contentType, "text/plain"):
 				result.ColumnNames = append(result.ColumnNames, "text/plain")
