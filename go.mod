@@ -61,7 +61,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.4
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/labstack/echo-contrib v0.17.4
+	github.com/labstack/echo-contrib v0.50.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lestrrat-go/jwx/v3 v3.0.13
 	github.com/lib/pq v1.10.9
