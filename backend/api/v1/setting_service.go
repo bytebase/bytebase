@@ -546,7 +546,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}); err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unset environment %v for instances", env.Id))
 				}
-				if _, err := s.store.BatchUpdateDatabases(ctx, nil, &store.BatchUpdateDatabases{
+				if err := s.store.BatchUpdateDatabases(ctx, nil, &store.BatchUpdateDatabases{
 					EnvironmentID:       &emptyStr,
 					FindByEnvironmentID: &env.Id,
 				}); err != nil {
@@ -609,7 +609,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				Setting:    setting,
 			})
 		}
-		if _, err = s.store.UpdateProjects(ctx, batchUpdate...); err != nil {
+		if err = s.store.UpdateProjects(ctx, batchUpdate...); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project classification with error: %v", err))
 		}
 	}

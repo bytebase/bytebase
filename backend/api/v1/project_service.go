@@ -359,11 +359,13 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		}
 	}
 
-	projects, err := s.store.UpdateProjects(ctx, patch)
+	if err := s.store.UpdateProjects(ctx, patch); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &patch.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	project = projects[0]
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
@@ -382,7 +384,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 
 		// If project is not already soft-deleted, soft-delete it first
 		if !project.Deleted {
-			if _, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
+			if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 				ResourceID: project.ResourceID,
 				Delete:     &deletePatch,
 			}); err != nil {
@@ -408,7 +410,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 	}
 
 	// For archive (soft delete), just mark the project as deleted without touching databases or issues
-	if _, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
+	if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
@@ -429,14 +431,16 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(convertToProject(project)), nil
 	}
 
-	projects, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
+	if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
-	})
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &project.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	project = projects[0]
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
@@ -471,7 +475,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			}
 		}
 		if len(projectsToSoftDelete) > 0 {
-			if _, err := s.store.UpdateProjects(ctx, projectsToSoftDelete...); err != nil {
+			if err := s.store.UpdateProjects(ctx, projectsToSoftDelete...); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 		}
@@ -514,7 +518,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 	}
 
 	if len(updatePatches) > 0 {
-		if _, err := s.store.UpdateProjects(ctx, updatePatches...); err != nil {
+		if err := s.store.UpdateProjects(ctx, updatePatches...); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
