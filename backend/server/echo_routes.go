@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	connectcors "connectrpc.com/cors"
 
@@ -58,9 +59,15 @@ func configureEchoRouters(
 
 	registerPprof(e, &profile.RuntimeDebug)
 
-	// Prometheus metrics
-	e.Use(echoprometheus.NewMiddleware("api"))
-	e.GET("/metrics", echoprometheus.NewHandler())
+	// Prometheus metrics - use custom registry to avoid duplicate registration in tests
+	registry := prometheus.NewRegistry()
+	e.Use(echoprometheus.NewMiddlewareWithConfig(echoprometheus.MiddlewareConfig{
+		Subsystem:  "api",
+		Registerer: registry,
+	}))
+	e.GET("/metrics", echoprometheus.NewHandlerWithConfig(echoprometheus.HandlerConfig{
+		Gatherer: registry,
+	}))
 
 	e.GET("/healthz", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "OK")
