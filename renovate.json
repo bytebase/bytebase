@@ -3,7 +3,7 @@
   "extends": ["config:recommended"],
   "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "allowedPostUpgradeCommands": ["^pnpm install --no-frozen-lockfile$"],
+  "allowedCommands": ["^pnpm install --no-frozen-lockfile$"],
   "packageRules": [
     {
       "matchManagers": ["npm"],
@@ -14,5 +14,8 @@
       }
     }
   ],
-  "ignoreDeps": ["github.com/pingcap/tidb/pkg/parser", "github.com/elastic/go-elasticsearch/v7"]
+  "ignoreDeps": [
+    "github.com/pingcap/tidb/pkg/parser",
+    "github.com/elastic/go-elasticsearch/v7"
+  ]
 }
