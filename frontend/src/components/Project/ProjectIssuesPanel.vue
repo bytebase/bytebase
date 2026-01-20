@@ -45,7 +45,7 @@ import {
   useRefreshIssueList,
   useUIStateStore,
 } from "@/store";
-import type { ComposedIssue } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -73,8 +73,7 @@ const route = useRoute();
 const router = useRouter();
 const me = useCurrentUserV1();
 const issueStore = useIssueV1Store();
-const issuePagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
+const issuePagedTable = ref<ComponentExposed<typeof PagedTable<Issue>>>();
 
 const uiStateStore = useUIStateStore();
 const HINT_KEY = "issue.hint-dismissed";

@@ -22,10 +22,6 @@ import {
 } from "@/utils";
 import { useUserStore } from "../user";
 import { projectNamePrefix, userNamePrefix } from "./common";
-import {
-  type ComposeIssueConfig,
-  shallowComposeIssue,
-} from "./experimental-issue";
 import { useProjectV1Store } from "./project";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
@@ -75,10 +71,11 @@ export const buildIssueFilter = (find: IssueFilter): string => {
 export const useIssueV1Store = defineStore("issue_v1", () => {
   const projectStore = useProjectV1Store();
 
-  const listIssues = async (
-    { find, pageSize, pageToken }: ListIssueParams,
-    composeIssueConfig?: ComposeIssueConfig
-  ) => {
+  const listIssues = async ({
+    find,
+    pageSize,
+    pageToken,
+  }: ListIssueParams): Promise<{ nextPageToken: string; issues: Issue[] }> => {
     const request = create(SearchIssuesRequestSchema, {
       parent: find.project,
       filter: buildIssueFilter(find),
@@ -93,23 +90,19 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       return `projects/${extractProjectResourceName(issue.name)}`;
     });
     await projectStore.batchGetOrFetchProjects(projects);
-    const composedIssues = await Promise.all(
-      issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
-    );
-    // Preprare creator for the issues.
-    const users = uniq(composedIssues.map((issue) => issue.creator));
+    // Prepare creator for the issues.
+    const users = uniq(issues.map((issue) => issue.creator));
     await useUserStore().batchGetOrFetchUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
-      issues: composedIssues,
+      issues,
     };
   };
 
   const fetchIssueByName = async (
     name: string,
-    composeIssueConfig?: ComposeIssueConfig,
     silent: boolean = false
-  ) => {
+  ): Promise<Issue> => {
     const request = create(GetIssueRequestSchema, { name });
     const issue = await issueServiceClientConnect.getIssue(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
@@ -117,7 +110,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     await projectStore.getOrFetchProjectByName(
       `projects/${extractProjectResourceName(issue.name)}`
     );
-    return shallowComposeIssue(issue, composeIssueConfig);
+    return issue;
   };
 
   return {

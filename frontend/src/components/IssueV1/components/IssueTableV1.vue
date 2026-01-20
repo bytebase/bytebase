@@ -13,7 +13,7 @@
       :striped="true"
       :bordered="bordered"
       :loading="loading"
-      :row-key="(issue: ComposedIssue) => issue.name"
+      :row-key="(issue: Issue) => issue.name"
       :default-expand-all="true"
       :expanded-row-keys="
         issueList.filter(isIssueExpanded).map((issue) => issue.name)
@@ -50,11 +50,8 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { useUserStore } from "@/store";
-import {
-  type ComposedIssue,
-  getTimeForPbTimestampProtoEs,
-  unknownUser,
-} from "@/types";
+import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   extractIssueUID,
   getHighlightHTMLByRegExp,
@@ -73,7 +70,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    issueList: ComposedIssue[];
+    issueList: Issue[];
     bordered?: boolean;
     title?: string;
     highlightText?: string;
@@ -128,8 +125,8 @@ const selectedIssueList = computed(() => {
   );
 });
 
-const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
-  const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
+const columnList = computed((): DataTableColumn<Issue>[] => {
+  const columns: (DataTableColumn<Issue> & { hide?: boolean })[] = [
     {
       type: "selection",
       width: 40,
@@ -251,7 +248,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
   return columns.filter((column) => !column.hide);
 });
 
-const issueUrl = (issue: ComposedIssue) => {
+const issueUrl = (issue: Issue) => {
   const issueRoute = getIssueRoute(issue);
   const route = router.resolve({
     name: issueRoute.name,
@@ -260,7 +257,7 @@ const issueUrl = (issue: ComposedIssue) => {
   return route.fullPath;
 };
 
-const rowProps = (issue: ComposedIssue) => {
+const rowProps = (issue: Issue) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
@@ -371,7 +368,7 @@ const issueHighlightSections = (
   ];
 };
 
-const isIssueExpanded = (issue: ComposedIssue): boolean => {
+const isIssueExpanded = (issue: Issue): boolean => {
   if (!props.highlightText || !issue.description) {
     return false;
   }
