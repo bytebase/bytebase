@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 	"strings"
 	"testing"
@@ -120,6 +121,84 @@ func TestURLConstructionWithQueryParams(t *testing.T) {
 
 			// Critical: Verify no URL encoding of the '?' character
 			assert.NotContains(t, fullURL.String(), "%3F", "URL should not contain encoded question mark")
+		})
+	}
+}
+
+func TestJSONParsing(t *testing.T) {
+	testCases := []struct {
+		name        string
+		jsonData    string
+		wantColumns []string
+		wantErr     bool
+	}{
+		{
+			name:        "JSON object response",
+			jsonData:    `{"took":5,"hits":{"total":100}}`,
+			wantColumns: []string{"took", "hits"},
+			wantErr:     false,
+		},
+		{
+			name:        "JSON array response (from _cat API)",
+			jsonData:    `[{"health":"yellow","status":"open"},{"health":"green","status":"open"}]`,
+			wantColumns: []string{"result"},
+			wantErr:     false,
+		},
+		{
+			name:     "invalid JSON",
+			jsonData: `{invalid`,
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			respBytes := []byte(tc.jsonData)
+
+			// Simulate the parsing logic from QueryConn
+			var columnNames []string
+
+			// Unmarshal into any to determine type
+			var data any
+			err := json.Unmarshal(respBytes, &data)
+			if err != nil {
+				if !tc.wantErr {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+
+			if tc.wantErr {
+				t.Fatal("expected error but got none")
+			}
+
+			// Handle based on type (same logic as QueryConn)
+			switch v := data.(type) {
+			case map[string]any:
+				// Object case
+				for key := range v {
+					columnNames = append(columnNames, key)
+				}
+			case []any:
+				// Array case
+				columnNames = append(columnNames, "result")
+			}
+
+			// Verify column count matches
+			assert.Equal(t, len(tc.wantColumns), len(columnNames),
+				"number of columns should match")
+
+			// For object responses, verify all expected columns exist
+			// (order may vary due to map iteration)
+			if len(tc.wantColumns) > 1 {
+				for _, expected := range tc.wantColumns {
+					assert.Contains(t, columnNames, expected,
+						"should contain expected column")
+				}
+			} else {
+				// For single column (array case), verify exact match
+				assert.Equal(t, tc.wantColumns, columnNames)
+			}
 		})
 	}
 }
