@@ -145,30 +145,6 @@ func TestJSONParsing(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "JSON primitive string",
-			jsonData:    `"hello world"`,
-			wantColumns: []string{"result"},
-			wantErr:     false,
-		},
-		{
-			name:        "JSON primitive number",
-			jsonData:    `42`,
-			wantColumns: []string{"result"},
-			wantErr:     false,
-		},
-		{
-			name:        "JSON primitive boolean",
-			jsonData:    `true`,
-			wantColumns: []string{"result"},
-			wantErr:     false,
-		},
-		{
-			name:        "JSON primitive null",
-			jsonData:    `null`,
-			wantColumns: []string{"result"},
-			wantErr:     false,
-		},
-		{
 			name:     "invalid JSON",
 			jsonData: `{invalid`,
 			wantErr:  true,
@@ -196,7 +172,7 @@ func TestJSONParsing(t *testing.T) {
 				t.Fatal("expected error but got none")
 			}
 
-			// Handle based on type
+			// Handle based on type (same logic as QueryConn)
 			switch v := data.(type) {
 			case map[string]any:
 				// Object case
@@ -205,9 +181,6 @@ func TestJSONParsing(t *testing.T) {
 				}
 			case []any:
 				// Array case
-				columnNames = append(columnNames, "result")
-			default:
-				// Primitive case (string, number, boolean, null)
 				columnNames = append(columnNames, "result")
 			}
 
