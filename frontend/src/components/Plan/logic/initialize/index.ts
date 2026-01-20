@@ -7,7 +7,7 @@ import {
   rolloutServiceClientConnect,
 } from "@/connect";
 import { projectNamePrefix, usePlanStore } from "@/store";
-import { EMPTY_ID, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import {
   GetIssueRequestSchema,
   Issue_Type,
@@ -17,7 +17,7 @@ import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutFromPlan, extractPlanNameFromRolloutName } from "@/utils";
-import { emptyPlan } from "@/types/v1/issue/plan";
+import { unknownPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";
 import {
   WORKSPACE_ROUTE_403,
@@ -43,7 +43,7 @@ export function useInitializePlan(
     // If planId is provided, use it directly
     if (unref(planId)) {
       const id = unref(planId)!;
-      if (id.toLowerCase() === "create") return String(EMPTY_ID);
+      if (id.toLowerCase() === "create") return "create";
       const uid = Number(id);
       if (uid > 0) return String(uid);
       return String(UNKNOWN_ID);
@@ -51,14 +51,14 @@ export function useInitializePlan(
     // Otherwise, if legacyRolloutId is provided, we'll fetch the plan from the rollout
     if (unref(legacyRolloutId)) {
       const id = unref(legacyRolloutId)!;
-      if (id.toLowerCase() === "create") return String(EMPTY_ID);
+      if (id.toLowerCase() === "create") return "create";
       // For rollout-based initialization, return a special marker
       return `rollout:${id}`;
     }
     // Otherwise, if issueId is provided, we'll fetch the plan from the issue
     if (unref(issueId)) {
       const id = unref(issueId)!;
-      if (id.toLowerCase() === "create") return String(EMPTY_ID);
+      if (id.toLowerCase() === "create") return "create";
       // For issue-based initialization, return a special marker
       return `issue:${id}`;
     }
@@ -70,7 +70,7 @@ export function useInitializePlan(
   const planStore = usePlanStore();
   const isInitializing = ref(true);
 
-  const plan = ref<Plan>(emptyPlan());
+  const plan = ref<Plan>(unknownPlan());
   const planCheckRuns = ref<PlanCheckRun[]>([]);
   const issue = ref<Issue | undefined>(undefined);
   const rollout = ref<Rollout | undefined>(undefined);
@@ -81,7 +81,7 @@ export function useInitializePlan(
     let issueResult: Issue | undefined = undefined;
     let rolloutResult: Rollout | undefined = undefined;
 
-    if (uid === String(EMPTY_ID)) {
+    if (uid === "create") {
       // Creating a new plan
       planResult = await createPlanSkeleton(
         route,
@@ -142,7 +142,7 @@ export function useInitializePlan(
           );
         }
         return {
-          plan: emptyPlan(),
+          plan: unknownPlan(),
           issue: issueResult,
           rollout: undefined,
           url,

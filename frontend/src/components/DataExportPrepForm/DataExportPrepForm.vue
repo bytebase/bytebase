@@ -47,7 +47,7 @@ import DatabaseAndGroupSelector, {
 } from "@/components/DatabaseAndGroupSelector/";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectByName } from "@/store";
-import { extractProjectResourceName, generateIssueTitle } from "@/utils";
+import { extractProjectResourceName, generatePlanTitle } from "@/utils";
 import { DrawerContent } from "../v2";
 
 type LocalState = {
@@ -80,10 +80,10 @@ const navigateToIssuePage = async () => {
     return;
   }
 
-  const issueType = "bb.issue.database.data.export";
+  const template = "bb.plan.export-data";
   const query: LocationQueryRaw = {
-    template: issueType,
-    name: generateIssueTitle(issueType),
+    template,
+    name: generatePlanTitle(template),
   };
 
   if (state.targetSelectState.changeSource === "DATABASE") {

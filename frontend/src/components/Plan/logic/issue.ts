@@ -11,11 +11,11 @@ import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
   extractProjectResourceName,
-  generateIssueTitle,
+  generatePlanTitle,
 } from "@/utils";
 
 export const preCreateIssue = async (project: string, targets: string[]) => {
-  const type = "bb.issue.database.update";
+  const type = "bb.plan.change-database";
   const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
   const projectStore = useProjectV1Store();
@@ -48,7 +48,7 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
     query.databaseGroupName = databaseGroupName;
     // Only set title from generated if enforceIssueTitle is false.
     if (!projectEntity.enforceIssueTitle) {
-      query.name = generateIssueTitle(type, [
+      query.name = generatePlanTitle(type, [
         extractDatabaseGroupName(databaseGroupName),
       ]);
     }
@@ -56,7 +56,7 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
     query.databaseList = targets.join(",");
     // Only set title from generated if enforceIssueTitle is false.
     if (!projectEntity.enforceIssueTitle) {
-      query.name = generateIssueTitle(
+      query.name = generatePlanTitle(
         type,
         targets.map((db) => {
           const { databaseName } = extractDatabaseResourceName(db);

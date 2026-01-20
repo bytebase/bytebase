@@ -17,6 +17,5 @@ export const unknownDatabaseGroup = (): DatabaseGroup => {
   const projectEntity = unknownProject();
   return create(DatabaseGroupSchema, {
     name: `${projectEntity.name}/databaseGroups/${UNKNOWN_ID}`,
-    title: "<<Unknown database group>>",
   });
 };

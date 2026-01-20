@@ -99,7 +99,7 @@ import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
   extractProjectResourceName,
-  generateIssueTitle,
+  generatePlanTitle,
   getDefaultPagination,
   type SearchParams,
   type SearchScope,
@@ -292,7 +292,7 @@ watch(
 );
 
 const handleSpecCreated = async (spec: Plan_Spec) => {
-  const template = "bb.issue.database.update";
+  const template = "bb.plan.change-database";
   const targets = targetsForSpec(spec);
   const isDatabaseGroup = targets.every((target) =>
     isValidDatabaseGroupName(target)
@@ -335,7 +335,7 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
     query.databaseGroupName = databaseGroupName;
     // Only set title from generated if enforceIssueTitle is false.
     if (!project.value.enforceIssueTitle) {
-      query.name = generateIssueTitle(template, [
+      query.name = generatePlanTitle(template, [
         extractDatabaseGroupName(databaseGroupName),
       ]);
     }
@@ -343,7 +343,7 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
     query.databaseList = targets.join(",");
     // Only set title from generated if enforceIssueTitle is false.
     if (!project.value.enforceIssueTitle) {
-      query.name = generateIssueTitle(
+      query.name = generatePlanTitle(
         template,
         targets.map((db) => {
           const { databaseName } = extractDatabaseResourceName(db);

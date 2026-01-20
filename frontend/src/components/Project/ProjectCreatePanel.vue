@@ -76,7 +76,7 @@ import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
-import { emptyProject } from "@/types";
+import { unknownProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -100,7 +100,7 @@ const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
   project: {
-    ...emptyProject(),
+    ...unknownProject(),
     title: "New Project",
   },
   resourceId: "",

@@ -11,7 +11,7 @@ import { computed } from "vue";
 import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { emptyProjectWebhook } from "@/types/v1/projectWebhook";
+import { unknownProjectWebhook } from "@/types/v1/projectWebhook";
 
 const props = defineProps<{
   projectId: string;
@@ -21,5 +21,5 @@ const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
-const defaultNewWebhook = emptyProjectWebhook();
+const defaultNewWebhook = unknownProjectWebhook();
 </script>

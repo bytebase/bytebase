@@ -70,7 +70,7 @@ import {
   displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
-  generateIssueTitle,
+  formatIssueTitle,
 } from "@/utils";
 
 const props = withDefaults(
@@ -149,16 +149,15 @@ const doCreateIssue = async () => {
   const newIssue = create(IssueSchema, {
     title: project.value.enforceIssueTitle
       ? `[${t("issue.title.request-role")}] ${formRef.value?.reason}`
-      : generateIssueTitle(
-          "bb.issue.grant.request",
+      : formatIssueTitle(
+          t("issue.title.request-specific-role", {
+            role: displayRoleTitle(binding.role),
+          }),
           uniq(
             databaseResources?.map(
               (databaseResource) => databaseResource.databaseFullName
             )
-          ),
-          t("issue.title.request-specific-role", {
-            role: displayRoleTitle(binding.role),
-          })
+          )
         ),
     description: binding.condition?.description,
     type: NewIssue_Type.GRANT_REQUEST,
