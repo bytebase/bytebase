@@ -96,7 +96,12 @@ import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { ChangelogView } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractProjectResourceName, generateIssueTitle } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+  generateIssueTitle,
+  getInstanceResource,
+} from "@/utils";
 import {
   extractDatabaseNameAndChangelogUID,
   isValidChangelogName,
@@ -185,7 +190,7 @@ const sourceEngine = computed(() => {
     const database = databaseStore.getDatabaseByName(
       changelogSourceSchemaState.databaseName
     );
-    return database.instanceResource.engine;
+    return getInstanceResource(database).engine;
   } else {
     return rawSQLState.engine;
   }
@@ -345,7 +350,9 @@ const tryFinishSetup = async () => {
   query.sqlMapStorageKey = sqlMapStorageKey;
   query.name = generateIssueTitle(
     "bb.issue.database.update",
-    targetDatabaseList.map((db) => db.databaseName)
+    targetDatabaseList.map(
+      (db) => extractDatabaseResourceName(db.name).databaseName
+    )
   );
 
   router.push({

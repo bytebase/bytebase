@@ -21,8 +21,9 @@ import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedDatabase } from "@/types";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { extractDatabaseResourceName } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
@@ -39,7 +40,7 @@ const props = withDefaults(
     environmentName?: string;
     projectName?: string;
     allowedEngineTypeList?: Engine[];
-    filter?: (database: ComposedDatabase) => boolean;
+    filter?: (database: Database) => boolean;
     multiple?: boolean;
     disabled?: boolean;
     size?: SelectSize;
@@ -58,16 +59,16 @@ defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 
-const getOption = (db: ComposedDatabase) => {
+const getOption = (db: Database) => {
   return {
     resource: db,
     value: db.name,
-    label: db.databaseName,
+    label: extractDatabaseResourceName(db.name).databaseName,
   };
 };
 
 const additionalOptions = computedAsync(async () => {
-  const options: ResourceSelectOption<ComposedDatabase>[] = [];
+  const options: ResourceSelectOption<Database>[] = [];
 
   let databaseNames: string[] = [];
   if (Array.isArray(props.value)) {
@@ -104,7 +105,7 @@ const handleSearch = async (params: {
   };
 };
 
-const customLabel = (database: ComposedDatabase, keyword: string) => {
+const customLabel = (database: Database, keyword: string) => {
   return (
     <RichDatabaseName
       database={database}

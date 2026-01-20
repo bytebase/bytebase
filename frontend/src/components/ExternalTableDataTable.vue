@@ -28,8 +28,10 @@ import { NDataTable } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { HighlightLabelText } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
-import type { ExternalTableMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  ExternalTableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 import ExternalTableDetailDrawer from "./ExternalTableDetailDrawer.vue";
 
 type LocalState = {
@@ -38,7 +40,7 @@ type LocalState = {
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     schemaName?: string;
     externalTableList: ExternalTableMetadata[];
     search?: string;

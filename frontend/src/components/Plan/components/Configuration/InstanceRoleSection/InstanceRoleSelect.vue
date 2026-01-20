@@ -26,7 +26,7 @@ import {
 import { instanceRoleServiceClientConnect } from "@/connect";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
-import { setSheetStatement } from "@/utils";
+import { extractDatabaseResourceName, setSheetStatement } from "@/utils";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import {
   parseStatement,
@@ -70,15 +70,20 @@ const database = computed(() => {
   return databases.value[0];
 });
 
+const instanceName = computed(() => {
+  if (!database.value) return undefined;
+  return extractDatabaseResourceName(database.value.name).instance;
+});
+
 watch(
-  () => database.value?.instance,
+  instanceName,
   async () => {
-    if (!database.value) return;
+    if (!database.value || !instanceName.value) return;
 
     loading.value = true;
     try {
       const request = create(ListInstanceRolesRequestSchema, {
-        parent: database.value.instance,
+        parent: instanceName.value,
       });
       const response =
         await instanceRoleServiceClientConnect.listInstanceRoles(request);

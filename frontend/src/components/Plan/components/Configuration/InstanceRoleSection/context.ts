@@ -7,6 +7,7 @@ import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { getInstanceResource } from "@/utils";
 
 export const KEY = Symbol(
   "bb.plan.setting.instance-role"
@@ -47,7 +48,7 @@ export const provideInstanceRoleSettingContext = (refs: {
 
     // Only show for PostgreSQL databases
     const allDatabasesArePostgres = databases.value.every(
-      (db) => db.instanceResource.engine === Engine.POSTGRES
+      (db) => getInstanceResource(db).engine === Engine.POSTGRES
     );
     if (!allDatabasesArePostgres) return false;
 

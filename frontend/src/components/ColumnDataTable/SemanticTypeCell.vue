@@ -25,7 +25,7 @@
 
   <FeatureModal
     :feature="PlanFeature.FEATURE_DATA_MASKING"
-    :instance="database.instanceResource"
+    :instance="getInstanceResource(database)"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -46,8 +46,9 @@ import { computed, reactive } from "vue";
 import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
 import { MiniActionButton } from "@/components/v2";
 import { useSubscriptionV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { getInstanceResource } from "@/utils";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
 
@@ -58,7 +59,7 @@ type LocalState = {
 
 const props = defineProps<{
   semanticTypeId: string;
-  database: ComposedDatabase;
+  database: Database;
   readonly?: boolean;
 }>();
 
@@ -82,7 +83,7 @@ const hasSensitiveDataFeature = computed(() => {
 const instanceMissingLicense = computed(() => {
   return subscriptionV1Store.instanceMissingLicense(
     PlanFeature.FEATURE_DATA_MASKING,
-    props.database.instanceResource
+    getInstanceResource(props.database)
   );
 });
 

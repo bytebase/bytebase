@@ -21,7 +21,7 @@
           </div>
           <div class="text-main text-right">
             <EnvironmentV1Name
-              :environment="database.effectiveEnvironmentEntity"
+              :environment="environment!"
               :link="false"
             />
           </div>
@@ -32,17 +32,17 @@
           </div>
           <div class="text-main text-right">
             <InstanceV1Name
-              :instance="database.instanceResource"
+              :instance="instanceResource!"
               :link="false"
             />
           </div>
         </div>
-        <div v-if="!hasProjectContext" class="contents">
+        <div v-if="!hasProjectContext && project" class="contents">
           <div class="text-gray-500 font-medium">
             {{ $t("common.project") }}
           </div>
           <div class="text-main text-right">
-            <ProjectV1Name :project="database.projectEntity" :link="false" />
+            <ProjectV1Name :project="project" :link="false" />
           </div>
         </div>
         <div class="contents">
@@ -77,7 +77,12 @@ import {
 } from "@/components/v2";
 import { useSQLEditorStore } from "@/store";
 import type { Position, SQLEditorTreeNodeTarget } from "@/types";
-import { minmax } from "@/utils";
+import {
+  getDatabaseEnvironment,
+  getDatabaseProject,
+  getInstanceResource,
+  minmax,
+} from "@/utils";
 import { useHoverStateContext } from "./hover-state";
 
 const props = defineProps<{
@@ -112,6 +117,21 @@ const database = computed(() => {
   const { type, target } = state.value.node.meta;
   if (type !== "database") return undefined;
   return target as SQLEditorTreeNodeTarget<"database">;
+});
+
+const environment = computed(() => {
+  if (!database.value) return undefined;
+  return getDatabaseEnvironment(database.value);
+});
+
+const instanceResource = computed(() => {
+  if (!database.value) return undefined;
+  return getInstanceResource(database.value);
+});
+
+const project = computed(() => {
+  if (!database.value) return undefined;
+  return getDatabaseProject(database.value);
 });
 
 const hasProjectContext = computed(() => {

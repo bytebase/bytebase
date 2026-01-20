@@ -73,15 +73,15 @@
             >
               <InstanceV1EngineIcon
                 class="shrink-0"
-                :instance="database.instanceResource"
+                :instance="getInstanceResource(database)"
               />
               <NEllipsis :tooltip="false">
                 <span class="mx-0.5 text-gray-400"
-                  >({{ database.effectiveEnvironmentEntity.title }})</span
+                  >({{ getDatabaseEnvironment(database).title }})</span
                 >
-                <span>{{ database.databaseName }}</span>
+                <span>{{ extractDatabaseResourceName(database.name).databaseName }}</span>
                 <span class="ml-0.5 text-gray-400"
-                  >({{ database.instanceResource.title }})</span
+                  >({{ getInstanceResource(database).title }})</span
                 >
               </NEllipsis>
               <div class="grow"></div>
@@ -169,13 +169,19 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
 } from "@/store";
-import { type ComposedDatabase, isValidDatabaseName } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   ChangelogView,
   DiffSchemaRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEnvironment,
+  getInstanceResource,
+} from "@/utils";
 import { isValidChangelogName } from "@/utils/v1/changelog";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
@@ -283,7 +289,7 @@ const previewSchemaChangeMessage = computed(() => {
     database.effectiveEnvironment ?? ""
   );
   return t("database.sync-schema.schema-change-preview", {
-    database: `${database.databaseName} (${environment?.title} - ${database.instanceResource.title})`,
+    database: `${extractDatabaseResourceName(database.name).databaseName} (${environment?.title} - ${getInstanceResource(database).title})`,
   });
 });
 
@@ -310,7 +316,7 @@ const handleSelectedDatabaseNameListChanged = (databaseNameList: string[]) => {
   state.showSelectDatabasePanel = false;
 };
 
-const handleUnselectDatabase = (database: ComposedDatabase) => {
+const handleUnselectDatabase = (database: Database) => {
   state.selectedDatabaseNameList = state.selectedDatabaseNameList.filter(
     (name) => name !== database.name
   );
@@ -429,7 +435,10 @@ onMounted(async () => {
   if (isValidDatabaseName(targetDatabaseName)) {
     const database =
       await databaseStore.getOrFetchDatabaseByName(targetDatabaseName);
-    if (database && database.instanceResource.engine === props.sourceEngine) {
+    if (
+      database &&
+      getInstanceResource(database).engine === props.sourceEngine
+    ) {
       state.selectedDatabaseNameList = [targetDatabaseName];
       state.selectedDatabaseName = targetDatabaseName;
     }

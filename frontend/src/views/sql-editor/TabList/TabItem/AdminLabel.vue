@@ -2,7 +2,7 @@
   <label class="flex items-center text-sm h-5 ml-0.5 whitespace-nowrap">
     <template v-if="!hideEnvironment">
       <EnvironmentV1Name
-        :environment="database.effectiveEnvironmentEntity"
+        :environment="environment"
         :link="false"
       />
       <ChevronRightIcon class="shrink-0 h-4 w-4 opacity-70" />
@@ -12,7 +12,7 @@
       <ChevronRightIcon class="shrink-0 h-4 w-4 opacity-70" />
     </template>
     <template v-if="isValidDatabaseName(database.name)">
-      <span>{{ database.databaseName }}</span>
+      <span>{{ databaseName }}</span>
     </template>
   </label>
 </template>
@@ -28,6 +28,11 @@ import {
   type SQLEditorTab,
   UNKNOWN_ID,
 } from "@/types";
+import {
+  extractDatabaseResourceName,
+  getDatabaseEnvironment,
+  getInstanceResource,
+} from "@/utils";
 
 const props = defineProps<{
   tab: SQLEditorTab;
@@ -40,10 +45,18 @@ const { database } = useDatabaseV1ByName(
 );
 
 const instance = computed(() => {
-  return database.value.instanceResource;
+  return getInstanceResource(database.value);
+});
+
+const environment = computed(() => {
+  return getDatabaseEnvironment(database.value);
+});
+
+const databaseName = computed(() => {
+  return extractDatabaseResourceName(database.value.name).databaseName;
 });
 
 const hideEnvironment = computed(() => {
-  return database.value.effectiveEnvironmentEntity?.id === String(UNKNOWN_ID);
+  return environment.value?.id === String(UNKNOWN_ID);
 });
 </script>

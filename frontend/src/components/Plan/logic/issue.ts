@@ -27,7 +27,7 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
       databaseNames.push(dbGroup.title);
     } else if (isValidDatabaseName(target)) {
       const db = databaseStore.getDatabaseByName(target);
-      databaseNames.push(db.databaseName);
+      databaseNames.push(extractDatabaseResourceName(db.name).databaseName);
     }
   }
 

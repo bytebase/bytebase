@@ -18,12 +18,14 @@ import type { DataTableColumn } from "naive-ui";
 import { NCheckbox, NDataTable, NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ComposedDatabase } from "@/types";
-import type { SequenceMetadata } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Database,
+  SequenceMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
 
 withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     schemaName?: string;
     sequenceList: SequenceMetadata[];
     loading?: boolean;

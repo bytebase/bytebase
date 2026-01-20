@@ -8,7 +8,7 @@
       shouldShowLink && 'hover:underline',
     ]"
   >
-    <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
+    <HighlightLabelText :text="extractDatabaseResourceName(database.name).databaseName" :keyword="keyword" />
     <span
       v-if="showNotFound && database.state === State.DELETED"
       class="text-control-placeholder"
@@ -22,14 +22,14 @@
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { autoDatabaseRoute } from "@/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { autoDatabaseRoute, extractDatabaseResourceName } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     link?: boolean;
     plain?: boolean;
     showNotFound?: boolean;

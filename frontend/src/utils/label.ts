@@ -1,5 +1,5 @@
 import { orderBy } from "lodash-es";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { extractEnvironmentResourceName } from "./v1";
 
 export const MAX_LABEL_VALUE_LENGTH = 63;
@@ -32,7 +32,7 @@ export const convertKVListToLabels = (
   return labels;
 };
 
-export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
+export const getSemanticLabelValue = (db: Database, key: string) => {
   if (key === "environment") {
     return extractEnvironmentResourceName(db.effectiveEnvironment ?? "");
   }

@@ -1,8 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { useDatabaseV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Changelog,
+  Database,
+} from "@/types/proto-es/v1/database_service_pb";
 import { ChangelogSchema } from "@/types/proto-es/v1/database_service_pb";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
@@ -41,7 +43,7 @@ export const changelogLink = (changelog: Changelog): string => {
 };
 
 export const mockLatestChangelog = (
-  database: ComposedDatabase,
+  database: Database,
   schema: string = ""
 ) => {
   return create(ChangelogSchema, {

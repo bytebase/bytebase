@@ -32,14 +32,15 @@ import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { InlineInput } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
+  Database,
   DatabaseMetadata,
   IndexMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEngine } from "@/utils";
 import { markUUID } from "../common";
 import { ColumnsCell, OperationCell } from "./components";
 
@@ -47,7 +48,7 @@ const props = withDefaults(
   defineProps<{
     show?: boolean;
     readonly?: boolean;
-    db: ComposedDatabase;
+    db: Database;
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;
@@ -173,7 +174,7 @@ const columns = computed(() => {
       render: (index) => {
         const allowTurnOnOrOffPrimary = () => {
           // Do not allow to edit primary key for TiDB.
-          if (props.db.instanceResource.engine === Engine.TIDB) {
+          if (getDatabaseEngine(props.db) === Engine.TIDB) {
             return false;
           }
 

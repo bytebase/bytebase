@@ -46,7 +46,7 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { autoDatabaseRoute } from "@/utils";
+import { autoDatabaseRoute, getInstanceResource } from "@/utils";
 import {
   batchConvertFromCELString,
   type ConditionExpression,
@@ -114,7 +114,7 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
       {validDatabase && (
         <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
           <span class="font-medium">{`${t("common.instance")}:`}</span>
-          <InstanceV1Name instance={database.instanceResource} />
+          <InstanceV1Name instance={getInstanceResource(database)} />
         </div>
       )}
       <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">

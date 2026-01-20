@@ -6,12 +6,8 @@ import { computed, unref, watchEffect } from "vue";
 import { reviewConfigServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import type {
-  ComposedDatabase,
-  MaybeRef,
-  SchemaPolicyRule,
-  SQLReviewPolicy,
-} from "@/types";
+import type { MaybeRef, SchemaPolicyRule, SQLReviewPolicy } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   PolicyType,
   TagPolicySchema,
@@ -326,7 +322,7 @@ export const useReviewPolicyByResource = (
 };
 
 export const useReviewPolicyForDatabase = (
-  database: MaybeRef<ComposedDatabase | undefined>
+  database: MaybeRef<Database | undefined>
 ) => {
   const store = useSQLReviewStore();
 

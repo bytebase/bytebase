@@ -5,10 +5,17 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedDatabase, DatabaseResource } from "@/types";
+import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { hasSchemaProperty } from "@/utils";
+import type {
+  Database,
+  TableMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  extractDatabaseResourceName,
+  getInstanceResource,
+  hasSchemaProperty,
+} from "@/utils";
 
 export type DatabaseResourceType =
   | "databases"
@@ -30,7 +37,7 @@ export const mapTreeOptions = ({
   filterValueList,
   includeCloumn,
 }: {
-  databaseList: ComposedDatabase[];
+  databaseList: Database[];
   filterValueList?: string[];
   includeCloumn: boolean;
 }) => {
@@ -46,7 +53,7 @@ export const mapTreeOptions = ({
     const databaseNode: DatabaseTreeOption<"databases"> = {
       level: "databases",
       value: database.name,
-      label: database.databaseName,
+      label: extractDatabaseResourceName(database.name).databaseName,
       isLeaf: false,
       children: getSchemaOrTableTreeOptions({
         database,
@@ -115,11 +122,11 @@ export const getSchemaOrTableTreeOptions = ({
   filterValueList,
   includeCloumn,
 }: {
-  database: ComposedDatabase;
+  database: Database;
   filterValueList?: string[];
   includeCloumn: boolean;
 }) => {
-  if (database.instanceResource.engine === Engine.MONGODB) {
+  if (getInstanceResource(database).engine === Engine.MONGODB) {
     // do not support table level select for MongoDB.
     return [];
   }
@@ -130,7 +137,7 @@ export const getSchemaOrTableTreeOptions = ({
   if (!databaseMetadata) {
     return undefined;
   }
-  if (hasSchemaProperty(database.instanceResource.engine)) {
+  if (hasSchemaProperty(getInstanceResource(database).engine)) {
     const schemaNodes = databaseMetadata.schemas.map(
       (schema): DatabaseTreeOption<"schemas"> => {
         const value = `${database.name}/schemas/${schema.name}`;

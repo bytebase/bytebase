@@ -122,7 +122,7 @@
         :dialect="dialect"
         :advices="isEditorReadonly || isCreating ? markers : []"
         :auto-complete-context="{
-          instance: database.instance,
+          instance: extractDatabaseResourceName(database.name).instance,
           database: database.name,
           scene: 'all',
         }"
@@ -170,7 +170,7 @@
         :dialect="dialect"
         :advices="isEditorReadonly || isCreating ? markers : []"
         :auto-complete-context="{
-          instance: database.instance,
+          instance: extractDatabaseResourceName(database.name).instance,
           database: database.name,
           scene: 'all',
         }"
@@ -222,6 +222,8 @@ import { dialectOfEngineV1, isValidDatabaseGroupName } from "@/types";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
+  extractDatabaseResourceName,
+  getInstanceResource,
   getSheetStatement,
   getStatementSize,
   setSheetStatement,
@@ -259,17 +261,16 @@ const database = computed(() => {
   return databaseForSpec(project.value, selectedSpec.value);
 });
 
-const language = useInstanceV1EditorLanguage(
-  computed(() => database.value.instanceResource)
-);
+const instanceResource = computed(() => getInstanceResource(database.value));
+
+const language = useInstanceV1EditorLanguage(instanceResource);
 const filename = computed(() => {
   const name = uuidv1();
   const ext = extensionNameOfLanguage(language.value);
   return `${name}.${ext}`;
 });
 const dialect = computed((): SQLDialect => {
-  const db = database.value;
-  return dialectOfEngineV1(db.instanceResource.engine);
+  return dialectOfEngineV1(instanceResource.value.engine);
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
@@ -387,7 +388,7 @@ const shouldShowSchemaEditorButton = computed(() => {
       return false;
     }
     const db = databaseStore.getDatabaseByName(targetName);
-    return engineSupportsSchemaEditor(db.instanceResource.engine);
+    return engineSupportsSchemaEditor(getInstanceResource(db).engine);
   });
 });
 

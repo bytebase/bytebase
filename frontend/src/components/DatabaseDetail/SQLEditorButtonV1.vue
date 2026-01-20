@@ -23,10 +23,11 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { VueClass } from "@/utils";
 import {
+  extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
   hasProjectPermissionV2,
@@ -35,7 +36,7 @@ import {
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     table?: string;
     schema?: string;
     label?: boolean;
@@ -54,7 +55,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (name: "failed", database: ComposedDatabase): void;
+  (name: "failed", database: Database): void;
 }>();
 
 const router = useRouter();
@@ -90,12 +91,13 @@ const gotoSQLEditor = () => {
     }
   }
 
+  const { instance, databaseName } = extractDatabaseResourceName(database.name);
   const route = router.resolve({
     name: SQL_EDITOR_DATABASE_MODULE,
     params: {
       project: extractProjectResourceName(database.project),
-      instance: extractInstanceResourceName(database.instance),
-      database: database.databaseName,
+      instance: extractInstanceResourceName(instance),
+      database: databaseName,
     },
     query: {
       table: props.table ? props.table : undefined,

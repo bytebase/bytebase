@@ -160,6 +160,8 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   checkRoleContainsAnyPermission,
   displayRoleTitle,
+  extractDatabaseResourceName,
+  getInstanceResource,
   hasProjectPermissionV2,
 } from "@/utils";
 import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
@@ -263,7 +265,7 @@ const getDataTableColumns = (
             return (
               <div class="flex items-center gap-x-1">
                 <InstanceV1Name
-                  instance={database.instanceResource}
+                  instance={getInstanceResource(database)}
                   link={false}
                 />
                 <span>/</span>
@@ -491,7 +493,8 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
     return "*";
   }
   const database = extractDatabase(databaseResource);
-  return database.databaseName;
+  const { databaseName } = extractDatabaseResourceName(database.name);
+  return databaseName;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {

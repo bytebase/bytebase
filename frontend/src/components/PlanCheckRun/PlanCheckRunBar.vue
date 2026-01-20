@@ -36,7 +36,7 @@
 import { create } from "@bufbuild/protobuf";
 import { ref } from "vue";
 import { planServiceClientConnect } from "@/connect";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Type,
@@ -54,7 +54,7 @@ const props = withDefaults(
     labelClass?: VueClass;
     planName: string;
     planCheckRunList?: PlanCheckRun[];
-    database: ComposedDatabase;
+    database: Database;
   }>(),
   {
     allowRunChecks: true,

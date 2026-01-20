@@ -28,7 +28,7 @@
             <div
               class="text-xl box-content font-bold text-main truncate flex items-center gap-x-2"
             >
-              {{ database.databaseName }}
+              {{ extractDatabaseResourceName(database.name).databaseName }}
 
               <ProductionEnvironmentV1Icon
                 :environment="environment"
@@ -64,7 +64,7 @@
               <span class="ml-1 textlabel"
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
-              <InstanceV1Name :instance="database.instanceResource" />
+              <InstanceV1Name :instance="getInstanceResource(database)" />
             </dd>
             <dt v-if="database.release" class="sr-only">
               {{ $t("common.release") }}
@@ -105,7 +105,7 @@
           <PermissionGuardWrapper
             v-if="!isDefaultProject"
             v-slot="slotProps"
-            :project="database.projectEntity"
+            :project="getDatabaseProject(database)"
             :permissions="['bb.databases.update']"
           >
             <NButton
@@ -122,7 +122,7 @@
           <PermissionGuardWrapper
             v-if="!isDefaultProject"
             v-slot="slotProps"
-            :project="database.projectEntity"
+            :project="getDatabaseProject(database)"
             :permissions="[
               ...PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE
             ]"
@@ -249,13 +249,17 @@ import {
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1ByName, useEnvironmentV1Store } from "@/store";
+import { useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import {
+  extractDatabaseResourceName,
   extractProjectResourceName,
+  getDatabaseEnvironment,
+  getDatabaseProject,
+  getInstanceResource,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
@@ -326,7 +330,7 @@ const { database, ready } = useDatabaseV1ByName(
   )
 );
 
-const project = computed(() => database.value.projectEntity);
+const project = computed(() => getDatabaseProject(database.value));
 
 watchEffect(() => {
   if (!ready.value) {
@@ -348,7 +352,7 @@ watchEffect(() => {
 });
 
 const hasSchemaDiagramFeature = computed((): boolean => {
-  return instanceV1HasAlterSchema(database.value.instanceResource);
+  return instanceV1HasAlterSchema(getInstanceResource(database.value));
 });
 
 const allowQuery = computed(() => {
@@ -364,10 +368,10 @@ const handleGotoSQLEditorFailed = () => {
 };
 
 const environment = computed(() => {
-  return useEnvironmentV1Store().getEnvironmentByName(
-    database.value.effectiveEnvironment ?? ""
-  );
+  return getDatabaseEnvironment(database.value);
 });
 
-useTitle(computed(() => database.value.databaseName));
+useTitle(
+  computed(() => extractDatabaseResourceName(database.value.name).databaseName)
+);
 </script>

@@ -8,7 +8,7 @@
         :content="state.code"
         :readonly="!editable"
         :auto-complete-context="{
-          instance: db.instance,
+          instance: extractDatabaseResourceName(db.name).instance,
           database: db.name,
           scene: 'all',
         }"
@@ -23,7 +23,8 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { extractDatabaseResourceName } from "@/utils";
 import type { EditStatus } from "..";
 
 type LocalState = {
@@ -31,7 +32,7 @@ type LocalState = {
 };
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   code: string;
   readonly: boolean;
   status: EditStatus;

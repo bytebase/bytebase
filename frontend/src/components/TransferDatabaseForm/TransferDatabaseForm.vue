@@ -52,7 +52,7 @@
           <div class="mx-2">
             <ul class="list-disc">
               <li v-for="db in selectedDatabaseList" :key="db.name">
-                {{ db.databaseName }}
+                {{ extractDatabaseResourceName(db.name).databaseName }}
               </li>
             </ul>
           </div>
@@ -85,11 +85,11 @@ import {
   useProjectByName,
 } from "@/store";
 import {
-  type ComposedDatabase,
   DEFAULT_PROJECT_NAME,
   formatEnvironmentName,
   isValidProjectName,
 } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
@@ -98,7 +98,7 @@ import {
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { extractDatabaseResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";
 import { PagedDatabaseTable } from "../v2/Model/DatabaseV1Table";
 import TransferSourceSelector from "./TransferSourceSelector.vue";
@@ -117,10 +117,10 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     projectName: string;
-    onSuccess?: (databases: ComposedDatabase[]) => void;
+    onSuccess?: (databases: Database[]) => void;
   }>(),
   {
-    onSuccess: (_: ComposedDatabase[]) => {},
+    onSuccess: (_: Database[]) => {},
   }
 );
 
@@ -216,7 +216,7 @@ const transferDatabase = async () => {
     const displayDatabaseName =
       selectedDatabaseList.value.length > 1
         ? `${selectedDatabaseList.value.length} databases`
-        : `'${selectedDatabaseList.value[0].databaseName}'`;
+        : `'${extractDatabaseResourceName(selectedDatabaseList.value[0].name).databaseName}'`;
 
     props.onSuccess(updated);
     emit("dismiss");

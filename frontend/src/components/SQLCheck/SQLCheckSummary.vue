@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Advice } from "@/types/proto-es/v1/sql_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
@@ -26,7 +26,7 @@ type Summary = {
 };
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   advices: Advice[];
 }>();
 

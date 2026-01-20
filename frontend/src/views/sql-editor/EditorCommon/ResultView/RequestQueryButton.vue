@@ -25,7 +25,7 @@ import {
   isValidDatabaseName,
   PresetRoleType,
 } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
+import { getDatabaseProject, hasProjectPermissionV2 } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -56,9 +56,10 @@ const available = computed(() => {
     return false;
   }
 
+  const project = getDatabaseProject(database.value);
   return (
-    database.value.projectEntity.allowRequestRole &&
-    hasProjectPermissionV2(database.value.projectEntity, "bb.issues.create")
+    project.allowRequestRole &&
+    hasProjectPermissionV2(project, "bb.issues.create")
   );
 });
 

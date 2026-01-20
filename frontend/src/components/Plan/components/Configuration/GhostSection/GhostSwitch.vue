@@ -38,6 +38,7 @@ import { targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { extractDatabaseResourceName } from "@/utils";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 
@@ -63,7 +64,7 @@ const errors = computed(() => {
         "task.online-migration.error.not-applicable.database-doesnt-meet-ghost-requirement",
         {
           database: unsupportedDatabases
-            .map((db) => db.databaseName)
+            .map((db) => extractDatabaseResourceName(db.name).databaseName)
             .join(", "),
         }
       )
@@ -113,7 +114,7 @@ const tooltipMessage = computed(() => {
     }
     // Otherwise show the databases that don't meet requirements
     const dbNames = databasesNotMeetingRequirements.value
-      .map((db) => db.databaseName)
+      .map((db) => extractDatabaseResourceName(db.name).databaseName)
       .join(", ");
     return t("plan.ghost.some-databases-not-meeting-requirements", {
       databases: dbNames,

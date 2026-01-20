@@ -1,7 +1,7 @@
 import type { TreeOption } from "naive-ui";
 import { t } from "@/plugins/i18n";
+import type { Database } from "../proto-es/v1/database_service_pb";
 import type { InstanceResource } from "../proto-es/v1/instance_service_pb";
-import type { ComposedDatabase } from "../v1";
 import type { Environment } from "../v1/environment";
 
 export type SQLEditorTreeFactor =
@@ -34,7 +34,7 @@ export type SQLEditorTreeNodeTarget<
   : T extends "environment"
     ? Environment
     : T extends "database"
-      ? ComposedDatabase
+      ? Database
       : T extends "label"
         ? LabelTarget
         : never;
@@ -110,7 +110,7 @@ export const instanceOfSQLEditorTreeNode = (node: SQLEditorTreeNode) => {
     return target as InstanceResource;
   }
   if (type === "database") {
-    return (target as ComposedDatabase).instanceResource;
+    return (target as Database).instanceResource;
   }
   return undefined;
 };

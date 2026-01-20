@@ -44,12 +44,9 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import {
-  type ComposedDatabase,
-  type DatabaseResource,
-  DEBOUNCE_SEARCH_DELAY,
-} from "@/types";
+import { type DatabaseResource, DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
@@ -149,7 +146,7 @@ const selectedValueList = ref<string[]>([]);
 const expandedKeys = ref<string[]>([]);
 const indeterminateKeys = ref<string[]>([]);
 const initializeStatus = ref<"PENDING" | "PROCESSING" | "DONE">("PENDING");
-const databaseList = ref<ComposedDatabase[]>([]);
+const databaseList = ref<Database[]>([]);
 const fetchDataState = ref<{
   nextPageToken?: string;
   loading: boolean;

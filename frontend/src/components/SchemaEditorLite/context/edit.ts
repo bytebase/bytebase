@@ -1,7 +1,7 @@
 import { computed, ref } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   FunctionMetadata,
   ProcedureMetadata,
   SchemaMetadata,
@@ -19,7 +19,7 @@ export const useEditStatus = () => {
   });
 
   const markEditStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       table?: TableMetadata;
@@ -44,7 +44,7 @@ export const useEditStatus = () => {
   };
 
   const removeEditStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       table?: TableMetadata;
@@ -67,7 +67,7 @@ export const useEditStatus = () => {
   };
 
   const getSchemaStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
     }
@@ -83,7 +83,7 @@ export const useEditStatus = () => {
   };
 
   const getTableStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       table: TableMetadata;
@@ -100,7 +100,7 @@ export const useEditStatus = () => {
   };
 
   const replaceTableName = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       table: TableMetadata;
@@ -135,7 +135,7 @@ export const useEditStatus = () => {
   };
 
   const getColumnStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       table: TableMetadata;
@@ -153,7 +153,7 @@ export const useEditStatus = () => {
   };
 
   const getPartitionStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       table: TableMetadata;
@@ -171,7 +171,7 @@ export const useEditStatus = () => {
   };
 
   const getProcedureStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       procedure: ProcedureMetadata;
@@ -185,7 +185,7 @@ export const useEditStatus = () => {
   };
 
   const getFunctionStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       function: FunctionMetadata;
@@ -199,7 +199,7 @@ export const useEditStatus = () => {
   };
 
   const getViewStatus = (
-    database: ComposedDatabase,
+    database: Database,
     metadata: {
       schema: SchemaMetadata;
       view: ViewMetadata;

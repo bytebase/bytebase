@@ -2,7 +2,7 @@
   <PermissionGuardWrapper
     v-if="available"
     v-slot="slotProps"
-    :project="database.projectEntity"
+    :project="getDatabaseProject(database)"
     :permissions="['bb.databases.getSchema']"
   >
     <NDropdown
@@ -27,15 +27,16 @@ import { useI18n } from "vue-i18n";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { databaseServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { isValidDatabaseName } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   GetDatabaseSDLSchemaRequest_SDLFormat,
   GetDatabaseSDLSchemaRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { extractDatabaseResourceName, getDatabaseProject } from "@/utils";
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
 }>();
 
 const exporting = ref(false);
@@ -76,19 +77,20 @@ const exportSchema = async (format: GetDatabaseSDLSchemaRequest_SDLFormat) => {
     const response =
       await databaseServiceClientConnect.getDatabaseSDLSchema(request);
 
+    const { databaseName } = extractDatabaseResourceName(props.database.name);
     let filename: string;
     let blob: Blob;
 
     // Check the content type to determine how to handle the response
     if (response.contentType.includes("application/zip")) {
       // Multi-file format - ZIP archive
-      filename = `${props.database.databaseName}_schema.zip`;
+      filename = `${databaseName}_schema.zip`;
       // Create a proper ArrayBuffer by slicing
       const arrayBuffer = response.schema.slice().buffer;
       blob = new Blob([arrayBuffer], { type: "application/zip" });
     } else {
       // Single file format - text file
-      filename = `${props.database.databaseName}_schema.sql`;
+      filename = `${databaseName}_schema.sql`;
       const content = new TextDecoder().decode(response.schema);
       blob = new Blob([content], { type: "text/plain" });
     }

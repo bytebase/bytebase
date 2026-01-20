@@ -27,7 +27,6 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import {
-  type ComposedDatabase,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
   type EditorPanelView,
@@ -39,17 +38,22 @@ import {
   typeToView,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  GetSchemaStringRequest_ObjectType,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
   defaultSQLEditorTab,
+  extractDatabaseResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
   generateSimpleDeleteStatement,
   generateSimpleInsertStatement,
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
+  getInstanceResource,
   instanceV1HasAlterSchema,
   isSameSQLEditorConnection,
   sortByDictionary,
@@ -85,17 +89,16 @@ export const useActions = () => {
 
     const { database } = target;
     const db = databaseStore.getDatabaseByName(database);
-    const { engine } = db.instanceResource;
-    const protoEsEngine = engine;
+    const engine = getInstanceResource(db).engine;
 
     const query = await formatCode(
       generateSimpleSelectAllStatement(
-        protoEsEngine,
+        engine,
         schema,
         tableOrViewName,
         SELECT_ALL_LIMIT
       ),
-      protoEsEngine
+      engine
     );
     updateViewState({
       view: "CODE",
@@ -263,7 +266,7 @@ export const useDropdown = () => {
           icon: action.icon,
           onSelect: () => {
             openNewTab({
-              title: `[${db.databaseName}] ${action.title}`,
+              title: `[${extractDatabaseResourceName(db.name).databaseName}] ${action.title}`,
               view: action.view,
               schema,
             });
@@ -288,7 +291,7 @@ export const useDropdown = () => {
       });
       if (type === "view") {
         const { view } = target as NodeTarget<"view">;
-        if (supportGetStringSchema(db.instanceResource.engine)) {
+        if (supportGetStringSchema(getInstanceResource(db).engine)) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),
@@ -324,7 +327,7 @@ export const useDropdown = () => {
           },
         });
 
-        if (supportGetStringSchema(db.instanceResource.engine)) {
+        if (supportGetStringSchema(getInstanceResource(db).engine)) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),
@@ -339,7 +342,7 @@ export const useDropdown = () => {
           });
         }
 
-        if (instanceV1HasAlterSchema(db.instanceResource)) {
+        if (instanceV1HasAlterSchema(getInstanceResource(db))) {
           items.push({
             key: "edit-schema",
             label: t("database.edit-schema"),
@@ -359,12 +362,15 @@ export const useDropdown = () => {
           label: t("sql-editor.copy-url"),
           icon: () => <LinkIcon class="w-4 h-4" />,
           onSelect: () => {
+            const { instance, databaseName } = extractDatabaseResourceName(
+              db.name
+            );
             const route = router.resolve({
               name: SQL_EDITOR_DATABASE_MODULE,
               params: {
                 project: extractProjectResourceName(db.project),
-                instance: extractInstanceResourceName(db.instance),
-                database: db.databaseName,
+                instance: extractInstanceResourceName(instance),
+                database: databaseName,
               },
               query: {
                 table: table,
@@ -540,7 +546,7 @@ export const useDropdown = () => {
 
 const engineForTarget = (target: NodeTarget) => {
   const { database } = target as NodeTarget<"database">;
-  return useDatabaseV1Store().getDatabaseByName(database).instanceResource
+  return getInstanceResource(useDatabaseV1Store().getDatabaseByName(database))
     .engine;
 };
 
@@ -587,7 +593,7 @@ const copyToClipboard = (content: string) => {
 };
 
 const runQuery = async (
-  database: ComposedDatabase,
+  database: Database,
   schema: string,
   tableOrViewName: string,
   statement: string
@@ -604,7 +610,7 @@ const runQuery = async (
 
   const { execute } = useExecuteSQL();
   const connection: SQLEditorConnection = {
-    instance: database.instance,
+    instance: extractDatabaseResourceName(database.name).instance,
     database: database.name,
     schema,
     table: tableOrViewName,
@@ -615,15 +621,13 @@ const runQuery = async (
     statement,
     connection,
     explain: false,
-    engine: database.instanceResource.engine,
+    engine: getInstanceResource(database).engine,
     selection: tab.editorState.selection,
   });
 };
 
-const getDefaultQueryableDataSourceOfDatabase = (
-  database: ComposedDatabase
-) => {
-  const dataSources = database.instanceResource.dataSources;
+const getDefaultQueryableDataSourceOfDatabase = (database: Database) => {
+  const dataSources = getInstanceResource(database).dataSources;
   const readonlyDataSources = dataSources.filter(
     (ds) => ds.type === DataSourceType.READ_ONLY
   );

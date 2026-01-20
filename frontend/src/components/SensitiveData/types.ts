@@ -1,9 +1,10 @@
-import type { ComposedDatabase, DatabaseResource } from "@/types";
+import type { DatabaseResource } from "@/types";
 import type {
   ColumnCatalog,
   ObjectSchema,
   TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 export type MaskDataTarget = TableCatalog | ColumnCatalog | ObjectSchema;
 
@@ -19,7 +20,7 @@ export interface MaskData {
 }
 
 export interface SensitiveColumn {
-  database: ComposedDatabase;
+  database: Database;
   maskData: MaskData;
 }
 

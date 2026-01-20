@@ -16,7 +16,6 @@ import {
 } from "@/store";
 import type {
   BBNotificationStyle,
-  ComposedDatabase,
   QueryContextStatus,
   QueryDataSourceType,
   SQLEditorConnection,
@@ -27,6 +26,7 @@ import type {
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   type QueryOption,
   QueryOptionSchema,
@@ -35,6 +35,9 @@ import {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  extractDatabaseResourceName,
+  getDatabaseProject,
+  getInstanceResource,
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
@@ -91,14 +94,12 @@ const useExecuteSQL = () => {
   };
 
   const getDataSourceId = (
-    database: ComposedDatabase,
+    database: Database,
     connection: SQLEditorConnection,
     mode?: QueryDataSourceType
   ) => {
-    if (
-      database.instance === connection.instance &&
-      !!connection.dataSourceId
-    ) {
+    const { instance } = extractDatabaseResourceName(database.name);
+    if (instance === connection.instance && !!connection.dataSourceId) {
       return connection.dataSourceId;
     }
 
@@ -239,7 +240,7 @@ const useExecuteSQL = () => {
   };
 
   const runQuery = async (
-    database: ComposedDatabase,
+    database: Database,
     context: SQLEditorDatabaseQueryContext
   ) => {
     if (context.status === "EXECUTING") {
@@ -322,9 +323,10 @@ const useExecuteSQL = () => {
         /* nothing */
       });
 
+    const instanceResource = getInstanceResource(database);
     if (
-      database.instanceResource.engine === Engine.MONGODB ||
-      database.instanceResource.engine === Engine.COSMOSDB
+      instanceResource.engine === Engine.MONGODB ||
+      instanceResource.engine === Engine.COSMOSDB
     ) {
       flattenNoSQLResult(resultSet);
     }
@@ -334,7 +336,7 @@ const useExecuteSQL = () => {
       // if the user is allowed to create issue in the project.
       if (
         hasPermissionToCreateChangeDatabaseIssueInProject(
-          database.projectEntity
+          getDatabaseProject(database)
         )
       ) {
         sqlEditorStore.isShowExecutingHint = true;

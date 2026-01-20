@@ -1,8 +1,8 @@
 import type Emittery from "emittery";
 import type { Ref } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -16,7 +16,7 @@ import type { ForeignKey } from "./schema";
 // and used in its descendants.
 export type SchemaDiagramContext = {
   // Props
-  database: Ref<ComposedDatabase>;
+  database: Ref<Database>;
   databaseMetadata: Ref<DatabaseMetadata>;
   editable: Ref<boolean>;
 

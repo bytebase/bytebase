@@ -1,14 +1,14 @@
 <template>
   <div class="flex items-center flex-wrap gap-1">
     <InstanceV1Name
-      :instance="database.instanceResource"
+      :instance="instanceResource"
       :plain="true"
       :link="link"
       :text-class="link ? 'hover:underline' : ''"
     >
       <template
         v-if="
-          database.instanceResource.environment !==
+          instanceResource.environment !==
           database.effectiveEnvironment
         "
         #prefix
@@ -31,7 +31,7 @@
 
       <template v-if="database">
         <EnvironmentV1Name
-          :environment="database.effectiveEnvironmentEntity"
+          :environment="effectiveEnvironment"
           :plain="true"
           :show-icon="false"
           :link="link"
@@ -58,11 +58,12 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import { type ComposedDatabase } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     link?: boolean;
   }>(),
   {
@@ -70,9 +71,14 @@ const props = withDefaults(
   }
 );
 
+const instanceResource = computed(() => getInstanceResource(props.database));
+const effectiveEnvironment = computed(() =>
+  getDatabaseEnvironment(props.database)
+);
+
 const instanceEnvironment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
-    props.database.instanceResource.environment ?? ""
+    instanceResource.value.environment ?? ""
   );
 });
 </script>

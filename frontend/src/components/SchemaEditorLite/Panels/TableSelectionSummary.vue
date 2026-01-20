@@ -6,15 +6,15 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   metadata: {
     database: DatabaseMetadata;
     schema: SchemaMetadata;

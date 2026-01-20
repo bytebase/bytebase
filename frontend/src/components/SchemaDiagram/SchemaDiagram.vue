@@ -34,9 +34,9 @@ import Emittery from "emittery";
 import { uniqueId } from "lodash-es";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import { BBSpin } from "@/bbkit";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -58,7 +58,7 @@ import type {
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    database: Database;
     databaseMetadata: DatabaseMetadata;
     editable?: boolean;
     schemaStatus?: (schema: SchemaMetadata) => EditStatus;

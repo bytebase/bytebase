@@ -26,20 +26,24 @@ import {
   DefaultValueCell,
   ForeignKeyCell,
 } from "@/components/SchemaEditorLite/Panels/TableColumnEditor/components";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
+import {
+  getHighlightHTMLByRegExp,
+  getInstanceResource,
+  useAutoHeightDataTable,
+} from "@/utils";
 import { EllipsisCell } from "../../common";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 
 const props = defineProps<{
-  db: ComposedDatabase;
+  db: Database;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
@@ -67,7 +71,7 @@ const primaryKey = computed(() => {
 });
 
 const columns = computed(() => {
-  const engine = props.db.instanceResource.engine;
+  const engine = getInstanceResource(props.db).engine;
   const downGrade = filteredColumns.value.length > 50;
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {

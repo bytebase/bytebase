@@ -1,4 +1,4 @@
-import type { ComposedDatabase } from "..";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Schema } from "./atomType";
 
 export enum SchemaEditorTabType {
@@ -30,7 +30,7 @@ export type TabContext = {
 } & (DatabaseTabContext | TableTabContext);
 
 export interface DatabaseSchema {
-  database: ComposedDatabase;
+  database: Database;
   schemaList: Schema[];
   originSchemaList: Schema[];
 }

@@ -36,9 +36,9 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { useNotificationStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
+  Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -47,6 +47,7 @@ import {
   ColumnMetadataSchema,
   TableMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEngine } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import { upsertColumnPrimaryKey } from "../edit";
 
@@ -58,7 +59,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   metadata: DatabaseMetadata;
   schema: SchemaMetadata;
   table?: TableMetadata;
@@ -119,7 +120,7 @@ const handleConfirmButtonClick = async () => {
 
     const column = create(ColumnMetadataSchema, {});
     column.name = "id";
-    const engine = props.database.instanceResource.engine;
+    const engine = getDatabaseEngine(props.database);
     column.type = engine === Engine.POSTGRES ? "integer" : "int";
     column.comment = "";
     table.columns.push(column);

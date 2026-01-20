@@ -83,16 +83,16 @@ import type { SelectOption } from "naive-ui";
 import { NButton, NInput, NInputGroup, NSelect } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { BBModal } from "@/bbkit";
-import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   ForeignKeyMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { ForeignKeyMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
-import { hasSchemaProperty } from "@/utils";
+import { getDatabaseEngine, hasSchemaProperty } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import {
   removeColumnFromForeignKey,
@@ -119,7 +119,7 @@ type ColumnSelectOption = TableSelectOption & {
 };
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: Database;
   metadata: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
@@ -139,7 +139,7 @@ const state = reactive<LocalState>({
   foreignKeyName: "",
 });
 const engine = computed(() => {
-  return props.database.instanceResource.engine;
+  return getDatabaseEngine(props.database);
 });
 
 const referencedSchema = computed(() => {

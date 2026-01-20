@@ -6,8 +6,9 @@ import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { orgPolicyServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedDatabase, MaybeRef } from "@/types";
+import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type {
   Policy,
   QueryDataPolicy,
@@ -254,7 +255,7 @@ export const usePolicyByParentAndType = (
 };
 
 export const useDataSourceRestrictionPolicy = (
-  database: MaybeRef<ComposedDatabase>
+  database: MaybeRef<Database>
 ) => {
   const store = usePolicyV1Store();
   const ready = ref(false);

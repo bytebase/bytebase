@@ -3,12 +3,12 @@
     <FeatureBadge
       :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
       class="mr-2"
-      :instance="database.instanceResource"
+      :instance="getInstanceResource(database)"
     />
-    <InstanceV1EngineIcon :instance="database.instanceResource" />
+    <InstanceV1EngineIcon :instance="getInstanceResource(database)" />
     <EnvironmentV1Name
       text-class="text-control-light"
-      :environment="database.effectiveEnvironmentEntity"
+      :environment="getDatabaseEnvironment(database)"
       :plain="true"
       :show-icon="false"
       :link="false"
@@ -27,6 +27,7 @@ import { FeatureBadge } from "@/components/FeatureGuard";
 import { DatabaseV1Name, EnvironmentV1Name } from "@/components/v2";
 import { useDatabaseV1ByName } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
 import { InstanceV1EngineIcon } from "./Instance";
 
 const props = defineProps<{

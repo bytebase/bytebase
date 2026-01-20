@@ -15,6 +15,8 @@ import {
   defaultSQLEditorTab,
   emptySQLEditorConnection,
   extractWorksheetConnection,
+  getDatabaseEnvironment,
+  getInstanceResource,
   getSheetStatement,
   isConnectedSQLEditorTab,
   suggestedTabTitleForSQLEditorConnection,
@@ -447,12 +449,12 @@ export const useSQLEditorConnectionDetail = (
   );
 
   const instance = computed(() => {
-    return database.value.instanceResource;
+    return getInstanceResource(database.value);
   });
 
   const environment = computed(() => {
     if (isValidDatabaseName(database.value.name)) {
-      return database.value.effectiveEnvironmentEntity;
+      return getDatabaseEnvironment(database.value);
     }
 
     return useEnvironmentV1Store().getEnvironmentByName(

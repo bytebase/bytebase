@@ -1,10 +1,10 @@
 import type { TreeOption } from "naive-ui";
 import { type RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
-import type { ComposedDatabase } from "@/types";
 import type {
   CheckConstraintMetadata,
   ColumnMetadata,
+  Database,
   DatabaseMetadata,
   DependencyColumn,
   ForeignKeyMetadata,
@@ -822,7 +822,7 @@ const buildSchemaNodeChildren = (
 };
 
 export const buildDatabaseSchemaTree = (
-  database: ComposedDatabase,
+  database: Database,
   metadata: DatabaseMetadata
 ) => {
   const dummyRoot = mapTreeNodeByType("database", {
