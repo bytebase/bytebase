@@ -235,17 +235,38 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 
 // PatchWorkSheet updates a sheet.
 func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
+	set := qb.Q()
+	set.Comma("updated_at = ?", time.Now())
+	if v := patch.Title; v != nil {
+		set.Comma("name = ?", *v)
+	}
+	if v := patch.Statement; v != nil {
+		set.Comma("statement = ?", *v)
+	}
+	if v := patch.Visibility; v != nil {
+		set.Comma("visibility = ?", *v)
+	}
+	if v := patch.InstanceID; v != nil {
+		if *v == "" {
+			set.Comma("instance = ?", nil)
+		} else {
+			set.Comma("instance = ?", *v)
+		}
+	}
+	if v := patch.DatabaseName; v != nil {
+		if *v == "" {
+			set.Comma("db_name = ?", nil)
+		} else {
+			set.Comma("db_name = ?", *v)
+		}
+	}
+
+	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE id = ?", set, patch.UID).ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
+		return errors.Wrapf(err, "failed to build sql")
 	}
-
-	if err := patchWorkSheetImpl(ctx, tx, patch); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit transaction")
 	}
 	return nil
 }
@@ -277,44 +298,6 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 	}
 
 	return tx.Commit()
-}
-
-// patchWorkSheetImpl updates a sheet's name/statement/visibility/instance/db_name/project.
-func patchWorkSheetImpl(ctx context.Context, txn *sql.Tx, patch *PatchWorkSheetMessage) error {
-	set := qb.Q()
-	set.Comma("updated_at = ?", time.Now())
-	if v := patch.Title; v != nil {
-		set.Comma("name = ?", *v)
-	}
-	if v := patch.Statement; v != nil {
-		set.Comma("statement = ?", *v)
-	}
-	if v := patch.Visibility; v != nil {
-		set.Comma("visibility = ?", *v)
-	}
-	if v := patch.InstanceID; v != nil {
-		if *v == "" {
-			set.Comma("instance = ?", nil)
-		} else {
-			set.Comma("instance = ?", *v)
-		}
-	}
-	if v := patch.DatabaseName; v != nil {
-		if *v == "" {
-			set.Comma("db_name = ?", nil)
-		} else {
-			set.Comma("db_name = ?", *v)
-		}
-	}
-
-	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE id = ?", set, patch.UID).ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-	return nil
 }
 
 // WorksheetOrganizerMessage is the store message for worksheet organizer.

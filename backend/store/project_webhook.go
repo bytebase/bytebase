@@ -67,21 +67,13 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, projectID string, crea
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&projectWebhook.ID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	s.removeProjectCache(projectID)
@@ -180,11 +172,6 @@ func (s *Store) GetProjectWebhook(ctx context.Context, find *FindProjectWebhookM
 
 // UpdateProjectWebhook updates an instance of ProjectWebhook.
 func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID string, projectWebhookID int, update *UpdateProjectWebhookMessage) (*ProjectWebhookMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-
 	var payload []byte
 	if update.Payload != nil {
 		p, err := protojson.Marshal(update.Payload)
@@ -211,7 +198,7 @@ func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID stri
 	}
 	var returnedPayload []byte
 	// Execute update query with RETURNING.
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&projectWebhook.ID,
 		&projectWebhook.ProjectID,
 		&returnedPayload,
@@ -224,10 +211,6 @@ func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID stri
 
 	if err := common.ProtojsonUnmarshaler.Unmarshal(returnedPayload, projectWebhook.Payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	s.removeProjectCache(projectResourceID)
@@ -243,17 +226,8 @@ func (s *Store) DeleteProjectWebhook(ctx context.Context, projectResourceID stri
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
-	}
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	s.removeProjectCache(projectResourceID)
