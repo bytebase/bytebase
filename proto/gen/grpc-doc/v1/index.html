@@ -2557,6 +2557,53 @@
         
           
           <li>
+            <a href="#v1%2fservice_account_service.proto">v1/service_account_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateServiceAccountRequest"><span class="badge">M</span>CreateServiceAccountRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteServiceAccountRequest"><span class="badge">M</span>DeleteServiceAccountRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetServiceAccountRequest"><span class="badge">M</span>GetServiceAccountRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListServiceAccountsRequest"><span class="badge">M</span>ListServiceAccountsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListServiceAccountsResponse"><span class="badge">M</span>ListServiceAccountsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ServiceAccount"><span class="badge">M</span>ServiceAccount</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UndeleteServiceAccountRequest"><span class="badge">M</span>UndeleteServiceAccountRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateServiceAccountRequest"><span class="badge">M</span>UpdateServiceAccountRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.ServiceAccountService"><span class="badge">S</span>ServiceAccountService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fsheet_service.proto">v1/sheet_service.proto</a>
             <ul>
               
@@ -2628,6 +2675,53 @@
               
                 <li>
                   <a href="#bytebase.v1.SubscriptionService"><span class="badge">S</span>SubscriptionService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2fworkload_identity_service.proto">v1/workload_identity_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateWorkloadIdentityRequest"><span class="badge">M</span>CreateWorkloadIdentityRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteWorkloadIdentityRequest"><span class="badge">M</span>DeleteWorkloadIdentityRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetWorkloadIdentityRequest"><span class="badge">M</span>GetWorkloadIdentityRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListWorkloadIdentitiesRequest"><span class="badge">M</span>ListWorkloadIdentitiesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListWorkloadIdentitiesResponse"><span class="badge">M</span>ListWorkloadIdentitiesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UndeleteWorkloadIdentityRequest"><span class="badge">M</span>UndeleteWorkloadIdentityRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateWorkloadIdentityRequest"><span class="badge">M</span>UpdateWorkloadIdentityRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.WorkloadIdentity"><span class="badge">M</span>WorkloadIdentity</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.WorkloadIdentityService"><span class="badge">S</span>WorkloadIdentityService</a>
                 </li>
               
             </ul>
@@ -28608,6 +28702,472 @@ Permissions required: bb.taskRuns.list</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/service_account_service.proto">v1/service_account_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateServiceAccountRequest">CreateServiceAccountRequest</h3>
+        <p>Request message for creating a service account.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource where this service account will be created.
+Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_account_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The ID to use for the service account, which will become the final component
+of the service account&#39;s email in the format: {service_account_id}@service.bytebase.com
+or {service_account_id}@{project-id}.service.bytebase.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_account</td>
+                  <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                  <td></td>
+                  <td><p>The service account to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteServiceAccountRequest">DeleteServiceAccountRequest</h3>
+        <p>Request message for deleting a service account.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the service account to delete.
+Format: serviceAccounts/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetServiceAccountRequest">GetServiceAccountRequest</h3>
+        <p>Request message for getting a service account.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the service account to retrieve.
+Format: serviceAccounts/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListServiceAccountsRequest">ListServiceAccountsRequest</h3>
+        <p>Request message for listing service accounts.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource.
+Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of service accounts to return. The service may return fewer than
+this value.
+If unspecified, at most 10 service accounts will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListServiceAccounts` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListServiceAccounts` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>show_deleted</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Show deleted service accounts if specified. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListServiceAccountsResponse">ListServiceAccountsResponse</h3>
+        <p>Response message for listing service accounts.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>service_accounts</td>
+                  <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                  <td>repeated</td>
+                  <td><p>The service accounts from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ServiceAccount">ServiceAccount</h3>
+        <p>ServiceAccount represents an API integration account.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the service account.
+Format: serviceAccounts/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.State">State</a></td>
+                  <td></td>
+                  <td><p>The state of the service account. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email of the service account.
+For workspace-level: {name}@service.bytebase.com
+For project-level: {name}@{project-id}.service.bytebase.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display title of the service account. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The service key for authentication. Only returned on creation or key rotation. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the service account was created. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UndeleteServiceAccountRequest">UndeleteServiceAccountRequest</h3>
+        <p>Request message for restoring a deleted service account.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the deleted service account.
+Format: serviceAccounts/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateServiceAccountRequest">UpdateServiceAccountRequest</h3>
+        <p>Request message for updating a service account.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>service_account</td>
+                  <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                  <td></td>
+                  <td><p>The service account to update.
+
+The service account&#39;s `name` field is used to identify the service account to update.
+Format: serviceAccounts/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update.
+Supported fields: title, service_key (triggers key rotation) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.ServiceAccountService">ServiceAccountService</h3>
+        <p>ServiceAccountService manages service accounts for API integrations.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CreateServiceAccount</td>
+                <td><a href="#bytebase.v1.CreateServiceAccountRequest">CreateServiceAccountRequest</a></td>
+                <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                <td><p>Creates a new service account.
+For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetServiceAccount</td>
+                <td><a href="#bytebase.v1.GetServiceAccountRequest">GetServiceAccountRequest</a></td>
+                <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                <td><p>Gets a service account by name.
+Permissions required: bb.serviceAccounts.get</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListServiceAccounts</td>
+                <td><a href="#bytebase.v1.ListServiceAccountsRequest">ListServiceAccountsRequest</a></td>
+                <td><a href="#bytebase.v1.ListServiceAccountsResponse">ListServiceAccountsResponse</a></td>
+                <td><p>Lists service accounts.
+For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateServiceAccount</td>
+                <td><a href="#bytebase.v1.UpdateServiceAccountRequest">UpdateServiceAccountRequest</a></td>
+                <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                <td><p>Updates a service account.
+Permissions required: bb.serviceAccounts.update</p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteServiceAccount</td>
+                <td><a href="#bytebase.v1.DeleteServiceAccountRequest">DeleteServiceAccountRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Deletes a service account.
+Permissions required: bb.serviceAccounts.delete</p></td>
+              </tr>
+            
+              <tr>
+                <td>UndeleteServiceAccount</td>
+                <td><a href="#bytebase.v1.UndeleteServiceAccountRequest">UndeleteServiceAccountRequest</a></td>
+                <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
+                <td><p>Restores a deleted service account.
+Permissions required: bb.serviceAccounts.undelete</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>CreateServiceAccount</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/serviceAccounts</td>
+                <td>service_account</td>
+              </tr>
+              
+              <tr>
+                <td>CreateServiceAccount</td>
+                <td>POST</td>
+                <td>/v1/serviceAccounts</td>
+                <td>service_account</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetServiceAccount</td>
+                <td>GET</td>
+                <td>/v1/{name=serviceAccounts/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListServiceAccounts</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/serviceAccounts</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>ListServiceAccounts</td>
+                <td>GET</td>
+                <td>/v1/serviceAccounts</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateServiceAccount</td>
+                <td>PATCH</td>
+                <td>/v1/{service_account.name=serviceAccounts/*}</td>
+                <td>service_account</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteServiceAccount</td>
+                <td>DELETE</td>
+                <td>/v1/{name=serviceAccounts/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UndeleteServiceAccount</td>
+                <td>POST</td>
+                <td>/v1/{name=serviceAccounts/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/sheet_service.proto">v1/sheet_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -29600,6 +30160,472 @@ Permissions required: bb.settings.set</p></td>
                 <td>PATCH</td>
                 <td>/v1/subscription</td>
                 <td>license</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/workload_identity_service.proto">v1/workload_identity_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateWorkloadIdentityRequest">CreateWorkloadIdentityRequest</h3>
+        <p>Request message for creating a workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource where this workload identity will be created.
+Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workload_identity_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The ID to use for the workload identity, which will become the final component
+of the workload identity&#39;s email in the format: {workload_identity_id}@workload.bytebase.com
+or {workload_identity_id}@{project-id}.workload.bytebase.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workload_identity</td>
+                  <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                  <td></td>
+                  <td><p>The workload identity to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteWorkloadIdentityRequest">DeleteWorkloadIdentityRequest</h3>
+        <p>Request message for deleting a workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the workload identity to delete.
+Format: workloadIdentities/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetWorkloadIdentityRequest">GetWorkloadIdentityRequest</h3>
+        <p>Request message for getting a workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the workload identity to retrieve.
+Format: workloadIdentities/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListWorkloadIdentitiesRequest">ListWorkloadIdentitiesRequest</h3>
+        <p>Request message for listing workload identities.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource.
+Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of workload identities to return. The service may return fewer than
+this value.
+If unspecified, at most 10 workload identities will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListWorkloadIdentities` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListWorkloadIdentities` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>show_deleted</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Show deleted workload identities if specified. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListWorkloadIdentitiesResponse">ListWorkloadIdentitiesResponse</h3>
+        <p>Response message for listing workload identities.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>workload_identities</td>
+                  <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                  <td>repeated</td>
+                  <td><p>The workload identities from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UndeleteWorkloadIdentityRequest">UndeleteWorkloadIdentityRequest</h3>
+        <p>Request message for restoring a deleted workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the deleted workload identity.
+Format: workloadIdentities/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateWorkloadIdentityRequest">UpdateWorkloadIdentityRequest</h3>
+        <p>Request message for updating a workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>workload_identity</td>
+                  <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                  <td></td>
+                  <td><p>The workload identity to update.
+
+The workload identity&#39;s `name` field is used to identify the workload identity to update.
+Format: workloadIdentities/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update.
+Supported fields: title, workload_identity_config </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.WorkloadIdentity">WorkloadIdentity</h3>
+        <p>WorkloadIdentity represents an external CI/CD workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the workload identity.
+Format: workloadIdentities/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.State">State</a></td>
+                  <td></td>
+                  <td><p>The state of the workload identity. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email of the workload identity.
+For workspace-level: {name}@workload.bytebase.com
+For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display title of the workload identity. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the workload identity was created. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workload_identity_config</td>
+                  <td><a href="#bytebase.v1.WorkloadIdentityConfig">WorkloadIdentityConfig</a></td>
+                  <td></td>
+                  <td><p>The workload identity configuration for OIDC token validation. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.WorkloadIdentityService">WorkloadIdentityService</h3>
+        <p>WorkloadIdentityService manages workload identities for external CI/CD integrations.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CreateWorkloadIdentity</td>
+                <td><a href="#bytebase.v1.CreateWorkloadIdentityRequest">CreateWorkloadIdentityRequest</a></td>
+                <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                <td><p>Creates a new workload identity.
+For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetWorkloadIdentity</td>
+                <td><a href="#bytebase.v1.GetWorkloadIdentityRequest">GetWorkloadIdentityRequest</a></td>
+                <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                <td><p>Gets a workload identity by name.
+Permissions required: bb.workloadIdentities.get</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListWorkloadIdentities</td>
+                <td><a href="#bytebase.v1.ListWorkloadIdentitiesRequest">ListWorkloadIdentitiesRequest</a></td>
+                <td><a href="#bytebase.v1.ListWorkloadIdentitiesResponse">ListWorkloadIdentitiesResponse</a></td>
+                <td><p>Lists workload identities.
+For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateWorkloadIdentity</td>
+                <td><a href="#bytebase.v1.UpdateWorkloadIdentityRequest">UpdateWorkloadIdentityRequest</a></td>
+                <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                <td><p>Updates a workload identity.
+Permissions required: bb.workloadIdentities.update</p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteWorkloadIdentity</td>
+                <td><a href="#bytebase.v1.DeleteWorkloadIdentityRequest">DeleteWorkloadIdentityRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Deletes a workload identity.
+Permissions required: bb.workloadIdentities.delete</p></td>
+              </tr>
+            
+              <tr>
+                <td>UndeleteWorkloadIdentity</td>
+                <td><a href="#bytebase.v1.UndeleteWorkloadIdentityRequest">UndeleteWorkloadIdentityRequest</a></td>
+                <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
+                <td><p>Restores a deleted workload identity.
+Permissions required: bb.workloadIdentities.undelete</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>CreateWorkloadIdentity</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/workloadIdentities</td>
+                <td>workload_identity</td>
+              </tr>
+              
+              <tr>
+                <td>CreateWorkloadIdentity</td>
+                <td>POST</td>
+                <td>/v1/workloadIdentities</td>
+                <td>workload_identity</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetWorkloadIdentity</td>
+                <td>GET</td>
+                <td>/v1/{name=workloadIdentities/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListWorkloadIdentities</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/workloadIdentities</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>ListWorkloadIdentities</td>
+                <td>GET</td>
+                <td>/v1/workloadIdentities</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateWorkloadIdentity</td>
+                <td>PATCH</td>
+                <td>/v1/{workload_identity.name=workloadIdentities/*}</td>
+                <td>workload_identity</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteWorkloadIdentity</td>
+                <td>DELETE</td>
+                <td>/v1/{name=workloadIdentities/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UndeleteWorkloadIdentity</td>
+                <td>POST</td>
+                <td>/v1/{name=workloadIdentities/*}:undelete</td>
+                <td>*</td>
               </tr>
               
             
