@@ -163,9 +163,17 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	// Get a single user. The user id is the Bytebase user uid.
 	g.GET("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		slog.Debug("get user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
+
 		user, err := s.getUser(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if user == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{"urn:ietf:params:scim:api:messages:2.0:Error"},
+				"status":  "404",
+			})
 		}
 
 		return c.JSON(http.StatusOK, convertToSCIMUser(user))
@@ -189,6 +197,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if filter == "" {
 			return c.JSON(http.StatusOK, response)
 		}
+		source := detectSCIMSource(c)
+		slog.Debug("list user", slog.String("source", source), slog.String("filter", filter))
 
 		filters, err := v1api.ParseFilter(filter)
 		if err != nil {
@@ -210,6 +220,10 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			find.Email = &normalizedEmail
 		}
 
+		if find.Email == nil {
+			return c.JSON(http.StatusOK, response)
+		}
+
 		users, err := s.store.ListUsers(ctx, find)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to list user, error %v`, err))
@@ -217,6 +231,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		for _, user := range users {
 			if user.MemberDeleted {
+				continue
+			}
+			if user.Profile.Source != source {
 				continue
 			}
 			response.TotalResults++
@@ -228,9 +245,17 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 	g.DELETE("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		slog.Debug("delete user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
+
 		user, err := s.getUser(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if user == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{"urn:ietf:params:scim:api:messages:2.0:Error"},
+				"status":  "404",
+			})
 		}
 
 		deleteUser := true
@@ -247,9 +272,17 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	// Body format is same as POST (full SCIMUser object).
 	g.PUT("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		slog.Debug("put user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
+
 		user, err := s.getUser(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if user == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{"urn:ietf:params:scim:api:messages:2.0:Error"},
+				"status":  "404",
+			})
 		}
 
 		source := detectSCIMSource(c)
@@ -273,6 +306,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 	g.PATCH("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		slog.Debug("patch user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
+
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
@@ -299,15 +334,18 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		updateUser := &store.UpdateUserMessage{}
 		for _, op := range patch.Operations {
 			// SCIM PATCH operations are case-insensitive per RFC 7644.
-			// Azure uses PascalCase (Replace), Okta uses lowercase (replace).
+			// Azure uses PascalCase (Add/Replace), Okta uses lowercase (add/replace).
 			opLower := strings.ToLower(op.OP)
-			if opLower != "replace" {
-				slog.Warn("empty path only supports replace operation", slog.String("operation", op.OP))
+			// Support both "add" and "replace" operations for user attributes.
+			// Per RFC 7644, "add" sets the value if not present, "replace" overwrites.
+			// For simplicity, we treat them the same since we're just updating user fields.
+			if opLower != "add" && opLower != "replace" {
+				slog.Warn("unsupported operation type", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 				continue
 			}
 
 			switch op.Path {
-			case "displayName":
+			case "displayName", "name.formatted":
 				displayName, ok := op.Value.(string)
 				if !ok {
 					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
@@ -367,7 +405,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 				}
 			default:
-				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
+				// Silently ignore other valid SCIM attributes that Bytebase doesn't use
+				// (e.g., externalId, name.givenName, name.familyName, preferredLanguage, addresses, phoneNumbers, etc.)
+				slog.Debug("ignoring unsupported user patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
 			}
 		}
 
@@ -393,6 +433,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
+		slog.Debug("post group", slog.String("source", detectSCIMSource(c)), slog.String("id", scimGroup.ExternalID), slog.String("email", scimGroup.Email))
+
 		// SCIM sync group process:
 		// - Azure: POST group without members, then PATCH to add members
 		// - Okta: May POST group with members directly
@@ -406,28 +448,68 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			members = append(members, member)
 		}
 
-		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
-			ID:    scimGroup.ExternalID,
-			Email: scimGroup.Email,
-			Title: scimGroup.DisplayName,
-			Payload: &storepb.GroupPayload{
-				Source:  source,
-				Members: members,
-			},
-		})
+		group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(scimGroup.ExternalID))
 		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
+			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
 		}
 
-		return c.JSON(http.StatusCreated, convertToSCIMGroup(group))
+		if group == nil {
+			email := scimGroup.Email
+			if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
+				email = scimGroup.ExternalID
+			}
+			newGroup, err := s.store.CreateGroup(ctx, &store.GroupMessage{
+				ID:    scimGroup.ExternalID,
+				Email: email,
+				Title: scimGroup.DisplayName,
+				Payload: &storepb.GroupPayload{
+					Source:  source,
+					Members: members,
+				},
+			})
+			if err != nil {
+				return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
+			}
+			return c.JSON(http.StatusCreated, convertToSCIMGroup(newGroup))
+		}
+
+		patch := &store.UpdateGroupMessage{
+			ID:    group.ID,
+			Title: &scimGroup.DisplayName,
+		}
+		email := scimGroup.Email
+		if email != "" {
+			patch.Email = &email
+		}
+		if len(members) > 0 {
+			patch.Payload = &storepb.GroupPayload{
+				Source:  source,
+				Members: members,
+			}
+		}
+		updatedGroup, err := s.store.UpdateGroup(ctx, patch)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update group, error %v", err))
+		}
+		return c.JSON(http.StatusCreated, convertToSCIMGroup(updatedGroup))
 	})
 
 	// Get a single group. The group id is the Bytebase group resource id.
 	g.GET("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		slog.Debug("get group", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("groupID")))
+
 		group, err := s.getGroup(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if group == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
 		}
 
 		return c.JSON(http.StatusOK, convertToSCIMGroup(group))
@@ -454,12 +536,14 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.JSON(http.StatusOK, response)
 		}
 
+		slog.Debug("list group", slog.String("source", detectSCIMSource(c)), slog.String("filter", filter))
+
 		filters, err := v1api.ParseFilter(filter)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse filter, error %v", err))
 		}
 
-		find := &store.FindGroupMessage{}
+		var groupName string
 		for _, expr := range filters {
 			if expr.Operator != v1api.ComparatorTypeEqual {
 				slog.Warn("unsupport filter operation", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
@@ -469,34 +553,38 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				slog.Warn("unsupport filter key", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
 				continue
 			}
-			// externalId can be either the IdP's group ID or group email, depending on customer's attribute mapping.
-			// - Default: objectId/groupId -> externalId (UUID format, no @)
-			// - Legacy mapping: mail -> externalId (email format, contains @)
-			if strings.Contains(expr.Value, "@") {
-				find.Email = &expr.Value
-			} else {
-				find.ID = &expr.Value
-			}
+			groupName = expr.Value
 		}
 
-		groups, err := s.store.ListGroups(ctx, find)
+		group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(groupName))
 		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to list group, error %v`, err))
+			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
+		}
+		if group == nil {
+			return c.JSON(http.StatusOK, response)
 		}
 
-		for _, group := range groups {
-			response.TotalResults++
-			response.Resources = append(response.Resources, convertToSCIMGroup(group))
-		}
+		response.TotalResults++
+		response.Resources = append(response.Resources, convertToSCIMGroup(group))
 
 		return c.JSON(http.StatusOK, response)
 	})
 
 	g.DELETE("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		slog.Debug("delete group", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("groupID")))
+
 		group, err := s.getGroup(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if group == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
 		}
 
 		if err := s.store.DeleteGroup(ctx, group.ID); err != nil {
@@ -514,12 +602,22 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	// Body format is same as POST (full SCIMGroup object).
 	g.PUT("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		source := detectSCIMSource(c)
+		slog.Debug("put group", slog.String("source", source), slog.String("id", c.Param("groupID")))
+
 		group, err := s.getGroup(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if group == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
 		}
 
-		source := detectSCIMSource(c)
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
@@ -544,12 +642,22 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 	g.PATCH("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
 		ctx := c.Request().Context()
+		source := detectSCIMSource(c)
+		slog.Debug("patch group", slog.String("source", source), slog.String("id", c.Param("groupID")))
+
 		group, err := s.getGroup(ctx, c)
 		if err != nil {
-			return err
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if group == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
 		}
 
-		source := detectSCIMSource(c)
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
@@ -615,17 +723,41 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 						continue
 					}
 				}
+			case "email":
+				if opLower != "add" && opLower != "replace" {
+					slog.Warn("unsupport operation type for email", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+				email, ok := op.Value.(string)
+				if !ok {
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
+					continue
+				}
+				updateGroup.Email = &email
 			case "displayName":
-				if opLower != "replace" {
+				if opLower != "add" && opLower != "replace" {
 					slog.Warn("unsupport operation type for displayName", slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
 				}
 				displayName, ok := op.Value.(string)
 				if !ok {
-					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 					continue
 				}
 				updateGroup.Title = &displayName
+			case "externalId":
+				if opLower != "replace" {
+					slog.Warn("unsupport operation type for externalId", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+				externalID, ok := op.Value.(string)
+				if !ok {
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
+					continue
+				}
+				if strings.Contains(externalID, "@") {
+					updateGroup.Email = &externalID
+				}
 			case "":
 				// Empty path with replace operation - Okta sends full resource attributes.
 				// Per RFC 7644 Section 3.5.2.3: If path is omitted, the value must be a complex
@@ -660,7 +792,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 				}
 			default:
-				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
+				slog.Warn("unsupport patch path", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 			}
 		}
 
@@ -712,19 +844,12 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 func (s *Service) getUser(ctx context.Context, c echo.Context) (*store.UserMessage, error) {
 	uid, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
-		return nil, c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse user id, error %v", err))
+		return nil, errors.Errorf("failed to parse user id %v, error %v", c.Param("userID"), err)
 	}
 
 	user, err := s.store.GetUserByID(ctx, uid)
 	if err != nil {
-		return nil, c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get user, error %v", err))
-	}
-	if user == nil {
-		// PUT must not create new resources per RFC 7644
-		return nil, c.JSON(http.StatusNotFound, map[string]any{
-			"schemas": []string{"urn:ietf:params:scim:api:messages:2.0:Error"},
-			"status":  "404",
-		})
+		return nil, errors.Errorf("failed to get user, error %v", err)
 	}
 	return user, nil
 }
@@ -732,19 +857,11 @@ func (s *Service) getUser(ctx context.Context, c echo.Context) (*store.UserMessa
 func (s *Service) getGroup(ctx context.Context, c echo.Context) (*store.GroupMessage, error) {
 	groupName, err := decodeGroupIdentifier(c.Param("groupID"))
 	if err != nil {
-		return nil, c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse group %v, error %v", c.Param("groupID"), err))
+		return nil, errors.Errorf("failed to parse group %v, error %v", c.Param("groupID"), err)
 	}
 	group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(groupName))
 	if err != nil {
-		return nil, c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
-	}
-	if group == nil {
-		return nil, c.JSON(http.StatusNotFound, map[string]any{
-			"schemas": []string{
-				"urn:ietf:params:scim:api:messages:2.0:Error",
-			},
-			"status": "404",
-		})
+		return nil, errors.Errorf("failed to find group, error %v", err)
 	}
 	return group, nil
 }
