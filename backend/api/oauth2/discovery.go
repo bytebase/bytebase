@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -35,7 +35,7 @@ type protectedResourceMetadata struct {
 
 // getBaseURL returns the base URL to use for OAuth2 endpoints.
 // It uses externalURL from profile/setting if configured, otherwise derives from the request.
-func (s *Service) getBaseURL(c echo.Context) string {
+func (s *Service) getBaseURL(c *echo.Context) string {
 	ctx := c.Request().Context()
 
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
@@ -59,7 +59,7 @@ func (s *Service) getBaseURL(c echo.Context) string {
 	return fmt.Sprintf("%s://%s", scheme, req.Host)
 }
 
-func (s *Service) handleDiscovery(c echo.Context) error {
+func (s *Service) handleDiscovery(c *echo.Context) error {
 	baseURL := s.getBaseURL(c)
 	metadata := &authorizationServerMetadata{
 		Issuer:                            baseURL,
@@ -77,7 +77,7 @@ func (s *Service) handleDiscovery(c echo.Context) error {
 
 // handleProtectedResourceMetadata returns RFC 9728 protected resource metadata.
 // This tells clients which authorization server protects this resource.
-func (s *Service) handleProtectedResourceMetadata(c echo.Context) error {
+func (s *Service) handleProtectedResourceMetadata(c *echo.Context) error {
 	baseURL := s.getBaseURL(c)
 	metadata := &protectedResourceMetadata{
 		Resource:               baseURL,

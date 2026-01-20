@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
@@ -64,7 +64,7 @@ func (s *Server) registerTools() {
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		// Extract Authorization header
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {

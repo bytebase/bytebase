@@ -11,9 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
@@ -74,6 +75,7 @@ type Server struct {
 
 	profile    *config.Profile
 	echoServer *echo.Echo
+	httpServer *http.Server
 	lspServer  *lsp.Server
 	store      *store.Store
 	dbFactory  *dbfactory.DBFactory
@@ -281,10 +283,14 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		return err
 	}
 
-	s.echoServer.Listener = listener
+	// Create HTTP server with H2C support (Echo v5)
+	s.httpServer = &http.Server{
+		Addr:    address,
+		Handler: h2c.NewHandler(s.echoServer, &http2.Server{}),
+	}
 
 	go func() {
-		if err := s.echoServer.StartH2CServer(address, &http2.Server{}); err != nil {
+		if err := s.httpServer.Serve(listener); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				slog.Error("http server listen error", log.BBError(err))
 			}
@@ -307,10 +313,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		s.cancel()
 	}
 
-	// Shutdown echo
-	if s.echoServer != nil {
-		if err := s.echoServer.Shutdown(ctx); err != nil {
-			s.echoServer.Logger.Fatal(err)
+	// Shutdown HTTP server
+	if s.httpServer != nil {
+		if err := s.httpServer.Shutdown(ctx); err != nil {
+			slog.Error("Failed to shutdown HTTP server", log.BBError(err))
 		}
 	}
 
