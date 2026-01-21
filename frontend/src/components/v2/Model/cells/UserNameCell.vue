@@ -8,7 +8,7 @@
           <div :class="isDeleted ? 'line-through' : ''">
             <HighlightLabelText
               v-if="onClickUser"
-              class="truncate max-w-40"
+              class="truncate max-w-40 cursor-pointer"
               :keyword="keyword"
               :text="user.title"
               @click="onClickUser(user, $event)"

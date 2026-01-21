@@ -665,9 +665,11 @@
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "enable": "开启水印"
         },
-        "data-export": {
-          "enable": "启用数据导出",
-          "description": "允许用户在 SQL 编辑器里导出数据"
+        "data-export": "启用数据导出",
+        "disable-copy-data": "限制复制数据",
+        "allow-admin-data-source": {
+          "self": "允许查询主数据源",
+          "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。"
         },
         "product-improvement": {
           "self": "产品改进",
@@ -743,9 +745,7 @@
           },
           "seconds": "秒",
           "project-scope": "项目",
-          "workspace-scope": "工作区",
-          "environment-scope": "环境",
-          "tooltip": "也可在 {scope} 级别进行配置。Bytebase 将应用最严格的值。"
+          "environment-scope": "环境"
         },
         "domain-restriction": {
           "self": "工作空间域名",
@@ -1517,20 +1517,7 @@
     "reorder": "重新排序环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
     "production-environment": "生产环境",
-    "access-control": {
-      "title": "访问控制",
-      "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制",
-      "restrict-admin-connection": {
-        "self": "限制查询主数据源",
-        "disallow": "不允许从主数据源查询数据",
-        "fallback": "如果没有可用的只读连接，则允许查询主数据源"
-      }
-    },
-    "statement-execution": {
-      "title": "语句执行",
-      "disallow-ddl": "禁止在 SQL 编辑器中运行 DDL 语句",
-      "disallow-dml": "禁止在 SQL 编辑器中运行修改数据的 DML 语句"
-    }
+    "statement-execution": {}
   },
   "quick-start": {
     "self": "新手任务",
@@ -2117,8 +2104,7 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "当只读数据源可用时，不允许查询主数据源。"
+      "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
     "manage-connections": "管理连接",
     "view-detail": "查看详情",

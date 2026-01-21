@@ -203,21 +203,15 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 }
 
 type EffectiveQueryDataPolicy struct {
-	MaximumResultSize          int64
-	MaximumResultRows          int32
-	DisableCopyData            bool
-	DisableExport              bool
-	MaxQueryTimeoutInSeconds   int64
-	AdminDataSourceRestriction storepb.QueryDataPolicy_Restriction
-	DisallowDDL                bool
-	DisallowDML                bool
+	MaximumResultSize        int64
+	MaximumResultRows        int32
+	DisableCopyData          bool
+	DisableExport            bool
+	MaxQueryTimeoutInSeconds int64
+	AllowAdminDataSource     bool
 }
 
 func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQueryDataPolicy {
-	maximumResultSize := policy.GetMaximumResultSize()
-	if maximumResultSize <= 0 {
-		maximumResultSize = common.DefaultMaximumSQLResultSize
-	}
 	maximumResultRows := policy.GetMaximumResultRows()
 	if maximumResultRows <= 0 {
 		maximumResultRows = math.MaxInt32
@@ -228,49 +222,34 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	}
 
 	return &EffectiveQueryDataPolicy{
-		MaximumResultSize:          maximumResultSize,
-		MaximumResultRows:          maximumResultRows,
-		MaxQueryTimeoutInSeconds:   timeoutInSeconds,
-		DisableCopyData:            policy.GetDisableCopyData(),
-		DisableExport:              policy.GetDisableExport(),
-		AdminDataSourceRestriction: policy.GetAdminDataSourceRestriction(),
-		DisallowDDL:                policy.GetDisallowDdl(),
-		DisallowDML:                policy.GetDisallowDml(),
+		MaximumResultRows:        maximumResultRows,
+		MaxQueryTimeoutInSeconds: timeoutInSeconds,
+		DisableCopyData:          policy.GetDisableCopyData(),
+		DisableExport:            policy.GetDisableExport(),
+		AllowAdminDataSource:     policy.GetAllowAdminDataSource(),
 	}
 }
 
-func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, project string) (*EffectiveQueryDataPolicy, error) {
-	projectPolicy, err := s.getQueryDataPolicy(ctx, project)
-	if err != nil {
-		return nil, err
-	}
+func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context) (*EffectiveQueryDataPolicy, error) {
 	workspacePolicy, err := s.getQueryDataPolicy(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	formatPorjectPolicy := formatEffectiveQueryDataPolicy(projectPolicy)
 	formatWorkspacePolicy := formatEffectiveQueryDataPolicy(workspacePolicy)
 
-	maximumResultSize := min(formatPorjectPolicy.MaximumResultSize, formatWorkspacePolicy.MaximumResultSize)
-	maximumResultRows := min(formatPorjectPolicy.MaximumResultRows, formatWorkspacePolicy.MaximumResultRows)
-	maximumTimeout := min(formatPorjectPolicy.MaxQueryTimeoutInSeconds, formatWorkspacePolicy.MaxQueryTimeoutInSeconds)
-
-	// For AdminDataSourceRestriction, project policy takes precedence over workspace
-	adminRestriction := formatPorjectPolicy.AdminDataSourceRestriction
-	if adminRestriction == storepb.QueryDataPolicy_RESTRICTION_UNSPECIFIED {
-		adminRestriction = formatWorkspacePolicy.AdminDataSourceRestriction
+	maximumResultSize, err := s.GetSQLResultSize(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return &EffectiveQueryDataPolicy{
-		DisableCopyData:            formatPorjectPolicy.DisableCopyData || formatWorkspacePolicy.DisableCopyData,
-		DisableExport:              formatPorjectPolicy.DisableExport || formatWorkspacePolicy.DisableExport,
-		MaximumResultSize:          maximumResultSize,
-		MaximumResultRows:          maximumResultRows,
-		MaxQueryTimeoutInSeconds:   maximumTimeout,
-		AdminDataSourceRestriction: adminRestriction,
-		DisallowDDL:                formatPorjectPolicy.DisallowDDL || formatWorkspacePolicy.DisallowDDL,
-		DisallowDML:                formatPorjectPolicy.DisallowDML || formatWorkspacePolicy.DisallowDML,
+		DisableCopyData:          formatWorkspacePolicy.DisableCopyData,
+		DisableExport:            formatWorkspacePolicy.DisableExport,
+		MaximumResultRows:        formatWorkspacePolicy.MaximumResultRows,
+		MaximumResultSize:        maximumResultSize,
+		MaxQueryTimeoutInSeconds: formatWorkspacePolicy.MaxQueryTimeoutInSeconds,
+		AllowAdminDataSource:     formatWorkspacePolicy.AllowAdminDataSource,
 	}, nil
 }
 
@@ -609,19 +588,13 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	policy := &PolicyMessage{
 		Resource:     patch.Resource,
 		ResourceType: patch.ResourceType,
 		Type:         patch.Type,
 	}
 
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&policy.Payload,
 		&policy.InheritFromParent,
 		&policy.Enforce,
@@ -630,10 +603,6 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -655,17 +624,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 

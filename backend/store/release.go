@@ -253,18 +253,8 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, errors.Wrapf(err, "failed to query row")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return s.GetRelease(ctx, &FindReleaseMessage{
@@ -283,13 +273,7 @@ func (s *Store) ListReleaseCategories(ctx context.Context, projectID string) ([]
 		ORDER BY category ASC
 	`
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query, projectID)
+	rows, err := s.GetDB().QueryContext(ctx, query, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query rows")
 	}
@@ -306,10 +290,6 @@ func (s *Store) ListReleaseCategories(ctx context.Context, projectID string) ([]
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "rows err")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return categories, nil

@@ -7,6 +7,7 @@ import GeneralSetting from "./GeneralSetting.vue";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 import ProductImprovementSetting from "./ProductImprovementSetting.vue";
 import SecuritySetting from "./SecuritySetting.vue";
+import SQLEditorSetting from "./SQLEditorSetting.vue";
 
 export {
   BrandingSetting,
@@ -18,4 +19,5 @@ export {
   AuditLogStdoutSetting,
   GeneralSetting,
   ProductImprovementSetting,
+  SQLEditorSetting,
 };

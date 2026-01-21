@@ -32,10 +32,6 @@
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
-      <QueryDataPolicySetting
-        ref="queryDataPolicySettingRef"
-        resource=""
-      />
       <MaximumRoleExpirationSetting
         ref="maximumRoleExpirationSettingRef"
       />
@@ -57,7 +53,6 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
-import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
 
 const props = defineProps<{
   title: string;
@@ -70,13 +65,10 @@ const domainRestrictionSettingRef =
   ref<InstanceType<typeof DomainRestrictionSetting>>();
 const maximumRoleExpirationSettingRef =
   ref<InstanceType<typeof MaximumRoleExpirationSetting>>();
-const queryDataPolicySettingRef =
-  ref<InstanceType<typeof QueryDataPolicySetting>>();
 
 const settingRefList = computed(() => [
   domainRestrictionSettingRef,
   maximumRoleExpirationSettingRef,
-  queryDataPolicySettingRef,
 ]);
 
 const initEnableWatermark = computed(() => {

@@ -16,6 +16,10 @@
       ref="securitySettingRef"
       :title="$t('settings.general.workspace.security')"
     />
+    <SQLEditorSetting
+      ref="sqlEditorSettingRef"
+      :title="$t('sql-editor.self')"
+    />
     <AIAugmentationSetting
       ref="aiAugmentationSettingRef"
       :title="$t('settings.general.workspace.ai-assistant.self')"
@@ -76,6 +80,7 @@ import {
   GeneralSetting,
   ProductImprovementSetting,
   SecuritySetting,
+  SQLEditorSetting,
 } from "@/components/GeneralSetting";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
@@ -89,6 +94,7 @@ const accountSettingRef = ref<InstanceType<typeof AccountSetting>>();
 const generalSettingRef = ref<InstanceType<typeof GeneralSetting>>();
 const brandingSettingRef = ref<InstanceType<typeof BrandingSetting>>();
 const securitySettingRef = ref<InstanceType<typeof SecuritySetting>>();
+const sqlEditorSettingRef = ref<InstanceType<typeof SQLEditorSetting>>();
 const aiAugmentationSettingRef =
   ref<InstanceType<typeof AIAugmentationSetting>>();
 const announcementSettingRef = ref<InstanceType<typeof AnnouncementSetting>>();
@@ -103,6 +109,7 @@ const settingRefList = computed(() => {
     generalSettingRef,
     brandingSettingRef,
     securitySettingRef,
+    sqlEditorSettingRef,
     aiAugmentationSettingRef,
     announcementSettingRef,
     productImprovementSettingRef,

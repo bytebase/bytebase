@@ -297,56 +297,59 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
 
 /**
- * QueryDataPolicy is the policy configuration for querying data.
+ * QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
  *
  * @generated from message bytebase.v1.QueryDataPolicy
  */
 export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   /**
-   * The query timeout duration.
+   * workspace-level policy
+   * The query timeout duration in the SQL editor.
    *
    * @generated from field: google.protobuf.Duration timeout = 1;
    */
   timeout?: Duration;
 
   /**
-   * Disable data export in the SQL editor.
-   *
-   * @generated from field: bool disable_export = 2;
-   */
-  disableExport: boolean;
-
-  /**
-   * The maximum result size limit in bytes.
-   * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-   *
-   * @generated from field: int64 maximum_result_size = 3;
-   */
-  maximumResultSize: bigint;
-
-  /**
-   * The maximum number of rows to return.
+   * workspace-level policy
+   * The maximum number of rows to return in the SQL editor.
    * The default value is -1, means no limit.
    *
-   * @generated from field: int32 maximum_result_rows = 4;
+   * @generated from field: int32 maximum_result_rows = 2;
    */
   maximumResultRows: number;
 
   /**
-   * Disable copying query results.
+   * workspace-level policy
+   * Disable data export in the SQL editor.
    *
-   * @generated from field: bool disable_copy_data = 5;
+   * @generated from field: bool disable_export = 3;
+   */
+  disableExport: boolean;
+
+  /**
+   * workspace-level policy
+   * Disable copying query results in the SQL editor.
+   *
+   * @generated from field: bool disable_copy_data = 4;
    */
   disableCopyData: boolean;
 
   /**
-   * Restriction for admin data source queries.
+   * workspace-level policy
+   * Allow using the admin data source to query in the SQL editor.
+   * If true, users can select the admin data source or read-only data source
+   * If false,
+   * 1. when read-only data source is configured, users're force to use the read-only data source
+   * 2. otherwise fallback to use the admin data source.
    *
-   * @generated from field: bytebase.v1.QueryDataPolicy.Restriction admin_data_source_restriction = 6;
+   * @generated from field: bool allow_admin_data_source = 5;
    */
-  adminDataSourceRestriction: QueryDataPolicy_Restriction;
+  allowAdminDataSource: boolean;
 
   /**
+   * ================
+   * Deprecate following fields.
    * Disallow running DDL statements in the SQL editor.
    *
    * @generated from field: bool disallow_ddl = 7;
@@ -366,39 +369,6 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
  * Use `create(QueryDataPolicySchema)` to create a new message.
  */
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
-
-/**
- * Restriction level for admin data source access.
- *
- * @generated from enum bytebase.v1.QueryDataPolicy.Restriction
- */
-export enum QueryDataPolicy_Restriction {
-  /**
-   * Unspecified restriction.
-   *
-   * @generated from enum value: RESTRICTION_UNSPECIFIED = 0;
-   */
-  RESTRICTION_UNSPECIFIED = 0,
-
-  /**
-   * Allow querying admin data sources when there is no read-only data source.
-   *
-   * @generated from enum value: FALLBACK = 1;
-   */
-  FALLBACK = 1,
-
-  /**
-   * Disallow querying admin data sources.
-   *
-   * @generated from enum value: DISALLOW = 2;
-   */
-  DISALLOW = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.QueryDataPolicy.Restriction.
- */
-export declare const QueryDataPolicy_RestrictionSchema: GenEnum<QueryDataPolicy_Restriction>;
 
 /**
  * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.

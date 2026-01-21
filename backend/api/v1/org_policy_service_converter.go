@@ -168,28 +168,26 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}
 	return &v1pb.Policy_QueryDataPolicy{
 		QueryDataPolicy: &v1pb.QueryDataPolicy{
-			Timeout:                    payload.Timeout,
-			DisableExport:              payload.DisableExport,
-			MaximumResultSize:          payload.MaximumResultSize,
-			MaximumResultRows:          payload.MaximumResultRows,
-			DisableCopyData:            payload.DisableCopyData,
-			AdminDataSourceRestriction: v1pb.QueryDataPolicy_Restriction(payload.AdminDataSourceRestriction),
-			DisallowDdl:                payload.DisallowDdl,
-			DisallowDml:                payload.DisallowDml,
+			Timeout:              payload.Timeout,
+			DisableExport:        payload.DisableExport,
+			MaximumResultRows:    payload.MaximumResultRows,
+			DisableCopyData:      payload.DisableCopyData,
+			AllowAdminDataSource: payload.AllowAdminDataSource,
+			DisallowDdl:          payload.DisallowDdl,
+			DisallowDml:          payload.DisallowDml,
 		},
 	}, nil
 }
 
 func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
 	return &storepb.QueryDataPolicy{
-		Timeout:                    policy.Timeout,
-		DisableExport:              policy.DisableExport,
-		MaximumResultSize:          policy.MaximumResultSize,
-		MaximumResultRows:          policy.MaximumResultRows,
-		DisableCopyData:            policy.DisableCopyData,
-		AdminDataSourceRestriction: storepb.QueryDataPolicy_Restriction(policy.AdminDataSourceRestriction),
-		DisallowDdl:                policy.DisallowDdl,
-		DisallowDml:                policy.DisallowDml,
+		Timeout:              policy.Timeout,
+		DisableExport:        policy.DisableExport,
+		MaximumResultRows:    policy.MaximumResultRows,
+		DisableCopyData:      policy.DisableCopyData,
+		AllowAdminDataSource: policy.AllowAdminDataSource,
+		DisallowDdl:          policy.DisallowDdl,
+		DisallowDml:          policy.DisallowDml,
 	}
 }
 

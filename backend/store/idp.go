@@ -51,12 +51,6 @@ type UpdateIdentityProviderMessage struct {
 
 // CreateIdentityProvider creates an identity provider.
 func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage) (*IdentityProviderMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	identityProvider := &IdentityProviderMessage{
 		ResourceID: create.ResourceID,
 		Title:      create.Title,
@@ -80,16 +74,12 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		VALUES (?, ?, ?, ?, ?)
 	`, create.ResourceID, create.Title, create.Domain, create.Type.String(), configBytes)
 
-	sql, args, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -253,22 +243,16 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 }
 
 func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	q := qb.Q().Space("DELETE FROM idp WHERE resource_id = ?", resourceID)
-	sql, args, err := q.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
 func convertIdentityProviderType(identityProviderType string) storepb.IdentityProviderType {

@@ -126,11 +126,10 @@ import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
-import { useEffectiveQueryDataPolicyForProject } from "@/store/modules/v1/policy";
+import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -163,12 +162,10 @@ const { currentTab: tab } = storeToRefs(tabStore);
 const databaseStore = useDatabaseV1Store();
 const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
-const { project } = storeToRefs(useSQLEditorStore());
 const contextMenu = provideResultTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
-const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject(project);
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
 
 const selectedDatabaseNameList = ref<string[]>([]);
 

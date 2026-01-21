@@ -42,6 +42,19 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 	}
 }
 
+// GetSQLResultSize gets the valid data_export_result_size from the workspace profile setting.
+func (s *Store) GetSQLResultSize(ctx context.Context) (int64, error) {
+	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return 0, err
+	}
+	maximumResultSize := workspaceProfile.GetSqlResultSize()
+	if maximumResultSize <= 0 {
+		maximumResultSize = common.DefaultMaximumSQLResultSize
+	}
+	return maximumResultSize, nil
+}
+
 // GetWorkspaceProfileSetting gets the workspace profile setting payload.
 func (s *Store) GetWorkspaceProfileSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
 	setting, err := s.GetSetting(ctx, storepb.SettingName_WORKSPACE_PROFILE)
@@ -312,16 +325,10 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
 	var setting SettingMessage
 	var nameString string
 	var valueString string
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&nameString,
 		&valueString,
 	); err != nil {
@@ -345,9 +352,6 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 	setting.Value = msg
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
-	}
 	s.settingCache.Add(setting.Name, &setting)
 	return &setting, nil
 }
@@ -360,18 +364,8 @@ func (s *Store) DeleteSetting(ctx context.Context, name storepb.SettingName) err
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit transaction")
 	}
 
 	s.settingCache.Remove(name)

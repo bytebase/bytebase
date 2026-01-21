@@ -138,20 +138,11 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	create.Enforce = true
@@ -168,17 +159,11 @@ func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // UpdateReviewConfig updates the sql review.
@@ -217,16 +202,10 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	var sqlReview ReviewConfigMessage
 	var payload []byte
 
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&sqlReview.ID,
 		&sqlReview.Enforce,
 		&sqlReview.Name,
@@ -244,10 +223,6 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 	}
 
 	sqlReview.Payload = reviewConfigPyload
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	return &sqlReview, nil
 }

@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"strings"
 	"time"
 
 	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
@@ -25,6 +23,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // NewDataExportExecutor creates a data export task executor.
@@ -92,7 +91,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 	statement := sheet.Statement
 
-	dataSource := apiv1.GetQueriableDataSource(instance)
+	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	creatorUser, err := exec.store.GetUserByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
@@ -161,18 +160,12 @@ func (exec *DataExportExecutor) executeExport(
 	}
 
 	// 2. Get query restrictions from workspace policy
-	queryRestriction := exec.getEffectiveQueryDataPolicy(ctx, database.ProjectID)
+	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
-		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
-		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-	}
-	if queryRestriction.MaxQueryTimeoutInSeconds > 0 {
-		queryContext.Timeout = &durationpb.Duration{
-			Seconds: queryRestriction.MaxQueryTimeoutInSeconds,
-		}
+		MaximumSQLResultSize: maximumSQLResultSize,
 	}
 
 	// 4. Execute query with timeout
@@ -203,27 +196,16 @@ func (exec *DataExportExecutor) executeExport(
 	return exec.formatAndZipResults(ctx, results, instance, database, format, statement)
 }
 
-// getEffectiveQueryDataPolicy gets the effective query data policy for a project.
-func (exec *DataExportExecutor) getEffectiveQueryDataPolicy(
+// getSQLResultSizeLimit gets the sql result size limit.
+func (exec *DataExportExecutor) getSQLResultSizeLimit(
 	ctx context.Context,
-	projectID string,
-) *store.EffectiveQueryDataPolicy {
-	value := &store.EffectiveQueryDataPolicy{
-		MaximumResultSize: common.DefaultMaximumSQLResultSize,
-		MaximumResultRows: math.MaxInt32,
+) int64 {
+	maximumResultSize, err := exec.store.GetSQLResultSize(ctx)
+	if err != nil {
+		slog.Error("failed to get the query data policy", log.BBError(err))
+		return common.DefaultMaximumSQLResultSize
 	}
-	if err := exec.license.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		policy, err := exec.store.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(projectID))
-		if err != nil {
-			slog.Error("failed to get the query data policy", log.BBError(err))
-			return value
-		}
-		value = policy
-	}
-	if value.MaximumResultRows == math.MaxInt32 {
-		value.MaximumResultRows = 0
-	}
-	return value
+	return maximumResultSize
 }
 
 // formatAndZipResults formats query results and packages them into a ZIP archive.
