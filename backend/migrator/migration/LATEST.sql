@@ -14,6 +14,20 @@ CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
 
 ALTER SEQUENCE idp_id_seq RESTART WITH 101;
 
+-- Project (created before principal for foreign key reference)
+CREATE TABLE project (
+    id serial PRIMARY KEY,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    name text NOT NULL,
+    resource_id text NOT NULL,
+    -- Stored as Project (proto/store/store/project.proto)
+    setting jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
+
+ALTER SEQUENCE project_id_seq RESTART WITH 101;
+
 -- principal
 CREATE TABLE principal (
     id serial PRIMARY KEY,
@@ -30,8 +44,7 @@ CREATE TABLE principal (
     profile jsonb NOT NULL DEFAULT '{}',
     -- project references the owning project for SERVICE_ACCOUNT and WORKLOAD_IDENTITY.
     -- NULL for END_USER/SYSTEM_BOT, and for workspace-level SERVICE_ACCOUNT/WORKLOAD_IDENTITY.
-    -- Foreign key constraint added after project table is created.
-    project text,
+    project text REFERENCES project(resource_id),
     CONSTRAINT principal_project_type_check CHECK (
         (type IN ('END_USER', 'SYSTEM_BOT') AND project IS NULL) OR
         (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
@@ -100,21 +113,6 @@ CREATE TABLE policy (
 CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_type ON policy(resource_type, resource, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 101;
-
--- Project
-CREATE TABLE project (
-    id serial PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    name text NOT NULL,
-    resource_id text NOT NULL,
-    -- Stored as Project (proto/store/store/project.proto)
-    setting jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
-
--- Add foreign key constraint for principal.project now that project table exists
-ALTER TABLE principal ADD CONSTRAINT principal_project_fkey FOREIGN KEY (project) REFERENCES project(resource_id);
 
 -- Project Hook
 CREATE TABLE project_webhook (
