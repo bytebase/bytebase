@@ -609,19 +609,13 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	policy := &PolicyMessage{
 		Resource:     patch.Resource,
 		ResourceType: patch.ResourceType,
 		Type:         patch.Type,
 	}
 
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&policy.Payload,
 		&policy.InheritFromParent,
 		&policy.Enforce,
@@ -630,10 +624,6 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -655,17 +645,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 

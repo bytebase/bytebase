@@ -181,24 +181,14 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
 	var id int64
-	if err := tx.QueryRowContext(ctx, query,
+	if err := s.GetDB().QueryRowContext(ctx, query,
 		revision.InstanceID,
 		revision.DatabaseName,
 		revision.Version,
 		p,
 	).Scan(&id, &revision.CreatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to query and scan")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	revision.UID = id
@@ -212,18 +202,8 @@ func (s *Store) DeleteRevision(ctx context.Context, uid int64, instanceID, datab
 		SET deleter = $1, deleted_at = now()
 		WHERE id = $2 AND instance = $3 AND db_name = $4`
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, deleter, uid, instanceID, databaseName); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, deleter, uid, instanceID, databaseName); err != nil {
 		return errors.Wrapf(err, "failed to exec")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return nil

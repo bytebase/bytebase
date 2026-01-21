@@ -122,22 +122,12 @@ func (s *Store) UpsertDBSchema(
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	var metadata, schema, config []byte
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&metadata,
 		&schema,
 		&config,
 	); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -167,16 +157,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
