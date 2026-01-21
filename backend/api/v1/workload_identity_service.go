@@ -83,10 +83,10 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 
 	// Create the workload identity
 	createdWI, err := s.store.CreateWorkloadIdentity(ctx, &store.CreateWorkloadIdentityMessage{
-		Email:     email,
-		Name:      wi.Title,
-		ProjectID: projectID,
-		Config:    storeConfig,
+		Email:   email,
+		Name:    wi.Title,
+		Project: projectID,
+		Config:  storeConfig,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workload identity"))
@@ -144,9 +144,9 @@ func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, re
 	}
 	limitPlusOne := offset.limit + 1
 
-	// List workload identities using the store method with project_id filtering
+	// List workload identities using the store method with project filtering
 	wis, err := s.store.ListWorkloadIdentities(ctx, &store.FindWorkloadIdentityMessage{
-		ProjectID:   projectID,
+		Project:     projectID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,

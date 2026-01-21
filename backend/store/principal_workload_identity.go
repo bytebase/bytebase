@@ -20,8 +20,8 @@ type WorkloadIdentityMessage struct {
 	Email         string
 	Name          string
 	MemberDeleted bool
-	// ProjectID is the owning project. NULL for workspace-level workload identities.
-	ProjectID *string
+	// Project is the owning project. NULL for workspace-level workload identities.
+	Project *string
 	// Config is the workload identity configuration.
 	Config *storepb.WorkloadIdentityConfig
 }
@@ -33,8 +33,8 @@ type FindWorkloadIdentityMessage struct {
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
-	// ProjectID filters by owning project. Use empty string for workspace-level workload identities.
-	ProjectID *string
+	// Project filters by owning project. Use empty string for workspace-level workload identities.
+	Project *string
 }
 
 // CreateWorkloadIdentityMessage is the message for creating a workload identity.
@@ -42,8 +42,8 @@ type CreateWorkloadIdentityMessage struct {
 	// Email must be lower case.
 	Email string
 	Name  string
-	// ProjectID is the owning project. NULL for workspace-level workload identities.
-	ProjectID *string
+	// Project is the owning project. NULL for workspace-level workload identities.
+	Project *string
 	// Config is the workload identity configuration.
 	Config *storepb.WorkloadIdentityConfig
 }
@@ -80,11 +80,11 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 	if !find.ShowDeleted {
 		where.And("deleted = ?", false)
 	}
-	if v := find.ProjectID; v != nil {
+	if v := find.Project; v != nil {
 		if *v == "" {
-			where.And("project_id IS NULL")
+			where.And("project IS NULL")
 		} else {
-			where.And("project_id = ?", *v)
+			where.And("project = ?", *v)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 			deleted,
 			email,
 			name,
-			project_id,
+			project,
 			profile
 		FROM principal
 		WHERE ?
@@ -128,20 +128,20 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 	var wis []*WorkloadIdentityMessage
 	for rows.Next() {
 		var wi WorkloadIdentityMessage
-		var projectID sql.NullString
+		var project sql.NullString
 		var profileBytes []byte
 		if err := rows.Scan(
 			&wi.ID,
 			&wi.MemberDeleted,
 			&wi.Email,
 			&wi.Name,
-			&projectID,
+			&project,
 			&profileBytes,
 		); err != nil {
 			return nil, err
 		}
-		if projectID.Valid {
-			wi.ProjectID = &projectID.String
+		if project.Valid {
+			wi.Project = &project.String
 		}
 		// Parse profile to extract workload identity config
 		var profile storepb.UserProfile
@@ -188,11 +188,11 @@ func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorklo
 			password_hash,
 			phone,
 			profile,
-			project_id
+			project
 		)
 		VALUES (?, ?, ?, '', '', ?, ?)
 		RETURNING id
-	`, email, create.Name, storepb.PrincipalType_WORKLOAD_IDENTITY.String(), profileBytes, create.ProjectID)
+	`, email, create.Name, storepb.PrincipalType_WORKLOAD_IDENTITY.String(), profileBytes, create.Project)
 
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
@@ -209,11 +209,11 @@ func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorklo
 	}
 
 	return &WorkloadIdentityMessage{
-		ID:        wiID,
-		Email:     email,
-		Name:      create.Name,
-		ProjectID: create.ProjectID,
-		Config:    create.Config,
+		ID:      wiID,
+		Email:   email,
+		Name:    create.Name,
+		Project: create.Project,
+		Config:  create.Config,
 	}, nil
 }
 
@@ -244,7 +244,7 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 	}
 
 	sqlStr, args, err := qb.Q().Space(`UPDATE principal SET ? WHERE id = ?
-		RETURNING id, deleted, email, name, project_id, profile`,
+		RETURNING id, deleted, email, name, project, profile`,
 		set, wi.ID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -257,20 +257,20 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 	defer tx.Rollback()
 
 	var updated WorkloadIdentityMessage
-	var projectID sql.NullString
+	var project sql.NullString
 	var profileBytes []byte
 	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(
 		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
 		&updated.Name,
-		&projectID,
+		&project,
 		&profileBytes,
 	); err != nil {
 		return nil, err
 	}
-	if projectID.Valid {
-		updated.ProjectID = &projectID.String
+	if project.Valid {
+		updated.Project = &project.String
 	}
 	// Parse profile to extract workload identity config
 	var profile storepb.UserProfile

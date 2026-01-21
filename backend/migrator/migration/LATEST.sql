@@ -28,17 +28,17 @@ CREATE TABLE principal (
     mfa_config jsonb NOT NULL DEFAULT '{}',
     -- Stored as UserProfile (proto/store/store/user.proto)
     profile jsonb NOT NULL DEFAULT '{}',
-    -- project_id references the owning project for SERVICE_ACCOUNT and WORKLOAD_IDENTITY.
+    -- project references the owning project for SERVICE_ACCOUNT and WORKLOAD_IDENTITY.
     -- NULL for END_USER/SYSTEM_BOT, and for workspace-level SERVICE_ACCOUNT/WORKLOAD_IDENTITY.
-    project_id text,
-    CONSTRAINT principal_project_id_type_check CHECK (
-        (type IN ('END_USER', 'SYSTEM_BOT') AND project_id IS NULL) OR
+    project text REFERENCES project(resource_id),
+    CONSTRAINT principal_project_type_check CHECK (
+        (type IN ('END_USER', 'SYSTEM_BOT') AND project IS NULL) OR
         (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
     )
 );
 
 CREATE UNIQUE INDEX idx_principal_unique_email ON principal(email);
-CREATE INDEX idx_principal_project_id ON principal(project_id) WHERE project_id IS NOT NULL;
+CREATE INDEX idx_principal_project ON principal(project) WHERE project IS NOT NULL;
 
 -- Setting
 CREATE TABLE setting (

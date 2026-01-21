@@ -94,7 +94,7 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		Email:        email,
 		Name:         sa.Title,
 		PasswordHash: string(passwordHash),
-		ProjectID:    projectID,
+		Project:      projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create service account"))
@@ -156,9 +156,9 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 	}
 	limitPlusOne := offset.limit + 1
 
-	// List service accounts using the store method with project_id filtering
+	// List service accounts using the store method with project filtering
 	sas, err := s.store.ListServiceAccounts(ctx, &store.FindServiceAccountMessage{
-		ProjectID:   projectID,
+		Project:     projectID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,

@@ -19,8 +19,8 @@ type ServiceAccountMessage struct {
 	Email         string
 	Name          string
 	MemberDeleted bool
-	// ProjectID is the owning project. NULL for workspace-level service accounts.
-	ProjectID *string
+	// Project is the owning project. NULL for workspace-level service accounts.
+	Project *string
 }
 
 // FindServiceAccountMessage is the message for finding service accounts.
@@ -30,8 +30,8 @@ type FindServiceAccountMessage struct {
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
-	// ProjectID filters by owning project. Use empty string for workspace-level service accounts.
-	ProjectID *string
+	// Project filters by owning project. Use empty string for workspace-level service accounts.
+	Project *string
 }
 
 // CreateServiceAccountMessage is the message for creating a service account.
@@ -40,8 +40,8 @@ type CreateServiceAccountMessage struct {
 	Email        string
 	Name         string
 	PasswordHash string
-	// ProjectID is the owning project. NULL for workspace-level service accounts.
-	ProjectID *string
+	// Project is the owning project. NULL for workspace-level service accounts.
+	Project *string
 }
 
 // UpdateServiceAccountMessage is the message to update a service account.
@@ -76,11 +76,11 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 	if !find.ShowDeleted {
 		where.And("deleted = ?", false)
 	}
-	if v := find.ProjectID; v != nil {
+	if v := find.Project; v != nil {
 		if *v == "" {
-			where.And("project_id IS NULL")
+			where.And("project IS NULL")
 		} else {
-			where.And("project_id = ?", *v)
+			where.And("project = ?", *v)
 		}
 	}
 
@@ -90,7 +90,7 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 			deleted,
 			email,
 			name,
-			project_id
+			project
 		FROM principal
 		WHERE ?
 		ORDER BY created_at ASC
@@ -123,18 +123,18 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 	var sas []*ServiceAccountMessage
 	for rows.Next() {
 		var sa ServiceAccountMessage
-		var projectID sql.NullString
+		var project sql.NullString
 		if err := rows.Scan(
 			&sa.ID,
 			&sa.MemberDeleted,
 			&sa.Email,
 			&sa.Name,
-			&projectID,
+			&project,
 		); err != nil {
 			return nil, err
 		}
-		if projectID.Valid {
-			sa.ProjectID = &projectID.String
+		if project.Valid {
+			sa.Project = &project.String
 		}
 		sas = append(sas, &sa)
 	}
@@ -172,11 +172,11 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 			password_hash,
 			phone,
 			profile,
-			project_id
+			project
 		)
 		VALUES (?, ?, ?, ?, '', ?, ?)
 		RETURNING id
-	`, email, create.Name, storepb.PrincipalType_SERVICE_ACCOUNT.String(), create.PasswordHash, profileBytes, create.ProjectID)
+	`, email, create.Name, storepb.PrincipalType_SERVICE_ACCOUNT.String(), create.PasswordHash, profileBytes, create.Project)
 
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
@@ -193,10 +193,10 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 	}
 
 	return &ServiceAccountMessage{
-		ID:        saID,
-		Email:     email,
-		Name:      create.Name,
-		ProjectID: create.ProjectID,
+		ID:      saID,
+		Email:   email,
+		Name:    create.Name,
+		Project: create.Project,
 	}, nil
 }
 
@@ -218,7 +218,7 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	}
 
 	sqlStr, args, err := qb.Q().Space(`UPDATE principal SET ? WHERE id = ?
-		RETURNING id, deleted, email, name, project_id`,
+		RETURNING id, deleted, email, name, project`,
 		set, sa.ID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -231,18 +231,18 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	defer tx.Rollback()
 
 	var updated ServiceAccountMessage
-	var projectID sql.NullString
+	var project sql.NullString
 	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(
 		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
 		&updated.Name,
-		&projectID,
+		&project,
 	); err != nil {
 		return nil, err
 	}
-	if projectID.Valid {
-		updated.ProjectID = &projectID.String
+	if project.Valid {
+		updated.Project = &project.String
 	}
 
 	if err := tx.Commit(); err != nil {
