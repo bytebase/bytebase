@@ -58,7 +58,6 @@ const props = defineProps<{
   showRoles: boolean;
   userList: User[];
   loading: boolean;
-  onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
 const emit = defineEmits<{
@@ -98,7 +97,6 @@ const columns = computed(() => {
         return h(UserNameCell, {
           user,
           "onReset-service-key": tryResetServiceKey,
-          "on-click-user": props.onClickUser,
         });
       },
     },
@@ -131,11 +129,6 @@ const columns = computed(() => {
       render: (user: User) => {
         return h(UserOperationsCell, {
           user,
-          "onClick-user": (user: User, e: MouseEvent) => {
-            if (props.onClickUser) {
-              props.onClickUser(user, e);
-            }
-          },
           "onUpdate-user": (user: User) => {
             emit("update-user", user);
           },

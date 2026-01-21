@@ -34,7 +34,7 @@ export const useWorkspaceApprovalSettingStore = defineStore(
 
     const fetchConfig = async () => {
       try {
-        const response = await settingStore.fetchSettingByName(
+        const response = await settingStore.getOrFetchSettingByName(
           Setting_SettingName.WORKSPACE_APPROVAL
         );
         if (!response) {

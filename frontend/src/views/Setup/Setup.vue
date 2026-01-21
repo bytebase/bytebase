@@ -26,5 +26,6 @@ onMounted(async () => {
     useRoleStore().fetchRoleList(),
     useWorkspaceV1Store().fetchIamPolicy(),
   ]);
+  ready.value = true;
 });
 </script>

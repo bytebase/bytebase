@@ -223,10 +223,6 @@ func convertToStoreIamPolicy(iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, err
 		bindings = append(bindings, storeBinding)
 	}
 
-	if len(bindings) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("policy binding is empty"))
-	}
-
 	return &storepb.IamPolicy{
 		Bindings: bindings,
 	}, nil

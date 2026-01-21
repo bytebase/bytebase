@@ -50,7 +50,6 @@ const props = withDefaults(
     loading: boolean;
     showGroupRole?: boolean;
     expandedKeys?: string[];
-    onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),
   {
     showGroupRole: true,
@@ -118,7 +117,6 @@ const columns = computed(() => {
           <GroupMemberNameCell
             user={row.user}
             role={props.showGroupRole ? row.role : undefined}
-            onClickUser={props.onClickUser}
           />
         );
       },
