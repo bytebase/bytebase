@@ -108,13 +108,7 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, sqlStr, args...)
+	rows, err := s.GetDB().QueryContext(ctx, sqlStr, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -142,22 +136,12 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 		return nil, errors.Wrapf(err, "failed to scan rows")
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	return sas, nil
 }
 
 // CreateServiceAccount creates a service account.
 func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceAccountMessage) (*ServiceAccountMessage, error) {
 	email := strings.ToLower(create.Email)
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	profileBytes, err := protojson.Marshal(&storepb.UserProfile{})
 	if err != nil {
@@ -184,11 +168,7 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 	}
 
 	var saID int
-	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(&saID); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&saID); err != nil {
 		return nil, err
 	}
 
@@ -224,15 +204,9 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	var updated ServiceAccountMessage
 	var project sql.NullString
-	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
 		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
@@ -243,10 +217,6 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	}
 	if project.Valid {
 		updated.Project = &project.String
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 
 	// Also update the unified cache if this SA is in there

@@ -104,12 +104,6 @@ func (s *Store) CreateEndUserFromMessage(ctx context.Context, create *CreateEndU
 		return nil, err
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	q := qb.Q().Space(`
 		INSERT INTO principal (
 			email,
@@ -128,23 +122,20 @@ func (s *Store) CreateEndUserFromMessage(ctx context.Context, create *CreateEndU
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var user UserMessage
-	user.Email = email
-	user.Name = create.Name
-	user.Type = storepb.PrincipalType_END_USER
-	user.PasswordHash = create.PasswordHash
-	user.Phone = create.Phone
-	user.Profile = profile
-	user.MFAConfig = &storepb.MFAConfig{}
+	user := &UserMessage{
+		Email:        email,
+		Name:         create.Name,
+		Type:         storepb.PrincipalType_END_USER,
+		PasswordHash: create.PasswordHash,
+		Phone:        create.Phone,
+		Profile:      profile,
+		MFAConfig:    &storepb.MFAConfig{},
+	}
 
-	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(&user.ID, &user.CreatedAt); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&user.ID, &user.CreatedAt); err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	s.userEmailCache.Add(user.Email, &user)
-	return &user, nil
+	s.userEmailCache.Add(user.Email, user)
+	return user, nil
 }

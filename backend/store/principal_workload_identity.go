@@ -113,13 +113,7 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, sqlStr, args...)
+	rows, err := s.GetDB().QueryContext(ctx, sqlStr, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -155,22 +149,12 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 		return nil, errors.Wrapf(err, "failed to scan rows")
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	return wis, nil
 }
 
 // CreateWorkloadIdentity creates a workload identity.
 func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorkloadIdentityMessage) (*WorkloadIdentityMessage, error) {
 	email := strings.ToLower(create.Email)
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	profile := &storepb.UserProfile{
 		WorkloadIdentityConfig: create.Config,
@@ -200,11 +184,7 @@ func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorklo
 	}
 
 	var wiID int
-	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(&wiID); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&wiID); err != nil {
 		return nil, err
 	}
 
@@ -250,16 +230,10 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	var updated WorkloadIdentityMessage
 	var project sql.NullString
 	var profileBytes []byte
-	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
 		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
@@ -278,10 +252,6 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 		return nil, err
 	}
 	updated.Config = profile.WorkloadIdentityConfig
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	// Also update the unified cache if this WI is in there
 	s.userEmailCache.Remove(wi.Email)
