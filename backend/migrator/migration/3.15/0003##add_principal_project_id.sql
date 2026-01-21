@@ -1,0 +1,17 @@
+-- Add project_id column to principal table for service accounts and workload identities.
+-- This column references the project that owns the service account or workload identity.
+-- For END_USER and SYSTEM_BOT types, this column should be NULL.
+-- For SERVICE_ACCOUNT and WORKLOAD_IDENTITY types, this column indicates the owning project.
+-- NULL project_id for SERVICE_ACCOUNT/WORKLOAD_IDENTITY means it's a workspace-level principal.
+
+ALTER TABLE principal ADD COLUMN project_id text;
+
+-- Create index for efficient lookups by project_id
+CREATE INDEX idx_principal_project_id ON principal(project_id) WHERE project_id IS NOT NULL;
+
+-- Add constraint to ensure END_USER and SYSTEM_BOT cannot have project_id
+ALTER TABLE principal ADD CONSTRAINT principal_project_id_type_check
+    CHECK (
+        (type IN ('END_USER', 'SYSTEM_BOT') AND project_id IS NULL) OR
+        (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
+    );
