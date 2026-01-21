@@ -91,7 +91,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			type
 		FROM system_schema.columns
 		WHERE keyspace_name = ?
-	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
+	`, d.config.ConnectionContext.DatabaseName).IterContext(ctx).Scanner()
 	for columnScanner.Next() {
 		var tableName, columnName, kind, clusteringOrder, columnType string
 		var position int
@@ -183,7 +183,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		FROM system_schema.indexes
 		WHERE keyspace_name = ?
 		ORDER BY table_name, index_name
-	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
+	`, d.config.ConnectionContext.DatabaseName).IterContext(ctx).Scanner()
 	for indexScanner.Next() {
 		var tableName, indexName, kind, options string
 		if err := indexScanner.Scan(
@@ -213,7 +213,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		FROM system_schema.tables
 		WHERE keyspace_name = ?
 		ORDER BY table_name
-	`, d.config.ConnectionContext.DatabaseName).WithContext(ctx).Iter().Scanner()
+	`, d.config.ConnectionContext.DatabaseName).IterContext(ctx).Scanner()
 	for tableScanner.Next() {
 		var tableName, comment string
 		if err := tableScanner.Scan(
@@ -324,14 +324,14 @@ func getPKDefinition(pks []primaryKey) string {
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	var version string
-	if err := d.session.Query("SELECT release_version FROM system.local").WithContext(ctx).Scan(&version); err != nil {
+	if err := d.session.Query("SELECT release_version FROM system.local").ScanContext(ctx, &version); err != nil {
 		return "", errors.Wrapf(err, "failed to query")
 	}
 	return version, nil
 }
 
 func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
-	scanner := d.session.Query("SELECT keyspace_name FROM system_schema.keyspaces").WithContext(ctx).Iter().Scanner()
+	scanner := d.session.Query("SELECT keyspace_name FROM system_schema.keyspaces").IterContext(ctx).Scanner()
 
 	var databases []*storepb.DatabaseSchemaMetadata
 	for scanner.Next() {

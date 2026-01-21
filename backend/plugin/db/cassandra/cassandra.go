@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"github.com/cockroachdb/cockroachdb-parser/pkg/util/timeofday"
-	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -85,7 +85,7 @@ func (d *Driver) Close(context.Context) error {
 
 func (d *Driver) Ping(ctx context.Context) error {
 	var version string
-	err := d.session.Query("SELECT release_version FROM system.local").WithContext(ctx).Scan(&version)
+	err := d.session.Query("SELECT release_version FROM system.local").ScanContext(ctx, &version)
 	if err != nil {
 		return errors.Wrapf(err, "failed to ping")
 	}
@@ -103,7 +103,7 @@ func (d *Driver) Execute(ctx context.Context, rawStatement string, _ db.ExecuteO
 	}
 
 	for _, stmt := range stmts {
-		if err := d.session.Query(stmt).WithContext(ctx).Exec(); err != nil {
+		if err := d.session.Query(stmt).ExecContext(ctx); err != nil {
 			return 0, errors.Wrapf(err, "failed to execute")
 		}
 	}
@@ -131,14 +131,14 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string
 			var pageState []byte
 			for {
 				nextPageState, err := func() ([]byte, error) {
-					iter := d.session.Query(stmt).WithContext(ctx).PageSize(pageSize).PageState(pageState).Iter()
+					iter := d.session.Query(stmt).PageSize(pageSize).PageState(pageState).IterContext(ctx)
 					defer iter.Close()
 					nextPageState := iter.PageState()
 
 					if len(result.ColumnNames) == 0 {
 						for _, c := range iter.Columns() {
 							result.ColumnNames = append(result.ColumnNames, c.Name)
-							result.ColumnTypeNames = append(result.ColumnTypeNames, c.TypeInfo.Type().String())
+							result.ColumnTypeNames = append(result.ColumnTypeNames, typeToString(c.TypeInfo.Type()))
 						}
 					}
 					for {
@@ -377,4 +377,65 @@ func formatAddress(host, port string) string {
 		return host
 	}
 	return host + ":" + port
+}
+
+func typeToString(t gocql.Type) string {
+	switch t {
+	case gocql.TypeCustom:
+		return "custom"
+	case gocql.TypeAscii:
+		return "ascii"
+	case gocql.TypeBigInt:
+		return "bigint"
+	case gocql.TypeBlob:
+		return "blob"
+	case gocql.TypeBoolean:
+		return "boolean"
+	case gocql.TypeCounter:
+		return "counter"
+	case gocql.TypeDecimal:
+		return "decimal"
+	case gocql.TypeDouble:
+		return "double"
+	case gocql.TypeFloat:
+		return "float"
+	case gocql.TypeInt:
+		return "int"
+	case gocql.TypeText:
+		return "text"
+	case gocql.TypeTimestamp:
+		return "timestamp"
+	case gocql.TypeUUID:
+		return "uuid"
+	case gocql.TypeVarchar:
+		return "varchar"
+	case gocql.TypeVarint:
+		return "varint"
+	case gocql.TypeTimeUUID:
+		return "timeuuid"
+	case gocql.TypeInet:
+		return "inet"
+	case gocql.TypeDate:
+		return "date"
+	case gocql.TypeTime:
+		return "time"
+	case gocql.TypeSmallInt:
+		return "smallint"
+	case gocql.TypeTinyInt:
+		return "tinyint"
+	case gocql.TypeDuration:
+		return "duration"
+	case gocql.TypeList:
+		return "list"
+	case gocql.TypeMap:
+		return "map"
+	case gocql.TypeSet:
+		return "set"
+	case gocql.TypeUDT:
+		return "udt"
+	case gocql.TypeTuple:
+		return "tuple"
+	default:
+		return fmt.Sprintf("unknown(%d)", t)
+	}
 }
