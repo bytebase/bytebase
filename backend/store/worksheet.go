@@ -201,12 +201,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&create.UID,
 		&create.CreatedAt,
 		&create.UpdatedAt,
@@ -216,9 +211,6 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return create, nil
@@ -341,12 +333,6 @@ func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID int, pri
 
 // UpsertWorksheetOrganizer upserts a new SheetOrganizerMessage.
 func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	payloadStr, err := protojson.Marshal(patch.Payload)
 	if err != nil {
 		return nil, err
@@ -374,7 +360,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 
 	var worksheetOrganizer WorksheetOrganizerMessage
 	var payload []byte
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&worksheetOrganizer.UID,
 		&worksheetOrganizer.WorksheetUID,
 		&worksheetOrganizer.Principal,
@@ -390,10 +376,6 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 		return nil, err
 	}
 	worksheetOrganizer.Payload = workSheetPayload
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 
 	return &worksheetOrganizer, nil
 }
