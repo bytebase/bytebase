@@ -112,7 +112,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
 
     setRequireResetPassword(resp.requireResetPassword);
-    const needAdminSetup = actuatorStore.needAdminSetup
+    const needAdminSetup = actuatorStore.needAdminSetup;
     await actuatorStore.fetchServerInfo();
 
     // After user login, we need to reset the auth session key.
