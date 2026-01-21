@@ -124,15 +124,7 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
 		return nil, err
 	}
 
@@ -147,17 +139,11 @@ func (s *Store) DeleteExportArchive(ctx context.Context, uid int) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // DeleteExpiredExportArchives deletes export archives older than the specified retention period.
