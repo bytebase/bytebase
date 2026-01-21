@@ -51,6 +51,8 @@ const (
 	ReleaseNamePrefix          = "releases/"
 	FileNamePrefix             = "files/"
 	RevisionNamePrefix         = "revisions/"
+	ServiceAccountNamePrefix   = "serviceAccounts/"
+	WorkloadIdentityNamePrefix = "workloadIdentities/"
 
 	SchemaSuffix    = "/schema"
 	SDLSchemaSuffix = "/sdlSchema"
@@ -516,7 +518,18 @@ func FormatGroupEmail(email string) string {
 
 // IsWorkloadIdentityEmail checks if the email is a workload identity email.
 func IsWorkloadIdentityEmail(email string) bool {
-	return strings.HasSuffix(email, WorkloadIdentityEmailSuffix)
+	return strings.HasSuffix(email, WorkloadIdentityEmailSuffix) || isProjectWorkloadIdentityEmail(email)
+}
+
+// isProjectWorkloadIdentityEmail checks if the email is a project-level workload identity email.
+func isProjectWorkloadIdentityEmail(email string) bool {
+	// Format: {name}@{project-id}.workload.bytebase.com
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	domain := parts[1]
+	return strings.HasSuffix(domain, ".workload.bytebase.com") && domain != WorkloadIdentityEmailSuffix
 }
 
 func FormatReviewConfig(id string) string {
@@ -637,4 +650,64 @@ func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resour
 	}
 
 	return storepb.Policy_RESOURCE_UNSPECIFIED, nil, errors.Errorf("unknown request name %s", requestName)
+}
+
+// IsServiceAccountEmail checks if the email is a service account email.
+func IsServiceAccountEmail(email string) bool {
+	return strings.HasSuffix(email, ServiceAccountEmailSuffix) || isProjectServiceAccountEmail(email)
+}
+
+// isProjectServiceAccountEmail checks if the email is a project-level service account email.
+func isProjectServiceAccountEmail(email string) bool {
+	// Format: {name}@{project-id}.service.bytebase.com
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	domain := parts[1]
+	return strings.HasSuffix(domain, ".service.bytebase.com")
+}
+
+// FormatServiceAccountEmail formats a service account email from email.
+func FormatServiceAccountEmail(email string) string {
+	return fmt.Sprintf("%s%s", ServiceAccountNamePrefix, email)
+}
+
+// FormatWorkloadIdentityEmail formats a workload identity email from email.
+func FormatWorkloadIdentityEmail(email string) string {
+	return fmt.Sprintf("%s%s", WorkloadIdentityNamePrefix, email)
+}
+
+// GetServiceAccountEmail extracts email from a service account resource name.
+func GetServiceAccountEmail(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, ServiceAccountNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
+// GetWorkloadIdentityEmail extracts email from a workload identity resource name.
+func GetWorkloadIdentityEmail(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, WorkloadIdentityNamePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
+// BuildServiceAccountEmail constructs a full email from name and optional project ID.
+func BuildServiceAccountEmail(name, projectID string) string {
+	if projectID == "" {
+		return fmt.Sprintf("%s%s", name, ServiceAccountEmailSuffix)
+	}
+	return fmt.Sprintf("%s@%s.service.bytebase.com", name, projectID)
+}
+
+// BuildWorkloadIdentityEmail constructs a full email from name and optional project ID.
+func BuildWorkloadIdentityEmail(name, projectID string) string {
+	if projectID == "" {
+		return fmt.Sprintf("%s%s", name, WorkloadIdentityEmailSuffix)
+	}
+	return fmt.Sprintf("%s@%s.workload.bytebase.com", name, projectID)
 }

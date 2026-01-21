@@ -112,11 +112,21 @@ func GetGroupByName(ctx context.Context, stores *store.Store, name string) (*sto
 }
 
 // GetUsersByMember gets user messages by member.
-// The member should be in users/{email} or groups/{email} format.
+// The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
 func GetUsersByMember(ctx context.Context, stores *store.Store, member string) []*store.UserMessage {
 	var users []*store.UserMessage
 	if strings.HasPrefix(member, common.UserNamePrefix) {
-		user := getUserByIdentifier(ctx, stores, member)
+		user := getUserByIdentifier(ctx, stores, member, common.UserNamePrefix)
+		if user != nil {
+			users = append(users, user)
+		}
+	} else if strings.HasPrefix(member, common.ServiceAccountNamePrefix) {
+		user := getUserByIdentifier(ctx, stores, member, common.ServiceAccountNamePrefix)
+		if user != nil {
+			users = append(users, user)
+		}
+	} else if strings.HasPrefix(member, common.WorkloadIdentityNamePrefix) {
+		user := getUserByIdentifier(ctx, stores, member, common.WorkloadIdentityNamePrefix)
 		if user != nil {
 			users = append(users, user)
 		}
@@ -131,7 +141,7 @@ func GetUsersByMember(ctx context.Context, stores *store.Store, member string) [
 			return users
 		}
 		for _, member := range group.Payload.Members {
-			user := getUserByIdentifier(ctx, stores, member.Member)
+			user := getUserByIdentifier(ctx, stores, member.Member, common.UserNamePrefix)
 			if user != nil {
 				users = append(users, user)
 			}
@@ -141,16 +151,30 @@ func GetUsersByMember(ctx context.Context, stores *store.Store, member string) [
 }
 
 // getUserByIdentifier gets user message by identifier.
-// The identifier should be in users/{email} format.
-func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier string) *store.UserMessage {
-	email, err := common.GetUserEmail(identifier)
+// The identifier should be in {prefix}{email} format where prefix is one of:
+// users/, serviceAccounts/, or workloadIdentities/
+func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier, prefix string) *store.UserMessage {
+	var email string
+	var err error
+	switch prefix {
+	case common.UserNamePrefix:
+		email, err = common.GetUserEmail(identifier)
+	case common.ServiceAccountNamePrefix:
+		email, err = common.GetServiceAccountEmail(identifier)
+	case common.WorkloadIdentityNamePrefix:
+		email, err = common.GetWorkloadIdentityEmail(identifier)
+	default:
+		// Fallback to user email for backward compatibility
+		email, err = common.GetUserEmail(identifier)
+	}
 	if err != nil {
-		slog.Error("failed to parse user email", slog.String("user", identifier), log.BBError(err))
+		slog.Error("failed to parse email from identifier", slog.String("identifier", identifier), log.BBError(err))
 		return nil
 	}
-	user, err := stores.GetUserByEmail(ctx, email)
+	// GetPrincipalByEmail handles all principal types based on email format
+	user, err := stores.GetPrincipalByEmail(ctx, email)
 	if err != nil {
-		slog.Error("failed to get user by email", slog.String("user", identifier), log.BBError(err))
+		slog.Error("failed to get principal by email", slog.String("identifier", identifier), log.BBError(err))
 		return nil
 	}
 	return user

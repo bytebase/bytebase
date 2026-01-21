@@ -172,15 +172,16 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		)
 	}
 
-	user, err := in.store.GetUserByEmail(ctx, claims.Subject)
+	// GetPrincipalByEmail handles all principal types (user, service account, workload identity)
+	user, err := in.store.GetPrincipalByEmail(ctx, claims.Subject)
 	if err != nil {
-		return nil, nil, errs.Errorf("failed to find user %q in the access token", claims.Subject)
+		return nil, nil, errs.Errorf("failed to find principal %q in the access token", claims.Subject)
 	}
 	if user == nil {
-		return nil, nil, errs.Errorf("user %q not exists in the access token", claims.Subject)
+		return nil, nil, errs.Errorf("principal %q not exists in the access token", claims.Subject)
 	}
 	if user.MemberDeleted {
-		return nil, nil, errs.Errorf("user ID %q has been deactivated by administrators", user.ID)
+		return nil, nil, errs.Errorf("principal ID %q has been deactivated by administrators", user.ID)
 	}
 
 	return user, claims, nil

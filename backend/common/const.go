@@ -16,6 +16,9 @@ const (
 
 	// WorkloadIdentityEmailSuffix is the email suffix for workload identities.
 	WorkloadIdentityEmailSuffix = "@workload.bytebase.com"
+
+	// ServiceAccountEmailSuffix is the email suffix for workspace-level service accounts.
+	ServiceAccountEmailSuffix = "@service.bytebase.com"
 )
 
 const (
