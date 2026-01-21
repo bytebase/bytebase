@@ -37,16 +37,18 @@ type FindServiceAccountMessage struct {
 // CreateServiceAccountMessage is the message for creating a service account.
 type CreateServiceAccountMessage struct {
 	// Email must be lower case.
-	Email string
-	Name  string
+	Email        string
+	Name         string
+	PasswordHash string
 	// ProjectID is the owning project. NULL for workspace-level service accounts.
 	ProjectID *string
 }
 
 // UpdateServiceAccountMessage is the message to update a service account.
 type UpdateServiceAccountMessage struct {
-	Name   *string
-	Delete *bool
+	Name         *string
+	PasswordHash *string
+	Delete       *bool
 }
 
 // GetServiceAccountByEmail gets a service account by email.
@@ -172,9 +174,9 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 			profile,
 			project_id
 		)
-		VALUES (?, ?, ?, '', '', ?, ?)
+		VALUES (?, ?, ?, ?, '', ?, ?)
 		RETURNING id
-	`, email, create.Name, storepb.PrincipalType_SERVICE_ACCOUNT.String(), profileBytes, create.ProjectID)
+	`, email, create.Name, storepb.PrincipalType_SERVICE_ACCOUNT.String(), create.PasswordHash, profileBytes, create.ProjectID)
 
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
@@ -206,6 +208,9 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	}
 	if v := patch.Name; v != nil {
 		set.Comma("name = ?", *v)
+	}
+	if v := patch.PasswordHash; v != nil {
+		set.Comma("password_hash = ?", *v)
 	}
 
 	if set.Len() == 0 {
