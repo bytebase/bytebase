@@ -30,7 +30,8 @@ CREATE TABLE principal (
     profile jsonb NOT NULL DEFAULT '{}',
     -- project references the owning project for SERVICE_ACCOUNT and WORKLOAD_IDENTITY.
     -- NULL for END_USER/SYSTEM_BOT, and for workspace-level SERVICE_ACCOUNT/WORKLOAD_IDENTITY.
-    project text REFERENCES project(resource_id),
+    -- Foreign key constraint added after project table is created.
+    project text,
     CONSTRAINT principal_project_type_check CHECK (
         (type IN ('END_USER', 'SYSTEM_BOT') AND project IS NULL) OR
         (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
@@ -111,6 +112,9 @@ CREATE TABLE project (
 );
 
 CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
+
+-- Add foreign key constraint for principal.project now that project table exists
+ALTER TABLE principal ADD CONSTRAINT principal_project_fkey FOREIGN KEY (project) REFERENCES project(resource_id);
 
 -- Project Hook
 CREATE TABLE project_webhook (
