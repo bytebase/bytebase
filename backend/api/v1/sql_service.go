@@ -459,7 +459,8 @@ func queryRetry(
 	database *store.DatabaseMessage,
 	driver db.Driver,
 	conn *sql.Conn,
-	statement string,
+	statements []parserbase.Statement,
+	originalStatement string,
 	queryContext db.QueryContext,
 	licenseService *enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
@@ -468,11 +469,6 @@ func queryRetry(
 	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
 	var err error
-	// Split the statement once at entry point
-	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
-	if err != nil {
-		return nil, nil, time.Duration(0), err
-	}
 	if !queryContext.Explain {
 		spans, err = parserbase.GetQuerySpan(
 			ctx,
@@ -513,18 +509,18 @@ func queryRetry(
 		}
 	}
 
-	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", statement))
+	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", originalStatement))
 	results, duration, queryErr := executeWithTimeout(
 		ctx,
 		driver,
 		conn,
-		statement,
+		originalStatement,
 		queryContext,
 	)
 	if queryErr != nil {
 		return nil, nil, duration, queryErr
 	}
-	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", duration))
+	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
 		return results, nil, duration, nil
 	}
@@ -741,16 +737,22 @@ func queryRetryStopOnError(
 	// MSSQL requires statements to be executed as a batch to preserve variable scope.
 	// For example, "DECLARE @meta int = 1; SELECT @meta" must be sent as one batch,
 	// otherwise the second statement will fail with "variable not defined" error.
-	// The queryRetry function will handle splitting internally via GetQuerySpan and queryBatch.
+	// Split for span analysis, but pass original statement for batch execution.
 	if instance.Metadata.GetEngine() == storepb.Engine_MSSQL {
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statements, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
 	}
 
 	// Split the statement into individual SQLs
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
 	if err != nil {
-		// Fall back to executing as a single statement if splitting fails
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		// Engines without splitter support (MongoDB, Redis, Elasticsearch) fall back to
+		// treating the entire statement as a single unit. These engines also don't have
+		// GetQuerySpan support, so queryRetry will return nil spans (old behavior).
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{{Text: statement}}, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
 	}
 
 	var allResults []*v1pb.QueryResult
@@ -763,7 +765,7 @@ func queryRetryStopOnError(
 			continue
 		}
 
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, []parserbase.Statement{stmt}, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
 		totalDuration += duration
 
 		if err != nil {
@@ -1031,6 +1033,14 @@ func doExport(
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
+
+	// Split the statement for span analysis
+	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), request.Statement)
+	if err != nil {
+		// Fall back to single statement for engines without splitter support
+		statements = []parserbase.Statement{{Text: request.Statement}}
+	}
+
 	results, spans, duration, queryErr := queryRetry(
 		ctx,
 		stores,
@@ -1039,6 +1049,7 @@ func doExport(
 		database,
 		driver,
 		conn,
+		statements,
 		request.Statement,
 		queryContext,
 		licenseService,
