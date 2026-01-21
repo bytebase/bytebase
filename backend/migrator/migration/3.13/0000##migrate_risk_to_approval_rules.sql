@@ -75,15 +75,27 @@ DECLARE
     clause text;
     source_in_clause boolean;
     level_in_clause boolean;
+    old_source_val text;
 BEGIN
+    -- Handle old source name aliases:
+    -- DATA_EXPORT was the old name, EXPORT_DATA is the new name
+    old_source_val := CASE source_val
+        WHEN 'EXPORT_DATA' THEN 'DATA_EXPORT'
+        ELSE NULL
+    END;
+
     -- Split expression by '||' (OR operator) and check each clause
     -- For a match, source and level must appear TOGETHER in the same AND clause
     FOR clause IN SELECT unnest(string_to_array(cel_expr, '||'))
     LOOP
-        -- Check if this clause contains the source
+        -- Check if this clause contains the source (including old aliases)
         source_in_clause := (
             clause LIKE '%source == "' || source_val || '"%'
             OR clause LIKE '%source == ''' || source_val || '''%'
+            OR (old_source_val IS NOT NULL AND (
+                clause LIKE '%source == "' || old_source_val || '"%'
+                OR clause LIKE '%source == ''' || old_source_val || '''%'
+            ))
         );
 
         -- Check if this clause contains the level
