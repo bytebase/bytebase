@@ -93,20 +93,11 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if err := tx.QueryRowContext(ctx, sql, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(
 		&create.UID,
 		&create.CreatedAt,
 	); err != nil {
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return create, nil
