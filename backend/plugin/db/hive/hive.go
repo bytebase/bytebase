@@ -326,19 +326,3 @@ func (d *Driver) queryStatementWithLimit(ctx context.Context, statement string, 
 	result.RowsCount = int64(len(result.Rows))
 	return result, nil
 }
-
-// Temporary helper for dump.go compatibility - will be removed in Task 4.
-// queryStatement executes a query without size limits.
-func (d *Driver) queryStatement(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
-	return d.queryStatementWithLimit(ctx, statement, 0)
-}
-
-// Temporary helper for dump.go compatibility - will be removed in Task 4.
-// executeCursor executes a statement without returning results.
-func (d *Driver) executeCursor(ctx context.Context, statement string) error {
-	if d.db == nil {
-		return errors.New("connection not initialized")
-	}
-	_, err := d.db.ExecContext(ctx, statement)
-	return err
-}
