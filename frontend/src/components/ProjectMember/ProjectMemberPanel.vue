@@ -198,7 +198,7 @@ const hasRequestRoleFeature = computed(() =>
 
 const shouldShowRequestRoleButton = computed(() => {
   return (
-    props.project.allowSelfApproval && hasWorkspacePermissionV2("bb.roles.list")
+    props.project.allowRequestRole && hasWorkspacePermissionV2("bb.roles.list")
   );
 });
 
