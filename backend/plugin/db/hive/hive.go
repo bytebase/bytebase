@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beltran/gohive"
+	_ "github.com/beltran/gohive/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
@@ -36,74 +36,112 @@ func init() {
 }
 
 type Driver struct {
-	config db.ConnectionConfig
-	ctx    db.ConnectionContext
-	conn   *gohive.Connection
+	config     db.ConnectionConfig
+	ctx        db.ConnectionContext
+	db         *sql.DB
+	connString string
 }
 
 var (
 	_ db.Driver = (*Driver)(nil)
 )
 
+func buildHiveDSN(config db.ConnectionConfig) (string, error) {
+	port := config.DataSource.Port
+	if port == "" {
+		port = "10000" // default Hive port
+	}
+
+	// Basic DSN format: hive://host:port/database
+	dsn := fmt.Sprintf("hive://%s:%s", config.DataSource.Host, port)
+
+	// Add database if specified
+	if config.ConnectionContext.DatabaseName != "" {
+		dsn = fmt.Sprintf("%s/%s", dsn, config.ConnectionContext.DatabaseName)
+	}
+
+	// Add authentication parameters
+	auth := "NONE"
+	service := "hive"
+
+	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
+		auth = "KERBEROS"
+		if t.KrbConfig.Primary != "" {
+			service = t.KrbConfig.Primary
+		}
+	}
+
+	dsn = fmt.Sprintf("%s?auth=%s&service=%s", dsn, auth, service)
+
+	return dsn, nil
+}
+
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	if config.DataSource.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
 
-	d.config = config
-	d.ctx = config.ConnectionContext
-
-	port, err := strconv.Atoi(config.DataSource.Port)
+	// Build DSN connection string
+	connString, err := buildHiveDSN(config)
 	if err != nil {
-		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
+		return nil, errors.Wrap(err, "failed to build DSN")
 	}
 
-	var authConnParam = "NONE"
-	hiveConfig := gohive.NewConnectConfiguration()
+	// Handle Kerberos authentication if needed
 	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
-		// Kerberos environment mutex.
+		// Kerberos environment mutex
 		util.Lock.Lock()
 		defer util.Lock.Unlock()
 
-		hiveConfig.Hostname = t.KrbConfig.Instance
-		hiveConfig.Service = t.KrbConfig.Primary
 		if err := util.BootKerberosEnv(t); err != nil {
 			return nil, errors.Wrapf(err, "failed to init SASL environment")
 		}
-		authConnParam = "KERBEROS"
 	}
 
-	conn, err := gohive.Connect(config.DataSource.Host, port, authConnParam, hiveConfig)
+	// Open database connection using v2 driver
+	sqlDB, err := sql.Open("hive", connString)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to open hive connection")
 	}
-	d.conn = conn
 
-	if config.ConnectionContext.DatabaseName != "" {
-		cursor := d.conn.Cursor()
-		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.ConnectionContext.DatabaseName)); err != nil {
-			return nil, multierr.Combine(d.conn.Close(), err)
-		}
+	// Configure connection pool (Hive doesn't support many concurrent connections well)
+	sqlDB.SetMaxOpenConns(5)
+	sqlDB.SetMaxIdleConns(2)
+	sqlDB.SetConnMaxLifetime(0) // connections don't expire
+
+	// Verify connection works
+	if err := sqlDB.PingContext(ctx); err != nil {
+		sqlDB.Close()
+		return nil, errors.Wrap(err, "failed to ping hive server")
 	}
+
+	d.config = config
+	d.ctx = config.ConnectionContext
+	d.db = sqlDB
+	d.connString = connString
+
 	return d, nil
 }
 
 func (d *Driver) Close(_ context.Context) error {
-	return d.conn.Close()
+	if d.db != nil {
+		return d.db.Close()
+	}
+	return nil
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	cursor := d.conn.Cursor()
-	defer cursor.Close()
-
-	if err := executeCursor(ctx, cursor, "SELECT 1"); err != nil {
+	if d.db == nil {
+		return errors.New("connection not initialized")
+	}
+	if err := d.db.PingContext(ctx); err != nil {
 		return errors.Wrapf(err, "bad connection")
 	}
 	return nil
 }
 
-func (*Driver) GetDB() *sql.DB {
-	return nil
+func (d *Driver) GetDB() *sql.DB {
+	return d.db
 }
 
 // Transaction statements [BEGIN, COMMIT, ROLLBACK] are not supported in Hive 4.0 temporarily.

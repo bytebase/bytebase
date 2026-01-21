@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/beltran/gohive"
+	_ "github.com/beltran/gohive/v2"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
