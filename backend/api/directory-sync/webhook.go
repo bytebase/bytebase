@@ -117,7 +117,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		var scimUser SCIMUser
 		if err := json.Unmarshal(body, &scimUser); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+			return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
 		// Normalize email to lowercase as Bytebase requires lowercase emails
@@ -217,6 +217,12 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 			// Normalize email to lowercase for consistent lookup
 			normalizedEmail := normalizeEmail(expr.Value)
+			if !common.IsValidEmail(normalizedEmail) {
+				// Azure sends UUID as userName for connectivity health checks, expecting empty response.
+				// This is expected behavior, so we just log at debug level and return empty.
+				slog.Debug("skipping filter with invalid email format", slog.String("key", expr.Key), slog.String("value", expr.Value))
+				continue
+			}
 			find.Email = &normalizedEmail
 		}
 
@@ -272,7 +278,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	// Body format is same as POST (full SCIMUser object).
 	g.PUT("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		slog.Debug("put user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
+		source := detectSCIMSource(c)
+		slog.Debug("put user", slog.String("source", source), slog.String("id", c.Param("userID")))
 
 		user, err := s.getUser(ctx, c)
 		if err != nil {
@@ -285,7 +292,6 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			})
 		}
 
-		source := detectSCIMSource(c)
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
@@ -293,7 +299,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		var scimUser SCIMUser
 		if err := json.Unmarshal(body, &scimUser); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+			return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
 		updatedUser, err := s.updateUserFromSCIM(ctx, user, &scimUser, source)
@@ -306,7 +312,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 	g.PATCH("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		slog.Debug("patch user", slog.String("source", detectSCIMSource(c)), slog.String("id", c.Param("userID")))
+		source := detectSCIMSource(c)
+		slog.Debug("patch user", slog.String("source", source), slog.String("id", c.Param("userID")))
 
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
@@ -315,7 +322,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		var patch PatchRequest
 		if err := json.Unmarshal(body, &patch); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+			return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
 		uid, err := strconv.Atoi(c.Param("userID"))
@@ -331,7 +338,12 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusNotFound, "cannot found user")
 		}
 
-		updateUser := &store.UpdateUserMessage{}
+		updateUser := &store.UpdateUserMessage{
+			Profile: user.Profile,
+		}
+		if user.Profile.Source != source {
+			updateUser.Profile.Source = source
+		}
 		for _, op := range patch.Operations {
 			// SCIM PATCH operations are case-insensitive per RFC 7644.
 			// Azure uses PascalCase (Add/Replace), Okta uses lowercase (add/replace).
@@ -362,9 +374,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				normalizedEmail := normalizeEmail(email)
 				updateUser.Email = &normalizedEmail
 			case "active":
-				active, ok := op.Value.(bool)
+				active, ok := parseBoolValue(op.Value)
 				if !ok {
-					slog.Warn("unsupport value, expect bool", slog.String("operation", op.OP), slog.String("path", op.Path))
+					slog.Warn("unsupport value, expect bool or string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 					continue
 				}
 				isDelete := !active
@@ -386,7 +398,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					normalizedEmail := normalizeEmail(userName)
 					updateUser.Email = &normalizedEmail
 				}
-				if active, ok := valueMap["active"].(bool); ok {
+				if active, ok := parseBoolValue(valueMap["active"]); ok {
 					isDelete := !active
 					updateUser.Delete = &isDelete
 				}
@@ -407,7 +419,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			default:
 				// Silently ignore other valid SCIM attributes that Bytebase doesn't use
 				// (e.g., externalId, name.givenName, name.familyName, preferredLanguage, addresses, phoneNumbers, etc.)
-				slog.Debug("ignoring unsupported user patch path", slog.String("operation", op.OP), slog.String("path", op.Path))
+				slog.Debug("ignoring unsupported user patch path", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 			}
 		}
 
@@ -430,7 +442,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		var scimGroup SCIMGroup
 		if err := json.Unmarshal(body, &scimGroup); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+			return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
 		slog.Debug("post group", slog.String("source", detectSCIMSource(c)), slog.String("id", scimGroup.ExternalID), slog.String("email", scimGroup.Email))
@@ -625,7 +637,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		var scimGroup SCIMGroup
 		if err := json.Unmarshal(body, &scimGroup); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+			return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
 		updatedGroup, err := s.updateGroupFromSCIM(ctx, group, &scimGroup, source)
@@ -665,11 +677,15 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		var patch PatchRequest
 		if err := json.Unmarshal(body, &patch); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+			return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
 		updateGroup := &store.UpdateGroupMessage{
-			ID: group.ID,
+			ID:      group.ID,
+			Payload: group.Payload,
+		}
+		if group.Payload.Source != source {
+			updateGroup.Payload.Source = source
 		}
 		for _, op := range patch.Operations {
 			// SCIM PATCH operations are case-insensitive per RFC 7644.
@@ -682,9 +698,6 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					slog.Warn("unsupport value, expect SCIMMember slice", slog.Any("value", op.Value), slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
 				}
-
-				updateGroup.Payload = group.Payload
-				updateGroup.Payload.Source = source
 
 				// For replace operation, clear existing members first
 				if opLower == "replace" {
@@ -987,4 +1000,21 @@ func convertToSCIMGroup(group *store.GroupMessage) *SCIMGroup {
 // Bytebase requires all emails to be lowercase for proper user lookup and authentication.
 func normalizeEmail(email string) string {
 	return strings.ToLower(email)
+}
+
+// parseBoolValue parses a value that can be either a boolean or a string representation of a boolean.
+// Azure AD sends "True"/"False" as strings, while Okta sends actual booleans.
+func parseBoolValue(value any) (bool, bool) {
+	if b, ok := value.(bool); ok {
+		return b, true
+	}
+	if s, ok := value.(string); ok {
+		switch strings.ToLower(s) {
+		case "true":
+			return true, true
+		case "false":
+			return false, true
+		}
+	}
+	return false, false
 }
