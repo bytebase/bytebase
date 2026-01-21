@@ -92,7 +92,7 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workload identity"))
 	}
 
-	return connect.NewResponse(convertWorkloadIdentityToProto(createdWI)), nil
+	return connect.NewResponse(convertToWorkloadIdentity(createdWI)), nil
 }
 
 // GetWorkloadIdentity gets a workload identity by name.
@@ -110,7 +110,7 @@ func (s *WorkloadIdentityService) GetWorkloadIdentity(ctx context.Context, reque
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("workload identity %q not found", email))
 	}
 
-	return connect.NewResponse(convertWorkloadIdentityToProto(wi)), nil
+	return connect.NewResponse(convertToWorkloadIdentity(wi)), nil
 }
 
 // ListWorkloadIdentities lists workload identities.
@@ -167,7 +167,7 @@ func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, re
 		NextPageToken: nextPageToken,
 	}
 	for _, wi := range wis {
-		response.WorkloadIdentities = append(response.WorkloadIdentities, convertWorkloadIdentityToProto(wi))
+		response.WorkloadIdentities = append(response.WorkloadIdentities, convertToWorkloadIdentity(wi))
 	}
 
 	return connect.NewResponse(response), nil
@@ -220,7 +220,7 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update workload identity"))
 	}
 
-	return connect.NewResponse(convertWorkloadIdentityToProto(updatedWI)), nil
+	return connect.NewResponse(convertToWorkloadIdentity(updatedWI)), nil
 }
 
 // DeleteWorkloadIdentity deletes a workload identity.
@@ -273,11 +273,11 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete workload identity"))
 	}
 
-	return connect.NewResponse(convertWorkloadIdentityToProto(restoredWI)), nil
+	return connect.NewResponse(convertToWorkloadIdentity(restoredWI)), nil
 }
 
-// convertWorkloadIdentityToProto converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
-func convertWorkloadIdentityToProto(wi *store.WorkloadIdentityMessage) *v1pb.WorkloadIdentity {
+// convertToWorkloadIdentity converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
+func convertToWorkloadIdentity(wi *store.WorkloadIdentityMessage) *v1pb.WorkloadIdentity {
 	result := &v1pb.WorkloadIdentity{
 		Name:  common.FormatWorkloadIdentityEmail(wi.Email),
 		State: convertDeletedToState(wi.MemberDeleted),

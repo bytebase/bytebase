@@ -101,7 +101,7 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 	}
 
 	// Convert to API response and include service key
-	result := convertServiceAccountToProto(createdSA)
+	result := convertToServiceAccount(createdSA)
 	result.ServiceKey = serviceKey
 
 	return connect.NewResponse(result), nil
@@ -122,7 +122,7 @@ func (s *ServiceAccountService) GetServiceAccount(ctx context.Context, request *
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("service account %q not found", email))
 	}
 
-	return connect.NewResponse(convertServiceAccountToProto(sa)), nil
+	return connect.NewResponse(convertToServiceAccount(sa)), nil
 }
 
 // ListServiceAccounts lists service accounts.
@@ -179,7 +179,7 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 		NextPageToken: nextPageToken,
 	}
 	for _, sa := range sas {
-		response.ServiceAccounts = append(response.ServiceAccounts, convertServiceAccountToProto(sa))
+		response.ServiceAccounts = append(response.ServiceAccounts, convertToServiceAccount(sa))
 	}
 
 	return connect.NewResponse(response), nil
@@ -241,7 +241,7 @@ func (s *ServiceAccountService) UpdateServiceAccount(ctx context.Context, reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update service account"))
 	}
 
-	result := convertServiceAccountToProto(updatedSA)
+	result := convertToServiceAccount(updatedSA)
 	if newServiceKey != "" {
 		result.ServiceKey = newServiceKey
 	}
@@ -299,12 +299,12 @@ func (s *ServiceAccountService) UndeleteServiceAccount(ctx context.Context, requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete service account"))
 	}
 
-	return connect.NewResponse(convertServiceAccountToProto(restoredSA)), nil
+	return connect.NewResponse(convertToServiceAccount(restoredSA)), nil
 }
 
-// convertServiceAccountToProto converts a store.ServiceAccountMessage to a v1pb.ServiceAccount.
+// convertToServiceAccount converts a store.ServiceAccountMessage to a v1pb.ServiceAccount.
 // Note: service_key is NOT populated by this function; it should only be returned on create/rotate.
-func convertServiceAccountToProto(sa *store.ServiceAccountMessage) *v1pb.ServiceAccount {
+func convertToServiceAccount(sa *store.ServiceAccountMessage) *v1pb.ServiceAccount {
 	return &v1pb.ServiceAccount{
 		Name:  common.FormatServiceAccountEmail(sa.Email),
 		State: convertDeletedToState(sa.MemberDeleted),
