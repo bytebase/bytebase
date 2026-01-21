@@ -23,6 +23,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.42.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/antlr4-go/antlr/v4 v4.13.1
+	github.com/apache/cassandra-gocql-driver/v2 v2.0.0
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.7
@@ -45,7 +46,6 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/go-ldap/ldap/v3 v3.4.12
 	github.com/go-sql-driver/mysql v1.9.3
-	github.com/gocql/gocql v1.7.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/golang-sql/sqlexp v0.1.0
 	github.com/google/cel-go v0.26.1
@@ -175,7 +175,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
-	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
