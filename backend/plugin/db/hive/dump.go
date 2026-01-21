@@ -6,7 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/beltran/gohive"
+	// Import gohive v2 driver for database/sql registration.
+	_ "github.com/beltran/gohive/v2"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -56,6 +57,10 @@ type MaterializedViewDDLOptions struct {
 }
 
 func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+	if d.db == nil {
+		return errors.New("connection not initialized")
+	}
+
 	var builder strings.Builder
 
 	databaseName := d.config.ConnectionContext.DatabaseName
@@ -68,19 +73,19 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 	}
 	schema := database.Schemas[0]
 
-	cursor := d.conn.Cursor()
-	if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", databaseName)); err != nil {
-		return err
+	// Set current database
+	if _, err := d.db.ExecContext(ctx, fmt.Sprintf("USE %s", databaseName)); err != nil {
+		return errors.Wrap(err, "failed to set database")
 	}
 
-	// dump managed tables.
+	// Dump managed tables
 	for _, table := range schema.GetTables() {
-		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name)
+		tableDDL, err := d.showCreateDDL(ctx, "TABLE", table.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump table %s", table.Name)
 		}
 
-		// dump indexes.
+		// Dump indexes
 		for _, index := range table.GetIndexes() {
 			indexDDL, err := genIndexDDL(&IndexDDLOptions{
 				databaseName:          databaseName,
@@ -107,25 +112,25 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 		_, _ = builder.WriteString(tableDDL)
 	}
 
-	// dump external tables.
+	// Dump external tables
 	for _, extTable := range schema.GetExternalTables() {
-		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name)
+		tabDDL, err := d.showCreateDDL(ctx, "TABLE", extTable.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 		}
 		_, _ = builder.WriteString(tabDDL)
 	}
 
-	// dump views.
+	// Dump views
 	for _, view := range schema.GetViews() {
-		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name)
+		viewDDL, err := d.showCreateDDL(ctx, "VIEW", view.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump view %s", view.Name)
 		}
 		_, _ = builder.WriteString(viewDDL)
 	}
 
-	// dump materialized views.
+	// Dump materialized views
 	for _, mtView := range schema.GetMaterializedViews() {
 		mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
 			databaseName:   databaseName,
@@ -157,30 +162,40 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 	return nil
 }
 
-// This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
-func showCreateDDL(ctx context.Context, conn *gohive.Connection, objectType string, objectName string) (string, error) {
+func (d *Driver) showCreateDDL(ctx context.Context, objectType string, objectName string) (string, error) {
 	objectName = fmt.Sprintf("`%s`", objectName)
 
-	// 'SHOW CREATE TABLE' can also be used for dumping views.
+	// 'SHOW CREATE TABLE' can also be used for dumping views
 	stmt := fmt.Sprintf("SHOW CREATE %s %s", objectType, objectName)
 	if objectType == "VIEW" {
 		stmt = fmt.Sprintf("SHOW CREATE TABLE %s", objectName)
 	}
 
-	schemaDDLResult, err := queryStatement(ctx, conn, stmt)
+	rows, err := d.db.QueryContext(ctx, stmt)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to execute %s", stmt)
 	}
+	defer rows.Close()
 
-	var schemaDDL string
-	for _, row := range schemaDDLResult.Rows {
-		if row == nil || len(row.Values) == 0 {
-			return "", errors.New("empty row")
+	var schemaDDL strings.Builder
+	for rows.Next() {
+		var ddlLine string
+		if err := rows.Scan(&ddlLine); err != nil {
+			return "", errors.Wrap(err, "failed to scan DDL row")
 		}
-		schemaDDL += fmt.Sprintln(row.Values[0].GetStringValue())
+		schemaDDL.WriteString(ddlLine)
+		schemaDDL.WriteString("\n")
 	}
 
-	return fmt.Sprintf(schemaStmtFmt, objectType, objectName, schemaDDL), nil
+	if err := rows.Err(); err != nil {
+		return "", errors.Wrap(err, "error reading DDL rows")
+	}
+
+	if schemaDDL.Len() == 0 {
+		return "", errors.New("empty DDL result")
+	}
+
+	return fmt.Sprintf(schemaStmtFmt, objectType, objectName, schemaDDL.String()), nil
 }
 
 func genIndexDDL(opts *IndexDDLOptions) (string, error) {

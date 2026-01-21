@@ -56,7 +56,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	result, err := queryStatement(ctx, d.conn, "SELECT VERSION()")
+	result, err := d.queryStatementWithLimit(ctx, "SELECT VERSION()", 0)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
@@ -75,7 +75,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
-	result, err := queryStatement(ctx, d.conn, "SHOW DATABASES")
+	result, err := d.queryStatementWithLimit(ctx, "SHOW DATABASES", 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
@@ -89,7 +89,7 @@ func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 }
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
-	result, err := queryStatement(ctx, d.conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
+	result, err := d.queryStatementWithLimit(ctx, fmt.Sprintf("SHOW TABLES FROM %s", databaseName), 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
@@ -182,7 +182,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 
 func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName string) ([]*storepb.TablePartitionMetadata, error) {
 	// partitions.
-	partitionResult, err := queryStatement(ctx, d.conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName))
+	partitionResult, err := d.queryStatementWithLimit(ctx, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName), 0)
 	if err != nil {
 		slog.Debug("failed to get partitions", log.BBError(err))
 		return nil, nil
@@ -241,25 +241,18 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 ) {
 	tableInfo := &TableInfo{}
 
-	cursor := d.conn.Cursor()
 	query := fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tableName)
-	if err := executeCursor(ctx, cursor, query); err != nil {
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to describe table %s", tableName)
 	}
+	defer rows.Close()
 
 	section := columnSection
-	for cursor.HasMore(ctx) {
-		rowMap := cursor.RowMap(ctx)
+	for rows.Next() {
 		var colName, dataType, comment string
-		colNameVal, dataTypeVal, commentVal := rowMap["col_name"], rowMap["data_type"], rowMap["comment"]
-		if v, ok := colNameVal.(string); ok {
-			colName = v
-		}
-		if v, ok := dataTypeVal.(string); ok {
-			dataType = v
-		}
-		if v, ok := commentVal.(string); ok {
-			comment = v
+		if err := rows.Scan(&colName, &dataType, &comment); err != nil {
+			return nil, errors.Wrap(err, "failed to scan row")
 		}
 
 		// The first rows are column metadata, followed by "# Detailed Table Information" and "# Storage Information"
@@ -277,7 +270,7 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 		}
 		switch section {
 		case columnSection:
-			if colNameVal != nil && dataTypeVal != nil && colName != "" && dataType != "" {
+			if colName != "" && dataType != "" {
 				// Column metadata.
 				position := len(tableInfo.colMetadatas) + 1
 				tableInfo.colMetadatas = append(tableInfo.colMetadatas, &storepb.ColumnMetadata{
@@ -320,6 +313,10 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 		default:
 			// No action needed for other sections
 		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "error iterating rows")
 	}
 
 	return tableInfo, nil
