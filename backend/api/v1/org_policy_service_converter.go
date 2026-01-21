@@ -173,6 +173,8 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 			MaximumResultRows:    payload.MaximumResultRows,
 			DisableCopyData:      payload.DisableCopyData,
 			AllowAdminDataSource: payload.AllowAdminDataSource,
+			DisallowDdl:          payload.DisallowDdl,
+			DisallowDml:          payload.DisallowDml,
 		},
 	}, nil
 }
@@ -184,6 +186,8 @@ func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.Quer
 		MaximumResultRows:    policy.MaximumResultRows,
 		DisableCopyData:      policy.DisableCopyData,
 		AllowAdminDataSource: policy.AllowAdminDataSource,
+		DisallowDdl:          policy.DisallowDdl,
+		DisallowDml:          policy.DisallowDml,
 	}
 }
 

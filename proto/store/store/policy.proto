@@ -125,4 +125,11 @@ message QueryDataPolicy {
   // workspace-level policy
   // Allow using the admin data source to query in the SQL editor.
   bool allow_admin_data_source = 9;
+
+  // ================
+  // Deprecate following fields.
+  // Disallow running DDL statements in the SQL editor.
+  bool disallow_ddl = 7;
+  // Disallow running DML statements in the SQL editor.
+  bool disallow_dml = 8;
 }

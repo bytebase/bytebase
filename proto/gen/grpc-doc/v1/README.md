@@ -6629,6 +6629,8 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
+| disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
+| disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
 
 

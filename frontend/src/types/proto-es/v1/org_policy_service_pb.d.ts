@@ -346,6 +346,22 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * @generated from field: bool allow_admin_data_source = 5;
    */
   allowAdminDataSource: boolean;
+
+  /**
+   * ================
+   * Deprecate following fields.
+   * Disallow running DDL statements in the SQL editor.
+   *
+   * @generated from field: bool disallow_ddl = 7;
+   */
+  disallowDdl: boolean;
+
+  /**
+   * Disallow running DML statements in the SQL editor.
+   *
+   * @generated from field: bool disallow_dml = 8;
+   */
+  disallowDml: boolean;
 };
 
 /**

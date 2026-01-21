@@ -307,6 +307,13 @@ message QueryDataPolicy {
   // 1. when read-only data source is configured, users're force to use the read-only data source
   // 2. otherwise fallback to use the admin data source.
   bool allow_admin_data_source = 5;
+
+  // ================
+  // Deprecate following fields.
+  // Disallow running DDL statements in the SQL editor.
+  bool disallow_ddl = 7;
+  // Disallow running DML statements in the SQL editor.
+  bool disallow_dml = 8;
 }
 
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
