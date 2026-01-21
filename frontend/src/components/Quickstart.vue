@@ -184,7 +184,7 @@ const introList = computed(() => {
           projectId: extractProjectResourceName(
             sampleProject.value?.name ?? UNKNOWN_PROJECT_NAME
           ),
-          issueSlug: SAMPLE_ISSUE_ID,
+          issueId: SAMPLE_ISSUE_ID,
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),

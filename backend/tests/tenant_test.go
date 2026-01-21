@@ -17,58 +17,19 @@ import (
 // TestTenantBackfill demonstrates the workflow for onboarding new tenant databases
 // in a multi-tenant architecture with database groups.
 //
-// This test implements the workflow described in the tenant integration design document.
+// KEY CONCEPTS:
+//   - Baseline Database: The "source of truth" for tenant schemas.
+//   - Database Group: Logical grouping using CEL expressions to match databases.
+//   - Idempotent CreateRollout: Re-evaluates database group, adds new databases
+//     without duplicating existing tasks.
 //
-// =============================================================================
-// WORKFLOW OVERVIEW
-// =============================================================================
-//
-// When a new tenant database is created, it needs to:
-// 1. Have the same schema as existing tenants (baseline database)
-// 2. Be included in any pending rollouts that haven't been executed yet
-//
-// =============================================================================
-// KEY CONCEPTS
-// =============================================================================
-//
-//   - Baseline Database: The "source of truth" tenant database. New tenants copy
-//     their initial schema from the baseline.
-//
-//   - Database Group: A logical grouping of tenant databases that receive the same
-//     database changes. Uses CEL expressions to match databases dynamically.
-//
-//   - Idempotent CreateRollout: Calling CreateRollout multiple times on the same
-//     plan is safe - it re-evaluates the database group and adds newly matched
-//     databases without duplicating existing tasks.
-//
-// =============================================================================
-// API WORKFLOW
-// =============================================================================
-//
-// Step 1: Get baseline schema
-//
-//	DatabaseService.GetDatabaseSchema(baseline_db)
-//
-// Step 2: Create new tenant database
-//
-//	PlanService.CreatePlan + IssueService.CreateIssue + RolloutService.CreateRollout
-//
-// Step 3: Initialize new tenant with baseline schema
-//
-//	Apply baseline schema to new tenant via ChangeDatabaseConfig
-//
-// Step 4: Find pending rollouts (baseline has NOT_STARTED tasks)
-//
-//	PlanService.ListPlans(filter="has_rollout == true")
-//	RolloutService.GetRollout() -> check task.Status
-//
-// Step 5: Add new tenant to pending rollouts
-//
-//	RolloutService.CreateRollout(plan) - idempotent, adds new tenant
-//
-// Step 6: [OPTIONAL] Execute pending tasks when ready
-//
-//	RolloutService.BatchRunTasks() or via Bytebase UI
+// WORKFLOW (Steps 1-5 in test):
+//  1. Get baseline schema - DatabaseService.GetDatabaseSchema()
+//  2. Create new tenant database
+//  3. Initialize tenant with baseline schema - Plan + Issue + Rollout
+//  4. Find pending rollouts - ListPlans(filter="has_rollout == true")
+//  5. Add tenant to pending rollouts - CreateRollout() (idempotent)
+//  6. [OPTIONAL] Execute pending tasks - BatchRunTasks() or UI
 func TestTenantBackfill(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -78,9 +39,8 @@ func TestTenantBackfill(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// ==========================================================================
-	// SETUP: Create project and instance
-	// ==========================================================================
+	// ==================== TEST SETUP ====================
+	// Create baseline database, database group, and a pending rollout.
 
 	projectID := generateRandomString("project")
 	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
@@ -105,22 +65,12 @@ func TestTenantBackfill(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// ==========================================================================
-	// STEP 1: Create baseline database
-	// ==========================================================================
-	// The baseline database is the "source of truth" for tenant schemas.
-	// It should be in the most stable production environment.
-
+	// Create baseline database (source of truth for tenant schemas).
 	baselineDBName := "tenant_baseline"
 	err = ctl.createDatabase(ctx, project.Msg, prodInstance.Msg, nil, baselineDBName, "")
 	a.NoError(err)
 
-	// ==========================================================================
-	// STEP 2: Create database group for all tenants
-	// ==========================================================================
-	// Database groups use CEL expressions to dynamically match databases.
-	// Expression "true" matches all databases in the project.
-
+	// Create database group matching all databases.
 	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
 		Parent:          project.Msg.Name,
 		DatabaseGroupId: "tenants",
@@ -131,14 +81,10 @@ func TestTenantBackfill(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// ==========================================================================
-	// STEP 3: Execute first database change on baseline (creates changelog)
-	// ==========================================================================
-	// This change is already executed - it will be in baseline's changelog.
-
+	// Execute first change on baseline (CREATE TABLE).
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Msg.Name,
-		Sheet:  &v1pb.Sheet{Content: []byte(migrationStatement1)}, // CREATE TABLE book
+		Sheet:  &v1pb.Sheet{Content: []byte(migrationStatement1)},
 	}))
 	a.NoError(err)
 
@@ -153,19 +99,13 @@ func TestTenantBackfill(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// Verify baseline has the schema.
 	baselineSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, baselineDBName),
 	}))
 	a.NoError(err)
 	a.Equal(wantBookSchema, baselineSchema.Msg.Schema)
 
-	// ==========================================================================
-	// STEP 4: Create second database change but DON'T execute it (pending rollout)
-	// ==========================================================================
-	// This simulates a change that is approved but waiting for execution
-	// (e.g., scheduled for maintenance window).
-
+	// Create pending change (ALTER TABLE) - approved but not executed.
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Msg.Name,
 		Sheet:  &v1pb.Sheet{Content: []byte(`ALTER TABLE book ADD COLUMN author TEXT;`)},
@@ -205,40 +145,24 @@ func TestTenantBackfill(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// Verify: rollout has 1 task for baseline, status is NOT_STARTED.
 	a.Len(pendingRollout.Msg.Stages, 1)
 	a.Len(pendingRollout.Msg.Stages[0].Tasks, 1)
 	a.Equal(v1pb.Task_NOT_STARTED, pendingRollout.Msg.Stages[0].Tasks[0].Status)
 
-	// ==========================================================================
-	// NEW TENANT ONBOARDING WORKFLOW
-	// ==========================================================================
-	// Now we simulate a new tenant being onboarded while there's a pending database change.
+	// ==================== TENANT ONBOARDING WORKFLOW ====================
 
-	// --------------------------------------------------------------------------
-	// STEP 5: Get baseline's current schema
-	// --------------------------------------------------------------------------
-	// API: DatabaseService.GetDatabaseSchema()
-
+	// Step 1: Get baseline's current schema.
 	baselineCurrentSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, baselineDBName),
 	}))
 	a.NoError(err)
 
-	// --------------------------------------------------------------------------
-	// STEP 6: Create new tenant database
-	// --------------------------------------------------------------------------
-
+	// Step 2: Create new tenant database.
 	newTenantDBName := "tenant_new"
 	err = ctl.createDatabase(ctx, project.Msg, prodInstance.Msg, nil, newTenantDBName, "")
 	a.NoError(err)
 
-	// --------------------------------------------------------------------------
-	// STEP 7: Initialize new tenant with baseline schema
-	// --------------------------------------------------------------------------
-	// Apply the baseline's current schema to the new tenant database.
-	// This ensures the new tenant has all previously executed database changes.
-
+	// Step 3: Initialize new tenant with baseline schema.
 	initSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Msg.Name,
 		Sheet:  &v1pb.Sheet{Content: []byte(baselineCurrentSchema.Msg.Schema)},
@@ -254,7 +178,7 @@ func TestTenantBackfill(t *testing.T) {
 				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Targets: []string{newTenantDBPath}, // Direct target, not database group
+						Targets: []string{newTenantDBPath},
 						Sheet:   initSheet.Msg.Name,
 					},
 				},
@@ -282,29 +206,19 @@ func TestTenantBackfill(t *testing.T) {
 	err = ctl.waitRollout(ctx, initIssue.Msg.Name, initRollout.Msg.Name)
 	a.NoError(err)
 
-	// Verify: New tenant now has same schema as baseline.
 	newTenantSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, newTenantDBName),
 	}))
 	a.NoError(err)
 	a.Equal(baselineCurrentSchema.Msg.Schema, newTenantSchema.Msg.Schema)
 
-	// --------------------------------------------------------------------------
-	// STEP 8: Find pending rollouts for baseline
-	// --------------------------------------------------------------------------
-	// Query plans with rollouts and check which ones have NOT_STARTED tasks
-	// for the baseline database.
-	//
-	// API: PlanService.ListPlans(filter="has_rollout == true")
-	//      RolloutService.GetRollout()
-
+	// Step 4: Find pending rollouts for baseline.
 	plans, err := ctl.planServiceClient.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
 		Parent: project.Msg.Name,
 		Filter: "has_rollout == true",
 	}))
 	a.NoError(err)
 
-	// Find plans where baseline has NOT_STARTED tasks.
 	var pendingPlansForBaseline []*v1pb.Plan
 	for _, p := range plans.Msg.Plans {
 		rollout, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
@@ -322,51 +236,26 @@ func TestTenantBackfill(t *testing.T) {
 		}
 	}
 
-	// Should find the pending plan we created earlier.
 	a.Len(pendingPlansForBaseline, 1)
 	a.Equal(pendingPlan.Msg.Name, pendingPlansForBaseline[0].Name)
 
-	// --------------------------------------------------------------------------
-	// STEP 9: Add new tenant to pending rollouts (idempotent CreateRollout)
-	// --------------------------------------------------------------------------
-	// Calling CreateRollout again on the same plan will:
-	// - Re-evaluate the database group expression
-	// - Add tasks for newly matched databases (our new tenant)
-	// - NOT duplicate tasks for existing databases
-	//
-	// API: RolloutService.CreateRollout()
-
+	// Step 5: Add new tenant to pending rollouts (idempotent CreateRollout).
+	// Re-evaluates database group, adds new tenant without duplicating existing tasks.
 	for _, p := range pendingPlansForBaseline {
 		updatedRollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 			Parent: p.Name,
 		}))
 		a.NoError(err)
 
-		// Verify: Rollout now has tasks for BOTH baseline and new tenant.
 		a.Len(updatedRollout.Msg.Stages, 1)
 		a.Len(updatedRollout.Msg.Stages[0].Tasks, 2) // baseline + new tenant
 
-		// Both tasks should be NOT_STARTED.
 		for _, task := range updatedRollout.Msg.Stages[0].Tasks {
 			a.Equal(v1pb.Task_NOT_STARTED, task.Status)
 		}
 	}
 
-	// ==========================================================================
-	// BACKFILL COMPLETE
-	// ==========================================================================
-	// At this point, the automation workflow is complete:
-	//
-	// - New tenant has baseline's current schema (all executed database changes)
-	// - New tenant is included in all pending rollouts (NOT_STARTED database changes)
-	//
-	// Executing the pending tasks is OPTIONAL and depends on user's choice.
-	// Users can execute via:
-	// - Bytebase UI (click "Run" on tasks)
-	// - API: RolloutService.BatchRunTasks()
-	// - Scheduled execution time
-
-	// Verify final state before optional execution.
+	// Verify: Both databases are in pending rollout.
 	finalRollout, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 		Name: pendingRollout.Msg.Name,
 	}))
@@ -380,19 +269,12 @@ func TestTenantBackfill(t *testing.T) {
 			}
 		}
 	}
-	// Both baseline and new tenant tasks should be NOT_STARTED.
 	a.Equal(2, notStartedCount)
 
-	// ==========================================================================
-	// OPTIONAL: Execute pending tasks
-	// ==========================================================================
-	// This section demonstrates task execution. In production, this would be
-	// triggered by user action or scheduled execution.
-
+	// Step 6 [OPTIONAL]: Execute pending tasks.
 	err = ctl.waitRollout(ctx, pendingIssue.Msg.Name, pendingRollout.Msg.Name)
 	a.NoError(err)
 
-	// Verify: Both databases now have the same final schema.
 	finalBaselineSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
 		Name: fmt.Sprintf("%s/databases/%s/schema", prodInstance.Msg.Name, baselineDBName),
 	}))
@@ -404,9 +286,8 @@ func TestTenantBackfill(t *testing.T) {
 	a.NoError(err)
 
 	a.Equal(finalBaselineSchema.Msg.Schema, finalNewTenantSchema.Msg.Schema)
-	a.Contains(finalNewTenantSchema.Msg.Schema, "author") // New column from pending change
+	a.Contains(finalNewTenantSchema.Msg.Schema, "author")
 
-	// Verify: All tasks are DONE.
 	completedRollout, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 		Name: pendingRollout.Msg.Name,
 	}))

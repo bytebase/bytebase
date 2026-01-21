@@ -23,7 +23,6 @@ defineProps<{
   instanceId?: string;
   databaseName?: string;
   changelogId?: string;
-  issueSlug?: string;
 }>();
 
 const router = useRouter();
