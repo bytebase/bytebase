@@ -88,28 +88,6 @@ func TestSQLQueryStopOnError(t *testing.T) {
 			wantError:       true,
 			wantSyntaxError: true,
 		},
-		{
-			name:                 "MySQL - Non-read-only command in Query API",
-			databaseName:         "TestStopOnError8",
-			dbType:               storepb.Engine_MYSQL,
-			environment:          "test",
-			prepareStatements:    "CREATE TABLE tbl8(id INT PRIMARY KEY);",
-			query:                "INSERT INTO tbl8 VALUES(1);",
-			wantResults:          1, // Error result
-			wantError:            true,
-			wantPermissionDenied: true,
-		},
-		{
-			name:                 "PostgreSQL - Non-read-only command in Query API",
-			databaseName:         "TestStopOnError9",
-			dbType:               storepb.Engine_POSTGRES,
-			environment:          "test",
-			prepareStatements:    "CREATE TABLE tbl9(id INT PRIMARY KEY);",
-			query:                "INSERT INTO tbl9 VALUES(1);",
-			wantResults:          1, // Error result
-			wantError:            true,
-			wantPermissionDenied: true,
-		},
 	}
 
 	t.Parallel()
@@ -186,20 +164,6 @@ func TestSQLQueryStopOnError(t *testing.T) {
 	}))
 	a.NoError(err)
 	pgTestInstance := pgTestInstanceResp.Msg
-
-	// Set up test environment policy to disallow DML
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
-		Parent: "environments/test",
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_DATA_QUERY,
-			Policy: &v1pb.Policy_QueryDataPolicy{
-				QueryDataPolicy: &v1pb.QueryDataPolicy{
-					DisallowDml: true,
-				},
-			},
-		},
-	}))
-	a.NoError(err)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

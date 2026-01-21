@@ -399,7 +399,6 @@
   
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
-    - [QueryDataPolicy.Restriction](#bytebase-v1-QueryDataPolicy-Restriction)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
@@ -2153,6 +2152,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
+| sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 
 
 
@@ -6619,18 +6619,17 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 <a name="bytebase-v1-QueryDataPolicy"></a>
 
 ### QueryDataPolicy
-QueryDataPolicy is the policy configuration for querying data.
+QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
-| disable_export | [bool](#bool) |  | Disable data export in the SQL editor. |
-| maximum_result_size | [int64](#int64) |  | The maximum result size limit in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-| maximum_result_rows | [int32](#int32) |  | The maximum number of rows to return. The default value is -1, means no limit. |
-| disable_copy_data | [bool](#bool) |  | Disable copying query results. |
-| admin_data_source_restriction | [QueryDataPolicy.Restriction](#bytebase-v1-QueryDataPolicy-Restriction) |  | Restriction for admin data source queries. |
-| disallow_ddl | [bool](#bool) |  | Disallow running DDL statements in the SQL editor. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | workspace-level policy The query timeout duration in the SQL editor. |
+| maximum_result_rows | [int32](#int32) |  | workspace-level policy The maximum number of rows to return in the SQL editor. The default value is -1, means no limit. |
+| disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
+| disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
+| allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
+| disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
 | disallow_dml | [bool](#bool) |  | Disallow running DML statements in the SQL editor. |
 
 
@@ -6733,19 +6732,6 @@ The type of organizational policy.
 | ROLLOUT_POLICY | 3 | Rollout deployment policy. |
 | TAG | 4 | Resource tag policy. |
 | DATA_QUERY | 6 | Query data access policy. |
-
-
-
-<a name="bytebase-v1-QueryDataPolicy-Restriction"></a>
-
-### QueryDataPolicy.Restriction
-Restriction level for admin data source access.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESTRICTION_UNSPECIFIED | 0 | Unspecified restriction. |
-| FALLBACK | 1 | Allow querying admin data sources when there is no read-only data source. |
-| DISALLOW | 2 | Disallow querying admin data sources. |
 
 
  

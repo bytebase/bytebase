@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, useDataSourceRestrictionPolicy } from "@/store";
+import { useDatabaseV1Store, useQueryDataPolicy } from "@/store";
 import type {
   QueryDataSourceType,
   SQLEditorConnection,
@@ -19,7 +19,6 @@ import {
   DataSourceType,
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { QueryDataPolicy_Restriction } from "@/types/proto-es/v1/org_policy_service_pb";
 import { wrapRefAsPromise } from "@/utils";
 import {
   extractDatabaseResourceName,
@@ -132,32 +131,6 @@ export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
   return database && isValidDatabaseName(database.name);
 };
 
-const getDataSourceBehavior = async (database: Database) => {
-  const { ready, dataSourceRestriction } =
-    useDataSourceRestrictionPolicy(database);
-  await wrapRefAsPromise(ready, /* expected */ true);
-
-  let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
-  if (
-    dataSourceRestriction.value.environmentPolicy ===
-      QueryDataPolicy_Restriction.DISALLOW ||
-    dataSourceRestriction.value.projectPolicy ===
-      QueryDataPolicy_Restriction.DISALLOW
-  ) {
-    behavior = "RO";
-  } else if (
-    dataSourceRestriction.value.environmentPolicy ===
-      QueryDataPolicy_Restriction.FALLBACK ||
-    dataSourceRestriction.value.projectPolicy ===
-      QueryDataPolicy_Restriction.FALLBACK
-  ) {
-    behavior = "FALLBACK";
-  } else {
-    behavior = "ALLOW_ADMIN";
-  }
-  return behavior;
-};
-
 export const getValidDataSourceByPolicy = async (
   database: Database,
   type?: QueryDataSourceType
@@ -170,24 +143,18 @@ export const getValidDataSourceByPolicy = async (
     (ds) => ds.type === DataSourceType.READ_ONLY
   );
 
-  const behavior = await getDataSourceBehavior(database);
+  const { ready, policy } = useQueryDataPolicy();
+  await wrapRefAsPromise(ready, /* expected */ true);
 
-  switch (behavior) {
-    case "ALLOW_ADMIN":
-    // ALLOW_ADMIN means no policy restriction.
-    case "FALLBACK": {
-      // FALLBACK means try to use read-only data source, it can also accept admin data source if no read-only data source exists.
-      switch (type) {
-        case DataSourceType.ADMIN:
-          return adminDataSource.id;
-        default:
-          // try to use read-only data source first.
-          return head(readonlyDataSources)?.id ?? adminDataSource.id;
-      }
-    }
-    case "RO": {
-      // RO only accept the read-only data source.
-      return head(readonlyDataSources)?.id;
+  if (policy.value.allowAdminDataSource) {
+    switch (type) {
+      case DataSourceType.ADMIN:
+        return adminDataSource.id;
+      default:
+        // try to use read-only data source first.
+        return head(readonlyDataSources)?.id ?? adminDataSource.id;
     }
   }
+
+  return head(readonlyDataSources)?.id ?? adminDataSource.id;
 };

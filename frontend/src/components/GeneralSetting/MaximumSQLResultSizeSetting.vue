@@ -6,14 +6,6 @@
           {{ $t("settings.general.workspace.maximum-sql-result.size.self") }}
         </span>
         <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
-        <NTooltip v-if="tooltip">
-          <template #trigger>
-            <CircleQuestionMarkIcon class="w-4 textinfolabel" />
-          </template>
-          <span>
-            {{ tooltip }}
-          </span>
-        </NTooltip>
       </p>
       <p class="text-sm text-gray-400 mt-1">
         {{
@@ -30,9 +22,8 @@
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <PermissionGuardWrapper
           v-slot="slotProps"
-          :project="project"
           :permissions="[
-            'bb.policies.update'
+            'bb.settings.setWorkspaceProfile'
           ]"
         >
           <NInputNumber
@@ -59,14 +50,6 @@
           {{ $t("settings.general.workspace.maximum-sql-result.rows.self") }}
         </span>
         <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
-        <NTooltip v-if="tooltip">
-          <template #trigger>
-            <CircleQuestionMarkIcon class="w-4 textinfolabel" />
-          </template>
-          <span>
-            {{ tooltip }}
-          </span>
-        </NTooltip>
       </p>
       <p class="text-sm text-gray-400 mt-1">
         {{
@@ -79,7 +62,6 @@
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <PermissionGuardWrapper
           v-slot="slotProps"
-          :project="project"
           :permissions="[
             'bb.policies.update'
           ]"
@@ -109,15 +91,16 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { CircleQuestionMarkIcon } from "lucide-vue-next";
-import { NInputNumber, NTooltip } from "naive-ui";
+import { NInputNumber } from "naive-ui";
 import { computed, ref } from "vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   featureToRef,
   usePolicyV1Store,
+  useSettingV1Store,
 } from "@/store";
 import {
   PolicyResourceType,
@@ -125,24 +108,24 @@ import {
   type QueryDataPolicy,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{
   resource: string;
-  project?: Project;
   policy: QueryDataPolicy;
-  tooltip?: string;
 }>();
 
 const policyV1Store = usePolicyV1Store();
+const settingV1Store = useSettingV1Store();
 
 const initialState = () => {
+  let size = settingV1Store.workspaceProfile.sqlResultSize;
+  if (size <= 0) {
+    size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
+  }
   return {
-    maximumResultSize: Math.round(
-      Number(props.policy.maximumResultSize) / 1024 / 1024
-    ),
+    maximumResultSize: Math.round(Number(size) / 1024 / 1024),
     maximumResultRows: Number(props.policy.maximumResultRows),
   };
 };
@@ -159,23 +142,36 @@ const allowUpdate = computed(() => {
 });
 
 const updateChange = async () => {
-  await policyV1Store.upsertPolicy({
-    parentPath: props.resource,
-    policy: {
-      type: PolicyType.DATA_QUERY,
-      resourceType: PolicyResourceType.WORKSPACE,
+  const init = initialState();
+  if (init.maximumResultRows !== queryRestriction.value.maximumResultRows) {
+    await policyV1Store.upsertPolicy({
+      parentPath: props.resource,
       policy: {
-        case: "queryDataPolicy",
-        value: create(QueryDataPolicySchema, {
-          ...props.policy,
-          maximumResultSize: BigInt(
-            queryRestriction.value.maximumResultSize * 1024 * 1024
-          ),
-          maximumResultRows: queryRestriction.value.maximumResultRows,
-        }),
+        type: PolicyType.DATA_QUERY,
+        resourceType: PolicyResourceType.WORKSPACE,
+        policy: {
+          case: "queryDataPolicy",
+          value: create(QueryDataPolicySchema, {
+            ...props.policy,
+            maximumResultRows: queryRestriction.value.maximumResultRows,
+          }),
+        },
       },
-    },
-  });
+    });
+  }
+
+  if (init.maximumResultSize !== queryRestriction.value.maximumResultSize) {
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        sqlResultSize: BigInt(
+          queryRestriction.value.maximumResultSize * 1024 * 1024
+        ),
+      },
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile.sql_result_size"],
+      }),
+    });
+  }
 };
 
 const handleInput = (value: number | null, callback: (val: number) => void) => {
