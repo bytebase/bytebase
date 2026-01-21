@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	// Import gohive v2 driver for database/sql registration.
 	_ "github.com/beltran/gohive/v2"
 	"github.com/pkg/errors"
 
@@ -68,14 +69,13 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 	}
 	schema := database.Schemas[0]
 
-	cursor := d.conn.Cursor()
-	if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", databaseName)); err != nil {
+	if err := d.executeCursor(ctx, fmt.Sprintf("USE %s", databaseName)); err != nil {
 		return err
 	}
 
 	// dump managed tables.
 	for _, table := range schema.GetTables() {
-		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name)
+		tableDDL, err := d.showCreateDDL(ctx, "TABLE", table.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump table %s", table.Name)
 		}
@@ -109,7 +109,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 
 	// dump external tables.
 	for _, extTable := range schema.GetExternalTables() {
-		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name)
+		tabDDL, err := d.showCreateDDL(ctx, "TABLE", extTable.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 		}
@@ -118,7 +118,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 
 	// dump views.
 	for _, view := range schema.GetViews() {
-		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name)
+		viewDDL, err := d.showCreateDDL(ctx, "VIEW", view.Name)
 		if err != nil {
 			return errors.Wrapf(err, "failed to dump view %s", view.Name)
 		}
@@ -158,7 +158,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 }
 
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
-func showCreateDDL(ctx context.Context, conn *gohive.Connection, objectType string, objectName string) (string, error) {
+func (d *Driver) showCreateDDL(ctx context.Context, objectType string, objectName string) (string, error) {
 	objectName = fmt.Sprintf("`%s`", objectName)
 
 	// 'SHOW CREATE TABLE' can also be used for dumping views.
@@ -167,7 +167,7 @@ func showCreateDDL(ctx context.Context, conn *gohive.Connection, objectType stri
 		stmt = fmt.Sprintf("SHOW CREATE TABLE %s", objectName)
 	}
 
-	schemaDDLResult, err := queryStatement(ctx, conn, stmt)
+	schemaDDLResult, err := d.queryStatement(ctx, stmt)
 	if err != nil {
 		return "", err
 	}

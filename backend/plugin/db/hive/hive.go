@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	// Import gohive v2 driver for database/sql registration.
 	_ "github.com/beltran/gohive/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -45,7 +46,7 @@ var (
 	_ db.Driver = (*Driver)(nil)
 )
 
-func buildHiveDSN(config db.ConnectionConfig) (string, error) {
+func buildHiveDSN(config db.ConnectionConfig) string {
 	port := config.DataSource.Port
 	if port == "" {
 		port = "10000" // default Hive port
@@ -72,7 +73,7 @@ func buildHiveDSN(config db.ConnectionConfig) (string, error) {
 
 	dsn = fmt.Sprintf("%s?auth=%s&service=%s", dsn, auth, service)
 
-	return dsn, nil
+	return dsn
 }
 
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
@@ -81,10 +82,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	}
 
 	// Build DSN connection string
-	connString, err := buildHiveDSN(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to build DSN")
-	}
+	connString := buildHiveDSN(config)
 
 	// Handle Kerberos authentication if needed
 	if t, ok := config.DataSource.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
@@ -244,6 +242,8 @@ func parseValueType(value any, gohiveType string) *v1pb.RowValue {
 		if b, ok := value.([]byte); ok {
 			return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: b}}
 		}
+	default:
+		// Fall through to default string conversion
 	}
 
 	// Default: convert to string
@@ -325,4 +325,20 @@ func (d *Driver) queryStatementWithLimit(ctx context.Context, statement string, 
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.RowsCount = int64(len(result.Rows))
 	return result, nil
+}
+
+// Temporary helper for dump.go compatibility - will be removed in Task 4.
+// queryStatement executes a query without size limits.
+func (d *Driver) queryStatement(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
+	return d.queryStatementWithLimit(ctx, statement, 0)
+}
+
+// Temporary helper for dump.go compatibility - will be removed in Task 4.
+// executeCursor executes a statement without returning results.
+func (d *Driver) executeCursor(ctx context.Context, statement string) error {
+	if d.db == nil {
+		return errors.New("connection not initialized")
+	}
+	_, err := d.db.ExecContext(ctx, statement)
+	return err
 }
