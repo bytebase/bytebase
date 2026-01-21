@@ -815,6 +815,10 @@ github.com/bahlo/generic-list-go v0.2.0 h1:5sz/EEAK+ls5wF+NeqDpk5+iNdMDXrh3z3nPn
 github.com/bahlo/generic-list-go v0.2.0/go.mod h1:2KvAjgMlE5NNynlg/5iLrrCCZ2+5xWbdbCW3pNTGyYg=
 github.com/bazelbuild/rules_go v0.49.0 h1:5vCbuvy8Q11g41lseGJDc5vxhDjJtfxr6nM/IC4VmqM=
 github.com/bazelbuild/rules_go v0.49.0/go.mod h1:Dhcz716Kqg1RHNWos+N6MlXNkjNP2EwZQ0LukRKJfMs=
+github.com/beltran/gohive v1.8.1 h1:qlygmroy3mKtKIQSpV/FqXJHty1LsPxF+JTQA5mbjwU=
+github.com/beltran/gohive v1.8.1/go.mod h1:BCgNAhr/wnbyXfp2yN9ZY4pVrGrtVqG4hhNDDXIal1U=
+github.com/beltran/gohive/v2 v2.0.0 h1:Rb7d33EwaG1mc2Cl014x3Mh5RGTNxmKd652gCXzVw5c=
+github.com/beltran/gohive/v2 v2.0.0/go.mod h1:MrxyI0sdriG52I+Bo2lJpGR75bxjcI/Hx3+MBnYqR10=
 github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab h1:ayfcn60tXOSYy5zUN1AMSTQo4nJCf7hrdzAVchpPst4=
 github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab/go.mod h1:GLe4UoSyvJ3cVG+DVtKen5eAiaD8mAJFuV5PT3Eeg9Q=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
@@ -855,8 +859,6 @@ github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c h1:scJ4ycKuUAaA
 github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c/go.mod h1:X0CGYwIZUnjfrv02/nBlftxqSBMm4mYJzFwiyn2D4d8=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898/go.mod h1:2KhUz4GSLcdJGXSJMXAf2BjmakcgoOkNyPpHdGAxRpY=
-github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4 h1:5o+GWOu+j68eAODMw7/lFJavWCCiPMeqEHuOGx0YmoU=
-github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4/go.mod h1:sV29Oj7v/xsXJjJwLRYimdnEX6aZOA1ofAlZ+D/snOo=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08 h1:S1GgjJLspz4E4z4CvomGvKgxyv0ATfZm27qHM418jWc=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08/go.mod h1:Qx8cW6jkI8riyzmklj80kAIkv+iezFUTBiGU0qHhHes=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
