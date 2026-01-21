@@ -13932,55 +13932,54 @@ components:
       properties:
         timeout:
           title: timeout
-          description: The query timeout duration.
-          $ref: '#/components/schemas/google.protobuf.Duration'
-        disableExport:
-          type: boolean
-          title: disable_export
-          description: Disable data export in the SQL editor.
-        maximumResultSize:
-          type:
-            - integer
-            - string
-          title: maximum_result_size
-          format: int64
           description: |-
-            The maximum result size limit in bytes.
-             The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+            workspace-level policy
+             The query timeout duration in the SQL editor.
+          $ref: '#/components/schemas/google.protobuf.Duration'
         maximumResultRows:
           type: integer
           title: maximum_result_rows
           format: int32
           description: |-
-            The maximum number of rows to return.
+            workspace-level policy
+             The maximum number of rows to return in the SQL editor.
              The default value is -1, means no limit.
+        disableExport:
+          type: boolean
+          title: disable_export
+          description: |-
+            workspace-level policy
+             Disable data export in the SQL editor.
         disableCopyData:
           type: boolean
           title: disable_copy_data
-          description: Disable copying query results.
-        adminDataSourceRestriction:
-          title: admin_data_source_restriction
-          description: Restriction for admin data source queries.
-          $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy.Restriction'
+          description: |-
+            workspace-level policy
+             Disable copying query results in the SQL editor.
+        allowAdminDataSource:
+          type: boolean
+          title: allow_admin_data_source
+          description: |-
+            workspace-level policy
+             Allow using the admin data source to query in the SQL editor.
+             If true, users can select the admin data source or read-only data source
+             If false,
+             1. when read-only data source is configured, users're force to use the read-only data source
+             2. otherwise fallback to use the admin data source.
         disallowDdl:
           type: boolean
           title: disallow_ddl
-          description: Disallow running DDL statements in the SQL editor.
+          description: |-
+            ================
+             Deprecate following fields.
+             Disallow running DDL statements in the SQL editor.
         disallowDml:
           type: boolean
           title: disallow_dml
           description: Disallow running DML statements in the SQL editor.
       title: QueryDataPolicy
       additionalProperties: false
-      description: QueryDataPolicy is the policy configuration for querying data.
-    bytebase.v1.QueryDataPolicy.Restriction:
-      type: string
-      title: Restriction
-      enum:
-        - RESTRICTION_UNSPECIFIED
-        - FALLBACK
-        - DISALLOW
-      description: Restriction level for admin data source access.
+      description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
     bytebase.v1.QueryHistory:
       type: object
       properties:
@@ -18456,6 +18455,15 @@ components:
           type: boolean
           title: enable_debug
           description: Whether debug mode is enabled.
+        sqlResultSize:
+          type:
+            - integer
+            - string
+          title: sql_result_size
+          format: int64
+          description: |-
+            The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.
+             The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

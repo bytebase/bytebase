@@ -20,6 +20,8 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import { useActuatorV1Store } from "./actuator";
 
+export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
+
 export const useSettingV1Store = defineStore("setting_v1", () => {
   const settingMapByName = reactive(new Map<string, Setting>());
 

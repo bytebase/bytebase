@@ -39,8 +39,6 @@ export const provideEnvironmentFormContext = (baseContext: {
       policyType: PolicyType;
       policy: Policy;
     };
-    "update-access-control": undefined;
-    "revert-access-control": undefined;
     "update-sql-review": undefined;
     "revert-sql-review": undefined;
     delete: Environment;

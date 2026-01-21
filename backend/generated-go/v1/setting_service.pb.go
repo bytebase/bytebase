@@ -902,7 +902,10 @@ type WorkspaceProfileSetting struct {
 	// The duration for access token. Default is 1 hour.
 	AccessTokenDuration *durationpb.Duration `protobuf:"bytes,18,opt,name=access_token_duration,json=accessTokenDuration,proto3" json:"access_token_duration,omitempty"`
 	// Whether debug mode is enabled.
-	EnableDebug   bool `protobuf:"varint,19,opt,name=enable_debug,json=enableDebug,proto3" json:"enable_debug,omitempty"`
+	EnableDebug bool `protobuf:"varint,19,opt,name=enable_debug,json=enableDebug,proto3" json:"enable_debug,omitempty"`
+	// The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.
+	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+	SqlResultSize int64 `protobuf:"varint,20,opt,name=sql_result_size,json=sqlResultSize,proto3" json:"sql_result_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1068,6 +1071,13 @@ func (x *WorkspaceProfileSetting) GetEnableDebug() bool {
 		return x.EnableDebug
 	}
 	return false
+}
+
+func (x *WorkspaceProfileSetting) GetSqlResultSize() int64 {
+	if x != nil {
+		return x.SqlResultSize
+	}
+	return 0
 }
 
 type Announcement struct {
@@ -2889,7 +2899,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xf8\v\n" +
+	"\apayload\"\xa0\f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2911,7 +2921,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12k\n" +
 	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
-	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x1a\x93\x03\n" +
+	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
+	"\x0fsql_result_size\x18\x14 \x01(\x03R\rsqlResultSize\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +

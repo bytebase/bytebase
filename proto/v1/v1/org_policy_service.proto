@@ -281,37 +281,35 @@ message RolloutPolicy {
   repeated string roles = 2;
 }
 
-// QueryDataPolicy is the policy configuration for querying data.
+// QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 message QueryDataPolicy {
-  // The query timeout duration.
+  // workspace-level policy
+  // The query timeout duration in the SQL editor.
   google.protobuf.Duration timeout = 1;
 
-  // Disable data export in the SQL editor.
-  bool disable_export = 2;
-
-  // The maximum result size limit in bytes.
-  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
-  int64 maximum_result_size = 3;
-
-  // The maximum number of rows to return.
+  // workspace-level policy
+  // The maximum number of rows to return in the SQL editor.
   // The default value is -1, means no limit.
-  int32 maximum_result_rows = 4;
+  int32 maximum_result_rows = 2;
 
-  // Disable copying query results.
-  bool disable_copy_data = 5;
+  // workspace-level policy
+  // Disable data export in the SQL editor.
+  bool disable_export = 3;
 
-  // Restriction level for admin data source access.
-  enum Restriction {
-    // Unspecified restriction.
-    RESTRICTION_UNSPECIFIED = 0;
-    // Allow querying admin data sources when there is no read-only data source.
-    FALLBACK = 1;
-    // Disallow querying admin data sources.
-    DISALLOW = 2;
-  }
-  // Restriction for admin data source queries.
-  Restriction admin_data_source_restriction = 6;
+  // workspace-level policy
+  // Disable copying query results in the SQL editor.
+  bool disable_copy_data = 4;
 
+  // workspace-level policy
+  // Allow using the admin data source to query in the SQL editor.
+  // If true, users can select the admin data source or read-only data source
+  // If false,
+  // 1. when read-only data source is configured, users're force to use the read-only data source
+  // 2. otherwise fallback to use the admin data source.
+  bool allow_admin_data_source = 5;
+
+  // ================
+  // Deprecate following fields.
   // Disallow running DDL statements in the SQL editor.
   bool disallow_ddl = 7;
   // Disallow running DML statements in the SQL editor.

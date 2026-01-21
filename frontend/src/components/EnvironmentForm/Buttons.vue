@@ -54,7 +54,6 @@ const {
 const revertEnvironment = () => {
   state.value.environment = cloneDeep(environment.value);
   state.value.rolloutPolicy = cloneDeep(rolloutPolicy.value);
-  events.emit("revert-access-control");
   events.emit("revert-sql-review");
 };
 
@@ -80,7 +79,6 @@ const updateEnvironment = () => {
     });
   }
 
-  events.emit("update-access-control");
   events.emit("update-sql-review");
 
   const env = cloneDeep(environment.value);

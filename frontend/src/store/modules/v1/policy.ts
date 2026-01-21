@@ -8,7 +8,6 @@ import { silentContextKey } from "@/connect/context-key";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME } from "@/types";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type {
   Policy,
   QueryDataPolicy,
@@ -19,7 +18,6 @@ import {
   PolicyResourceType,
   PolicySchema,
   PolicyType,
-  QueryDataPolicy_Restriction,
   QueryDataPolicySchema,
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
@@ -29,8 +27,6 @@ import { useCurrentUserV1 } from "./auth";
 interface PolicyState {
   policyMapByName: Map<string, Policy>;
 }
-
-export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
 
 export const replacePolicyTypeNameToLowerCase = (name: string) => {
   const pattern = /(^|\/)policies\/([^/]+)($|\/)/;
@@ -59,17 +55,10 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
     return policy?.policy?.case === "queryDataPolicy"
       ? policy.policy.value
       : create(QueryDataPolicySchema, {
-          maximumResultSize: BigInt(
-            DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024
-          ),
           maximumResultRows: -1,
           timeout: create(DurationSchema, {
             seconds: BigInt(0),
           }),
-          adminDataSourceRestriction:
-            QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-          disallowDdl: false,
-          disallowDml: false,
         });
   };
 
@@ -178,13 +167,9 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
 });
 
 const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
-  let maximumResultSize = Number(policy.maximumResultSize);
   let maximumResultRows = policy.maximumResultRows;
   let queryTimeoutInSeconds = Number(policy.timeout?.seconds ?? 0);
 
-  if (maximumResultSize <= 0) {
-    maximumResultSize = DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024;
-  }
   if (maximumResultRows <= 0) {
     maximumResultRows = Number.MAX_VALUE;
   }
@@ -195,7 +180,7 @@ const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
   return {
     disableCopyData: policy.disableCopyData,
     disableExport: policy.disableExport,
-    maximumResultSize,
+    allowAdminDataSource: policy.allowAdminDataSource,
     maximumResultRows,
     queryTimeoutInSeconds,
   };
@@ -254,103 +239,23 @@ export const usePolicyByParentAndType = (
   };
 };
 
-export const useDataSourceRestrictionPolicy = (
-  database: MaybeRef<Database>
-) => {
-  const store = usePolicyV1Store();
-  const ready = ref(false);
-
-  watchEffect(async () => {
-    await store.getOrFetchPolicyByParentAndType({
-      parentPath: unref(database).project,
-      policyType: PolicyType.DATA_QUERY,
-    });
-
-    const environment = unref(database).effectiveEnvironment;
-    if (environment) {
-      await store.getOrFetchPolicyByParentAndType({
-        parentPath: environment,
-        policyType: PolicyType.DATA_QUERY,
-      });
-    }
-    ready.value = true;
-  });
-
-  const dataSourceRestriction = computed(() => {
-    const projectLevelPolicy = store.getQueryDataPolicyByParent(
-      unref(database).project
-    );
-    const projectLevelAdminDSRestriction =
-      projectLevelPolicy.adminDataSourceRestriction;
-
-    let envLevelAdminDSRestriction =
-      QueryDataPolicy_Restriction.RESTRICTION_UNSPECIFIED;
-    const environment = unref(database).effectiveEnvironment;
-    if (environment) {
-      const envLevelPolicy = store.getQueryDataPolicyByParent(environment);
-      envLevelAdminDSRestriction = envLevelPolicy.adminDataSourceRestriction;
-    }
-
-    return {
-      environmentPolicy: envLevelAdminDSRestriction,
-      projectPolicy: projectLevelAdminDSRestriction,
-    };
-  });
-
-  return {
-    ready,
-    dataSourceRestriction,
-  };
-};
-
-export const useEffectiveQueryDataPolicyForProject = (
-  project: MaybeRef<string>
-) => {
+export const useQueryDataPolicy = () => {
   const store = usePolicyV1Store();
   const ready = ref(false);
 
   watchEffect(() => {
-    const projectName = unref(project);
-    // Fetch both workspace-level and project-level DATA_QUERY policies
-    Promise.all([
-      store.getOrFetchPolicyByParentAndType({
+    // Fetch workspace-level DATA_QUERY policies
+    store
+      .getOrFetchPolicyByParentAndType({
         parentPath: "",
         policyType: PolicyType.DATA_QUERY,
-      }),
-      store.getOrFetchPolicyByParentAndType({
-        parentPath: projectName,
-        policyType: PolicyType.DATA_QUERY,
-      }),
-    ]).finally(() => (ready.value = true));
+      })
+      .finally(() => (ready.value = true));
   });
 
-  const policy = computed(() => {
-    const workspacePolicy = formatQueryDataPolicy(
-      store.getQueryDataPolicyByParent("")
-    );
-    const projectPolicy = formatQueryDataPolicy(
-      store.getQueryDataPolicyByParent(unref(project))
-    );
-
-    return {
-      disableCopyData:
-        projectPolicy.disableCopyData || workspacePolicy.disableCopyData,
-      disableExport:
-        projectPolicy.disableExport || workspacePolicy.disableExport,
-      maximumResultRows: Math.min(
-        projectPolicy.maximumResultRows,
-        workspacePolicy.maximumResultRows
-      ),
-      maximumResultSize: Math.min(
-        projectPolicy.maximumResultSize,
-        workspacePolicy.maximumResultSize
-      ),
-      queryTimeoutInSeconds: Math.min(
-        projectPolicy.queryTimeoutInSeconds,
-        workspacePolicy.queryTimeoutInSeconds
-      ),
-    };
-  });
+  const policy = computed(() =>
+    formatQueryDataPolicy(store.getQueryDataPolicyByParent(""))
+  );
 
   return {
     policy,

@@ -173,8 +173,7 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed, ref, toRef, watchEffect } from "vue";
+import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
@@ -187,10 +186,10 @@ import type {
 import DataExportButton from "@/components/DataExportButton.vue";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
-import { useSQLEditorStore, useSQLEditorTabStore, useSQLStore } from "@/store";
+import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
-  useEffectiveQueryDataPolicyForProject,
   usePolicyV1Store,
+  useQueryDataPolicy,
 } from "@/store/modules/v1/policy";
 import type {
   DatabaseResource,
@@ -199,7 +198,6 @@ import type {
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import type { SQLResultViewContext } from "./context";
@@ -237,20 +235,8 @@ defineEmits<{
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const tabStore = useSQLEditorTabStore();
-const { project } = storeToRefs(useSQLEditorStore());
 
-const { policy: effectiveQueryDataPolicy } =
-  useEffectiveQueryDataPolicyForProject(project);
-
-watchEffect(() => {
-  const environment = props.database.effectiveEnvironment;
-  if (environment) {
-    policyStore.getOrFetchPolicyByParentAndType({
-      parentPath: environment,
-      policyType: PolicyType.DATA_QUERY,
-    });
-  }
-});
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
 
 const detail: SQLResultViewContext["detail"] = ref(undefined);
 
