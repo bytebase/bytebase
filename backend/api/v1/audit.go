@@ -33,6 +33,12 @@ var (
 	maskedString string
 )
 
+const (
+	// maxAuditPayloadChars is the maximum characters for request/response payloads in stdout logs.
+	// Set to 100KB (102400 chars) to match AWS CloudTrail industry standard for audit logs.
+	maxAuditPayloadChars = 102400
+)
+
 // AuditInterceptor is the v1 audit interceptor for gRPC server.
 type AuditInterceptor struct {
 	store   *store.Store
@@ -268,6 +274,26 @@ func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	// The severity field helps categorize the audit event itself
 	if p.Severity != storepb.AuditLog_SEVERITY_UNSPECIFIED {
 		attrs = append(attrs, slog.String("severity", p.Severity.String()))
+	}
+
+	// Include request payload (truncated to 100KB for log manageability)
+	// Request is already redacted for sensitive data by getRequestString()
+	if p.Request != "" {
+		request := p.Request
+		if truncated, wasTruncated := common.TruncateString(p.Request, maxAuditPayloadChars); wasTruncated {
+			request = truncated + "...[truncated]"
+		}
+		attrs = append(attrs, slog.String("request", request))
+	}
+
+	// Include response payload (truncated to 100KB for log manageability)
+	// Response is already redacted for sensitive data by getResponseString()
+	if p.Response != "" {
+		response := p.Response
+		if truncated, wasTruncated := common.TruncateString(p.Response, maxAuditPayloadChars); wasTruncated {
+			response = truncated + "...[truncated]"
+		}
+		attrs = append(attrs, slog.String("response", response))
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, p.Method, attrs...)

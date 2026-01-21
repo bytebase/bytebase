@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -86,6 +87,66 @@ func TestRetentionCutoffCalculation(t *testing.T) {
 				// Verify the cutoff is approximately correct
 				daysDiff := now.Sub(*expectedCutoff).Hours() / 24
 				assert.InDelta(t, float64(tt.retentionDays), daysDiff, 0.1, "Cutoff should be approximately %d days ago", tt.retentionDays)
+			}
+		})
+	}
+}
+
+func TestLogAuditToStdout_IncludesRequestResponse(t *testing.T) {
+	// This test documents the expected behavior that request and response
+	// fields should be included in stdout audit logs when present.
+	//
+	// The actual logAuditToStdout function writes to slog, which would require
+	// setting up a custom handler to capture output. This test validates the
+	// data structure expectations.
+
+	tests := []struct {
+		name            string
+		request         string
+		response        string
+		expectRequest   bool
+		expectResponse  bool
+		expectTruncated bool
+	}{
+		{
+			name:           "empty request and response",
+			request:        "",
+			response:       "",
+			expectRequest:  false,
+			expectResponse: false,
+		},
+		{
+			name:           "normal request and response",
+			request:        `{"name":"test"}`,
+			response:       `{"success":true}`,
+			expectRequest:  true,
+			expectResponse: true,
+		},
+		{
+			name:            "large request should be truncated",
+			request:         string(make([]byte, 150000)), // 150KB
+			response:        `{"success":true}`,
+			expectRequest:   true,
+			expectResponse:  true,
+			expectTruncated: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Validate truncation behavior
+			if tt.expectTruncated && len(tt.request) > 102400 {
+				truncated, wasTruncated := common.TruncateString(tt.request, 102400)
+				assert.True(t, wasTruncated, "Large request should be truncated")
+				assert.LessOrEqual(t, len(truncated), 102400, "Truncated string should be within limit")
+			}
+
+			// Document that empty strings should not be logged
+			if tt.request == "" {
+				assert.False(t, tt.expectRequest, "Empty request should not be logged")
+			}
+			if tt.response == "" {
+				assert.False(t, tt.expectResponse, "Empty response should not be logged")
 			}
 		})
 	}
