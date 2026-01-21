@@ -15,7 +15,7 @@ import (
 // ServiceAccountMessage is the message for a service account.
 type ServiceAccountMessage struct {
 	ID int
-	// Email must be lower case, format: {name}@{project-id}.iam.bytebase.com or {name}@iam.bytebase.com
+	// Email must be lower case, format: {name}@{project-id}.service.bytebase.com or {name}@service.bytebase.com
 	Email         string
 	Name          string
 	MemberDeleted bool

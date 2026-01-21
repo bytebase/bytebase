@@ -16,7 +16,7 @@ import (
 // WorkloadIdentityMessage is the message for a workload identity.
 type WorkloadIdentityMessage struct {
 	ID int
-	// Email must be lower case, format: {name}@{project-id}.wl.bytebase.com or {name}@wl.bytebase.com
+	// Email must be lower case, format: {name}@{project-id}.workload.bytebase.com or {name}@workload.bytebase.com
 	Email         string
 	Name          string
 	MemberDeleted bool
