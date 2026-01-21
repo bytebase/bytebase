@@ -86,18 +86,9 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 		return 0, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
-	}
-	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit")
 	}
 
 	return id, nil
