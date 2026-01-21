@@ -52,10 +52,14 @@
               {{ rule.title || "-" }}
             </div>
             <div class="px-3 py-2 truncate">
-              <code class="text-xs">{{ rule.condition || "true" }}</code>
+              <EllipsisText>
+                <code class="text-xs">{{ rule.condition || "true" }}</code>
+              </EllipsisText>
             </div>
             <div class="px-3 py-2 truncate">
-              {{ formatApprovalFlow(rule.flow) }}
+              <EllipsisText>
+                {{ formatApprovalFlow(rule.flow) }}
+              </EllipsisText>
             </div>
             <div class="px-3 py-2 w-24 flex items-center gap-x-1">
               <MiniActionButton @click="handleEditRule(rule)">
@@ -110,6 +114,7 @@ import { NButton, NPopconfirm } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
+import EllipsisText from "@/components/EllipsisText.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { MiniActionButton } from "@/components/v2";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";

@@ -66,7 +66,6 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
       const response = await settingServiceClientConnect.getSetting(request, {
         contextValues: createContextValues().set(silentContextKey, silent),
       });
-      settingMapByName.set(response.name, response);
       return response;
     } catch {
       return;
@@ -79,15 +78,19 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
     );
   };
 
-  const getOrFetchSettingByName = (
+  const getOrFetchSettingByName = async (
     name: Setting_SettingName,
     silent = false
-  ): Promise<Setting | undefined> | Setting | undefined => {
+  ): Promise<Setting | undefined> => {
     const setting = getSettingByName(name);
     if (setting) {
       return setting;
     }
-    return fetchSettingByName(name, silent);
+    const response = await fetchSettingByName(name, silent);
+    if (response) {
+      settingMapByName.set(response.name, response);
+    }
+    return response;
   };
 
   const upsertSetting = async ({
@@ -150,7 +153,6 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
     workspaceProfile,
     classification,
     getProjectClassification,
-    fetchSettingByName,
     getSettingByName,
     getOrFetchSettingByName,
     upsertSetting,

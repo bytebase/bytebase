@@ -109,7 +109,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       if (!hasWorkspacePermissionV2("bb.settings.getEnvironment")) {
         return;
       }
-      const setting = await useSettingV1Store().fetchSettingByName(
+      const setting = await useSettingV1Store().getOrFetchSettingByName(
         Setting_SettingName.ENVIRONMENT,
         silent
       );

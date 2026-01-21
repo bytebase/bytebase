@@ -29,7 +29,6 @@
               :show-roles="false"
               :user-list="list"
               :loading="loading"
-              :on-click-user="onUserClick"
               @select-group="handleUpdateGroup"
               @update-user="handleUserUpdated"
             />
@@ -55,7 +54,6 @@
             <UserDataTableByGroup
               :groups="list"
               :loading="loading"
-              :on-click-user="onUserClick"
               v-model:expanded-keys="expandedKeys"
               @update-group="handleUpdateGroup"
               @remove-group="handleRemoveGroup"
@@ -227,7 +225,6 @@ import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import { SearchBox } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
@@ -260,10 +257,6 @@ type LocalState = {
   showAadSyncDrawer: boolean;
   editingGroup?: Group;
 };
-
-const props = defineProps<{
-  onClickUser?: (user: User, event: MouseEvent) => void;
-}>();
 
 const state = reactive<LocalState>({
   typeTab: defaultTab,
@@ -480,18 +473,6 @@ const handleGroupUpdated = (group: Group) => {
   groupPagedTable.value?.updateCache([group]);
   requestAnimationFrame(() => {
     expandedKeys.value = [...expanded];
-  });
-};
-
-const onUserClick = (user: User, event: MouseEvent) => {
-  if (props.onClickUser) {
-    return props.onClickUser(user, event);
-  }
-  router.push({
-    name: WORKSPACE_ROUTE_USER_PROFILE,
-    params: {
-      principalEmail: user.email,
-    },
   });
 };
 </script>
