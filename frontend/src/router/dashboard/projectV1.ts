@@ -240,21 +240,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         component: () => import("@/views/project/ProjectIssueDashboard.vue"),
         props: true,
       },
-      // Redirect legacy issue slug format (e.g., "my-issue-123") to new numeric format
-      {
-        path: "issues/:issueSlug",
-        redirect: (to) => {
-          const { issueSlug, projectId } = to.params;
-          // Extract issue ID from slug (last part after the final hyphen)
-          const match = String(issueSlug).match(/-(\d+)$/);
-          const issueId = match ? match[1] : issueSlug;
-          return {
-            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-            params: { projectId, issueId },
-            query: to.query,
-          };
-        },
-      },
       {
         path: "plans",
         name: PROJECT_V1_ROUTE_PLANS,
