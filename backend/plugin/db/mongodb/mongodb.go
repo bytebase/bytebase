@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/gomongo"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -250,8 +251,47 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 
 	statement = strings.Trim(statement, " \t\n\r\f;")
-	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
+
+	var gomongoErr error
+	if d.client != nil {
+		gmClient := gomongo.NewClient(d.client)
+		var gmResult *gomongo.Result
+		gmResult, gomongoErr = gmClient.Execute(ctx, d.databaseName, statement)
+		if gomongoErr == nil {
+			return d.convertGomongoResult(gmResult, statement, startTime), nil
+		}
+	}
+
+	results, err := d.queryConnWithMongosh(ctx, statement, queryContext, startTime)
+	if err == nil && gomongoErr != nil {
+		slog.Debug("executed query with mongosh fallback", slog.String("statement", statement), log.BBError(gomongoErr))
+	}
+	return results, err
+}
+
+func (*Driver) convertGomongoResult(res *gomongo.Result, statement string, startTime time.Time) []*v1pb.QueryResult {
+	rows := []*v1pb.QueryRow{}
+	for _, r := range res.Rows {
+		rows = append(rows, &v1pb.QueryRow{
+			Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_StringValue{StringValue: r}},
+			},
+		})
+	}
+
+	return []*v1pb.QueryResult{{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            rows,
+		RowsCount:       int64(res.RowCount),
+		Latency:         durationpb.New(time.Since(startTime)),
+		Statement:       statement,
+	}}
+}
+
+func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, queryContext db.QueryContext, startTime time.Time) ([]*v1pb.QueryResult, error) {
+	simpleStatement := isMongoStatement(statement)
 	connectionURI := getBasicMongoDBConnectionURI(d.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.

@@ -857,10 +857,14 @@ github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c h1:scJ4ycKuUAaA
 github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c/go.mod h1:X0CGYwIZUnjfrv02/nBlftxqSBMm4mYJzFwiyn2D4d8=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898/go.mod h1:2KhUz4GSLcdJGXSJMXAf2BjmakcgoOkNyPpHdGAxRpY=
+github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8 h1:/MFuVj7SR+TQAXtLkt5y72a8JnvKcYITfQOoAhyvbvM=
+github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8/go.mod h1:7aVbtrEx9OpYH+qoeyqdxAVXH5NsBJSbTScD2jt+B0o=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/parser v0.0.0-20260113041207-12c6f17e2d8e h1:MtSRG2W59qJujPTbK8jUoQKJX4wLRYXJDWDOgtVa8kY=
 github.com/bytebase/parser v0.0.0-20260113041207-12c6f17e2d8e/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
+github.com/bytebase/parser v0.0.0-20260121030202-698704919f24 h1:oonTO26orUa4bYk/hQjALiYO1zII+Kzpjg75OnC3VtU=
+github.com/bytebase/parser v0.0.0-20260121030202-698704919f24/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94 h1:6PNsuNmSqCuR8Z616uQLzDIvujWCFsKzeVc3ECmVubk=

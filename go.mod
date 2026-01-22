@@ -141,6 +141,7 @@ require (
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
@@ -299,7 +300,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20260113041207-12c6f17e2d8e
+	github.com/bytebase/parser v0.0.0-20260121030202-698704919f24
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
