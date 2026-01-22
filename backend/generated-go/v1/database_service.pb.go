@@ -24,6 +24,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// SyncStatus is the status of the database sync operation.
+type SyncStatus int32
+
+const (
+	SyncStatus_SYNC_STATUS_UNSPECIFIED SyncStatus = 0
+	// The database was synced successfully.
+	SyncStatus_OK SyncStatus = 1
+	// The database sync failed.
+	SyncStatus_FAILED SyncStatus = 2
+)
+
+// Enum value maps for SyncStatus.
+var (
+	SyncStatus_name = map[int32]string{
+		0: "SYNC_STATUS_UNSPECIFIED",
+		1: "OK",
+		2: "FAILED",
+	}
+	SyncStatus_value = map[string]int32{
+		"SYNC_STATUS_UNSPECIFIED": 0,
+		"OK":                      1,
+		"FAILED":                  2,
+	}
+)
+
+func (x SyncStatus) Enum() *SyncStatus {
+	p := new(SyncStatus)
+	*p = x
+	return p
+}
+
+func (x SyncStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SyncStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_database_service_proto_enumTypes[0].Descriptor()
+}
+
+func (SyncStatus) Type() protoreflect.EnumType {
+	return &file_v1_database_service_proto_enumTypes[0]
+}
+
+func (x SyncStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SyncStatus.Descriptor instead.
+func (SyncStatus) EnumDescriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{0}
+}
+
 type ChangelogView int32
 
 const (
@@ -59,11 +111,11 @@ func (x ChangelogView) String() string {
 }
 
 func (ChangelogView) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[0].Descriptor()
+	return file_v1_database_service_proto_enumTypes[1].Descriptor()
 }
 
 func (ChangelogView) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[0]
+	return &file_v1_database_service_proto_enumTypes[1]
 }
 
 func (x ChangelogView) Number() protoreflect.EnumNumber {
@@ -72,7 +124,7 @@ func (x ChangelogView) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ChangelogView.Descriptor instead.
 func (ChangelogView) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{1}
 }
 
 // SDLFormat specifies the output format for SDL schema.
@@ -113,11 +165,11 @@ func (x GetDatabaseSDLSchemaRequest_SDLFormat) String() string {
 }
 
 func (GetDatabaseSDLSchemaRequest_SDLFormat) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[1].Descriptor()
+	return file_v1_database_service_proto_enumTypes[2].Descriptor()
 }
 
 func (GetDatabaseSDLSchemaRequest_SDLFormat) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[1]
+	return &file_v1_database_service_proto_enumTypes[2]
 }
 
 func (x GetDatabaseSDLSchemaRequest_SDLFormat) Number() protoreflect.EnumNumber {
@@ -187,11 +239,11 @@ func (x TablePartitionMetadata_Type) String() string {
 }
 
 func (TablePartitionMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[2].Descriptor()
+	return file_v1_database_service_proto_enumTypes[3].Descriptor()
 }
 
 func (TablePartitionMetadata_Type) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[2]
+	return &file_v1_database_service_proto_enumTypes[3]
 }
 
 func (x TablePartitionMetadata_Type) Number() protoreflect.EnumNumber {
@@ -236,11 +288,11 @@ func (x ColumnMetadata_IdentityGeneration) String() string {
 }
 
 func (ColumnMetadata_IdentityGeneration) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[3].Descriptor()
+	return file_v1_database_service_proto_enumTypes[4].Descriptor()
 }
 
 func (ColumnMetadata_IdentityGeneration) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[3]
+	return &file_v1_database_service_proto_enumTypes[4]
 }
 
 func (x ColumnMetadata_IdentityGeneration) Number() protoreflect.EnumNumber {
@@ -285,11 +337,11 @@ func (x GenerationMetadata_Type) String() string {
 }
 
 func (GenerationMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[4].Descriptor()
+	return file_v1_database_service_proto_enumTypes[5].Descriptor()
 }
 
 func (GenerationMetadata_Type) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[4]
+	return &file_v1_database_service_proto_enumTypes[5]
 }
 
 func (x GenerationMetadata_Type) Number() protoreflect.EnumNumber {
@@ -334,11 +386,11 @@ func (x TaskMetadata_State) String() string {
 }
 
 func (TaskMetadata_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[5].Descriptor()
+	return file_v1_database_service_proto_enumTypes[6].Descriptor()
 }
 
 func (TaskMetadata_State) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[5]
+	return &file_v1_database_service_proto_enumTypes[6]
 }
 
 func (x TaskMetadata_State) Number() protoreflect.EnumNumber {
@@ -380,11 +432,11 @@ func (x StreamMetadata_Type) String() string {
 }
 
 func (StreamMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[6].Descriptor()
+	return file_v1_database_service_proto_enumTypes[7].Descriptor()
 }
 
 func (StreamMetadata_Type) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[6]
+	return &file_v1_database_service_proto_enumTypes[7]
 }
 
 func (x StreamMetadata_Type) Number() protoreflect.EnumNumber {
@@ -432,11 +484,11 @@ func (x StreamMetadata_Mode) String() string {
 }
 
 func (StreamMetadata_Mode) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[7].Descriptor()
+	return file_v1_database_service_proto_enumTypes[8].Descriptor()
 }
 
 func (StreamMetadata_Mode) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[7]
+	return &file_v1_database_service_proto_enumTypes[8]
 }
 
 func (x StreamMetadata_Mode) Number() protoreflect.EnumNumber {
@@ -484,11 +536,11 @@ func (x Changelog_Status) String() string {
 }
 
 func (Changelog_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[8].Descriptor()
+	return file_v1_database_service_proto_enumTypes[9].Descriptor()
 }
 
 func (Changelog_Status) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[8]
+	return &file_v1_database_service_proto_enumTypes[9]
 }
 
 func (x Changelog_Status) Number() protoreflect.EnumNumber {
@@ -551,11 +603,11 @@ func (x GetSchemaStringRequest_ObjectType) String() string {
 }
 
 func (GetSchemaStringRequest_ObjectType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_database_service_proto_enumTypes[9].Descriptor()
+	return file_v1_database_service_proto_enumTypes[10].Descriptor()
 }
 
 func (GetSchemaStringRequest_ObjectType) Type() protoreflect.EnumType {
-	return &file_v1_database_service_proto_enumTypes[9]
+	return &file_v1_database_service_proto_enumTypes[10]
 }
 
 func (x GetSchemaStringRequest_ObjectType) Number() protoreflect.EnumNumber {
@@ -1601,8 +1653,12 @@ type Database struct {
 	InstanceResource *InstanceResource `protobuf:"bytes,9,opt,name=instance_resource,json=instanceResource,proto3" json:"instance_resource,omitempty"`
 	// The database is available for DML prior backup.
 	BackupAvailable bool `protobuf:"varint,10,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The sync status of the database.
+	SyncStatus SyncStatus `protobuf:"varint,11,opt,name=sync_status,json=syncStatus,proto3,enum=bytebase.v1.SyncStatus" json:"sync_status,omitempty"`
+	// The error message if sync failed.
+	SyncError     string `protobuf:"bytes,12,opt,name=sync_error,json=syncError,proto3" json:"sync_error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Database) Reset() {
@@ -1703,6 +1759,20 @@ func (x *Database) GetBackupAvailable() bool {
 		return x.BackupAvailable
 	}
 	return false
+}
+
+func (x *Database) GetSyncStatus() SyncStatus {
+	if x != nil {
+		return x.SyncStatus
+	}
+	return SyncStatus_SYNC_STATUS_UNSPECIFIED
+}
+
+func (x *Database) GetSyncError() string {
+	if x != nil {
+		return x.SyncError
+	}
+	return ""
 }
 
 // DatabaseMetadata is the metadata for databases.
@@ -5583,7 +5653,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xac\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\x8f\x06\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
@@ -5595,7 +5665,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06labels\x18\b \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +
 	"\x11instance_resource\x18\t \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
 	"\x10backup_available\x18\n" +
-	" \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x1a9\n" +
+	" \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x12=\n" +
+	"\vsync_status\x18\v \x01(\x0e2\x17.bytebase.v1.SyncStatusB\x03\xe0A\x03R\n" +
+	"syncStatus\x12\"\n" +
+	"\n" +
+	"sync_error\x18\f \x01(\tB\x03\xe0A\x03R\tsyncError\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +
@@ -6022,7 +6096,13 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tPROCEDURE\x10\a\x12\f\n" +
 	"\bSEQUENCE\x10\b\">\n" +
 	"\x17GetSchemaStringResponse\x12#\n" +
-	"\rschema_string\x18\x01 \x01(\tR\fschemaString*b\n" +
+	"\rschema_string\x18\x01 \x01(\tR\fschemaString*=\n" +
+	"\n" +
+	"SyncStatus\x12\x1b\n" +
+	"\x17SYNC_STATUS_UNSPECIFIED\x10\x00\x12\x06\n" +
+	"\x02OK\x10\x01\x12\n" +
+	"\n" +
+	"\x06FAILED\x10\x02*b\n" +
 	"\rChangelogView\x12\x1e\n" +
 	"\x1aCHANGELOG_VIEW_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CHANGELOG_VIEW_BASIC\x10\x01\x12\x17\n" +
@@ -6057,179 +6137,181 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 	return file_v1_database_service_proto_rawDescData
 }
 
-var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
 var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_v1_database_service_proto_goTypes = []any{
-	(ChangelogView)(0),                         // 0: bytebase.v1.ChangelogView
-	(GetDatabaseSDLSchemaRequest_SDLFormat)(0), // 1: bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
-	(TablePartitionMetadata_Type)(0),           // 2: bytebase.v1.TablePartitionMetadata.Type
-	(ColumnMetadata_IdentityGeneration)(0),     // 3: bytebase.v1.ColumnMetadata.IdentityGeneration
-	(GenerationMetadata_Type)(0),               // 4: bytebase.v1.GenerationMetadata.Type
-	(TaskMetadata_State)(0),                    // 5: bytebase.v1.TaskMetadata.State
-	(StreamMetadata_Type)(0),                   // 6: bytebase.v1.StreamMetadata.Type
-	(StreamMetadata_Mode)(0),                   // 7: bytebase.v1.StreamMetadata.Mode
-	(Changelog_Status)(0),                      // 8: bytebase.v1.Changelog.Status
-	(GetSchemaStringRequest_ObjectType)(0),     // 9: bytebase.v1.GetSchemaStringRequest.ObjectType
-	(*GetDatabaseRequest)(nil),                 // 10: bytebase.v1.GetDatabaseRequest
-	(*BatchGetDatabasesRequest)(nil),           // 11: bytebase.v1.BatchGetDatabasesRequest
-	(*BatchGetDatabasesResponse)(nil),          // 12: bytebase.v1.BatchGetDatabasesResponse
-	(*ListDatabasesRequest)(nil),               // 13: bytebase.v1.ListDatabasesRequest
-	(*ListDatabasesResponse)(nil),              // 14: bytebase.v1.ListDatabasesResponse
-	(*UpdateDatabaseRequest)(nil),              // 15: bytebase.v1.UpdateDatabaseRequest
-	(*BatchUpdateDatabasesRequest)(nil),        // 16: bytebase.v1.BatchUpdateDatabasesRequest
-	(*BatchUpdateDatabasesResponse)(nil),       // 17: bytebase.v1.BatchUpdateDatabasesResponse
-	(*BatchSyncDatabasesRequest)(nil),          // 18: bytebase.v1.BatchSyncDatabasesRequest
-	(*BatchSyncDatabasesResponse)(nil),         // 19: bytebase.v1.BatchSyncDatabasesResponse
-	(*SyncDatabaseRequest)(nil),                // 20: bytebase.v1.SyncDatabaseRequest
-	(*SyncDatabaseResponse)(nil),               // 21: bytebase.v1.SyncDatabaseResponse
-	(*GetDatabaseMetadataRequest)(nil),         // 22: bytebase.v1.GetDatabaseMetadataRequest
-	(*GetDatabaseSchemaRequest)(nil),           // 23: bytebase.v1.GetDatabaseSchemaRequest
-	(*GetDatabaseSDLSchemaRequest)(nil),        // 24: bytebase.v1.GetDatabaseSDLSchemaRequest
-	(*DiffSchemaRequest)(nil),                  // 25: bytebase.v1.DiffSchemaRequest
-	(*DiffSchemaResponse)(nil),                 // 26: bytebase.v1.DiffSchemaResponse
-	(*Database)(nil),                           // 27: bytebase.v1.Database
-	(*DatabaseMetadata)(nil),                   // 28: bytebase.v1.DatabaseMetadata
-	(*SchemaMetadata)(nil),                     // 29: bytebase.v1.SchemaMetadata
-	(*EnumTypeMetadata)(nil),                   // 30: bytebase.v1.EnumTypeMetadata
-	(*EventMetadata)(nil),                      // 31: bytebase.v1.EventMetadata
-	(*SequenceMetadata)(nil),                   // 32: bytebase.v1.SequenceMetadata
-	(*TriggerMetadata)(nil),                    // 33: bytebase.v1.TriggerMetadata
-	(*ExternalTableMetadata)(nil),              // 34: bytebase.v1.ExternalTableMetadata
-	(*TableMetadata)(nil),                      // 35: bytebase.v1.TableMetadata
-	(*CheckConstraintMetadata)(nil),            // 36: bytebase.v1.CheckConstraintMetadata
-	(*TablePartitionMetadata)(nil),             // 37: bytebase.v1.TablePartitionMetadata
-	(*ColumnMetadata)(nil),                     // 38: bytebase.v1.ColumnMetadata
-	(*GenerationMetadata)(nil),                 // 39: bytebase.v1.GenerationMetadata
-	(*ViewMetadata)(nil),                       // 40: bytebase.v1.ViewMetadata
-	(*DependencyColumn)(nil),                   // 41: bytebase.v1.DependencyColumn
-	(*MaterializedViewMetadata)(nil),           // 42: bytebase.v1.MaterializedViewMetadata
-	(*DependencyTable)(nil),                    // 43: bytebase.v1.DependencyTable
-	(*FunctionMetadata)(nil),                   // 44: bytebase.v1.FunctionMetadata
-	(*ProcedureMetadata)(nil),                  // 45: bytebase.v1.ProcedureMetadata
-	(*PackageMetadata)(nil),                    // 46: bytebase.v1.PackageMetadata
-	(*TaskMetadata)(nil),                       // 47: bytebase.v1.TaskMetadata
-	(*StreamMetadata)(nil),                     // 48: bytebase.v1.StreamMetadata
-	(*SpatialIndexConfig)(nil),                 // 49: bytebase.v1.SpatialIndexConfig
-	(*TessellationConfig)(nil),                 // 50: bytebase.v1.TessellationConfig
-	(*GridLevel)(nil),                          // 51: bytebase.v1.GridLevel
-	(*BoundingBox)(nil),                        // 52: bytebase.v1.BoundingBox
-	(*StorageConfig)(nil),                      // 53: bytebase.v1.StorageConfig
-	(*DimensionalConfig)(nil),                  // 54: bytebase.v1.DimensionalConfig
-	(*DimensionConstraint)(nil),                // 55: bytebase.v1.DimensionConstraint
-	(*IndexMetadata)(nil),                      // 56: bytebase.v1.IndexMetadata
-	(*ExtensionMetadata)(nil),                  // 57: bytebase.v1.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),                 // 58: bytebase.v1.ForeignKeyMetadata
-	(*DatabaseSchema)(nil),                     // 59: bytebase.v1.DatabaseSchema
-	(*DatabaseSDLSchema)(nil),                  // 60: bytebase.v1.DatabaseSDLSchema
-	(*ListChangelogsRequest)(nil),              // 61: bytebase.v1.ListChangelogsRequest
-	(*ListChangelogsResponse)(nil),             // 62: bytebase.v1.ListChangelogsResponse
-	(*GetChangelogRequest)(nil),                // 63: bytebase.v1.GetChangelogRequest
-	(*Changelog)(nil),                          // 64: bytebase.v1.Changelog
-	(*GetSchemaStringRequest)(nil),             // 65: bytebase.v1.GetSchemaStringRequest
-	(*GetSchemaStringResponse)(nil),            // 66: bytebase.v1.GetSchemaStringResponse
-	nil,                                        // 67: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),              // 68: google.protobuf.FieldMask
-	(State)(0),                                 // 69: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),              // 70: google.protobuf.Timestamp
-	(*InstanceResource)(nil),                   // 71: bytebase.v1.InstanceResource
+	(SyncStatus)(0),    // 0: bytebase.v1.SyncStatus
+	(ChangelogView)(0), // 1: bytebase.v1.ChangelogView
+	(GetDatabaseSDLSchemaRequest_SDLFormat)(0), // 2: bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
+	(TablePartitionMetadata_Type)(0),           // 3: bytebase.v1.TablePartitionMetadata.Type
+	(ColumnMetadata_IdentityGeneration)(0),     // 4: bytebase.v1.ColumnMetadata.IdentityGeneration
+	(GenerationMetadata_Type)(0),               // 5: bytebase.v1.GenerationMetadata.Type
+	(TaskMetadata_State)(0),                    // 6: bytebase.v1.TaskMetadata.State
+	(StreamMetadata_Type)(0),                   // 7: bytebase.v1.StreamMetadata.Type
+	(StreamMetadata_Mode)(0),                   // 8: bytebase.v1.StreamMetadata.Mode
+	(Changelog_Status)(0),                      // 9: bytebase.v1.Changelog.Status
+	(GetSchemaStringRequest_ObjectType)(0),     // 10: bytebase.v1.GetSchemaStringRequest.ObjectType
+	(*GetDatabaseRequest)(nil),                 // 11: bytebase.v1.GetDatabaseRequest
+	(*BatchGetDatabasesRequest)(nil),           // 12: bytebase.v1.BatchGetDatabasesRequest
+	(*BatchGetDatabasesResponse)(nil),          // 13: bytebase.v1.BatchGetDatabasesResponse
+	(*ListDatabasesRequest)(nil),               // 14: bytebase.v1.ListDatabasesRequest
+	(*ListDatabasesResponse)(nil),              // 15: bytebase.v1.ListDatabasesResponse
+	(*UpdateDatabaseRequest)(nil),              // 16: bytebase.v1.UpdateDatabaseRequest
+	(*BatchUpdateDatabasesRequest)(nil),        // 17: bytebase.v1.BatchUpdateDatabasesRequest
+	(*BatchUpdateDatabasesResponse)(nil),       // 18: bytebase.v1.BatchUpdateDatabasesResponse
+	(*BatchSyncDatabasesRequest)(nil),          // 19: bytebase.v1.BatchSyncDatabasesRequest
+	(*BatchSyncDatabasesResponse)(nil),         // 20: bytebase.v1.BatchSyncDatabasesResponse
+	(*SyncDatabaseRequest)(nil),                // 21: bytebase.v1.SyncDatabaseRequest
+	(*SyncDatabaseResponse)(nil),               // 22: bytebase.v1.SyncDatabaseResponse
+	(*GetDatabaseMetadataRequest)(nil),         // 23: bytebase.v1.GetDatabaseMetadataRequest
+	(*GetDatabaseSchemaRequest)(nil),           // 24: bytebase.v1.GetDatabaseSchemaRequest
+	(*GetDatabaseSDLSchemaRequest)(nil),        // 25: bytebase.v1.GetDatabaseSDLSchemaRequest
+	(*DiffSchemaRequest)(nil),                  // 26: bytebase.v1.DiffSchemaRequest
+	(*DiffSchemaResponse)(nil),                 // 27: bytebase.v1.DiffSchemaResponse
+	(*Database)(nil),                           // 28: bytebase.v1.Database
+	(*DatabaseMetadata)(nil),                   // 29: bytebase.v1.DatabaseMetadata
+	(*SchemaMetadata)(nil),                     // 30: bytebase.v1.SchemaMetadata
+	(*EnumTypeMetadata)(nil),                   // 31: bytebase.v1.EnumTypeMetadata
+	(*EventMetadata)(nil),                      // 32: bytebase.v1.EventMetadata
+	(*SequenceMetadata)(nil),                   // 33: bytebase.v1.SequenceMetadata
+	(*TriggerMetadata)(nil),                    // 34: bytebase.v1.TriggerMetadata
+	(*ExternalTableMetadata)(nil),              // 35: bytebase.v1.ExternalTableMetadata
+	(*TableMetadata)(nil),                      // 36: bytebase.v1.TableMetadata
+	(*CheckConstraintMetadata)(nil),            // 37: bytebase.v1.CheckConstraintMetadata
+	(*TablePartitionMetadata)(nil),             // 38: bytebase.v1.TablePartitionMetadata
+	(*ColumnMetadata)(nil),                     // 39: bytebase.v1.ColumnMetadata
+	(*GenerationMetadata)(nil),                 // 40: bytebase.v1.GenerationMetadata
+	(*ViewMetadata)(nil),                       // 41: bytebase.v1.ViewMetadata
+	(*DependencyColumn)(nil),                   // 42: bytebase.v1.DependencyColumn
+	(*MaterializedViewMetadata)(nil),           // 43: bytebase.v1.MaterializedViewMetadata
+	(*DependencyTable)(nil),                    // 44: bytebase.v1.DependencyTable
+	(*FunctionMetadata)(nil),                   // 45: bytebase.v1.FunctionMetadata
+	(*ProcedureMetadata)(nil),                  // 46: bytebase.v1.ProcedureMetadata
+	(*PackageMetadata)(nil),                    // 47: bytebase.v1.PackageMetadata
+	(*TaskMetadata)(nil),                       // 48: bytebase.v1.TaskMetadata
+	(*StreamMetadata)(nil),                     // 49: bytebase.v1.StreamMetadata
+	(*SpatialIndexConfig)(nil),                 // 50: bytebase.v1.SpatialIndexConfig
+	(*TessellationConfig)(nil),                 // 51: bytebase.v1.TessellationConfig
+	(*GridLevel)(nil),                          // 52: bytebase.v1.GridLevel
+	(*BoundingBox)(nil),                        // 53: bytebase.v1.BoundingBox
+	(*StorageConfig)(nil),                      // 54: bytebase.v1.StorageConfig
+	(*DimensionalConfig)(nil),                  // 55: bytebase.v1.DimensionalConfig
+	(*DimensionConstraint)(nil),                // 56: bytebase.v1.DimensionConstraint
+	(*IndexMetadata)(nil),                      // 57: bytebase.v1.IndexMetadata
+	(*ExtensionMetadata)(nil),                  // 58: bytebase.v1.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),                 // 59: bytebase.v1.ForeignKeyMetadata
+	(*DatabaseSchema)(nil),                     // 60: bytebase.v1.DatabaseSchema
+	(*DatabaseSDLSchema)(nil),                  // 61: bytebase.v1.DatabaseSDLSchema
+	(*ListChangelogsRequest)(nil),              // 62: bytebase.v1.ListChangelogsRequest
+	(*ListChangelogsResponse)(nil),             // 63: bytebase.v1.ListChangelogsResponse
+	(*GetChangelogRequest)(nil),                // 64: bytebase.v1.GetChangelogRequest
+	(*Changelog)(nil),                          // 65: bytebase.v1.Changelog
+	(*GetSchemaStringRequest)(nil),             // 66: bytebase.v1.GetSchemaStringRequest
+	(*GetSchemaStringResponse)(nil),            // 67: bytebase.v1.GetSchemaStringResponse
+	nil,                                        // 68: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),              // 69: google.protobuf.FieldMask
+	(State)(0),                                 // 70: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),              // 71: google.protobuf.Timestamp
+	(*InstanceResource)(nil),                   // 72: bytebase.v1.InstanceResource
 }
 var file_v1_database_service_proto_depIdxs = []int32{
-	27, // 0: bytebase.v1.BatchGetDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	27, // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	27, // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	68, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	15, // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
-	27, // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	1,  // 6: bytebase.v1.GetDatabaseSDLSchemaRequest.format:type_name -> bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
-	69, // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
-	70, // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	67, // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	71, // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
-	29, // 11: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
-	57, // 12: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
-	35, // 13: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
-	34, // 14: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
-	40, // 15: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
-	44, // 16: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
-	45, // 17: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
-	48, // 18: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
-	47, // 19: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
-	42, // 20: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
-	46, // 21: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
-	32, // 22: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
-	31, // 23: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
-	30, // 24: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
-	38, // 25: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	38, // 26: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	56, // 27: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	58, // 28: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
-	37, // 29: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
-	36, // 30: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
-	33, // 31: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	2,  // 32: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
-	37, // 33: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
-	56, // 34: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	36, // 35: bytebase.v1.TablePartitionMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
-	39, // 36: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
-	3,  // 37: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
-	4,  // 38: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
-	41, // 39: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	38, // 40: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	33, // 41: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	41, // 42: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	33, // 43: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	56, // 44: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	43, // 45: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
-	5,  // 46: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
-	6,  // 47: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
-	7,  // 48: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
-	50, // 49: bytebase.v1.SpatialIndexConfig.tessellation:type_name -> bytebase.v1.TessellationConfig
-	53, // 50: bytebase.v1.SpatialIndexConfig.storage:type_name -> bytebase.v1.StorageConfig
-	54, // 51: bytebase.v1.SpatialIndexConfig.dimensional:type_name -> bytebase.v1.DimensionalConfig
-	51, // 52: bytebase.v1.TessellationConfig.grid_levels:type_name -> bytebase.v1.GridLevel
-	52, // 53: bytebase.v1.TessellationConfig.bounding_box:type_name -> bytebase.v1.BoundingBox
-	55, // 54: bytebase.v1.DimensionalConfig.constraints:type_name -> bytebase.v1.DimensionConstraint
-	49, // 55: bytebase.v1.IndexMetadata.spatial_config:type_name -> bytebase.v1.SpatialIndexConfig
-	0,  // 56: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
-	64, // 57: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
-	0,  // 58: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
-	70, // 59: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
-	8,  // 60: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
-	9,  // 61: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
-	28, // 62: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
-	10, // 63: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
-	11, // 64: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
-	13, // 65: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	15, // 66: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	16, // 67: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	20, // 68: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
-	18, // 69: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
-	22, // 70: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	23, // 71: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	24, // 72: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:input_type -> bytebase.v1.GetDatabaseSDLSchemaRequest
-	25, // 73: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
-	61, // 74: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
-	63, // 75: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
-	65, // 76: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
-	27, // 77: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
-	12, // 78: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
-	14, // 79: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	27, // 80: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	17, // 81: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	21, // 82: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
-	19, // 83: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
-	28, // 84: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	59, // 85: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	60, // 86: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:output_type -> bytebase.v1.DatabaseSDLSchema
-	26, // 87: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
-	62, // 88: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
-	64, // 89: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
-	66, // 90: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
-	77, // [77:91] is the sub-list for method output_type
-	63, // [63:77] is the sub-list for method input_type
-	63, // [63:63] is the sub-list for extension type_name
-	63, // [63:63] is the sub-list for extension extendee
-	0,  // [0:63] is the sub-list for field type_name
+	28, // 0: bytebase.v1.BatchGetDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	28, // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	28, // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
+	69, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	16, // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
+	28, // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	2,  // 6: bytebase.v1.GetDatabaseSDLSchemaRequest.format:type_name -> bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
+	70, // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
+	71, // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	68, // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	72, // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
+	0,  // 11: bytebase.v1.Database.sync_status:type_name -> bytebase.v1.SyncStatus
+	30, // 12: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
+	58, // 13: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
+	36, // 14: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
+	35, // 15: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
+	41, // 16: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
+	45, // 17: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
+	46, // 18: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
+	49, // 19: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
+	48, // 20: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
+	43, // 21: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
+	47, // 22: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
+	33, // 23: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
+	32, // 24: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
+	31, // 25: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
+	39, // 26: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	39, // 27: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	57, // 28: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	59, // 29: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
+	38, // 30: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
+	37, // 31: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
+	34, // 32: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	3,  // 33: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
+	38, // 34: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
+	57, // 35: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	37, // 36: bytebase.v1.TablePartitionMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
+	40, // 37: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
+	4,  // 38: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
+	5,  // 39: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
+	42, // 40: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	39, // 41: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	34, // 42: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	42, // 43: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	34, // 44: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	57, // 45: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	44, // 46: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
+	6,  // 47: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
+	7,  // 48: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
+	8,  // 49: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
+	51, // 50: bytebase.v1.SpatialIndexConfig.tessellation:type_name -> bytebase.v1.TessellationConfig
+	54, // 51: bytebase.v1.SpatialIndexConfig.storage:type_name -> bytebase.v1.StorageConfig
+	55, // 52: bytebase.v1.SpatialIndexConfig.dimensional:type_name -> bytebase.v1.DimensionalConfig
+	52, // 53: bytebase.v1.TessellationConfig.grid_levels:type_name -> bytebase.v1.GridLevel
+	53, // 54: bytebase.v1.TessellationConfig.bounding_box:type_name -> bytebase.v1.BoundingBox
+	56, // 55: bytebase.v1.DimensionalConfig.constraints:type_name -> bytebase.v1.DimensionConstraint
+	50, // 56: bytebase.v1.IndexMetadata.spatial_config:type_name -> bytebase.v1.SpatialIndexConfig
+	1,  // 57: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
+	65, // 58: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
+	1,  // 59: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
+	71, // 60: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
+	9,  // 61: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
+	10, // 62: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
+	29, // 63: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
+	11, // 64: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	12, // 65: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
+	14, // 66: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	16, // 67: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	17, // 68: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	21, // 69: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
+	19, // 70: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
+	23, // 71: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	24, // 72: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	25, // 73: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:input_type -> bytebase.v1.GetDatabaseSDLSchemaRequest
+	26, // 74: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
+	62, // 75: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
+	64, // 76: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
+	66, // 77: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
+	28, // 78: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	13, // 79: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
+	15, // 80: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	28, // 81: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	18, // 82: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	22, // 83: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
+	20, // 84: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
+	29, // 85: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	60, // 86: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	61, // 87: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:output_type -> bytebase.v1.DatabaseSDLSchema
+	27, // 88: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
+	63, // 89: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
+	65, // 90: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
+	67, // 91: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
+	78, // [78:92] is the sub-list for method output_type
+	64, // [64:78] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_service_proto_init() }
@@ -6250,7 +6332,7 @@ func file_v1_database_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_service_proto_rawDesc), len(file_v1_database_service_proto_rawDesc)),
-			NumEnums:      10,
+			NumEnums:      11,
 			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   1,

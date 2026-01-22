@@ -1276,6 +1276,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
+    "syncing-databases-for-instance": "Sincronizando bases de datos para {0}...",
+    "n-databases-had-sync-errors": "{0} base(s) de datos tuvieron errores de sincronización",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
     "procedures": "Trámites",
@@ -1320,7 +1322,6 @@
     "users": "Usuarios",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
     "successfully-archived-instance": "Se archivó exitosamente la instancia '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Esquema sincronizado con éxito para la instancia '{0}'.",
     "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
     "restore": "Restaurar",
@@ -1611,7 +1612,9 @@
     "failed-to-export-schema": "Error al exportar el esquema",
     "select": "Seleccionar base de datos",
     "sync-status": "Estado de sincronización",
-    "last-successful-sync": "Última sincronización exitosa",
+    "sync-status-failed": "Sincronización fallida",
+    "last-sync": "Última sincronización",
+    "sync-complete-for-instance": "Sincronización completada para la instancia '{0}'",
     "filter-database": "Filtrar base de datos",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
@@ -2641,6 +2644,13 @@
       "rejected-by": "Rechazado por",
       "and-n-other-users": "{names} y {count} otros usuarios",
       "self-approval-not-allowed": "No se permite la autoaprobación para este proyecto. No puedes aprobarlo como creador."
+    },
+    "approval-flow-builtin": {
+      "project-owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
+      "workspace-dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
+      "workspace-admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
+      "project-owner-workspace-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
+      "project-owner-workspace-dba-workspace-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
     }
   },
   "schema-template": {
@@ -2760,10 +2770,6 @@
     "vcs-source": "Fuente VCS",
     "view-all-files": "Ver todos los archivos",
     "and-n-more-files": "y {n} archivos más",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "Fantasma DDL"
-    },
     "file-type": {
       "versioned": "Versión",
       "declarative": "Declarativo",

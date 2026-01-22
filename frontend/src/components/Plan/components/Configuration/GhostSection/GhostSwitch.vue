@@ -26,32 +26,39 @@
 </template>
 
 <script setup lang="tsx">
-import { create } from "@bufbuild/protobuf";
-import { cloneDeep } from "lodash-es";
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
-import { targetsForSpec } from "@/components/Plan/logic";
-import { planServiceClientConnect } from "@/connect";
+import {
+  targetsForSpec,
+  updateSpecSheetWithStatement,
+} from "@/components/Plan/logic";
 import { pushNotification } from "@/store";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName, setSheetStatement } from "@/utils";
+import { useSelectedSpec } from "../../SpecDetailView/context";
+import {
+  getDefaultGhostConfig,
+  getGhostConfig,
+  isGhostEnabled,
+  updateGhostConfig,
+} from "../../StatementSection/directiveUtils";
+import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import { allowGhostForDatabase } from "./common";
 import { useGhostSettingContext } from "./context";
 
 const { t } = useI18n();
-const {
-  isCreating,
-  plan,
-  selectedSpec,
-  allowChange,
-  enabled,
-  events,
-  databases,
-} = useGhostSettingContext();
+const { isCreating, plan, allowChange, events, databases } =
+  useGhostSettingContext();
+const { selectedSpec } = useSelectedSpec();
+const { sheet, sheetStatement, sheetReady } = useSpecSheet(selectedSpec);
+
+const enabled = computed(() => {
+  if (!sheetReady.value) return false;
+  return isGhostEnabled(sheetStatement.value);
+});
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
@@ -136,31 +143,26 @@ const toggleChecked = async (on: boolean) => {
     return;
   }
 
-  if (isCreating.value) {
-    if (
-      !selectedSpec.value ||
-      selectedSpec.value.config?.case !== "changeDatabaseConfig"
-    )
-      return;
-    selectedSpec.value.config.value.enableGhost = on;
-  } else {
-    const planPatch = cloneDeep(plan.value);
-    const spec = (planPatch?.specs || []).find((spec) => {
-      return spec.id === selectedSpec.value?.id;
-    });
-    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
-      // Should not reach here.
-      throw new Error(
-        "Plan or spec is not defined. Cannot update gh-ost setting."
-      );
-    }
+  // Get current ghost config from sheet (to preserve flags when enabling)
+  const currentConfig = on
+    ? (getGhostConfig(sheetStatement.value) ?? getDefaultGhostConfig())
+    : undefined;
+  const updatedStatement = updateGhostConfig(
+    sheetStatement.value,
+    currentConfig
+  );
 
-    spec.config.value.enableGhost = on;
-    const request = create(UpdatePlanRequestSchema, {
-      plan: planPatch,
-      updateMask: { paths: ["specs"] },
-    });
-    await planServiceClientConnect.updatePlan(request);
+  if (isCreating.value) {
+    // When creating a plan, update the local sheet directly.
+    if (!sheet.value) return;
+    setSheetStatement(sheet.value, updatedStatement);
+  } else {
+    // For created plans, create new sheet and update plan/spec
+    await updateSpecSheetWithStatement(
+      plan.value,
+      selectedSpec.value,
+      updatedStatement
+    );
     events.emit("update");
     pushNotification({
       module: "bytebase",

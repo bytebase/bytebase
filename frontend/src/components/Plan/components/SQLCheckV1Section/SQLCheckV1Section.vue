@@ -212,6 +212,7 @@ const runChecks = async () => {
     const targets = targetsForSpec(selectedSpec.value);
 
     // Run check for all targets
+    // Ghost directive (-- ghost = {...}) is embedded in the statement if enabled
     const request = create(CheckReleaseRequestSchema, {
       parent: `${projectNamePrefix}${extractProjectResourceName(plan.value.name)}`,
       release: {
@@ -221,7 +222,6 @@ const runChecks = async () => {
             // Use "0" for dummy version.
             version: "0",
             statement: new TextEncoder().encode(statement),
-            enableGhost: !config.release && config.enableGhost,
           },
         ],
       },

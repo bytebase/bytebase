@@ -47,10 +47,9 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 			return []*v1pb.Release_File{
 				{
 					// use file pattern as the path
-					Path:        w.FilePattern,
-					Version:     w.CurrentTime.Format(versionFormat),
-					EnableGhost: false,
-					Statement:   contents,
+					Path:      w.FilePattern,
+					Version:   w.CurrentTime.Format(versionFormat),
+					Statement: contents,
 				},
 			}, nil
 		}
@@ -62,10 +61,9 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 				return nil, err
 			}
 			files = append(files, &v1pb.Release_File{
-				Path:        m,
-				Version:     w.CurrentTime.Format(versionFormat),
-				EnableGhost: false,
-				Statement:   content,
+				Path:      m,
+				Version:   w.CurrentTime.Format(versionFormat),
+				Statement: content,
 			})
 		}
 		return files, nil
@@ -80,9 +78,6 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 
 		base := strings.TrimSuffix(filepath.Base(m), filepath.Ext(m))
 
-		// Extract migration type from SQL front matter comments
-		t := extractMigrationTypeFromContent(string(content))
-
 		version := extractVersion(base)
 		if version == "" {
 			w.Logger.Warn("version not found. ignore the file", "file", m)
@@ -90,10 +85,9 @@ func getReleaseFiles(w *world.World) ([]*v1pb.Release_File, error) {
 		}
 
 		files = append(files, &v1pb.Release_File{
-			Path:        m,
-			Version:     version,
-			EnableGhost: t,
-			Statement:   content,
+			Path:      m,
+			Version:   version,
+			Statement: content,
 		})
 	}
 
@@ -111,30 +105,4 @@ func extractVersion(s string) string {
 
 	// Return the first capture group which contains just the version numbers
 	return matches[1]
-}
-
-var migrationTypeReg = regexp.MustCompile(`(?i)^--\s*migration-type:\s*(\w+)`)
-
-// extractMigrationTypeFromContent extracts enable_ghost setting from SQL front matter comments.
-// Returns true if "-- migration-type: ghost" is found.
-// Example:
-//
-//	-- migration-type: ghost
-//	ALTER TABLE ...
-func extractMigrationTypeFromContent(content string) bool {
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		// Stop at first non-comment line
-		if line != "" && !strings.HasPrefix(line, "--") {
-			break
-		}
-		matches := migrationTypeReg.FindStringSubmatch(line)
-		if len(matches) >= 2 {
-			if strings.ToLower(matches[1]) == "ghost" {
-				return true
-			}
-		}
-	}
-	return false
 }

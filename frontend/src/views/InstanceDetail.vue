@@ -17,6 +17,8 @@
       <div class="flex items-center gap-x-2">
         <InstanceSyncButton
           v-if="instance.state === State.ACTIVE"
+          :instance-name="instance.name"
+          :instance-title="instance.title"
           @sync-schema="syncSchema"
         />
         <InstanceActionDropdown :instance="instance" />
@@ -104,7 +106,6 @@ import {
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
-  pushNotification,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
@@ -262,14 +263,8 @@ const syncSchema = async (enableFullSync: boolean) => {
   await instanceV1Store.syncInstance(instance.value.name, enableFullSync);
   // Remove the database list cache for the instance.
   databaseStore.removeCacheByInstance(instance.value.name);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t(
-      "instance.successfully-synced-schema-for-instance-instance-value-name",
-      [instance.value.title]
-    ),
-  });
+  // Note: Notification is now handled by InstanceSyncButton component
+  // which shows an honest "syncing" message and checks for errors after 30 seconds
 };
 
 const createDatabase = () => {

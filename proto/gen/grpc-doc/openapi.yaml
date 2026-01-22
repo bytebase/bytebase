@@ -13195,6 +13195,16 @@ components:
           title: backup_available
           description: The database is available for DML prior backup.
           readOnly: true
+        syncStatus:
+          title: sync_status
+          description: The sync status of the database.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.SyncStatus'
+        syncError:
+          type: string
+          title: sync_error
+          description: The error message if sync failed.
+          readOnly: true
       title: Database
       additionalProperties: false
     bytebase.v1.Database.LabelsEntry:
@@ -17394,32 +17404,11 @@ components:
           description: |-
             The resource name of the release.
              Format: projects/{project}/releases/{release}
-        ghostFlags:
-          type: object
-          title: ghost_flags
-          additionalProperties:
-            type: string
-            title: value
         enablePriorBackup:
           type: boolean
           title: enable_prior_backup
           description: If set, a backup of the modified data will be created automatically before any changes are applied.
-        enableGhost:
-          type: boolean
-          title: enable_ghost
-          description: Whether to use gh-ost for online schema migration.
       title: ChangeDatabaseConfig
-      additionalProperties: false
-    bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry:
-      type: object
-      properties:
-        key:
-          type: string
-          title: key
-        value:
-          type: string
-          title: value
-      title: GhostFlagsEntry
       additionalProperties: false
     bytebase.v1.Plan.CreateDatabaseConfig:
       type: object
@@ -18610,10 +18599,6 @@ components:
           type: string
           title: version
           description: The version identifier for the file.
-        enableGhost:
-          type: boolean
-          title: enable_ghost
-          description: Whether to use gh-ost for online schema migration.
         sheet:
           type: string
           title: sheet
@@ -20401,6 +20386,14 @@ components:
           description: All database name list in the instance.
       title: SyncInstanceResponse
       additionalProperties: false
+    bytebase.v1.SyncStatus:
+      type: string
+      title: SyncStatus
+      enum:
+        - SYNC_STATUS_UNSPECIFIED
+        - OK
+        - FAILED
+      description: SyncStatus is the status of the database sync operation.
     bytebase.v1.TableCatalog:
       type: object
       allOf:

@@ -38,9 +38,4 @@ message Task {
 
   // Whether to create an automatic backup before applying changes.
   bool enable_prior_backup = 11;
-  // Configuration flags for gh-ost migration tool.
-  map<string, string> flags = 12;
-
-  // Whether to use gh-ost for online schema migration.
-  bool enable_ghost = 16;
 }

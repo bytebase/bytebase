@@ -310,8 +310,6 @@ message Release {
 
     // The version identifier for the file.
     string version = 6;
-    // Whether to use gh-ost for online schema migration.
-    bool enable_ghost = 9;
 
     // For inputs, we must either use `sheet` or `statement`.
     // For outputs, we always use `sheet`. `statement` is the preview of the sheet content.

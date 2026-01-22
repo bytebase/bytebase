@@ -104,7 +104,6 @@ const props = withDefaults(
     databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
-    enableGhost?: boolean;
     showCodeLocation?: boolean;
     ignoreIssueCreationRestriction?: boolean;
     adviceFilter?: (advices: Advice, index: number) => boolean;
@@ -113,7 +112,6 @@ const props = withDefaults(
     databaseMetadata: undefined,
     buttonProps: undefined,
     buttonStyle: undefined,
-    changeType: undefined,
     showCodeLocation: undefined,
     ignoreIssueCreationRestriction: false,
     adviceFilter: undefined,
@@ -157,7 +155,7 @@ const statementErrors = asyncComputed(async () => {
 }, []);
 
 const runCheckInternal = async (statement: string) => {
-  const { database, enableGhost } = props;
+  const { database } = props;
   const request = create(CheckReleaseRequestSchema, {
     parent: database.project,
     release: {
@@ -166,8 +164,8 @@ const runCheckInternal = async (statement: string) => {
         {
           // Use "0" for dummy version.
           version: "0",
+          // Ghost directive (-- ghost = {...}) is embedded in the statement if enabled
           statement: new TextEncoder().encode(statement),
-          enableGhost: enableGhost ?? false,
         },
       ],
     },

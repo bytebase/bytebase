@@ -473,13 +473,6 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
   version: string;
 
   /**
-   * Whether to use gh-ost for online schema migration.
-   *
-   * @generated from field: bool enable_ghost = 9;
-   */
-  enableGhost: boolean;
-
-  /**
    * For inputs, we must either use `sheet` or `statement`.
    * For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
    *

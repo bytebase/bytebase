@@ -19,8 +19,6 @@ message ReleasePayload {
     // The SHA256 hash of the sheet content (hex-encoded).
     string sheet_sha256 = 4;
     string version = 6;
-    // Whether to use gh-ost for online schema migration.
-    bool enable_ghost = 7;
   }
 
   message VCSSource {

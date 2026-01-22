@@ -19,10 +19,12 @@
 </template>
 
 <script setup lang="tsx">
+import { CheckCircleIcon, XCircleIcon } from "lucide-vue-next";
 import {
   type DataTableColumn,
   type DataTableSortState,
   NDataTable,
+  NTooltip,
 } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -32,7 +34,10 @@ import {
   LabelsCell,
   ProjectNameCell,
 } from "@/components/v2/Model/cells";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  SyncStatus,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   getDatabaseEnvironment,
   getDatabaseProject,
@@ -184,6 +189,24 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
       <LabelsCell labels={data.labels} showCount={1} placeholder="-" />
     ),
   };
+  const SYNC_STATUS: DatabaseDataTableColumn = {
+    key: "sync-status",
+    title: t("database.sync-status"),
+    width: 100,
+    render: (data) => {
+      if (data.syncStatus === SyncStatus.FAILED) {
+        return (
+          <NTooltip>
+            {{
+              trigger: () => <XCircleIcon class="w-4 h-4 text-error" />,
+              default: () => data.syncError || t("database.sync-status-failed"),
+            }}
+          </NTooltip>
+        );
+      }
+      return <CheckCircleIcon class="w-4 h-4 text-success" />;
+    },
+  };
 
   const columnsMap = new Map<Mode, DatabaseDataTableColumn[]>([
     [
@@ -196,16 +219,41 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
         INSTANCE,
         ADDRESS,
         DATABASE_LABELS,
+        SYNC_STATUS,
       ],
     ],
-    ["ALL_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE]],
-    ["ALL_TINY", [NAME, ENVIRONMENT, PROJECT, INSTANCE]],
-    ["INSTANCE", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, DATABASE_LABELS]],
+    [
+      "ALL_SHORT",
+      [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE, SYNC_STATUS],
+    ],
+    ["ALL_TINY", [NAME, ENVIRONMENT, PROJECT, INSTANCE, SYNC_STATUS]],
+    [
+      "INSTANCE",
+      [
+        NAME,
+        ENVIRONMENT,
+        SCHEMA_VERSION,
+        PROJECT,
+        DATABASE_LABELS,
+        SYNC_STATUS,
+      ],
+    ],
     [
       "PROJECT",
-      [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS, DATABASE_LABELS],
+      [
+        NAME,
+        ENVIRONMENT,
+        SCHEMA_VERSION,
+        INSTANCE,
+        ADDRESS,
+        DATABASE_LABELS,
+        SYNC_STATUS,
+      ],
     ],
-    ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS]],
+    [
+      "PROJECT_SHORT",
+      [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS, SYNC_STATUS],
+    ],
   ]);
 
   const columns: DatabaseDataTableColumn[] = (

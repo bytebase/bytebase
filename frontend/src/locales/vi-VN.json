@@ -1276,6 +1276,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Đã đồng bộ hóa thành công lược đồ cho cơ sở dữ liệu '{0}'.",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
+    "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {0}...",
+    "n-databases-had-sync-errors": "{0} cơ sở dữ liệu gặp lỗi đồng bộ",
     "failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
     "procedures": "Thủ tục",
@@ -1320,7 +1322,6 @@
     "users": "Người dùng",
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Đã đồng bộ hóa thành công lược đồ cho phiên bản '{0}'.",
     "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
     "restore": "Khôi phục",
@@ -1611,7 +1612,9 @@
     "failed-to-export-schema": "Không thể xuất schema",
     "select": "Chọn cơ sở dữ liệu",
     "sync-status": "Trạng thái đồng bộ",
-    "last-successful-sync": "Lần đồng bộ thành công cuối cùng",
+    "sync-status-failed": "Đồng bộ thất bại",
+    "last-sync": "Lần đồng bộ cuối cùng",
+    "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{0}'",
     "filter-database": "Lọc cơ sở dữ liệu",
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
@@ -2641,6 +2644,13 @@
       "rejected-by": "Bị từ chối bởi",
       "and-n-other-users": "{names} và {count} người dùng khác",
       "self-approval-not-allowed": "Không được phép tự phê duyệt cho dự án này. Bạn không thể phê duyệt với tư cách là người sáng tạo."
+    },
+    "approval-flow-builtin": {
+      "project-owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
+      "workspace-dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
+      "workspace-admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
+      "project-owner-workspace-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
+      "project-owner-workspace-dba-workspace-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
     }
   },
   "schema-template": {
@@ -2760,10 +2770,6 @@
     "vcs-source": "Nguồn VCS",
     "view-all-files": "Xem tất cả các tập tin",
     "and-n-more-files": "và {n} tập tin khác",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ma"
-    },
     "file-type": {
       "versioned": "Phiên bản",
       "declarative": "Khai báo",

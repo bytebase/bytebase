@@ -1276,6 +1276,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
     "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
     "start-to-sync-schema": "开始同步 schema",
+    "syncing-databases-for-instance": "正在同步 {0} 的数据库...",
+    "n-databases-had-sync-errors": "{0} 个数据库同步出错",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
     "procedures": "存储过程",
@@ -1320,7 +1322,6 @@
     "users": "用户",
     "successfully-restored-instance": "已成功恢复实例“{0}”。",
     "successfully-archived-instance": "成功归档实例'{0}'。",
-    "successfully-synced-schema-for-instance-instance-value-name": "成功为实例'{0}'同步 schema 。",
     "archive-instance-instance-name": "归档实例'{0}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "restore": "恢复",
@@ -1611,7 +1612,9 @@
     "failed-to-export-schema": "导出 Schema 失败",
     "select": "选择数据库",
     "sync-status": "同步状态",
-    "last-successful-sync": "最后一次成功的同步",
+    "sync-status-failed": "同步失败",
+    "last-sync": "最后一次同步",
+    "sync-complete-for-instance": "实例 '{0}' 同步完成",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
     "unassign": "取消分配",
@@ -2641,6 +2644,13 @@
       "rejected-by": "被拒绝",
       "and-n-other-users": "{names} 和另外 {count} 位用户",
       "self-approval-not-allowed": "此项目不允许工单创建者审批。您无法以创建者身份批准。"
+    },
+    "approval-flow-builtin": {
+      "project-owner": "系统定义的流程。只需要项目所有者审批。",
+      "workspace-dba": "系统定义的流程。只需要 DBA 审批。",
+      "workspace-admin": "系统定义的流程。只需要管理员审批。",
+      "project-owner-workspace-dba": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。",
+      "project-owner-workspace-dba-workspace-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
     }
   },
   "schema-template": {
@@ -2760,10 +2770,6 @@
     "vcs-source": "VCS 源",
     "view-all-files": "查看全部文件",
     "and-n-more-files": "还有 {count} 个文件",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "版本化",
       "declarative": "声明式",

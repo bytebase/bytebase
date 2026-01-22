@@ -1276,6 +1276,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
+    "syncing-databases-for-instance": "Syncing databases for {0}...",
+    "n-databases-had-sync-errors": "{0} database(s) had sync errors",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
     "procedures": "Procedures",
@@ -1320,7 +1322,6 @@
     "users": "Users",
     "successfully-restored-instance": "Successfully restored the instance '{0}'.",
     "successfully-archived-instance": "Successfully archived the instance '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-instance-instance-name": "Archive instance '{0}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "restore": "Restore",
@@ -1611,7 +1612,9 @@
     "failed-to-export-schema": "Failed to export schema",
     "select": "Select database",
     "sync-status": "Sync status",
-    "last-successful-sync": "Last successful sync",
+    "sync-status-failed": "Sync failed",
+    "last-sync": "Last sync",
+    "sync-complete-for-instance": "Sync complete for instance '{0}'",
     "filter-database": "Filter database",
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
@@ -2641,6 +2644,13 @@
       "rejected-by": "Rejected by",
       "and-n-other-users": "{names} and 1 other user | {names} and {count} other users",
       "self-approval-not-allowed": "Self-approval is not allowed in this project. So you cannot approve your own issue."
+    },
+    "approval-flow-builtin": {
+      "project-owner": "The system defines the approval process and only needs the project Owner to approve it.",
+      "workspace-dba": "The system defines the approval process and only needs DBA approval.",
+      "workspace-admin": "The system defines the approval process and only needs Administrator approval.",
+      "project-owner-workspace-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
+      "project-owner-workspace-dba-workspace-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
     }
   },
   "schema-template": {
@@ -2760,10 +2770,6 @@
     "vcs-source": "VCS Source",
     "view-all-files": "View all files",
     "and-n-more-files": "and {n} more files",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "Versioned",
       "declarative": "Declarative",
