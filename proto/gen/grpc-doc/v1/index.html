@@ -1450,6 +1450,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SyncStatus"><span class="badge">E</span>SyncStatus</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TablePartitionMetadata.Type"><span class="badge">E</span>TablePartitionMetadata.Type</a>
                 </li>
               
@@ -13431,6 +13435,20 @@ https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
                   <td><p>The database is available for DML prior backup. </p></td>
                 </tr>
               
+                <tr>
+                  <td>sync_status</td>
+                  <td><a href="#bytebase.v1.SyncStatus">SyncStatus</a></td>
+                  <td></td>
+                  <td><p>The sync status of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The error message if sync failed. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -16413,6 +16431,35 @@ multiple files organized by schema objects (tables, views, functions, etc.).</p>
                 <td>DELTA</td>
                 <td>1</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.SyncStatus">SyncStatus</h3>
+        <p>SyncStatus is the status of the database sync operation.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SYNC_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OK</td>
+                <td>1</td>
+                <td><p>The database was synced successfully.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>2</td>
+                <td><p>The database sync failed.</p></td>
               </tr>
             
           </tbody>

@@ -527,6 +527,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SyncStatus"><span class="badge">E</span>SyncStatus</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TablePartitionMetadata.Type"><span class="badge">E</span>TablePartitionMetadata.Type</a>
                 </li>
               
@@ -3148,6 +3152,20 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td></td>
                   <td><p>The release that was last applied to this database.
 Format: projects/{project}/releases/{release_id} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_status</td>
+                  <td><a href="#bytebase.store.SyncStatus">SyncStatus</a></td>
+                  <td></td>
+                  <td><p>The sync status of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The error message if sync failed. </p></td>
                 </tr>
               
             </tbody>
@@ -5841,6 +5859,35 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
               <tr>
                 <td>TYPE_DELTA</td>
                 <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.SyncStatus">SyncStatus</h3>
+        <p>SyncStatus is the status of the database sync operation.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SYNC_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNC_STATUS_OK</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNC_STATUS_FAILED</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             

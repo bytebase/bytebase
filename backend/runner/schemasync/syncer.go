@@ -113,6 +113,23 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 								slog.String("instance", database.InstanceID),
 								slog.String("databaseName", database.DatabaseName),
 								log.BBError(err))
+							// Save sync error to database metadata
+							if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+								InstanceID:   database.InstanceID,
+								DatabaseName: database.DatabaseName,
+								MetadataUpdates: []func(*storepb.DatabaseMetadata){
+									func(md *storepb.DatabaseMetadata) {
+										md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
+										md.SyncError = err.Error()
+										md.LastSyncTime = timestamppb.Now()
+									},
+								},
+							}); updateErr != nil {
+								slog.Error("Failed to update database sync error",
+									slog.String("instance", database.InstanceID),
+									slog.String("database", database.DatabaseName),
+									log.BBError(updateErr))
+							}
 						}
 					})
 					return true
@@ -396,6 +413,8 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 			md.LastSyncTime = timestamppb.Now()
 			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
 			md.Datashare = syncedDatabaseMetadata.Datashare
+			md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_OK
+			md.SyncError = ""
 		},
 	}
 

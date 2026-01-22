@@ -9184,6 +9184,14 @@ components:
           type: boolean
           title: backup_available
           description: The database is available for DML prior backup.
+        syncStatus:
+          title: sync_status
+          description: The sync status of the database.
+          $ref: '#/components/schemas/bytebase.v1.SyncStatus'
+        syncError:
+          type: string
+          title: sync_error
+          description: The error message if sync failed.
       title: Database
       additionalProperties: false
     bytebase.v1.Database.LabelsEntry:
@@ -16135,6 +16143,14 @@ components:
           description: All database name list in the instance.
       title: SyncInstanceResponse
       additionalProperties: false
+    bytebase.v1.SyncStatus:
+      type: string
+      title: SyncStatus
+      enum:
+        - SYNC_STATUS_UNSPECIFIED
+        - OK
+        - FAILED
+      description: SyncStatus is the status of the database sync operation.
     bytebase.v1.TableCatalog:
       type: object
       allOf:

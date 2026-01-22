@@ -22,6 +22,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// SyncStatus is the status of the database sync operation.
+type SyncStatus int32
+
+const (
+	SyncStatus_SYNC_STATUS_UNSPECIFIED SyncStatus = 0
+	SyncStatus_SYNC_STATUS_OK          SyncStatus = 1
+	SyncStatus_SYNC_STATUS_FAILED      SyncStatus = 2
+)
+
+// Enum value maps for SyncStatus.
+var (
+	SyncStatus_name = map[int32]string{
+		0: "SYNC_STATUS_UNSPECIFIED",
+		1: "SYNC_STATUS_OK",
+		2: "SYNC_STATUS_FAILED",
+	}
+	SyncStatus_value = map[string]int32{
+		"SYNC_STATUS_UNSPECIFIED": 0,
+		"SYNC_STATUS_OK":          1,
+		"SYNC_STATUS_FAILED":      2,
+	}
+)
+
+func (x SyncStatus) Enum() *SyncStatus {
+	p := new(SyncStatus)
+	*p = x
+	return p
+}
+
+func (x SyncStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SyncStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_database_proto_enumTypes[0].Descriptor()
+}
+
+func (SyncStatus) Type() protoreflect.EnumType {
+	return &file_store_database_proto_enumTypes[0]
+}
+
+func (x SyncStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SyncStatus.Descriptor instead.
+func (SyncStatus) EnumDescriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{0}
+}
+
 type TaskMetadata_State int32
 
 const (
@@ -55,11 +105,11 @@ func (x TaskMetadata_State) String() string {
 }
 
 func (TaskMetadata_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[0].Descriptor()
+	return file_store_database_proto_enumTypes[1].Descriptor()
 }
 
 func (TaskMetadata_State) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[0]
+	return &file_store_database_proto_enumTypes[1]
 }
 
 func (x TaskMetadata_State) Number() protoreflect.EnumNumber {
@@ -101,11 +151,11 @@ func (x StreamMetadata_Type) String() string {
 }
 
 func (StreamMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[1].Descriptor()
+	return file_store_database_proto_enumTypes[2].Descriptor()
 }
 
 func (StreamMetadata_Type) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[1]
+	return &file_store_database_proto_enumTypes[2]
 }
 
 func (x StreamMetadata_Type) Number() protoreflect.EnumNumber {
@@ -153,11 +203,11 @@ func (x StreamMetadata_Mode) String() string {
 }
 
 func (StreamMetadata_Mode) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[2].Descriptor()
+	return file_store_database_proto_enumTypes[3].Descriptor()
 }
 
 func (StreamMetadata_Mode) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[2]
+	return &file_store_database_proto_enumTypes[3]
 }
 
 func (x StreamMetadata_Mode) Number() protoreflect.EnumNumber {
@@ -227,11 +277,11 @@ func (x TablePartitionMetadata_Type) String() string {
 }
 
 func (TablePartitionMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[3].Descriptor()
+	return file_store_database_proto_enumTypes[4].Descriptor()
 }
 
 func (TablePartitionMetadata_Type) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[3]
+	return &file_store_database_proto_enumTypes[4]
 }
 
 func (x TablePartitionMetadata_Type) Number() protoreflect.EnumNumber {
@@ -276,11 +326,11 @@ func (x ColumnMetadata_IdentityGeneration) String() string {
 }
 
 func (ColumnMetadata_IdentityGeneration) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[4].Descriptor()
+	return file_store_database_proto_enumTypes[5].Descriptor()
 }
 
 func (ColumnMetadata_IdentityGeneration) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[4]
+	return &file_store_database_proto_enumTypes[5]
 }
 
 func (x ColumnMetadata_IdentityGeneration) Number() protoreflect.EnumNumber {
@@ -325,11 +375,11 @@ func (x GenerationMetadata_Type) String() string {
 }
 
 func (GenerationMetadata_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[5].Descriptor()
+	return file_store_database_proto_enumTypes[6].Descriptor()
 }
 
 func (GenerationMetadata_Type) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[5]
+	return &file_store_database_proto_enumTypes[6]
 }
 
 func (x GenerationMetadata_Type) Number() protoreflect.EnumNumber {
@@ -383,11 +433,11 @@ func (x ObjectSchema_Type) String() string {
 }
 
 func (ObjectSchema_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_database_proto_enumTypes[6].Descriptor()
+	return file_store_database_proto_enumTypes[7].Descriptor()
 }
 
 func (ObjectSchema_Type) Type() protoreflect.EnumType {
-	return &file_store_database_proto_enumTypes[6]
+	return &file_store_database_proto_enumTypes[7]
 }
 
 func (x ObjectSchema_Type) Number() protoreflect.EnumNumber {
@@ -408,7 +458,11 @@ type DatabaseMetadata struct {
 	Datashare       bool                   `protobuf:"varint,4,opt,name=datashare,proto3" json:"datashare,omitempty"`
 	// The release that was last applied to this database.
 	// Format: projects/{project}/releases/{release_id}
-	Release       string `protobuf:"bytes,8,opt,name=release,proto3" json:"release,omitempty"`
+	Release string `protobuf:"bytes,8,opt,name=release,proto3" json:"release,omitempty"`
+	// The sync status of the database.
+	SyncStatus SyncStatus `protobuf:"varint,9,opt,name=sync_status,json=syncStatus,proto3,enum=bytebase.store.SyncStatus" json:"sync_status,omitempty"`
+	// The error message if sync failed.
+	SyncError     string `protobuf:"bytes,10,opt,name=sync_error,json=syncError,proto3" json:"sync_error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -474,6 +528,20 @@ func (x *DatabaseMetadata) GetDatashare() bool {
 func (x *DatabaseMetadata) GetRelease() string {
 	if x != nil {
 		return x.Release
+	}
+	return ""
+}
+
+func (x *DatabaseMetadata) GetSyncStatus() SyncStatus {
+	if x != nil {
+		return x.SyncStatus
+	}
+	return SyncStatus_SYNC_STATUS_UNSPECIFIED
+}
+
+func (x *DatabaseMetadata) GetSyncError() string {
+	if x != nil {
+		return x.SyncError
 	}
 	return ""
 }
@@ -4565,13 +4633,18 @@ var File_store_database_proto protoreflect.FileDescriptor
 
 const file_store_database_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc4\x02\n" +
+	"\x14store/database.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x03\n" +
 	"\x10DatabaseMetadata\x12D\n" +
 	"\x06labels\x18\x01 \x03(\v2,.bytebase.store.DatabaseMetadata.LabelsEntryR\x06labels\x12@\n" +
 	"\x0elast_sync_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncTime\x12)\n" +
 	"\x10backup_available\x18\x03 \x01(\bR\x0fbackupAvailable\x12\x1c\n" +
 	"\tdatashare\x18\x04 \x01(\bR\tdatashare\x12\x18\n" +
-	"\arelease\x18\b \x01(\tR\arelease\x1a9\n" +
+	"\arelease\x18\b \x01(\tR\arelease\x12;\n" +
+	"\vsync_status\x18\t \x01(\x0e2\x1a.bytebase.store.SyncStatusR\n" +
+	"syncStatus\x12\x1d\n" +
+	"\n" +
+	"sync_error\x18\n" +
+	" \x01(\tR\tsyncError\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x06\x10\aJ\x04\b\a\x10\b\"\x84\x04\n" +
@@ -5028,7 +5101,12 @@ const file_store_database_proto_rawDesc = "" +
 	"\n" +
 	"\x06OBJECT\x10\x04\x12\t\n" +
 	"\x05ARRAY\x10\x05B\x06\n" +
-	"\x04kindB\x90\x01\n" +
+	"\x04kind*U\n" +
+	"\n" +
+	"SyncStatus\x12\x1b\n" +
+	"\x17SYNC_STATUS_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eSYNC_STATUS_OK\x10\x01\x12\x16\n" +
+	"\x12SYNC_STATUS_FAILED\x10\x02B\x90\x01\n" +
 	"\x12com.bytebase.storeB\rDatabaseProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -5043,136 +5121,138 @@ func file_store_database_proto_rawDescGZIP() []byte {
 	return file_store_database_proto_rawDescData
 }
 
-var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
 var file_store_database_proto_goTypes = []any{
-	(TaskMetadata_State)(0),                // 0: bytebase.store.TaskMetadata.State
-	(StreamMetadata_Type)(0),               // 1: bytebase.store.StreamMetadata.Type
-	(StreamMetadata_Mode)(0),               // 2: bytebase.store.StreamMetadata.Mode
-	(TablePartitionMetadata_Type)(0),       // 3: bytebase.store.TablePartitionMetadata.Type
-	(ColumnMetadata_IdentityGeneration)(0), // 4: bytebase.store.ColumnMetadata.IdentityGeneration
-	(GenerationMetadata_Type)(0),           // 5: bytebase.store.GenerationMetadata.Type
-	(ObjectSchema_Type)(0),                 // 6: bytebase.store.ObjectSchema.Type
-	(*DatabaseMetadata)(nil),               // 7: bytebase.store.DatabaseMetadata
-	(*DatabaseSchemaMetadata)(nil),         // 8: bytebase.store.DatabaseSchemaMetadata
-	(*LinkedDatabaseMetadata)(nil),         // 9: bytebase.store.LinkedDatabaseMetadata
-	(*SchemaMetadata)(nil),                 // 10: bytebase.store.SchemaMetadata
-	(*EnumTypeMetadata)(nil),               // 11: bytebase.store.EnumTypeMetadata
-	(*EventMetadata)(nil),                  // 12: bytebase.store.EventMetadata
-	(*SequenceMetadata)(nil),               // 13: bytebase.store.SequenceMetadata
-	(*TriggerMetadata)(nil),                // 14: bytebase.store.TriggerMetadata
-	(*RuleMetadata)(nil),                   // 15: bytebase.store.RuleMetadata
-	(*TaskMetadata)(nil),                   // 16: bytebase.store.TaskMetadata
-	(*StreamMetadata)(nil),                 // 17: bytebase.store.StreamMetadata
-	(*TableMetadata)(nil),                  // 18: bytebase.store.TableMetadata
-	(*CheckConstraintMetadata)(nil),        // 19: bytebase.store.CheckConstraintMetadata
-	(*ExcludeConstraintMetadata)(nil),      // 20: bytebase.store.ExcludeConstraintMetadata
-	(*ExternalTableMetadata)(nil),          // 21: bytebase.store.ExternalTableMetadata
-	(*TablePartitionMetadata)(nil),         // 22: bytebase.store.TablePartitionMetadata
-	(*ColumnMetadata)(nil),                 // 23: bytebase.store.ColumnMetadata
-	(*GenerationMetadata)(nil),             // 24: bytebase.store.GenerationMetadata
-	(*ViewMetadata)(nil),                   // 25: bytebase.store.ViewMetadata
-	(*DependencyColumn)(nil),               // 26: bytebase.store.DependencyColumn
-	(*MaterializedViewMetadata)(nil),       // 27: bytebase.store.MaterializedViewMetadata
-	(*DependencyTable)(nil),                // 28: bytebase.store.DependencyTable
-	(*FunctionMetadata)(nil),               // 29: bytebase.store.FunctionMetadata
-	(*ProcedureMetadata)(nil),              // 30: bytebase.store.ProcedureMetadata
-	(*PackageMetadata)(nil),                // 31: bytebase.store.PackageMetadata
-	(*IndexMetadata)(nil),                  // 32: bytebase.store.IndexMetadata
-	(*SpatialIndexConfig)(nil),             // 33: bytebase.store.SpatialIndexConfig
-	(*TessellationConfig)(nil),             // 34: bytebase.store.TessellationConfig
-	(*BoundingBox)(nil),                    // 35: bytebase.store.BoundingBox
-	(*GridLevel)(nil),                      // 36: bytebase.store.GridLevel
-	(*StorageConfig)(nil),                  // 37: bytebase.store.StorageConfig
-	(*DimensionalConfig)(nil),              // 38: bytebase.store.DimensionalConfig
-	(*ExtensionMetadata)(nil),              // 39: bytebase.store.ExtensionMetadata
-	(*EventTriggerMetadata)(nil),           // 40: bytebase.store.EventTriggerMetadata
-	(*ForeignKeyMetadata)(nil),             // 41: bytebase.store.ForeignKeyMetadata
-	(*InstanceRoleMetadata)(nil),           // 42: bytebase.store.InstanceRoleMetadata
-	(*DatabaseConfig)(nil),                 // 43: bytebase.store.DatabaseConfig
-	(*SchemaCatalog)(nil),                  // 44: bytebase.store.SchemaCatalog
-	(*TableCatalog)(nil),                   // 45: bytebase.store.TableCatalog
-	(*ColumnCatalog)(nil),                  // 46: bytebase.store.ColumnCatalog
-	(*ObjectSchema)(nil),                   // 47: bytebase.store.ObjectSchema
-	nil,                                    // 48: bytebase.store.DatabaseMetadata.LabelsEntry
-	nil,                                    // 49: bytebase.store.SpatialIndexConfig.EngineSpecificEntry
-	nil,                                    // 50: bytebase.store.ColumnCatalog.LabelsEntry
-	(*ObjectSchema_StructKind)(nil),        // 51: bytebase.store.ObjectSchema.StructKind
-	(*ObjectSchema_ArrayKind)(nil),         // 52: bytebase.store.ObjectSchema.ArrayKind
-	nil,                                    // 53: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	(*timestamppb.Timestamp)(nil),          // 54: google.protobuf.Timestamp
+	(SyncStatus)(0),                        // 0: bytebase.store.SyncStatus
+	(TaskMetadata_State)(0),                // 1: bytebase.store.TaskMetadata.State
+	(StreamMetadata_Type)(0),               // 2: bytebase.store.StreamMetadata.Type
+	(StreamMetadata_Mode)(0),               // 3: bytebase.store.StreamMetadata.Mode
+	(TablePartitionMetadata_Type)(0),       // 4: bytebase.store.TablePartitionMetadata.Type
+	(ColumnMetadata_IdentityGeneration)(0), // 5: bytebase.store.ColumnMetadata.IdentityGeneration
+	(GenerationMetadata_Type)(0),           // 6: bytebase.store.GenerationMetadata.Type
+	(ObjectSchema_Type)(0),                 // 7: bytebase.store.ObjectSchema.Type
+	(*DatabaseMetadata)(nil),               // 8: bytebase.store.DatabaseMetadata
+	(*DatabaseSchemaMetadata)(nil),         // 9: bytebase.store.DatabaseSchemaMetadata
+	(*LinkedDatabaseMetadata)(nil),         // 10: bytebase.store.LinkedDatabaseMetadata
+	(*SchemaMetadata)(nil),                 // 11: bytebase.store.SchemaMetadata
+	(*EnumTypeMetadata)(nil),               // 12: bytebase.store.EnumTypeMetadata
+	(*EventMetadata)(nil),                  // 13: bytebase.store.EventMetadata
+	(*SequenceMetadata)(nil),               // 14: bytebase.store.SequenceMetadata
+	(*TriggerMetadata)(nil),                // 15: bytebase.store.TriggerMetadata
+	(*RuleMetadata)(nil),                   // 16: bytebase.store.RuleMetadata
+	(*TaskMetadata)(nil),                   // 17: bytebase.store.TaskMetadata
+	(*StreamMetadata)(nil),                 // 18: bytebase.store.StreamMetadata
+	(*TableMetadata)(nil),                  // 19: bytebase.store.TableMetadata
+	(*CheckConstraintMetadata)(nil),        // 20: bytebase.store.CheckConstraintMetadata
+	(*ExcludeConstraintMetadata)(nil),      // 21: bytebase.store.ExcludeConstraintMetadata
+	(*ExternalTableMetadata)(nil),          // 22: bytebase.store.ExternalTableMetadata
+	(*TablePartitionMetadata)(nil),         // 23: bytebase.store.TablePartitionMetadata
+	(*ColumnMetadata)(nil),                 // 24: bytebase.store.ColumnMetadata
+	(*GenerationMetadata)(nil),             // 25: bytebase.store.GenerationMetadata
+	(*ViewMetadata)(nil),                   // 26: bytebase.store.ViewMetadata
+	(*DependencyColumn)(nil),               // 27: bytebase.store.DependencyColumn
+	(*MaterializedViewMetadata)(nil),       // 28: bytebase.store.MaterializedViewMetadata
+	(*DependencyTable)(nil),                // 29: bytebase.store.DependencyTable
+	(*FunctionMetadata)(nil),               // 30: bytebase.store.FunctionMetadata
+	(*ProcedureMetadata)(nil),              // 31: bytebase.store.ProcedureMetadata
+	(*PackageMetadata)(nil),                // 32: bytebase.store.PackageMetadata
+	(*IndexMetadata)(nil),                  // 33: bytebase.store.IndexMetadata
+	(*SpatialIndexConfig)(nil),             // 34: bytebase.store.SpatialIndexConfig
+	(*TessellationConfig)(nil),             // 35: bytebase.store.TessellationConfig
+	(*BoundingBox)(nil),                    // 36: bytebase.store.BoundingBox
+	(*GridLevel)(nil),                      // 37: bytebase.store.GridLevel
+	(*StorageConfig)(nil),                  // 38: bytebase.store.StorageConfig
+	(*DimensionalConfig)(nil),              // 39: bytebase.store.DimensionalConfig
+	(*ExtensionMetadata)(nil),              // 40: bytebase.store.ExtensionMetadata
+	(*EventTriggerMetadata)(nil),           // 41: bytebase.store.EventTriggerMetadata
+	(*ForeignKeyMetadata)(nil),             // 42: bytebase.store.ForeignKeyMetadata
+	(*InstanceRoleMetadata)(nil),           // 43: bytebase.store.InstanceRoleMetadata
+	(*DatabaseConfig)(nil),                 // 44: bytebase.store.DatabaseConfig
+	(*SchemaCatalog)(nil),                  // 45: bytebase.store.SchemaCatalog
+	(*TableCatalog)(nil),                   // 46: bytebase.store.TableCatalog
+	(*ColumnCatalog)(nil),                  // 47: bytebase.store.ColumnCatalog
+	(*ObjectSchema)(nil),                   // 48: bytebase.store.ObjectSchema
+	nil,                                    // 49: bytebase.store.DatabaseMetadata.LabelsEntry
+	nil,                                    // 50: bytebase.store.SpatialIndexConfig.EngineSpecificEntry
+	nil,                                    // 51: bytebase.store.ColumnCatalog.LabelsEntry
+	(*ObjectSchema_StructKind)(nil),        // 52: bytebase.store.ObjectSchema.StructKind
+	(*ObjectSchema_ArrayKind)(nil),         // 53: bytebase.store.ObjectSchema.ArrayKind
+	nil,                                    // 54: bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	(*timestamppb.Timestamp)(nil),          // 55: google.protobuf.Timestamp
 }
 var file_store_database_proto_depIdxs = []int32{
-	48, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
-	54, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
-	10, // 2: bytebase.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
-	39, // 3: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
-	9,  // 4: bytebase.store.DatabaseSchemaMetadata.linked_databases:type_name -> bytebase.store.LinkedDatabaseMetadata
-	40, // 5: bytebase.store.DatabaseSchemaMetadata.event_triggers:type_name -> bytebase.store.EventTriggerMetadata
-	18, // 6: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
-	21, // 7: bytebase.store.SchemaMetadata.external_tables:type_name -> bytebase.store.ExternalTableMetadata
-	25, // 8: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
-	29, // 9: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
-	30, // 10: bytebase.store.SchemaMetadata.procedures:type_name -> bytebase.store.ProcedureMetadata
-	17, // 11: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
-	16, // 12: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
-	27, // 13: bytebase.store.SchemaMetadata.materialized_views:type_name -> bytebase.store.MaterializedViewMetadata
-	13, // 14: bytebase.store.SchemaMetadata.sequences:type_name -> bytebase.store.SequenceMetadata
-	31, // 15: bytebase.store.SchemaMetadata.packages:type_name -> bytebase.store.PackageMetadata
-	12, // 16: bytebase.store.SchemaMetadata.events:type_name -> bytebase.store.EventMetadata
-	11, // 17: bytebase.store.SchemaMetadata.enum_types:type_name -> bytebase.store.EnumTypeMetadata
-	0,  // 18: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
-	1,  // 19: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
-	2,  // 20: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
-	23, // 21: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	32, // 22: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	41, // 23: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	22, // 24: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
-	19, // 25: bytebase.store.TableMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
-	14, // 26: bytebase.store.TableMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	15, // 27: bytebase.store.TableMetadata.rules:type_name -> bytebase.store.RuleMetadata
-	20, // 28: bytebase.store.TableMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
-	23, // 29: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	3,  // 30: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
-	22, // 31: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
-	32, // 32: bytebase.store.TablePartitionMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	19, // 33: bytebase.store.TablePartitionMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
-	20, // 34: bytebase.store.TablePartitionMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
-	24, // 35: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
-	4,  // 36: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
-	5,  // 37: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
-	26, // 38: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	23, // 39: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	14, // 40: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	15, // 41: bytebase.store.ViewMetadata.rules:type_name -> bytebase.store.RuleMetadata
-	26, // 42: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
-	14, // 43: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
-	32, // 44: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	28, // 45: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
-	33, // 46: bytebase.store.IndexMetadata.spatial_config:type_name -> bytebase.store.SpatialIndexConfig
-	34, // 47: bytebase.store.SpatialIndexConfig.tessellation:type_name -> bytebase.store.TessellationConfig
-	37, // 48: bytebase.store.SpatialIndexConfig.storage:type_name -> bytebase.store.StorageConfig
-	38, // 49: bytebase.store.SpatialIndexConfig.dimensional:type_name -> bytebase.store.DimensionalConfig
-	49, // 50: bytebase.store.SpatialIndexConfig.engine_specific:type_name -> bytebase.store.SpatialIndexConfig.EngineSpecificEntry
-	35, // 51: bytebase.store.TessellationConfig.bounding_box:type_name -> bytebase.store.BoundingBox
-	36, // 52: bytebase.store.TessellationConfig.grid_levels:type_name -> bytebase.store.GridLevel
-	44, // 53: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
-	45, // 54: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
-	46, // 55: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
-	47, // 56: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	50, // 57: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
-	47, // 58: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
-	6,  // 59: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
-	51, // 60: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
-	52, // 61: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
-	53, // 62: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
-	47, // 63: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
-	47, // 64: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
-	65, // [65:65] is the sub-list for method output_type
-	65, // [65:65] is the sub-list for method input_type
-	65, // [65:65] is the sub-list for extension type_name
-	65, // [65:65] is the sub-list for extension extendee
-	0,  // [0:65] is the sub-list for field type_name
+	49, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
+	55, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
+	0,  // 2: bytebase.store.DatabaseMetadata.sync_status:type_name -> bytebase.store.SyncStatus
+	11, // 3: bytebase.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
+	40, // 4: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
+	10, // 5: bytebase.store.DatabaseSchemaMetadata.linked_databases:type_name -> bytebase.store.LinkedDatabaseMetadata
+	41, // 6: bytebase.store.DatabaseSchemaMetadata.event_triggers:type_name -> bytebase.store.EventTriggerMetadata
+	19, // 7: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
+	22, // 8: bytebase.store.SchemaMetadata.external_tables:type_name -> bytebase.store.ExternalTableMetadata
+	26, // 9: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
+	30, // 10: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
+	31, // 11: bytebase.store.SchemaMetadata.procedures:type_name -> bytebase.store.ProcedureMetadata
+	18, // 12: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
+	17, // 13: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
+	28, // 14: bytebase.store.SchemaMetadata.materialized_views:type_name -> bytebase.store.MaterializedViewMetadata
+	14, // 15: bytebase.store.SchemaMetadata.sequences:type_name -> bytebase.store.SequenceMetadata
+	32, // 16: bytebase.store.SchemaMetadata.packages:type_name -> bytebase.store.PackageMetadata
+	13, // 17: bytebase.store.SchemaMetadata.events:type_name -> bytebase.store.EventMetadata
+	12, // 18: bytebase.store.SchemaMetadata.enum_types:type_name -> bytebase.store.EnumTypeMetadata
+	1,  // 19: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
+	2,  // 20: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
+	3,  // 21: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
+	24, // 22: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	33, // 23: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	42, // 24: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
+	23, // 25: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
+	20, // 26: bytebase.store.TableMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
+	15, // 27: bytebase.store.TableMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	16, // 28: bytebase.store.TableMetadata.rules:type_name -> bytebase.store.RuleMetadata
+	21, // 29: bytebase.store.TableMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
+	24, // 30: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	4,  // 31: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
+	23, // 32: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
+	33, // 33: bytebase.store.TablePartitionMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	20, // 34: bytebase.store.TablePartitionMetadata.check_constraints:type_name -> bytebase.store.CheckConstraintMetadata
+	21, // 35: bytebase.store.TablePartitionMetadata.exclude_constraints:type_name -> bytebase.store.ExcludeConstraintMetadata
+	25, // 36: bytebase.store.ColumnMetadata.generation:type_name -> bytebase.store.GenerationMetadata
+	5,  // 37: bytebase.store.ColumnMetadata.identity_generation:type_name -> bytebase.store.ColumnMetadata.IdentityGeneration
+	6,  // 38: bytebase.store.GenerationMetadata.type:type_name -> bytebase.store.GenerationMetadata.Type
+	27, // 39: bytebase.store.ViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
+	24, // 40: bytebase.store.ViewMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	15, // 41: bytebase.store.ViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	16, // 42: bytebase.store.ViewMetadata.rules:type_name -> bytebase.store.RuleMetadata
+	27, // 43: bytebase.store.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.store.DependencyColumn
+	15, // 44: bytebase.store.MaterializedViewMetadata.triggers:type_name -> bytebase.store.TriggerMetadata
+	33, // 45: bytebase.store.MaterializedViewMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	29, // 46: bytebase.store.FunctionMetadata.dependency_tables:type_name -> bytebase.store.DependencyTable
+	34, // 47: bytebase.store.IndexMetadata.spatial_config:type_name -> bytebase.store.SpatialIndexConfig
+	35, // 48: bytebase.store.SpatialIndexConfig.tessellation:type_name -> bytebase.store.TessellationConfig
+	38, // 49: bytebase.store.SpatialIndexConfig.storage:type_name -> bytebase.store.StorageConfig
+	39, // 50: bytebase.store.SpatialIndexConfig.dimensional:type_name -> bytebase.store.DimensionalConfig
+	50, // 51: bytebase.store.SpatialIndexConfig.engine_specific:type_name -> bytebase.store.SpatialIndexConfig.EngineSpecificEntry
+	36, // 52: bytebase.store.TessellationConfig.bounding_box:type_name -> bytebase.store.BoundingBox
+	37, // 53: bytebase.store.TessellationConfig.grid_levels:type_name -> bytebase.store.GridLevel
+	45, // 54: bytebase.store.DatabaseConfig.schemas:type_name -> bytebase.store.SchemaCatalog
+	46, // 55: bytebase.store.SchemaCatalog.tables:type_name -> bytebase.store.TableCatalog
+	47, // 56: bytebase.store.TableCatalog.columns:type_name -> bytebase.store.ColumnCatalog
+	48, // 57: bytebase.store.TableCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
+	51, // 58: bytebase.store.ColumnCatalog.labels:type_name -> bytebase.store.ColumnCatalog.LabelsEntry
+	48, // 59: bytebase.store.ColumnCatalog.object_schema:type_name -> bytebase.store.ObjectSchema
+	7,  // 60: bytebase.store.ObjectSchema.type:type_name -> bytebase.store.ObjectSchema.Type
+	52, // 61: bytebase.store.ObjectSchema.struct_kind:type_name -> bytebase.store.ObjectSchema.StructKind
+	53, // 62: bytebase.store.ObjectSchema.array_kind:type_name -> bytebase.store.ObjectSchema.ArrayKind
+	54, // 63: bytebase.store.ObjectSchema.StructKind.properties:type_name -> bytebase.store.ObjectSchema.StructKind.PropertiesEntry
+	48, // 64: bytebase.store.ObjectSchema.ArrayKind.kind:type_name -> bytebase.store.ObjectSchema
+	48, // 65: bytebase.store.ObjectSchema.StructKind.PropertiesEntry.value:type_name -> bytebase.store.ObjectSchema
+	66, // [66:66] is the sub-list for method output_type
+	66, // [66:66] is the sub-list for method input_type
+	66, // [66:66] is the sub-list for extension type_name
+	66, // [66:66] is the sub-list for extension extendee
+	0,  // [0:66] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -5191,7 +5271,7 @@ func file_store_database_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_database_proto_rawDesc), len(file_store_database_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      8,
 			NumMessages:   47,
 			NumExtensions: 0,
 			NumServices:   0,

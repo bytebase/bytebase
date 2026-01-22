@@ -92,6 +92,7 @@
     - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
+    - [SyncStatus](#bytebase-store-SyncStatus)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
   
@@ -963,6 +964,8 @@ DatabaseMetadata is the metadata for databases.
 | backup_available | [bool](#bool) |  |  |
 | datashare | [bool](#bool) |  |  |
 | release | [string](#string) |  | The release that was last applied to this database. Format: projects/{project}/releases/{release_id} |
+| sync_status | [SyncStatus](#bytebase-store-SyncStatus) |  | The sync status of the database. |
+| sync_error | [string](#string) |  | The error message if sync failed. |
 
 
 
@@ -1857,6 +1860,19 @@ ViewMetadata is the metadata for views.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_DELTA | 1 |  |
+
+
+
+<a name="bytebase-store-SyncStatus"></a>
+
+### SyncStatus
+SyncStatus is the status of the database sync operation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SYNC_STATUS_UNSPECIFIED | 0 |  |
+| SYNC_STATUS_OK | 1 |  |
+| SYNC_STATUS_FAILED | 2 |  |
 
 
 

@@ -32,15 +32,19 @@
         {{ $t("database.sync-status") }}
       </dt>
       <dd class="mt-1 text-sm text-main">
-        <span>
+        <template v-if="database.syncStatus === SyncStatus.FAILED">
+          <span class="text-error">{{ $t("database.sync-status-failed") }}</span>
+          <p class="text-xs text-gray-500 mt-1">{{ database.syncError }}</p>
+        </template>
+        <template v-else>
           {{ database.state === State.ACTIVE ? "OK" : "NOT_FOUND" }}
-        </span>
+        </template>
       </dd>
     </div>
 
     <div class="col-span-1">
       <dt class="text-sm font-medium text-control-light">
-        {{ $t("database.last-successful-sync") }}
+        {{ $t("database.last-sync") }}
       </dt>
       <dd class="mt-1 text-sm text-main">
         {{
@@ -59,7 +63,10 @@
 import { computed } from "vue";
 import { useDBSchemaV1Store } from "@/store";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  SyncStatus,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   getDatabaseEngine,
   humanizeDate,
