@@ -26,7 +26,7 @@ export const databaseV1Url = (db: Database) => {
   return databaseV1UrlWithProject(db.project, db.name);
 };
 
-export const databaseV1UrlWithProject = (project: string, database: string) => {
+const databaseV1UrlWithProject = (project: string, database: string) => {
   const projectId = extractProjectResourceName(project);
   const { databaseName, instanceName } = extractDatabaseResourceName(database);
 

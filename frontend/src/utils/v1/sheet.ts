@@ -7,10 +7,6 @@ export const extractSheetUID = (name: string) => {
   return matches?.[1] ?? "-1";
 };
 
-export const isLocalSheet = (name: string) => {
-  return extractSheetUID(name).startsWith("-");
-};
-
 export const setSheetStatement = (
   sheet: Sheet | Worksheet,
   statement: string

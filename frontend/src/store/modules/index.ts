@@ -1,5 +1,4 @@
 export * from "./v1/auth";
-export * from "./command";
 export * from "./help";
 export * from "./notification";
 export * from "./router";

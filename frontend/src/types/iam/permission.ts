@@ -1,9 +1,8 @@
-import type { PickLiteral } from "../utils";
 import type { Permission } from "./permission-generated";
 
 export type { Permission };
 
-export type QueryPermission = PickLiteral<
+export type QueryPermission = Extract<
   Permission,
   | "bb.sql.select"
   | "bb.sql.info"

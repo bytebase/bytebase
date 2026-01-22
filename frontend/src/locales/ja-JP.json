@@ -2641,13 +2641,6 @@
       "rejected-by": "拒否された",
       "and-n-other-users": "{names} と他の {count} 人のユーザー",
       "self-approval-not-allowed": "このプロジェクトでは自己承認は許可されていません。作成者として承認することはできません。"
-    },
-    "approval-flow-builtin": {
-      "project-owner": "システム定義のプロセス。プロジェクト所有者の承認のみが必要です。",
-      "workspace-dba": "システム定義のプロセス。 DBA の承認のみが必要です。",
-      "workspace-admin": "システム定義のプロセス。管理者の承認のみが必要です。",
-      "project-owner-workspace-dba": "システム定義のプロセス。承認は最初にプロジェクト所有者によって行われ、次に DBA によって行われます。",
-      "project-owner-workspace-dba-workspace-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
     }
   },
   "schema-template": {

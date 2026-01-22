@@ -96,41 +96,12 @@ export function bytesToString(size: number): string {
   return round(size, 2) + " " + unitList[i];
 }
 
-export function nanosecondsToString(nanoseconds: number): string {
-  // dayjs.duration() takes the length of time in milliseconds.
-  return dayjs.duration(nanoseconds / 1000000).humanize();
-}
-
-export function timezoneString(zoneName: string, offset: number): string {
-  let sign = "+";
-  if (offset < 0) {
-    sign = "-";
-  }
-  const hour = Math.abs(offset) / 3600;
-  const minutes = Math.abs(offset) & (3600 / 60);
-  return `${zoneName}${sign}${String(hour).padStart(2, "0")}:${String(
-    minutes
-  ).padStart(2, "0")}`;
-}
-
 export function urlfy(str: string): string {
   let result = str.trim();
   if (result.search(/^http[s]?:\/\//) == -1) {
     result = "http://" + result;
   }
   return result;
-}
-
-export function isUrl(str: string): boolean {
-  let url;
-
-  try {
-    url = new URL(str);
-  } catch {
-    return false;
-  }
-
-  return url.protocol === "http:" || url.protocol === "https:";
 }
 
 // Performs inline swap, also handles negative index (counting from the end)
@@ -308,10 +279,6 @@ export function emitStorageChangedEvent() {
   iframeEl.remove();
 }
 
-export function removeElementBySelector(selector: string) {
-  document.body.querySelectorAll(selector).forEach((e) => e.remove());
-}
-
 type CompareFunc = "gt" | "lt" | "eq" | "neq" | "gte" | "lte";
 // semverCompare compares version string v1 is greater than v2.
 // It should be used to handle the database pseudo semantic version likes "8.0.29-0ubuntu0.20.04.3".
@@ -329,12 +296,6 @@ export function semverCompare(
   return semver[method](formattedV1, formattedV2);
 }
 
-export function clearObject(obj: Record<string, unknown>) {
-  const keys = Object.keys(obj);
-  keys.forEach((key) => delete obj[key]);
-  return obj;
-}
-
 const MODIFIERS = [
   "cmd",
   "ctrl",
@@ -344,9 +305,9 @@ const MODIFIERS = [
   "opt_or_alt",
   "shift",
 ] as const;
-export type ModifierKey = (typeof MODIFIERS)[number];
+type ModifierKey = (typeof MODIFIERS)[number];
 
-export const modifierKeyText = (mod: ModifierKey) => {
+const modifierKeyText = (mod: ModifierKey) => {
   const isMac = navigator.userAgent.search("Mac") !== -1;
   if (mod === "cmd" || (mod === "cmd_or_ctrl" && isMac)) {
     return "⌘"; // U+2318

@@ -46,10 +46,7 @@ typedPlanData.instanceFeatures.forEach((feature) => {
 });
 
 // Helper function to check if a plan has a feature
-export const planHasFeature = (
-  plan: PlanType,
-  feature: PlanFeature
-): boolean => {
+const planHasFeature = (plan: PlanType, feature: PlanFeature): boolean => {
   const planFeatures = planFeatureMatrix.get(plan);
   return planFeatures?.has(feature) ?? false;
 };

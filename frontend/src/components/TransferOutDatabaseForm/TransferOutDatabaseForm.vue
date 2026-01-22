@@ -207,7 +207,7 @@ const doTransfer = async () => {
       });
 
       router.push({
-        ...autoProjectRoute(router, target),
+        ...autoProjectRoute(target),
       });
     }
 

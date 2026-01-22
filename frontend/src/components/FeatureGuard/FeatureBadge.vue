@@ -27,7 +27,7 @@
       <template #trigger>
         <router-link
           v-if="clickable"
-          :to="autoSubscriptionRoute($router)"
+          :to="autoSubscriptionRoute()"
           exact-active-class=""
         >
           <SparklesIcon class="w-5 h-5" />

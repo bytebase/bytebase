@@ -2641,13 +2641,6 @@
       "rejected-by": "Bị từ chối bởi",
       "and-n-other-users": "{names} và {count} người dùng khác",
       "self-approval-not-allowed": "Không được phép tự phê duyệt cho dự án này. Bạn không thể phê duyệt với tư cách là người sáng tạo."
-    },
-    "approval-flow-builtin": {
-      "project-owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
-      "workspace-dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
-      "workspace-admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
-      "project-owner-workspace-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
-      "project-owner-workspace-dba-workspace-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
     }
   },
   "schema-template": {

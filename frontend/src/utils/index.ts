@@ -19,7 +19,6 @@ export * from "./TinyTimer";
 export * from "./sheet";
 export * from "./naive-ui";
 export * from "./useDashboardSidebar";
-export * from "./release";
 
 export * from "./v1";
 export * from "./iam";

@@ -20,7 +20,7 @@ import {
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractDatabaseResourceName, extractProjectResourceName } from "..";
 
 export const extractIssueUID = (name: string) => {
@@ -43,23 +43,6 @@ export const getRolloutFromPlan = (planName: string): string => {
 
 export const flattenTaskV1List = (rollout: Rollout | undefined) => {
   return rollout?.stages.flatMap((stage) => stage.tasks) || [];
-};
-
-const DATABASE_RELATED_TASK_TYPE_LIST = [
-  Task_Type.DATABASE_CREATE,
-  Task_Type.DATABASE_MIGRATE,
-];
-
-export const isDatabaseChangeRelatedIssue = (
-  issue: Issue,
-  rollout: Rollout | undefined
-): boolean => {
-  return (
-    Boolean(issue.plan) &&
-    flattenTaskV1List(rollout).some((task) => {
-      return DATABASE_RELATED_TASK_TYPE_LIST.includes(task.type);
-    })
-  );
 };
 
 export const isGrantRequestIssue = (issue: Issue): boolean => {

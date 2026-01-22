@@ -93,7 +93,7 @@ const handleDatabaseClick = (event: MouseEvent, database: Database) => {
   if (props.customClick) {
     emit("row-click", event, database);
   } else {
-    const url = router.resolve(autoDatabaseRoute(router, database)).fullPath;
+    const url = router.resolve(autoDatabaseRoute(database)).fullPath;
     if (event.ctrlKey || event.metaKey) {
       window.open(url, "_blank");
     } else {

@@ -4,8 +4,11 @@ import type {
   Notification,
   NotificationCreate,
   NotificationFilter,
-  NotificationState,
 } from "@/types";
+
+interface NotificationState {
+  notificationByModule: Map<string, Notification[]>;
+}
 
 export const useNotificationStore = defineStore("notification", {
   state: (): NotificationState => ({

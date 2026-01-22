@@ -149,7 +149,7 @@ export const buildConditionExpr = ({
   });
 };
 
-export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
+const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   const conditionList: DatabaseResourceCondition[] = [];
 
   for (const resource of resources) {

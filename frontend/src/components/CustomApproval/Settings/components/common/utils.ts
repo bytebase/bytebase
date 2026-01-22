@@ -3,7 +3,7 @@ import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResource
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import { useRoleStore } from "@/store";
-import { PRESET_WORKSPACE_ROLES, PresetRiskLevelList } from "@/types";
+import { PRESET_WORKSPACE_ROLES } from "@/types";
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -15,7 +15,6 @@ import {
   supportedEngineV1List,
 } from "@/utils";
 import {
-  CEL_ATTRIBUTE_LEVEL,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
@@ -72,15 +71,6 @@ const getDBEndingOptions = () => {
     label: engineNameV1(type),
     value: Engine[type],
   }));
-};
-
-const getLevelOptions = () => {
-  return PresetRiskLevelList.map<ResourceSelectOption<unknown>>(
-    ({ level }) => ({
-      label: levelText(level),
-      value: RiskLevel[level],
-    })
-  );
 };
 
 const getRiskLevelOptions = () => {
@@ -207,9 +197,6 @@ export const getApprovalOptionConfigMap = (
         return map;
       case CEL_ATTRIBUTE_RESOURCE_DB_ENGINE:
         options = getDBEndingOptions();
-        break;
-      case CEL_ATTRIBUTE_LEVEL:
-        options = getLevelOptions();
         break;
       case CEL_ATTRIBUTE_STATEMENT_SQL_TYPE:
         options = getSQLTypeOptions(source);
