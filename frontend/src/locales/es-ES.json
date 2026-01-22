@@ -1089,17 +1089,6 @@
     "task-run": {
       "logs": "Registros",
       "session": "Sesión",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "ejecutar comando",
-          "schema-dump": "Volcado de esquema",
-          "transaction-control": "Control de transacciones",
-          "database-sync": "Sincronización de base de datos",
-          "prior-backup": "Copia de seguridad previa",
-          "retry-info": "Reintento de información",
-          "compute-diff": "Calcular diff"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "Sesiones de bloqueo",
@@ -2644,13 +2633,6 @@
       "rejected-by": "Rechazado por",
       "and-n-other-users": "{names} y {count} otros usuarios",
       "self-approval-not-allowed": "No se permite la autoaprobación para este proyecto. No puedes aprobarlo como creador."
-    },
-    "approval-flow-builtin": {
-      "project-owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
-      "workspace-dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
-      "workspace-admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
-      "project-owner-workspace-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
-      "project-owner-workspace-dba-workspace-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
     }
   },
   "schema-template": {

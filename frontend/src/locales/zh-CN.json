@@ -1089,17 +1089,6 @@
     "task-run": {
       "logs": "日志",
       "session": "会话",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "执行指令",
-          "schema-dump": "导出 schema",
-          "transaction-control": "事务控制",
-          "database-sync": "数据库同步",
-          "prior-backup": "数据预备份",
-          "retry-info": "重试信息",
-          "compute-diff": "计算差异"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "阻塞会话",
@@ -2644,13 +2633,6 @@
       "rejected-by": "被拒绝",
       "and-n-other-users": "{names} 和另外 {count} 位用户",
       "self-approval-not-allowed": "此项目不允许工单创建者审批。您无法以创建者身份批准。"
-    },
-    "approval-flow-builtin": {
-      "project-owner": "系统定义的流程。只需要项目所有者审批。",
-      "workspace-dba": "系统定义的流程。只需要 DBA 审批。",
-      "workspace-admin": "系统定义的流程。只需要管理员审批。",
-      "project-owner-workspace-dba": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。",
-      "project-owner-workspace-dba-workspace-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
     }
   },
   "schema-template": {

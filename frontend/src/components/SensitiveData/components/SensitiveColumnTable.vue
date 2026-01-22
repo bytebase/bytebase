@@ -16,7 +16,7 @@ import { TrashIcon } from "lucide-vue-next";
 import { type DataTableColumn, NDataTable, NPopconfirm } from "naive-ui";
 import { computed, h, withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
 import type {
@@ -58,7 +58,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const settingStore = useSettingV1Store();
 const dbCatalogStore = useDatabaseCatalogV1Store();
 
@@ -98,7 +97,7 @@ const dataTableColumns = computed(() => {
           <div>
             <RouterLink
               to={{
-                ...autoDatabaseRoute(router, props.database),
+                ...autoDatabaseRoute(props.database),
                 query: {
                   schema: item.schema,
                   table: item.table,

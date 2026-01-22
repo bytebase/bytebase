@@ -145,7 +145,7 @@ const escapeMongoDBCollectionName = (name: string) => {
     .replace(/'/g, "\\u0027");
 };
 
-export const wrapSQLIdentifier = (id: string, engine: Engine) => {
+const wrapSQLIdentifier = (id: string, engine: Engine) => {
   if (engine === Engine.MSSQL) {
     return `[${id}]`;
   }
@@ -167,7 +167,7 @@ export const wrapSQLIdentifier = (id: string, engine: Engine) => {
   return "`" + id + "`";
 };
 
-export const generateSchemaAndTableNameInSQL = (
+const generateSchemaAndTableNameInSQL = (
   engine: Engine,
   schema: string,
   tableOrView: string

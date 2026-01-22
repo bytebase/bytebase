@@ -31,7 +31,7 @@ export const extractPlanCheckRunUID = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const extractSpecId = (name: string) => {
+const extractSpecId = (name: string) => {
   const pattern = /(?:^|\/)specs\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";

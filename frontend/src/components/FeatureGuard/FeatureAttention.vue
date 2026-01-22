@@ -182,6 +182,6 @@ const onClick = () => {
     state.showInstanceAssignmentDrawer = true;
     return;
   }
-  router.push(autoSubscriptionRoute(router));
+  router.push(autoSubscriptionRoute());
 };
 </script>

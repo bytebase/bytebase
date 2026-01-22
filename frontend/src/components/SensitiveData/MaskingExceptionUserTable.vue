@@ -131,7 +131,7 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
                 query.table = access.databaseResource.table;
               }
               router.push({
-                ...autoDatabaseRoute(router, database),
+                ...autoDatabaseRoute(database),
                 query,
               });
             }}

@@ -168,7 +168,7 @@ const onClose = () => {
 const onClick = () => {
   state.showModal = false;
   router.push({
-    ...autoProjectRoute(router, project.value),
+    ...autoProjectRoute(project.value),
   });
 };
 </script>

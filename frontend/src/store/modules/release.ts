@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { releaseServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import type { MaybeRef, Pagination } from "@/types";
+import type { MaybeRef } from "@/types";
 import { isValidReleaseName, unknownRelease } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
@@ -26,7 +26,10 @@ export const useReleaseStore = defineStore("release", () => {
 
   const fetchReleasesByProject = async (
     project: string,
-    pagination?: Pagination,
+    pagination?: {
+      pageSize?: number;
+      pageToken?: string;
+    },
     showDeleted?: boolean,
     filter?: string
   ) => {
