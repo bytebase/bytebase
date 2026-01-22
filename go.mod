@@ -98,7 +98,7 @@ require (
 	google.golang.org/api v0.261.0
 	google.golang.org/genproto v0.0.0-20260120221211-b8f7ae30c516
 	google.golang.org/genproto/googleapis/api v0.0.0-20260120221211-b8f7ae30c516
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120174246-409b4a993575
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/inf.v0 v0.9.1
