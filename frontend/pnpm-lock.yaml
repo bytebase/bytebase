@@ -125,8 +125,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.20.0
-        version: 1.20.0(@popperjs/core@2.11.8)(typescript@5.9.3)
+        specifier: 1.20.1
+        version: 1.20.1(@popperjs/core@2.11.8)(typescript@5.9.3)
       pinia:
         specifier: 3.0.4
         version: 3.0.4(typescript@5.9.3)(vue@3.5.27(typescript@5.9.3))
@@ -4192,8 +4192,8 @@ packages:
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
 
-  pev2@1.20.0:
-    resolution: {integrity: sha512-tyyDABXII32cAz1Ed5CZiE0UqJqw9950l4rkEI0dj9NOw9XslKgzH5uhGXsq+B73LfMsOd/fYpkO8l1CGK8fsQ==}
+  pev2@1.20.1:
+    resolution: {integrity: sha512-ir8x7nAwW+jAgnjWAUed2B8FDDtPF4FvRrEgmhpxIF+iBauYB3QKkCGhYJJyvsLx7nOgIfO1HUFaO5qNmlpNJw==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -9532,7 +9532,7 @@ snapshots:
 
   perfect-debounce@1.0.0: {}
 
-  pev2@1.20.0(@popperjs/core@2.11.8)(typescript@5.9.3):
+  pev2@1.20.1(@popperjs/core@2.11.8)(typescript@5.9.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       '@fortawesome/free-solid-svg-icons': 6.7.2
