@@ -31,7 +31,9 @@ import {
 import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
+import { ServiceAccountService } from "@/types/proto-es/v1/service_account_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
+import { WorkloadIdentityService } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 import {
@@ -138,6 +140,16 @@ export const issueServiceClientConnect = createClient(IssueService, transport);
 export const sheetServiceClientConnect = createClient(SheetService, transport);
 
 export const userServiceClientConnect = createClient(UserService, transport);
+
+export const serviceAccountServiceClientConnect = createClient(
+  ServiceAccountService,
+  transport
+);
+
+export const workloadIdentityServiceClientConnect = createClient(
+  WorkloadIdentityService,
+  transport
+);
 
 export const releaseServiceClientConnect = createClient(
   ReleaseService,
