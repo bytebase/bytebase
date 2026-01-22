@@ -1895,7 +1895,8 @@
       "add-more": "Thêm",
       "condition-name": "Tên điều kiện",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
-      "project-level-roles": "Vai trò cấp độ dự án"
+      "project-level-roles": "Vai trò cấp độ dự án",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
@@ -2643,6 +2644,13 @@
       "rejected-by": "Bị từ chối bởi",
       "and-n-other-users": "{names} và {count} người dùng khác",
       "self-approval-not-allowed": "Không được phép tự phê duyệt cho dự án này. Bạn không thể phê duyệt với tư cách là người sáng tạo."
+    },
+    "approval-flow-builtin": {
+      "project-owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
+      "workspace-dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
+      "workspace-admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
+      "project-owner-workspace-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
+      "project-owner-workspace-dba-workspace-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
     }
   },
   "schema-template": {

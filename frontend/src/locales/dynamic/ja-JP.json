@@ -1,24 +1,4 @@
 {
-  "custom-approval": {
-    "approval-flow-builtin": {
-      "project-owner": "システム定義のプロセス。プロジェクト所有者の承認のみが必要です。",
-      "workspace-dba": "システム定義のプロセス。 DBA の承認のみが必要です。",
-      "workspace-admin": "システム定義のプロセス。管理者の承認のみが必要です。",
-      "project-owner-workspace-dba": "システム定義のプロセス。承認は最初にプロジェクト所有者によって行われ、次に DBA によって行われます。",
-      "project-owner-workspace-dba-workspace-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
-    },
-    "risk-rule": {
-      "template": {
-        "presets": {
-          "request-role-high": "リクエスト プロジェクト オーナー ロールのリスクは高いと考えられます。",
-          "environment-prod-high": "運用環境、デフォルトで高リスク",
-          "environment-dev-low": "開発環境、デフォルトでは低リスク",
-          "dml-in-environment-prod-10k-rows-high": "運用環境で更新または削除されたデータ行の数が 10,000 を超えており、デフォルトで高リスクとみなされます。",
-          "create-database-in-environment-prod-moderate": "本番環境でデータベースを作成します。デフォルトは中リスクです"
-        }
-      }
-    }
-  },
   "activity": {
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",

@@ -12,7 +12,7 @@ export type BuiltinApprovalFlow = {
 
 type BuiltinApprovalFlowDefinition = {
   id: string;
-  descriptionKey: string;
+  description: string;
   roles: string[];
 };
 
@@ -21,32 +21,33 @@ type BuiltinApprovalFlowDefinition = {
 const BUILTIN_FLOW_DEFINITIONS: readonly BuiltinApprovalFlowDefinition[] = [
   {
     id: "bb.project-owner",
-    descriptionKey:
-      "dynamic.custom-approval.approval-flow-builtin.project-owner",
+    description: t("custom-approval.approval-flow-builtin.project-owner"),
     roles: [PresetRoleType.PROJECT_OWNER],
   },
   {
     id: "bb.workspace-dba",
-    descriptionKey:
-      "dynamic.custom-approval.approval-flow-builtin.workspace-dba",
+    description: t("custom-approval.approval-flow-builtin.workspace-dba"),
+
     roles: [PresetRoleType.WORKSPACE_DBA],
   },
   {
     id: "bb.workspace-admin",
-    descriptionKey:
-      "dynamic.custom-approval.approval-flow-builtin.workspace-admin",
+    description: t("custom-approval.approval-flow-builtin.workspace-admin"),
+
     roles: [PresetRoleType.WORKSPACE_ADMIN],
   },
   {
     id: "bb.project-owner-workspace-dba",
-    descriptionKey:
-      "dynamic.custom-approval.approval-flow-builtin.project-owner-workspace-dba",
+    description: t(
+      "custom-approval.approval-flow-builtin.project-owner-workspace-dba"
+    ),
     roles: [PresetRoleType.PROJECT_OWNER, PresetRoleType.WORKSPACE_DBA],
   },
   {
     id: "bb.project-owner-workspace-dba-workspace-admin",
-    descriptionKey:
-      "dynamic.custom-approval.approval-flow-builtin.project-owner-workspace-dba-workspace-admin",
+    description: t(
+      "custom-approval.approval-flow-builtin.project-owner-workspace-dba-workspace-admin"
+    ),
     roles: [
       PresetRoleType.PROJECT_OWNER,
       PresetRoleType.WORKSPACE_DBA,
@@ -66,7 +67,7 @@ export const BUILTIN_APPROVAL_FLOWS: readonly BuiltinApprovalFlow[] =
   BUILTIN_FLOW_DEFINITIONS.map((def) => ({
     id: def.id,
     title: generateTitle(def.roles),
-    description: t(def.descriptionKey),
+    description: def.description,
     roles: def.roles,
     readonly: true as const,
   }));

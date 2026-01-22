@@ -1,24 +1,4 @@
 {
-  "custom-approval": {
-    "approval-flow-builtin": {
-      "project-owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
-      "workspace-dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
-      "workspace-admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
-      "project-owner-workspace-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
-      "project-owner-workspace-dba-workspace-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
-    },
-    "risk-rule": {
-      "template": {
-        "presets": {
-          "request-role-high": "Se considera que el riesgo para el rol de propietario del proyecto de solicitud es alto.",
-          "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
-          "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
-          "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
-          "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
-        }
-      }
-    }
-  },
   "activity": {
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",

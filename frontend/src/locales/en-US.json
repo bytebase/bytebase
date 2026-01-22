@@ -1895,7 +1895,8 @@
       "add-more": "Add more",
       "condition-name": "Condition name",
       "workspace-level-roles": "Workspace level roles",
-      "project-level-roles": "Project level roles"
+      "project-level-roles": "Project level roles",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "Select Project",
     "all": "All projects",
@@ -2643,6 +2644,13 @@
       "rejected-by": "Rejected by",
       "and-n-other-users": "{names} and 1 other user | {names} and {count} other users",
       "self-approval-not-allowed": "Self-approval is not allowed in this project. So you cannot approve your own issue."
+    },
+    "approval-flow-builtin": {
+      "project-owner": "The system defines the approval process and only needs the project Owner to approve it.",
+      "workspace-dba": "The system defines the approval process and only needs DBA approval.",
+      "workspace-admin": "The system defines the approval process and only needs Administrator approval.",
+      "project-owner-workspace-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
+      "project-owner-workspace-dba-workspace-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
     }
   },
   "schema-template": {

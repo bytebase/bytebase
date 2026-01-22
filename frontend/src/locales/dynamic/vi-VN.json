@@ -1,24 +1,4 @@
 {
-  "custom-approval": {
-    "approval-flow-builtin": {
-      "project-owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
-      "workspace-dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
-      "workspace-admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
-      "project-owner-workspace-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
-      "project-owner-workspace-dba-workspace-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
-    },
-    "risk-rule": {
-      "template": {
-        "presets": {
-          "request-role-high": "Rủi ro đối với vai trò chủ sở hữu dự án yêu cầu được coi là cao.",
-          "environment-prod-high": "Rủi ro cho môi trường sản xuất được coi là cao.",
-          "environment-dev-low": "Giá trị rủi ro cho môi trường phát triển được coi là thấp.",
-          "dml-in-environment-prod-10k-rows-high": "Trong môi trường sản xuất, nếu số lượng hàng cần cập nhật hoặc xóa vượt quá 10000, rủi ro được coi là cao.",
-          "create-database-in-environment-prod-moderate": "Tạo cơ sở dữ liệu trong môi trường sản xuất được coi là rủi ro trung bình."
-        }
-      }
-    }
-  },
   "activity": {
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",
