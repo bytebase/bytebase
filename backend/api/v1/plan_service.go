@@ -436,7 +436,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		if c, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
 			if len(c.ChangeDatabaseConfig.Targets) == 1 {
 				if _, _, err := common.GetProjectIDDatabaseGroupID(c.ChangeDatabaseConfig.Targets[0]); err == nil {
-					dg, err := getDatabaseGroupByName(ctx, s.store, c.ChangeDatabaseConfig.Targets[0], v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC)
+					dg, err := getDatabaseGroupByName(ctx, s.store, c.ChangeDatabaseConfig.Targets[0], v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database group %q: %v", c.ChangeDatabaseConfig.Targets[0], err))
 					}
@@ -648,7 +648,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group %q (project %q) does not belong to plan project %q", name, groupProjectID, projectID))
 		}
 
-		dg, err := getDatabaseGroupByName(ctx, s, name, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC)
+		dg, err := getDatabaseGroupByName(ctx, s, name, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database group %q: %v", name, err))
 		}
