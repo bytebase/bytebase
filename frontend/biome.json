@@ -35,14 +35,19 @@
         "useArraySortCompare": "error",
         "useFind": "error",
         "useSpread": "error",
+        "useVueConsistentVBindStyle": "error",
+        "useVueConsistentVOnStyle": "error",
         "useVueHyphenatedAttributes": "error",
+        "useVueValidTemplateRoot": "error",
         "useVueValidVBind": "error",
         "useVueValidVElse": "error",
         "useVueValidVElseIf": "error",
         "useVueValidVHtml": "error",
         "useVueValidVIf": "error",
+        "useVueValidVOnce": "error",
         "useVueValidVOn": "error",
-        "useVueValidVText": "error"
+        "useVueValidVText": "error",
+        "useVueVForKey": "error"
       },
       "style": {
         "noCommonJs": "error",
