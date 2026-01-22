@@ -170,8 +170,8 @@ importers:
         specifier: ^0.1.8
         version: 0.1.8(vue@3.5.27(typescript@5.9.3))
       vscode:
-        specifier: npm:@codingame/monaco-vscode-extension-api@21.6.0
-        version: '@codingame/monaco-vscode-extension-api@21.6.0'
+        specifier: npm:@codingame/monaco-vscode-extension-api@25.0.1
+        version: '@codingame/monaco-vscode-extension-api@25.0.1'
       vscode-languageclient:
         specifier: 9.0.1
         version: 9.0.1
@@ -1196,9 +1196,6 @@ packages:
 
   '@codingame/monaco-vscode-environment-service-override@25.0.1':
     resolution: {integrity: sha512-Sgd3AYLA/RGZk5Lc9KTt/4isUh/NrHqgT7sReo7MPHigB6tFB8EbSc0s9xMx4EwCgwDp/2Bq5kDG2qThOnjhVQ==}
-
-  '@codingame/monaco-vscode-extension-api@21.6.0':
-    resolution: {integrity: sha512-oslSpuCAZKS88hPx76Cickqd9/z5M1koUkx8UOqnfVIFAemnMHkZWWC4bOa/Q7wFZBy+1qB0/OuhrIBtycj5vA==}
 
   '@codingame/monaco-vscode-extension-api@25.0.1':
     resolution: {integrity: sha512-mVO+B/DK4QWvUaL5xpkCRn5U2FM4eanIwAnsdm4/42ghq8jwH/uu2zp/7QIriMcXhO+1bVJWPx43WkXYhwjMfg==}
@@ -6246,13 +6243,6 @@ snapshots:
   '@codingame/monaco-vscode-environment-service-override@25.0.1':
     dependencies:
       '@codingame/monaco-vscode-api': 25.0.1
-
-  '@codingame/monaco-vscode-extension-api@21.6.0':
-    dependencies:
-      '@codingame/monaco-vscode-4a3ac544-9a61-534c-88df-756262793ef7-common': 21.6.0
-      '@codingame/monaco-vscode-4bf376c2-03c7-58cb-8303-c67aeefa3d3d-common': 21.6.0
-      '@codingame/monaco-vscode-api': 21.6.0
-      '@codingame/monaco-vscode-extensions-service-override': 21.6.0
 
   '@codingame/monaco-vscode-extension-api@25.0.1':
     dependencies:
