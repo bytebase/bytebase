@@ -17394,32 +17394,11 @@ components:
           description: |-
             The resource name of the release.
              Format: projects/{project}/releases/{release}
-        ghostFlags:
-          type: object
-          title: ghost_flags
-          additionalProperties:
-            type: string
-            title: value
         enablePriorBackup:
           type: boolean
           title: enable_prior_backup
           description: If set, a backup of the modified data will be created automatically before any changes are applied.
-        enableGhost:
-          type: boolean
-          title: enable_ghost
-          description: Whether to use gh-ost for online schema migration.
       title: ChangeDatabaseConfig
-      additionalProperties: false
-    bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry:
-      type: object
-      properties:
-        key:
-          type: string
-          title: key
-        value:
-          type: string
-          title: value
-      title: GhostFlagsEntry
       additionalProperties: false
     bytebase.v1.Plan.CreateDatabaseConfig:
       type: object
@@ -18610,10 +18589,6 @@ components:
           type: string
           title: version
           description: The version identifier for the file.
-        enableGhost:
-          type: boolean
-          title: enable_ghost
-          description: Whether to use gh-ost for online schema migration.
         sheet:
           type: string
           title: sheet

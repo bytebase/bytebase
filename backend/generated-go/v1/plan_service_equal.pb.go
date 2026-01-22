@@ -180,22 +180,7 @@ func (x *Plan_ChangeDatabaseConfig) Equal(y *Plan_ChangeDatabaseConfig) bool {
 	if x.Release != y.Release {
 		return false
 	}
-	if len(x.GhostFlags) != len(y.GhostFlags) {
-		return false
-	}
-	for k := range x.GhostFlags {
-		_, ok := y.GhostFlags[k]
-		if !ok {
-			return false
-		}
-		if x.GhostFlags[k] != y.GhostFlags[k] {
-			return false
-		}
-	}
 	if x.EnablePriorBackup != y.EnablePriorBackup {
-		return false
-	}
-	if x.EnableGhost != y.EnableGhost {
 		return false
 	}
 	return true

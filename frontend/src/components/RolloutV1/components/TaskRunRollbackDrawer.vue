@@ -310,8 +310,6 @@ const handleConfirm = async () => {
           case: "changeDatabaseConfig",
           value: create(Plan_ChangeDatabaseConfigSchema, {
             targets: [preview.task.target],
-
-            enableGhost: false,
             sheet: sheet.name,
           }),
         },

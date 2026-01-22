@@ -45,8 +45,11 @@
 <script lang="ts" setup>
 import { WrenchIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { useSelectedSpec } from "../../SpecDetailView/context";
+import { isGhostEnabled } from "../../StatementSection/directiveUtils";
+import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import OptionRow from "../OptionRow.vue";
 import { useGhostSettingContext } from "./context";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
@@ -54,5 +57,12 @@ import GhostSwitch from "./GhostSwitch.vue";
 
 const showFlagsPanel = ref(false);
 
-const { allowChange, enabled } = useGhostSettingContext();
+const { allowChange } = useGhostSettingContext();
+const { selectedSpec } = useSelectedSpec();
+const { sheetStatement, sheetReady } = useSpecSheet(selectedSpec);
+
+const enabled = computed(() => {
+  if (!sheetReady.value) return false;
+  return isGhostEnabled(sheetStatement.value);
+});
 </script>

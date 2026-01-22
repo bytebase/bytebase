@@ -13,14 +13,13 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, enableGhost bool) error {
+func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project, database *v1pb.Database, sheet *v1pb.Sheet, _ bool) error {
 	spec := &v1pb.Plan_Spec{
 		Id: uuid.NewString(),
 		Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-				Targets:     []string{database.Name},
-				Sheet:       sheet.Name,
-				EnableGhost: enableGhost,
+				Targets: []string{database.Name},
+				Sheet:   sheet.Name,
 			},
 		},
 	}

@@ -120,7 +120,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 
-	if task.Payload.GetEnableGhost() {
+	if ghost.IsGhostEnabled(sheet.Statement) {
 		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID, sheet, instance, database, project)
 	}
 	return exec.runStandardMigration(ctx, driverCtx, task, taskRunUID, sheet, instance, database, project)
@@ -283,7 +283,14 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 }
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	flags := task.Payload.GetFlags()
+	// Parse ghost flags from sheet directive
+	flags, err := ghost.ParseGhostDirective(sheet.Statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse ghost directive")
+	}
+	if flags == nil {
+		flags = make(map[string]string)
+	}
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -312,7 +319,9 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	}
 
 	// Prepare gh-ost migration context before beginning migration
-	statement := strings.TrimSpace(sheet.Statement)
+	// Remove all Bytebase directives from statement before passing to gh-ost
+	cleanedStatement := parserbase.CleanDirectives(sheet.Statement)
+	statement := strings.TrimSpace(cleanedStatement)
 	// Trim trailing semicolons.
 	statement = strings.TrimRight(statement, ";")
 
@@ -326,7 +335,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), sheet.Statement, false, flags, 10000000)
+	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}

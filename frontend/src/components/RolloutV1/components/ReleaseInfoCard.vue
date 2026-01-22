@@ -73,10 +73,7 @@
             >
               <div class="flex-1 min-w-0 mr-2">
                 <div class="font-medium truncate">{{ file.path }}</div>
-                <div class="text-gray-500">
-                  {{ file.version }} •
-                  {{ getChangeTypeText(file.enableGhost) }}
-                </div>
+                <div class="text-gray-500">{{ file.version }}</div>
               </div>
               <div
                 v-if="release.type"
@@ -188,12 +185,6 @@ const displayedFiles = computed(() => {
   if (!release.value?.files) return [];
   return release.value.files.slice(0, maxDisplayedFiles.value);
 });
-
-const getChangeTypeText = (enableGhost: boolean) => {
-  return enableGhost
-    ? t("release.change-type.ddl-ghost")
-    : t("release.change-type.ddl");
-};
 
 const getReleaseFileTypeText = (fileType: Release_Type) => {
   switch (fileType) {

@@ -1,8 +1,11 @@
 package plancheck
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/component/ghost"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -10,7 +13,7 @@ import (
 
 // DeriveCheckTargets derives check targets from a plan and optional database group.
 // This replaces the stored config by computing targets at runtime.
-func DeriveCheckTargets(project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
+func DeriveCheckTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
 	var targets []*CheckTarget
 
 	for _, spec := range plan.Config.Specs {
@@ -41,7 +44,23 @@ func DeriveCheckTargets(project *store.ProjectMessage, plan *store.PlanMessage, 
 				}
 			}
 
-			enableGhost := config.ChangeDatabaseConfig.EnableGhost
+			// Parse ghost config from sheet content
+			var enableGhost bool
+			var ghostFlags map[string]string
+
+			sheetContent, err := getSheetContent(ctx, s, config.ChangeDatabaseConfig.SheetSha256)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get sheet content")
+			}
+			if sheetContent != "" {
+				enableGhost = ghost.IsGhostEnabled(sheetContent)
+				if enableGhost {
+					ghostFlags, err = ghost.ParseGhostDirective(sheetContent)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to parse ghost directive")
+					}
+				}
+			}
 
 			for _, target := range databases {
 				types := []storepb.PlanCheckType{
@@ -56,8 +75,8 @@ func DeriveCheckTargets(project *store.ProjectMessage, plan *store.PlanMessage, 
 					Target:            target,
 					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
 					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,
-					EnableGhost:       config.ChangeDatabaseConfig.EnableGhost,
-					GhostFlags:        config.ChangeDatabaseConfig.GhostFlags,
+					EnableGhost:       enableGhost,
+					GhostFlags:        ghostFlags,
 					Types:             types,
 				})
 			}
@@ -67,4 +86,18 @@ func DeriveCheckTargets(project *store.ProjectMessage, plan *store.PlanMessage, 
 	}
 
 	return targets, nil
+}
+
+func getSheetContent(ctx context.Context, s *store.Store, sheetSha256 string) (string, error) {
+	if sheetSha256 == "" {
+		return "", nil
+	}
+	sheet, err := s.GetSheetFull(ctx, sheetSha256)
+	if err != nil {
+		return "", err
+	}
+	if sheet == nil {
+		return "", nil
+	}
+	return sheet.Statement, nil
 }

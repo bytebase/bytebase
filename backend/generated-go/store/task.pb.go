@@ -97,12 +97,8 @@ type Task struct {
 	Source isTask_Source `protobuf_oneof:"source"`
 	// Whether to create an automatic backup before applying changes.
 	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	// Configuration flags for gh-ost migration tool.
-	Flags map[string]string `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Whether to use gh-ost for online schema migration.
-	EnableGhost   bool `protobuf:"varint,16,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Task) Reset() {
@@ -188,20 +184,6 @@ func (x *Task) GetEnablePriorBackup() bool {
 	return false
 }
 
-func (x *Task) GetFlags() map[string]string {
-	if x != nil {
-		return x.Flags
-	}
-	return nil
-}
-
-func (x *Task) GetEnableGhost() bool {
-	if x != nil {
-		return x.EnableGhost
-	}
-	return false
-}
-
 type isTask_Source interface {
 	isTask_Source()
 }
@@ -226,7 +208,7 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\"\xd2\x03\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\"\xbe\x02\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
@@ -234,13 +216,7 @@ const file_store_task_proto_rawDesc = "" +
 	"\fsheet_sha256\x18\n" +
 	" \x01(\tH\x00R\vsheetSha256\x12\x1a\n" +
 	"\arelease\x18\r \x01(\tH\x00R\arelease\x12.\n" +
-	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
-	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12!\n" +
-	"\fenable_ghost\x18\x10 \x01(\bR\venableGhost\x1a8\n" +
-	"\n" +
-	"FlagsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"a\n" +
+	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\"a\n" +
 	"\x04Type\x12\x19\n" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
@@ -262,19 +238,17 @@ func file_store_task_proto_rawDescGZIP() []byte {
 }
 
 var file_store_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_task_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_task_proto_goTypes = []any{
 	(Task_Type)(0), // 0: bytebase.store.Task.Type
 	(*Task)(nil),   // 1: bytebase.store.Task
-	nil,            // 2: bytebase.store.Task.FlagsEntry
 }
 var file_store_task_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.Task.flags:type_name -> bytebase.store.Task.FlagsEntry
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_store_task_proto_init() }
@@ -292,7 +266,7 @@ func file_store_task_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_proto_rawDesc), len(file_store_task_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

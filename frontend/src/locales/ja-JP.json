@@ -2759,10 +2759,6 @@
     "vcs-source": "VCSソース",
     "view-all-files": "すべてのファイルを表示",
     "and-n-more-files": "および{n}個のファイル",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDLゴースト"
-    },
     "file-type": {
       "versioned": "バージョン",
       "declarative": "宣言",

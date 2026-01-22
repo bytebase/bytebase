@@ -158,7 +158,6 @@
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
-    - [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
@@ -277,7 +276,6 @@
   
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
-    - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
   
     - [Task.Type](#bytebase-store-Task-Type)
   
@@ -2826,25 +2824,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry"></a>
-
-### PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
@@ -3530,7 +3510,6 @@ Activity type enumeration.
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | version | [string](#string) |  |  |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 
@@ -4619,24 +4598,6 @@ Task is the metadata for database operation tasks.
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of a single sheet content (hex-encoded). Used for non-release tasks. |
 | release | [string](#string) |  | The release resource name: projects/{project}/releases/{release}. Used for GitOps release-based tasks that execute multiple files. |
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
-| flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
-
-
-
-
-
-
-<a name="bytebase-store-Task-FlagsEntry"></a>
-
-### Task.FlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 

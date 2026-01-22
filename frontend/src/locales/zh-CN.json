@@ -2759,10 +2759,6 @@
     "vcs-source": "VCS 源",
     "view-all-files": "查看全部文件",
     "and-n-more-files": "还有 {count} 个文件",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "版本化",
       "declarative": "声明式",

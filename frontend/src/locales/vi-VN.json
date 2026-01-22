@@ -2759,10 +2759,6 @@
     "vcs-source": "Nguồn VCS",
     "view-all-files": "Xem tất cả các tập tin",
     "and-n-more-files": "và {n} tập tin khác",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ma"
-    },
     "file-type": {
       "versioned": "Phiên bản",
       "declarative": "Khai báo",

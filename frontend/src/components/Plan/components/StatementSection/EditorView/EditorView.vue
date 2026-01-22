@@ -231,6 +231,7 @@ import {
 } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { useSelectedSpec } from "../../SpecDetailView/context";
+import { isGhostEnabled } from "../directiveUtils";
 import SchemaEditorDrawer from "../SchemaEditorDrawer.vue";
 import { useSpecSheet } from "../useSpecSheet";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
@@ -369,9 +370,9 @@ const shouldShowSchemaEditorButton = computed(() => {
     return false;
   }
 
-  // Now TypeScript knows config.value is Plan_ChangeDatabaseConfig
   // Only for regular DDL (not gh-ost) schema changes
-  if (spec.config.value.enableGhost) {
+  // Check if ghost is enabled via sheet directive
+  if (isGhostEnabled(sheetStatement.value)) {
     return false;
   }
 
