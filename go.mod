@@ -32,6 +32,7 @@ require (
 	github.com/beltran/gohive/v2 v2.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.9.2
+	github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
@@ -141,7 +142,6 @@ require (
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect

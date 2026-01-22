@@ -861,8 +861,6 @@ github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8 h1:/MFuVj7SR+TQAX
 github.com/bytebase/gomongo v0.0.0-20260121095259-4d0ac7950ed8/go.mod h1:7aVbtrEx9OpYH+qoeyqdxAVXH5NsBJSbTScD2jt+B0o=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/parser v0.0.0-20260113041207-12c6f17e2d8e h1:MtSRG2W59qJujPTbK8jUoQKJX4wLRYXJDWDOgtVa8kY=
-github.com/bytebase/parser v0.0.0-20260113041207-12c6f17e2d8e/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/parser v0.0.0-20260121030202-698704919f24 h1:oonTO26orUa4bYk/hQjALiYO1zII+Kzpjg75OnC3VtU=
 github.com/bytebase/parser v0.0.0-20260121030202-698704919f24/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
@@ -1759,6 +1757,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/testcontainers/testcontainers-go v0.40.0 h1:pSdJYLOVgLE8YdUY2FHQ1Fxu+aMnb6JfVz1mxk7OeMU=
 github.com/testcontainers/testcontainers-go v0.40.0/go.mod h1:FSXV5KQtX2HAMlm7U3APNyLkkap35zNLxukw9oBi/MY=
+github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0 h1:z/1qHeliTLDKNaJ7uOHOx1FjwghbcbYfga4dTFkF0hU=
+github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0/go.mod h1:GaunAWwMXLtsMKG3xn2HYIBDbKddGArfcGsF2Aog81E=
 github.com/the42/cartconvert v0.0.0-20131203171324-aae784c392b8 h1:I4DY8wLxJXCrMYzDM6lKCGc3IQwJX0PlTLsd3nQqI3c=
 github.com/the42/cartconvert v0.0.0-20131203171324-aae784c392b8/go.mod h1:fWO/msnJVhHqN1yX6OBoxSyfj7TEj1hHiL8bJSQsK30=
 github.com/tiancaiamao/gp v0.0.0-20221230034425-4025bc8a4d4a h1:J/YdBZ46WKpXsxsW93SG+q0F8KI+yFrcIDT4c/RNoc4=
