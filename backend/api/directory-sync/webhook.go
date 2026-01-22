@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"slices"
 	"strconv"
@@ -217,7 +218,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 			// Normalize email to lowercase for consistent lookup
 			normalizedEmail := normalizeEmail(expr.Value)
-			if !common.IsValidEmail(normalizedEmail) {
+			if _, err := mail.ParseAddress(normalizedEmail); err != nil {
 				// Azure sends UUID as userName for connectivity health checks, expecting empty response.
 				// This is expected behavior, so we just log at debug level and return empty.
 				slog.Debug("skipping filter with invalid email format", slog.String("key", expr.Key), slog.String("value", expr.Value))
