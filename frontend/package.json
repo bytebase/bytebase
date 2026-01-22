@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@buf/googleapis_googleapis.bufbuild_es": "2.10.2-20251126203132-004180b77378.1",
-    "@bufbuild/protobuf": "2.10.2",
+    "@bufbuild/protobuf": "2.11.0",
     "@codingame/monaco-vscode-api": "21.6.0",
     "@codingame/monaco-vscode-javascript-default-extension": "21.6.0",
     "@codingame/monaco-vscode-languages-service-override": "21.6.0",
