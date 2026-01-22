@@ -150,7 +150,6 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 			Path:        f.Path,
 			SheetSha256: sheetSha256s[i],
 			Version:     f.Version,
-			EnableGhost: f.EnableGhost,
 		})
 	}
 
@@ -332,7 +331,6 @@ func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 			Sheet:       common.FormatSheet(release.ProjectID, f.SheetSha256),
 			SheetSha256: f.SheetSha256,
 			Version:     f.Version,
-			EnableGhost: f.EnableGhost,
 		})
 	}
 	return r

@@ -453,7 +453,6 @@
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
-    - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
@@ -7568,25 +7567,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry"></a>
-
-### Plan.ChangeDatabaseConfig.GhostFlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
@@ -8505,7 +8486,6 @@ A SQL file in a release.
 | ----- | ---- | ----- | ----------- |
 | path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
 | version | [string](#string) |  | The version identifier for the file. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |

@@ -5,8 +5,8 @@
       <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
       <TransactionModeSection v-if="shouldShowTransactionModeSection" />
       <IsolationLevelSection v-if="shouldShowIsolationLevelSection" />
-      <PreBackupSection v-if="shouldShowPreBackupSection" />
       <GhostSection v-if="shouldShowGhostSection" />
+      <PreBackupSection v-if="shouldShowPreBackupSection" />
     </div>
     <div v-else class="text-sm text-control-light">
       {{ $t("plan.options.no-options-available") }}

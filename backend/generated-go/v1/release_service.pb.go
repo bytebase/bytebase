@@ -925,8 +925,6 @@ type Release_File struct {
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// The version identifier for the file.
 	Version string `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	// Whether to use gh-ost for online schema migration.
-	EnableGhost bool `protobuf:"varint,9,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	// For inputs, we must either use `sheet` or `statement`.
 	// For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 	//
@@ -983,13 +981,6 @@ func (x *Release_File) GetVersion() string {
 		return x.Version
 	}
 	return ""
-}
-
-func (x *Release_File) GetEnableGhost() bool {
-	if x != nil {
-		return x.EnableGhost
-	}
-	return false
 }
 
 func (x *Release_File) GetSheet() string {
@@ -1127,7 +1118,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\x1dListReleaseCategoriesResponse\x12\x1e\n" +
 	"\n" +
 	"categories\x18\x01 \x03(\tR\n" +
-	"categories\"\x91\x06\n" +
+	"categories\"\xee\x05\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12/\n" +
@@ -1138,11 +1129,10 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12-\n" +
-	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xd1\x01\n" +
+	"\x04type\x18\b \x01(\x0e2\x19.bytebase.v1.Release.TypeR\x04type\x1a\xae\x01\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
-	"\fenable_ghost\x18\t \x01(\bR\venableGhost\x12-\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12-\n" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
 	"\tstatement\x18\a \x01(\fB\x03\xe0A\x04R\tstatement\x12&\n" +

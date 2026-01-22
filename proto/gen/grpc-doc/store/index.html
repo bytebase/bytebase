@@ -798,10 +798,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig</a>
                 </li>
               
@@ -1283,10 +1279,6 @@
               
                 <li>
                   <a href="#bytebase.store.Task"><span class="badge">M</span>Task</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.Task.FlagsEntry"><span class="badge">M</span>Task.FlagsEntry</a>
                 </li>
               
               
@@ -8360,55 +8352,10 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>enable_prior_backup</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9887,13 +9834,6 @@ IM integration setting should be set for this function to work. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
                 </tr>
               
             </tbody>
@@ -12702,51 +12642,6 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to create an automatic backup before applying changes. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>flags</td>
-                  <td><a href="#bytebase.store.Task.FlagsEntry">Task.FlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>Configuration flags for gh-ost migration tool. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.Task.FlagsEntry">Task.FlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>

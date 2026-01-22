@@ -276,13 +276,8 @@ message Plan {
     // Format: projects/{project}/releases/{release}
     string release = 3 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
 
-    map<string, string> ghost_flags = 5;
-
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     bool enable_prior_backup = 6;
-
-    // Whether to use gh-ost for online schema migration.
-    bool enable_ghost = 7;
   }
 
   message ExportDataConfig {

@@ -17,6 +17,10 @@ var (
 	// txnIsolationDirectiveRegex matches the isolation level directive.
 	// Format: -- txn-isolation = READ UNCOMMITTED|READ COMMITTED|REPEATABLE READ|SERIALIZABLE
 	txnIsolationDirectiveRegex = regexp.MustCompile(`(?i)^\s*--\s*txn-isolation\s*=\s*(READ\s+UNCOMMITTED|READ\s+COMMITTED|REPEATABLE\s+READ|SERIALIZABLE)\s*$`)
+
+	// ghostDirectiveRegex matches the ghost configuration directive.
+	// Format: -- gh-ost = {"key":"value",...} or -- gh-ost = {} /*comment*/
+	ghostDirectiveRegex = regexp.MustCompile(`(?i)^\s*--\s*gh-ost\s*=\s*\{[^}]*\}\s*(?:/\*.*\*/)?\s*$`)
 )
 
 // ParseTransactionConfig extracts both transaction mode and isolation level directives from the SQL script.
@@ -103,4 +107,27 @@ func ConvertToSQLIsolation(level common.IsolationLevel) sql.IsolationLevel {
 	default:
 		return sql.LevelDefault
 	}
+}
+
+// CleanDirectives removes all Bytebase directive comments from a SQL statement.
+// This includes: -- txn-mode, -- txn-isolation, -- ghost
+// Use this before passing statements to external tools (like gh-ost) that may not handle directives.
+func CleanDirectives(script string) string {
+	lines := strings.Split(script, "\n")
+	if len(lines) == 0 {
+		return script
+	}
+
+	var remainingLines []string
+	for _, line := range lines {
+		// Check if this line is a directive
+		if txnModeDirectiveRegex.MatchString(line) ||
+			txnIsolationDirectiveRegex.MatchString(line) ||
+			ghostDirectiveRegex.MatchString(line) {
+			continue
+		}
+		remainingLines = append(remainingLines, line)
+	}
+
+	return strings.Join(remainingLines, "\n")
 }

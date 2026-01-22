@@ -303,14 +303,11 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	SheetSha256 string `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The resource name of the release.
 	// Format: projects/{project}/releases/{release}
-	Release    string            `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
-	GhostFlags map[string]string `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Release string `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	// Whether to use gh-ost for online schema migration.
-	EnableGhost   bool `protobuf:"varint,12,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PlanConfig_ChangeDatabaseConfig) Reset() {
@@ -364,23 +361,9 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetRelease() string {
 	return ""
 }
 
-func (x *PlanConfig_ChangeDatabaseConfig) GetGhostFlags() map[string]string {
-	if x != nil {
-		return x.GhostFlags
-	}
-	return nil
-}
-
 func (x *PlanConfig_ChangeDatabaseConfig) GetEnablePriorBackup() bool {
 	if x != nil {
 		return x.EnablePriorBackup
-	}
-	return false
-}
-
-func (x *PlanConfig_ChangeDatabaseConfig) GetEnableGhost() bool {
-	if x != nil {
-		return x.EnableGhost
 	}
 	return false
 }
@@ -464,7 +447,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xf0\t\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xac\b\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12\x1f\n" +
@@ -484,19 +467,13 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xe1\x02\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\x9d\x01\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
 	" \x03(\tR\atargets\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12\x18\n" +
-	"\arelease\x18\t \x01(\tR\arelease\x12`\n" +
-	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
-	"ghostFlags\x12.\n" +
-	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\f \x01(\bR\venableGhost\x1a=\n" +
-	"\x0fGhostFlagsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xb3\x01\n" +
+	"\arelease\x18\t \x01(\tR\arelease\x12.\n" +
+	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x1a\xb3\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
 	"\atargets\x18\x05 \x03(\tR\atargets\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x124\n" +
@@ -517,28 +494,26 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 	return file_store_plan_proto_rawDescData
 }
 
-var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_plan_proto_goTypes = []any{
 	(*PlanConfig)(nil),                      // 0: bytebase.store.PlanConfig
 	(*PlanConfig_Spec)(nil),                 // 1: bytebase.store.PlanConfig.Spec
 	(*PlanConfig_CreateDatabaseConfig)(nil), // 2: bytebase.store.PlanConfig.CreateDatabaseConfig
 	(*PlanConfig_ChangeDatabaseConfig)(nil), // 3: bytebase.store.PlanConfig.ChangeDatabaseConfig
 	(*PlanConfig_ExportDataConfig)(nil),     // 4: bytebase.store.PlanConfig.ExportDataConfig
-	nil,                                     // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(ExportFormat)(0),                       // 6: bytebase.store.ExportFormat
+	(ExportFormat)(0),                       // 5: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
 	2, // 1: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
 	3, // 2: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
 	4, // 3: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	5, // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	6, // 5: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5, // 4: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -559,7 +534,7 @@ func file_store_plan_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

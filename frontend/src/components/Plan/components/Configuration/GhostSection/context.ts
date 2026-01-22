@@ -5,8 +5,8 @@ import { targetsForSpec } from "@/components/Plan/logic";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { getInstanceResource, isNullOrUndefined } from "@/utils";
-import { GHOST_AVAILABLE_ENGINES, getGhostEnabledForSpec } from "./common";
+import { getInstanceResource } from "@/utils";
+import { GHOST_AVAILABLE_ENGINES } from "./common";
 
 export const KEY = Symbol(
   "bb.plan.setting.gh-ost"
@@ -40,20 +40,22 @@ export const provideGhostSettingContext = (refs: {
   });
 
   const shouldShow = computed(() => {
-    return (
-      selectedSpec.value &&
-      databases.value.every((db) =>
-        GHOST_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine)
-      ) &&
-      !isNullOrUndefined(getGhostEnabledForSpec(selectedSpec.value))
-    );
-  });
+    if (!selectedSpec.value) return false;
 
-  const enabled = computed(() => {
-    return (
-      (selectedSpec.value && getGhostEnabledForSpec(selectedSpec.value)) ||
-      false
+    // Check if all databases support ghost (engine check)
+    const allDatabasesSupportGhost = databases.value.every((db) =>
+      GHOST_AVAILABLE_ENGINES.includes(getInstanceResource(db).engine)
     );
+    if (!allDatabasesSupportGhost) return false;
+
+    // Check if this is a change database config
+    if (selectedSpec.value.config?.case !== "changeDatabaseConfig") {
+      return false;
+    }
+    const config = selectedSpec.value.config.value;
+    // Show for sheet-based migrations only (not release-based).
+    // Release-based migrations don't support ghost configuration.
+    return !config.release;
   });
 
   const context = {
@@ -62,7 +64,6 @@ export const provideGhostSettingContext = (refs: {
     plan,
     shouldShow,
     allowChange,
-    enabled,
     databases,
     events,
   };

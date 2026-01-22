@@ -193,7 +193,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan"))
 	}
 
-	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
+	planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
@@ -362,7 +362,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	if planCheckRunsTrigger {
-		planCheckRun, err := getPlanCheckRunFromPlan(project, updatedPlan, databaseGroup)
+		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 		}
@@ -449,7 +449,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 			}
 		}
 	}
-	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
+	planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
@@ -736,8 +736,8 @@ func storePlanConfigHasCreateDatabase(plan *storepb.PlanConfig) bool {
 // Converters section - ordered with callers before callees.
 
 // getPlanCheckRunFromPlan returns the plan check run for a plan.
-func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) (*store.PlanCheckRunMessage, error) {
-	targets, err := plancheck.DeriveCheckTargets(project, plan, databaseGroup)
+func getPlanCheckRunFromPlan(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) (*store.PlanCheckRunMessage, error) {
+	targets, err := plancheck.DeriveCheckTargets(ctx, s, project, plan, databaseGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -877,9 +877,7 @@ func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.Pla
 			Targets:           c.Targets,
 			Sheet:             sheet,
 			Release:           c.Release,
-			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
-			EnableGhost:       c.EnableGhost,
 		},
 	}
 }
@@ -958,9 +956,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			Targets:           c.Targets,
 			SheetSha256:       sheetSha256,
 			Release:           c.Release,
-			GhostFlags:        c.GhostFlags,
 			EnablePriorBackup: c.EnablePriorBackup,
-			EnableGhost:       c.EnableGhost,
 		},
 	}
 }
