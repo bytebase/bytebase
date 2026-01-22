@@ -195,8 +195,8 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3
       '@iconify/json':
-        specifier: 2.2.430
-        version: 2.2.430
+        specifier: 2.2.431
+        version: 2.2.431
       '@intlify/eslint-plugin-vue-i18n':
         specifier: ^4.0.0
         version: 4.1.1(eslint@9.39.2(jiti@2.6.1))(jsonc-eslint-parser@2.4.0)(vue-eslint-parser@10.2.0(eslint@9.39.2(jiti@2.6.1)))(yaml-eslint-parser@1.3.0)
@@ -1005,9 +1005,6 @@ packages:
   '@codingame/monaco-vscode-configuration-service-override@25.0.0':
     resolution: {integrity: sha512-h5Us5tmWWvVYEwTx7M4eGaGFafGgMPCPczxyLohGudMRIF72WUfF6rPvGi/GMDZZGbieVk+060BQ8MfRVqupng==}
 
-  '@codingame/monaco-vscode-editor-api@25.0.0':
-    resolution: {integrity: sha512-uiY06RTWFo2WZdh6OybkLlDhuG+8LlkjUDpr9/wW55uucqHo4X8fx4XKEtD98cscC+6FKQkbG2yyUiOJ/npHOw==}
-
   '@codingame/monaco-vscode-editor-api@25.0.1':
     resolution: {integrity: sha512-O+Aw0OX86QO5s8wjW52UBKgl4AErwd5uUcbnxCyDGdd8Ug9qhYcMP66//az8FVHL0wV1Hph7xmqvx7szXvXmiA==}
 
@@ -1603,8 +1600,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@iconify/json@2.2.430':
-    resolution: {integrity: sha512-h6ZF1tqaY8qw+NzQSAxvZgrXkp0FvlVZbhaf4LIcwcia2ZpqqZWuwhrBlregXdpPUAqcn76Z0l1H0udGMycdsw==}
+  '@iconify/json@2.2.431':
+    resolution: {integrity: sha512-pOJ8ntUspUj6MNpNVdc9r3ezsuP70bhXG6/w3y0id7vqJqXJasjdiWu6SXi9GPleTf2sHdRB6R+gTyCyiKajXg==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -5706,10 +5703,6 @@ snapshots:
       '@codingame/monaco-vscode-api': 25.0.0
       '@codingame/monaco-vscode-files-service-override': 25.0.0
 
-  '@codingame/monaco-vscode-editor-api@25.0.0':
-    dependencies:
-      '@codingame/monaco-vscode-api': 25.0.0
-
   '@codingame/monaco-vscode-editor-api@25.0.1':
     dependencies:
       '@codingame/monaco-vscode-api': 25.0.1
@@ -6192,7 +6185,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@iconify/json@2.2.430':
+  '@iconify/json@2.2.431':
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 2.0.3
@@ -8664,7 +8657,7 @@ snapshots:
     dependencies:
       '@codingame/monaco-vscode-api': 25.0.1
       '@codingame/monaco-vscode-configuration-service-override': 25.0.0
-      '@codingame/monaco-vscode-editor-api': 25.0.0
+      '@codingame/monaco-vscode-editor-api': 25.0.1
       '@codingame/monaco-vscode-editor-service-override': 25.0.0
       '@codingame/monaco-vscode-extension-api': 25.0.1
       '@codingame/monaco-vscode-extensions-service-override': 25.0.1
