@@ -6,6 +6,7 @@
         :value="enabled"
         :disabled="
           !allowChange ||
+          isSheetOversize ||
           (!enabled &&
             (databasesNotMeetingRequirements.length > 0 || errors.length > 0))
         "
@@ -53,7 +54,8 @@ const { t } = useI18n();
 const { isCreating, plan, allowChange, events, databases } =
   useGhostSettingContext();
 const { selectedSpec } = useSelectedSpec();
-const { sheet, sheetStatement, sheetReady } = useSpecSheet(selectedSpec);
+const { sheet, sheetStatement, sheetReady, isSheetOversize } =
+  useSpecSheet(selectedSpec);
 
 const enabled = computed(() => {
   if (!sheetReady.value) return false;
@@ -103,6 +105,11 @@ const databasesNotMeetingRequirements = computed(() => {
 });
 
 const tooltipMessage = computed(() => {
+  // Check if sheet is oversized
+  if (isSheetOversize.value) {
+    return t("issue.options-disabled-due-to-oversize");
+  }
+
   // Check if only some databases are checked
   if (
     checkedDatabasesCount.value < totalDatabasesCount.value &&

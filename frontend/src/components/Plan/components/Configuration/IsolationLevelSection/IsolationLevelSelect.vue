@@ -1,21 +1,26 @@
 <template>
-  <NSelect
-    v-model:value="selectedIsolation"
-    class="w-36!"
-    size="small"
-    :options="options"
-    :placeholder="$t('plan.select-isolation-level')"
-    :filterable="true"
-    :virtual-scroll="true"
-    :fallback-option="false"
-    :consistent-menu-width="false"
-    :clearable="true"
-    :disabled="!allowChange"
-  />
+  <NTooltip :disabled="!isSheetOversize">
+    <template #trigger>
+      <NSelect
+        v-model:value="selectedIsolation"
+        class="w-36!"
+        size="small"
+        :options="options"
+        :placeholder="$t('plan.select-isolation-level')"
+        :filterable="true"
+        :virtual-scroll="true"
+        :fallback-option="false"
+        :consistent-menu-width="false"
+        :clearable="true"
+        :disabled="!allowChange || isSheetOversize"
+      />
+    </template>
+    {{ $t("issue.options-disabled-due-to-oversize") }}
+  </NTooltip>
 </template>
 
 <script setup lang="tsx">
-import { NSelect, type SelectOption } from "naive-ui";
+import { NSelect, NTooltip, type SelectOption } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   updateSpecSheetWithStatement,
@@ -38,7 +43,8 @@ const {
 } = useIsolationLevelSettingContext();
 
 const { selectedSpec } = useSelectedSpec();
-const { sheetStatement, sheet, sheetReady } = useSpecSheet(selectedSpec);
+const { sheetStatement, sheet, sheetReady, isSheetOversize } =
+  useSpecSheet(selectedSpec);
 const { plan, isCreating } = usePlanContext();
 
 // Flag to prevent circular updates

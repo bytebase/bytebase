@@ -66,7 +66,8 @@ const emits = defineEmits<{
 const { t } = useI18n();
 const { isCreating, allowChange, plan, events } = useGhostSettingContext();
 const { selectedSpec } = useSelectedSpec();
-const { sheet, sheetStatement, sheetReady } = useSpecSheet(selectedSpec);
+const { sheet, sheetStatement, sheetReady, isSheetOversize } =
+  useSpecSheet(selectedSpec);
 
 const title = computed(() => {
   return t("task.online-migration.configure-ghost-parameters");
@@ -94,7 +95,7 @@ const errors = computed(() => {
 
 const readonly = computed(() => {
   if (isCreating.value) return false;
-  return !allowChange.value;
+  return !allowChange.value || isSheetOversize.value;
 });
 
 const close = () => {

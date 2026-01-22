@@ -1,23 +1,28 @@
 <template>
-  <NSelect
-    v-model:value="selectedRole"
-    class="w-36!"
-    size="small"
-    :options="options"
-    :placeholder="$t('instance.select-database-user')"
-    :filterable="true"
-    :virtual-scroll="true"
-    :fallback-option="false"
-    :consistent-menu-width="false"
-    :clearable="true"
-    :disabled="!allowChange"
-    :loading="loading"
-  />
+  <NTooltip :disabled="!isSheetOversize">
+    <template #trigger>
+      <NSelect
+        v-model:value="selectedRole"
+        class="w-36!"
+        size="small"
+        :options="options"
+        :placeholder="$t('instance.select-database-user')"
+        :filterable="true"
+        :virtual-scroll="true"
+        :fallback-option="false"
+        :consistent-menu-width="false"
+        :clearable="true"
+        :disabled="!allowChange || isSheetOversize"
+        :loading="loading"
+      />
+    </template>
+    {{ $t("issue.options-disabled-due-to-oversize") }}
+  </NTooltip>
 </template>
 
 <script setup lang="tsx">
 import { create } from "@bufbuild/protobuf";
-import { NSelect, type SelectOption } from "naive-ui";
+import { NSelect, NTooltip, type SelectOption } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   updateSpecSheetWithStatement,
@@ -42,7 +47,8 @@ const {
   events,
 } = useInstanceRoleSettingContext();
 const { selectedSpec } = useSelectedSpec();
-const { sheetStatement, sheet, sheetReady } = useSpecSheet(selectedSpec);
+const { sheetStatement, sheet, sheetReady, isSheetOversize } =
+  useSpecSheet(selectedSpec);
 const { plan, isCreating } = usePlanContext();
 
 // Flag to prevent circular updates

@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "上传 SQL",
     "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
+    "options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
     "overwrite-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "transaction-mode": {

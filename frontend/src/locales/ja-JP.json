@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "SQLのアップロード",
     "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
+    "options-disabled-due-to-oversize": "SQL が大きすぎるため、オプションは無効になっています。",
     "overwrite-current-statement": "現在の SQL ステートメントを上書きする",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
     "transaction-mode": {
