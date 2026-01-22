@@ -955,7 +955,20 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
 		BackupAvailable:      database.Metadata.GetBackupAvailable(),
+		SyncStatus:           convertSyncStatus(database.Metadata.GetSyncStatus()),
+		SyncError:            database.Metadata.GetSyncError(),
 	}, nil
+}
+
+func convertSyncStatus(status storepb.SyncStatus) v1pb.SyncStatus {
+	switch status {
+	case storepb.SyncStatus_SYNC_STATUS_OK:
+		return v1pb.SyncStatus_OK
+	case storepb.SyncStatus_SYNC_STATUS_FAILED:
+		return v1pb.SyncStatus_FAILED
+	default:
+		return v1pb.SyncStatus_SYNC_STATUS_UNSPECIFIED
+	}
 }
 
 type tableMetadataFilter struct {

@@ -333,6 +333,7 @@
     - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
+    - [SyncStatus](#bytebase-v1-SyncStatus)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
   
@@ -4717,6 +4718,8 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 | backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
+| sync_status | [SyncStatus](#bytebase-v1-SyncStatus) |  | The sync status of the database. |
+| sync_error | [string](#string) |  | The error message if sync failed. |
 
 
 
@@ -5763,6 +5766,19 @@ SDLFormat specifies the output format for SDL schema.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | DELTA | 1 |  |
+
+
+
+<a name="bytebase-v1-SyncStatus"></a>
+
+### SyncStatus
+SyncStatus is the status of the database sync operation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SYNC_STATUS_UNSPECIFIED | 0 |  |
+| OK | 1 | The database was synced successfully. |
+| FAILED | 2 | The database sync failed. |
 
 
 

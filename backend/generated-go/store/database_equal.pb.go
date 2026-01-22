@@ -38,6 +38,12 @@ func (x *DatabaseMetadata) Equal(y *DatabaseMetadata) bool {
 	if x.Release != y.Release {
 		return false
 	}
+	if x.SyncStatus != y.SyncStatus {
+		return false
+	}
+	if x.SyncError != y.SyncError {
+		return false
+	}
 	return true
 }
 

@@ -40,20 +40,25 @@ import { NButton, NDropdown, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
-import { pushNotification } from "@/store";
+import { pushNotification, useDatabaseV1Store } from "@/store";
+import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     type?: "default" | "primary";
     size?: "small" | "medium";
     disabled?: boolean;
     quaternary?: boolean;
+    instanceName?: string;
+    instanceTitle?: string;
   }>(),
   {
     type: "default",
     size: "medium",
     disabled: false,
     quaternary: false,
+    instanceName: "",
+    instanceTitle: "",
   }
 );
 
@@ -100,14 +105,89 @@ const syncInstnceOptions = computed((): DropdownOption[] => {
 const syncSchema = async (option: SyncInstanceOption) => {
   try {
     syncingSchema.value = true;
-    if (option === "sync-all") {
+
+    // Show immediate "syncing" notification (honest - not claiming success yet)
+    const displayName = props.instanceTitle || props.instanceName || "";
+    if (displayName) {
       pushNotification({
         module: "bytebase",
-        style: "SUCCESS",
-        title: t("instance.sync.sync-all-tip"),
+        style: "INFO",
+        title: t("db.syncing-databases-for-instance", [displayName]),
+      });
+    } else {
+      // Fallback for batch sync or when instance info not provided
+      pushNotification({
+        module: "bytebase",
+        style: "INFO",
+        title: t("db.start-to-sync-schema"),
       });
     }
+
     emit("sync-schema", option === "sync-all" /* enable full sync */);
+
+    // Two-phase delayed check for sync status
+    if (props.instanceName) {
+      const displayName = props.instanceTitle || props.instanceName;
+      let notificationShown = false;
+
+      const checkSyncStatus = async (): Promise<"complete" | "syncing"> => {
+        const databaseStore = useDatabaseV1Store();
+        const { databases } = await databaseStore.fetchDatabases({
+          parent: props.instanceName,
+          pageSize: 1000,
+          silent: true,
+        });
+
+        const stillSyncing = databases.filter(
+          (db) => db.syncStatus === SyncStatus.SYNC_STATUS_UNSPECIFIED
+        );
+        const failed = databases.filter(
+          (db) => db.syncStatus === SyncStatus.FAILED
+        );
+
+        // If any databases still syncing, don't notify yet
+        if (stillSyncing.length > 0) {
+          return "syncing";
+        }
+
+        // All syncs complete - show appropriate notification
+        if (failed.length > 0) {
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: t("db.n-databases-had-sync-errors", [failed.length]),
+          });
+        } else {
+          pushNotification({
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("database.sync-complete-for-instance", [displayName]),
+          });
+        }
+        notificationShown = true;
+        return "complete";
+      };
+
+      // First check at 15 seconds (fast feedback for small instances)
+      setTimeout(async () => {
+        try {
+          await checkSyncStatus();
+        } catch {
+          // Silently ignore - will retry at 30s
+        }
+      }, 15000);
+
+      // Second check at 30 seconds (for larger instances)
+      setTimeout(async () => {
+        if (notificationShown) return;
+        try {
+          await checkSyncStatus();
+          // If still syncing at 30s, don't notify - user can check database list
+        } catch {
+          // Silently ignore - user can check database list
+        }
+      }, 30000);
+    }
   } catch (error) {
     pushNotification({
       module: "bytebase",
