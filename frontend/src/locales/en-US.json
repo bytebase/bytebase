@@ -2759,10 +2759,6 @@
     "vcs-source": "VCS Source",
     "view-all-files": "View all files",
     "and-n-more-files": "and {n} more files",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "Versioned",
       "declarative": "Declarative",

@@ -2759,10 +2759,6 @@
     "vcs-source": "Fuente VCS",
     "view-all-files": "Ver todos los archivos",
     "and-n-more-files": "y {n} archivos más",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "Fantasma DDL"
-    },
     "file-type": {
       "versioned": "Versión",
       "declarative": "Declarativo",
