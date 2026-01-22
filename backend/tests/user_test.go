@@ -48,11 +48,10 @@ func TestDeleteUser(t *testing.T) {
 	a.Error(err)
 	a.ErrorContains(err, expectErrorMsg)
 
-	serviceAccountResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
-		User: &v1pb.User{
-			Title:    "bot",
-			UserType: v1pb.UserType_SERVICE_ACCOUNT,
-			Email:    "bot@service.bytebase.com",
+	serviceAccountResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
+		ServiceAccountId: "bot",
+		ServiceAccount: &v1pb.ServiceAccount{
+			Title: "bot",
 		},
 	}))
 	a.NoError(err)

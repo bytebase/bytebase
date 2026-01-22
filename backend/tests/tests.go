@@ -88,32 +88,34 @@ var (
 )
 
 type controller struct {
-	server                       *server.Server
-	profile                      *component.Profile
-	client                       *http.Client
-	authInterceptor              *authInterceptor
-	issueServiceClient           v1connect.IssueServiceClient
-	rolloutServiceClient         v1connect.RolloutServiceClient
-	planServiceClient            v1connect.PlanServiceClient
-	orgPolicyServiceClient       v1connect.OrgPolicyServiceClient
-	reviewConfigServiceClient    v1connect.ReviewConfigServiceClient
-	projectServiceClient         v1connect.ProjectServiceClient
-	databaseGroupServiceClient   v1connect.DatabaseGroupServiceClient
-	authServiceClient            v1connect.AuthServiceClient
-	userServiceClient            v1connect.UserServiceClient
-	settingServiceClient         v1connect.SettingServiceClient
-	instanceServiceClient        v1connect.InstanceServiceClient
-	databaseServiceClient        v1connect.DatabaseServiceClient
-	databaseCatalogServiceClient v1connect.DatabaseCatalogServiceClient
-	sheetServiceClient           v1connect.SheetServiceClient
-	sqlServiceClient             v1connect.SQLServiceClient
-	subscriptionServiceClient    v1connect.SubscriptionServiceClient
-	actuatorServiceClient        v1connect.ActuatorServiceClient
-	workspaceServiceClient       v1connect.WorkspaceServiceClient
-	releaseServiceClient         v1connect.ReleaseServiceClient
-	revisionServiceClient        v1connect.RevisionServiceClient
-	groupServiceClient           v1connect.GroupServiceClient
-	auditLogServiceClient        v1connect.AuditLogServiceClient
+	server                        *server.Server
+	profile                       *component.Profile
+	client                        *http.Client
+	authInterceptor               *authInterceptor
+	issueServiceClient            v1connect.IssueServiceClient
+	rolloutServiceClient          v1connect.RolloutServiceClient
+	planServiceClient             v1connect.PlanServiceClient
+	orgPolicyServiceClient        v1connect.OrgPolicyServiceClient
+	reviewConfigServiceClient     v1connect.ReviewConfigServiceClient
+	projectServiceClient          v1connect.ProjectServiceClient
+	databaseGroupServiceClient    v1connect.DatabaseGroupServiceClient
+	authServiceClient             v1connect.AuthServiceClient
+	userServiceClient             v1connect.UserServiceClient
+	settingServiceClient          v1connect.SettingServiceClient
+	instanceServiceClient         v1connect.InstanceServiceClient
+	databaseServiceClient         v1connect.DatabaseServiceClient
+	databaseCatalogServiceClient  v1connect.DatabaseCatalogServiceClient
+	sheetServiceClient            v1connect.SheetServiceClient
+	sqlServiceClient              v1connect.SQLServiceClient
+	subscriptionServiceClient     v1connect.SubscriptionServiceClient
+	actuatorServiceClient         v1connect.ActuatorServiceClient
+	workspaceServiceClient        v1connect.WorkspaceServiceClient
+	releaseServiceClient          v1connect.ReleaseServiceClient
+	revisionServiceClient         v1connect.RevisionServiceClient
+	groupServiceClient            v1connect.GroupServiceClient
+	auditLogServiceClient         v1connect.AuditLogServiceClient
+	serviceAccountServiceClient   v1connect.ServiceAccountServiceClient
+	workloadIdentityServiceClient v1connect.WorkloadIdentityServiceClient
 
 	project *v1pb.Project
 
@@ -300,6 +302,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.revisionServiceClient = v1connect.NewRevisionServiceClient(ctl.client, baseURL, interceptors)
 	ctl.groupServiceClient = v1connect.NewGroupServiceClient(ctl.client, baseURL, interceptors)
 	ctl.auditLogServiceClient = v1connect.NewAuditLogServiceClient(ctl.client, baseURL, interceptors)
+	ctl.serviceAccountServiceClient = v1connect.NewServiceAccountServiceClient(ctl.client, baseURL, interceptors)
+	ctl.workloadIdentityServiceClient = v1connect.NewWorkloadIdentityServiceClient(ctl.client, baseURL, interceptors)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")

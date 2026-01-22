@@ -55,7 +55,19 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByEmail(ctx, email)
+
+	// Special case for SYSTEM_BOT user which is a built-in resource.
+	// SYSTEM_BOT is stored in principal table with type='SYSTEM_BOT', but GetEndUserByEmail
+	// only queries END_USER type. We use the static SystemBotUser here to avoid mixing user types.
+	if email == common.SystemBotEmail {
+		v1User, err := convertToUser(ctx, s.iamManager, store.SystemBotUser)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+		}
+		return connect.NewResponse(v1User), nil
+	}
+
+	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -107,10 +119,12 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	}
 	limitPlusOne := offset.limit + 1
 
+	endUserType := storepb.PrincipalType_END_USER
 	find := &store.FindUserMessage{
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
+		Type:        &endUserType,
 	}
 	filterResult, err := store.GetListUserFilter(request.Msg.Filter)
 	if err != nil {
@@ -151,6 +165,15 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		NextPageToken: nextPageToken,
 	}
 	for _, user := range users {
+		// Because FindUserMessage.Type is an equality filter, we can't filter for OR (END_USER OR SYSTEM_BOT).
+		// So we filter on the result set for SYSTEM_BOT if the request allows (though FindUserMessage forced END_USER).
+		// Wait, FindUserMessage forced END_USER above. So we won't get SYSTEM_BOT.
+		// If we want to support SYSTEM_BOT in ListUsers, we need to handle it.
+		// Usually ListUsers is for management UI, which mainly deals with END_USER.
+		// If we need SYSTEM_BOT, we might need a more flexible store filter or just rely on END_USER.
+		// Let's assume ListUsers is strictly for END_USERs for now as per separation concern.
+		// SystemBot is a special singleton usually fetched by ID or known email.
+
 		v1User, err := convertToUser(ctx, s.iamManager, user)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
@@ -195,24 +218,12 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, err
 	}
-	if principalType != storepb.PrincipalType_SERVICE_ACCOUNT && principalType != storepb.PrincipalType_END_USER && principalType != storepb.PrincipalType_WORKLOAD_IDENTITY {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support user, service account, and workload identity only"))
+	if principalType != storepb.PrincipalType_END_USER {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support user only"))
 	}
 
-	// Validate workload identity specific requirements
-	if principalType == storepb.PrincipalType_WORKLOAD_IDENTITY {
-		if !common.IsWorkloadIdentityEmail(request.Msg.User.Email) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload identity email must end with %s", common.WorkloadIdentityEmailSuffix))
-		}
-		if request.Msg.User.WorkloadIdentityConfig == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload_identity_config is required for workload identity"))
-		}
-	}
-
-	if principalType == storepb.PrincipalType_END_USER {
-		if err := s.userCountGuard(ctx); err != nil {
-			return nil, err
-		}
+	if err := s.userCountGuard(ctx); err != nil {
+		return nil, err
 	}
 
 	count, err := s.store.CountActiveEndUsers(ctx)
@@ -228,11 +239,10 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	}
 
 	// Skip domain restrictions for service accounts and workload identities
-	skipDomainRestriction := principalType == storepb.PrincipalType_SERVICE_ACCOUNT || principalType == storepb.PrincipalType_WORKLOAD_IDENTITY
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, skipDomainRestriction, false); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, false); err != nil {
 		return nil, err
 	}
-	existingUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
+	existingUser, err := s.store.GetEndUserByEmail(ctx, request.Msg.User.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
@@ -241,52 +251,21 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	}
 
 	password := request.Msg.User.Password
-	switch principalType {
-	case storepb.PrincipalType_SERVICE_ACCOUNT:
+	if password != "" {
+		if err := s.validatePassword(ctx, password); err != nil {
+			return nil, err
+		}
+	} else {
 		pwd, err := common.RandomString(20)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account"))
-		}
-		password = fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, pwd)
-	case storepb.PrincipalType_WORKLOAD_IDENTITY:
-		// Workload identity uses OIDC tokens, not passwords
-		// Generate a random unusable password for security
-		pwd, err := common.RandomString(64)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate secure password for workload identity"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password for user"))
 		}
 		password = pwd
-	default:
-		if password != "" {
-			if err := s.validatePassword(ctx, password); err != nil {
-				return nil, err
-			}
-		} else {
-			pwd, err := common.RandomString(20)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password for user"))
-			}
-			password = pwd
-		}
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
-	}
-
-	// Build profile with workload identity config if applicable
-	var profile *storepb.UserProfile
-	if principalType == storepb.PrincipalType_WORKLOAD_IDENTITY {
-		wic := request.Msg.User.WorkloadIdentityConfig
-		profile = &storepb.UserProfile{
-			WorkloadIdentityConfig: &storepb.WorkloadIdentityConfig{
-				ProviderType:     storepb.WorkloadIdentityConfig_ProviderType(wic.ProviderType),
-				IssuerUrl:        wic.IssuerUrl,
-				AllowedAudiences: wic.AllowedAudiences,
-				SubjectPattern:   wic.SubjectPattern,
-			},
-		}
 	}
 
 	userMessage := &store.UserMessage{
@@ -295,7 +274,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		Phone:        request.Msg.User.Phone,
 		Type:         principalType,
 		PasswordHash: string(passwordHash),
-		Profile:      profile,
+		Profile:      &storepb.UserProfile{},
 	}
 
 	user, err := s.store.CreateUser(ctx, userMessage)
@@ -317,9 +296,6 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	userResponse, err := convertToUser(ctx, s.iamManager, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
-	}
-	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
-		userResponse.ServiceKey = password
 	}
 	return connect.NewResponse(userResponse), nil
 }
@@ -366,7 +342,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByEmail(ctx, email)
+	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -416,16 +392,6 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 				return nil, err
 			}
 			passwordPatch = &request.Msg.User.Password
-		case "service_key":
-			if user.Type != storepb.PrincipalType_SERVICE_ACCOUNT {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("service key can be mutated for service accounts only"))
-			}
-			val, err := common.RandomString(20)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account"))
-			}
-			password := fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, val)
-			passwordPatch = &password
 		case "mfa_enabled":
 			if request.Msg.User.MfaEnabled {
 				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
@@ -544,9 +510,6 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 	}
-	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
-		userResponse.ServiceKey = *passwordPatch
-	}
 	return connect.NewResponse(userResponse), nil
 }
 
@@ -568,7 +531,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByEmail(ctx, email)
+	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -661,7 +624,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByEmail(ctx, email)
+	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -707,7 +670,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByEmail(ctx, email)
+	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -724,12 +687,12 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	}
 
 	// Validate email format and domain restrictions
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.Email, user.Type == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.Email, false); err != nil {
 		return nil, err
 	}
 
 	// Check if email already exists
-	existedUser, err := s.store.GetUserByEmail(ctx, request.Msg.Email)
+	existedUser, err := s.store.GetEndUserByEmail(ctx, request.Msg.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
@@ -785,17 +748,6 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 		Groups: groups,
 	}
 
-	// Add workload identity config if present
-	if user.Profile != nil && user.Profile.WorkloadIdentityConfig != nil {
-		wic := user.Profile.WorkloadIdentityConfig
-		convertedUser.WorkloadIdentityConfig = &v1pb.WorkloadIdentityConfig{
-			ProviderType:     v1pb.WorkloadIdentityConfig_ProviderType(wic.ProviderType),
-			IssuerUrl:        wic.IssuerUrl,
-			AllowedAudiences: wic.AllowedAudiences,
-			SubjectPattern:   wic.SubjectPattern,
-		}
-	}
-
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
 		// Only expose temporary MFA secrets and recovery codes to the user themselves
@@ -815,17 +767,13 @@ func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, erro
 		t = storepb.PrincipalType_END_USER
 	case v1pb.UserType_SYSTEM_BOT:
 		t = storepb.PrincipalType_SYSTEM_BOT
-	case v1pb.UserType_SERVICE_ACCOUNT:
-		t = storepb.PrincipalType_SERVICE_ACCOUNT
-	case v1pb.UserType_WORKLOAD_IDENTITY:
-		t = storepb.PrincipalType_WORKLOAD_IDENTITY
 	default:
 		return t, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user type %s", userType))
 	}
 	return t, nil
 }
 
-func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.LicenseService, stores *store.Store, email string, isServiceAccount bool, checkDomainSetting bool) error {
+func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.LicenseService, stores *store.Store, email string, checkDomainSetting bool) error {
 	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.
@@ -847,10 +795,6 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	// Check if the email is valid.
 	if err := common.ValidateEmail(email); err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid email: %v", err.Error()))
-	}
-	// Domain restrictions are not applied to service account.
-	if isServiceAccount {
-		return nil
 	}
 	// Enforce domain restrictions.
 	if len(allowedDomains) > 0 {

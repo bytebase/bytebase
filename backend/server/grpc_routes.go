@@ -112,6 +112,8 @@ func configureGrpcRouters(
 	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager)
 	subscriptionService := apiv1.NewSubscriptionService(profile, licenseService)
 	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
+	serviceAccountService := apiv1.NewServiceAccountService(stores, iamManager)
+	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, iamManager)
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
 
@@ -212,6 +214,12 @@ func configureGrpcRouters(
 	userPath, userHandler := v1connect.NewUserServiceHandler(userService, handlerOpts)
 	connectHandlers[userPath] = userHandler
 
+	serviceAccountPath, serviceAccountHandler := v1connect.NewServiceAccountServiceHandler(serviceAccountService, handlerOpts)
+	connectHandlers[serviceAccountPath] = serviceAccountHandler
+
+	workloadIdentityPath, workloadIdentityHandler := v1connect.NewWorkloadIdentityServiceHandler(workloadIdentityService, handlerOpts)
+	connectHandlers[workloadIdentityPath] = workloadIdentityHandler
+
 	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService, handlerOpts)
 	connectHandlers[worksheetPath] = worksheetHandler
 
@@ -241,10 +249,12 @@ func configureGrpcRouters(
 		v1connect.RoleServiceName,
 		v1connect.RolloutServiceName,
 		v1connect.SettingServiceName,
+		v1connect.ServiceAccountServiceName,
 		v1connect.SheetServiceName,
 		v1connect.SQLServiceName,
 		v1connect.SubscriptionServiceName,
 		v1connect.UserServiceName,
+		v1connect.WorkloadIdentityServiceName,
 		v1connect.WorksheetServiceName,
 		v1connect.WorkspaceServiceName,
 	)
@@ -340,6 +350,12 @@ func configureGrpcRouters(
 		return err
 	}
 	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterServiceAccountServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
+	if err := v1pb.RegisterWorkloadIdentityServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}
 	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {

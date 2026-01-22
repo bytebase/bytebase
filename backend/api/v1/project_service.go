@@ -1205,13 +1205,15 @@ func validateMember(member string) error {
 	}
 
 	userIdentifierMap := map[string]bool{
-		common.UserBindingPrefix:  true,
-		common.GroupBindingPrefix: true,
+		common.UserBindingPrefix:             true,
+		common.GroupBindingPrefix:            true,
+		common.ServiceAccountBindingPrefix:   true,
+		common.WorkloadIdentityBindingPrefix: true,
 	}
 	for prefix := range userIdentifierMap {
 		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
 			return nil
 		}
 	}
-	return errors.Errorf("invalid user %s", member)
+	return errors.Errorf("invalid member %s", member)
 }

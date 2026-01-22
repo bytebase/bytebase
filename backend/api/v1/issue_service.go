@@ -337,7 +337,7 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid empty creator identifier"))
 	}
-	user, err := s.store.GetUserByEmail(ctx, email)
+	user, err := s.store.GetPrincipalByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf(`failed to find user "%s" with error: %v`, email, err.Error()))
 	}
@@ -489,7 +489,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user email from %q", request.Issue.GrantRequest.User))
 		}
-		grantRequestUser, err := s.store.GetUserByEmail(ctx, grantRequestUserEmail)
+		grantRequestUser, err := s.store.GetEndUserByEmail(ctx, grantRequestUserEmail)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", grantRequestUserEmail))
 		}
@@ -742,7 +742,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	// Get issue creator for webhook event
-	creator, err := s.store.GetUserByEmail(ctx, issue.CreatorEmail)
+	creator, err := s.store.GetPrincipalByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
 		creator = store.SystemBotUser

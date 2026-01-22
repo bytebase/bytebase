@@ -20,11 +20,13 @@ import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_p
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
+import { ServiceAccountService } from "@/types/proto-es/v1/service_account_service_pb";
 import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
 import { UserService } from "@/types/proto-es/v1/user_service_pb";
+import { WorkloadIdentityService } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorksheetService } from "@/types/proto-es/v1/worksheet_service_pb";
 import { WorkspaceService } from "@/types/proto-es/v1/workspace_service_pb";
 
@@ -51,11 +53,13 @@ export const ALL_METHODS_WITH_AUDIT = [
   ReviewConfigService,
   RoleService,
   RolloutService,
+  ServiceAccountService,
   SettingService,
   SheetService,
   SQLService,
   SubscriptionService,
   UserService,
+  WorkloadIdentityService,
   WorksheetService,
   WorkspaceService,
 ]

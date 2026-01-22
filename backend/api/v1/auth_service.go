@@ -201,7 +201,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	}
 
 	// 4. Get user
-	user, err := s.store.GetUserByEmail(ctx, stored.UserEmail)
+	user, err := s.store.GetEndUserByEmail(ctx, stored.UserEmail)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get user"))
 	}
@@ -245,7 +245,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 		return nil, err
 	}
 
-	user, err := s.store.GetUserByEmail(ctx, request.Email)
+	user, err := s.store.GetPrincipalByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", request.Email))
 	}
@@ -365,11 +365,11 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 	}
 	// If the email is still invalid, we will return an error.
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, email, false /* isServiceAccount */, false); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, email, false); err != nil {
 		return nil, err
 	}
 
-	user, err := s.store.GetUserByEmail(ctx, email)
+	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list users by email %s", email))
 	}
@@ -639,7 +639,7 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if err != nil {
 		return nil, err
 	}
-	user, err := s.store.GetUserByEmail(ctx, userEmail)
+	user, err := s.store.GetEndUserByEmail(ctx, userEmail)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
 	}
@@ -701,7 +701,7 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 	}
 
 	// Check domain restriction
-	return validateEmailWithDomains(ctx, s.licenseService, s.store, user.Email, false, false)
+	return validateEmailWithDomains(ctx, s.licenseService, s.store, user.Email, false)
 }
 
 // checkMFARequired checks if MFA is required and returns a response with temp token if so.
@@ -812,28 +812,20 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Find workload identity by email
-	user, err := s.store.GetUserByEmail(ctx, request.Email)
+	wi, err := s.store.GetWorkloadIdentityByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workload identity"))
 	}
-	if user == nil {
+	if wi == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("workload identity %q not found", request.Email))
 	}
-	if user.Type != storepb.PrincipalType_WORKLOAD_IDENTITY {
-		return nil, connect.NewError(connect.CodeInvalidArgument,
-			errors.Errorf("email %q is not a workload identity", request.Email))
-	}
-	if user.MemberDeleted {
+	if wi.MemberDeleted {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))
 	}
 
 	// Get workload identity config
-	if user.Profile == nil {
-		return nil, connect.NewError(connect.CodeInternal,
-			errors.New("workload identity profile not found"))
-	}
-	wicConfig := user.Profile.GetWorkloadIdentityConfig()
+	wicConfig := wi.Config
 	if wicConfig == nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.New("workload identity config not found"))
@@ -846,20 +838,17 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Generate Bytebase API token (1 hour duration, same as service account)
-	token, err := auth.GenerateAPIToken(user.Email, s.secret)
+	token, err := auth.GenerateAPIToken(wi.Email, s.secret)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))
 	}
 
 	// Update last login time
-	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
-		Profile: &storepb.UserProfile{
-			LastLoginTime:          timestamppb.Now(),
-			WorkloadIdentityConfig: wicConfig,
-		},
+	if _, err := s.store.UpdateWorkloadIdentity(ctx, wi, &store.UpdateWorkloadIdentityMessage{
+		LastLoginTime: timestamppb.Now(),
 	}); err != nil {
-		slog.Error("failed to update workload identity profile", log.BBError(err), slog.String("email", user.Email))
+		slog.Error("failed to update workload identity profile", log.BBError(err), slog.String("email", wi.Email))
 	}
 
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{

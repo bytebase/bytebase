@@ -59,8 +59,10 @@ const (
 	MetadataSuffix  = "/metadata"
 	CatalogSuffix   = "/catalog"
 
-	UserBindingPrefix  = "user:"
-	GroupBindingPrefix = "group:"
+	UserBindingPrefix             = "user:"
+	GroupBindingPrefix            = "group:"
+	ServiceAccountBindingPrefix   = "serviceAccount:"
+	WorkloadIdentityBindingPrefix = "workloadIdentity:"
 )
 
 // GetProjectID returns the project ID from a resource name.

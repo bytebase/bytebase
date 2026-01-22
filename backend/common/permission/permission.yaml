@@ -92,6 +92,12 @@ permissions:
   - bb.rollouts.create
   - bb.rollouts.get
   - bb.rollouts.list
+  - bb.serviceAccounts.create
+  - bb.serviceAccounts.delete
+  - bb.serviceAccounts.get
+  - bb.serviceAccounts.list
+  - bb.serviceAccounts.undelete
+  - bb.serviceAccounts.update
   - bb.settings.get
   - bb.settings.getEnvironment
   - bb.settings.getWorkspaceProfile
@@ -119,5 +125,11 @@ permissions:
   - bb.users.updateEmail
   - bb.worksheets.get
   - bb.worksheets.manage
+  - bb.workloadIdentities.create
+  - bb.workloadIdentities.delete
+  - bb.workloadIdentities.get
+  - bb.workloadIdentities.list
+  - bb.workloadIdentities.undelete
+  - bb.workloadIdentities.update
   - bb.workspaces.getIamPolicy
   - bb.workspaces.setIamPolicy

@@ -38,7 +38,7 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Level {
 }
 
 func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
-	creator, err := s.store.GetUserByEmail(ctx, history.Creator)
+	creator, err := s.store.GetPrincipalByEmail(ctx, history.Creator)
 	if err != nil {
 		return nil, err
 	}
