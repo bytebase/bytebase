@@ -21,18 +21,18 @@ type BuiltinApprovalFlowDefinition = {
 const BUILTIN_FLOW_DEFINITIONS: readonly BuiltinApprovalFlowDefinition[] = [
   {
     id: "bb.project-owner",
-        description: t("custom-approval.approval-flow-builtin.project-owner"),
+    description: t("custom-approval.approval-flow-builtin.project-owner"),
     roles: [PresetRoleType.PROJECT_OWNER],
   },
   {
     id: "bb.workspace-dba",
-       description: t("custom-approval.approval-flow-builtin.workspace-dba"),
+    description: t("custom-approval.approval-flow-builtin.workspace-dba"),
 
     roles: [PresetRoleType.WORKSPACE_DBA],
   },
   {
     id: "bb.workspace-admin",
-        description: t("custom-approval.approval-flow-builtin.workspace-admin"),
+    description: t("custom-approval.approval-flow-builtin.workspace-admin"),
 
     roles: [PresetRoleType.WORKSPACE_ADMIN],
   },
