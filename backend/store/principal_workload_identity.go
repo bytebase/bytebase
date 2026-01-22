@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -24,9 +25,9 @@ type WorkloadIdentityMessage struct {
 	Project *string
 	// Config is the workload identity configuration.
 	Config *storepb.WorkloadIdentityConfig
+	// LastLoginTime is the last login time of the workload identity.
+	LastLoginTime *timestamppb.Timestamp
 }
-
-// FindWorkloadIdentityMessage is the message for finding workload identities.
 type FindWorkloadIdentityMessage struct {
 	ID          *int
 	Email       *string
@@ -50,9 +51,10 @@ type CreateWorkloadIdentityMessage struct {
 
 // UpdateWorkloadIdentityMessage is the message to update a workload identity.
 type UpdateWorkloadIdentityMessage struct {
-	Name   *string
-	Delete *bool
-	Config *storepb.WorkloadIdentityConfig
+	Name          *string
+	Delete        *bool
+	Config        *storepb.WorkloadIdentityConfig
+	LastLoginTime *timestamppb.Timestamp
 }
 
 // GetWorkloadIdentityByEmail gets a workload identity by email.
@@ -143,6 +145,7 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 			return nil, err
 		}
 		wi.Config = profile.WorkloadIdentityConfig
+		wi.LastLoginTime = profile.LastLoginTime
 		wis = append(wis, &wi)
 	}
 	if err := rows.Err(); err != nil {
@@ -208,9 +211,17 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 	}
 	// Config update requires updating the profile JSON
 	updateConfig := patch.Config != nil
-	if updateConfig {
+	updateLastLoginTime := patch.LastLoginTime != nil
+	if updateConfig || updateLastLoginTime {
 		profile := &storepb.UserProfile{
-			WorkloadIdentityConfig: patch.Config,
+			WorkloadIdentityConfig: wi.Config,
+			LastLoginTime:          wi.LastLoginTime,
+		}
+		if updateConfig {
+			profile.WorkloadIdentityConfig = patch.Config
+		}
+		if updateLastLoginTime {
+			profile.LastLoginTime = patch.LastLoginTime
 		}
 		profileBytes, err := protojson.Marshal(profile)
 		if err != nil {
@@ -252,6 +263,7 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 		return nil, err
 	}
 	updated.Config = profile.WorkloadIdentityConfig
+	updated.LastLoginTime = profile.LastLoginTime
 
 	// Also update the unified cache if this WI is in there
 	s.userEmailCache.Remove(wi.Email)

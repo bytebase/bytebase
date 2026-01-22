@@ -182,7 +182,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	// Set issue information if available
 	if issue != nil {
 		creatorName := issue.Title // Fallback
-		creatorUser, err := m.store.GetUserByEmail(ctx, actor.Email)
+		creatorUser, err := m.store.GetPrincipalByEmail(ctx, actor.Email)
 		if err != nil {
 			slog.Warn("failed to get creator user for webhook context",
 				slog.String("issue_title", issue.Title),

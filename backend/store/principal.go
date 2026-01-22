@@ -81,20 +81,6 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	return users[0], nil
 }
 
-// GetUserByEmail gets the user by email.
-func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	if v, ok := s.userEmailCache.Get(email); ok && s.enableCache {
-		return v, nil
-	}
-
-	if err := s.listAndCacheAllUsers(ctx); err != nil {
-		return nil, err
-	}
-
-	user, _ := s.userEmailCache.Get(email)
-	return user, nil
-}
-
 // GetPrincipalByEmail gets any principal (user, service account, or workload identity) by email.
 // This is used by the auth layer where the JWT subject can be any principal type.
 // It determines the principal type by the email format and calls the appropriate method.
@@ -151,6 +137,20 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 
 	// Default to end user
 	return s.GetUserByEmail(ctx, email)
+}
+
+// GetUserByEmail gets the user by email.
+func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
+	if v, ok := s.userEmailCache.Get(email); ok && s.enableCache {
+		return v, nil
+	}
+
+	if err := s.listAndCacheAllUsers(ctx); err != nil {
+		return nil, err
+	}
+
+	user, _ := s.userEmailCache.Get(email)
+	return user, nil
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {

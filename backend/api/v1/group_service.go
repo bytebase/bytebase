@@ -126,7 +126,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, groupMessage.Email, false /* isServiceAccount */, true); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, groupMessage.Email, true); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", groupMessage.Email))
 	}
 
@@ -283,7 +283,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get member email"))
 		}
-		user, err := s.store.GetUserByEmail(ctx, email)
+		user, err := s.store.GetEndUserByEmail(ctx, email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get member %s", member.Member))
 		}

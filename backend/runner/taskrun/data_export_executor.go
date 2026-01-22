@@ -92,7 +92,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	statement := sheet.Statement
 
 	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
-	creatorUser, err := exec.store.GetUserByEmail(ctx, issue.CreatorEmail)
+	creatorUser, err := exec.store.GetPrincipalByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
 	}
