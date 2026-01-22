@@ -12,10 +12,10 @@ importers:
     dependencies:
       '@buf/googleapis_googleapis.bufbuild_es':
         specifier: 2.10.2-20251126203132-004180b77378.1
-        version: 2.10.2-20251126203132-004180b77378.1(@bufbuild/protobuf@2.10.2)
+        version: 2.10.2-20251126203132-004180b77378.1(@bufbuild/protobuf@2.11.0)
       '@bufbuild/protobuf':
-        specifier: 2.10.2
-        version: 2.10.2
+        specifier: 2.11.0
+        version: 2.11.0
       '@codingame/monaco-vscode-api':
         specifier: 21.6.0
         version: 21.6.0
@@ -39,10 +39,10 @@ importers:
         version: 21.6.0
       '@connectrpc/connect':
         specifier: ^2.1.1
-        version: 2.1.1(@bufbuild/protobuf@2.10.2)
+        version: 2.1.1(@bufbuild/protobuf@2.11.0)
       '@connectrpc/connect-web':
         specifier: ^2.1.1
-        version: 2.1.1(@bufbuild/protobuf@2.10.2)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))
+        version: 2.1.1(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0))
       '@markdoc/markdoc':
         specifier: 0.5.4
         version: 0.5.4
@@ -963,8 +963,8 @@ packages:
     peerDependencies:
       '@bufbuild/protobuf': ^2.10.2
 
-  '@bufbuild/protobuf@2.10.2':
-    resolution: {integrity: sha512-uFsRXwIGyu+r6AMdz+XijIIZJYpoWeYzILt5yZ2d3mCjQrWUTVpVD9WL/jZAbvp+Ed04rOhrsk7FiTcEDseB5A==}
+  '@bufbuild/protobuf@2.11.0':
+    resolution: {integrity: sha512-sBXGT13cpmPR5BMgHE6UEEfEaShh5Ror6rfN3yEK5si7QVrtZg8LEPQb0VVhiLRUslD2yLnXtnRzG035J/mZXQ==}
 
   '@code-inspector/core@1.3.6':
     resolution: {integrity: sha512-bSxf/PWDPY6rv9EFf0mJvTnLnz3927PPrpX6BmQcRKQab+Ez95yRqrVZY8IcBUpaqA/k3etA5rZ1qkN0V4ERtw==}
@@ -1199,9 +1199,6 @@ packages:
 
   '@codingame/monaco-vscode-extension-api@21.6.0':
     resolution: {integrity: sha512-oslSpuCAZKS88hPx76Cickqd9/z5M1koUkx8UOqnfVIFAemnMHkZWWC4bOa/Q7wFZBy+1qB0/OuhrIBtycj5vA==}
-
-  '@codingame/monaco-vscode-extension-api@25.0.0':
-    resolution: {integrity: sha512-zY4S0Gp+lF/VwGn6UNkSo1TsfeXndbxPTAGCAlttvgnQV6FCLI/L3AedNv2RVVON/vxvamSoQR39A6hZzSw0SA==}
 
   '@codingame/monaco-vscode-extension-api@25.0.1':
     resolution: {integrity: sha512-mVO+B/DK4QWvUaL5xpkCRn5U2FM4eanIwAnsdm4/42ghq8jwH/uu2zp/7QIriMcXhO+1bVJWPx43WkXYhwjMfg==}
@@ -5862,11 +5859,11 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.11':
     optional: true
 
-  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20251126203132-004180b77378.1(@bufbuild/protobuf@2.10.2)':
+  '@buf/googleapis_googleapis.bufbuild_es@2.10.2-20251126203132-004180b77378.1(@bufbuild/protobuf@2.11.0)':
     dependencies:
-      '@bufbuild/protobuf': 2.10.2
+      '@bufbuild/protobuf': 2.11.0
 
-  '@bufbuild/protobuf@2.10.2': {}
+  '@bufbuild/protobuf@2.11.0': {}
 
   '@code-inspector/core@1.3.6':
     dependencies:
@@ -6289,11 +6286,6 @@ snapshots:
       '@codingame/monaco-vscode-api': 21.6.0
       '@codingame/monaco-vscode-extensions-service-override': 21.6.0
 
-  '@codingame/monaco-vscode-extension-api@25.0.0':
-    dependencies:
-      '@codingame/monaco-vscode-api': 25.0.0
-      '@codingame/monaco-vscode-extensions-service-override': 25.0.0
-
   '@codingame/monaco-vscode-extension-api@25.0.1':
     dependencies:
       '@codingame/monaco-vscode-api': 25.0.1
@@ -6583,14 +6575,14 @@ snapshots:
       '@codingame/monaco-vscode-view-status-bar-service-override': 25.0.0
       '@codingame/monaco-vscode-view-title-bar-service-override': 25.0.0
 
-  '@connectrpc/connect-web@2.1.1(@bufbuild/protobuf@2.10.2)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))':
+  '@connectrpc/connect-web@2.1.1(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0))':
     dependencies:
-      '@bufbuild/protobuf': 2.10.2
-      '@connectrpc/connect': 2.1.1(@bufbuild/protobuf@2.10.2)
+      '@bufbuild/protobuf': 2.11.0
+      '@connectrpc/connect': 2.1.1(@bufbuild/protobuf@2.11.0)
 
-  '@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2)':
+  '@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0)':
     dependencies:
-      '@bufbuild/protobuf': 2.10.2
+      '@bufbuild/protobuf': 2.11.0
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -9368,12 +9360,12 @@ snapshots:
 
   monaco-languageclient@10.6.0:
     dependencies:
-      '@codingame/monaco-vscode-api': 25.0.0
+      '@codingame/monaco-vscode-api': 25.0.1
       '@codingame/monaco-vscode-configuration-service-override': 25.0.0
       '@codingame/monaco-vscode-editor-api': 25.0.0
       '@codingame/monaco-vscode-editor-service-override': 25.0.0
-      '@codingame/monaco-vscode-extension-api': 25.0.0
-      '@codingame/monaco-vscode-extensions-service-override': 25.0.0
+      '@codingame/monaco-vscode-extension-api': 25.0.1
+      '@codingame/monaco-vscode-extensions-service-override': 25.0.1
       '@codingame/monaco-vscode-language-pack-cs': 25.0.0
       '@codingame/monaco-vscode-language-pack-de': 25.0.0
       '@codingame/monaco-vscode-language-pack-es': 25.0.0
