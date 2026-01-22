@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "Upload SQL",
     "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
+    "options-disabled-due-to-oversize": "Options are disabled because the SQL is oversized.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "transaction-mode": {

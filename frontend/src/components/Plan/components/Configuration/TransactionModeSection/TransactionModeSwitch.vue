@@ -1,13 +1,18 @@
 <template>
-  <NSwitch
-    v-model:value="isTransactionOn"
-    size="small"
-    :disabled="!allowChange"
-  />
+  <NTooltip :disabled="!isSheetOversize">
+    <template #trigger>
+      <NSwitch
+        v-model:value="isTransactionOn"
+        size="small"
+        :disabled="!allowChange || isSheetOversize"
+      />
+    </template>
+    {{ $t("issue.options-disabled-due-to-oversize") }}
+  </NTooltip>
 </template>
 
 <script setup lang="tsx">
-import { NSwitch } from "naive-ui";
+import { NSwitch, NTooltip } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   updateSpecSheetWithStatement,
@@ -25,7 +30,8 @@ import { useTransactionModeSettingContext } from "./context";
 const { allowChange, transactionMode, events } =
   useTransactionModeSettingContext();
 const { selectedSpec } = useSelectedSpec();
-const { sheetStatement, sheet, sheetReady } = useSpecSheet(selectedSpec);
+const { sheetStatement, sheet, sheetReady, isSheetOversize } =
+  useSpecSheet(selectedSpec);
 const { plan, isCreating } = usePlanContext();
 
 // Flag to prevent circular updates

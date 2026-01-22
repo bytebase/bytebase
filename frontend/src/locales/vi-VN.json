@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "Tải lên SQL",
     "statement-from-sheet-warning": "Do kích thước SQL vượt quá, nó đã bị cắt bớt để hiển thị và chỉnh sửa bị vô hiệu hóa. Bạn có thể tải lên một tệp SQL mới để ghi đè nó.",
+    "options-disabled-due-to-oversize": "Các tùy chọn bị vô hiệu hóa vì SQL quá lớn.",
     "overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
     "upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
     "transaction-mode": {

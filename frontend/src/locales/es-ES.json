@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "Cargar SQL",
     "statement-from-sheet-warning": "Debido a que el SQL es demasiado grande, se ha truncado para mostrarlo y la edición está deshabilitada. Puede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
     "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "transaction-mode": {
