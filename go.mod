@@ -393,7 +393,7 @@ replace (
 
 	github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
 
-	github.com/pingcap/tidb => github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b
+	github.com/pingcap/tidb => github.com/bytebase/tidb v1.0.9
 
 	github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b
 
