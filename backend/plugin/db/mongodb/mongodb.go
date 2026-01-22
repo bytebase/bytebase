@@ -257,7 +257,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if d.client != nil {
 		gmClient := gomongo.NewClient(d.client)
 		var gmResult *gomongo.Result
-		gmResult, gomongoErr = gmClient.Execute(ctx, d.databaseName, statement)
+		var opts []gomongo.ExecuteOption
+		if queryContext.Limit > 0 {
+			opts = append(opts, gomongo.WithMaxRows(int64(queryContext.Limit)))
+		}
+		gmResult, gomongoErr = gmClient.Execute(ctx, d.databaseName, statement, opts...)
 		if gomongoErr == nil {
 			return d.convertGomongoResult(gmResult, statement, startTime), nil
 		}
