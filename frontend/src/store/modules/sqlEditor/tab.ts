@@ -1,7 +1,6 @@
-import type { MaybeRef } from "@vueuse/core";
 import { cloneDeep, head, isUndefined, omitBy, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, reactive, unref, watch } from "vue";
+import { computed, type MaybeRef, reactive, unref, watch } from "vue";
 import type {
   BatchQueryContext,
   SQLEditorConnection,
