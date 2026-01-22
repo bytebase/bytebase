@@ -23,6 +23,8 @@ import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service
 import {
   CreateServiceAccountRequestSchema,
   DeleteServiceAccountRequestSchema,
+  GetServiceAccountRequestSchema,
+  ListServiceAccountsRequestSchema,
   ServiceAccountSchema,
   UndeleteServiceAccountRequestSchema,
   UpdateServiceAccountRequestSchema,
@@ -46,6 +48,8 @@ import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_ser
 import {
   CreateWorkloadIdentityRequestSchema,
   DeleteWorkloadIdentityRequestSchema,
+  GetWorkloadIdentityRequestSchema,
+  ListWorkloadIdentitiesRequestSchema,
   UndeleteWorkloadIdentityRequestSchema,
   UpdateWorkloadIdentityRequestSchema,
   WorkloadIdentitySchema,
@@ -147,23 +151,125 @@ export const useUserStore = defineStore("user", () => {
         nextPageToken: "",
       };
     }
-    const request = create(ListUsersRequestSchema, {
-      pageSize: params.pageSize,
-      pageToken: params.pageToken,
-      filter: getListUserFilter(params.filter ?? {}),
-      showDeleted: params.filter?.state === State.DELETED ? true : false,
-    });
-    const response = await userServiceClientConnect.listUsers(request);
-    for (const user of response.users) {
-      setUser(user);
+
+    const requestedTypes = params.filter?.types ?? [
+      UserType.USER,
+      UserType.SERVICE_ACCOUNT,
+      UserType.WORKLOAD_IDENTITY,
+      UserType.SYSTEM_BOT,
+    ];
+    const showDeleted = params.filter?.state === State.DELETED;
+    const allUsers: User[] = [];
+
+    const needsUserService = requestedTypes.some(
+      (t) => t === UserType.USER || t === UserType.SYSTEM_BOT
+    );
+    const needsServiceAccountService = requestedTypes.includes(
+      UserType.SERVICE_ACCOUNT
+    );
+    const needsWorkloadIdentityService = requestedTypes.includes(
+      UserType.WORKLOAD_IDENTITY
+    );
+
+    const promises: Promise<void>[] = [];
+
+    if (needsUserService) {
+      const userPromise = (async () => {
+        const request = create(ListUsersRequestSchema, {
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+          filter: getListUserFilter(params.filter ?? {}),
+          showDeleted,
+        });
+        const response = await userServiceClientConnect.listUsers(request);
+        for (const user of response.users) {
+          setUser(user);
+          allUsers.push(user);
+        }
+      })();
+      promises.push(userPromise);
     }
+
+    if (needsServiceAccountService) {
+      const saPromise = (async () => {
+        const request = create(ListServiceAccountsRequestSchema, {
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+          showDeleted,
+        });
+        const response =
+          await serviceAccountServiceClientConnect.listServiceAccounts(request);
+        for (const sa of response.serviceAccounts) {
+          const user = serviceAccountToUser(sa);
+          setUser(user);
+          allUsers.push(user);
+        }
+      })();
+      promises.push(saPromise);
+    }
+
+    if (needsWorkloadIdentityService) {
+      const wiPromise = (async () => {
+        const request = create(ListWorkloadIdentitiesRequestSchema, {
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+          showDeleted,
+        });
+        const response =
+          await workloadIdentityServiceClientConnect.listWorkloadIdentities(
+            request
+          );
+        for (const wi of response.workloadIdentities) {
+          const user = workloadIdentityToUser(wi);
+          setUser(user);
+          allUsers.push(user);
+        }
+      })();
+      promises.push(wiPromise);
+    }
+
+    await Promise.all(promises);
+
     return {
-      users: response.users,
-      nextPageToken: response.nextPageToken,
+      users: allUsers,
+      nextPageToken: "",
     };
   };
 
   const fetchUser = async (name: string, silent = false) => {
+    const email = extractUserId(name);
+
+    if (
+      email.endsWith("@service.bytebase.com") ||
+      email.includes(".service.bytebase.com")
+    ) {
+      const request = create(GetServiceAccountRequestSchema, {
+        name: `serviceAccounts/${email}`,
+      });
+      const response =
+        await serviceAccountServiceClientConnect.getServiceAccount(request, {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        });
+      return setUser(serviceAccountToUser(response));
+    }
+
+    if (
+      email.endsWith("@workload.bytebase.com") ||
+      email.includes(".workload.bytebase.com")
+    ) {
+      const request = create(GetWorkloadIdentityRequestSchema, {
+        name: `workloadIdentities/${email}`,
+      });
+      const response =
+        await workloadIdentityServiceClientConnect.getWorkloadIdentity(
+          request,
+          {
+            contextValues: createContextValues().set(silentContextKey, silent),
+          }
+        );
+      return setUser(workloadIdentityToUser(response));
+    }
+
     const request = create(GetUserRequestSchema, {
       name,
     });
@@ -359,16 +465,97 @@ export const useUserStore = defineStore("user", () => {
       );
     }
 
-    try {
-      const request = create(BatchGetUsersRequestSchema, {
-        names: pendingFetch,
-      });
-      const response = await userServiceClientConnect.batchGetUsers(request, {
-        contextValues: createContextValues().set(silentContextKey, true),
-      });
-      for (const user of response.users) {
-        setUser(user);
+    const regularUsers: string[] = [];
+    const serviceAccountEmails: string[] = [];
+    const workloadIdentityEmails: string[] = [];
+
+    for (const name of pendingFetch) {
+      const email = extractUserId(name);
+      if (
+        email.endsWith("@service.bytebase.com") ||
+        email.includes(".service.bytebase.com")
+      ) {
+        serviceAccountEmails.push(email);
+      } else if (
+        email.endsWith("@workload.bytebase.com") ||
+        email.includes(".workload.bytebase.com")
+      ) {
+        workloadIdentityEmails.push(email);
+      } else {
+        regularUsers.push(name);
       }
+    }
+
+    try {
+      const promises: Promise<void>[] = [];
+
+      if (regularUsers.length > 0) {
+        const userPromise = (async () => {
+          const request = create(BatchGetUsersRequestSchema, {
+            names: regularUsers,
+          });
+          const response = await userServiceClientConnect.batchGetUsers(
+            request,
+            {
+              contextValues: createContextValues().set(silentContextKey, true),
+            }
+          );
+          for (const user of response.users) {
+            setUser(user);
+          }
+        })();
+        promises.push(userPromise);
+      }
+
+      for (const email of serviceAccountEmails) {
+        const saPromise = (async () => {
+          try {
+            const request = create(GetServiceAccountRequestSchema, {
+              name: `serviceAccounts/${email}`,
+            });
+            const response =
+              await serviceAccountServiceClientConnect.getServiceAccount(
+                request,
+                {
+                  contextValues: createContextValues().set(
+                    silentContextKey,
+                    true
+                  ),
+                }
+              );
+            setUser(serviceAccountToUser(response));
+          } catch {
+            // Ignore errors for individual fetches
+          }
+        })();
+        promises.push(saPromise);
+      }
+
+      for (const email of workloadIdentityEmails) {
+        const wiPromise = (async () => {
+          try {
+            const request = create(GetWorkloadIdentityRequestSchema, {
+              name: `workloadIdentities/${email}`,
+            });
+            const response =
+              await workloadIdentityServiceClientConnect.getWorkloadIdentity(
+                request,
+                {
+                  contextValues: createContextValues().set(
+                    silentContextKey,
+                    true
+                  ),
+                }
+              );
+            setUser(workloadIdentityToUser(response));
+          } catch {
+            // Ignore errors for individual fetches
+          }
+        })();
+        promises.push(wiPromise);
+      }
+
+      await Promise.all(promises);
     } finally {
       return validList.map(
         (name) => getUserByIdentifier(name) ?? unknownUser(name)

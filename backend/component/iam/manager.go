@@ -99,7 +99,7 @@ func (m *Manager) GetUserGroups(ctx context.Context, email string) ([]string, er
 }
 
 func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool) bool {
-	userName := common.FormatUserEmail(user.Email)
+	userName := formatUserNameByType(user)
 
 	for _, binding := range policy.GetBindings() {
 		permissions := getPermissions(binding.GetRole())
@@ -126,4 +126,19 @@ func check(user *store.UserMessage, p permission.Permission, policy *storepb.Iam
 		}
 	}
 	return false
+}
+
+// formatUserNameByType returns the appropriate member name format based on user type.
+// For regular users: users/{email}
+// For service accounts: serviceAccounts/{email}
+// For workload identities: workloadIdentities/{email}
+func formatUserNameByType(user *store.UserMessage) string {
+	switch user.Type {
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
+		return common.FormatServiceAccountEmail(user.Email)
+	case storepb.PrincipalType_WORKLOAD_IDENTITY:
+		return common.FormatWorkloadIdentityEmail(user.Email)
+	default:
+		return common.FormatUserEmail(user.Email)
+	}
 }

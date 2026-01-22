@@ -182,7 +182,7 @@ func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier, p
 
 // GetUserIAMPolicyBindings return the valid bindings for the user.
 func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policies ...*storepb.IamPolicy) []*storepb.Binding {
-	userEmailFullName := common.FormatUserEmail(user.Email)
+	userMemberName := formatMemberNameByType(user)
 
 	var bindings []*storepb.Binding
 
@@ -198,7 +198,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 					hasUser = true
 					break
 				}
-				if userEmailFullName == member {
+				if userMemberName == member {
 					hasUser = true
 					break
 				}
@@ -213,7 +213,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 						continue
 					}
 					for _, member := range group.Payload.Members {
-						if userEmailFullName == member.Member {
+						if userMemberName == member.Member {
 							hasUser = true
 							break
 						}
@@ -231,8 +231,8 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 	return bindings
 }
 
-// MemberContainsUser checks if a member (user or group) contains the specified user.
-// The member should be in users/{email} or groups/{email} format.
+// MemberContainsUser checks if a member (user, service account, workload identity, or group) contains the specified user.
+// The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
 func MemberContainsUser(ctx context.Context, stores *store.Store, member string, user *store.UserMessage) bool {
 	if member == common.AllUsers {
 		return true
@@ -243,6 +243,26 @@ func MemberContainsUser(ctx context.Context, stores *store.Store, member string,
 		memberEmail, err := common.GetUserEmail(member)
 		if err != nil {
 			slog.Error("failed to parse user email", slog.String("member", member), log.BBError(err))
+			return false
+		}
+		return memberEmail == user.Email
+	}
+
+	// Check if member is a service account
+	if strings.HasPrefix(member, common.ServiceAccountNamePrefix) {
+		memberEmail, err := common.GetServiceAccountEmail(member)
+		if err != nil {
+			slog.Error("failed to parse service account email", slog.String("member", member), log.BBError(err))
+			return false
+		}
+		return memberEmail == user.Email
+	}
+
+	// Check if member is a workload identity
+	if strings.HasPrefix(member, common.WorkloadIdentityNamePrefix) {
+		memberEmail, err := common.GetWorkloadIdentityEmail(member)
+		if err != nil {
+			slog.Error("failed to parse workload identity email", slog.String("member", member), log.BBError(err))
 			return false
 		}
 		return memberEmail == user.Email
@@ -259,9 +279,9 @@ func MemberContainsUser(ctx context.Context, stores *store.Store, member string,
 			slog.Error("cannot find group", slog.String("group", member))
 			return false
 		}
-		userEmailFullName := common.FormatUserEmail(user.Email)
+		userMemberName := formatMemberNameByType(user)
 		for _, groupMember := range group.Payload.Members {
-			if userEmailFullName == groupMember.Member {
+			if userMemberName == groupMember.Member {
 				return true
 			}
 		}

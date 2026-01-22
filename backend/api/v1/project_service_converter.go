@@ -144,6 +144,10 @@ func convertToV1MemberInBinding(member string) string {
 		return common.UserBindingPrefix + strings.TrimPrefix(member, common.UserNamePrefix)
 	} else if strings.HasPrefix(member, common.GroupPrefix) {
 		return common.GroupBindingPrefix + strings.TrimPrefix(member, common.GroupPrefix)
+	} else if strings.HasPrefix(member, common.ServiceAccountNamePrefix) {
+		return common.ServiceAccountBindingPrefix + strings.TrimPrefix(member, common.ServiceAccountNamePrefix)
+	} else if strings.HasPrefix(member, common.WorkloadIdentityNamePrefix) {
+		return common.WorkloadIdentityBindingPrefix + strings.TrimPrefix(member, common.WorkloadIdentityNamePrefix)
 	}
 	// handle allUsers.
 	return member
@@ -235,10 +239,16 @@ func convertToStoreIamPolicyMember(member string) (string, error) {
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
 		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
 		return common.FormatGroupEmail(email), nil
+	} else if strings.HasPrefix(member, common.ServiceAccountBindingPrefix) {
+		email := strings.TrimPrefix(member, common.ServiceAccountBindingPrefix)
+		return common.FormatServiceAccountEmail(email), nil
+	} else if strings.HasPrefix(member, common.WorkloadIdentityBindingPrefix) {
+		email := strings.TrimPrefix(member, common.WorkloadIdentityBindingPrefix)
+		return common.FormatWorkloadIdentityEmail(email), nil
 	} else if member == common.AllUsers {
 		return member, nil
 	}
-	return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport member %s", member))
+	return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported member %s", member))
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {

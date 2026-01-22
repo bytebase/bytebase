@@ -55,6 +55,18 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+
+	// Special case for SYSTEM_BOT user which is a built-in resource.
+	// SYSTEM_BOT is stored in principal table with type='SYSTEM_BOT', but GetEndUserByEmail
+	// only queries END_USER type. We use the static SystemBotUser here to avoid mixing user types.
+	if email == common.SystemBotEmail {
+		v1User, err := convertToUser(ctx, s.iamManager, store.SystemBotUser)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+		}
+		return connect.NewResponse(v1User), nil
+	}
+
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))

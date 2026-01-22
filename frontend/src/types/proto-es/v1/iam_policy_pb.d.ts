@@ -116,6 +116,8 @@ export declare type Binding = Message<"bytebase.v1.Binding"> & {
    * Specifies the principals requesting access for a Bytebase resource.
    * For users, the member should be: user:{email}
    * For groups, the member should be: group:{email}
+   * For service accounts, the member should be: serviceAccount:{email}
+   * For workload identities, the member should be: workloadIdentity:{email}
    *
    * @generated from field: repeated string members = 2;
    */
