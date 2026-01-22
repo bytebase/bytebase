@@ -1,6 +1,5 @@
-import type { MaybeRef } from "@vueuse/core";
 import { useEventListener } from "@vueuse/core";
-import { ref, unref } from "vue";
+import { type MaybeRef, ref, unref } from "vue";
 import type { Point } from "../types";
 
 export type DraggableOptions = {
