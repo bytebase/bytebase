@@ -55,7 +55,7 @@ const props = withDefaults(
     multiple?: boolean;
     suffix?: string;
     includeWorkspaceRoles?: boolean;
-    filter?: (role: string) => boolean;
+    filter?: (role: Role) => boolean;
   }>(),
   {
     clearable: true,
@@ -76,7 +76,7 @@ const showFeatureModal = ref(false);
 const hasCustomRoleFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_ROLES);
 const hasPermission = computed(() => hasWorkspacePermissionV2("bb.roles.list"));
 
-const filterRole = (role: string) => {
+const filterRole = (role: Role) => {
   if (!props.filter) {
     return true;
   }
@@ -93,7 +93,7 @@ const availableRoleOptions = computed(
         key: "workspace-roles",
         label: t("role.workspace-roles.self"),
         children: PRESET_WORKSPACE_ROLES.map(roleStore.getRoleByName)
-          .filter((role) => role && filterRole(role.name))
+          .filter((role) => role && filterRole(role))
           .map<RoleSelectOption>((role) => ({
             label: displayRoleTitle(role!.name),
             value: role!.name,
@@ -107,7 +107,7 @@ const availableRoleOptions = computed(
       key: "project-roles",
       label: t("role.project-roles.self") + props.suffix,
       children: PRESET_PROJECT_ROLES.map(roleStore.getRoleByName)
-        .filter((role) => role && filterRole(role.name))
+        .filter((role) => role && filterRole(role))
         .map<RoleSelectOption>((role) => ({
           label: displayRoleTitle(role!.name),
           value: role!.name,
@@ -116,7 +116,7 @@ const availableRoleOptions = computed(
     });
 
     const customRoles = roleStore.roleList.filter(
-      (role) => !PRESET_ROLES.includes(role.name) && filterRole(role.name)
+      (role) => !PRESET_ROLES.includes(role.name) && filterRole(role)
     );
     if (customRoles.length > 0) {
       roleGroups.push({
