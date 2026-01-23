@@ -55,6 +55,9 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
 
 	// Special case for SYSTEM_BOT user which is a built-in resource.
 	// SYSTEM_BOT is stored in principal table with type='SYSTEM_BOT', but GetEndUserByEmail
@@ -119,21 +122,19 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	}
 	limitPlusOne := offset.limit + 1
 
-	endUserType := storepb.PrincipalType_END_USER
 	find := &store.FindUserMessage{
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
-		Type:        &endUserType,
 	}
 	filterResult, err := store.GetListUserFilter(request.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if filterResult != nil {
-		find.FilterQ = filterResult.Query
-		find.ProjectID = filterResult.ProjectID
-	}
+	find.FilterQ = filterResult.Query
+	find.ProjectID = filterResult.ProjectID
+	find.UserTypes = &filterResult.UserTypes
+
 	if v := find.ProjectID; v != nil {
 		user, ok := GetUserFromContext(ctx)
 		if !ok {
@@ -342,6 +343,9 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
@@ -531,6 +535,9 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
@@ -623,6 +630,9 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	email, err := common.GetUserEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
 	}
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
@@ -773,7 +783,20 @@ func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, erro
 	return t, nil
 }
 
+func validateEndUserEmail(email string) error {
+	if common.IsServiceAccountEmail(email) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email for end users cannot end with %v", common.ServiceAccountSuffix))
+	}
+	if common.IsWorkloadIdentityEmail(email) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email for end users cannot end with %v", common.WorkloadIdentitySuffix))
+	}
+	return nil
+}
+
 func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.LicenseService, stores *store.Store, email string, checkDomainSetting bool) error {
+	if err := validateEndUserEmail(email); err != nil {
+		return err
+	}
 	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.

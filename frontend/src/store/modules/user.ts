@@ -227,7 +227,13 @@ export const useUserStore = defineStore("user", () => {
       user: user,
     });
     const response = await userServiceClientConnect.createUser(request);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.USER,
+      },
+    ]);
     return setUser(response);
   };
 
@@ -267,7 +273,18 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     await userServiceClientConnect.deleteUser(request);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: -1,
+        state: State.ACTIVE,
+        userType: UserType.USER,
+      },
+      {
+        count: 1,
+        state: State.DELETED,
+        userType: UserType.USER,
+      },
+    ]);
 
     const user = userMapByName.value.get(name);
     if (user) {
@@ -280,7 +297,18 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     const response = await userServiceClientConnect.undeleteUser(request);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.USER,
+      },
+      {
+        count: -1,
+        state: State.DELETED,
+        userType: UserType.USER,
+      },
+    ]);
     return setUser(response);
   };
 
@@ -302,80 +330,18 @@ export const useUserStore = defineStore("user", () => {
       );
     }
 
-    const regularUsers: string[] = [];
-    const serviceAccountEmails: string[] = [];
-    const workloadIdentityEmails: string[] = [];
-
-    for (const name of pendingFetch) {
-      const email = extractUserId(name);
-      if (
-        email.endsWith("@service.bytebase.com") ||
-        email.includes(".service.bytebase.com")
-      ) {
-        serviceAccountEmails.push(email);
-      } else if (
-        email.endsWith("@workload.bytebase.com") ||
-        email.includes(".workload.bytebase.com")
-      ) {
-        workloadIdentityEmails.push(email);
-      } else {
-        regularUsers.push(name);
-      }
-    }
-
     try {
-      const promises: Promise<void>[] = [];
-
-      if (regularUsers.length > 0) {
-        const userPromise = (async () => {
-          const request = create(BatchGetUsersRequestSchema, {
-            names: regularUsers,
-          });
-          const response = await userServiceClientConnect.batchGetUsers(
-            request,
-            {
-              contextValues: createContextValues().set(silentContextKey, true),
-            }
-          );
-          for (const user of response.users) {
-            setUser(user);
-          }
-        })();
-        promises.push(userPromise);
+      if (pendingFetch.length > 0) {
+        const request = create(BatchGetUsersRequestSchema, {
+          names: pendingFetch,
+        });
+        const response = await userServiceClientConnect.batchGetUsers(request, {
+          contextValues: createContextValues().set(silentContextKey, true),
+        });
+        for (const user of response.users) {
+          setUser(user);
+        }
       }
-
-      for (const email of serviceAccountEmails) {
-        const saPromise = (async () => {
-          try {
-            const response = await serviceAccountStore.getOrFetchServiceAccount(
-              `${serviceAccountNamePrefix}${email}`,
-              true
-            );
-            setUser(serviceAccountToUser(response));
-          } catch {
-            // Ignore errors for individual fetches
-          }
-        })();
-        promises.push(saPromise);
-      }
-
-      for (const email of workloadIdentityEmails) {
-        const wiPromise = (async () => {
-          try {
-            const response =
-              await workloadIdentityStore.getOrFetchWorkloadIdentity(
-                `${workloadIdentityNamePrefix}${email}`,
-                true
-              );
-            setUser(workloadIdentityToUser(response));
-          } catch {
-            // Ignore errors for individual fetches
-          }
-        })();
-        promises.push(wiPromise);
-      }
-
-      await Promise.all(promises);
     } finally {
       return validList.map(
         (name) => getUserByIdentifier(name) ?? unknownUser(name)

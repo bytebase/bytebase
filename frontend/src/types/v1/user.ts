@@ -52,12 +52,14 @@ export const getGroupEmailInBinding = (email: string) => {
   return `${groupBindingPrefix}${email}`;
 };
 
+export const serviceAccountSuffix = "service.bytebase.com";
 export const serviceAccountBindingPrefix = "serviceAccount:";
 
 export const getServiceAccountNameInBinding = (email: string) => {
   return `${serviceAccountBindingPrefix}${email}`;
 };
 
+export const workloadIdentitySuffix = "workload.bytebase.com";
 export const workloadIdentityBindingPrefix = "workloadIdentity:";
 
 export const getWorkloadIdentityNameInBinding = (name: string) => {
@@ -71,4 +73,17 @@ export const isValidUserName = (name: string) => {
     name !== unknownUser().name &&
     name !== allUsersUser().name
   );
+};
+
+export const getUserTypeByEmail = (email: string): UserType => {
+  if (email === SYSTEM_BOT_EMAIL) {
+    return UserType.SYSTEM_BOT;
+  }
+  if (email.endsWith(serviceAccountSuffix)) {
+    return UserType.SERVICE_ACCOUNT;
+  }
+  if (email.endsWith(workloadIdentitySuffix)) {
+    return UserType.WORKLOAD_IDENTITY;
+  }
+  return UserType.USER;
 };

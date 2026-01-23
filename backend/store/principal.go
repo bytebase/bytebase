@@ -29,11 +29,11 @@ type FindUserMessage struct {
 	ID          *int
 	Email       *string
 	ShowDeleted bool
-	Type        *storepb.PrincipalType
 	Limit       *int
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
+	UserTypes   *[]storepb.PrincipalType
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -279,8 +279,12 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			where.And("principal.email = ?", strings.ToLower(*v))
 		}
 	}
-	if v := find.Type; v != nil {
-		where.And("principal.type = ?", v.String())
+	if v := find.UserTypes; v != nil {
+		typeStrings := make([]string, 0, len(*v))
+		for _, t := range *v {
+			typeStrings = append(typeStrings, t.String())
+		}
+		where.And("principal.type = ANY(?)", typeStrings)
 	}
 	if !find.ShowDeleted {
 		where.And("principal.deleted = ?", false)

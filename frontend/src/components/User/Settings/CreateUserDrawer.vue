@@ -59,7 +59,7 @@
               </label>
               <EmailInput
                 v-model:value="state.user.email"
-                domain="workload.bytebase.com"
+                :domain="workloadIdentitySuffix"
                 :show-domain="true"
                 :disabled="isEditMode"
               />
@@ -326,7 +326,7 @@
                 v-model:value="state.user.email"
                 :domain="
                   state.user.userType === UserType.SERVICE_ACCOUNT
-                   ? 'service.bytebase.com'
+                   ? serviceAccountSuffix
                    : ''
                 "
                 :show-domain="state.user.userType === UserType.SERVICE_ACCOUNT"
@@ -427,7 +427,9 @@ import {
   getServiceAccountNameInBinding,
   getUserEmailInBinding,
   getWorkloadIdentityNameInBinding,
+  serviceAccountSuffix,
   unknownUser,
+  workloadIdentitySuffix,
 } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import type { User } from "@/types/proto-es/v1/user_service_pb";

@@ -109,91 +109,37 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const replicaCount = computed(() => serverInfo.value?.replicaCount ?? 1);
 
-  const inactiveUserCount = computed(() => {
-    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (
-        stat.state === State.DELETED &&
-        stat.userType !== UserType.SERVICE_ACCOUNT &&
-        stat.userType !== UserType.WORKLOAD_IDENTITY
-      ) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  });
-
-  const serviceAccountCount = computed(() => {
-    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (
-        stat.state === State.ACTIVE &&
-        stat.userType === UserType.SERVICE_ACCOUNT
-      ) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  });
-
-  const workloadIdentityCount = computed(() => {
-    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (
-        stat.state === State.ACTIVE &&
-        stat.userType === UserType.WORKLOAD_IDENTITY
-      ) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  });
-
-  const inactiveServiceAccountCount = computed(() => {
-    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (
-        stat.state === State.DELETED &&
-        stat.userType === UserType.SERVICE_ACCOUNT
-      ) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  });
-
-  const inactiveWorkloadIdentityCount = computed(() => {
-    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (
-        stat.state === State.DELETED &&
-        stat.userType === UserType.WORKLOAD_IDENTITY
-      ) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  });
-
-  // Actions
-  const getActiveUserCount = ({
-    includeBot,
-    includeServiceAccount,
+  const countUser = ({
+    state,
+    userTypes,
   }: {
-    includeBot: boolean;
-    includeServiceAccount: boolean;
-  }) => {
+    state: State;
+    userTypes: UserType[];
+  }): number => {
     return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (stat.state !== State.ACTIVE) {
-        return count;
+      if (stat.state === state && userTypes.includes(stat.userType)) {
+        count += stat.count;
       }
-      if (!includeBot && stat.userType === UserType.SYSTEM_BOT) {
-        return count;
-      }
-      if (
-        !includeServiceAccount &&
-        stat.userType === UserType.SERVICE_ACCOUNT
-      ) {
-        return count;
-      }
-      count += stat.count;
       return count;
     }, 0);
+  };
+
+  const updateUserStat = (
+    updates: {
+      count: number;
+      state: State;
+      userType: UserType;
+    }[]
+  ) => {
+    for (const update of updates) {
+      const item = (serverInfo.value?.userStats ?? []).find(
+        (stat) =>
+          stat.state === update.state && stat.userType === update.userType
+      );
+      if (item) {
+        item.count += update.count;
+      }
+    }
   };
 
   const quickStartEnabled = computed(() => {
@@ -206,9 +152,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
     // Hide quickstart if there are more than 1 active users.
     return (
-      getActiveUserCount({
-        includeBot: false,
-        includeServiceAccount: false,
+      countUser({
+        state: State.ACTIVE,
+        userTypes: [UserType.USER],
       }) <= 1
     );
   });
@@ -326,14 +272,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     activatedInstanceCount,
     totalInstanceCount,
     replicaCount,
-    inactiveUserCount,
-    serviceAccountCount,
-    workloadIdentityCount,
-    inactiveServiceAccountCount,
-    inactiveWorkloadIdentityCount,
     quickStartEnabled,
     // Actions
-    getActiveUserCount,
+    countUser,
+    updateUserStat,
     setLogo,
     setServerInfo,
     fetchServerInfo,

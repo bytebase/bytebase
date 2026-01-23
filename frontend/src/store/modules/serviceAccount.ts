@@ -1,9 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { serviceAccountServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import { serviceAccountBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import {
@@ -21,6 +23,12 @@ import {
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { useActuatorV1Store } from "./v1/actuator";
+import { extractServiceAccountId, serviceAccountNamePrefix } from "./v1/common";
+
+const ensureServiceAccountFullName = (identifier: string) => {
+  const id = extractServiceAccountId(identifier);
+  return `${serviceAccountNamePrefix}${id}`;
+};
 
 export const useServiceAccountStore = defineStore("serviceAccount", () => {
   const actuatorStore = useActuatorV1Store();
@@ -49,7 +57,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
   };
 
   const getServiceAccount = (name: string) => {
-    return cacheByName.value.get(name);
+    return cacheByName.value.get(ensureServiceAccountFullName(name));
   };
 
   const getOrFetchServiceAccount = async (name: string, silent = false) => {
@@ -60,6 +68,29 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa = await fetchServiceAccount(name, silent);
     cacheByName.value.set(name, sa);
     return sa;
+  };
+
+  // TODO(ed): support batch get
+  const batchGetOrFetchServiceAccounts = async (nameList: string[]) => {
+    const validList = uniq(nameList).filter(
+      (name) =>
+        Boolean(name) &&
+        (name.startsWith(serviceAccountNamePrefix) ||
+          name.startsWith(serviceAccountBindingPrefix))
+    );
+    try {
+      const pendingFetch = validList
+        .filter((name) => {
+          return getServiceAccount(name) === undefined;
+        })
+        .map((name) => ensureServiceAccountFullName(name));
+
+      await Promise.all(
+        pendingFetch.map((name) => {
+          return getOrFetchServiceAccount(name);
+        })
+      );
+    } catch {}
   };
 
   const createServiceAccount = async (
@@ -76,7 +107,13 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.createServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+    ]);
     return sa;
   };
 
@@ -106,7 +143,18 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     if (sa) {
       sa.state = State.DELETED;
     }
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: -1,
+        state: State.ACTIVE,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+      {
+        count: 1,
+        state: State.DELETED,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+    ]);
   };
 
   const undeleteServiceAccount = async (name: string) => {
@@ -116,7 +164,18 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.undeleteServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+      {
+        count: -1,
+        state: State.DELETED,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+    ]);
     return sa;
   };
 
@@ -124,6 +183,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     listServiceAccounts,
     getServiceAccount,
     getOrFetchServiceAccount,
+    batchGetOrFetchServiceAccounts,
     createServiceAccount,
     updateServiceAccount,
     deleteServiceAccount,
