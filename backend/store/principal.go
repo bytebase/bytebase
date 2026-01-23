@@ -60,6 +60,8 @@ type UserMessage struct {
 	Profile       *storepb.UserProfile
 	// Phone conforms E.164 format.
 	Phone string
+	// Project is the owning project. NULL for workspace-level principals.
+	Project *string
 	// output only
 	CreatedAt time.Time
 }
@@ -177,6 +179,7 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*
 			mfa_config,
 			phone,
 			profile,
+			project,
 			created_at
 		FROM principal
 		WHERE email = ANY(?)
@@ -200,6 +203,7 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*
 		var mfaConfigBytes []byte
 		var profileBytes []byte
 		var typeString string
+		var project sql.NullString
 		if err := rows.Scan(
 			&user.ID,
 			&user.MemberDeleted,
@@ -210,6 +214,7 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*
 			&mfaConfigBytes,
 			&user.Phone,
 			&profileBytes,
+			&project,
 			&user.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -218,6 +223,9 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*
 			user.Type = storepb.PrincipalType(typeValue)
 		} else {
 			return nil, errors.Errorf("invalid principal type string: %s", typeString)
+		}
+		if project.Valid {
+			user.Project = &project.String
 		}
 
 		mfaConfig := storepb.MFAConfig{}
@@ -394,6 +402,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			principal.mfa_config,
 			principal.phone,
 			principal.profile,
+			principal.project,
 			principal.created_at
 		FROM ?
 		WHERE ?
@@ -407,13 +416,13 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		q.Space("OFFSET ?", *v)
 	}
 
-	sql, args, err := q.ToSQL()
+	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var userMessages []*UserMessage
-	rows, err := txn.QueryContext(ctx, sql, args...)
+	rows, err := txn.QueryContext(ctx, sqlStr, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -423,6 +432,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		var mfaConfigBytes []byte
 		var profileBytes []byte
 		var typeString string
+		var project sql.NullString
 		if err := rows.Scan(
 			&userMessage.ID,
 			&userMessage.MemberDeleted,
@@ -433,6 +443,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			&mfaConfigBytes,
 			&userMessage.Phone,
 			&profileBytes,
+			&project,
 			&userMessage.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -441,6 +452,9 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			userMessage.Type = storepb.PrincipalType(typeValue)
 		} else {
 			return nil, errors.Errorf("invalid principal type string: %s", typeString)
+		}
+		if project.Valid {
+			userMessage.Project = &project.String
 		}
 
 		mfaConfig := storepb.MFAConfig{}

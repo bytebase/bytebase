@@ -49,7 +49,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
 
   const fetchServiceAccount = async (name: string, silent = false) => {
     const request = create(GetServiceAccountRequestSchema, {
-      name,
+      name: ensureServiceAccountFullName(name),
     });
     return serviceAccountServiceClientConnect.getServiceAccount(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
@@ -66,7 +66,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
       return cached;
     }
     const sa = await fetchServiceAccount(name, silent);
-    cacheByName.value.set(name, sa);
+    cacheByName.value.set(sa.name, sa);
     return sa;
   };
 

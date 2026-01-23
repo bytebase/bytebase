@@ -189,37 +189,12 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const fetchUser = async (name: string, silent = false) => {
-    const email = extractUserId(name);
-
-    if (
-      email.endsWith("@service.bytebase.com") ||
-      email.includes(".service.bytebase.com")
-    ) {
-      const response = await serviceAccountStore.getOrFetchServiceAccount(
-        `${serviceAccountNamePrefix}${email}`,
-        silent
-      );
-      return setUser(serviceAccountToUser(response));
-    }
-
-    if (
-      email.endsWith("@workload.bytebase.com") ||
-      email.includes(".workload.bytebase.com")
-    ) {
-      const response = await workloadIdentityStore.getOrFetchWorkloadIdentity(
-        `${workloadIdentityNamePrefix}${email}`,
-        silent
-      );
-      return setUser(workloadIdentityToUser(response));
-    }
-
     const request = create(GetUserRequestSchema, {
       name,
     });
-    const response = await userServiceClientConnect.getUser(request, {
+    return await userServiceClientConnect.getUser(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    return setUser(response);
   };
 
   const createUser = async (user: User) => {

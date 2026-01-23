@@ -52,7 +52,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
 
   const fetchWorkloadIdentity = async (name: string, silent = false) => {
     const request = create(GetWorkloadIdentityRequestSchema, {
-      name,
+      name: ensureWorkloadIdentityFullName(name),
     });
     return workloadIdentityServiceClientConnect.getWorkloadIdentity(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
@@ -72,7 +72,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
       return cached;
     }
     const wi = await fetchWorkloadIdentity(name, silent);
-    cacheByName.value.set(name, wi);
+    cacheByName.value.set(wi.name, wi);
     return wi;
   };
 
