@@ -452,7 +452,13 @@
       "subscription": "（升级到付费方案来解锁角色管理）"
     },
     "members": {
+      "service-accounts": "服务账号",
+      "add-service-account": "添加服务账号",
+      "workload-identities": "工作负载身份",
+      "add-workload-identity": "添加工作负载身份",
       "inactive-users": "未激活用户",
+      "inactive-service-accounts": "未激活服务账号",
+      "inactive-workload-identities": "未激活工作负载身份",
       "table": {
         "account": "账户",
         "role": "角色",

@@ -452,7 +452,13 @@
       "subscription": "(Upgrade to enable role management)"
     },
     "members": {
+      "service-accounts": "Service Accounts",
+      "add-service-account": "Add Service Account",
+      "workload-identities": "Workload Identities",
+      "add-workload-identity": "Add Workload Identity",
       "inactive-users": "Inactive users",
+      "inactive-service-accounts": "Inactive service accounts",
+      "inactive-workload-identities": "Inactive workload identities",
       "table": {
         "account": "Account",
         "role": "Role",

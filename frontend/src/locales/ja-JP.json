@@ -452,7 +452,13 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "members": {
+      "service-accounts": "サービスアカウント",
+      "add-service-account": "サービスアカウントを追加",
+      "workload-identities": "ワークロードID",
+      "add-workload-identity": "ワークロードIDを追加",
       "inactive-users": "非アクティブユーザー",
+      "inactive-service-accounts": "非アクティブサービスアカウント",
+      "inactive-workload-identities": "非アクティブワークロードID",
       "table": {
         "account": "アカウント",
         "role": "役割",

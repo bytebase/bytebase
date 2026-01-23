@@ -452,7 +452,13 @@
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "members": {
+      "service-accounts": "Tài khoản dịch vụ",
+      "add-service-account": "Thêm tài khoản dịch vụ",
+      "workload-identities": "Danh tính Workload",
+      "add-workload-identity": "Thêm danh tính Workload",
       "inactive-users": "Người dùng không hoạt động",
+      "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
+      "inactive-workload-identities": "Danh tính Workload không hoạt động",
       "table": {
         "account": "Tài khoản",
         "role": "Vai trò",

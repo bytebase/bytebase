@@ -463,6 +463,7 @@ interface LocalState {
 
 const props = defineProps<{
   user?: User;
+  initialUserType?: UserType;
 }>();
 
 const emit = defineEmits<{
@@ -582,6 +583,10 @@ watch(
   () => props.user,
   (user) => {
     if (!user) {
+      // Apply initialUserType when creating a new user
+      if (props.initialUserType) {
+        state.user.userType = props.initialUserType;
+      }
       return;
     }
     state.user = create(UserSchema, user);
