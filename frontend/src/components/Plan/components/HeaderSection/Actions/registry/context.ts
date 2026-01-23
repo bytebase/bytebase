@@ -181,12 +181,8 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
       hasProjectPermissionV2(project, "bb.plans.update"),
     createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
-    // Check both permissions: developers have bb.rollouts.create (for legacy UI)
-    // but not bb.taskRuns.create, so they can't create rollouts in the new CI/CD workflow.
-    // Releasers have both permissions.
-    createRollout:
-      hasProjectPermissionV2(project, "bb.rollouts.create") &&
-      hasProjectPermissionV2(project, "bb.taskRuns.create"),
+    // For data export issues, creators use ROLLOUT_START which checks runTasks instead.
+    createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
     runTasks:
       issue?.type === Issue_Type.DATABASE_EXPORT
         ? currentUserEmail === extractUserId(issue.creator)

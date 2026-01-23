@@ -26,7 +26,7 @@ export const ROLLOUT_CREATE: ActionDefinition = {
   disabledReason: (ctx) => {
     if (!ctx.permissions.createRollout) {
       return t("common.missing-required-permission", {
-        permissions: "bb.rollouts.create, bb.taskRuns.create",
+        permissions: "bb.rollouts.create",
       });
     }
     return undefined;

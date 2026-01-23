@@ -1854,7 +1854,7 @@ export declare const RolloutService: GenService<{
   },
   /**
    * Creates a new rollout for a plan.
-   * Permissions required: bb.rollouts.create
+   * Permissions required: bb.rollouts.create (or issue creator for data export issues)
    *
    * @generated from rpc bytebase.v1.RolloutService.CreateRollout
    */

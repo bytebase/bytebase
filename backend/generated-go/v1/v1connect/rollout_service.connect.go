@@ -77,7 +77,7 @@ type RolloutServiceClient interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create
+	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
@@ -264,7 +264,7 @@ type RolloutServiceHandler interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create
+	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list

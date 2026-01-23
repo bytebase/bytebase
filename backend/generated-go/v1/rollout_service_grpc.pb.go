@@ -45,7 +45,7 @@ type RolloutServiceClient interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(ctx context.Context, in *ListRolloutsRequest, opts ...grpc.CallOption) (*ListRolloutsResponse, error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create
+	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
@@ -204,7 +204,7 @@ type RolloutServiceServer interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *ListRolloutsRequest) (*ListRolloutsResponse, error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create
+	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list

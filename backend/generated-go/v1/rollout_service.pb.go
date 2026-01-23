@@ -3600,12 +3600,12 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\x04name\">\n" +
 	"\x1ePreviewTaskRunRollbackResponse\x12\x1c\n" +
-	"\tstatement\x18\x01 \x01(\tR\tstatement2\xa1\x10\n" +
+	"\tstatement\x18\x01 \x01(\tR\tstatement2\x8b\x10\n" +
 	"\x0eRolloutService\x12\x8f\x01\n" +
 	"\n" +
 	"GetRollout\x12\x1e.bytebase.v1.GetRolloutRequest\x1a\x14.bytebase.v1.Rollout\"K\xdaA\x04name\x8a\xea0\x0fbb.rollouts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02'\x12%/v1/{name=projects/*/plans/*/rollout}\x12\x9e\x01\n" +
-	"\fListRollouts\x12 .bytebase.v1.ListRolloutsRequest\x1a!.bytebase.v1.ListRolloutsResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.rollouts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/rollouts\x12\xa3\x01\n" +
-	"\rCreateRollout\x12!.bytebase.v1.CreateRolloutRequest\x1a\x14.bytebase.v1.Rollout\"Y\xdaA\x06parent\x8a\xea0\x12bb.rollouts.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{parent=projects/*/plans/*}/rollout\x12\xbf\x01\n" +
+	"\fListRollouts\x12 .bytebase.v1.ListRolloutsRequest\x1a!.bytebase.v1.ListRolloutsResponse\"I\xdaA\x06parent\x8a\xea0\x10bb.rollouts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{parent=projects/*}/rollouts\x12\x8d\x01\n" +
+	"\rCreateRollout\x12!.bytebase.v1.CreateRolloutRequest\x1a\x14.bytebase.v1.Rollout\"C\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{parent=projects/*/plans/*}/rollout\x12\xbf\x01\n" +
 	"\fListTaskRuns\x12 .bytebase.v1.ListTaskRunsRequest\x1a!.bytebase.v1.ListTaskRunsResponse\"j\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02C\x12A/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns\x12\xac\x01\n" +
 	"\n" +
 	"GetTaskRun\x12\x1e.bytebase.v1.GetTaskRunRequest\x1a\x14.bytebase.v1.TaskRun\"h\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02C\x12A/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}\x12\xbd\x01\n" +
