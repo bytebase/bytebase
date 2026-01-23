@@ -123,6 +123,10 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	}
 
 	if len(prependStatements) > 0 {
+		// Ensure prependStatements ends with semicolon
+		if !strings.HasSuffix(prependStatements, ";") {
+			prependStatements += ";"
+		}
 		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", prependStatements, sqlForComment, g.result), nil
 	}
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result), nil
@@ -331,7 +335,7 @@ func getPrependStatements(statement string) (string, error) {
 	return listener.setRoleText, nil
 }
 
-// setRoleListener detects SET role statements
+// setRoleListener detects SET role and search_path statements
 type setRoleListener struct {
 	*parser.BasePostgreSQLParserListener
 	setRoleText string
@@ -339,28 +343,51 @@ type setRoleListener struct {
 
 // EnterVariablesetstmt handles SET statements
 func (l *setRoleListener) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
-	// Only process if we haven't found a SET role statement yet
+	// Only process if we haven't found a SET role/search_path statement yet
 	if l.setRoleText != "" {
 		return
 	}
 
-	// Check if this is SET role
-	// Structure: VariablesetstmtContext -> Set_rest -> Set_rest_more -> Generic_set -> Var_name
-	if ctx.Set_rest() != nil {
-		setRest := ctx.Set_rest()
-		if setRest.Set_rest_more() != nil {
-			setRestMore := setRest.Set_rest_more()
-			if setRestMore.Generic_set() != nil {
-				genericSet := setRestMore.Generic_set()
-				if genericSet.Var_name() != nil {
-					varName := genericSet.Var_name().GetText()
-					if strings.EqualFold(varName, "role") {
-						// Found SET role statement, capture the full text
-						l.setRoleText = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-					}
-				}
+	setRest := ctx.Set_rest()
+	if setRest == nil {
+		return
+	}
+	setRestMore := setRest.Set_rest_more()
+	if setRestMore == nil {
+		return
+	}
+
+	// Check for "SET ROLE <name>" syntax (ROLE is a keyword/terminal)
+	// This is different from "SET role = <value>" which uses Generic_set
+	for i := 0; i < setRestMore.GetChildCount(); i++ {
+		child := setRestMore.GetChild(i)
+		if tn, ok := child.(*antlr.TerminalNodeImpl); ok {
+			if tn.GetText() == "ROLE" {
+				// Found SET ROLE syntax
+				l.setRoleText = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+				return
 			}
 		}
+	}
+
+	// Check for "SET role = <value>" or "SET search_path = <value>" syntax
+	// Structure: VariablesetstmtContext -> Set_rest -> Set_rest_more -> Generic_set -> Var_name
+	genericSet := setRestMore.Generic_set()
+	if genericSet == nil {
+		return
+	}
+	varName := genericSet.Var_name()
+	if varName == nil {
+		return
+	}
+	if len(varName.AllColid()) != 1 {
+		return
+	}
+
+	name := NormalizePostgreSQLColid(varName.Colid(0))
+	if name == "role" || name == "search_path" {
+		// Found SET role or search_path statement, capture the full text
+		l.setRoleText = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	}
 }
 
