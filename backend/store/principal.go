@@ -407,13 +407,13 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		q.Space("OFFSET ?", *v)
 	}
 
-	sqlStr, args, err := q.ToSQL()
+	sql, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var userMessages []*UserMessage
-	rows, err := txn.QueryContext(ctx, sqlStr, args...)
+	rows, err := txn.QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
