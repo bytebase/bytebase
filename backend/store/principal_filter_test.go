@@ -3,20 +3,20 @@ package store
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetListUserFilter(t *testing.T) {
 	tests := []struct {
-		name        string
-		filter      string
-		wantSQL     string
-		wantArgs    []any
-		wantProject *string
-		wantErr     bool
-		errContains string
+		name          string
+		filter        string
+		wantSQL       string
+		wantArgs      []any
+		wantProject   *string
+		wantUserTypes []storepb.PrincipalType
+		wantErr       bool
+		errContains   string
 	}{
 		{
 			name:     "empty filter",
@@ -24,6 +24,10 @@ func TestGetListUserFilter(t *testing.T) {
 			wantSQL:  "",
 			wantArgs: nil,
 			wantErr:  false,
+			wantUserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_END_USER,
+				storepb.PrincipalType_SYSTEM_BOT,
+			},
 		},
 		{
 			name:     "name filter",
@@ -54,32 +58,43 @@ func TestGetListUserFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "user_type filter - SERVICE_ACCOUNT",
-			filter:   `user_type == "SERVICE_ACCOUNT"`,
-			wantSQL:  "(principal.type = $1)",
-			wantArgs: []any{storepb.PrincipalType_SERVICE_ACCOUNT.String()},
-			wantErr:  false,
+			name:        "user_type filter - SERVICE_ACCOUNT",
+			filter:      `user_type == "SERVICE_ACCOUNT"`,
+			wantErr:     true,
+			errContains: "invalid user type SERVICE_ACCOUNT",
 		},
 		{
 			name:     "user_type filter - USER",
 			filter:   `user_type == "USER"`,
-			wantSQL:  "(principal.type = $1)",
-			wantArgs: []any{storepb.PrincipalType_END_USER.String()},
+			wantSQL:  "(TRUE)",
+			wantArgs: []any{},
 			wantErr:  false,
+			wantUserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_END_USER,
+			},
 		},
 		{
-			name:     "user_type in list",
-			filter:   `user_type in ["SERVICE_ACCOUNT", "USER"]`,
-			wantSQL:  "(principal.type = ANY($1))",
-			wantArgs: []any{[]any{storepb.PrincipalType_SERVICE_ACCOUNT.String(), storepb.PrincipalType_END_USER.String()}},
+			name:     "user_type filter - USER",
+			filter:   `user_type in ["SYSTEM_BOT", "USER"]`,
+			wantSQL:  "(TRUE)",
+			wantArgs: []any{},
 			wantErr:  false,
+			wantUserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_SYSTEM_BOT,
+				storepb.PrincipalType_END_USER,
+			},
 		},
 		{
-			name:     "user_type not in list",
-			filter:   `!(user_type in ["SERVICE_ACCOUNT"])`,
-			wantSQL:  "((NOT (principal.type = ANY($1))))",
-			wantArgs: []any{[]any{storepb.PrincipalType_SERVICE_ACCOUNT.String()}},
-			wantErr:  false,
+			name:        "user_type in list",
+			filter:      `user_type in ["SERVICE_ACCOUNT", "USER"]`,
+			wantErr:     true,
+			errContains: "invalid user type SERVICE_ACCOUNT",
+		},
+		{
+			name:        "user_type not in list",
+			filter:      `!(user_type in ["SERVICE_ACCOUNT"])`,
+			wantErr:     true,
+			errContains: "unexpected function",
 		},
 		{
 			name:     "state filter - STATE_ACTIVE",
@@ -120,9 +135,12 @@ func TestGetListUserFilter(t *testing.T) {
 		{
 			name:     "complex nested condition",
 			filter:   `(name == "ed" || name == "alice") && user_type == "USER"`,
-			wantSQL:  "(((principal.name = $1 OR principal.name = $2) AND principal.type = $3))",
-			wantArgs: []any{"ed", "alice", storepb.PrincipalType_END_USER.String()},
+			wantSQL:  "(((principal.name = $1 OR principal.name = $2) AND TRUE))",
+			wantArgs: []any{"ed", "alice"},
 			wantErr:  false,
+			wantUserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_END_USER,
+			},
 		},
 		{
 			name:        "unsupported variable",
@@ -163,12 +181,6 @@ func TestGetListUserFilter(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-
-			if tt.filter == "" {
-				require.Nil(t, result)
-				return
-			}
-
 			require.NotNil(t, result)
 
 			if tt.wantProject != nil {
@@ -178,10 +190,16 @@ func TestGetListUserFilter(t *testing.T) {
 				require.Nil(t, result.ProjectID)
 			}
 
-			sql, args, err := result.Query.ToSQL()
-			require.NoError(t, err)
-			require.Equal(t, tt.wantSQL, sql)
-			require.Equal(t, tt.wantArgs, args)
+			if len(tt.wantUserTypes) > 0 {
+				require.Equal(t, tt.wantUserTypes, result.UserTypes)
+			}
+
+			if query := result.Query; query != nil {
+				sql, args, err := query.ToSQL()
+				require.NoError(t, err)
+				require.Equal(t, tt.wantSQL, sql)
+				require.Equal(t, tt.wantArgs, args)
+			}
 		})
 	}
 }

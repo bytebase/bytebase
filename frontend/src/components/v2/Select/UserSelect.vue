@@ -22,9 +22,9 @@ import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import {
+  batchGetOrFetchAccounts,
   getUserFullNameByType,
   type UserFilter,
-  userNamePrefix,
   useUserStore,
 } from "@/store";
 import { allUsersUser } from "@/types";
@@ -106,9 +106,7 @@ const additionalOptions = computedAsync(async () => {
   }
 
   // Ensure users are fetched into store
-  await userStore.batchGetOrFetchUsers(
-    userEmails.map((email) => `${userNamePrefix}${email}`)
-  );
+  await batchGetOrFetchAccounts(userEmails);
 
   // Get all users from store
   for (const email of userEmails) {

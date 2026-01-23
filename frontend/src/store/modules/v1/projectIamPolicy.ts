@@ -22,8 +22,8 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getDatabaseProject, getUserListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
+import { batchGetOrFetchAccounts } from "../account";
 import { useRoleStore } from "../role";
-import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
 import { getUserFullNameByType, userNamePrefix } from "./common";
 import { useGroupStore } from "./group";
@@ -49,7 +49,7 @@ export const composePolicyBindings = async (
     useGroupStore().batchGetOrFetchGroups(groups),
   ];
   if (!skipFetchUsers) {
-    requests.push(useUserStore().batchGetOrFetchUsers(users));
+    requests.push(batchGetOrFetchAccounts(users));
   }
   await Promise.allSettled(requests);
 };

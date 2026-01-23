@@ -1,9 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { workloadIdentityServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import { workloadIdentityBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   type User,
@@ -21,6 +23,15 @@ import {
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { useActuatorV1Store } from "./v1/actuator";
+import {
+  extractWorkloadIdentityId,
+  workloadIdentityNamePrefix,
+} from "./v1/common";
+
+const ensureWorkloadIdentityFullName = (identifier: string) => {
+  const id = extractWorkloadIdentityId(identifier);
+  return `${workloadIdentityNamePrefix}${id}`;
+};
 
 export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   const actuatorStore = useActuatorV1Store();
@@ -49,7 +60,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   };
 
   const getWorkloadIdentity = (name: string) => {
-    return cacheByName.value.get(name);
+    return cacheByName.value.get(ensureWorkloadIdentityFullName(name));
   };
 
   const getOrFetchWorkloadIdentity = async (
@@ -63,6 +74,30 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     const wi = await fetchWorkloadIdentity(name, silent);
     cacheByName.value.set(name, wi);
     return wi;
+  };
+
+  // TODO(ed): support batch get
+  const batchGetOrFetchWorkloadIdentities = async (nameList: string[]) => {
+    const validList = uniq(nameList).filter(
+      (name) =>
+        Boolean(name) &&
+        (name.startsWith(workloadIdentityNamePrefix) ||
+          name.startsWith(workloadIdentityBindingPrefix))
+    );
+    try {
+      const pendingFetch = validList
+        .filter((name) => {
+          return getWorkloadIdentity(name) === undefined;
+        })
+        .map((name) => ensureWorkloadIdentityFullName(name));
+
+      await Promise.all(
+        pendingFetch.map((name) => {
+          return getOrFetchWorkloadIdentity(name);
+        })
+      );
+    } catch {
+    }
   };
 
   const createWorkloadIdentity = async (
@@ -161,6 +196,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     listWorkloadIdentities,
     getWorkloadIdentity,
     getOrFetchWorkloadIdentity,
+    batchGetOrFetchWorkloadIdentities,
     createWorkloadIdentity,
     updateWorkloadIdentity,
     deleteWorkloadIdentity,

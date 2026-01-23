@@ -129,6 +129,7 @@ const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;
 }>();
 
+// TODO(ed): we'd probably support "SERVICE_ACCOUNT" and "WORKLOAD_IDENTITY"
 const initMemberType = computed((): MemberType => {
   for (const binding of props.value) {
     if (binding.startsWith(groupBindingPrefix)) {
