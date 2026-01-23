@@ -911,6 +911,11 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
 	for _, task := range tasks {
+		// Skip tasks that are marked as skipped (they don't have archives)
+		if task.Payload.GetSkipped() {
+			continue
+		}
+
 		taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 			TaskUID: &task.ID,
 			Status:  &targetTaskRunStatus,
