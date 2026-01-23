@@ -3,8 +3,9 @@ package store
 import (
 	"testing"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestGetListUserFilter(t *testing.T) {
