@@ -1,6 +1,5 @@
 import { uniq } from "lodash-es";
 import {
-  CEL_ATTRIBUTE_LEVEL,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_REQUEST_TIME,
@@ -15,7 +14,6 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
   CEL_ATTRIBUTE_RISK_LEVEL,
-  CEL_ATTRIBUTE_SOURCE,
   CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
   CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
@@ -87,14 +85,6 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CompareOperatorList,
   ]),
 
-  [CEL_ATTRIBUTE_LEVEL]: uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-  ]),
-  [CEL_ATTRIBUTE_SOURCE]: uniq([
-    ...EqualityOperatorList,
-    ...CollectionOperatorList,
-  ]),
   [CEL_ATTRIBUTE_RISK_LEVEL]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,

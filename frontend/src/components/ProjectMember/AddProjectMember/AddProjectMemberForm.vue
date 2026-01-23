@@ -22,6 +22,20 @@
         <span>{{ $t("settings.members.assign-role") }}</span>
         <RequiredStar />
       </div>
+      <BBAttention
+        v-if="requiredPermissions"
+        :type="'info'"
+        class="w-full"
+      >
+        <div>
+          {{ $t("project.members.roles-are-filtered-by-permissions") }}
+          <ul class="list-disc pl-4">
+            <li v-for="permission in requiredPermissions" :key="permission">
+              {{ permission }}
+            </li>
+          </ul>
+        </div>
+      </BBAttention>
       <RoleSelect
         v-model:value="state.role"
         :include-workspace-roles="false"
@@ -99,6 +113,7 @@
 import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import { BBAttention } from "@/bbkit";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
@@ -107,6 +122,7 @@ import { RoleSelect } from "@/components/v2/Select";
 import { useRoleStore } from "@/store";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { checkRoleContainsAnyPermission } from "@/utils";
 import { buildConditionExpr } from "@/utils/issue/cel";
@@ -118,7 +134,7 @@ const props = withDefaults(
     allowRemove: boolean;
     requireReason?: boolean;
     disableMemberChange?: boolean;
-    supportRoles?: string[];
+    requiredPermissions?: string[];
     databaseResources?: DatabaseResource[];
   }>(),
   {
@@ -140,11 +156,11 @@ interface LocalState {
   databaseId?: string;
 }
 
-const filterRole = (role: string) => {
-  if (!props.supportRoles) {
-    return true;
+const filterRole = (role: Role) => {
+  if (props.requiredPermissions) {
+    return props.requiredPermissions.every((p) => role.permissions.includes(p));
   }
-  return props.supportRoles.includes(role);
+  return true;
 };
 
 const getInitialState = (): LocalState => {

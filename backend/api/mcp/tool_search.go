@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 // SearchInput is the input for the search_api tool.
@@ -235,8 +237,8 @@ func (*Server) formatProperty(sb *strings.Builder, prop PropertyInfo) {
 		cleanDesc := strings.ReplaceAll(prop.Description, "\n", " ")
 		cleanDesc = strings.ReplaceAll(cleanDesc, "\r", "")
 		// Truncate at 100 chars
-		if len(cleanDesc) > 100 {
-			cleanDesc = cleanDesc[:97] + "..."
+		if truncated, ok := common.TruncateString(cleanDesc, 97); ok {
+			cleanDesc = truncated + "..."
 		}
 		desc = fmt.Sprintf(" // %s", cleanDesc)
 	}

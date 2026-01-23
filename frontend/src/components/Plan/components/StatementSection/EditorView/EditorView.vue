@@ -224,13 +224,12 @@ import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractDatabaseResourceName,
   getInstanceResource,
-  getSheetStatement,
-  getStatementSize,
   setSheetStatement,
   useInstanceV1EditorLanguage,
 } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { useSelectedSpec } from "../../SpecDetailView/context";
+import { isGhostEnabled } from "../directiveUtils";
 import SchemaEditorDrawer from "../SchemaEditorDrawer.vue";
 import { useSpecSheet } from "../useSpecSheet";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
@@ -299,17 +298,21 @@ const isEditorReadonly = computed(() => {
   return !editorState.isEditing.value || isSheetOversize.value || false;
 });
 
-const { sheet, sheetName, sheetReady, sheetStatement } =
-  useSpecSheet(selectedSpec);
+const {
+  sheet,
+  sheetName,
+  sheetReady,
+  sheetStatement,
+  isSheetOversize: isSheetOversizeRaw,
+} = useSpecSheet(selectedSpec);
 
+// Wrap the raw oversized check with UI-specific conditions:
+// - When creating, sheets are local and never truncated in practice
+// - When editing, the user has already entered edit mode (only possible for non-oversized sheets)
 const isSheetOversize = computed(() => {
   if (isCreating.value) return false;
   if (editorState.isEditing.value) return false;
-  if (!sheetReady.value) return false;
-  if (!sheet.value) return false;
-  return (
-    getStatementSize(getSheetStatement(sheet.value)) < sheet.value.contentSize
-  );
+  return isSheetOversizeRaw.value;
 });
 
 const denyEditStatementReasons = computed(() => {
@@ -369,9 +372,9 @@ const shouldShowSchemaEditorButton = computed(() => {
     return false;
   }
 
-  // Now TypeScript knows config.value is Plan_ChangeDatabaseConfig
   // Only for regular DDL (not gh-ost) schema changes
-  if (spec.config.value.enableGhost) {
+  // Check if ghost is enabled via sheet directive
+  if (isGhostEnabled(sheetStatement.value)) {
     return false;
   }
 

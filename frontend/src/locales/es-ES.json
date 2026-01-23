@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "Cargar SQL",
     "statement-from-sheet-warning": "Debido a que el SQL es demasiado grande, se ha truncado para mostrarlo y la edición está deshabilitada. Puede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
     "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "transaction-mode": {
@@ -1089,17 +1090,6 @@
     "task-run": {
       "logs": "Registros",
       "session": "Sesión",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "ejecutar comando",
-          "schema-dump": "Volcado de esquema",
-          "transaction-control": "Control de transacciones",
-          "database-sync": "Sincronización de base de datos",
-          "prior-backup": "Copia de seguridad previa",
-          "retry-info": "Reintento de información",
-          "compute-diff": "Calcular diff"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "Sesiones de bloqueo",
@@ -1276,6 +1266,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
+    "syncing-databases-for-instance": "Sincronizando bases de datos para {0}...",
+    "n-databases-had-sync-errors": "{0} base(s) de datos tuvieron errores de sincronización",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
     "procedures": "Trámites",
@@ -1320,7 +1312,6 @@
     "users": "Usuarios",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
     "successfully-archived-instance": "Se archivó exitosamente la instancia '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Esquema sincronizado con éxito para la instancia '{0}'.",
     "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
     "restore": "Restaurar",
@@ -1611,7 +1602,9 @@
     "failed-to-export-schema": "Error al exportar el esquema",
     "select": "Seleccionar base de datos",
     "sync-status": "Estado de sincronización",
-    "last-successful-sync": "Última sincronización exitosa",
+    "sync-status-failed": "Sincronización fallida",
+    "last-sync": "Última sincronización",
+    "sync-complete-for-instance": "Sincronización completada para la instancia '{0}'",
     "filter-database": "Filtrar base de datos",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
@@ -1892,7 +1885,8 @@
       "add-more": "Más información",
       "condition-name": "Nombre de la condición",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
-      "project-level-roles": "Roles a nivel de proyecto"
+      "project-level-roles": "Roles a nivel de proyecto",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
@@ -2759,10 +2753,6 @@
     "vcs-source": "Fuente VCS",
     "view-all-files": "Ver todos los archivos",
     "and-n-more-files": "y {n} archivos más",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "Fantasma DDL"
-    },
     "file-type": {
       "versioned": "Versión",
       "declarative": "Declarativo",

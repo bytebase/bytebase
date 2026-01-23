@@ -527,6 +527,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SyncStatus"><span class="badge">E</span>SyncStatus</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TablePartitionMetadata.Type"><span class="badge">E</span>TablePartitionMetadata.Type</a>
                 </li>
               
@@ -795,10 +799,6 @@
               
                 <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a>
                 </li>
               
                 <li>
@@ -1283,10 +1283,6 @@
               
                 <li>
                   <a href="#bytebase.store.Task"><span class="badge">M</span>Task</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.Task.FlagsEntry"><span class="badge">M</span>Task.FlagsEntry</a>
                 </li>
               
               
@@ -3156,6 +3152,20 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td></td>
                   <td><p>The release that was last applied to this database.
 Format: projects/{project}/releases/{release_id} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_status</td>
+                  <td><a href="#bytebase.store.SyncStatus">SyncStatus</a></td>
+                  <td></td>
+                  <td><p>The sync status of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The error message if sync failed. </p></td>
                 </tr>
               
             </tbody>
@@ -5855,6 +5865,35 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.SyncStatus">SyncStatus</h3>
+        <p>SyncStatus is the status of the database sync operation.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SYNC_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNC_STATUS_OK</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNC_STATUS_FAILED</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.TablePartitionMetadata.Type">TablePartitionMetadata.Type</h3>
         <p>The type is the type of a table partition. Some database engines may not</p><p>support all types. Only available for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,</p><p>LINEAR_KEY</p><p>(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:</p><p>RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,</p><p>LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
         <table class="enum-table">
@@ -8360,55 +8399,10 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>enable_prior_backup</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9887,13 +9881,6 @@ IM integration setting should be set for this function to work. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
                 </tr>
               
             </tbody>
@@ -12702,51 +12689,6 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to create an automatic backup before applying changes. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>flags</td>
-                  <td><a href="#bytebase.store.Task.FlagsEntry">Task.FlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>Configuration flags for gh-ost migration tool. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.Task.FlagsEntry">Task.FlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>

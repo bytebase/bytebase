@@ -1,5 +1,4 @@
 import {
-  CEL_ATTRIBUTE_LEVEL,
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_REQUEST_TIME,
@@ -14,7 +13,6 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
   CEL_ATTRIBUTE_RISK_LEVEL,
-  CEL_ATTRIBUTE_SOURCE,
   CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
   CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
@@ -33,8 +31,6 @@ export type NumberFactor = (typeof NumberFactorList)[number];
 
 export const StringFactorList = [
   // Risk related factors
-  CEL_ATTRIBUTE_LEVEL,
-  CEL_ATTRIBUTE_SOURCE,
   CEL_ATTRIBUTE_RISK_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
@@ -62,17 +58,7 @@ export type StringFactor = (typeof StringFactorList)[number];
 export const TimestampFactorList = [CEL_ATTRIBUTE_REQUEST_TIME] as const;
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
-export const HighLevelFactorList = [
-  CEL_ATTRIBUTE_LEVEL,
-  CEL_ATTRIBUTE_SOURCE,
-] as const;
-export type HighLevelFactor = (typeof HighLevelFactorList)[number];
-
-export type Factor =
-  | NumberFactor
-  | StringFactor
-  | TimestampFactor
-  | HighLevelFactor;
+export type Factor = NumberFactor | StringFactor | TimestampFactor;
 
 export const isNumberFactor = (factor: string): factor is NumberFactor => {
   return NumberFactorList.includes(factor as NumberFactor);
@@ -86,10 +72,4 @@ export const isTimestampFactor = (
   factor: string
 ): factor is TimestampFactor => {
   return TimestampFactorList.includes(factor as TimestampFactor);
-};
-
-export const isHighLevelFactor = (
-  factor: string
-): factor is HighLevelFactor => {
-  return HighLevelFactorList.includes(factor as HighLevelFactor);
 };

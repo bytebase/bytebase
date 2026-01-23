@@ -19,9 +19,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRouter } from "vue-router";
+import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
-import { autoProfileLink } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -36,13 +35,14 @@ defineEmits<{
   (event: "click"): void;
 }>();
 
-const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 
 const bindings = computed(() => {
   if (!props.link) return {};
   return {
-    to: autoProfileLink(router),
+    to: {
+      name: SETTING_ROUTE_PROFILE,
+    },
   };
 });
 </script>

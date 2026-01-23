@@ -17,10 +17,11 @@ import (
 
 // SystemBotUser is the static system bot user.
 var SystemBotUser = &UserMessage{
-	ID:    common.SystemBotID,
-	Name:  "Bytebase",
-	Email: "support@bytebase.com",
-	Type:  storepb.PrincipalType_SYSTEM_BOT,
+	ID:      common.SystemBotID,
+	Name:    "Bytebase",
+	Email:   "support@bytebase.com",
+	Type:    storepb.PrincipalType_SYSTEM_BOT,
+	Profile: &storepb.UserProfile{},
 }
 
 // FindUserMessage is the message for finding users.

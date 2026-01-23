@@ -86,14 +86,13 @@ const columnList = computed(() => {
   return columns.filter((column) => !column.hide);
 });
 
-const getReleaseFileTypeText = (file: Release_File) => {
+const getReleaseFileTypeText = (_file: Release_File) => {
   switch (props.releaseType) {
     case Release_Type.DECLARATIVE:
       return "SDL";
     case Release_Type.VERSIONED:
-      return file.enableGhost
-        ? `${t("issue.title.change-database")} (gh-ost)`
-        : t("issue.title.change-database");
+      // Ghost configuration is now in sheet content via directive (-- ghost = {...})
+      return t("issue.title.change-database");
     case Release_Type.TYPE_UNSPECIFIED:
       return "";
     default:

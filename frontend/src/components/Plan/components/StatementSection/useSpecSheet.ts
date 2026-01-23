@@ -6,6 +6,7 @@ import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractSheetUID,
   getSheetStatement,
+  getStatementSize,
   setSheetStatement,
   sheetNameOfSpec,
 } from "@/utils";
@@ -51,11 +52,23 @@ export const useSpecSheet = (spec: ComputedRef<Plan_Spec>) => {
     sheetStatement.value = statement;
   };
 
+  // Check if the sheet content is truncated (oversized).
+  // When contentSize > actual fetched statement size, the sheet was truncated
+  // during fetch. Modifying directives on truncated sheets would cause data loss.
+  const isSheetOversize = computed(() => {
+    if (!sheetReady.value) return false;
+    if (!sheet.value) return false;
+    return (
+      getStatementSize(getSheetStatement(sheet.value)) < sheet.value.contentSize
+    );
+  });
+
   return {
     sheet,
     sheetName,
     sheetReady,
     sheetStatement,
     updateSheetStatement,
+    isSheetOversize,
   };
 };

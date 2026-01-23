@@ -48,3 +48,17 @@ export const isFloatParameter = (
 ): param is GhostParameter<"float"> => {
   return param.type === "float";
 };
+
+/**
+ * Returns the default ghost configuration from SupportedGhostParameters.
+ * Only includes parameters with non-empty defaults.
+ */
+export const getDefaultGhostFlags = (): Record<string, string> => {
+  const defaults: Record<string, string> = {};
+  for (const param of SupportedGhostParameters) {
+    if (param.defaults !== "") {
+      defaults[param.key] = param.defaults;
+    }
+  }
+  return defaults;
+};

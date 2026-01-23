@@ -28,20 +28,5 @@ func (x *Task) Equal(y *Task) bool {
 	if x.EnablePriorBackup != y.EnablePriorBackup {
 		return false
 	}
-	if len(x.Flags) != len(y.Flags) {
-		return false
-	}
-	for k := range x.Flags {
-		_, ok := y.Flags[k]
-		if !ok {
-			return false
-		}
-		if x.Flags[k] != y.Flags[k] {
-			return false
-		}
-	}
-	if x.EnableGhost != y.EnableGhost {
-		return false
-	}
 	return true
 }

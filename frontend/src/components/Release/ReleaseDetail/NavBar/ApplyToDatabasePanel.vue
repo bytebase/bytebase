@@ -105,10 +105,6 @@ const handleCreate = async () => {
     return;
   }
 
-  // Determine enableGhost from release files
-  const firstFile = release.value.files?.[0];
-  const enableGhost = firstFile?.enableGhost ?? false;
-
   const parts = release.value.name.split("/");
   const releaseName = parts[parts.length - 1] || release.value.name;
 
@@ -126,8 +122,6 @@ const handleCreate = async () => {
                 ? state.targetSelectState.selectedDatabaseNameList
                 : [state.targetSelectState.selectedDatabaseGroup!]) || [],
             release: release.value.name,
-
-            enableGhost,
           }),
         },
       },

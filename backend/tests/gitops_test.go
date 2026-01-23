@@ -82,9 +82,8 @@ func TestGitOpsCheck(t *testing.T) {
 		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
-				Path:        "migrations/001__create_users_table.sql",
-				Version:     "001",
-				EnableGhost: false,
+				Path:    "migrations/001__create_users_table.sql",
+				Version: "001",
 				Statement: []byte(`CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					username TEXT NOT NULL UNIQUE,
@@ -93,10 +92,9 @@ func TestGitOpsCheck(t *testing.T) {
 				);`),
 			},
 			{
-				Path:        "migrations/002__add_email_index.sql",
-				Version:     "002",
-				EnableGhost: false,
-				Statement:   []byte(`CREATE INDEX idx_users_email ON users(email);`),
+				Path:      "migrations/002__add_email_index.sql",
+				Version:   "002",
+				Statement: []byte(`CREATE INDEX idx_users_email ON users(email);`),
 			},
 		},
 	}
@@ -201,9 +199,8 @@ func TestGitOpsRollout(t *testing.T) {
 			Type: v1pb.Release_VERSIONED,
 			Files: []*v1pb.Release_File{
 				{
-					Path:        "migrations/001__create_products_table.sql",
-					Version:     "001",
-					EnableGhost: false,
+					Path:    "migrations/001__create_products_table.sql",
+					Version: "001",
 					Statement: []byte(`CREATE TABLE products (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						name TEXT NOT NULL,
@@ -385,27 +382,24 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Type: v1pb.Release_VERSIONED,
 			Files: []*v1pb.Release_File{
 				{
-					Path:        "migrations/1.0.0__create_table_one.sql",
-					Version:     "1.0.0",
-					EnableGhost: false,
+					Path:    "migrations/1.0.0__create_table_one.sql",
+					Version: "1.0.0",
 					Statement: []byte(`CREATE TABLE table_one (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						name TEXT NOT NULL
 					);`),
 				},
 				{
-					Path:        "migrations/1.0.1__create_table_two.sql",
-					Version:     "1.0.1",
-					EnableGhost: false,
+					Path:    "migrations/1.0.1__create_table_two.sql",
+					Version: "1.0.1",
 					Statement: []byte(`CREATE TABLE table_two (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						value TEXT NOT NULL
 					);`),
 				},
 				{
-					Path:        "migrations/1.0.2__create_table_three.sql",
-					Version:     "1.0.2",
-					EnableGhost: false,
+					Path:    "migrations/1.0.2__create_table_three.sql",
+					Version: "1.0.2",
 					Statement: []byte(`CREATE TABLE table_three (
 						id INTEGER PRIMARY KEY AUTOINCREMENT,
 						data TEXT NULL
@@ -614,9 +608,8 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
-				Path:        "migrations/1.0.0__create_users_table.sql",
-				Version:     "1.0.0",
-				EnableGhost: false,
+				Path:    "migrations/1.0.0__create_users_table.sql",
+				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					username TEXT NOT NULL,
@@ -681,9 +674,8 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Type: v1pb.Release_VERSIONED,
 		Files: []*v1pb.Release_File{
 			{
-				Path:        "migrations/1.0.0__create_users_table.sql",
-				Version:     "1.0.0",
-				EnableGhost: false,
+				Path:    "migrations/1.0.0__create_users_table.sql",
+				Version: "1.0.0",
 				Statement: []byte(`CREATE TABLE users (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					username TEXT NOT NULL,

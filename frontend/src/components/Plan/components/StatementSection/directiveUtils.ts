@@ -21,6 +21,11 @@ const TXN_ISOLATION_REGEX =
 const ROLE_SETTER_REGEX =
   /\/\*\s*=== Bytebase Role Setter\. DO NOT EDIT\. === \*\/\s*SET ROLE ([a-zA-Z_][a-zA-Z0-9_]{0,62});/;
 
+// Ghost configuration directive pattern
+// Matches: -- gh-ost = {"key":"value",...} or -- gh-ost = {} /*comment*/
+const GHOST_DIRECTIVE_REGEX =
+  /^\s*--\s*gh-ost\s*=\s*(\{[^}]*\})\s*(?:\/\*.*\*\/)?\s*$/i;
+
 export type IsolationLevel =
   | "READ_UNCOMMITTED"
   | "READ_COMMITTED"
@@ -32,6 +37,8 @@ export interface ParsedStatement {
   transactionMode?: "on" | "off";
   // Line 2 directive (isolation level, only valid when txn-mode is on)
   isolationLevel?: IsolationLevel;
+  // Ghost configuration (JSON object with gh-ost flags)
+  ghostConfig?: Record<string, string>;
   // Role setter block if present
   roleSetterBlock?: string;
   // The main SQL content (everything except directives and role setter)
@@ -81,6 +88,18 @@ export function parseStatement(statement: string): ParsedStatement {
       directiveLines.add(i);
       continue;
     }
+
+    // Check for ghost directive
+    const ghostMatch = line.match(GHOST_DIRECTIVE_REGEX);
+    if (ghostMatch) {
+      try {
+        result.ghostConfig = JSON.parse(ghostMatch[1]);
+      } catch {
+        // Invalid JSON, treat as regular comment
+      }
+      directiveLines.add(i);
+      continue;
+    }
   }
 
   // Build remaining content without directive lines
@@ -122,6 +141,19 @@ export function buildStatement(components: ParsedStatement): string {
     // Convert back from underscore to space format
     const isolation = components.isolationLevel.replace(/_/g, " ");
     parts.push(`-- txn-isolation = ${isolation}`);
+  }
+
+  // Ghost directive
+  if (components.ghostConfig !== undefined) {
+    if (Object.keys(components.ghostConfig).length === 0) {
+      parts.push(`-- gh-ost = {} /* using default config */`);
+    } else {
+      parts.push(
+        `-- gh-ost = ${JSON.stringify(
+          components.ghostConfig
+        )} /* merges with default config */`
+      );
+    }
   }
 
   // Role setter block (if present) - place it before main content
@@ -177,4 +209,44 @@ export function updateRoleSetter(
   }
 
   return buildStatement(parsed);
+}
+
+/**
+ * Updates the ghost configuration in a statement while preserving other components.
+ * Pass undefined to remove ghost config, or an empty object {} to enable ghost with no flags.
+ */
+export function updateGhostConfig(
+  statement: string,
+  config: Record<string, string> | undefined
+): string {
+  const parsed = parseStatement(statement);
+  parsed.ghostConfig = config;
+  return buildStatement(parsed);
+}
+
+/**
+ * Gets the ghost configuration from a statement.
+ * Returns undefined if no ghost directive is present.
+ */
+export function getGhostConfig(
+  statement: string
+): Record<string, string> | undefined {
+  const parsed = parseStatement(statement);
+  return parsed.ghostConfig;
+}
+
+/**
+ * Checks if ghost is enabled for a statement (directive is present).
+ */
+export function isGhostEnabled(statement: string): boolean {
+  const parsed = parseStatement(statement);
+  return parsed.ghostConfig !== undefined;
+}
+
+/**
+ * Returns the default ghost configuration.
+ * Empty object {} means "use default config" - will be rendered as -- gh-ost = {} /*default config*\/
+ */
+export function getDefaultGhostConfig(): Record<string, string> {
+  return {};
 }

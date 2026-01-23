@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import semver from "semver";
 import { computed, ref } from "vue";
 import { actuatorServiceClientConnect } from "@/connect";
-import { useSilentRequest } from "@/plugins/silent-request";
 import {
   type AppFeatures,
   type AppProfile,
@@ -185,15 +184,13 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const fetchLatestRelease = async (): Promise<Release | undefined> => {
     try {
-      const releaseList = await useSilentRequest(async () => {
-        const response = await fetch(
-          `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json() as Promise<Release[]>;
-      });
+      const response = await fetch(
+        `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const releaseList = (await response.json()) as Release[];
       return releaseList[0];
     } catch {
       return;

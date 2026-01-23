@@ -87,7 +87,7 @@
 import { useClipboard } from "@vueuse/core";
 import { LockKeyholeIcon, UsersIcon } from "lucide-vue-next";
 import { NInput, NInputGroup, NInputGroupLabel, NPopover } from "naive-ui";
-import { computed, h, onMounted, ref } from "vue";
+import { computed, h, onMounted, ref, type VNode } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { CopyButton } from "@/components/v2";
@@ -99,12 +99,18 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
-import type { AccessOption } from "@/types";
 import {
   type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
+
+type AccessOption = {
+  label: string;
+  description: string;
+  value: Worksheet_Visibility;
+  icon: VNode;
+};
 
 const props = defineProps<{
   worksheet?: Worksheet;

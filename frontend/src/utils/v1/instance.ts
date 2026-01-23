@@ -253,13 +253,6 @@ export const instanceV1AllowsReorderColumns = (
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
-export const instanceV1SupportsTablePartition = (
-  instanceOrEngine: Instance | InstanceResource | Engine
-) => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.MYSQL, Engine.TIDB].includes(engine);
-};
-
 export const instanceV1SupportsExternalTable = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
@@ -470,16 +463,6 @@ export const instanceV1SupportsTransactionMode = (engine: Engine): boolean => {
 export const getDefaultTransactionMode = (): boolean => {
   // All engines default to "on" for safety and backward compatibility
   return true;
-};
-
-// Engines that support prior backup rollback (restore from backup)
-// These engines support GenerateRestoreSQL for DML rollback via backup restore
-export const instanceV1SupportsPriorBackupRollback = (
-  engine: Engine
-): boolean => {
-  return [Engine.MYSQL, Engine.POSTGRES, Engine.MSSQL, Engine.ORACLE].includes(
-    engine
-  );
 };
 
 // Engines that support schema diff rollback (generate reverse DDL via schema comparison)

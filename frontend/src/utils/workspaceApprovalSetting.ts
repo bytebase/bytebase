@@ -15,10 +15,6 @@ import {
 import { batchConvertCELStringToParsedExpr } from "@/utils";
 import { displayRoleTitle } from "./role";
 
-export const approvalNodeRoleText = (role: string) => {
-  return displayRoleTitle(role);
-};
-
 // Convert proto WorkspaceApprovalSetting to local format
 export const resolveLocalApprovalConfig = async (
   config: WorkspaceApprovalSetting

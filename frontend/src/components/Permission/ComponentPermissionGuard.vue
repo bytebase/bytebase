@@ -25,6 +25,7 @@
   <GrantRequestPanel
     v-if="showRequestRolePanel && project"
     :project-name="project.name"
+    :required-permissions="missedPermissions"
     @close="showRequestRolePanel = false"
   />
 </template>

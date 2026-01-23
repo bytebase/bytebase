@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "Upload SQL",
     "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
+    "options-disabled-due-to-oversize": "Options are disabled because the SQL is oversized.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "transaction-mode": {
@@ -1089,17 +1090,6 @@
     "task-run": {
       "logs": "Logs",
       "session": "Session",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "Command execute",
-          "schema-dump": "Schema dump",
-          "transaction-control": "Transaction control",
-          "database-sync": "Database sync",
-          "prior-backup": "Prior backup",
-          "retry-info": "Retry information",
-          "compute-diff": "Compute diff"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "Blocking sessions",
@@ -1276,6 +1266,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
+    "syncing-databases-for-instance": "Syncing databases for {0}...",
+    "n-databases-had-sync-errors": "{0} database(s) had sync errors",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
     "procedures": "Procedures",
@@ -1320,7 +1312,6 @@
     "users": "Users",
     "successfully-restored-instance": "Successfully restored the instance '{0}'.",
     "successfully-archived-instance": "Successfully archived the instance '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
     "archive-instance-instance-name": "Archive instance '{0}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "restore": "Restore",
@@ -1611,7 +1602,9 @@
     "failed-to-export-schema": "Failed to export schema",
     "select": "Select database",
     "sync-status": "Sync status",
-    "last-successful-sync": "Last successful sync",
+    "sync-status-failed": "Sync failed",
+    "last-sync": "Last sync",
+    "sync-complete-for-instance": "Sync complete for instance '{0}'",
     "filter-database": "Filter database",
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
@@ -1892,7 +1885,8 @@
       "add-more": "Add more",
       "condition-name": "Condition name",
       "workspace-level-roles": "Workspace level roles",
-      "project-level-roles": "Project level roles"
+      "project-level-roles": "Project level roles",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "Select Project",
     "all": "All projects",
@@ -2759,10 +2753,6 @@
     "vcs-source": "VCS Source",
     "view-all-files": "View all files",
     "and-n-more-files": "and {n} more files",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "Versioned",
       "declarative": "Declarative",

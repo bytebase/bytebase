@@ -6,6 +6,13 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/store";
 
+// SyncStatus is the status of the database sync operation.
+enum SyncStatus {
+  SYNC_STATUS_UNSPECIFIED = 0;
+  SYNC_STATUS_OK = 1;
+  SYNC_STATUS_FAILED = 2;
+}
+
 // DatabaseMetadata is the metadata for databases.
 message DatabaseMetadata {
   reserved 6; // drifted field removed
@@ -18,6 +25,10 @@ message DatabaseMetadata {
   // The release that was last applied to this database.
   // Format: projects/{project}/releases/{release_id}
   string release = 8;
+  // The sync status of the database.
+  SyncStatus sync_status = 9;
+  // The error message if sync failed.
+  string sync_error = 10;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.

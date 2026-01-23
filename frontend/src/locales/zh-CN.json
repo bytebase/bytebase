@@ -1030,6 +1030,7 @@
     },
     "upload-sql": "上传 SQL",
     "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
+    "options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
     "overwrite-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "transaction-mode": {
@@ -1089,17 +1090,6 @@
     "task-run": {
       "logs": "日志",
       "session": "会话",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "执行指令",
-          "schema-dump": "导出 schema",
-          "transaction-control": "事务控制",
-          "database-sync": "数据库同步",
-          "prior-backup": "数据预备份",
-          "retry-info": "重试信息",
-          "compute-diff": "计算差异"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "阻塞会话",
@@ -1276,6 +1266,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
     "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
     "start-to-sync-schema": "开始同步 schema",
+    "syncing-databases-for-instance": "正在同步 {0} 的数据库...",
+    "n-databases-had-sync-errors": "{0} 个数据库同步出错",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
     "procedures": "存储过程",
@@ -1320,7 +1312,6 @@
     "users": "用户",
     "successfully-restored-instance": "已成功恢复实例“{0}”。",
     "successfully-archived-instance": "成功归档实例'{0}'。",
-    "successfully-synced-schema-for-instance-instance-value-name": "成功为实例'{0}'同步 schema 。",
     "archive-instance-instance-name": "归档实例'{0}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "restore": "恢复",
@@ -1611,7 +1602,9 @@
     "failed-to-export-schema": "导出 Schema 失败",
     "select": "选择数据库",
     "sync-status": "同步状态",
-    "last-successful-sync": "最后一次成功的同步",
+    "sync-status-failed": "同步失败",
+    "last-sync": "最后一次同步",
+    "sync-complete-for-instance": "实例 '{0}' 同步完成",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
     "unassign": "取消分配",
@@ -1892,7 +1885,8 @@
       "add-more": "增加更多",
       "condition-name": "条件名称",
       "workspace-level-roles": "工作空间级别角色",
-      "project-level-roles": "项目级别角色"
+      "project-level-roles": "项目级别角色",
+      "roles-are-filtered-by-permissions": "角色已按权限筛选"
     },
     "select": "选择项目",
     "all": "所有项目",
@@ -2759,10 +2753,6 @@
     "vcs-source": "VCS 源",
     "view-all-files": "查看全部文件",
     "and-n-more-files": "还有 {count} 个文件",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "版本化",
       "declarative": "声明式",

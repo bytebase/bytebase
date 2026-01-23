@@ -1,15 +1,7 @@
-import { last } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import { useDatabaseV1Store } from "@/store";
-import {
-  isValidDatabaseName,
-  UNKNOWN_ID,
-  UNKNOWN_TASK_NAME,
-  unknownDatabase,
-  unknownStage,
-  unknownTask,
-} from "@/types";
+import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -22,7 +14,6 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractCoreDatabaseInfoFromDatabaseCreateTask,
-  flattenTaskV1List,
   mockDatabase,
 } from "./issue";
 
@@ -44,14 +35,6 @@ export const extractStageUID = (name: string) => {
   const pattern = /(?:^|\/)stages\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
-};
-
-export const isValidStageName = (name: string | undefined) => {
-  if (!name) {
-    return false;
-  }
-  const stageUID = extractStageUID(name);
-  return stageUID && stageUID !== String(UNKNOWN_ID);
 };
 
 export const extractTaskUID = (name: string) => {
@@ -98,15 +81,6 @@ export const extractTaskNameFromTaskRunName = (taskRunName: string): string => {
   return taskRunName.substring(0, idx);
 };
 
-export const stageV1Slug = (stage: Stage): string => {
-  // Stage UID is now the environment ID
-  return extractStageUID(stage.name);
-};
-
-export const taskV1Slug = (task: Task): string => {
-  return extractTaskUID(task.name);
-};
-
 /**
  * Extracts the stage resource name from a task resource name.
  * Task name format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
@@ -116,92 +90,6 @@ export const extractStageNameFromTaskName = (taskName: string): string => {
   const pattern = /^(.+\/stages\/[^/]+)\/tasks\/[^/]+$/;
   const matches = taskName.match(pattern);
   return matches?.[1] ?? "";
-};
-
-export const activeTaskInTaskList = (tasks: Task[]): Task => {
-  // Focus on the running task first.
-  const runningTask = tasks.find((task) => task.status === Task_Status.RUNNING);
-  if (runningTask) {
-    return runningTask;
-  }
-
-  const maybeActiveTask = tasks.find(
-    (task) =>
-      task.status === Task_Status.NOT_STARTED ||
-      task.status === Task_Status.PENDING ||
-      // "FAILED" is also a transient task status, which requires user
-      // to take further action (e.g. Skip, Retry)
-      task.status === Task_Status.FAILED ||
-      // "CANCELED" tasks can be "RESTART"ed
-      // So it should be an "active" task
-      task.status === Task_Status.CANCELED ||
-      task.status === Task_Status.STATUS_UNSPECIFIED // compatibility for preview phase
-  );
-  if (maybeActiveTask) {
-    return maybeActiveTask;
-  }
-
-  // fallback
-  return last(tasks) ?? unknownTask();
-};
-
-export const activeTaskInStageV1 = (stage: Stage): Task => {
-  return activeTaskInTaskList(stage.tasks);
-};
-
-export const activeTaskInRollout = (rollout: Rollout | undefined): Task => {
-  if (!rollout) {
-    return unknownTask();
-  }
-  return activeTaskInTaskList(flattenTaskV1List(rollout));
-};
-
-export const activeStageInRollout = (rollout: Rollout | undefined): Stage => {
-  const activeTask = activeTaskInRollout(rollout);
-  if (activeTask.name !== UNKNOWN_TASK_NAME) {
-    const stage = rollout?.stages.find((stage) =>
-      stage.tasks.includes(activeTask)
-    );
-    if (stage) {
-      return stage;
-    }
-  }
-  return unknownStage();
-};
-
-export const findTaskByName = (
-  rollout: Rollout | undefined,
-  name: string
-): Task => {
-  // Use task ID for comparison to handle legacy data with malformed stage IDs.
-  const targetTaskUID = extractTaskUID(name);
-  if (!targetTaskUID) {
-    return unknownTask();
-  }
-  for (const stage of rollout?.stages ?? []) {
-    for (const task of stage.tasks) {
-      if (extractTaskUID(task.name) === targetTaskUID) {
-        return task;
-      }
-    }
-  }
-  return unknownTask();
-};
-
-export const findStageByName = (
-  rollout: Rollout | undefined,
-  name: string
-): Stage => {
-  // Use stage ID for comparison to handle legacy data with malformed stage IDs.
-  const targetStageUID = extractStageUID(name);
-  if (!targetStageUID) {
-    return unknownStage();
-  }
-  return (
-    (rollout?.stages ?? []).find(
-      (s) => extractStageUID(s.name) === targetStageUID
-    ) ?? unknownStage()
-  );
 };
 
 export const sheetNameOfTaskV1 = (task: Task): string => {
@@ -219,20 +107,6 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
     return task.payload.value.sheet ?? "";
   }
   return "";
-};
-
-export const setSheetNameForTask = (task: Task, sheetName: string) => {
-  if (task.payload?.case === "databaseCreate") {
-    task.payload.value.sheet = sheetName;
-  } else if (task.payload?.case === "databaseUpdate") {
-    // Task.DatabaseUpdate now uses oneof source { sheet | release }
-    task.payload.value.source = {
-      case: "sheet",
-      value: sheetName,
-    };
-  } else if (task.payload?.case === "databaseDataExport") {
-    task.payload.value.sheet = sheetName;
-  }
 };
 
 export const releaseNameOfTaskV1 = (task: Task): string => {

@@ -13,6 +13,7 @@ import (
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -96,9 +97,9 @@ func (d *Driver) getVersion() (string, error) {
 	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		// Include response body to help debug parsing issues
-		bodyPreview := string(bytes)
-		if len(bodyPreview) > 500 {
-			bodyPreview = bodyPreview[:500] + "..."
+		bodyPreview, truncated := common.TruncateString(string(bytes), 500)
+		if truncated {
+			bodyPreview += "..."
 		}
 		return "", errors.Wrapf(err, "failed to parse version response: %s", bodyPreview)
 	}
@@ -158,9 +159,9 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 		var results []IndicesResult
 		if err := json.Unmarshal(bytes, &results); err != nil {
 			// Include response body to help debug parsing issues
-			bodyPreview := string(bytes)
-			if len(bodyPreview) > 500 {
-				bodyPreview = bodyPreview[:500] + "..."
+			bodyPreview, truncated := common.TruncateString(string(bytes), 500)
+			if truncated {
+				bodyPreview += "..."
 			}
 			return nil, errors.Wrapf(err, "failed to parse Elasticsearch indices response: %s", bodyPreview)
 		}
@@ -204,9 +205,9 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 	var results []IndicesResult
 	if err := json.Unmarshal(bytes, &results); err != nil {
 		// Include response body to help debug parsing issues
-		bodyPreview := string(bytes)
-		if len(bodyPreview) > 500 {
-			bodyPreview = bodyPreview[:500] + "..."
+		bodyPreview, truncated := common.TruncateString(string(bytes), 500)
+		if truncated {
+			bodyPreview += "..."
 		}
 		return nil, errors.Wrapf(err, "failed to parse indices response: %s", bodyPreview)
 	}

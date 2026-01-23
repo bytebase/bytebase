@@ -135,12 +135,19 @@ import {
   extractUserId,
   pushNotification,
   useCurrentUserV1,
+  usePermissionStore,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
+  useRoleStore,
   useSubscriptionV1Store,
   useWorkspaceV1Store,
 } from "@/store";
-import { groupBindingPrefix, PRESET_WORKSPACE_ROLES } from "@/types";
+import {
+  groupBindingPrefix,
+  type Permission,
+  PRESET_WORKSPACE_ROLES,
+  PresetRoleType,
+} from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -170,7 +177,9 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const dialog = useDialog();
+const permissionStore = usePermissionStore();
 const currentUserV1 = useCurrentUserV1();
+const roleStore = useRoleStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 
 const projectResourceName = computed(() => props.project.name);
@@ -188,6 +197,29 @@ const state = reactive<LocalState>({
 const workspaceStore = useWorkspaceV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
+const projectOwnerPermissions = computed(
+  () =>
+    (roleStore.getRoleByName(PresetRoleType.PROJECT_OWNER)?.permissions ??
+      []) as Permission[]
+);
+const currentPermissionsInProject = computed(() =>
+  permissionStore.currentPermissionsInProjectV1(props.project)
+);
+
+const hasMissingPermission = computed(() => {
+  for (const permission of projectOwnerPermissions.value) {
+    if (permissionStore.currentPermissions.has(permission)) {
+      continue;
+    }
+    if (currentPermissionsInProject.value.has(permission)) {
+      continue;
+    }
+    return true;
+  }
+
+  return false;
+});
+
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
@@ -198,7 +230,9 @@ const hasRequestRoleFeature = computed(() =>
 
 const shouldShowRequestRoleButton = computed(() => {
   return (
-    props.project.allowRequestRole && hasWorkspacePermissionV2("bb.roles.list")
+    props.project.allowRequestRole &&
+    hasWorkspacePermissionV2("bb.roles.list") &&
+    hasMissingPermission.value
   );
 });
 

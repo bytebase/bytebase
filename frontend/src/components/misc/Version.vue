@@ -17,7 +17,7 @@
       </RequireEnterpriseButton>
       <router-link
         v-if="subscriptionViewMode === 'LINK'"
-        :to="autoSubscriptionRoute($router)"
+        :to="autoSubscriptionRoute()"
         exact-active-class=""
       >
         {{ $t(readableCurrentPlan) }}

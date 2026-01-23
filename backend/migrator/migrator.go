@@ -16,6 +16,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -209,9 +210,9 @@ func executeMigration(ctx context.Context, conn *sql.Conn, statement string, ver
 		}
 
 		// Truncate statement for readability in error message
-		stmtPreview := statement
-		if len(stmtPreview) > 100 {
-			stmtPreview = stmtPreview[:100] + "..."
+		stmtPreview, truncated := common.TruncateString(statement, 100)
+		if truncated {
+			stmtPreview += "..."
 		}
 
 		return errors.Errorf("migration %s failed\n"+
