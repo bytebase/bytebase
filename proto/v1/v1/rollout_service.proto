@@ -34,15 +34,14 @@ service RolloutService {
   }
 
   // Creates a new rollout for a plan.
-  // Permissions required: bb.rollouts.create
+  // Permissions required: bb.rollouts.create (or issue creator for data export issues)
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*}/rollout"
       body: "*"
     };
     option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.rollouts.create";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
 

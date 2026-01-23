@@ -439,7 +439,6 @@ var PredefinedRoles = []*RoleMessage{
 			permission.ReleasesList,
 			permission.RevisionsGet,
 			permission.RevisionsList,
-			permission.RolloutsCreate,
 			permission.RolloutsGet,
 			permission.RolloutsList,
 			permission.SheetsCreate,

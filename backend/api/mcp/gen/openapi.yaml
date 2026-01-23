@@ -4688,10 +4688,10 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Creates a new rollout for a plan.  Permissions required: bb.rollouts.create'
+      summary: 'Creates a new rollout for a plan.  Permissions required: bb.rollouts.create (or issue creator for data export issues)'
       description: |-
         Creates a new rollout for a plan.
-         Permissions required: bb.rollouts.create
+         Permissions required: bb.rollouts.create (or issue creator for data export issues)
       operationId: bytebase.v1.RolloutService.CreateRollout
       parameters:
         - name: Connect-Protocol-Version

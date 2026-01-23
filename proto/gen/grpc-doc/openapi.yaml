@@ -6679,7 +6679,7 @@ paths:
       summary: CreateRollout
       description: |-
         Creates a new rollout for a plan.
-         Permissions required: bb.rollouts.create
+         Permissions required: bb.rollouts.create (or issue creator for data export issues)
       operationId: RolloutService_CreateRollout
       parameters:
         - name: project
