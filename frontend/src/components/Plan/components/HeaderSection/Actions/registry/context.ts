@@ -106,7 +106,17 @@ function computeExportArchiveReady(
     return false;
   }
 
-  const exportTaskRuns = exportTasks
+  // Only consider DONE tasks for archive readiness (skipped tasks don't have archives)
+  const doneTasks = exportTasks.filter(
+    (task) => task.status === Task_Status.DONE
+  );
+
+  // Need at least one DONE task to have an archive to download
+  if (doneTasks.length === 0) {
+    return false;
+  }
+
+  const exportTaskRuns = doneTasks
     .map((task) => {
       const taskRunsForTask = taskRuns.filter(
         (taskRun) => extractTaskUID(taskRun.name) === extractTaskUID(task.name)

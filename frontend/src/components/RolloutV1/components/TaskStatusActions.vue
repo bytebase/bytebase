@@ -4,7 +4,7 @@
       v-if="!readonly && (primaryAction || dropdownOptions.length > 0)"
       class="flex flex-row justify-end items-center gap-x-2"
     >
-      <NButton v-if="primaryAction" size="small" @click="handlePrimaryAction">
+      <NButton v-if="primaryAction" :size="size" @click="handlePrimaryAction">
         {{ actionDisplayTitle(primaryAction) }}
       </NButton>
       <NDropdown
@@ -13,7 +13,7 @@
         :options="dropdownOptions"
         @select="handleDropdownSelect"
       >
-        <NButton size="small" class="px-1!" quaternary>
+        <NButton :size="size" class="px-1!" quaternary>
           <template #icon>
             <EllipsisVerticalIcon class="w-4 h-4" />
           </template>
@@ -63,11 +63,17 @@ type TaskStatusAction =
   // * -> SKIPPED
   | "SKIP";
 
-const props = defineProps<{
-  task: Task;
-  taskRuns: TaskRun[];
-  rollout?: Rollout;
-}>();
+const props = withDefaults(
+  defineProps<{
+    task: Task;
+    taskRuns: TaskRun[];
+    rollout?: Rollout;
+    size?: "tiny" | "small" | "medium" | "large";
+  }>(),
+  {
+    size: "small",
+  }
+);
 
 const emit = defineEmits<{
   "action-confirmed": [];
