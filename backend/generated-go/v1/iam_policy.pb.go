@@ -257,6 +257,8 @@ type Binding struct {
 	// Specifies the principals requesting access for a Bytebase resource.
 	// For users, the member should be: user:{email}
 	// For groups, the member should be: group:{email}
+	// For service accounts, the member should be: serviceAccount:{email}
+	// For workload identities, the member should be: workloadIdentity:{email}
 	Members []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this binding, only used in the project IAM policy.
 	// If the condition evaluates to true, then this binding applies to the current request.

@@ -140,10 +140,14 @@ func convertToV1WebhookType(tp storepb.WebhookType) v1pb.WebhookType {
 }
 
 func convertToV1MemberInBinding(member string) string {
-	if strings.HasPrefix(member, common.UserNamePrefix) {
-		return common.UserBindingPrefix + strings.TrimPrefix(member, common.UserNamePrefix)
-	} else if strings.HasPrefix(member, common.GroupPrefix) {
-		return common.GroupBindingPrefix + strings.TrimPrefix(member, common.GroupPrefix)
+	if email, ok := strings.CutPrefix(member, common.ServiceAccountNamePrefix); ok {
+		return common.ServiceAccountBindingPrefix + email
+	} else if email, ok := strings.CutPrefix(member, common.WorkloadIdentityNamePrefix); ok {
+		return common.WorkloadIdentityBindingPrefix + email
+	} else if email, ok := strings.CutPrefix(member, common.UserNamePrefix); ok {
+		return common.UserBindingPrefix + email
+	} else if email, ok := strings.CutPrefix(member, common.GroupPrefix); ok {
+		return common.GroupBindingPrefix + email
 	}
 	// handle allUsers.
 	return member
@@ -229,16 +233,18 @@ func convertToStoreIamPolicy(iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, err
 }
 
 func convertToStoreIamPolicyMember(member string) (string, error) {
-	if strings.HasPrefix(member, common.UserBindingPrefix) {
-		email := strings.TrimPrefix(member, common.UserBindingPrefix)
+	if email, ok := strings.CutPrefix(member, common.ServiceAccountBindingPrefix); ok {
+		return common.FormatServiceAccountEmail(email), nil
+	} else if email, ok := strings.CutPrefix(member, common.WorkloadIdentityBindingPrefix); ok {
+		return common.FormatWorkloadIdentityEmail(email), nil
+	} else if email, ok := strings.CutPrefix(member, common.UserBindingPrefix); ok {
 		return common.FormatUserEmail(email), nil
-	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
-		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
+	} else if email, ok := strings.CutPrefix(member, common.GroupBindingPrefix); ok {
 		return common.FormatGroupEmail(email), nil
 	} else if member == common.AllUsers {
 		return member, nil
 	}
-	return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport member %s", member))
+	return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported member %s", member))
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
