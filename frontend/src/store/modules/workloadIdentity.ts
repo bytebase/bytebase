@@ -96,8 +96,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
           return getOrFetchWorkloadIdentity(name);
         })
       );
-    } catch {
-    }
+    } catch {}
   };
 
   const createWorkloadIdentity = async (

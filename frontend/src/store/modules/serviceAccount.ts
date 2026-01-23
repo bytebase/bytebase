@@ -90,8 +90,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
           return getOrFetchServiceAccount(name);
         })
       );
-    } catch {
-    }
+    } catch {}
   };
 
   const createServiceAccount = async (
