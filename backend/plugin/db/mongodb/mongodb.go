@@ -24,6 +24,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/telemetry"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -270,6 +271,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	results, err := d.queryConnWithMongosh(ctx, statement, queryContext, startTime)
 	if err == nil && gomongoErr != nil {
 		slog.Debug("executed query with mongosh fallback", slog.String("statement", statement), log.BBError(gomongoErr))
+		telemetry.ReportGomongoFallback(ctx, statement, gomongoErr.Error())
 	}
 	return results, err
 }
