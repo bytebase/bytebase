@@ -6964,7 +6964,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} Format: instances/{instance} Format: projects/{project}/rollouts/{rollout} Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
+| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} Format: instances/{instance} Format: projects/{project}/plans/{plan}/rollout Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |

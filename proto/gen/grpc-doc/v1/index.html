@@ -19744,8 +19744,8 @@ TODO: use range instead </p></td>
                   <td><p>The name is the resource name to execute the export against.
 Format: instances/{instance}/databases/{database}
 Format: instances/{instance}
-Format: projects/{project}/rollouts/{rollout}
-Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+Format: projects/{project}/plans/{plan}/rollout
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
                 </tr>
               
                 <tr>
@@ -21110,14 +21110,14 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*}:export</td>
+                <td>/v1/{name=projects/*/plans/*/rollout}:export</td>
                 <td>*</td>
               </tr>
               
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*/stages/*}:export</td>
+                <td>/v1/{name=projects/*/plans/*/rollout/stages/*}:export</td>
                 <td>*</td>
               </tr>
               
