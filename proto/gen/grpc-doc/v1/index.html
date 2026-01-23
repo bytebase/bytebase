@@ -18592,7 +18592,9 @@ Format: {resource type}/{resource id} </p></td>
                   <td>repeated</td>
                   <td><p>Specifies the principals who are exempt from masking.
 For users, the member should be: user:{email}
-For groups, the member should be: group:{email} </p></td>
+For groups, the member should be: group:{email}
+For service accounts, the member should be: serviceAccount:{email}
+For workload identities, the member should be: workloadIdentity:{email} </p></td>
                 </tr>
               
                 <tr>
@@ -19744,8 +19746,8 @@ TODO: use range instead </p></td>
                   <td><p>The name is the resource name to execute the export against.
 Format: instances/{instance}/databases/{database}
 Format: instances/{instance}
-Format: projects/{project}/rollouts/{rollout}
-Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+Format: projects/{project}/plans/{plan}/rollout
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
                 </tr>
               
                 <tr>
@@ -21110,14 +21112,14 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*}:export</td>
+                <td>/v1/{name=projects/*/plans/*/rollout}:export</td>
                 <td>*</td>
               </tr>
               
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*/stages/*}:export</td>
+                <td>/v1/{name=projects/*/plans/*/rollout/stages/*}:export</td>
                 <td>*</td>
               </tr>
               
@@ -28471,7 +28473,7 @@ Permissions required: bb.rollouts.list</p></td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
                 <td><p>Creates a new rollout for a plan.
-Permissions required: bb.rollouts.create</p></td>
+Permissions required: bb.rollouts.create (or issue creator for data export issues)</p></td>
               </tr>
             
               <tr>

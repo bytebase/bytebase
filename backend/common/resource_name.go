@@ -24,7 +24,6 @@ const (
 	UserNamePrefix             = "users/"
 	IdentityProviderNamePrefix = "idps/"
 	SettingNamePrefix          = "settings/"
-	RolloutPrefix              = "rollouts/"
 	StagePrefix                = "stages/"
 	TaskPrefix                 = "tasks/"
 	TaskRunPrefix              = "taskRuns/"

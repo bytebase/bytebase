@@ -64,7 +64,7 @@ func TestDeleteUser(t *testing.T) {
 	// Test: only count the end user.
 	for _, binding := range policy.Bindings {
 		if binding.Role == "roles/workspaceAdmin" {
-			binding.Members = append(binding.Members, fmt.Sprintf("user:%s", serviceAccount.Email))
+			binding.Members = append(binding.Members, fmt.Sprintf("serviceAccount:%s", serviceAccount.Email))
 			break
 		}
 	}

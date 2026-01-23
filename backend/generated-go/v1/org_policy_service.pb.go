@@ -983,6 +983,8 @@ type MaskingExemptionPolicy_Exemption struct {
 	// Specifies the principals who are exempt from masking.
 	// For users, the member should be: user:{email}
 	// For groups, the member should be: group:{email}
+	// For service accounts, the member should be: serviceAccount:{email}
+	// For workload identities, the member should be: workloadIdentity:{email}
 	Members []string `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this exception policy instance.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec

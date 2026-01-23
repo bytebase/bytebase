@@ -7,7 +7,7 @@ import {
 
 /**
  * Extract task name from task run name.
- * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+ * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
  */
 export const getTaskNameFromTaskRun = (taskRunName: string): string => {
   return taskRunName.replace(

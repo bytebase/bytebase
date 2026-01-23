@@ -32,7 +32,7 @@ export const getRevisionType = (type: Revision_Type): string => {
 };
 
 // Extract task link from taskRun resource name
-// e.g., "projects/xxx/rollouts/yyy/stages/zzz/tasks/aaa/taskRuns/bbb" -> "/projects/xxx/rollouts/yyy/stages/zzz/tasks/aaa"
+// e.g., "projects/xxx/plans/yyy/rollout/stages/zzz/tasks/aaa/taskRuns/bbb" -> "/projects/xxx/plans/yyy/rollout/stages/zzz/tasks/aaa"
 export const extractTaskLink = (taskRunName: string): string => {
   const parts = taskRunName.split("/taskRuns/");
   if (parts.length !== 2) {
