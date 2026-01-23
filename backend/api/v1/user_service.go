@@ -113,7 +113,6 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 		}
 		response.Users = append(response.Users, v1User)
-
 	}
 
 	return connect.NewResponse(response), nil
