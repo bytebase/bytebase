@@ -452,7 +452,13 @@
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "members": {
+      "service-accounts": "Cuentas de Servicio",
+      "add-service-account": "Añadir Cuenta de Servicio",
+      "workload-identities": "Identidades de Carga de Trabajo",
+      "add-workload-identity": "Añadir Identidad de Carga de Trabajo",
       "inactive-users": "Usuarios inactivos",
+      "inactive-service-accounts": "Cuentas de servicio inactivas",
+      "inactive-workload-identities": "Identidades de carga de trabajo inactivas",
       "table": {
         "account": "Cuenta",
         "role": "Rol",
