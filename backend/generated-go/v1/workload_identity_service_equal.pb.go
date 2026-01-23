@@ -68,42 +68,6 @@ func (x *GetWorkloadIdentityRequest) Equal(y *GetWorkloadIdentityRequest) bool {
 	return true
 }
 
-func (x *BatchGetWorkloadIdentitiesRequest) Equal(y *BatchGetWorkloadIdentitiesRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Names) != len(y.Names) {
-		return false
-	}
-	for i := 0; i < len(x.Names); i++ {
-		if x.Names[i] != y.Names[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *BatchGetWorkloadIdentitiesResponse) Equal(y *BatchGetWorkloadIdentitiesResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.WorkloadIdentities) != len(y.WorkloadIdentities) {
-		return false
-	}
-	for i := 0; i < len(x.WorkloadIdentities); i++ {
-		if !x.WorkloadIdentities[i].Equal(y.WorkloadIdentities[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *ListWorkloadIdentitiesRequest) Equal(y *ListWorkloadIdentitiesRequest) bool {
 	if x == y {
 		return true

@@ -624,8 +624,6 @@
     - [RolloutService](#bytebase-v1-RolloutService)
   
 - [v1/service_account_service.proto](#v1_service_account_service-proto)
-    - [BatchGetServiceAccountsRequest](#bytebase-v1-BatchGetServiceAccountsRequest)
-    - [BatchGetServiceAccountsResponse](#bytebase-v1-BatchGetServiceAccountsResponse)
     - [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest)
     - [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest)
     - [GetServiceAccountRequest](#bytebase-v1-GetServiceAccountRequest)
@@ -659,8 +657,6 @@
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
 - [v1/workload_identity_service.proto](#v1_workload_identity_service-proto)
-    - [BatchGetWorkloadIdentitiesRequest](#bytebase-v1-BatchGetWorkloadIdentitiesRequest)
-    - [BatchGetWorkloadIdentitiesResponse](#bytebase-v1-BatchGetWorkloadIdentitiesResponse)
     - [CreateWorkloadIdentityRequest](#bytebase-v1-CreateWorkloadIdentityRequest)
     - [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest)
     - [GetWorkloadIdentityRequest](#bytebase-v1-GetWorkloadIdentityRequest)
@@ -10186,36 +10182,6 @@ RolloutService manages the execution of deployment plans.
 
 
 
-<a name="bytebase-v1-BatchGetServiceAccountsRequest"></a>
-
-### BatchGetServiceAccountsRequest
-Request message for batch getting service accounts.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The service account names to retrieve. Format: serviceAccounts/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetServiceAccountsResponse"></a>
-
-### BatchGetServiceAccountsResponse
-Response message for batch getting service accounts.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| service_accounts | [ServiceAccount](#bytebase-v1-ServiceAccount) | repeated | The service accounts from the specified request. |
-
-
-
-
-
-
 <a name="bytebase-v1-CreateServiceAccountRequest"></a>
 
 ### CreateServiceAccountRequest
@@ -10367,7 +10333,6 @@ ServiceAccountService manages service accounts for API integrations.
 | ----------- | ------------ | ------------- | ------------|
 | CreateServiceAccount | [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Creates a new service account. For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace. For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project. |
 | GetServiceAccount | [GetServiceAccountRequest](#bytebase-v1-GetServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Gets a service account by name. Permissions required: bb.serviceAccounts.get |
-| BatchGetServiceAccounts | [BatchGetServiceAccountsRequest](#bytebase-v1-BatchGetServiceAccountsRequest) | [BatchGetServiceAccountsResponse](#bytebase-v1-BatchGetServiceAccountsResponse) | Gets service accounts in batch. Permissions required: bb.serviceAccounts.get |
 | ListServiceAccounts | [ListServiceAccountsRequest](#bytebase-v1-ListServiceAccountsRequest) | [ListServiceAccountsResponse](#bytebase-v1-ListServiceAccountsResponse) | Lists service accounts. For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace. For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project. |
 | UpdateServiceAccount | [UpdateServiceAccountRequest](#bytebase-v1-UpdateServiceAccountRequest) | [ServiceAccount](#bytebase-v1-ServiceAccount) | Updates a service account. Permissions required: bb.serviceAccounts.update |
 | DeleteServiceAccount | [DeleteServiceAccountRequest](#bytebase-v1-DeleteServiceAccountRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a service account. Permissions required: bb.serviceAccounts.delete |
@@ -10696,36 +10661,6 @@ SubscriptionService manages enterprise subscriptions and licensing.
 
 
 
-<a name="bytebase-v1-BatchGetWorkloadIdentitiesRequest"></a>
-
-### BatchGetWorkloadIdentitiesRequest
-Request message for batch getting workload identities.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The workload identity names to retrieve. Format: workloadIdentities/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetWorkloadIdentitiesResponse"></a>
-
-### BatchGetWorkloadIdentitiesResponse
-Response message for batch getting workload identities.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| workload_identities | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | repeated | The workload identities from the specified request. |
-
-
-
-
-
-
 <a name="bytebase-v1-CreateWorkloadIdentityRequest"></a>
 
 ### CreateWorkloadIdentityRequest
@@ -10877,7 +10812,6 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | ----------- | ------------ | ------------- | ------------|
 | CreateWorkloadIdentity | [CreateWorkloadIdentityRequest](#bytebase-v1-CreateWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Creates a new workload identity. For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace. For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project. |
 | GetWorkloadIdentity | [GetWorkloadIdentityRequest](#bytebase-v1-GetWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Gets a workload identity by name. Permissions required: bb.workloadIdentities.get |
-| BatchGetWorkloadIdentities | [BatchGetWorkloadIdentitiesRequest](#bytebase-v1-BatchGetWorkloadIdentitiesRequest) | [BatchGetWorkloadIdentitiesResponse](#bytebase-v1-BatchGetWorkloadIdentitiesResponse) | Gets workload identities in batch. Permissions required: bb.workloadIdentities.get |
 | ListWorkloadIdentities | [ListWorkloadIdentitiesRequest](#bytebase-v1-ListWorkloadIdentitiesRequest) | [ListWorkloadIdentitiesResponse](#bytebase-v1-ListWorkloadIdentitiesResponse) | Lists workload identities. For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace. For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project. |
 | UpdateWorkloadIdentity | [UpdateWorkloadIdentityRequest](#bytebase-v1-UpdateWorkloadIdentityRequest) | [WorkloadIdentity](#bytebase-v1-WorkloadIdentity) | Updates a workload identity. Permissions required: bb.workloadIdentities.update |
 | DeleteWorkloadIdentity | [DeleteWorkloadIdentityRequest](#bytebase-v1-DeleteWorkloadIdentityRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a workload identity. Permissions required: bb.workloadIdentities.delete |

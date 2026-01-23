@@ -40,9 +40,6 @@ const (
 	// ServiceAccountServiceGetServiceAccountProcedure is the fully-qualified name of the
 	// ServiceAccountService's GetServiceAccount RPC.
 	ServiceAccountServiceGetServiceAccountProcedure = "/bytebase.v1.ServiceAccountService/GetServiceAccount"
-	// ServiceAccountServiceBatchGetServiceAccountsProcedure is the fully-qualified name of the
-	// ServiceAccountService's BatchGetServiceAccounts RPC.
-	ServiceAccountServiceBatchGetServiceAccountsProcedure = "/bytebase.v1.ServiceAccountService/BatchGetServiceAccounts"
 	// ServiceAccountServiceListServiceAccountsProcedure is the fully-qualified name of the
 	// ServiceAccountService's ListServiceAccounts RPC.
 	ServiceAccountServiceListServiceAccountsProcedure = "/bytebase.v1.ServiceAccountService/ListServiceAccounts"
@@ -66,9 +63,6 @@ type ServiceAccountServiceClient interface {
 	// Gets a service account by name.
 	// Permissions required: bb.serviceAccounts.get
 	GetServiceAccount(context.Context, *connect.Request[v1.GetServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error)
-	// Gets service accounts in batch.
-	// Permissions required: bb.serviceAccounts.get
-	BatchGetServiceAccounts(context.Context, *connect.Request[v1.BatchGetServiceAccountsRequest]) (*connect.Response[v1.BatchGetServiceAccountsResponse], error)
 	// Lists service accounts.
 	// For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
@@ -107,12 +101,6 @@ func NewServiceAccountServiceClient(httpClient connect.HTTPClient, baseURL strin
 			connect.WithSchema(serviceAccountServiceMethods.ByName("GetServiceAccount")),
 			connect.WithClientOptions(opts...),
 		),
-		batchGetServiceAccounts: connect.NewClient[v1.BatchGetServiceAccountsRequest, v1.BatchGetServiceAccountsResponse](
-			httpClient,
-			baseURL+ServiceAccountServiceBatchGetServiceAccountsProcedure,
-			connect.WithSchema(serviceAccountServiceMethods.ByName("BatchGetServiceAccounts")),
-			connect.WithClientOptions(opts...),
-		),
 		listServiceAccounts: connect.NewClient[v1.ListServiceAccountsRequest, v1.ListServiceAccountsResponse](
 			httpClient,
 			baseURL+ServiceAccountServiceListServiceAccountsProcedure,
@@ -142,13 +130,12 @@ func NewServiceAccountServiceClient(httpClient connect.HTTPClient, baseURL strin
 
 // serviceAccountServiceClient implements ServiceAccountServiceClient.
 type serviceAccountServiceClient struct {
-	createServiceAccount    *connect.Client[v1.CreateServiceAccountRequest, v1.ServiceAccount]
-	getServiceAccount       *connect.Client[v1.GetServiceAccountRequest, v1.ServiceAccount]
-	batchGetServiceAccounts *connect.Client[v1.BatchGetServiceAccountsRequest, v1.BatchGetServiceAccountsResponse]
-	listServiceAccounts     *connect.Client[v1.ListServiceAccountsRequest, v1.ListServiceAccountsResponse]
-	updateServiceAccount    *connect.Client[v1.UpdateServiceAccountRequest, v1.ServiceAccount]
-	deleteServiceAccount    *connect.Client[v1.DeleteServiceAccountRequest, emptypb.Empty]
-	undeleteServiceAccount  *connect.Client[v1.UndeleteServiceAccountRequest, v1.ServiceAccount]
+	createServiceAccount   *connect.Client[v1.CreateServiceAccountRequest, v1.ServiceAccount]
+	getServiceAccount      *connect.Client[v1.GetServiceAccountRequest, v1.ServiceAccount]
+	listServiceAccounts    *connect.Client[v1.ListServiceAccountsRequest, v1.ListServiceAccountsResponse]
+	updateServiceAccount   *connect.Client[v1.UpdateServiceAccountRequest, v1.ServiceAccount]
+	deleteServiceAccount   *connect.Client[v1.DeleteServiceAccountRequest, emptypb.Empty]
+	undeleteServiceAccount *connect.Client[v1.UndeleteServiceAccountRequest, v1.ServiceAccount]
 }
 
 // CreateServiceAccount calls bytebase.v1.ServiceAccountService.CreateServiceAccount.
@@ -159,11 +146,6 @@ func (c *serviceAccountServiceClient) CreateServiceAccount(ctx context.Context, 
 // GetServiceAccount calls bytebase.v1.ServiceAccountService.GetServiceAccount.
 func (c *serviceAccountServiceClient) GetServiceAccount(ctx context.Context, req *connect.Request[v1.GetServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error) {
 	return c.getServiceAccount.CallUnary(ctx, req)
-}
-
-// BatchGetServiceAccounts calls bytebase.v1.ServiceAccountService.BatchGetServiceAccounts.
-func (c *serviceAccountServiceClient) BatchGetServiceAccounts(ctx context.Context, req *connect.Request[v1.BatchGetServiceAccountsRequest]) (*connect.Response[v1.BatchGetServiceAccountsResponse], error) {
-	return c.batchGetServiceAccounts.CallUnary(ctx, req)
 }
 
 // ListServiceAccounts calls bytebase.v1.ServiceAccountService.ListServiceAccounts.
@@ -196,9 +178,6 @@ type ServiceAccountServiceHandler interface {
 	// Gets a service account by name.
 	// Permissions required: bb.serviceAccounts.get
 	GetServiceAccount(context.Context, *connect.Request[v1.GetServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error)
-	// Gets service accounts in batch.
-	// Permissions required: bb.serviceAccounts.get
-	BatchGetServiceAccounts(context.Context, *connect.Request[v1.BatchGetServiceAccountsRequest]) (*connect.Response[v1.BatchGetServiceAccountsResponse], error)
 	// Lists service accounts.
 	// For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
@@ -233,12 +212,6 @@ func NewServiceAccountServiceHandler(svc ServiceAccountServiceHandler, opts ...c
 		connect.WithSchema(serviceAccountServiceMethods.ByName("GetServiceAccount")),
 		connect.WithHandlerOptions(opts...),
 	)
-	serviceAccountServiceBatchGetServiceAccountsHandler := connect.NewUnaryHandler(
-		ServiceAccountServiceBatchGetServiceAccountsProcedure,
-		svc.BatchGetServiceAccounts,
-		connect.WithSchema(serviceAccountServiceMethods.ByName("BatchGetServiceAccounts")),
-		connect.WithHandlerOptions(opts...),
-	)
 	serviceAccountServiceListServiceAccountsHandler := connect.NewUnaryHandler(
 		ServiceAccountServiceListServiceAccountsProcedure,
 		svc.ListServiceAccounts,
@@ -269,8 +242,6 @@ func NewServiceAccountServiceHandler(svc ServiceAccountServiceHandler, opts ...c
 			serviceAccountServiceCreateServiceAccountHandler.ServeHTTP(w, r)
 		case ServiceAccountServiceGetServiceAccountProcedure:
 			serviceAccountServiceGetServiceAccountHandler.ServeHTTP(w, r)
-		case ServiceAccountServiceBatchGetServiceAccountsProcedure:
-			serviceAccountServiceBatchGetServiceAccountsHandler.ServeHTTP(w, r)
 		case ServiceAccountServiceListServiceAccountsProcedure:
 			serviceAccountServiceListServiceAccountsHandler.ServeHTTP(w, r)
 		case ServiceAccountServiceUpdateServiceAccountProcedure:
@@ -294,10 +265,6 @@ func (UnimplementedServiceAccountServiceHandler) CreateServiceAccount(context.Co
 
 func (UnimplementedServiceAccountServiceHandler) GetServiceAccount(context.Context, *connect.Request[v1.GetServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ServiceAccountService.GetServiceAccount is not implemented"))
-}
-
-func (UnimplementedServiceAccountServiceHandler) BatchGetServiceAccounts(context.Context, *connect.Request[v1.BatchGetServiceAccountsRequest]) (*connect.Response[v1.BatchGetServiceAccountsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ServiceAccountService.BatchGetServiceAccounts is not implemented"))
 }
 
 func (UnimplementedServiceAccountServiceHandler) ListServiceAccounts(context.Context, *connect.Request[v1.ListServiceAccountsRequest]) (*connect.Response[v1.ListServiceAccountsResponse], error) {

@@ -2557,14 +2557,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.BatchGetServiceAccountsRequest"><span class="badge">M</span>BatchGetServiceAccountsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchGetServiceAccountsResponse"><span class="badge">M</span>BatchGetServiceAccountsResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.CreateServiceAccountRequest"><span class="badge">M</span>CreateServiceAccountRequest</a>
                 </li>
               
@@ -2688,14 +2680,6 @@
           <li>
             <a href="#v1%2fworkload_identity_service.proto">v1/workload_identity_service.proto</a>
             <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchGetWorkloadIdentitiesRequest"><span class="badge">M</span>BatchGetWorkloadIdentitiesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchGetWorkloadIdentitiesResponse"><span class="badge">M</span>BatchGetWorkloadIdentitiesResponse</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.v1.CreateWorkloadIdentityRequest"><span class="badge">M</span>CreateWorkloadIdentityRequest</a>
@@ -28695,55 +28679,6 @@ Permissions required: bb.taskRuns.list</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.BatchGetServiceAccountsRequest">BatchGetServiceAccountsRequest</h3>
-        <p>Request message for batch getting service accounts.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>names</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The service account names to retrieve.
-Format: serviceAccounts/{email} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.BatchGetServiceAccountsResponse">BatchGetServiceAccountsResponse</h3>
-        <p>Response message for batch getting service accounts.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>service_accounts</td>
-                  <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
-                  <td>repeated</td>
-                  <td><p>The service accounts from the specified request. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.CreateServiceAccountRequest">CreateServiceAccountRequest</h3>
         <p>Request message for creating a service account.</p>
 
@@ -29074,14 +29009,6 @@ Permissions required: bb.serviceAccounts.get</p></td>
               </tr>
             
               <tr>
-                <td>BatchGetServiceAccounts</td>
-                <td><a href="#bytebase.v1.BatchGetServiceAccountsRequest">BatchGetServiceAccountsRequest</a></td>
-                <td><a href="#bytebase.v1.BatchGetServiceAccountsResponse">BatchGetServiceAccountsResponse</a></td>
-                <td><p>Gets service accounts in batch.
-Permissions required: bb.serviceAccounts.get</p></td>
-              </tr>
-            
-              <tr>
                 <td>ListServiceAccounts</td>
                 <td><a href="#bytebase.v1.ListServiceAccountsRequest">ListServiceAccountsRequest</a></td>
                 <td><a href="#bytebase.v1.ListServiceAccountsResponse">ListServiceAccountsResponse</a></td>
@@ -29155,16 +29082,6 @@ Permissions required: bb.serviceAccounts.undelete</p></td>
                 <td>GetServiceAccount</td>
                 <td>GET</td>
                 <td>/v1/{name=serviceAccounts/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>BatchGetServiceAccounts</td>
-                <td>GET</td>
-                <td>/v1/serviceAccounts:batchGet</td>
                 <td></td>
               </tr>
               
@@ -30230,55 +30147,6 @@ Permissions required: bb.settings.set</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.BatchGetWorkloadIdentitiesRequest">BatchGetWorkloadIdentitiesRequest</h3>
-        <p>Request message for batch getting workload identities.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>names</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The workload identity names to retrieve.
-Format: workloadIdentities/{email} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.BatchGetWorkloadIdentitiesResponse">BatchGetWorkloadIdentitiesResponse</h3>
-        <p>Response message for batch getting workload identities.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>workload_identities</td>
-                  <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
-                  <td>repeated</td>
-                  <td><p>The workload identities from the specified request. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.CreateWorkloadIdentityRequest">CreateWorkloadIdentityRequest</h3>
         <p>Request message for creating a workload identity.</p>
 
@@ -30609,14 +30477,6 @@ Permissions required: bb.workloadIdentities.get</p></td>
               </tr>
             
               <tr>
-                <td>BatchGetWorkloadIdentities</td>
-                <td><a href="#bytebase.v1.BatchGetWorkloadIdentitiesRequest">BatchGetWorkloadIdentitiesRequest</a></td>
-                <td><a href="#bytebase.v1.BatchGetWorkloadIdentitiesResponse">BatchGetWorkloadIdentitiesResponse</a></td>
-                <td><p>Gets workload identities in batch.
-Permissions required: bb.workloadIdentities.get</p></td>
-              </tr>
-            
-              <tr>
                 <td>ListWorkloadIdentities</td>
                 <td><a href="#bytebase.v1.ListWorkloadIdentitiesRequest">ListWorkloadIdentitiesRequest</a></td>
                 <td><a href="#bytebase.v1.ListWorkloadIdentitiesResponse">ListWorkloadIdentitiesResponse</a></td>
@@ -30690,16 +30550,6 @@ Permissions required: bb.workloadIdentities.undelete</p></td>
                 <td>GetWorkloadIdentity</td>
                 <td>GET</td>
                 <td>/v1/{name=workloadIdentities/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>BatchGetWorkloadIdentities</td>
-                <td>GET</td>
-                <td>/v1/workloadIdentities:batchGet</td>
                 <td></td>
               </tr>
               

@@ -130,47 +130,6 @@ export declare type GetWorkloadIdentityRequest = Message<"bytebase.v1.GetWorkloa
 export declare const GetWorkloadIdentityRequestSchema: GenMessage<GetWorkloadIdentityRequest>;
 
 /**
- * Request message for batch getting workload identities.
- *
- * @generated from message bytebase.v1.BatchGetWorkloadIdentitiesRequest
- */
-export declare type BatchGetWorkloadIdentitiesRequest = Message<"bytebase.v1.BatchGetWorkloadIdentitiesRequest"> & {
-  /**
-   * The workload identity names to retrieve.
-   * Format: workloadIdentities/{email}
-   *
-   * @generated from field: repeated string names = 1;
-   */
-  names: string[];
-};
-
-/**
- * Describes the message bytebase.v1.BatchGetWorkloadIdentitiesRequest.
- * Use `create(BatchGetWorkloadIdentitiesRequestSchema)` to create a new message.
- */
-export declare const BatchGetWorkloadIdentitiesRequestSchema: GenMessage<BatchGetWorkloadIdentitiesRequest>;
-
-/**
- * Response message for batch getting workload identities.
- *
- * @generated from message bytebase.v1.BatchGetWorkloadIdentitiesResponse
- */
-export declare type BatchGetWorkloadIdentitiesResponse = Message<"bytebase.v1.BatchGetWorkloadIdentitiesResponse"> & {
-  /**
-   * The workload identities from the specified request.
-   *
-   * @generated from field: repeated bytebase.v1.WorkloadIdentity workload_identities = 1;
-   */
-  workloadIdentities: WorkloadIdentity[];
-};
-
-/**
- * Describes the message bytebase.v1.BatchGetWorkloadIdentitiesResponse.
- * Use `create(BatchGetWorkloadIdentitiesResponseSchema)` to create a new message.
- */
-export declare const BatchGetWorkloadIdentitiesResponseSchema: GenMessage<BatchGetWorkloadIdentitiesResponse>;
-
-/**
  * Request message for listing workload identities.
  *
  * @generated from message bytebase.v1.ListWorkloadIdentitiesRequest
@@ -348,17 +307,6 @@ export declare const WorkloadIdentityService: GenService<{
     methodKind: "unary";
     input: typeof GetWorkloadIdentityRequestSchema;
     output: typeof WorkloadIdentitySchema;
-  },
-  /**
-   * Gets workload identities in batch.
-   * Permissions required: bb.workloadIdentities.get
-   *
-   * @generated from rpc bytebase.v1.WorkloadIdentityService.BatchGetWorkloadIdentities
-   */
-  batchGetWorkloadIdentities: {
-    methodKind: "unary";
-    input: typeof BatchGetWorkloadIdentitiesRequestSchema;
-    output: typeof BatchGetWorkloadIdentitiesResponseSchema;
   },
   /**
    * Lists workload identities.

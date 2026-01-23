@@ -1,11 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { workloadIdentityServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { workloadIdentityBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   type User,
@@ -52,7 +50,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
 
   const fetchWorkloadIdentity = async (name: string, silent = false) => {
     const request = create(GetWorkloadIdentityRequestSchema, {
-      name: ensureWorkloadIdentityFullName(name),
+      name,
     });
     return workloadIdentityServiceClientConnect.getWorkloadIdentity(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
@@ -60,49 +58,30 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   };
 
   const getWorkloadIdentity = (name: string) => {
-    return cacheByName.value.get(ensureWorkloadIdentityFullName(name));
+    const validName = ensureWorkloadIdentityFullName(name);
+    const email = extractWorkloadIdentityId(validName);
+    return (
+      cacheByName.value.get(ensureWorkloadIdentityFullName(name)) ??
+      create(WorkloadIdentitySchema, {
+        name,
+        email,
+        state: State.ACTIVE,
+        title: email,
+      })
+    );
   };
 
   const getOrFetchWorkloadIdentity = async (
     name: string,
     silent = false
   ): Promise<WorkloadIdentity> => {
-    const cached = getWorkloadIdentity(name);
-    if (cached) {
-      return cached;
+    const validName = ensureWorkloadIdentityFullName(name);
+    if (cacheByName.value.has(validName)) {
+      return cacheByName.value.get(validName)!;
     }
     const wi = await fetchWorkloadIdentity(name, silent);
     cacheByName.value.set(wi.name, wi);
     return wi;
-  };
-
-  const batchGetOrFetchWorkloadIdentities = async (nameList: string[]) => {
-    const validList = uniq(nameList).filter(
-      (name) =>
-        Boolean(name) &&
-        (name.startsWith(workloadIdentityNamePrefix) ||
-          name.startsWith(workloadIdentityBindingPrefix))
-    );
-    try {
-      const pendingFetch = validList
-        .filter((name) => {
-          return getWorkloadIdentity(name) === undefined;
-        })
-        .map((name) => ensureWorkloadIdentityFullName(name));
-
-      const resp =
-        await workloadIdentityServiceClientConnect.batchGetWorkloadIdentities(
-          {
-            names: pendingFetch,
-          },
-          {
-            contextValues: createContextValues().set(silentContextKey, true),
-          }
-        );
-      for (const wi of resp.workloadIdentities) {
-        cacheByName.value.set(wi.name, wi);
-      }
-    } catch {}
   };
 
   const createWorkloadIdentity = async (
@@ -201,7 +180,6 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     listWorkloadIdentities,
     getWorkloadIdentity,
     getOrFetchWorkloadIdentity,
-    batchGetOrFetchWorkloadIdentities,
     createWorkloadIdentity,
     updateWorkloadIdentity,
     deleteWorkloadIdentity,

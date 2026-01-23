@@ -5179,44 +5179,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.SearchQueryHistoriesResponse'
-  /bytebase.v1.ServiceAccountService/BatchGetServiceAccounts:
-    post:
-      tags:
-        - bytebase.v1.ServiceAccountService
-      summary: 'Gets service accounts in batch.  Permissions required: bb.serviceAccounts.get'
-      description: |-
-        Gets service accounts in batch.
-         Permissions required: bb.serviceAccounts.get
-      operationId: bytebase.v1.ServiceAccountService.BatchGetServiceAccounts
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchGetServiceAccountsRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchGetServiceAccountsResponse'
   /bytebase.v1.ServiceAccountService/CreateServiceAccount:
     post:
       tags:
@@ -6099,44 +6061,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.User'
-  /bytebase.v1.WorkloadIdentityService/BatchGetWorkloadIdentities:
-    post:
-      tags:
-        - bytebase.v1.WorkloadIdentityService
-      summary: 'Gets workload identities in batch.  Permissions required: bb.workloadIdentities.get'
-      description: |-
-        Gets workload identities in batch.
-         Permissions required: bb.workloadIdentities.get
-      operationId: bytebase.v1.WorkloadIdentityService.BatchGetWorkloadIdentities
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchGetWorkloadIdentitiesRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchGetWorkloadIdentitiesResponse'
   /bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity:
     post:
       tags:
@@ -7706,32 +7630,6 @@ components:
           description: The projects from the specified request.
       title: BatchGetProjectsResponse
       additionalProperties: false
-    bytebase.v1.BatchGetServiceAccountsRequest:
-      type: object
-      properties:
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-          description: |-
-            The service account names to retrieve.
-             Format: serviceAccounts/{email}
-      title: BatchGetServiceAccountsRequest
-      additionalProperties: false
-      description: Request message for batch getting service accounts.
-    bytebase.v1.BatchGetServiceAccountsResponse:
-      type: object
-      properties:
-        serviceAccounts:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
-          title: service_accounts
-          description: The service accounts from the specified request.
-      title: BatchGetServiceAccountsResponse
-      additionalProperties: false
-      description: Response message for batch getting service accounts.
     bytebase.v1.BatchGetUsersRequest:
       type: object
       properties:
@@ -7756,32 +7654,6 @@ components:
           description: The users from the specified request.
       title: BatchGetUsersResponse
       additionalProperties: false
-    bytebase.v1.BatchGetWorkloadIdentitiesRequest:
-      type: object
-      properties:
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-          description: |-
-            The workload identity names to retrieve.
-             Format: workloadIdentities/{email}
-      title: BatchGetWorkloadIdentitiesRequest
-      additionalProperties: false
-      description: Request message for batch getting workload identities.
-    bytebase.v1.BatchGetWorkloadIdentitiesResponse:
-      type: object
-      properties:
-        workloadIdentities:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
-          title: workload_identities
-          description: The workload identities from the specified request.
-      title: BatchGetWorkloadIdentitiesResponse
-      additionalProperties: false
-      description: Response message for batch getting workload identities.
     bytebase.v1.BatchParseRequest:
       type: object
       properties:

@@ -125,33 +125,6 @@ func (s *ServiceAccountService) GetServiceAccount(ctx context.Context, request *
 	return connect.NewResponse(convertToServiceAccount(sa)), nil
 }
 
-// BatchGetServiceAccounts gets service accounts in batch.
-func (s *ServiceAccountService) BatchGetServiceAccounts(ctx context.Context, request *connect.Request[v1pb.BatchGetServiceAccountsRequest]) (*connect.Response[v1pb.BatchGetServiceAccountsResponse], error) {
-	emails := make([]string, 0, len(request.Msg.Names))
-	for _, name := range request.Msg.Names {
-		email, err := common.GetServiceAccountEmail(name)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		if !common.IsServiceAccountEmail(email) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %v is not service account", email))
-		}
-		emails = append(emails, email)
-	}
-
-	users, err := s.store.BatchGetUsersByEmails(ctx, emails)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get service accounts"))
-	}
-
-	response := &v1pb.BatchGetServiceAccountsResponse{}
-	for _, user := range users {
-		response.ServiceAccounts = append(response.ServiceAccounts, convertUserToServiceAccount(user))
-	}
-
-	return connect.NewResponse(response), nil
-}
-
 // ListServiceAccounts lists service accounts.
 func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request *connect.Request[v1pb.ListServiceAccountsRequest]) (*connect.Response[v1pb.ListServiceAccountsResponse], error) {
 	// Parse parent to determine workspace vs project level
@@ -337,16 +310,5 @@ func convertToServiceAccount(sa *store.ServiceAccountMessage) *v1pb.ServiceAccou
 		State: convertDeletedToState(sa.MemberDeleted),
 		Email: sa.Email,
 		Title: sa.Name,
-	}
-}
-
-// convertUserToServiceAccount converts a store.UserMessage to a v1pb.ServiceAccount.
-// Note: service_key is NOT populated by this function; it should only be returned on create/rotate.
-func convertUserToServiceAccount(user *store.UserMessage) *v1pb.ServiceAccount {
-	return &v1pb.ServiceAccount{
-		Name:  common.FormatServiceAccountEmail(user.Email),
-		State: convertDeletedToState(user.MemberDeleted),
-		Email: user.Email,
-		Title: user.Name,
 	}
 }

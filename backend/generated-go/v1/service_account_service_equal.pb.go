@@ -68,42 +68,6 @@ func (x *GetServiceAccountRequest) Equal(y *GetServiceAccountRequest) bool {
 	return true
 }
 
-func (x *BatchGetServiceAccountsRequest) Equal(y *BatchGetServiceAccountsRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Names) != len(y.Names) {
-		return false
-	}
-	for i := 0; i < len(x.Names); i++ {
-		if x.Names[i] != y.Names[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *BatchGetServiceAccountsResponse) Equal(y *BatchGetServiceAccountsResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.ServiceAccounts) != len(y.ServiceAccounts) {
-		return false
-	}
-	for i := 0; i < len(x.ServiceAccounts); i++ {
-		if !x.ServiceAccounts[i].Equal(y.ServiceAccounts[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *ListServiceAccountsRequest) Equal(y *ListServiceAccountsRequest) bool {
 	if x == y {
 		return true
