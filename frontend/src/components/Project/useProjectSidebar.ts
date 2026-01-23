@@ -121,7 +121,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         expand: true,
         children: [
           {
-            title: t("common.members"),
+            title: t("common.members", 2 /* multiply*/),
             path: PROJECT_V1_ROUTE_MEMBERS,
             type: "div",
           },

@@ -1,8 +1,25 @@
 import { uniq } from "lodash-es";
-import { extractUserId, useGroupStore, useWorkspaceV1Store } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
-import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
+import {
+  ensureGroupIdentifier,
+  extractServiceAccountId,
+  extractWorkloadIdentityId,
+  groupNamePrefix,
+  useGroupStore,
+  useWorkspaceV1Store,
+} from "@/store";
+import {
+  serviceAccountNamePrefix,
+  userNamePrefix,
+  workloadIdentityNamePrefix,
+} from "@/store/modules/v1/common";
+import {
+  ALL_USERS_USER_EMAIL,
+  groupBindingPrefix,
+  serviceAccountBindingPrefix,
+  workloadIdentityBindingPrefix,
+} from "@/types";
 import type { Binding, IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import { ensureUserFullName } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
@@ -18,10 +35,28 @@ export const isBindingPolicyExpired = (binding: Binding): boolean => {
   return false;
 };
 
-// getUserEmailListInBinding will extract users in the IAM policy binding.
-// If the binding is group, will conains all members email in the group.
-// It can also includs ALL_USERS_USER_EMAIL
-export const getUserEmailListInBinding = ({
+export const convertMemberToFullname = (member: string) => {
+  if (member.startsWith(groupBindingPrefix)) {
+    return ensureGroupIdentifier(member);
+  } else if (member.startsWith(serviceAccountBindingPrefix)) {
+    const email = extractServiceAccountId(member);
+    return `${serviceAccountNamePrefix}${email}`;
+  } else if (member.startsWith(workloadIdentityBindingPrefix)) {
+    const email = extractWorkloadIdentityId(member);
+    return `${workloadIdentityNamePrefix}${email}`;
+  } else {
+    // ATTENTION: the email can be ALL_USERS_USER_EMAIL
+    return ensureUserFullName(member);
+  }
+};
+
+// getUserListInBinding will extract users in the IAM policy binding.
+// If the binding is group, will conains all members in the group.
+// The return value should be the user full name with the prefix:
+// - users/{email}, could includs ALL_USERS_USER_EMAIL
+// - serviceAccounts/{email}
+// - workloadIdentities/{email}
+export const getUserListInBinding = ({
   binding,
   ignoreGroup,
 }: {
@@ -33,10 +68,11 @@ export const getUserEmailListInBinding = ({
   }
 
   const groupStore = useGroupStore();
-  const emailList = [];
+  const fullnameList = [];
 
   for (const member of binding.members) {
-    if (member.startsWith(groupBindingPrefix)) {
+    const fullname = convertMemberToFullname(member);
+    if (fullname.startsWith(groupNamePrefix)) {
       if (ignoreGroup) {
         continue;
       }
@@ -44,16 +80,15 @@ export const getUserEmailListInBinding = ({
       if (!group) {
         continue;
       }
-
-      emailList.push(...group.members.map((m) => extractUserId(m.member)));
+      for (const groupMember of group.members) {
+        // the group member MUST be human.
+        fullnameList.push(ensureUserFullName(groupMember.member));
+      }
     } else {
-      const email = extractUserId(member);
-      // ATTENTION:
-      // the email can be ALL_USERS_USER_EMAIL
-      emailList.push(email);
+      fullnameList.push(fullname);
     }
   }
-  return uniq(emailList);
+  return uniq(fullnameList);
 };
 
 // memberMapToRolesInProjectIAM return the Map<users/{email}, Set<roles/{role}>>
@@ -63,7 +98,7 @@ export const memberMapToRolesInProjectIAM = (
   targetRole?: string
 ): Map<string, Set<string>> => {
   const workspaceStore = useWorkspaceV1Store();
-  // Map<users/{email}, Set<roles/{role}>>
+  // Map<userfullname, Set<roles/{role}>>
   const rolesMapByName = new Map<string, Set<string>>();
 
   // Handle project level roles.
@@ -75,14 +110,12 @@ export const memberMapToRolesInProjectIAM = (
       continue;
     }
 
-    const emails = getUserEmailListInBinding({ binding, ignoreGroup: false });
-
-    for (const email of emails) {
-      const key = `${userNamePrefix}${email}`;
-      if (!rolesMapByName.has(key)) {
-        rolesMapByName.set(key, new Set());
+    const fullnames = getUserListInBinding({ binding, ignoreGroup: false });
+    for (const fullname of fullnames) {
+      if (!rolesMapByName.has(fullname)) {
+        rolesMapByName.set(fullname, new Set());
       }
-      rolesMapByName.get(key)?.add(binding.role);
+      rolesMapByName.get(fullname)?.add(binding.role);
     }
   }
 
@@ -102,22 +135,23 @@ export const memberMapToRolesInProjectIAM = (
   return rolesMapByName;
 };
 
-export const bindingListInIAM = ({
+export const filterBindingsByUserName = ({
   policy,
-  email,
+  name,
   ignoreGroup,
 }: {
   policy: IamPolicy;
-  email: string;
+  name: string; // the name should be the fullname
   ignoreGroup: boolean;
 }): Binding[] => {
   return policy.bindings.filter((binding) => {
     if (isBindingPolicyExpired(binding)) {
       return false;
     }
-    const emailList = getUserEmailListInBinding({ binding, ignoreGroup });
+    const fullnameList = getUserListInBinding({ binding, ignoreGroup });
     return (
-      emailList.includes(ALL_USERS_USER_EMAIL) || emailList.includes(email)
+      fullnameList.includes(`${userNamePrefix}${ALL_USERS_USER_EMAIL}`) ||
+      fullnameList.includes(name)
     );
   });
 };

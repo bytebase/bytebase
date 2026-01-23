@@ -323,7 +323,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "members",
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
-          title: () => t("common.members"),
+          title: () => t("common.members", 2 /* multiply*/),
           requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),

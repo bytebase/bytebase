@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-col">
-    <NInputGroup v-if="enforceDomain && !readonly">
+    <NInputGroup v-if="enforceDomain && !disabled">
       <NInput
         v-model:value="state.shortValue"
         :size="size"
-        :disabled="readonly"
+        :disabled="disabled"
         :status="hasEmailError ? 'error' : undefined"
       />
       <NInputGroupLabel :size="size"> @ </NInputGroupLabel>
@@ -12,14 +12,14 @@
         :size="size"
         v-model:value="state.domain"
         :options="domainSelectOptions"
-        :disabled="readonly"
+        :disabled="disabled"
       />
     </NInputGroup>
     <NInput
       v-else
       v-model:value="state.value"
       :size="size"
-      :disabled="readonly"
+      :disabled="disabled"
       :status="hasEmailError ? 'error' : undefined"
     />
     <span v-if="hasEmailError" class="text-error text-sm mt-1">
@@ -57,17 +57,14 @@ const props = withDefaults(
   defineProps<{
     size?: "small" | "medium" | "large";
     value?: string;
-    readonly?: boolean;
-    domainPrefix?: string;
-    fallbackDomain?: string;
+    disabled?: boolean;
+    domain?: string;
     showDomain?: boolean;
   }>(),
   {
     size: "medium",
     value: "",
-    readonly: false,
-    domainPrefix: "",
-    fallbackDomain: "",
+    disabled: false,
     showDomain: false,
   }
 );
@@ -90,16 +87,19 @@ const enforceDomain = computed(() => {
 });
 
 const domainSelectOptions = computed(() => {
+  if (props.domain) {
+    return [
+      {
+        label: props.domain,
+        value: props.domain,
+      },
+    ];
+  }
   const domains = settingV1Store.workspaceProfile.domains.filter(
     (domain) => domain && domain.trim() !== ""
   );
-  if (domains.length === 0 && props.fallbackDomain) {
-    domains.push(props.fallbackDomain);
-  }
   return domains.map((domain) => {
-    const value = props.domainPrefix
-      ? `${props.domainPrefix}.${domain.trim()}`
-      : domain.trim();
+    const value = domain.trim();
     return {
       label: value,
       value,

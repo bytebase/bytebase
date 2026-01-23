@@ -21,7 +21,12 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { type UserFilter, userNamePrefix, useUserStore } from "@/store";
+import {
+  getUserFullNameByType,
+  type UserFilter,
+  userNamePrefix,
+  useUserStore,
+} from "@/store";
 import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -39,7 +44,7 @@ const props = defineProps<{
   multiple?: boolean;
   disabled?: boolean;
   size?: SelectSize;
-  value?: string | string[] | undefined; // email or emails
+  value?: string | string[] | undefined; // user fullname
   projectName?: string;
   // allUsers is a special user that represents all users in the project.
   includeAllUsers?: boolean;
@@ -50,6 +55,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
+  // the value is user fullname
   (event: "update:value", value: string[] | string | undefined): void;
 }>();
 
@@ -82,7 +88,7 @@ const getFilter = (search: string): UserFilter => {
 
 const getOption = (user: User): ResourceSelectOption<User> => ({
   resource: user,
-  value: user.email,
+  value: getUserFullNameByType(user),
   label: user.title,
 });
 

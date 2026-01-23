@@ -16,10 +16,10 @@
           />
           <div v-else class="w-full flex flex-col gap-y-2">
             <div class="flex items-center gap-x-1">
-              {{ $t("common.email") }}
+              {{ $t("common.members") }}
               <RequiredStar />
             </div>
-            <EmailInput :readonly="true" :value="email" />
+            <NInput :disabled="true" :value="props.member?.binding" />
           </div>
 
           <div class="w-full flex flex-col gap-y-2">
@@ -68,21 +68,15 @@
 
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
-import { NButton, useDialog } from "naive-ui";
+import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
-import {
-  extractGroupEmail,
-  extractUserId,
-  pushNotification,
-  useWorkspaceV1Store,
-} from "@/store";
-import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
+import { pushNotification, useWorkspaceV1Store } from "@/store";
+import { ALL_USERS_USER_EMAIL } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
 
@@ -120,16 +114,6 @@ const dialog = useDialog();
 
 const isCreating = computed(() => !props.member);
 
-const email = computed(() => {
-  if (!props.member) {
-    return "";
-  }
-  if (props.member.type === "users") {
-    return extractUserId(props.member.binding);
-  }
-  return extractGroupEmail(props.member.binding);
-});
-
 const allowConfirm = computed(() => {
   if (state.memberList.length === 0) {
     return false;
@@ -163,11 +147,7 @@ const updateRoleBinding = async () => {
     });
   } else {
     for (const member of memberListInBinding.value) {
-      const isGroup = member.startsWith(groupBindingPrefix);
-      const existedRoles = workspaceStore.findRolesByMember({
-        member,
-        ignoreGroup: !isGroup,
-      });
+      const existedRoles = workspaceStore.findRolesByMember(member);
       batchPatch.push({
         member,
         roles: [...new Set([...state.roles, ...existedRoles])],

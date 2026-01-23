@@ -79,23 +79,33 @@ import { computed, ref } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
 import {
-  ensureGroupIdentifier,
   extractGroupEmail,
+  extractServiceAccountId,
   extractUserId,
+  extractWorkloadIdentityId,
+  groupNamePrefix,
+  serviceAccountNamePrefix,
+  workloadIdentityNamePrefix,
 } from "@/store";
-import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
   getGroupEmailInBinding,
+  getServiceAccountNameInBinding,
   getUserEmailInBinding,
+  getWorkloadIdentityNameInBinding,
   groupBindingPrefix,
 } from "@/types";
+import { convertMemberToFullname } from "@/utils";
 
 type MemberType = "USERS" | "GROUPS";
 
 const props = withDefaults(
   defineProps<{
-    // member binding list, for users, should be user:{email}, for groups, should be group:{email}
-    // We don't support mixed data.
+    // member binding list, could be
+    // - user:{email}
+    // - group:{email}
+    // - serviceAccount:{email}
+    // - workloadIdentity:{email}
+    // We don't support mix group with other data.
     value: string[];
     required: boolean;
     projectName?: string;
@@ -137,34 +147,29 @@ const onTypeChange = (type: MemberType) => {
 };
 
 const memberList = computed(() => {
-  const list = [];
-
-  for (const binding of props.value) {
-    if (binding.startsWith(groupBindingPrefix)) {
-      list.push(ensureGroupIdentifier(binding));
-    } else {
-      // For users, extract email from binding format "user:{email}"
-      const email = extractUserId(binding);
-      if (email) {
-        list.push(email);
-      }
-    }
-  }
-
-  return list;
+  return props.value.map(convertMemberToFullname);
 });
 
-const onMemberListUpdate = (memberList: string[]) => {
-  const memberListInBinding = uniq(memberList)
-    .map((member) => {
-      if (member.startsWith(groupNamePrefix)) {
-        const email = extractGroupEmail(member);
-        return getGroupEmailInBinding(email);
-      }
-      // UserSelect now returns email directly
-      return getUserEmailInBinding(member);
-    })
-    .filter((binding) => binding);
+const convertNameToMember = (fullname: string) => {
+  if (fullname.startsWith(groupNamePrefix)) {
+    const email = extractGroupEmail(fullname);
+    return getGroupEmailInBinding(email);
+  } else if (fullname.startsWith(serviceAccountNamePrefix)) {
+    const email = extractServiceAccountId(fullname);
+    return getServiceAccountNameInBinding(email);
+  } else if (fullname.startsWith(workloadIdentityNamePrefix)) {
+    const email = extractWorkloadIdentityId(fullname);
+    return getWorkloadIdentityNameInBinding(email);
+  } else {
+    const email = extractUserId(fullname);
+    return getUserEmailInBinding(email);
+  }
+};
+
+const onMemberListUpdate = (fullnameList: string[]) => {
+  const memberListInBinding = uniq(fullnameList)
+    .map(convertNameToMember)
+    .filter((member) => !!member);
 
   emit("update:value", memberListInBinding);
 };

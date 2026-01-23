@@ -60,8 +60,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "update-group", group: Group): void;
-  (event: "remove-group", group: Group): void;
+  (event: "group-selected", group: Group): void;
+  (event: "group-removed", group: Group): void;
   (event: "update:expanded-keys", keys: string[]): void;
 }>();
 
@@ -129,11 +129,11 @@ const columns = computed(() => {
         if (row.type === "group") {
           return h(GroupOperationsCell, {
             group: row.group,
-            "onUpdate-group": () => {
-              emit("update-group", row.group);
+            "onGroup-selected": () => {
+              emit("group-selected", row.group);
             },
-            "onRemove-group": () => {
-              emit("remove-group", row.group);
+            "onGroup-removed": () => {
+              emit("group-removed", row.group);
             },
           });
         } else {

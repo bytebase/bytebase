@@ -4,7 +4,7 @@
       v-for="group in groups"
       :key="group.name"
       class="cursor-pointer! hover:bg-gray-200"
-      @click="$emit('select-group', group)"
+      @click="$emit('group-selected', group)"
     >
       {{ group.title }}
     </NTag>
@@ -24,7 +24,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "select-group", group: Group): void;
+  (event: "group-selected", group: Group): void;
 }>();
 
 const groupStore = useGroupStore();

@@ -198,7 +198,7 @@
     "configure": "Configure",
     "groups": "Groups",
     "database-group": "Database Group | Database Groups",
-    "members": "Members",
+    "members": "Member | Members",
     "warehouse": "Warehouse",
     "schedule": "Schedule",
     "state": "State",
@@ -513,6 +513,7 @@
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
+      "update-user": "Update User",
       "entra-sync": {
         "self": "Sync from SCIM",
         "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",

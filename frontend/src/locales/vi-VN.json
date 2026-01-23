@@ -198,7 +198,7 @@
     "configure": "Cấu hình",
     "groups": "Nhóm",
     "database-group": "Nhóm cơ sở dữ liệu | Nhóm cơ sở dữ liệu",
-    "members": "Thành viên",
+    "members": "Thành viên | Thành viên",
     "warehouse": "Kho",
     "schedule": "Lịch trình",
     "state": "Trạng thái",
@@ -513,6 +513,7 @@
       "view-by-roles": "Xem theo vai trò",
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
+      "update-user": "Cập nhật người dùng",
       "entra-sync": {
         "self": "Đồng bộ từ SCIM",
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",

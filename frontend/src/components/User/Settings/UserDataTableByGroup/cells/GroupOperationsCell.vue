@@ -1,12 +1,12 @@
 <template>
   <div class="flex justify-end gap-x-2">
-    <RemoveGroupButton v-if="allowDeleteGroup" :group="group" @removed="$emit('remove-group')">
+    <RemoveGroupButton v-if="allowDeleteGroup" :group="group" @removed="$emit('group-removed')">
       <Trash2Icon class="w-4 h-auto" />
     </RemoveGroupButton>
 
     <MiniActionButton
       v-if="allowEditGroup"
-      @click="$emit('update-group')"
+      @click="$emit('group-selected')"
     >
       <PencilIcon />
     </MiniActionButton>
@@ -29,8 +29,8 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (event: "update-group"): void;
-  (event: "remove-group"): void;
+  (event: "group-selected"): void;
+  (event: "group-removed"): void;
 }>();
 
 const currentUser = useCurrentUserV1();

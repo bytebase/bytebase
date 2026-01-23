@@ -22,3 +22,10 @@ export const isUserIncludedInList = (
   }
   return false;
 };
+
+export const extractEmailPrefix = (email: string, suffix: string): string => {
+  if (email.endsWith(suffix)) {
+    return email.slice(0, -suffix.length);
+  }
+  return email.split("@")[0];
+};
