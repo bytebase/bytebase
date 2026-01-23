@@ -1,11 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { serviceAccountServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { serviceAccountBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import {
@@ -57,40 +55,27 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
   };
 
   const getServiceAccount = (name: string) => {
-    return cacheByName.value.get(ensureServiceAccountFullName(name));
+    const validName = ensureServiceAccountFullName(name);
+    const email = extractServiceAccountId(validName);
+    return (
+      cacheByName.value.get(validName) ??
+      create(ServiceAccountSchema, {
+        name,
+        email,
+        state: State.ACTIVE,
+        title: email,
+      })
+    );
   };
 
   const getOrFetchServiceAccount = async (name: string, silent = false) => {
-    const cached = getServiceAccount(name);
-    if (cached) {
-      return cached;
+    const validName = ensureServiceAccountFullName(name);
+    if (cacheByName.value.has(validName)) {
+      return cacheByName.value.get(validName)!;
     }
-    const sa = await fetchServiceAccount(name, silent);
-    cacheByName.value.set(name, sa);
+    const sa = await fetchServiceAccount(validName, silent);
+    cacheByName.value.set(sa.name, sa);
     return sa;
-  };
-
-  // TODO(ed): support batch get
-  const batchGetOrFetchServiceAccounts = async (nameList: string[]) => {
-    const validList = uniq(nameList).filter(
-      (name) =>
-        Boolean(name) &&
-        (name.startsWith(serviceAccountNamePrefix) ||
-          name.startsWith(serviceAccountBindingPrefix))
-    );
-    try {
-      const pendingFetch = validList
-        .filter((name) => {
-          return getServiceAccount(name) === undefined;
-        })
-        .map((name) => ensureServiceAccountFullName(name));
-
-      await Promise.all(
-        pendingFetch.map((name) => {
-          return getOrFetchServiceAccount(name);
-        })
-      );
-    } catch {}
   };
 
   const createServiceAccount = async (
@@ -183,7 +168,6 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     listServiceAccounts,
     getServiceAccount,
     getOrFetchServiceAccount,
-    batchGetOrFetchServiceAccounts,
     createServiceAccount,
     updateServiceAccount,
     deleteServiceAccount,

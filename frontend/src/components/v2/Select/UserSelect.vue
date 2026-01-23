@@ -21,12 +21,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import {
-  batchGetOrFetchAccounts,
-  getUserFullNameByType,
-  type UserFilter,
-  useUserStore,
-} from "@/store";
+import { getUserFullNameByType, type UserFilter, useUserStore } from "@/store";
 import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -106,7 +101,7 @@ const additionalOptions = computedAsync(async () => {
   }
 
   // Ensure users are fetched into store
-  await batchGetOrFetchAccounts(userEmails);
+  await userStore.batchGetOrFetchUsers(userEmails);
 
   // Get all users from store
   for (const email of userEmails) {

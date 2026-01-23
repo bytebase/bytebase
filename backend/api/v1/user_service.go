@@ -86,14 +86,35 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 
 // BatchGetUsers get users in batch.
 func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Request[v1pb.BatchGetUsersRequest]) (*connect.Response[v1pb.BatchGetUsersResponse], error) {
-	response := &v1pb.BatchGetUsersResponse{}
+	// Extract and validate emails from names
+	emails := make([]string, 0, len(request.Msg.Names))
 	for _, name := range request.Msg.Names {
-		user, err := s.GetUser(ctx, connect.NewRequest(&v1pb.GetUserRequest{Name: name}))
+		email, err := common.GetUserEmail(name)
 		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if err := validateEndUserEmail(email); err != nil {
 			return nil, err
 		}
-		response.Users = append(response.Users, user.Msg)
+		emails = append(emails, email)
 	}
+
+	// Batch get from store
+	users, err := s.store.BatchGetUsersByEmails(ctx, emails)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
+	}
+
+	// Build a map for quick lookup
+	response := &v1pb.BatchGetUsersResponse{}
+	for _, user := range users {
+		v1User, err := convertToUser(ctx, s.iamManager, user)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+		}
+		response.Users = append(response.Users, v1User)
+	}
+
 	return connect.NewResponse(response), nil
 }
 

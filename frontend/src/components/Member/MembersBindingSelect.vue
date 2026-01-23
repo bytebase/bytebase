@@ -151,7 +151,7 @@ const memberList = computed(() => {
   return props.value.map(convertMemberToFullname);
 });
 
-const convertNameToMember = (fullname: string) => {
+const convertFullnameToMember = (fullname: string) => {
   if (fullname.startsWith(groupNamePrefix)) {
     const email = extractGroupEmail(fullname);
     return getGroupEmailInBinding(email);
@@ -169,7 +169,7 @@ const convertNameToMember = (fullname: string) => {
 
 const onMemberListUpdate = (fullnameList: string[]) => {
   const memberListInBinding = uniq(fullnameList)
-    .map(convertNameToMember)
+    .map(convertFullnameToMember)
     .filter((member) => !!member);
 
   emit("update:value", memberListInBinding);

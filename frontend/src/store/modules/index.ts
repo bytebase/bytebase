@@ -7,7 +7,6 @@ export * from "./uistate";
 export * from "./sqlReview";
 export * from "./idp";
 export * from "./user";
-export * from "./account";
 export * from "./serviceAccount";
 export * from "./workloadIdentity";
 export * from "./workspaceApprovalSetting";
