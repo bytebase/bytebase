@@ -2,7 +2,12 @@
   <component
     :is="isLink ? 'router-link' : 'div'"
     :class="isLink && 'normal-link'"
-    :to="`/users/${email}`"
+    :to="{
+      name: WORKSPACE_ROUTE_USER_PROFILE,
+      params: {
+        principalEmail: email,
+      },
+    }"
   >
     <HighlightLabelText
       :keyword="keyword ?? ''"
@@ -14,6 +19,9 @@
 <script lang="tsx" setup>
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import { getUserTypeByEmail } from "@/types";
+import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = withDefaults(
@@ -28,7 +36,12 @@ const props = withDefaults(
   }
 );
 
+const isEndUser = computed(
+  () => getUserTypeByEmail(props.email) === UserType.USER
+);
+
 const isLink = computed(
-  () => props.link && hasWorkspacePermissionV2("bb.users.get")
+  () =>
+    props.link && isEndUser.value && hasWorkspacePermissionV2("bb.users.get")
 );
 </script>

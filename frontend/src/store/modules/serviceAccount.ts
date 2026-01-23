@@ -76,7 +76,13 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.createServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+    ]);
     return sa;
   };
 
@@ -106,7 +112,18 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     if (sa) {
       sa.state = State.DELETED;
     }
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: -1,
+        state: State.ACTIVE,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+      {
+        count: 1,
+        state: State.DELETED,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+    ]);
   };
 
   const undeleteServiceAccount = async (name: string) => {
@@ -116,7 +133,18 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.undeleteServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+      {
+        count: -1,
+        state: State.DELETED,
+        userType: UserType.SERVICE_ACCOUNT,
+      },
+    ]);
     return sa;
   };
 

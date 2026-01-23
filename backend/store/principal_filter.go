@@ -19,12 +19,18 @@ import (
 type GetListUserFilterResult struct {
 	Query     *qb.Query
 	ProjectID *string
+	UserTypes []storepb.PrincipalType
 }
 
 // GetListUserFilter parses a CEL filter string and returns a query for filtering users.
 func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 	if filter == "" {
-		return nil, nil
+		return &GetListUserFilterResult{
+			UserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_END_USER,
+				storepb.PrincipalType_SYSTEM_BOT,
+			},
+		}, nil
 	}
 
 	e, err := cel.NewEnv()
@@ -38,6 +44,7 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 	var projectID *string
+	userTypes := []storepb.PrincipalType{}
 
 	convertToPrincipalType := func(v1UserType v1pb.UserType) (storepb.PrincipalType, error) {
 		switch v1UserType {
@@ -69,7 +76,8 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 			if err != nil {
 				return nil, errors.Errorf("failed to parse the user type %q with error: %v", v1UserType, err)
 			}
-			return qb.Q().Space("principal.type = ?", principalType.String()), nil
+			userTypes = append(userTypes, principalType)
+			return qb.Q().Space("TRUE"), nil
 		case "state":
 			stateStr, ok := value.(string)
 			if !ok {
@@ -114,7 +122,6 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 			return nil, errors.Errorf("empty user_type filter")
 		}
 
-		userTypeList := make([]any, 0, len(rawTypeList))
 		for _, rawType := range rawTypeList {
 			v1UserType, ok := v1pb.UserType_value[rawType.(string)]
 			if !ok {
@@ -124,10 +131,10 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 			if err != nil {
 				return nil, errors.Errorf("failed to parse the user type %q with error: %v", v1UserType, err)
 			}
-			userTypeList = append(userTypeList, principalType.String())
+			userTypes = append(userTypes, principalType)
 		}
 
-		return qb.Q().Space("principal.type = ANY(?)", userTypeList), nil
+		return qb.Q().Space("TRUE"), nil
 	}
 
 	getFilter = func(expr celast.Expr) (*qb.Query, error) {
@@ -197,8 +204,18 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 		return nil, err
 	}
 
+	if len(userTypes) == 0 {
+		// Force to query end users and system bot.
+		userTypes = append(
+			userTypes,
+			storepb.PrincipalType_END_USER,
+			storepb.PrincipalType_SYSTEM_BOT,
+		)
+	}
+
 	return &GetListUserFilterResult{
 		Query:     qb.Q().Space("(?)", q),
 		ProjectID: projectID,
+		UserTypes: userTypes,
 	}, nil
 }

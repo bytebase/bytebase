@@ -81,7 +81,13 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         request
       );
     cacheByName.value.set(wi.name, wi);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.WORKLOAD_IDENTITY,
+      },
+    ]);
     return wi;
   };
 
@@ -113,7 +119,18 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     if (wi) {
       wi.state = State.DELETED;
     }
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: -1,
+        state: State.ACTIVE,
+        userType: UserType.WORKLOAD_IDENTITY,
+      },
+      {
+        count: 1,
+        state: State.DELETED,
+        userType: UserType.WORKLOAD_IDENTITY,
+      },
+    ]);
   };
 
   const undeleteWorkloadIdentity = async (name: string) => {
@@ -125,7 +142,18 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         request
       );
     cacheByName.value.set(wi.name, wi);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.WORKLOAD_IDENTITY,
+      },
+      {
+        count: -1,
+        state: State.DELETED,
+        userType: UserType.WORKLOAD_IDENTITY,
+      },
+    ]);
     return wi;
   };
 

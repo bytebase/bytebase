@@ -32,7 +32,7 @@ func (s *Store) GetEndUserByEmail(ctx context.Context, email string) (*UserMessa
 		return nil, nil
 	}
 
-	users, err := s.ListEndUsers(ctx, &FindEndUserMessage{Email: &email, ShowDeleted: true})
+	users, err := s.listEndUsers(ctx, &FindEndUserMessage{Email: &email, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -42,18 +42,20 @@ func (s *Store) GetEndUserByEmail(ctx context.Context, email string) (*UserMessa
 	return users[0], nil
 }
 
-// ListEndUsers lists end users.
-func (s *Store) ListEndUsers(ctx context.Context, find *FindEndUserMessage) ([]*UserMessage, error) {
-	endUserType := storepb.PrincipalType_END_USER
+// listEndUsers lists end users.
+func (s *Store) listEndUsers(ctx context.Context, find *FindEndUserMessage) ([]*UserMessage, error) {
+	userTypes := []storepb.PrincipalType{
+		storepb.PrincipalType_END_USER,
+	}
 	findUser := &FindUserMessage{
 		ID:          find.ID,
 		Email:       find.Email,
 		ShowDeleted: find.ShowDeleted,
-		Type:        &endUserType,
 		Limit:       find.Limit,
 		Offset:      find.Offset,
 		FilterQ:     find.FilterQ,
 		ProjectID:   find.ProjectID,
+		UserTypes:   &userTypes,
 	}
 	return s.ListUsers(ctx, findUser)
 }

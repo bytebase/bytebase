@@ -227,7 +227,13 @@ export const useUserStore = defineStore("user", () => {
       user: user,
     });
     const response = await userServiceClientConnect.createUser(request);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.USER,
+      },
+    ]);
     return setUser(response);
   };
 
@@ -267,7 +273,18 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     await userServiceClientConnect.deleteUser(request);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: -1,
+        state: State.ACTIVE,
+        userType: UserType.USER,
+      },
+      {
+        count: 1,
+        state: State.DELETED,
+        userType: UserType.USER,
+      },
+    ]);
 
     const user = userMapByName.value.get(name);
     if (user) {
@@ -280,7 +297,18 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     const response = await userServiceClientConnect.undeleteUser(request);
-    await actuatorStore.fetchServerInfo();
+    actuatorStore.updateUserStat([
+      {
+        count: 1,
+        state: State.ACTIVE,
+        userType: UserType.USER,
+      },
+      {
+        count: -1,
+        state: State.DELETED,
+        userType: UserType.USER,
+      },
+    ]);
     return setUser(response);
   };
 

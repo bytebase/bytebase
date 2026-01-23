@@ -682,39 +682,54 @@ onMounted(async () => {
 });
 
 const activeUserCount = computed(() => {
-  return actuatorStore.getActiveUserCount({
-    includeBot: true,
-    includeServiceAccount: false,
+  return actuatorStore.countUser({
+    state: State.ACTIVE,
+    userTypes: [UserType.SYSTEM_BOT, UserType.USER],
   });
 });
 
 const activeServiceAccountCount = computed(() => {
-  return actuatorStore.serviceAccountCount;
+  return actuatorStore.countUser({
+    state: State.ACTIVE,
+    userTypes: [UserType.SERVICE_ACCOUNT],
+  });
 });
 
 const activeWorkloadIdentityCount = computed(() => {
-  return actuatorStore.workloadIdentityCount;
+  return actuatorStore.countUser({
+    state: State.ACTIVE,
+    userTypes: [UserType.WORKLOAD_IDENTITY],
+  });
 });
 
 const inactiveUserCount = computed(() => {
-  return actuatorStore.inactiveUserCount;
+  return actuatorStore.countUser({
+    state: State.DELETED,
+    userTypes: [UserType.USER, UserType.SYSTEM_BOT],
+  });
 });
 
 const inactiveServiceAccountCount = computed(() => {
-  return actuatorStore.inactiveServiceAccountCount;
+  return actuatorStore.countUser({
+    state: State.DELETED,
+    userTypes: [UserType.SERVICE_ACCOUNT],
+  });
 });
 
 const inactiveWorkloadIdentityCount = computed(() => {
-  return actuatorStore.inactiveWorkloadIdentityCount;
+  return actuatorStore.countUser({
+    state: State.DELETED,
+    userTypes: [UserType.WORKLOAD_IDENTITY],
+  });
 });
 
 const remainingUserCount = computed((): number => {
   return Math.max(
     0,
     subscriptionV1Store.userCountLimit -
-      actuatorStore.getActiveUserCount({
-        includeBot: false,
-        includeServiceAccount: false,
+      actuatorStore.countUser({
+        state: State.ACTIVE,
+        userTypes: [UserType.USER],
       })
   );
 });
