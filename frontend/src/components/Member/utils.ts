@@ -1,21 +1,36 @@
 import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
-import { extractGroupEmail, useGroupStore, useUserStore } from "@/store";
 import {
+  extractGroupEmail,
+  serviceAccountToUser,
+  useGroupStore,
+  useServiceAccountStore,
+  useUserStore,
+  useWorkloadIdentityStore,
+  workloadIdentityToUser,
+} from "@/store";
+import {
+  extractServiceAccountId,
   extractUserId,
+  extractWorkloadIdentityId,
   groupNamePrefix,
-  userNamePrefix,
+  serviceAccountNamePrefix,
+  workloadIdentityNamePrefix,
 } from "@/store/modules/v1/common";
 import {
   getGroupEmailInBinding,
-  getUserEmailInBinding,
   groupBindingPrefix,
   unknownUser,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import { UserSchema, UserType } from "@/types/proto-es/v1/user_service_pb";
+import {
+  type User,
+  UserSchema,
+  UserType,
+} from "@/types/proto-es/v1/user_service_pb";
+import { convertMemberToFullname } from "@/utils";
 import type { GroupBinding, MemberBinding } from "./types";
 
 const getMemberBinding = (
@@ -24,6 +39,8 @@ const getMemberBinding = (
 ): MemberBinding | undefined => {
   const groupStore = useGroupStore();
   const userStore = useUserStore();
+  const serviceAccountStore = useServiceAccountStore();
+  const workloadIdentityStore = useWorkloadIdentityStore();
 
   let memberBinding: MemberBinding | undefined = undefined;
   if (member.startsWith(groupBindingPrefix)) {
@@ -55,22 +72,55 @@ const getMemberBinding = (
       projectRoleBindings: [],
     };
   } else {
-    let user = userStore.getUserByIdentifier(member) ?? unknownUser(member);
-    if (!user) {
-      const email = extractUserId(member);
-      user = create(UserSchema, {
-        title: email,
-        name: `${userNamePrefix}${email}`,
-        email: email,
-        userType: UserType.USER,
-        state: State.DELETED,
-      });
+    let user: User | undefined = unknownUser(member);
+    const fullname = convertMemberToFullname(member);
+    if (fullname.startsWith(serviceAccountNamePrefix)) {
+      const sa = serviceAccountStore.getServiceAccount(fullname);
+      if (sa) {
+        user = serviceAccountToUser(sa);
+      } else {
+        const email = extractServiceAccountId(fullname);
+        user = create(UserSchema, {
+          title: email,
+          name: fullname,
+          email: email,
+          userType: UserType.SERVICE_ACCOUNT,
+          state: State.DELETED,
+        });
+      }
+    } else if (fullname.startsWith(workloadIdentityNamePrefix)) {
+      const wi = workloadIdentityStore.getWorkloadIdentity(fullname);
+      if (wi) {
+        user = workloadIdentityToUser(wi);
+      } else {
+        const email = extractWorkloadIdentityId(fullname);
+        user = create(UserSchema, {
+          title: email,
+          name: fullname,
+          email: email,
+          userType: UserType.WORKLOAD_IDENTITY,
+          state: State.DELETED,
+        });
+      }
+    } else {
+      user = userStore.getUserByIdentifier(member);
+      if (!user) {
+        const email = extractUserId(member);
+        user = create(UserSchema, {
+          title: email,
+          name: fullname,
+          email: email,
+          userType: UserType.USER,
+          state: State.DELETED,
+        });
+      }
     }
+
     memberBinding = {
       type: "users",
       title: user.title,
       user: user,
-      binding: getUserEmailInBinding(user.email),
+      binding: member,
       workspaceLevelRoles: new Set<string>(),
       projectRoleBindings: [],
     };

@@ -198,7 +198,7 @@
     "configure": "設定",
     "groups": "グループ",
     "database-group": "データベースグループ | データベースグループ",
-    "members": "メンバー",
+    "members": "メンバー | メンバー",
     "warehouse": "倉庫",
     "schedule": "プラン",
     "state": "州",
@@ -513,6 +513,7 @@
       "view-by-roles": "役割ごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
+      "update-user": "ユーザーを更新",
       "entra-sync": {
         "self": "SCIM から同期",
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",

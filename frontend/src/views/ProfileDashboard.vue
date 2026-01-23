@@ -337,7 +337,7 @@ const user = computedAsync(() => {
 }, unknownUser());
 
 const userRoles = computed(() => {
-  return [...workspaceStore.getWorkspaceRolesByEmail(user.value.email)];
+  return [...workspaceStore.getWorkspaceRolesByName(user.value.name)];
 });
 
 const isSelf = computed(() => currentUser.value.name === user.value.name);

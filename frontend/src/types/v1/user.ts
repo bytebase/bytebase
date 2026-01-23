@@ -54,7 +54,7 @@ export const getGroupEmailInBinding = (email: string) => {
 
 export const serviceAccountBindingPrefix = "serviceAccount:";
 
-export const getServiceAccountEmailInBinding = (email: string) => {
+export const getServiceAccountNameInBinding = (email: string) => {
   return `${serviceAccountBindingPrefix}${email}`;
 };
 

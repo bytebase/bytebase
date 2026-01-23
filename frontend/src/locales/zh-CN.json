@@ -198,7 +198,7 @@
     "configure": "配置",
     "groups": "分组",
     "database-group": "数据库分组",
-    "members": "成员",
+    "members": "成员 | 成员",
     "warehouse": "仓库",
     "schedule": "计划",
     "state": "状态",
@@ -513,6 +513,7 @@
       "view-by-roles": "按角色查看",
       "add-member": "添加成员",
       "add-user": "添加用户",
+      "update-user": "更新用户",
       "entra-sync": {
         "self": "从 SCIM 同步",
         "description": "将 Entra ID（前 Azure AD）或 Okta 中的用户和组同步到您的 Bytebase 实例。",

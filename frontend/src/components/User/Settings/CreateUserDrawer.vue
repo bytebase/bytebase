@@ -2,7 +2,11 @@
   <Drawer @close="$emit('close')">
     <DrawerContent
       class="w-[40rem] max-w-[100vw]"
-      :title="$t('settings.members.add-user')"
+      :title="
+        isEditMode
+          ? $t('settings.members.update-user')
+          : $t('settings.members.add-user')
+      "
     >
       <template #default>
         <div class="flex flex-col gap-y-6">
@@ -16,7 +20,10 @@
                 <heroicons-outline:question-mark-circle class="w-4 h-4" />
               </a>
             </div>
-            <NRadioGroup v-model:value="state.user.userType">
+            <NRadioGroup
+              v-model:value="state.user.userType"
+              :disabled="isEditMode"
+            >
               <NRadio :value="UserType.USER" :label="$t('common.user')" />
               <NRadio
                 :value="UserType.SERVICE_ACCOUNT"
@@ -57,6 +64,7 @@
                   placeholder="github-deploy"
                   :maxlength="100"
                   class="flex-1"
+                  :disabled="isEditMode"
                 />
                 <span class="ml-1 text-gray-500">@workload.bytebase.com</span>
               </div>
@@ -78,7 +86,12 @@
             <!-- Owner / Group -->
             <div class="flex flex-col gap-y-2">
               <label class="block text-sm font-medium leading-5 text-control">
-                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
+                <template
+                  v-if="
+                    state.wif.providerType ===
+                    WorkloadIdentityConfig_ProviderType.GITLAB
+                  "
+                >
                   {{ $t("settings.members.workload-identity-group") }}
                 </template>
                 <template v-else>
@@ -89,7 +102,12 @@
               <NInput
                 v-model:value="state.wif.owner"
                 :input-props="{ type: 'text', autocomplete: 'off' }"
-                :placeholder="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB ? 'my-group' : 'my-org'"
+                :placeholder="
+                  state.wif.providerType ===
+                  WorkloadIdentityConfig_ProviderType.GITLAB
+                    ? 'my-group'
+                    : 'my-org'
+                "
                 :maxlength="200"
               />
             </div>
@@ -97,7 +115,12 @@
             <!-- Repository / Project -->
             <div class="flex flex-col gap-y-2">
               <label class="block text-sm font-medium leading-5 text-control">
-                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
+                <template
+                  v-if="
+                    state.wif.providerType ===
+                    WorkloadIdentityConfig_ProviderType.GITLAB
+                  "
+                >
                   {{ $t("settings.members.workload-identity-project") }}
                 </template>
                 <template v-else>
@@ -107,12 +130,24 @@
               <NInput
                 v-model:value="state.wif.repo"
                 :input-props="{ type: 'text', autocomplete: 'off' }"
-                :placeholder="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB ? 'my-project' : 'my-repo'"
+                :placeholder="
+                  state.wif.providerType ===
+                  WorkloadIdentityConfig_ProviderType.GITLAB
+                    ? 'my-project'
+                    : 'my-repo'
+                "
                 :maxlength="200"
               />
               <span class="text-xs text-gray-500">
-                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
-                  {{ $t("settings.members.workload-identity-project-hint") }}
+                <template
+                  v-if="
+                    state.wif.providerType ===
+                    WorkloadIdentityConfig_ProviderType.GITLAB
+                  "
+                >
+                  {{
+                    $t("settings.members.workload-identity-project-hint")
+                  }}
                 </template>
                 <template v-else>
                   {{ $t("settings.members.workload-identity-repo-hint") }}
@@ -122,11 +157,18 @@
 
             <!-- Allowed Branches/Tags (GitLab only) -->
             <div
-              v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB"
+              v-if="
+                state.wif.providerType ===
+                WorkloadIdentityConfig_ProviderType.GITLAB
+              "
               class="flex flex-col gap-y-2"
             >
               <label class="block text-sm font-medium leading-5 text-control">
-                {{ $t("settings.members.workload-identity-allowed-branches-tags") }}
+                {{
+                  $t(
+                    "settings.members.workload-identity-allowed-branches-tags"
+                  )
+                }}
               </label>
               <NSelect
                 v-model:value="state.wif.refType"
@@ -136,11 +178,21 @@
 
             <!-- Branch (GitHub) or Branch/Tag (GitLab when specific is selected) -->
             <div
-              v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITHUB || state.wif.refType !== 'all'"
+              v-if="
+                state.wif.providerType ===
+                  WorkloadIdentityConfig_ProviderType.GITHUB ||
+                state.wif.refType !== 'all'
+              "
               class="flex flex-col gap-y-2"
             >
               <label class="block text-sm font-medium leading-5 text-control">
-                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB && state.wif.refType === 'tag'">
+                <template
+                  v-if="
+                    state.wif.providerType ===
+                      WorkloadIdentityConfig_ProviderType.GITLAB &&
+                    state.wif.refType === 'tag'
+                  "
+                >
                   {{ $t("settings.members.workload-identity-tag") }}
                 </template>
                 <template v-else>
@@ -154,7 +206,13 @@
                 :maxlength="200"
               />
               <span class="text-xs text-gray-500">
-                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB && state.wif.refType === 'tag'">
+                <template
+                  v-if="
+                    state.wif.providerType ===
+                      WorkloadIdentityConfig_ProviderType.GITLAB &&
+                    state.wif.refType === 'tag'
+                  "
+                >
                   {{ $t("settings.members.workload-identity-tag-hint") }}
                 </template>
                 <template v-else>
@@ -171,8 +229,15 @@
                   <label
                     class="block text-sm font-medium leading-5 text-control"
                   >
-                    <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
-                      {{ $t("settings.members.workload-identity-gitlab-url") }}
+                    <template
+                      v-if="
+                        state.wif.providerType ===
+                        WorkloadIdentityConfig_ProviderType.GITLAB
+                      "
+                    >
+                      {{
+                        $t("settings.members.workload-identity-gitlab-url")
+                      }}
                     </template>
                     <template v-else>
                       {{ $t("settings.members.workload-identity-issuer") }}
@@ -184,10 +249,17 @@
                     :maxlength="500"
                   />
                   <span
-                    v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB"
+                    v-if="
+                      state.wif.providerType ===
+                      WorkloadIdentityConfig_ProviderType.GITLAB
+                    "
                     class="text-xs text-gray-500"
                   >
-                    {{ $t("settings.members.workload-identity-gitlab-url-hint") }}
+                    {{
+                      $t(
+                        "settings.members.workload-identity-gitlab-url-hint"
+                      )
+                    }}
                   </span>
                 </div>
 
@@ -221,7 +293,10 @@
               </div>
             </NCollapseTransition>
 
-            <NButton text @click="state.wif.showAdvanced = !state.wif.showAdvanced">
+            <NButton
+              text
+              @click="state.wif.showAdvanced = !state.wif.showAdvanced"
+            >
               {{ $t("settings.members.workload-identity-advanced") }}
               <template #icon>
                 <heroicons-outline:chevron-down
@@ -265,6 +340,7 @@
                     : ''
                 "
                 :show-domain="state.user.userType === UserType.SERVICE_ACCOUNT"
+                :disabled="isEditMode"
               />
             </div>
           </template>
@@ -316,9 +392,11 @@
             type="primary"
             :disabled="!allowConfirm"
             :loading="state.isRequesting"
-            @click="tryCreateOrUpdateUser"
+            @click="createOrUpdateUser"
           >
-            {{ $t("common.confirm") }}
+            {{
+              isEditMode ? $t("common.update") : $t("common.confirm")
+            }}
           </NButton>
         </div>
       </template>
@@ -328,6 +406,8 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { isEqual } from "lodash-es";
 import {
   NButton,
   NCollapseTransition,
@@ -343,15 +423,26 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
+  getUserFullNameByType,
   pushNotification,
+  serviceAccountToUser,
+  useServiceAccountStore,
   useSettingV1Store,
   useUserStore,
+  useWorkloadIdentityStore,
   useWorkspaceV1Store,
+  workloadIdentityToUser,
 } from "@/store";
-import { unknownUser } from "@/types";
+import {
+  getServiceAccountNameInBinding,
+  getUserEmailInBinding,
+  getWorkloadIdentityNameInBinding,
+  unknownUser,
+} from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
+  UpdateUserRequestSchema,
   UserSchema,
   UserType,
   WorkloadIdentityConfig_ProviderType,
@@ -380,15 +471,22 @@ interface LocalState {
   wif: WifState;
 }
 
+const props = defineProps<{
+  user?: User;
+}>();
+
 const emit = defineEmits<{
   (event: "close"): void;
   (event: "created", user: User): void;
+  (event: "updated", user: User): void;
 }>();
 
 const workspaceStore = useWorkspaceV1Store();
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const serviceAccountStore = useServiceAccountStore();
+const workloadIdentityStore = useWorkloadIdentityStore();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const state = reactive<LocalState>({
@@ -409,6 +507,121 @@ const state = reactive<LocalState>({
     showAdvanced: false,
   },
 });
+
+const isEditMode = computed(() => !!props.user);
+
+const initialRoles = computed(() => {
+  if (!props.user) {
+    return [PresetRoleType.WORKSPACE_MEMBER];
+  }
+
+  const roles = workspaceStore.userMapToRoles.get(
+    getUserFullNameByType(props.user)
+  );
+  return roles ? [...roles] : [];
+});
+
+// Parse subject pattern and extract owner/repo/branch/refType
+const parseSubjectPattern = (pattern: string) => {
+  const { providerType } = state.wif;
+
+  if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
+    // GitHub patterns:
+    // repo:owner/*
+    // repo:owner/repo:*
+    // repo:owner/repo:ref:refs/heads/branch
+    const match = pattern.match(/^repo:([^/]+)\/(.*)$/);
+    if (match) {
+      const owner = match[1];
+      const rest = match[2];
+      if (rest === "*") {
+        return { owner, repo: "", branch: "" };
+      }
+      const repoMatch = rest.match(/^([^:]+):(.*)$/);
+      if (repoMatch) {
+        const repo = repoMatch[1];
+        const refPart = repoMatch[2];
+        if (refPart === "*") {
+          return { owner, repo, branch: "" };
+        }
+        const branchMatch = refPart.match(/^ref:refs\/heads\/(.+)$/);
+        if (branchMatch) {
+          return { owner, repo, branch: branchMatch[1] };
+        }
+      }
+    }
+  }
+
+  if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    // GitLab patterns:
+    // project_path:group/*
+    // project_path:group/project:*
+    // project_path:group/project:ref_type:branch:ref:main
+    // project_path:group/project:ref_type:tag:ref:v1.0.0
+    const match = pattern.match(/^project_path:([^/]+)\/(.*)$/);
+    if (match) {
+      const owner = match[1];
+      const rest = match[2];
+      if (rest === "*") {
+        return { owner, repo: "", branch: "", refType: "all" as const };
+      }
+      const projectMatch = rest.match(/^([^:]+):(.*)$/);
+      if (projectMatch) {
+        const repo = projectMatch[1];
+        const refPart = projectMatch[2];
+        if (refPart === "*") {
+          return { owner, repo, branch: "", refType: "all" as const };
+        }
+        const refTypeMatch = refPart.match(/^ref_type:(branch|tag):ref:(.+)$/);
+        if (refTypeMatch) {
+          return {
+            owner,
+            repo,
+            branch: refTypeMatch[2],
+            refType: refTypeMatch[1] as "branch" | "tag",
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+watch(
+  () => props.user,
+  (user) => {
+    if (!user) {
+      return;
+    }
+    state.user = create(UserSchema, user);
+    state.roles = [...initialRoles.value];
+
+    if (user.userType === UserType.WORKLOAD_IDENTITY) {
+      const config = user.workloadIdentityConfig;
+      if (config) {
+        state.wif.emailPrefix = user.email.split("@")[0];
+        state.wif.providerType = config.providerType;
+        state.wif.issuerUrl = config.issuerUrl;
+        state.wif.audience = config.allowedAudiences[0] || "";
+        state.wif.subjectPattern = config.subjectPattern;
+
+        const parsed = parseSubjectPattern(config.subjectPattern);
+        if (parsed) {
+          state.wif.owner = parsed.owner;
+          state.wif.repo = parsed.repo;
+          state.wif.branch = parsed.branch;
+          if ("refType" in parsed && parsed.refType) {
+            state.wif.refType = parsed.refType;
+          }
+        }
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 
 const platformOptions = [
   {
@@ -494,73 +707,6 @@ const computedSubjectPattern = computed(() => {
   return "";
 });
 
-// Parse subject pattern and extract owner/repo/branch/refType
-const parseSubjectPattern = (pattern: string) => {
-  const { providerType } = state.wif;
-
-  if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
-    // GitHub patterns:
-    // repo:owner/*
-    // repo:owner/repo:*
-    // repo:owner/repo:ref:refs/heads/branch
-    const match = pattern.match(/^repo:([^/]+)\/(.*)$/);
-    if (match) {
-      const owner = match[1];
-      const rest = match[2];
-      if (rest === "*") {
-        return { owner, repo: "", branch: "" };
-      }
-      const repoMatch = rest.match(/^([^:]+):(.*)$/);
-      if (repoMatch) {
-        const repo = repoMatch[1];
-        const refPart = repoMatch[2];
-        if (refPart === "*") {
-          return { owner, repo, branch: "" };
-        }
-        const branchMatch = refPart.match(/^ref:refs\/heads\/(.+)$/);
-        if (branchMatch) {
-          return { owner, repo, branch: branchMatch[1] };
-        }
-      }
-    }
-  }
-
-  if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
-    // GitLab patterns:
-    // project_path:group/*
-    // project_path:group/project:*
-    // project_path:group/project:ref_type:branch:ref:main
-    // project_path:group/project:ref_type:tag:ref:v1.0.0
-    const match = pattern.match(/^project_path:([^/]+)\/(.*)$/);
-    if (match) {
-      const owner = match[1];
-      const rest = match[2];
-      if (rest === "*") {
-        return { owner, repo: "", branch: "", refType: "all" as const };
-      }
-      const projectMatch = rest.match(/^([^:]+):(.*)$/);
-      if (projectMatch) {
-        const repo = projectMatch[1];
-        const refPart = projectMatch[2];
-        if (refPart === "*") {
-          return { owner, repo, branch: "", refType: "all" as const };
-        }
-        const refTypeMatch = refPart.match(/^ref_type:(branch|tag):ref:(.+)$/);
-        if (refTypeMatch) {
-          return {
-            owner,
-            repo,
-            branch: refTypeMatch[2],
-            refType: refTypeMatch[1] as "branch" | "tag",
-          };
-        }
-      }
-    }
-  }
-
-  return null;
-};
-
 // Flag to prevent circular updates
 let isUpdatingFromPattern = false;
 let isUpdatingFromFields = false;
@@ -642,61 +788,174 @@ const extractUserTitle = (email: string): string => {
   return email;
 };
 
-const getMemberPrefix = (_userType: UserType): string => {
-  return "user:";
-};
-
-const tryCreateOrUpdateUser = async () => {
+const createOrUpdateUser = async () => {
   state.isRequesting = true;
   try {
-    let createdUser: User;
+    if (isEditMode.value) {
+      await updateUser();
+    } else {
+      await createUser();
+    }
+  } catch {
+    // nothing
+  } finally {
+    state.isRequesting = false;
+  }
+};
 
-    if (state.user.userType === UserType.WORKLOAD_IDENTITY) {
-      const email = `${state.wif.emailPrefix}@workload.bytebase.com`;
-      createdUser = await userStore.createUser(
-        create(UserSchema, {
-          name: "",
-          email,
+const convertUserToMember = (user: User) => {
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT:
+      return getServiceAccountNameInBinding(user.email);
+    case UserType.WORKLOAD_IDENTITY:
+      return getWorkloadIdentityNameInBinding(user.email);
+    default:
+      return getUserEmailInBinding(user.email);
+  }
+};
+
+const createUser = async () => {
+  let createdUser: User;
+
+  switch (state.user.userType) {
+    case UserType.WORKLOAD_IDENTITY: {
+      const wi = await workloadIdentityStore.createWorkloadIdentity(
+        state.wif.emailPrefix,
+        {
           title: state.user.title || state.wif.emailPrefix,
-          userType: UserType.WORKLOAD_IDENTITY,
-          password: "",
-          phone: "",
-          mfaEnabled: false,
           workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
             providerType: state.wif.providerType,
             issuerUrl: state.wif.issuerUrl,
             allowedAudiences: state.wif.audience ? [state.wif.audience] : [],
             subjectPattern: state.wif.subjectPattern,
           }),
-        })
+        }
       );
-    } else {
+      createdUser = workloadIdentityToUser(wi);
+      break;
+    }
+    case UserType.SERVICE_ACCOUNT: {
+      const serviceAccountId = state.user.email.split("@")[0];
+      const sa = await serviceAccountStore.createServiceAccount(
+        serviceAccountId,
+        {
+          title: state.user.title,
+        }
+      );
+      createdUser = serviceAccountToUser(sa);
+      break;
+    }
+    default: {
       createdUser = await userStore.createUser({
         ...state.user,
         title: state.user.title || extractUserTitle(state.user.email),
         password: state.user.password,
       });
     }
-
-    if (state.roles.length > 0) {
-      await workspaceStore.patchIamPolicy([
-        {
-          member: `${getMemberPrefix(state.user.userType)}${createdUser.email}`,
-          roles: state.roles,
-        },
-      ]);
-    }
-    emit("created", createdUser);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.created"),
-    });
-    emit("close");
-  } catch {
-    // nothing
-  } finally {
-    state.isRequesting = false;
   }
+
+  if (state.roles.length > 0) {
+    await workspaceStore.patchIamPolicy([
+      {
+        member: convertUserToMember(createdUser),
+        roles: state.roles,
+      },
+    ]);
+  }
+  emit("created", createdUser);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.created"),
+  });
+  emit("close");
+};
+
+const updateUser = async () => {
+  const user = props.user;
+  if (!user) {
+    return;
+  }
+
+  const updateMask: string[] = [];
+  const payload = create(UserSchema, state.user);
+  if (payload.title !== user.title) {
+    updateMask.push("title");
+  }
+
+  let updatedUser: User = user;
+
+  switch (payload.userType) {
+    case UserType.WORKLOAD_IDENTITY: {
+      const wi = await workloadIdentityStore.updateWorkloadIdentity(
+        {
+          name: payload.name,
+          title: payload.title,
+          workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
+            providerType: state.wif.providerType,
+            issuerUrl: state.wif.issuerUrl,
+            allowedAudiences: state.wif.audience ? [state.wif.audience] : [],
+            subjectPattern: state.wif.subjectPattern,
+          }),
+        },
+        create(FieldMaskSchema, {
+          paths: [...updateMask, "workload_identity_config"],
+        })
+      );
+      updatedUser = workloadIdentityToUser(wi);
+      break;
+    }
+    case UserType.SERVICE_ACCOUNT: {
+      if (updateMask.length > 0) {
+        const se = await serviceAccountStore.updateServiceAccount(
+          {
+            name: payload.name,
+            title: payload.title,
+          },
+          create(FieldMaskSchema, {
+            paths: [...updateMask],
+          })
+        );
+        updatedUser = serviceAccountToUser(se);
+      }
+      break;
+    }
+    default: {
+      if (payload.phone !== user.phone) {
+        updateMask.push("phone");
+      }
+      if (payload.password) {
+        updateMask.push("password");
+      }
+
+      if (updateMask.length > 0) {
+        updatedUser = await userStore.updateUser(
+          create(UpdateUserRequestSchema, {
+            user: payload,
+            updateMask: create(FieldMaskSchema, {
+              paths: updateMask,
+            }),
+          })
+        );
+      }
+    }
+  }
+
+  if (!isEqual([...initialRoles.value].sort(), [...state.roles].sort())) {
+    await workspaceStore.patchIamPolicy([
+      {
+        member: convertUserToMember(updatedUser),
+        roles: state.roles,
+      },
+    ]);
+  }
+
+  emit("updated", updatedUser);
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+  emit("close");
 };
 </script>

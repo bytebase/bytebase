@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { workspaceServiceClientConnect } from "@/connect";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types";
+import { ALL_USERS_USER_EMAIL } from "@/types";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   BindingSchema,
@@ -12,9 +12,7 @@ import {
   IamPolicySchema,
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
-import { bindingListInIAM, getUserEmailListInBinding } from "@/utils";
-import { extractUserId } from "./common";
-import { extractGroupEmail } from "./group";
+import { getUserListInBinding, isBindingPolicyExpired } from "@/utils";
 import { composePolicyBindings } from "./projectIamPolicy";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
@@ -24,38 +22,43 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     return _workspaceIamPolicy.value;
   });
 
-  // roleMapToUsers returns Map<roles/{role}, Set<users/{email}>>
-  // the user could includes users/ALL_USERS_USER_EMAIL
+  // roleMapToUsers returns Map<roles/{role}, Set<userfullname>>
+  // the user fullname can be
+  // - users/{email}, includes users/ALL_USERS_USER_EMAIL
+  // - serviceAccounts/{email}
+  // - workloadIdentities/{email}
   const roleMapToUsers = computed(() => {
     const map = new Map<string, Set<string>>();
     for (const binding of _workspaceIamPolicy.value.bindings) {
       if (!map.has(binding.role)) {
         map.set(binding.role, new Set());
       }
-      for (const email of getUserEmailListInBinding({
+      for (const fullname of getUserListInBinding({
         binding,
         ignoreGroup: false,
       })) {
-        map.get(binding.role)?.add(`${userNamePrefix}${email}`);
+        map.get(binding.role)?.add(fullname);
       }
     }
     return map;
   });
 
-  // userMapToRoles returns Map<users/{email}, Set<roles/{role}>>
-  // the user could includes users/ALL_USERS_USER_EMAIL
+  // userMapToRoles returns Map<userfullname, Set<roles/{role}>>
+  // the user fullname can be
+  // - users/{email}, includes users/ALL_USERS_USER_EMAIL
+  // - serviceAccounts/{email}
+  // - workloadIdentities/{email}
   const userMapToRoles = computed(() => {
     const map = new Map<string, Set<string>>();
     for (const binding of _workspaceIamPolicy.value.bindings) {
-      for (const email of getUserEmailListInBinding({
+      for (const fullname of getUserListInBinding({
         binding,
         ignoreGroup: false,
       })) {
-        const key = `${userNamePrefix}${email}`;
-        if (!map.has(key)) {
-          map.set(key, new Set());
+        if (!map.has(fullname)) {
+          map.set(fullname, new Set());
         }
-        map.get(key)?.add(binding.role);
+        map.get(fullname)?.add(binding.role);
       }
     }
     return map;
@@ -136,30 +139,21 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     _workspaceIamPolicy.value = policy;
   };
 
-  const findRolesByMember = ({
-    member,
-    ignoreGroup,
-  }: {
-    member: string;
-    ignoreGroup: boolean;
-  }): string[] => {
-    let email = member;
-    if (member.startsWith(groupBindingPrefix)) {
-      email = extractGroupEmail(member);
-    } else {
-      email = extractUserId(member);
+  const findRolesByMember = (member: string): string[] => {
+    const roles = new Set<string>();
+    for (const binding of _workspaceIamPolicy.value.bindings) {
+      if (isBindingPolicyExpired(binding)) {
+        continue;
+      }
+      if (binding.members.includes(member)) {
+        roles.add(binding.role);
+      }
     }
-    return bindingListInIAM({
-      policy: _workspaceIamPolicy.value,
-      email,
-      ignoreGroup,
-    }).map((binding) => binding.role);
+    return [...roles];
   };
 
-  const getWorkspaceRolesByEmail = (email: string) => {
-    const specificRoles =
-      userMapToRoles.value.get(`${userNamePrefix}${email}`) ??
-      new Set<string>([]);
+  const getWorkspaceRolesByName = (name: string) => {
+    const specificRoles = userMapToRoles.value.get(name) ?? new Set<string>([]);
     if (userMapToRoles.value.has(`${userNamePrefix}${ALL_USERS_USER_EMAIL}`)) {
       for (const role of userMapToRoles.value.get(
         `${userNamePrefix}${ALL_USERS_USER_EMAIL}`
@@ -171,11 +165,12 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   };
 
   return {
+    userMapToRoles,
     workspaceIamPolicy,
     fetchIamPolicy,
     patchIamPolicy,
     findRolesByMember,
     roleMapToUsers,
-    getWorkspaceRolesByEmail,
+    getWorkspaceRolesByName,
   };
 });

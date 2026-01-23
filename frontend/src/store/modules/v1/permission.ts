@@ -4,7 +4,7 @@ import { computed, shallowReactive } from "vue";
 import { type Permission, PRESET_WORKSPACE_ROLES } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
-import { bindingListInIAM } from "@/utils";
+import { filterBindingsByUserName } from "@/utils";
 import { useRoleStore } from "../role";
 import { useCurrentUserV1 } from "./auth";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
@@ -20,8 +20,10 @@ export const usePermissionStore = defineStore("permission", () => {
   const workspaceStore = useWorkspaceV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
 
+  // currentRolesInWorkspace returns role for the current user in the workspace level
+  // it also includes the role for the user group
   const currentRolesInWorkspace = computed(() => {
-    return workspaceStore.getWorkspaceRolesByEmail(currentUser.value.email);
+    return workspaceStore.getWorkspaceRolesByName(currentUser.value.name);
   });
 
   const currentPermissions = computed(() => {
@@ -44,9 +46,9 @@ export const usePermissionStore = defineStore("permission", () => {
     ].filter((role) => !PRESET_WORKSPACE_ROLES.includes(role));
 
     const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
-    const projectBindings = bindingListInIAM({
+    const projectBindings = filterBindingsByUserName({
       policy: iamPolicy,
-      email: currentUser.value.email,
+      name: currentUser.value.name,
       ignoreGroup: false,
     });
 

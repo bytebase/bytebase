@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-col">
-    <NInputGroup v-if="enforceDomain && !readonly">
+    <NInputGroup v-if="enforceDomain && !disabled">
       <NInput
         v-model:value="state.shortValue"
         :size="size"
-        :disabled="readonly"
+        :disabled="disabled"
         :status="hasEmailError ? 'error' : undefined"
       />
       <NInputGroupLabel :size="size"> @ </NInputGroupLabel>
@@ -12,14 +12,14 @@
         :size="size"
         v-model:value="state.domain"
         :options="domainSelectOptions"
-        :disabled="readonly"
+        :disabled="disabled"
       />
     </NInputGroup>
     <NInput
       v-else
       v-model:value="state.value"
       :size="size"
-      :disabled="readonly"
+      :disabled="disabled"
       :status="hasEmailError ? 'error' : undefined"
     />
     <span v-if="hasEmailError" class="text-error text-sm mt-1">
@@ -57,7 +57,7 @@ const props = withDefaults(
   defineProps<{
     size?: "small" | "medium" | "large";
     value?: string;
-    readonly?: boolean;
+    disabled?: boolean;
     domainPrefix?: string;
     fallbackDomain?: string;
     showDomain?: boolean;
@@ -65,7 +65,7 @@ const props = withDefaults(
   {
     size: "medium",
     value: "",
-    readonly: false,
+    disabled: false,
     domainPrefix: "",
     fallbackDomain: "",
     showDomain: false,
