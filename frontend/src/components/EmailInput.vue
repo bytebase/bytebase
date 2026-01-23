@@ -58,16 +58,13 @@ const props = withDefaults(
     size?: "small" | "medium" | "large";
     value?: string;
     disabled?: boolean;
-    domainPrefix?: string;
-    fallbackDomain?: string;
+    domain?: string;
     showDomain?: boolean;
   }>(),
   {
     size: "medium",
     value: "",
     disabled: false,
-    domainPrefix: "",
-    fallbackDomain: "",
     showDomain: false,
   }
 );
@@ -90,16 +87,19 @@ const enforceDomain = computed(() => {
 });
 
 const domainSelectOptions = computed(() => {
+  if (props.domain) {
+    return [
+      {
+        label: props.domain,
+        value: props.domain,
+      },
+    ];
+  }
   const domains = settingV1Store.workspaceProfile.domains.filter(
     (domain) => domain && domain.trim() !== ""
   );
-  if (domains.length === 0 && props.fallbackDomain) {
-    domains.push(props.fallbackDomain);
-  }
   return domains.map((domain) => {
-    const value = props.domainPrefix
-      ? `${props.domainPrefix}.${domain.trim()}`
-      : domain.trim();
+    const value = domain.trim();
     return {
       label: value,
       value,

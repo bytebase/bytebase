@@ -57,17 +57,12 @@
                 {{ $t("common.email") }}
                 <RequiredStar class="ml-0.5" />
               </label>
-              <div class="flex items-center">
-                <NInput
-                  v-model:value="state.wif.emailPrefix"
-                  :input-props="{ type: 'text', autocomplete: 'off' }"
-                  placeholder="github-deploy"
-                  :maxlength="100"
-                  class="flex-1"
-                  :disabled="isEditMode"
-                />
-                <span class="ml-1 text-gray-500">@workload.bytebase.com</span>
-              </div>
+              <EmailInput
+                v-model:value="state.user.email"
+                domain="workload.bytebase.com"
+                :show-domain="true"
+                :disabled="isEditMode"
+              />
             </div>
 
             <!-- Platform -->
@@ -329,15 +324,10 @@
               </label>
               <EmailInput
                 v-model:value="state.user.email"
-                :domain-prefix="
+                :domain="
                   state.user.userType === UserType.SERVICE_ACCOUNT
-                    ? 'service'
-                    : ''
-                "
-                :fallback-domain="
-                  state.user.userType === UserType.SERVICE_ACCOUNT
-                    ? 'bytebase.com'
-                    : ''
+                   ? 'service.bytebase.com'
+                   : ''
                 "
                 :show-domain="state.user.userType === UserType.SERVICE_ACCOUNT"
                 :disabled="isEditMode"
