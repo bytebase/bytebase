@@ -45,6 +45,14 @@ service WorkloadIdentityService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Gets workload identities in batch.
+  // Permissions required: bb.workloadIdentities.get
+  rpc BatchGetWorkloadIdentities(BatchGetWorkloadIdentitiesRequest) returns (BatchGetWorkloadIdentitiesResponse) {
+    option (google.api.http) = {get: "/v1/workloadIdentities:batchGet"};
+    option (bytebase.v1.permission) = "bb.workloadIdentities.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Lists workload identities.
   // For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
   // For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
@@ -146,6 +154,22 @@ message GetWorkloadIdentityRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/WorkloadIdentity"}
   ];
+}
+
+// Request message for batch getting workload identities.
+message BatchGetWorkloadIdentitiesRequest {
+  // The workload identity names to retrieve.
+  // Format: workloadIdentities/{email}
+  repeated string names = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/WorkloadIdentity"}
+  ];
+}
+
+// Response message for batch getting workload identities.
+message BatchGetWorkloadIdentitiesResponse {
+  // The workload identities from the specified request.
+  repeated WorkloadIdentity workload_identities = 1;
 }
 
 // Request message for listing workload identities.

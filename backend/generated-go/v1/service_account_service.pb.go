@@ -234,6 +234,99 @@ func (x *GetServiceAccountRequest) GetName() string {
 	return ""
 }
 
+// Request message for batch getting service accounts.
+type BatchGetServiceAccountsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The service account names to retrieve.
+	// Format: serviceAccounts/{email}
+	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetServiceAccountsRequest) Reset() {
+	*x = BatchGetServiceAccountsRequest{}
+	mi := &file_v1_service_account_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetServiceAccountsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetServiceAccountsRequest) ProtoMessage() {}
+
+func (x *BatchGetServiceAccountsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_service_account_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetServiceAccountsRequest.ProtoReflect.Descriptor instead.
+func (*BatchGetServiceAccountsRequest) Descriptor() ([]byte, []int) {
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BatchGetServiceAccountsRequest) GetNames() []string {
+	if x != nil {
+		return x.Names
+	}
+	return nil
+}
+
+// Response message for batch getting service accounts.
+type BatchGetServiceAccountsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The service accounts from the specified request.
+	ServiceAccounts []*ServiceAccount `protobuf:"bytes,1,rep,name=service_accounts,json=serviceAccounts,proto3" json:"service_accounts,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *BatchGetServiceAccountsResponse) Reset() {
+	*x = BatchGetServiceAccountsResponse{}
+	mi := &file_v1_service_account_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetServiceAccountsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetServiceAccountsResponse) ProtoMessage() {}
+
+func (x *BatchGetServiceAccountsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_service_account_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetServiceAccountsResponse.ProtoReflect.Descriptor instead.
+func (*BatchGetServiceAccountsResponse) Descriptor() ([]byte, []int) {
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BatchGetServiceAccountsResponse) GetServiceAccounts() []*ServiceAccount {
+	if x != nil {
+		return x.ServiceAccounts
+	}
+	return nil
+}
+
 // Request message for listing service accounts.
 type ListServiceAccountsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -259,7 +352,7 @@ type ListServiceAccountsRequest struct {
 
 func (x *ListServiceAccountsRequest) Reset() {
 	*x = ListServiceAccountsRequest{}
-	mi := &file_v1_service_account_service_proto_msgTypes[3]
+	mi := &file_v1_service_account_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -271,7 +364,7 @@ func (x *ListServiceAccountsRequest) String() string {
 func (*ListServiceAccountsRequest) ProtoMessage() {}
 
 func (x *ListServiceAccountsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_service_account_service_proto_msgTypes[3]
+	mi := &file_v1_service_account_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -284,7 +377,7 @@ func (x *ListServiceAccountsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServiceAccountsRequest.ProtoReflect.Descriptor instead.
 func (*ListServiceAccountsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_service_account_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListServiceAccountsRequest) GetParent() string {
@@ -329,7 +422,7 @@ type ListServiceAccountsResponse struct {
 
 func (x *ListServiceAccountsResponse) Reset() {
 	*x = ListServiceAccountsResponse{}
-	mi := &file_v1_service_account_service_proto_msgTypes[4]
+	mi := &file_v1_service_account_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -341,7 +434,7 @@ func (x *ListServiceAccountsResponse) String() string {
 func (*ListServiceAccountsResponse) ProtoMessage() {}
 
 func (x *ListServiceAccountsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_service_account_service_proto_msgTypes[4]
+	mi := &file_v1_service_account_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +447,7 @@ func (x *ListServiceAccountsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServiceAccountsResponse.ProtoReflect.Descriptor instead.
 func (*ListServiceAccountsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_service_account_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListServiceAccountsResponse) GetServiceAccounts() []*ServiceAccount {
@@ -388,7 +481,7 @@ type UpdateServiceAccountRequest struct {
 
 func (x *UpdateServiceAccountRequest) Reset() {
 	*x = UpdateServiceAccountRequest{}
-	mi := &file_v1_service_account_service_proto_msgTypes[5]
+	mi := &file_v1_service_account_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -400,7 +493,7 @@ func (x *UpdateServiceAccountRequest) String() string {
 func (*UpdateServiceAccountRequest) ProtoMessage() {}
 
 func (x *UpdateServiceAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_service_account_service_proto_msgTypes[5]
+	mi := &file_v1_service_account_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -413,7 +506,7 @@ func (x *UpdateServiceAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateServiceAccountRequest.ProtoReflect.Descriptor instead.
 func (*UpdateServiceAccountRequest) Descriptor() ([]byte, []int) {
-	return file_v1_service_account_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateServiceAccountRequest) GetServiceAccount() *ServiceAccount {
@@ -442,7 +535,7 @@ type DeleteServiceAccountRequest struct {
 
 func (x *DeleteServiceAccountRequest) Reset() {
 	*x = DeleteServiceAccountRequest{}
-	mi := &file_v1_service_account_service_proto_msgTypes[6]
+	mi := &file_v1_service_account_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -454,7 +547,7 @@ func (x *DeleteServiceAccountRequest) String() string {
 func (*DeleteServiceAccountRequest) ProtoMessage() {}
 
 func (x *DeleteServiceAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_service_account_service_proto_msgTypes[6]
+	mi := &file_v1_service_account_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -467,7 +560,7 @@ func (x *DeleteServiceAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteServiceAccountRequest.ProtoReflect.Descriptor instead.
 func (*DeleteServiceAccountRequest) Descriptor() ([]byte, []int) {
-	return file_v1_service_account_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeleteServiceAccountRequest) GetName() string {
@@ -489,7 +582,7 @@ type UndeleteServiceAccountRequest struct {
 
 func (x *UndeleteServiceAccountRequest) Reset() {
 	*x = UndeleteServiceAccountRequest{}
-	mi := &file_v1_service_account_service_proto_msgTypes[7]
+	mi := &file_v1_service_account_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -501,7 +594,7 @@ func (x *UndeleteServiceAccountRequest) String() string {
 func (*UndeleteServiceAccountRequest) ProtoMessage() {}
 
 func (x *UndeleteServiceAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_service_account_service_proto_msgTypes[7]
+	mi := &file_v1_service_account_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -514,7 +607,7 @@ func (x *UndeleteServiceAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UndeleteServiceAccountRequest.ProtoReflect.Descriptor instead.
 func (*UndeleteServiceAccountRequest) Descriptor() ([]byte, []int) {
-	return file_v1_service_account_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_service_account_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UndeleteServiceAccountRequest) GetName() string {
@@ -546,7 +639,12 @@ const file_v1_service_account_service_proto_rawDesc = "" +
 	"\x0fservice_account\x18\x03 \x01(\v2\x1b.bytebase.v1.ServiceAccountB\x03\xe0A\x02R\x0eserviceAccount\"S\n" +
 	"\x18GetServiceAccountRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/ServiceAccountR\x04name\"\xae\x01\n" +
+	"\x1bbytebase.com/ServiceAccountR\x04name\"[\n" +
+	"\x1eBatchGetServiceAccountsRequest\x129\n" +
+	"\x05names\x18\x01 \x03(\tB#\xe0A\x02\xfaA\x1d\n" +
+	"\x1bbytebase.com/ServiceAccountR\x05names\"i\n" +
+	"\x1fBatchGetServiceAccountsResponse\x12F\n" +
+	"\x10service_accounts\x18\x01 \x03(\v2\x1b.bytebase.v1.ServiceAccountR\x0fserviceAccounts\"\xae\x01\n" +
 	"\x1aListServiceAccountsRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
@@ -566,11 +664,11 @@ const file_v1_service_account_service_proto_rawDesc = "" +
 	"\x1bbytebase.com/ServiceAccountR\x04name\"X\n" +
 	"\x1dUndeleteServiceAccountRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/ServiceAccountR\x04name2\x88\n" +
-	"\n" +
+	"\x1bbytebase.com/ServiceAccountR\x04name2\xc3\v\n" +
 	"\x15ServiceAccountService\x12\x99\x02\n" +
 	"\x14CreateServiceAccount\x12(.bytebase.v1.CreateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\xb9\x01\xdaA)parent,service_account,service_account_id\x8a\xea0\x19bb.serviceAccounts.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02b:\x0fservice_accountZ&:\x0fservice_account\"\x13/v1/serviceAccounts\"'/v1/{parent=projects/*}/serviceAccounts\x12\xa2\x01\n" +
-	"\x11GetServiceAccount\x12%.bytebase.v1.GetServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"I\xdaA\x04name\x8a\xea0\x16bb.serviceAccounts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/{name=serviceAccounts/*}\x12\xd8\x01\n" +
+	"\x11GetServiceAccount\x12%.bytebase.v1.GetServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"I\xdaA\x04name\x8a\xea0\x16bb.serviceAccounts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/{name=serviceAccounts/*}\x12\xb8\x01\n" +
+	"\x17BatchGetServiceAccounts\x12+.bytebase.v1.BatchGetServiceAccountsRequest\x1a,.bytebase.v1.BatchGetServiceAccountsResponse\"B\x8a\xea0\x16bb.serviceAccounts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/serviceAccounts:batchGet\x12\xd8\x01\n" +
 	"\x13ListServiceAccounts\x12'.bytebase.v1.ListServiceAccountsRequest\x1a(.bytebase.v1.ListServiceAccountsResponse\"n\xdaA\x06parent\x8a\xea0\x17bb.serviceAccounts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02@Z\x15\x12\x13/v1/serviceAccounts\x12'/v1/{parent=projects/*}/serviceAccounts\x12\xe8\x01\n" +
 	"\x14UpdateServiceAccount\x12(.bytebase.v1.UpdateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\x88\x01\xdaA\x1bservice_account,update_mask\x8a\xea0\x19bb.serviceAccounts.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\x0fservice_account2,/v1/{service_account.name=serviceAccounts/*}\x12\xaa\x01\n" +
 	"\x14DeleteServiceAccount\x12(.bytebase.v1.DeleteServiceAccountRequest\x1a\x16.google.protobuf.Empty\"P\xdaA\x04name\x8a\xea0\x19bb.serviceAccounts.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e*\x1c/v1/{name=serviceAccounts/*}\x12\xba\x01\n" +
@@ -589,45 +687,50 @@ func file_v1_service_account_service_proto_rawDescGZIP() []byte {
 	return file_v1_service_account_service_proto_rawDescData
 }
 
-var file_v1_service_account_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_service_account_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_service_account_service_proto_goTypes = []any{
-	(*ServiceAccount)(nil),                // 0: bytebase.v1.ServiceAccount
-	(*CreateServiceAccountRequest)(nil),   // 1: bytebase.v1.CreateServiceAccountRequest
-	(*GetServiceAccountRequest)(nil),      // 2: bytebase.v1.GetServiceAccountRequest
-	(*ListServiceAccountsRequest)(nil),    // 3: bytebase.v1.ListServiceAccountsRequest
-	(*ListServiceAccountsResponse)(nil),   // 4: bytebase.v1.ListServiceAccountsResponse
-	(*UpdateServiceAccountRequest)(nil),   // 5: bytebase.v1.UpdateServiceAccountRequest
-	(*DeleteServiceAccountRequest)(nil),   // 6: bytebase.v1.DeleteServiceAccountRequest
-	(*UndeleteServiceAccountRequest)(nil), // 7: bytebase.v1.UndeleteServiceAccountRequest
-	(State)(0),                            // 8: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),         // 9: google.protobuf.Timestamp
-	(*fieldmaskpb.FieldMask)(nil),         // 10: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),                 // 11: google.protobuf.Empty
+	(*ServiceAccount)(nil),                  // 0: bytebase.v1.ServiceAccount
+	(*CreateServiceAccountRequest)(nil),     // 1: bytebase.v1.CreateServiceAccountRequest
+	(*GetServiceAccountRequest)(nil),        // 2: bytebase.v1.GetServiceAccountRequest
+	(*BatchGetServiceAccountsRequest)(nil),  // 3: bytebase.v1.BatchGetServiceAccountsRequest
+	(*BatchGetServiceAccountsResponse)(nil), // 4: bytebase.v1.BatchGetServiceAccountsResponse
+	(*ListServiceAccountsRequest)(nil),      // 5: bytebase.v1.ListServiceAccountsRequest
+	(*ListServiceAccountsResponse)(nil),     // 6: bytebase.v1.ListServiceAccountsResponse
+	(*UpdateServiceAccountRequest)(nil),     // 7: bytebase.v1.UpdateServiceAccountRequest
+	(*DeleteServiceAccountRequest)(nil),     // 8: bytebase.v1.DeleteServiceAccountRequest
+	(*UndeleteServiceAccountRequest)(nil),   // 9: bytebase.v1.UndeleteServiceAccountRequest
+	(State)(0),                              // 10: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),           // 11: google.protobuf.Timestamp
+	(*fieldmaskpb.FieldMask)(nil),           // 12: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),                   // 13: google.protobuf.Empty
 }
 var file_v1_service_account_service_proto_depIdxs = []int32{
-	8,  // 0: bytebase.v1.ServiceAccount.state:type_name -> bytebase.v1.State
-	9,  // 1: bytebase.v1.ServiceAccount.create_time:type_name -> google.protobuf.Timestamp
+	10, // 0: bytebase.v1.ServiceAccount.state:type_name -> bytebase.v1.State
+	11, // 1: bytebase.v1.ServiceAccount.create_time:type_name -> google.protobuf.Timestamp
 	0,  // 2: bytebase.v1.CreateServiceAccountRequest.service_account:type_name -> bytebase.v1.ServiceAccount
-	0,  // 3: bytebase.v1.ListServiceAccountsResponse.service_accounts:type_name -> bytebase.v1.ServiceAccount
-	0,  // 4: bytebase.v1.UpdateServiceAccountRequest.service_account:type_name -> bytebase.v1.ServiceAccount
-	10, // 5: bytebase.v1.UpdateServiceAccountRequest.update_mask:type_name -> google.protobuf.FieldMask
-	1,  // 6: bytebase.v1.ServiceAccountService.CreateServiceAccount:input_type -> bytebase.v1.CreateServiceAccountRequest
-	2,  // 7: bytebase.v1.ServiceAccountService.GetServiceAccount:input_type -> bytebase.v1.GetServiceAccountRequest
-	3,  // 8: bytebase.v1.ServiceAccountService.ListServiceAccounts:input_type -> bytebase.v1.ListServiceAccountsRequest
-	5,  // 9: bytebase.v1.ServiceAccountService.UpdateServiceAccount:input_type -> bytebase.v1.UpdateServiceAccountRequest
-	6,  // 10: bytebase.v1.ServiceAccountService.DeleteServiceAccount:input_type -> bytebase.v1.DeleteServiceAccountRequest
-	7,  // 11: bytebase.v1.ServiceAccountService.UndeleteServiceAccount:input_type -> bytebase.v1.UndeleteServiceAccountRequest
-	0,  // 12: bytebase.v1.ServiceAccountService.CreateServiceAccount:output_type -> bytebase.v1.ServiceAccount
-	0,  // 13: bytebase.v1.ServiceAccountService.GetServiceAccount:output_type -> bytebase.v1.ServiceAccount
-	4,  // 14: bytebase.v1.ServiceAccountService.ListServiceAccounts:output_type -> bytebase.v1.ListServiceAccountsResponse
-	0,  // 15: bytebase.v1.ServiceAccountService.UpdateServiceAccount:output_type -> bytebase.v1.ServiceAccount
-	11, // 16: bytebase.v1.ServiceAccountService.DeleteServiceAccount:output_type -> google.protobuf.Empty
-	0,  // 17: bytebase.v1.ServiceAccountService.UndeleteServiceAccount:output_type -> bytebase.v1.ServiceAccount
-	12, // [12:18] is the sub-list for method output_type
-	6,  // [6:12] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	0,  // 3: bytebase.v1.BatchGetServiceAccountsResponse.service_accounts:type_name -> bytebase.v1.ServiceAccount
+	0,  // 4: bytebase.v1.ListServiceAccountsResponse.service_accounts:type_name -> bytebase.v1.ServiceAccount
+	0,  // 5: bytebase.v1.UpdateServiceAccountRequest.service_account:type_name -> bytebase.v1.ServiceAccount
+	12, // 6: bytebase.v1.UpdateServiceAccountRequest.update_mask:type_name -> google.protobuf.FieldMask
+	1,  // 7: bytebase.v1.ServiceAccountService.CreateServiceAccount:input_type -> bytebase.v1.CreateServiceAccountRequest
+	2,  // 8: bytebase.v1.ServiceAccountService.GetServiceAccount:input_type -> bytebase.v1.GetServiceAccountRequest
+	3,  // 9: bytebase.v1.ServiceAccountService.BatchGetServiceAccounts:input_type -> bytebase.v1.BatchGetServiceAccountsRequest
+	5,  // 10: bytebase.v1.ServiceAccountService.ListServiceAccounts:input_type -> bytebase.v1.ListServiceAccountsRequest
+	7,  // 11: bytebase.v1.ServiceAccountService.UpdateServiceAccount:input_type -> bytebase.v1.UpdateServiceAccountRequest
+	8,  // 12: bytebase.v1.ServiceAccountService.DeleteServiceAccount:input_type -> bytebase.v1.DeleteServiceAccountRequest
+	9,  // 13: bytebase.v1.ServiceAccountService.UndeleteServiceAccount:input_type -> bytebase.v1.UndeleteServiceAccountRequest
+	0,  // 14: bytebase.v1.ServiceAccountService.CreateServiceAccount:output_type -> bytebase.v1.ServiceAccount
+	0,  // 15: bytebase.v1.ServiceAccountService.GetServiceAccount:output_type -> bytebase.v1.ServiceAccount
+	4,  // 16: bytebase.v1.ServiceAccountService.BatchGetServiceAccounts:output_type -> bytebase.v1.BatchGetServiceAccountsResponse
+	6,  // 17: bytebase.v1.ServiceAccountService.ListServiceAccounts:output_type -> bytebase.v1.ListServiceAccountsResponse
+	0,  // 18: bytebase.v1.ServiceAccountService.UpdateServiceAccount:output_type -> bytebase.v1.ServiceAccount
+	13, // 19: bytebase.v1.ServiceAccountService.DeleteServiceAccount:output_type -> google.protobuf.Empty
+	0,  // 20: bytebase.v1.ServiceAccountService.UndeleteServiceAccount:output_type -> bytebase.v1.ServiceAccount
+	14, // [14:21] is the sub-list for method output_type
+	7,  // [7:14] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_service_account_service_proto_init() }
@@ -643,7 +746,7 @@ func file_v1_service_account_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_service_account_service_proto_rawDesc), len(file_v1_service_account_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

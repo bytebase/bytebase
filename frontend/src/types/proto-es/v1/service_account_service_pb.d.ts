@@ -129,6 +129,47 @@ export declare type GetServiceAccountRequest = Message<"bytebase.v1.GetServiceAc
 export declare const GetServiceAccountRequestSchema: GenMessage<GetServiceAccountRequest>;
 
 /**
+ * Request message for batch getting service accounts.
+ *
+ * @generated from message bytebase.v1.BatchGetServiceAccountsRequest
+ */
+export declare type BatchGetServiceAccountsRequest = Message<"bytebase.v1.BatchGetServiceAccountsRequest"> & {
+  /**
+   * The service account names to retrieve.
+   * Format: serviceAccounts/{email}
+   *
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetServiceAccountsRequest.
+ * Use `create(BatchGetServiceAccountsRequestSchema)` to create a new message.
+ */
+export declare const BatchGetServiceAccountsRequestSchema: GenMessage<BatchGetServiceAccountsRequest>;
+
+/**
+ * Response message for batch getting service accounts.
+ *
+ * @generated from message bytebase.v1.BatchGetServiceAccountsResponse
+ */
+export declare type BatchGetServiceAccountsResponse = Message<"bytebase.v1.BatchGetServiceAccountsResponse"> & {
+  /**
+   * The service accounts from the specified request.
+   *
+   * @generated from field: repeated bytebase.v1.ServiceAccount service_accounts = 1;
+   */
+  serviceAccounts: ServiceAccount[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetServiceAccountsResponse.
+ * Use `create(BatchGetServiceAccountsResponseSchema)` to create a new message.
+ */
+export declare const BatchGetServiceAccountsResponseSchema: GenMessage<BatchGetServiceAccountsResponse>;
+
+/**
  * Request message for listing service accounts.
  *
  * @generated from message bytebase.v1.ListServiceAccountsRequest
@@ -306,6 +347,17 @@ export declare const ServiceAccountService: GenService<{
     methodKind: "unary";
     input: typeof GetServiceAccountRequestSchema;
     output: typeof ServiceAccountSchema;
+  },
+  /**
+   * Gets service accounts in batch.
+   * Permissions required: bb.serviceAccounts.get
+   *
+   * @generated from rpc bytebase.v1.ServiceAccountService.BatchGetServiceAccounts
+   */
+  batchGetServiceAccounts: {
+    methodKind: "unary";
+    input: typeof BatchGetServiceAccountsRequestSchema;
+    output: typeof BatchGetServiceAccountsResponseSchema;
   },
   /**
    * Lists service accounts.

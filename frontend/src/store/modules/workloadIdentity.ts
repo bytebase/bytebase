@@ -76,7 +76,6 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     return wi;
   };
 
-  // TODO(ed): support batch get
   const batchGetOrFetchWorkloadIdentities = async (nameList: string[]) => {
     const validList = uniq(nameList).filter(
       (name) =>
@@ -91,11 +90,17 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         })
         .map((name) => ensureWorkloadIdentityFullName(name));
 
-      await Promise.all(
-        pendingFetch.map((name) => {
-          return getOrFetchWorkloadIdentity(name);
-        })
-      );
+      const resp = await workloadIdentityServiceClientConnect.batchGetWorkloadIdentities(
+        {
+          names: pendingFetch,
+        },
+        {
+          contextValues: createContextValues().set(silentContextKey, true),
+        }
+      )
+      for (const wi of resp.workloadIdentities) {
+        cacheByName.value.set(wi.name, wi);
+      }
     } catch {}
   };
 

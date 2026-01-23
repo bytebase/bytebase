@@ -234,6 +234,99 @@ func (x *GetWorkloadIdentityRequest) GetName() string {
 	return ""
 }
 
+// Request message for batch getting workload identities.
+type BatchGetWorkloadIdentitiesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The workload identity names to retrieve.
+	// Format: workloadIdentities/{email}
+	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetWorkloadIdentitiesRequest) Reset() {
+	*x = BatchGetWorkloadIdentitiesRequest{}
+	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetWorkloadIdentitiesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetWorkloadIdentitiesRequest) ProtoMessage() {}
+
+func (x *BatchGetWorkloadIdentitiesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetWorkloadIdentitiesRequest.ProtoReflect.Descriptor instead.
+func (*BatchGetWorkloadIdentitiesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BatchGetWorkloadIdentitiesRequest) GetNames() []string {
+	if x != nil {
+		return x.Names
+	}
+	return nil
+}
+
+// Response message for batch getting workload identities.
+type BatchGetWorkloadIdentitiesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The workload identities from the specified request.
+	WorkloadIdentities []*WorkloadIdentity `protobuf:"bytes,1,rep,name=workload_identities,json=workloadIdentities,proto3" json:"workload_identities,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *BatchGetWorkloadIdentitiesResponse) Reset() {
+	*x = BatchGetWorkloadIdentitiesResponse{}
+	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetWorkloadIdentitiesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetWorkloadIdentitiesResponse) ProtoMessage() {}
+
+func (x *BatchGetWorkloadIdentitiesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetWorkloadIdentitiesResponse.ProtoReflect.Descriptor instead.
+func (*BatchGetWorkloadIdentitiesResponse) Descriptor() ([]byte, []int) {
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BatchGetWorkloadIdentitiesResponse) GetWorkloadIdentities() []*WorkloadIdentity {
+	if x != nil {
+		return x.WorkloadIdentities
+	}
+	return nil
+}
+
 // Request message for listing workload identities.
 type ListWorkloadIdentitiesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -259,7 +352,7 @@ type ListWorkloadIdentitiesRequest struct {
 
 func (x *ListWorkloadIdentitiesRequest) Reset() {
 	*x = ListWorkloadIdentitiesRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -271,7 +364,7 @@ func (x *ListWorkloadIdentitiesRequest) String() string {
 func (*ListWorkloadIdentitiesRequest) ProtoMessage() {}
 
 func (x *ListWorkloadIdentitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -284,7 +377,7 @@ func (x *ListWorkloadIdentitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkloadIdentitiesRequest.ProtoReflect.Descriptor instead.
 func (*ListWorkloadIdentitiesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListWorkloadIdentitiesRequest) GetParent() string {
@@ -329,7 +422,7 @@ type ListWorkloadIdentitiesResponse struct {
 
 func (x *ListWorkloadIdentitiesResponse) Reset() {
 	*x = ListWorkloadIdentitiesResponse{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -341,7 +434,7 @@ func (x *ListWorkloadIdentitiesResponse) String() string {
 func (*ListWorkloadIdentitiesResponse) ProtoMessage() {}
 
 func (x *ListWorkloadIdentitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +447,7 @@ func (x *ListWorkloadIdentitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkloadIdentitiesResponse.ProtoReflect.Descriptor instead.
 func (*ListWorkloadIdentitiesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListWorkloadIdentitiesResponse) GetWorkloadIdentities() []*WorkloadIdentity {
@@ -388,7 +481,7 @@ type UpdateWorkloadIdentityRequest struct {
 
 func (x *UpdateWorkloadIdentityRequest) Reset() {
 	*x = UpdateWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -400,7 +493,7 @@ func (x *UpdateWorkloadIdentityRequest) String() string {
 func (*UpdateWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *UpdateWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -413,7 +506,7 @@ func (x *UpdateWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateWorkloadIdentityRequest) GetWorkloadIdentity() *WorkloadIdentity {
@@ -442,7 +535,7 @@ type DeleteWorkloadIdentityRequest struct {
 
 func (x *DeleteWorkloadIdentityRequest) Reset() {
 	*x = DeleteWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -454,7 +547,7 @@ func (x *DeleteWorkloadIdentityRequest) String() string {
 func (*DeleteWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *DeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -467,7 +560,7 @@ func (x *DeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*DeleteWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeleteWorkloadIdentityRequest) GetName() string {
@@ -489,7 +582,7 @@ type UndeleteWorkloadIdentityRequest struct {
 
 func (x *UndeleteWorkloadIdentityRequest) Reset() {
 	*x = UndeleteWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -501,7 +594,7 @@ func (x *UndeleteWorkloadIdentityRequest) String() string {
 func (*UndeleteWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *UndeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -514,7 +607,7 @@ func (x *UndeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UndeleteWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UndeleteWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UndeleteWorkloadIdentityRequest) GetName() string {
@@ -545,7 +638,12 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x11workload_identity\x18\x03 \x01(\v2\x1d.bytebase.v1.WorkloadIdentityB\x03\xe0A\x02R\x10workloadIdentity\"W\n" +
 	"\x1aGetWorkloadIdentityRequest\x129\n" +
 	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
-	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\xb1\x01\n" +
+	"\x1dbytebase.com/WorkloadIdentityR\x04name\"`\n" +
+	"!BatchGetWorkloadIdentitiesRequest\x12;\n" +
+	"\x05names\x18\x01 \x03(\tB%\xe0A\x02\xfaA\x1f\n" +
+	"\x1dbytebase.com/WorkloadIdentityR\x05names\"t\n" +
+	"\"BatchGetWorkloadIdentitiesResponse\x12N\n" +
+	"\x13workload_identities\x18\x01 \x03(\v2\x1d.bytebase.v1.WorkloadIdentityR\x12workloadIdentities\"\xb1\x01\n" +
 	"\x1dListWorkloadIdentitiesRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
@@ -565,11 +663,11 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\\\n" +
 	"\x1fUndeleteWorkloadIdentityRequest\x129\n" +
 	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
-	"\x1dbytebase.com/WorkloadIdentityR\x04name2\xe7\n" +
-	"\n" +
+	"\x1dbytebase.com/WorkloadIdentityR\x04name2\xb1\f\n" +
 	"\x17WorkloadIdentityService\x12\xb0\x02\n" +
 	"\x16CreateWorkloadIdentity\x12*.bytebase.v1.CreateWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"\xca\x01\xdaA-parent,workload_identity,workload_identity_id\x8a\xea0\x1cbb.workloadIdentities.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02l:\x11workload_identityZ+:\x11workload_identity\"\x16/v1/workloadIdentities\"*/v1/{parent=projects/*}/workloadIdentities\x12\xae\x01\n" +
-	"\x13GetWorkloadIdentity\x12'.bytebase.v1.GetWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"O\xdaA\x04name\x8a\xea0\x19bb.workloadIdentities.get\x90\xea0\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/{name=workloadIdentities/*}\x12\xea\x01\n" +
+	"\x13GetWorkloadIdentity\x12'.bytebase.v1.GetWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"O\xdaA\x04name\x8a\xea0\x19bb.workloadIdentities.get\x90\xea0\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/{name=workloadIdentities/*}\x12\xc7\x01\n" +
+	"\x1aBatchGetWorkloadIdentities\x12..bytebase.v1.BatchGetWorkloadIdentitiesRequest\x1a/.bytebase.v1.BatchGetWorkloadIdentitiesResponse\"H\x8a\xea0\x19bb.workloadIdentities.get\x90\xea0\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/workloadIdentities:batchGet\x12\xea\x01\n" +
 	"\x16ListWorkloadIdentities\x12*.bytebase.v1.ListWorkloadIdentitiesRequest\x1a+.bytebase.v1.ListWorkloadIdentitiesResponse\"w\xdaA\x06parent\x8a\xea0\x1abb.workloadIdentities.list\x90\xea0\x01\x82\xd3\xe4\x93\x02FZ\x18\x12\x16/v1/workloadIdentities\x12*/v1/{parent=projects/*}/workloadIdentities\x12\xfa\x01\n" +
 	"\x16UpdateWorkloadIdentity\x12*.bytebase.v1.UpdateWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"\x94\x01\xdaA\x1dworkload_identity,update_mask\x8a\xea0\x1cbb.workloadIdentities.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02F:\x11workload_identity21/v1/{workload_identity.name=workloadIdentities/*}\x12\xb4\x01\n" +
 	"\x16DeleteWorkloadIdentity\x12*.bytebase.v1.DeleteWorkloadIdentityRequest\x1a\x16.google.protobuf.Empty\"V\xdaA\x04name\x8a\xea0\x1cbb.workloadIdentities.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02!*\x1f/v1/{name=workloadIdentities/*}\x12\xc6\x01\n" +
@@ -588,47 +686,52 @@ func file_v1_workload_identity_service_proto_rawDescGZIP() []byte {
 	return file_v1_workload_identity_service_proto_rawDescData
 }
 
-var file_v1_workload_identity_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_workload_identity_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_workload_identity_service_proto_goTypes = []any{
-	(*WorkloadIdentity)(nil),                // 0: bytebase.v1.WorkloadIdentity
-	(*CreateWorkloadIdentityRequest)(nil),   // 1: bytebase.v1.CreateWorkloadIdentityRequest
-	(*GetWorkloadIdentityRequest)(nil),      // 2: bytebase.v1.GetWorkloadIdentityRequest
-	(*ListWorkloadIdentitiesRequest)(nil),   // 3: bytebase.v1.ListWorkloadIdentitiesRequest
-	(*ListWorkloadIdentitiesResponse)(nil),  // 4: bytebase.v1.ListWorkloadIdentitiesResponse
-	(*UpdateWorkloadIdentityRequest)(nil),   // 5: bytebase.v1.UpdateWorkloadIdentityRequest
-	(*DeleteWorkloadIdentityRequest)(nil),   // 6: bytebase.v1.DeleteWorkloadIdentityRequest
-	(*UndeleteWorkloadIdentityRequest)(nil), // 7: bytebase.v1.UndeleteWorkloadIdentityRequest
-	(State)(0),                              // 8: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),           // 9: google.protobuf.Timestamp
-	(*WorkloadIdentityConfig)(nil),          // 10: bytebase.v1.WorkloadIdentityConfig
-	(*fieldmaskpb.FieldMask)(nil),           // 11: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),                   // 12: google.protobuf.Empty
+	(*WorkloadIdentity)(nil),                   // 0: bytebase.v1.WorkloadIdentity
+	(*CreateWorkloadIdentityRequest)(nil),      // 1: bytebase.v1.CreateWorkloadIdentityRequest
+	(*GetWorkloadIdentityRequest)(nil),         // 2: bytebase.v1.GetWorkloadIdentityRequest
+	(*BatchGetWorkloadIdentitiesRequest)(nil),  // 3: bytebase.v1.BatchGetWorkloadIdentitiesRequest
+	(*BatchGetWorkloadIdentitiesResponse)(nil), // 4: bytebase.v1.BatchGetWorkloadIdentitiesResponse
+	(*ListWorkloadIdentitiesRequest)(nil),      // 5: bytebase.v1.ListWorkloadIdentitiesRequest
+	(*ListWorkloadIdentitiesResponse)(nil),     // 6: bytebase.v1.ListWorkloadIdentitiesResponse
+	(*UpdateWorkloadIdentityRequest)(nil),      // 7: bytebase.v1.UpdateWorkloadIdentityRequest
+	(*DeleteWorkloadIdentityRequest)(nil),      // 8: bytebase.v1.DeleteWorkloadIdentityRequest
+	(*UndeleteWorkloadIdentityRequest)(nil),    // 9: bytebase.v1.UndeleteWorkloadIdentityRequest
+	(State)(0),                                 // 10: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),              // 11: google.protobuf.Timestamp
+	(*WorkloadIdentityConfig)(nil),             // 12: bytebase.v1.WorkloadIdentityConfig
+	(*fieldmaskpb.FieldMask)(nil),              // 13: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),                      // 14: google.protobuf.Empty
 }
 var file_v1_workload_identity_service_proto_depIdxs = []int32{
-	8,  // 0: bytebase.v1.WorkloadIdentity.state:type_name -> bytebase.v1.State
-	9,  // 1: bytebase.v1.WorkloadIdentity.create_time:type_name -> google.protobuf.Timestamp
-	10, // 2: bytebase.v1.WorkloadIdentity.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
+	10, // 0: bytebase.v1.WorkloadIdentity.state:type_name -> bytebase.v1.State
+	11, // 1: bytebase.v1.WorkloadIdentity.create_time:type_name -> google.protobuf.Timestamp
+	12, // 2: bytebase.v1.WorkloadIdentity.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
 	0,  // 3: bytebase.v1.CreateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
-	0,  // 4: bytebase.v1.ListWorkloadIdentitiesResponse.workload_identities:type_name -> bytebase.v1.WorkloadIdentity
-	0,  // 5: bytebase.v1.UpdateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
-	11, // 6: bytebase.v1.UpdateWorkloadIdentityRequest.update_mask:type_name -> google.protobuf.FieldMask
-	1,  // 7: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:input_type -> bytebase.v1.CreateWorkloadIdentityRequest
-	2,  // 8: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:input_type -> bytebase.v1.GetWorkloadIdentityRequest
-	3,  // 9: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:input_type -> bytebase.v1.ListWorkloadIdentitiesRequest
-	5,  // 10: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:input_type -> bytebase.v1.UpdateWorkloadIdentityRequest
-	6,  // 11: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:input_type -> bytebase.v1.DeleteWorkloadIdentityRequest
-	7,  // 12: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:input_type -> bytebase.v1.UndeleteWorkloadIdentityRequest
-	0,  // 13: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	0,  // 14: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	4,  // 15: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:output_type -> bytebase.v1.ListWorkloadIdentitiesResponse
-	0,  // 16: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	12, // 17: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:output_type -> google.protobuf.Empty
-	0,  // 18: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	13, // [13:19] is the sub-list for method output_type
-	7,  // [7:13] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	0,  // 4: bytebase.v1.BatchGetWorkloadIdentitiesResponse.workload_identities:type_name -> bytebase.v1.WorkloadIdentity
+	0,  // 5: bytebase.v1.ListWorkloadIdentitiesResponse.workload_identities:type_name -> bytebase.v1.WorkloadIdentity
+	0,  // 6: bytebase.v1.UpdateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
+	13, // 7: bytebase.v1.UpdateWorkloadIdentityRequest.update_mask:type_name -> google.protobuf.FieldMask
+	1,  // 8: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:input_type -> bytebase.v1.CreateWorkloadIdentityRequest
+	2,  // 9: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:input_type -> bytebase.v1.GetWorkloadIdentityRequest
+	3,  // 10: bytebase.v1.WorkloadIdentityService.BatchGetWorkloadIdentities:input_type -> bytebase.v1.BatchGetWorkloadIdentitiesRequest
+	5,  // 11: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:input_type -> bytebase.v1.ListWorkloadIdentitiesRequest
+	7,  // 12: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:input_type -> bytebase.v1.UpdateWorkloadIdentityRequest
+	8,  // 13: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:input_type -> bytebase.v1.DeleteWorkloadIdentityRequest
+	9,  // 14: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:input_type -> bytebase.v1.UndeleteWorkloadIdentityRequest
+	0,  // 15: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	0,  // 16: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	4,  // 17: bytebase.v1.WorkloadIdentityService.BatchGetWorkloadIdentities:output_type -> bytebase.v1.BatchGetWorkloadIdentitiesResponse
+	6,  // 18: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:output_type -> bytebase.v1.ListWorkloadIdentitiesResponse
+	0,  // 19: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	14, // 20: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:output_type -> google.protobuf.Empty
+	0,  // 21: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	15, // [15:22] is the sub-list for method output_type
+	8,  // [8:15] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_workload_identity_service_proto_init() }
@@ -645,7 +748,7 @@ func file_v1_workload_identity_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_workload_identity_service_proto_rawDesc), len(file_v1_workload_identity_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

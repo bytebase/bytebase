@@ -20,12 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ServiceAccountService_CreateServiceAccount_FullMethodName   = "/bytebase.v1.ServiceAccountService/CreateServiceAccount"
-	ServiceAccountService_GetServiceAccount_FullMethodName      = "/bytebase.v1.ServiceAccountService/GetServiceAccount"
-	ServiceAccountService_ListServiceAccounts_FullMethodName    = "/bytebase.v1.ServiceAccountService/ListServiceAccounts"
-	ServiceAccountService_UpdateServiceAccount_FullMethodName   = "/bytebase.v1.ServiceAccountService/UpdateServiceAccount"
-	ServiceAccountService_DeleteServiceAccount_FullMethodName   = "/bytebase.v1.ServiceAccountService/DeleteServiceAccount"
-	ServiceAccountService_UndeleteServiceAccount_FullMethodName = "/bytebase.v1.ServiceAccountService/UndeleteServiceAccount"
+	ServiceAccountService_CreateServiceAccount_FullMethodName    = "/bytebase.v1.ServiceAccountService/CreateServiceAccount"
+	ServiceAccountService_GetServiceAccount_FullMethodName       = "/bytebase.v1.ServiceAccountService/GetServiceAccount"
+	ServiceAccountService_BatchGetServiceAccounts_FullMethodName = "/bytebase.v1.ServiceAccountService/BatchGetServiceAccounts"
+	ServiceAccountService_ListServiceAccounts_FullMethodName     = "/bytebase.v1.ServiceAccountService/ListServiceAccounts"
+	ServiceAccountService_UpdateServiceAccount_FullMethodName    = "/bytebase.v1.ServiceAccountService/UpdateServiceAccount"
+	ServiceAccountService_DeleteServiceAccount_FullMethodName    = "/bytebase.v1.ServiceAccountService/DeleteServiceAccount"
+	ServiceAccountService_UndeleteServiceAccount_FullMethodName  = "/bytebase.v1.ServiceAccountService/UndeleteServiceAccount"
 )
 
 // ServiceAccountServiceClient is the client API for ServiceAccountService service.
@@ -41,6 +42,9 @@ type ServiceAccountServiceClient interface {
 	// Gets a service account by name.
 	// Permissions required: bb.serviceAccounts.get
 	GetServiceAccount(ctx context.Context, in *GetServiceAccountRequest, opts ...grpc.CallOption) (*ServiceAccount, error)
+	// Gets service accounts in batch.
+	// Permissions required: bb.serviceAccounts.get
+	BatchGetServiceAccounts(ctx context.Context, in *BatchGetServiceAccountsRequest, opts ...grpc.CallOption) (*BatchGetServiceAccountsResponse, error)
 	// Lists service accounts.
 	// For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
@@ -78,6 +82,16 @@ func (c *serviceAccountServiceClient) GetServiceAccount(ctx context.Context, in 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ServiceAccount)
 	err := c.cc.Invoke(ctx, ServiceAccountService_GetServiceAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceAccountServiceClient) BatchGetServiceAccounts(ctx context.Context, in *BatchGetServiceAccountsRequest, opts ...grpc.CallOption) (*BatchGetServiceAccountsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchGetServiceAccountsResponse)
+	err := c.cc.Invoke(ctx, ServiceAccountService_BatchGetServiceAccounts_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +151,9 @@ type ServiceAccountServiceServer interface {
 	// Gets a service account by name.
 	// Permissions required: bb.serviceAccounts.get
 	GetServiceAccount(context.Context, *GetServiceAccountRequest) (*ServiceAccount, error)
+	// Gets service accounts in batch.
+	// Permissions required: bb.serviceAccounts.get
+	BatchGetServiceAccounts(context.Context, *BatchGetServiceAccountsRequest) (*BatchGetServiceAccountsResponse, error)
 	// Lists service accounts.
 	// For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
@@ -165,6 +182,9 @@ func (UnimplementedServiceAccountServiceServer) CreateServiceAccount(context.Con
 }
 func (UnimplementedServiceAccountServiceServer) GetServiceAccount(context.Context, *GetServiceAccountRequest) (*ServiceAccount, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetServiceAccount not implemented")
+}
+func (UnimplementedServiceAccountServiceServer) BatchGetServiceAccounts(context.Context, *BatchGetServiceAccountsRequest) (*BatchGetServiceAccountsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchGetServiceAccounts not implemented")
 }
 func (UnimplementedServiceAccountServiceServer) ListServiceAccounts(context.Context, *ListServiceAccountsRequest) (*ListServiceAccountsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListServiceAccounts not implemented")
@@ -231,6 +251,24 @@ func _ServiceAccountService_GetServiceAccount_Handler(srv interface{}, ctx conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServiceAccountServiceServer).GetServiceAccount(ctx, req.(*GetServiceAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceAccountService_BatchGetServiceAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetServiceAccountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceAccountServiceServer).BatchGetServiceAccounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceAccountService_BatchGetServiceAccounts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceAccountServiceServer).BatchGetServiceAccounts(ctx, req.(*BatchGetServiceAccountsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -321,6 +359,10 @@ var ServiceAccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetServiceAccount",
 			Handler:    _ServiceAccountService_GetServiceAccount_Handler,
+		},
+		{
+			MethodName: "BatchGetServiceAccounts",
+			Handler:    _ServiceAccountService_BatchGetServiceAccounts_Handler,
 		},
 		{
 			MethodName: "ListServiceAccounts",

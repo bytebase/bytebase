@@ -20,12 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkloadIdentityService_CreateWorkloadIdentity_FullMethodName   = "/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity"
-	WorkloadIdentityService_GetWorkloadIdentity_FullMethodName      = "/bytebase.v1.WorkloadIdentityService/GetWorkloadIdentity"
-	WorkloadIdentityService_ListWorkloadIdentities_FullMethodName   = "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities"
-	WorkloadIdentityService_UpdateWorkloadIdentity_FullMethodName   = "/bytebase.v1.WorkloadIdentityService/UpdateWorkloadIdentity"
-	WorkloadIdentityService_DeleteWorkloadIdentity_FullMethodName   = "/bytebase.v1.WorkloadIdentityService/DeleteWorkloadIdentity"
-	WorkloadIdentityService_UndeleteWorkloadIdentity_FullMethodName = "/bytebase.v1.WorkloadIdentityService/UndeleteWorkloadIdentity"
+	WorkloadIdentityService_CreateWorkloadIdentity_FullMethodName     = "/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity"
+	WorkloadIdentityService_GetWorkloadIdentity_FullMethodName        = "/bytebase.v1.WorkloadIdentityService/GetWorkloadIdentity"
+	WorkloadIdentityService_BatchGetWorkloadIdentities_FullMethodName = "/bytebase.v1.WorkloadIdentityService/BatchGetWorkloadIdentities"
+	WorkloadIdentityService_ListWorkloadIdentities_FullMethodName     = "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities"
+	WorkloadIdentityService_UpdateWorkloadIdentity_FullMethodName     = "/bytebase.v1.WorkloadIdentityService/UpdateWorkloadIdentity"
+	WorkloadIdentityService_DeleteWorkloadIdentity_FullMethodName     = "/bytebase.v1.WorkloadIdentityService/DeleteWorkloadIdentity"
+	WorkloadIdentityService_UndeleteWorkloadIdentity_FullMethodName   = "/bytebase.v1.WorkloadIdentityService/UndeleteWorkloadIdentity"
 )
 
 // WorkloadIdentityServiceClient is the client API for WorkloadIdentityService service.
@@ -41,6 +42,9 @@ type WorkloadIdentityServiceClient interface {
 	// Gets a workload identity by name.
 	// Permissions required: bb.workloadIdentities.get
 	GetWorkloadIdentity(ctx context.Context, in *GetWorkloadIdentityRequest, opts ...grpc.CallOption) (*WorkloadIdentity, error)
+	// Gets workload identities in batch.
+	// Permissions required: bb.workloadIdentities.get
+	BatchGetWorkloadIdentities(ctx context.Context, in *BatchGetWorkloadIdentitiesRequest, opts ...grpc.CallOption) (*BatchGetWorkloadIdentitiesResponse, error)
 	// Lists workload identities.
 	// For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
@@ -78,6 +82,16 @@ func (c *workloadIdentityServiceClient) GetWorkloadIdentity(ctx context.Context,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WorkloadIdentity)
 	err := c.cc.Invoke(ctx, WorkloadIdentityService_GetWorkloadIdentity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workloadIdentityServiceClient) BatchGetWorkloadIdentities(ctx context.Context, in *BatchGetWorkloadIdentitiesRequest, opts ...grpc.CallOption) (*BatchGetWorkloadIdentitiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchGetWorkloadIdentitiesResponse)
+	err := c.cc.Invoke(ctx, WorkloadIdentityService_BatchGetWorkloadIdentities_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +151,9 @@ type WorkloadIdentityServiceServer interface {
 	// Gets a workload identity by name.
 	// Permissions required: bb.workloadIdentities.get
 	GetWorkloadIdentity(context.Context, *GetWorkloadIdentityRequest) (*WorkloadIdentity, error)
+	// Gets workload identities in batch.
+	// Permissions required: bb.workloadIdentities.get
+	BatchGetWorkloadIdentities(context.Context, *BatchGetWorkloadIdentitiesRequest) (*BatchGetWorkloadIdentitiesResponse, error)
 	// Lists workload identities.
 	// For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
@@ -165,6 +182,9 @@ func (UnimplementedWorkloadIdentityServiceServer) CreateWorkloadIdentity(context
 }
 func (UnimplementedWorkloadIdentityServiceServer) GetWorkloadIdentity(context.Context, *GetWorkloadIdentityRequest) (*WorkloadIdentity, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetWorkloadIdentity not implemented")
+}
+func (UnimplementedWorkloadIdentityServiceServer) BatchGetWorkloadIdentities(context.Context, *BatchGetWorkloadIdentitiesRequest) (*BatchGetWorkloadIdentitiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchGetWorkloadIdentities not implemented")
 }
 func (UnimplementedWorkloadIdentityServiceServer) ListWorkloadIdentities(context.Context, *ListWorkloadIdentitiesRequest) (*ListWorkloadIdentitiesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListWorkloadIdentities not implemented")
@@ -232,6 +252,24 @@ func _WorkloadIdentityService_GetWorkloadIdentity_Handler(srv interface{}, ctx c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(WorkloadIdentityServiceServer).GetWorkloadIdentity(ctx, req.(*GetWorkloadIdentityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkloadIdentityService_BatchGetWorkloadIdentities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetWorkloadIdentitiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkloadIdentityServiceServer).BatchGetWorkloadIdentities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkloadIdentityService_BatchGetWorkloadIdentities_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkloadIdentityServiceServer).BatchGetWorkloadIdentities(ctx, req.(*BatchGetWorkloadIdentitiesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -322,6 +360,10 @@ var WorkloadIdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetWorkloadIdentity",
 			Handler:    _WorkloadIdentityService_GetWorkloadIdentity_Handler,
+		},
+		{
+			MethodName: "BatchGetWorkloadIdentities",
+			Handler:    _WorkloadIdentityService_BatchGetWorkloadIdentities_Handler,
 		},
 		{
 			MethodName: "ListWorkloadIdentities",

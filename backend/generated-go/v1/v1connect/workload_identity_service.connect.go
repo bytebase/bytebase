@@ -40,6 +40,9 @@ const (
 	// WorkloadIdentityServiceGetWorkloadIdentityProcedure is the fully-qualified name of the
 	// WorkloadIdentityService's GetWorkloadIdentity RPC.
 	WorkloadIdentityServiceGetWorkloadIdentityProcedure = "/bytebase.v1.WorkloadIdentityService/GetWorkloadIdentity"
+	// WorkloadIdentityServiceBatchGetWorkloadIdentitiesProcedure is the fully-qualified name of the
+	// WorkloadIdentityService's BatchGetWorkloadIdentities RPC.
+	WorkloadIdentityServiceBatchGetWorkloadIdentitiesProcedure = "/bytebase.v1.WorkloadIdentityService/BatchGetWorkloadIdentities"
 	// WorkloadIdentityServiceListWorkloadIdentitiesProcedure is the fully-qualified name of the
 	// WorkloadIdentityService's ListWorkloadIdentities RPC.
 	WorkloadIdentityServiceListWorkloadIdentitiesProcedure = "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities"
@@ -63,6 +66,9 @@ type WorkloadIdentityServiceClient interface {
 	// Gets a workload identity by name.
 	// Permissions required: bb.workloadIdentities.get
 	GetWorkloadIdentity(context.Context, *connect.Request[v1.GetWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error)
+	// Gets workload identities in batch.
+	// Permissions required: bb.workloadIdentities.get
+	BatchGetWorkloadIdentities(context.Context, *connect.Request[v1.BatchGetWorkloadIdentitiesRequest]) (*connect.Response[v1.BatchGetWorkloadIdentitiesResponse], error)
 	// Lists workload identities.
 	// For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
@@ -101,6 +107,12 @@ func NewWorkloadIdentityServiceClient(httpClient connect.HTTPClient, baseURL str
 			connect.WithSchema(workloadIdentityServiceMethods.ByName("GetWorkloadIdentity")),
 			connect.WithClientOptions(opts...),
 		),
+		batchGetWorkloadIdentities: connect.NewClient[v1.BatchGetWorkloadIdentitiesRequest, v1.BatchGetWorkloadIdentitiesResponse](
+			httpClient,
+			baseURL+WorkloadIdentityServiceBatchGetWorkloadIdentitiesProcedure,
+			connect.WithSchema(workloadIdentityServiceMethods.ByName("BatchGetWorkloadIdentities")),
+			connect.WithClientOptions(opts...),
+		),
 		listWorkloadIdentities: connect.NewClient[v1.ListWorkloadIdentitiesRequest, v1.ListWorkloadIdentitiesResponse](
 			httpClient,
 			baseURL+WorkloadIdentityServiceListWorkloadIdentitiesProcedure,
@@ -130,12 +142,13 @@ func NewWorkloadIdentityServiceClient(httpClient connect.HTTPClient, baseURL str
 
 // workloadIdentityServiceClient implements WorkloadIdentityServiceClient.
 type workloadIdentityServiceClient struct {
-	createWorkloadIdentity   *connect.Client[v1.CreateWorkloadIdentityRequest, v1.WorkloadIdentity]
-	getWorkloadIdentity      *connect.Client[v1.GetWorkloadIdentityRequest, v1.WorkloadIdentity]
-	listWorkloadIdentities   *connect.Client[v1.ListWorkloadIdentitiesRequest, v1.ListWorkloadIdentitiesResponse]
-	updateWorkloadIdentity   *connect.Client[v1.UpdateWorkloadIdentityRequest, v1.WorkloadIdentity]
-	deleteWorkloadIdentity   *connect.Client[v1.DeleteWorkloadIdentityRequest, emptypb.Empty]
-	undeleteWorkloadIdentity *connect.Client[v1.UndeleteWorkloadIdentityRequest, v1.WorkloadIdentity]
+	createWorkloadIdentity     *connect.Client[v1.CreateWorkloadIdentityRequest, v1.WorkloadIdentity]
+	getWorkloadIdentity        *connect.Client[v1.GetWorkloadIdentityRequest, v1.WorkloadIdentity]
+	batchGetWorkloadIdentities *connect.Client[v1.BatchGetWorkloadIdentitiesRequest, v1.BatchGetWorkloadIdentitiesResponse]
+	listWorkloadIdentities     *connect.Client[v1.ListWorkloadIdentitiesRequest, v1.ListWorkloadIdentitiesResponse]
+	updateWorkloadIdentity     *connect.Client[v1.UpdateWorkloadIdentityRequest, v1.WorkloadIdentity]
+	deleteWorkloadIdentity     *connect.Client[v1.DeleteWorkloadIdentityRequest, emptypb.Empty]
+	undeleteWorkloadIdentity   *connect.Client[v1.UndeleteWorkloadIdentityRequest, v1.WorkloadIdentity]
 }
 
 // CreateWorkloadIdentity calls bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity.
@@ -146,6 +159,11 @@ func (c *workloadIdentityServiceClient) CreateWorkloadIdentity(ctx context.Conte
 // GetWorkloadIdentity calls bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity.
 func (c *workloadIdentityServiceClient) GetWorkloadIdentity(ctx context.Context, req *connect.Request[v1.GetWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error) {
 	return c.getWorkloadIdentity.CallUnary(ctx, req)
+}
+
+// BatchGetWorkloadIdentities calls bytebase.v1.WorkloadIdentityService.BatchGetWorkloadIdentities.
+func (c *workloadIdentityServiceClient) BatchGetWorkloadIdentities(ctx context.Context, req *connect.Request[v1.BatchGetWorkloadIdentitiesRequest]) (*connect.Response[v1.BatchGetWorkloadIdentitiesResponse], error) {
+	return c.batchGetWorkloadIdentities.CallUnary(ctx, req)
 }
 
 // ListWorkloadIdentities calls bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities.
@@ -178,6 +196,9 @@ type WorkloadIdentityServiceHandler interface {
 	// Gets a workload identity by name.
 	// Permissions required: bb.workloadIdentities.get
 	GetWorkloadIdentity(context.Context, *connect.Request[v1.GetWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error)
+	// Gets workload identities in batch.
+	// Permissions required: bb.workloadIdentities.get
+	BatchGetWorkloadIdentities(context.Context, *connect.Request[v1.BatchGetWorkloadIdentitiesRequest]) (*connect.Response[v1.BatchGetWorkloadIdentitiesResponse], error)
 	// Lists workload identities.
 	// For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
@@ -212,6 +233,12 @@ func NewWorkloadIdentityServiceHandler(svc WorkloadIdentityServiceHandler, opts 
 		connect.WithSchema(workloadIdentityServiceMethods.ByName("GetWorkloadIdentity")),
 		connect.WithHandlerOptions(opts...),
 	)
+	workloadIdentityServiceBatchGetWorkloadIdentitiesHandler := connect.NewUnaryHandler(
+		WorkloadIdentityServiceBatchGetWorkloadIdentitiesProcedure,
+		svc.BatchGetWorkloadIdentities,
+		connect.WithSchema(workloadIdentityServiceMethods.ByName("BatchGetWorkloadIdentities")),
+		connect.WithHandlerOptions(opts...),
+	)
 	workloadIdentityServiceListWorkloadIdentitiesHandler := connect.NewUnaryHandler(
 		WorkloadIdentityServiceListWorkloadIdentitiesProcedure,
 		svc.ListWorkloadIdentities,
@@ -242,6 +269,8 @@ func NewWorkloadIdentityServiceHandler(svc WorkloadIdentityServiceHandler, opts 
 			workloadIdentityServiceCreateWorkloadIdentityHandler.ServeHTTP(w, r)
 		case WorkloadIdentityServiceGetWorkloadIdentityProcedure:
 			workloadIdentityServiceGetWorkloadIdentityHandler.ServeHTTP(w, r)
+		case WorkloadIdentityServiceBatchGetWorkloadIdentitiesProcedure:
+			workloadIdentityServiceBatchGetWorkloadIdentitiesHandler.ServeHTTP(w, r)
 		case WorkloadIdentityServiceListWorkloadIdentitiesProcedure:
 			workloadIdentityServiceListWorkloadIdentitiesHandler.ServeHTTP(w, r)
 		case WorkloadIdentityServiceUpdateWorkloadIdentityProcedure:
@@ -265,6 +294,10 @@ func (UnimplementedWorkloadIdentityServiceHandler) CreateWorkloadIdentity(contex
 
 func (UnimplementedWorkloadIdentityServiceHandler) GetWorkloadIdentity(context.Context, *connect.Request[v1.GetWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity is not implemented"))
+}
+
+func (UnimplementedWorkloadIdentityServiceHandler) BatchGetWorkloadIdentities(context.Context, *connect.Request[v1.BatchGetWorkloadIdentitiesRequest]) (*connect.Response[v1.BatchGetWorkloadIdentitiesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkloadIdentityService.BatchGetWorkloadIdentities is not implemented"))
 }
 
 func (UnimplementedWorkloadIdentityServiceHandler) ListWorkloadIdentities(context.Context, *connect.Request[v1.ListWorkloadIdentitiesRequest]) (*connect.Response[v1.ListWorkloadIdentitiesResponse], error) {

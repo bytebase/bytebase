@@ -113,6 +113,33 @@ func (s *WorkloadIdentityService) GetWorkloadIdentity(ctx context.Context, reque
 	return connect.NewResponse(convertToWorkloadIdentity(wi)), nil
 }
 
+// BatchGetWorkloadIdentities gets workload identities in batch.
+func (s *WorkloadIdentityService) BatchGetWorkloadIdentities(ctx context.Context, request *connect.Request[v1pb.BatchGetWorkloadIdentitiesRequest]) (*connect.Response[v1pb.BatchGetWorkloadIdentitiesResponse], error) {
+	emails := make([]string, 0, len(request.Msg.Names))
+	for _, name := range request.Msg.Names {
+		email, err := common.GetWorkloadIdentityEmail(name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if !common.IsWorkloadIdentityEmail(email) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email %v is not workload identity", email))
+		}
+		emails = append(emails, email)
+	}
+
+	users, err := s.store.BatchGetUsersByEmails(ctx, emails)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get workload identities"))
+	}
+
+	response := &v1pb.BatchGetWorkloadIdentitiesResponse{}
+	for _, user := range users {
+		response.WorkloadIdentities = append(response.WorkloadIdentities, convertUserToWorkloadIdentity(user))
+	}
+
+	return connect.NewResponse(response), nil
+}
+
 // ListWorkloadIdentities lists workload identities.
 func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, request *connect.Request[v1pb.ListWorkloadIdentitiesRequest]) (*connect.Response[v1pb.ListWorkloadIdentitiesResponse], error) {
 	// Parse parent to determine workspace vs project level
@@ -288,6 +315,23 @@ func convertToWorkloadIdentity(wi *store.WorkloadIdentityMessage) *v1pb.Workload
 	// Convert workload identity config
 	if wi.Config != nil {
 		result.WorkloadIdentityConfig = convertToAPIWorkloadIdentityConfig(wi.Config)
+	}
+
+	return result
+}
+
+// convertUserToWorkloadIdentity converts a store.UserMessage to a v1pb.WorkloadIdentity.
+func convertUserToWorkloadIdentity(user *store.UserMessage) *v1pb.WorkloadIdentity {
+	result := &v1pb.WorkloadIdentity{
+		Name:  common.FormatWorkloadIdentityEmail(user.Email),
+		State: convertDeletedToState(user.MemberDeleted),
+		Email: user.Email,
+		Title: user.Name,
+	}
+
+	// Convert workload identity config from user profile
+	if user.Profile != nil && user.Profile.WorkloadIdentityConfig != nil {
+		result.WorkloadIdentityConfig = convertToAPIWorkloadIdentityConfig(user.Profile.WorkloadIdentityConfig)
 	}
 
 	return result

@@ -9204,6 +9204,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+  /v1/serviceAccounts:batchGet:
+    get:
+      tags:
+        - ServiceAccountService
+      summary: BatchGetServiceAccounts
+      description: |-
+        Gets service accounts in batch.
+         Permissions required: bb.serviceAccounts.get
+      operationId: ServiceAccountService_BatchGetServiceAccounts
+      parameters:
+        - name: names
+          in: query
+          description: |-
+            The service account names to retrieve.
+             Format: serviceAccounts/{email}
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+            title: names
+            description: |-
+              The service account names to retrieve.
+               Format: serviceAccounts/{email}
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchGetServiceAccountsResponse'
   /v1/settings:
     get:
       tags:
@@ -9976,6 +10007,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+  /v1/workloadIdentities:batchGet:
+    get:
+      tags:
+        - WorkloadIdentityService
+      summary: BatchGetWorkloadIdentities
+      description: |-
+        Gets workload identities in batch.
+         Permissions required: bb.workloadIdentities.get
+      operationId: WorkloadIdentityService_BatchGetWorkloadIdentities
+      parameters:
+        - name: names
+          in: query
+          description: |-
+            The workload identity names to retrieve.
+             Format: workloadIdentities/{email}
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+            title: names
+            description: |-
+              The workload identity names to retrieve.
+               Format: workloadIdentities/{email}
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchGetWorkloadIdentitiesResponse'
   /v1/worksheets:
     post:
       tags:
@@ -11538,6 +11600,34 @@ components:
           description: The projects from the specified request.
       title: BatchGetProjectsResponse
       additionalProperties: false
+    bytebase.v1.BatchGetServiceAccountsRequest:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+          title: names
+          description: |-
+            The service account names to retrieve.
+             Format: serviceAccounts/{email}
+      title: BatchGetServiceAccountsRequest
+      required:
+        - names
+      additionalProperties: false
+      description: Request message for batch getting service accounts.
+    bytebase.v1.BatchGetServiceAccountsResponse:
+      type: object
+      properties:
+        serviceAccounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+          title: service_accounts
+          description: The service accounts from the specified request.
+      title: BatchGetServiceAccountsResponse
+      additionalProperties: false
+      description: Response message for batch getting service accounts.
     bytebase.v1.BatchGetUsersRequest:
       type: object
       properties:
@@ -11564,6 +11654,34 @@ components:
           description: The users from the specified request.
       title: BatchGetUsersResponse
       additionalProperties: false
+    bytebase.v1.BatchGetWorkloadIdentitiesRequest:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+          title: names
+          description: |-
+            The workload identity names to retrieve.
+             Format: workloadIdentities/{email}
+      title: BatchGetWorkloadIdentitiesRequest
+      required:
+        - names
+      additionalProperties: false
+      description: Request message for batch getting workload identities.
+    bytebase.v1.BatchGetWorkloadIdentitiesResponse:
+      type: object
+      properties:
+        workloadIdentities:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+          title: workload_identities
+          description: The workload identities from the specified request.
+      title: BatchGetWorkloadIdentitiesResponse
+      additionalProperties: false
+      description: Response message for batch getting workload identities.
     bytebase.v1.BatchParseRequest:
       type: object
       properties:

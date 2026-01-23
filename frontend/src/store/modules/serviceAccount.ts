@@ -70,7 +70,6 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     return sa;
   };
 
-  // TODO(ed): support batch get
   const batchGetOrFetchServiceAccounts = async (nameList: string[]) => {
     const validList = uniq(nameList).filter(
       (name) =>
@@ -85,11 +84,17 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
         })
         .map((name) => ensureServiceAccountFullName(name));
 
-      await Promise.all(
-        pendingFetch.map((name) => {
-          return getOrFetchServiceAccount(name);
-        })
-      );
+      const resp = await serviceAccountServiceClientConnect.batchGetServiceAccounts(
+        {
+          names: pendingFetch,
+        },
+        {
+          contextValues: createContextValues().set(silentContextKey, true),
+        }
+      )
+      for (const sa of resp.serviceAccounts) {
+        cacheByName.value.set(sa.name, sa);
+      }
     } catch {}
   };
 
