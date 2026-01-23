@@ -153,7 +153,11 @@ const sessionState = useDynamicLocalStorage<SessionState>(
 
 const pageSize = computed(() => {
   const sizeInSession = sessionState.value.pageSize ?? 0;
-  if (!options.value.find((o) => o.value === sizeInSession)) {
+  // Guard against NaN/invalid values from corrupted localStorage data
+  if (
+    !Number.isFinite(sizeInSession) ||
+    !options.value.find((o) => o.value === sizeInSession)
+  ) {
     return options.value[0].value;
   }
   return Math.max(options.value[0].value, sizeInSession);

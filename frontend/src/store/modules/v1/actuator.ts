@@ -111,7 +111,59 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const inactiveUserCount = computed(() => {
     return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (stat.state === State.DELETED) {
+      if (
+        stat.state === State.DELETED &&
+        stat.userType !== UserType.SERVICE_ACCOUNT &&
+        stat.userType !== UserType.WORKLOAD_IDENTITY
+      ) {
+        count += stat.count;
+      }
+      return count;
+    }, 0);
+  });
+
+  const serviceAccountCount = computed(() => {
+    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
+      if (
+        stat.state === State.ACTIVE &&
+        stat.userType === UserType.SERVICE_ACCOUNT
+      ) {
+        count += stat.count;
+      }
+      return count;
+    }, 0);
+  });
+
+  const workloadIdentityCount = computed(() => {
+    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
+      if (
+        stat.state === State.ACTIVE &&
+        stat.userType === UserType.WORKLOAD_IDENTITY
+      ) {
+        count += stat.count;
+      }
+      return count;
+    }, 0);
+  });
+
+  const inactiveServiceAccountCount = computed(() => {
+    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
+      if (
+        stat.state === State.DELETED &&
+        stat.userType === UserType.SERVICE_ACCOUNT
+      ) {
+        count += stat.count;
+      }
+      return count;
+    }, 0);
+  });
+
+  const inactiveWorkloadIdentityCount = computed(() => {
+    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
+      if (
+        stat.state === State.DELETED &&
+        stat.userType === UserType.WORKLOAD_IDENTITY
+      ) {
         count += stat.count;
       }
       return count;
@@ -275,6 +327,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     totalInstanceCount,
     replicaCount,
     inactiveUserCount,
+    serviceAccountCount,
+    workloadIdentityCount,
+    inactiveServiceAccountCount,
+    inactiveWorkloadIdentityCount,
     quickStartEnabled,
     // Actions
     getActiveUserCount,
