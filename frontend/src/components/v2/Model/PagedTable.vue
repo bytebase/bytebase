@@ -132,7 +132,8 @@ const fetchData = async (refresh = false) => {
   const isFirstFetch = state.paginationToken === "";
   const expectedRowCount = isFirstFetch
     ? // Load one or more page for the first fetch to restore the session
-      pageSize.value * sessionState.value.page
+      // Use fallback of 1 for backward compatibility with versions that don't store page field
+      pageSize.value * (sessionState.value.page ?? 1)
     : // Always load one page if NOT the first fetch
       pageSize.value;
 
