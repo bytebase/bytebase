@@ -13,7 +13,7 @@ export const useTaskNavigation = () => {
   const router = useRouter();
 
   const navigateToTaskDetail = (task: Task) => {
-    // Task name format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+    // Task name format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
     // Use utility functions for consistent parsing
     const projectName = extractProjectResourceName(task.name);
     const planId = extractPlanUIDFromRolloutName(task.name);

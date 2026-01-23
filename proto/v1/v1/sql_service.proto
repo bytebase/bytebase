@@ -56,11 +56,11 @@ service SQLService {
       body: "*"
 
       additional_bindings: {
-        post: "/v1/{name=projects/*/rollouts/*}:export"
+        post: "/v1/{name=projects/*/plans/*/rollout}:export"
         body: "*"
       }
       additional_bindings: {
-        post: "/v1/{name=projects/*/rollouts/*/stages/*}:export"
+        post: "/v1/{name=projects/*/plans/*/rollout/stages/*}:export"
         body: "*"
       }
     };
@@ -409,8 +409,8 @@ message ExportRequest {
   // The name is the resource name to execute the export against.
   // Format: instances/{instance}/databases/{database}
   // Format: instances/{instance}
-  // Format: projects/{project}/rollouts/{rollout}
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  // Format: projects/{project}/plans/{plan}/rollout
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}

@@ -1445,8 +1445,8 @@ type ExportRequest struct {
 	// The name is the resource name to execute the export against.
 	// Format: instances/{instance}/databases/{database}
 	// Format: instances/{instance}
-	// Format: projects/{project}/rollouts/{rollout}
-	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+	// Format: projects/{project}/plans/{plan}/rollout
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
 	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
@@ -2909,13 +2909,13 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\aContent\x12N\n" +
 	"\x05parts\x18\x01 \x03(\v28.bytebase.v1.AICompletionResponse.Candidate.Content.PartR\x05parts\x1a\x1a\n" +
 	"\x04Part\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text2\xbd\a\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text2\xc7\a\n" +
 	"\n" +
 	"SQLService\x12\x8f\x01\n" +
 	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"O\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=instances/*/databases/*}:query\x12\x89\x01\n" +
 	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"0\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12\x95\x01\n" +
-	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"(\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/queryHistories:search\x12\xfa\x01\n" +
-	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xb6\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x93\x01:\x01*Z,:\x01*\"'/v1/{name=projects/*/rollouts/*}:exportZ5:\x01*\"0/v1/{name=projects/*/rollouts/*/stages/*}:export\")/v1/{name=instances/*/databases/*}:export\x12\x81\x01\n" +
+	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"(\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/queryHistories:search\x12\x84\x02\n" +
+	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\xc0\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x9d\x01:\x01*Z1:\x01*\",/v1/{name=projects/*/plans/*/rollout}:exportZ::\x01*\"5/v1/{name=projects/*/plans/*/rollout/stages/*}:export\")/v1/{name=instances/*/databases/*}:export\x12\x81\x01\n" +
 	"\fDiffMetadata\x12 .bytebase.v1.DiffMetadataRequest\x1a!.bytebase.v1.DiffMetadataResponse\",\x80\xea0\x01\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/schemaDesign:diffMetadata\x12x\n" +
 	"\fAICompletion\x12 .bytebase.v1.AICompletionRequest\x1a!.bytebase.v1.AICompletionResponse\"#\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/sql/aiCompletionB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fSqlServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"

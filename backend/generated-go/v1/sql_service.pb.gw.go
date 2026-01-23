@@ -418,7 +418,7 @@ func RegisterSQLServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*}:export"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*/rollout}:export"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -438,7 +438,7 @@ func RegisterSQLServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*/stages/*}:export"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*/rollout/stages/*}:export"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -604,7 +604,7 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*}:export"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*/rollout}:export"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -621,7 +621,7 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/rollouts/*/stages/*}:export"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SQLService/Export", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*/rollout/stages/*}:export"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -676,8 +676,8 @@ var (
 	pattern_SQLService_AdminExecute_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"v1"}, "adminExecute"))
 	pattern_SQLService_SearchQueryHistories_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "queryHistories"}, "search"))
 	pattern_SQLService_Export_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "databases", "name"}, "export"))
-	pattern_SQLService_Export_1               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "rollouts", "name"}, "export"))
-	pattern_SQLService_Export_2               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "projects", "rollouts", "stages", "name"}, "export"))
+	pattern_SQLService_Export_1               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "projects", "plans", "rollout", "name"}, "export"))
+	pattern_SQLService_Export_2               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 2, 4, 1, 0, 4, 7, 5, 5}, []string{"v1", "projects", "plans", "rollout", "stages", "name"}, "export"))
 	pattern_SQLService_DiffMetadata_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "schemaDesign"}, "diffMetadata"))
 	pattern_SQLService_AICompletion_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "sql", "aiCompletion"}, ""))
 )

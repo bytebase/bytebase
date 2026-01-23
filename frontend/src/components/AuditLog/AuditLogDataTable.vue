@@ -30,8 +30,8 @@ import { mapSorterStatus } from "@/components/v2/Model/utils";
 import {
   extractUserId,
   getProjectIdPlanUidStageUidFromRolloutName,
+  planNamePrefix,
   projectNamePrefix,
-  rolloutNamePrefix,
 } from "@/store/modules/v1/common";
 import { getDateForPbTimestampProtoEs, unknownProject } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
@@ -274,7 +274,7 @@ const getViewLink = (auditLog: AuditLog): string | null => {
       if (!projectId || !planId) {
         return null;
       }
-      return `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${planId}`;
+      return `${projectNamePrefix}${projectId}/${planNamePrefix}${planId}/rollout`;
     }
   }
   return null;
