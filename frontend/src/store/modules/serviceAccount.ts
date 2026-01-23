@@ -84,14 +84,15 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
         })
         .map((name) => ensureServiceAccountFullName(name));
 
-      const resp = await serviceAccountServiceClientConnect.batchGetServiceAccounts(
-        {
-          names: pendingFetch,
-        },
-        {
-          contextValues: createContextValues().set(silentContextKey, true),
-        }
-      )
+      const resp =
+        await serviceAccountServiceClientConnect.batchGetServiceAccounts(
+          {
+            names: pendingFetch,
+          },
+          {
+            contextValues: createContextValues().set(silentContextKey, true),
+          }
+        );
       for (const sa of resp.serviceAccounts) {
         cacheByName.value.set(sa.name, sa);
       }

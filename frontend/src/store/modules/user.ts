@@ -32,12 +32,7 @@ import {
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { serviceAccountToUser, useServiceAccountStore } from "./serviceAccount";
 import { useActuatorV1Store } from "./v1/actuator";
-import {
-  extractUserId,
-  serviceAccountNamePrefix,
-  userNamePrefix,
-  workloadIdentityNamePrefix,
-} from "./v1/common";
+import { extractUserId, userNamePrefix } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 import {
   useWorkloadIdentityStore,

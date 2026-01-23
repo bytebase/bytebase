@@ -90,14 +90,15 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         })
         .map((name) => ensureWorkloadIdentityFullName(name));
 
-      const resp = await workloadIdentityServiceClientConnect.batchGetWorkloadIdentities(
-        {
-          names: pendingFetch,
-        },
-        {
-          contextValues: createContextValues().set(silentContextKey, true),
-        }
-      )
+      const resp =
+        await workloadIdentityServiceClientConnect.batchGetWorkloadIdentities(
+          {
+            names: pendingFetch,
+          },
+          {
+            contextValues: createContextValues().set(silentContextKey, true),
+          }
+        );
       for (const wi of resp.workloadIdentities) {
         cacheByName.value.set(wi.name, wi);
       }
