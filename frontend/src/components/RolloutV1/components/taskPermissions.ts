@@ -5,7 +5,7 @@ import {
   usePolicyV1Store,
   useProjectIamPolicyStore,
 } from "@/store";
-import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
+import { roleNamePrefix } from "@/store/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
@@ -35,8 +35,7 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
 
   // Special check for data export issues: only the creator can run tasks
   if (issue && issue.type === Issue_Type.DATABASE_EXPORT) {
-    const formattedCurrentUser = `${userNamePrefix}${currentUser.value.email}`;
-    return issue.creator === formattedCurrentUser;
+    return issue.creator === currentUser.value.name;
   }
 
   const { project } = useCurrentProjectV1();
@@ -53,7 +52,6 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const databaseStore = useDatabaseV1Store();
   const policyStore = usePolicyV1Store();
-  const formatedCurrentUser = `${userNamePrefix}${currentUser.value.email}`;
 
   return tasks.every((task) => {
     // Get database from task target
@@ -89,7 +87,7 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
           project.value.name
         );
         const memberRoles = memberMapToRolesInProjectIAM(projectIamPolicy);
-        const userRoles = memberRoles.get(formatedCurrentUser);
+        const userRoles = memberRoles.get(currentUser.value.name);
         if (userRoles?.has(requiredRole)) {
           return true;
         }

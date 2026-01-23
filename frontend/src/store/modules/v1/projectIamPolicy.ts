@@ -20,11 +20,12 @@ import {
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { getDatabaseProject, getUserEmailListInBinding } from "@/utils";
+import { getDatabaseProject, getUserListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useRoleStore } from "../role";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
+import { getUserFullNameByType, userNamePrefix } from "./common";
 import { useGroupStore } from "./group";
 import { usePermissionStore } from "./permission";
 
@@ -146,13 +147,13 @@ const checkProjectIAMPolicyWithExpr = (
   // Check if the user has the permission.
   for (const binding of policy.bindings) {
     // If the user is not in the binding, then skip.
-    const userEmailList = getUserEmailListInBinding({
+    const nameList = getUserListInBinding({
       binding,
       ignoreGroup: false,
     });
     if (
-      !userEmailList.includes(user.email) &&
-      !userEmailList.includes(ALL_USERS_USER_EMAIL)
+      !nameList.includes(getUserFullNameByType(user)) &&
+      !nameList.includes(`${userNamePrefix}${ALL_USERS_USER_EMAIL}`)
     ) {
       continue;
     }

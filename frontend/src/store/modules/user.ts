@@ -30,9 +30,19 @@ import {
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
+import { serviceAccountToUser, useServiceAccountStore } from "./serviceAccount";
 import { useActuatorV1Store } from "./v1/actuator";
-import { extractUserId, userNamePrefix } from "./v1/common";
+import {
+  extractUserId,
+  serviceAccountNamePrefix,
+  userNamePrefix,
+  workloadIdentityNamePrefix,
+} from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
+import {
+  useWorkloadIdentityStore,
+  workloadIdentityToUser,
+} from "./workloadIdentity";
 
 export interface UserFilter {
   query?: string;
@@ -64,6 +74,8 @@ const getListUserFilter = (params: UserFilter) => {
 
 export const useUserStore = defineStore("user", () => {
   const actuatorStore = useActuatorV1Store();
+  const serviceAccountStore = useServiceAccountStore();
+  const workloadIdentityStore = useWorkloadIdentityStore();
   const allUser = computed(() => allUsersUser());
   const userRequestCache = new Map<string, Promise<User>>();
 
@@ -97,23 +109,110 @@ export const useUserStore = defineStore("user", () => {
         nextPageToken: "",
       };
     }
-    const request = create(ListUsersRequestSchema, {
-      pageSize: params.pageSize,
-      pageToken: params.pageToken,
-      filter: getListUserFilter(params.filter ?? {}),
-      showDeleted: params.filter?.state === State.DELETED ? true : false,
-    });
-    const response = await userServiceClientConnect.listUsers(request);
-    for (const user of response.users) {
-      setUser(user);
+
+    const requestedTypes = params.filter?.types ?? [
+      UserType.USER,
+      UserType.SERVICE_ACCOUNT,
+      UserType.WORKLOAD_IDENTITY,
+      UserType.SYSTEM_BOT,
+    ];
+    const showDeleted = params.filter?.state === State.DELETED;
+    const allUsers: User[] = [];
+
+    const needsUserService = requestedTypes.some(
+      (t) => t === UserType.USER || t === UserType.SYSTEM_BOT
+    );
+    const needsServiceAccountService = requestedTypes.includes(
+      UserType.SERVICE_ACCOUNT
+    );
+    const needsWorkloadIdentityService = requestedTypes.includes(
+      UserType.WORKLOAD_IDENTITY
+    );
+
+    const promises: Promise<void>[] = [];
+
+    if (needsUserService) {
+      const userPromise = (async () => {
+        const request = create(ListUsersRequestSchema, {
+          pageSize: params.pageSize,
+          pageToken: params.pageToken,
+          filter: getListUserFilter(params.filter ?? {}),
+          showDeleted,
+        });
+        const response = await userServiceClientConnect.listUsers(request);
+        for (const user of response.users) {
+          setUser(user);
+          allUsers.push(user);
+        }
+      })();
+      promises.push(userPromise);
     }
+
+    if (needsServiceAccountService) {
+      const saPromise = (async () => {
+        const response = await serviceAccountStore.listServiceAccounts(
+          params.pageSize,
+          params.pageToken,
+          showDeleted
+        );
+        for (const sa of response.serviceAccounts) {
+          const user = serviceAccountToUser(sa);
+          setUser(user);
+          allUsers.push(user);
+        }
+      })();
+      promises.push(saPromise);
+    }
+
+    if (needsWorkloadIdentityService) {
+      const wiPromise = (async () => {
+        const response = await workloadIdentityStore.listWorkloadIdentities(
+          params.pageSize,
+          params.pageToken,
+          showDeleted
+        );
+        for (const wi of response.workloadIdentities) {
+          const user = workloadIdentityToUser(wi);
+          setUser(user);
+          allUsers.push(user);
+        }
+      })();
+      promises.push(wiPromise);
+    }
+
+    await Promise.all(promises);
+
     return {
-      users: response.users,
-      nextPageToken: response.nextPageToken,
+      users: allUsers,
+      nextPageToken: "",
     };
   };
 
   const fetchUser = async (name: string, silent = false) => {
+    const email = extractUserId(name);
+
+    if (
+      email.endsWith("@service.bytebase.com") ||
+      email.includes(".service.bytebase.com")
+    ) {
+      const response = await serviceAccountStore.getOrFetchServiceAccount(
+        `${serviceAccountNamePrefix}${email}`,
+        silent
+      );
+      return setUser(serviceAccountToUser(response));
+    }
+
+    if (
+      email.endsWith("@workload.bytebase.com") ||
+      email.includes(".workload.bytebase.com")
+    ) {
+      const response = await workloadIdentityStore.getOrFetchWorkloadIdentity(
+        `${workloadIdentityNamePrefix}${email}`,
+        silent
+      );
+      return setUser(workloadIdentityToUser(response));
+    }
+
     const request = create(GetUserRequestSchema, {
       name,
     });
@@ -138,6 +237,7 @@ export const useUserStore = defineStore("user", () => {
     if (!originData) {
       throw new Error(`user with name ${name} not found`);
     }
+
     const request = create(UpdateUserRequestSchema, {
       user: updateUserRequest.user,
       updateMask: updateUserRequest.updateMask,
@@ -146,6 +246,7 @@ export const useUserStore = defineStore("user", () => {
       regenerateRecoveryCodes: updateUserRequest.regenerateRecoveryCodes,
     });
     const response = await userServiceClientConnect.updateUser(request);
+
     return setUser(response);
   };
 
@@ -161,19 +262,22 @@ export const useUserStore = defineStore("user", () => {
     return setUser(response);
   };
 
-  const archiveUser = async (user: User) => {
+  const archiveUser = async (name: string) => {
     const request = create(DeleteUserRequestSchema, {
-      name: user.name,
+      name,
     });
     await userServiceClientConnect.deleteUser(request);
-    user.state = State.DELETED;
     await actuatorStore.fetchServerInfo();
-    return user;
+
+    const user = userMapByName.value.get(name);
+    if (user) {
+      user.state = State.DELETED;
+    }
   };
 
-  const restoreUser = async (user: User) => {
+  const restoreUser = async (name: string) => {
     const request = create(UndeleteUserRequestSchema, {
-      name: user.name,
+      name,
     });
     const response = await userServiceClientConnect.undeleteUser(request);
     await actuatorStore.fetchServerInfo();
@@ -198,16 +302,80 @@ export const useUserStore = defineStore("user", () => {
       );
     }
 
-    try {
-      const request = create(BatchGetUsersRequestSchema, {
-        names: pendingFetch,
-      });
-      const response = await userServiceClientConnect.batchGetUsers(request, {
-        contextValues: createContextValues().set(silentContextKey, true),
-      });
-      for (const user of response.users) {
-        setUser(user);
+    const regularUsers: string[] = [];
+    const serviceAccountEmails: string[] = [];
+    const workloadIdentityEmails: string[] = [];
+
+    for (const name of pendingFetch) {
+      const email = extractUserId(name);
+      if (
+        email.endsWith("@service.bytebase.com") ||
+        email.includes(".service.bytebase.com")
+      ) {
+        serviceAccountEmails.push(email);
+      } else if (
+        email.endsWith("@workload.bytebase.com") ||
+        email.includes(".workload.bytebase.com")
+      ) {
+        workloadIdentityEmails.push(email);
+      } else {
+        regularUsers.push(name);
       }
+    }
+
+    try {
+      const promises: Promise<void>[] = [];
+
+      if (regularUsers.length > 0) {
+        const userPromise = (async () => {
+          const request = create(BatchGetUsersRequestSchema, {
+            names: regularUsers,
+          });
+          const response = await userServiceClientConnect.batchGetUsers(
+            request,
+            {
+              contextValues: createContextValues().set(silentContextKey, true),
+            }
+          );
+          for (const user of response.users) {
+            setUser(user);
+          }
+        })();
+        promises.push(userPromise);
+      }
+
+      for (const email of serviceAccountEmails) {
+        const saPromise = (async () => {
+          try {
+            const response = await serviceAccountStore.getOrFetchServiceAccount(
+              `${serviceAccountNamePrefix}${email}`,
+              true
+            );
+            setUser(serviceAccountToUser(response));
+          } catch {
+            // Ignore errors for individual fetches
+          }
+        })();
+        promises.push(saPromise);
+      }
+
+      for (const email of workloadIdentityEmails) {
+        const wiPromise = (async () => {
+          try {
+            const response =
+              await workloadIdentityStore.getOrFetchWorkloadIdentity(
+                `${workloadIdentityNamePrefix}${email}`,
+                true
+              );
+            setUser(workloadIdentityToUser(response));
+          } catch {
+            // Ignore errors for individual fetches
+          }
+        })();
+        promises.push(wiPromise);
+      }
+
+      await Promise.all(promises);
     } finally {
       return validList.map(
         (name) => getUserByIdentifier(name) ?? unknownUser(name)

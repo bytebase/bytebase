@@ -125,7 +125,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planUID int64)
 	}
 
 	// Derive check targets from plan
-	targets, err := DeriveCheckTargets(project, plan, databaseGroup)
+	targets, err := DeriveCheckTargets(ctxWithCancel, s.store, project, plan, databaseGroup)
 	if err != nil {
 		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		return

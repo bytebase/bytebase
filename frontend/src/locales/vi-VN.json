@@ -198,7 +198,7 @@
     "configure": "Cấu hình",
     "groups": "Nhóm",
     "database-group": "Nhóm cơ sở dữ liệu | Nhóm cơ sở dữ liệu",
-    "members": "Thành viên",
+    "members": "Thành viên | Thành viên",
     "warehouse": "Kho",
     "schedule": "Lịch trình",
     "state": "Trạng thái",
@@ -513,6 +513,7 @@
       "view-by-roles": "Xem theo vai trò",
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
+      "update-user": "Cập nhật người dùng",
       "entra-sync": {
         "self": "Đồng bộ từ SCIM",
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
@@ -1030,6 +1031,7 @@
     },
     "upload-sql": "Tải lên SQL",
     "statement-from-sheet-warning": "Do kích thước SQL vượt quá, nó đã bị cắt bớt để hiển thị và chỉnh sửa bị vô hiệu hóa. Bạn có thể tải lên một tệp SQL mới để ghi đè nó.",
+    "options-disabled-due-to-oversize": "Các tùy chọn bị vô hiệu hóa vì SQL quá lớn.",
     "overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
     "upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
     "transaction-mode": {
@@ -1089,17 +1091,6 @@
     "task-run": {
       "logs": "Nhật ký",
       "session": "Phiên",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "Thực thi lệnh",
-          "schema-dump": "Kết xuất lược đồ",
-          "transaction-control": "Kiểm soát giao dịch",
-          "database-sync": "Đồng bộ cơ sở dữ liệu",
-          "prior-backup": "Sao lưu trước",
-          "retry-info": "Thông tin thử lại",
-          "compute-diff": "Tính toán khác"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "Phiên chặn",
@@ -1276,6 +1267,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Đã đồng bộ hóa thành công lược đồ cho cơ sở dữ liệu '{0}'.",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
+    "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {0}...",
+    "n-databases-had-sync-errors": "{0} cơ sở dữ liệu gặp lỗi đồng bộ",
     "failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
     "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
     "procedures": "Thủ tục",
@@ -1320,7 +1313,6 @@
     "users": "Người dùng",
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Đã đồng bộ hóa thành công lược đồ cho phiên bản '{0}'.",
     "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
     "restore": "Khôi phục",
@@ -1611,7 +1603,9 @@
     "failed-to-export-schema": "Không thể xuất schema",
     "select": "Chọn cơ sở dữ liệu",
     "sync-status": "Trạng thái đồng bộ",
-    "last-successful-sync": "Lần đồng bộ thành công cuối cùng",
+    "sync-status-failed": "Đồng bộ thất bại",
+    "last-sync": "Lần đồng bộ cuối cùng",
+    "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{0}'",
     "filter-database": "Lọc cơ sở dữ liệu",
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
@@ -1892,7 +1886,8 @@
       "add-more": "Thêm",
       "condition-name": "Tên điều kiện",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
-      "project-level-roles": "Vai trò cấp độ dự án"
+      "project-level-roles": "Vai trò cấp độ dự án",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
@@ -2759,10 +2754,6 @@
     "vcs-source": "Nguồn VCS",
     "view-all-files": "Xem tất cả các tập tin",
     "and-n-more-files": "và {n} tập tin khác",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ma"
-    },
     "file-type": {
       "versioned": "Phiên bản",
       "declarative": "Khai báo",

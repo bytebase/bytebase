@@ -7,7 +7,7 @@
       <template #default>
         <div class="flex flex-col gap-y-4">
           <p class="font-medium text-control">
-            {{ $t("task.online-migration.gho\st-parameters") }}
+            {{ $t("task.online-migration.ghost-parameters") }}
             <LearnMoreLink
               class="text-sm ml-1"
               url="https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md"
@@ -36,17 +36,22 @@
 </template>
 
 <script setup lang="ts">
-import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
+import { updateSpecSheetWithStatement } from "@/components/Plan/logic";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { setSheetStatement } from "@/utils";
+import { useSelectedSpec } from "../../SpecDetailView/context";
+import {
+  getGhostConfig,
+  updateGhostConfig,
+} from "../../StatementSection/directiveUtils";
+import { useSpecSheet } from "../../StatementSection/useSpecSheet";
 import { useGhostSettingContext } from "./context";
 import FlagsForm from "./FlagsForm";
 
@@ -59,22 +64,27 @@ const emits = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { isCreating, allowChange, plan, selectedSpec, events } =
-  useGhostSettingContext();
+const { isCreating, allowChange, plan, events } = useGhostSettingContext();
+const { selectedSpec } = useSelectedSpec();
+const { sheet, sheetStatement, sheetReady, isSheetOversize } =
+  useSpecSheet(selectedSpec);
 
 const title = computed(() => {
   return t("task.online-migration.configure-ghost-parameters");
 });
-const config = computed(() => {
-  return selectedSpec.value?.config?.case === "changeDatabaseConfig"
-    ? selectedSpec.value.config.value
-    : undefined;
-});
+
 const flags = ref<Record<string, string>>({});
 
-const isDirty = computed(() => {
-  return !isEqual(config.value?.ghostFlags ?? {}, flags.value);
+// Get current flags from sheet directive
+const currentFlags = computed(() => {
+  if (!sheetReady.value) return {};
+  return getGhostConfig(sheetStatement.value) ?? {};
 });
+
+const isDirty = computed(() => {
+  return !isEqual(currentFlags.value, flags.value);
+});
+
 const errors = computed(() => {
   const errors: string[] = [];
   if (!isDirty.value) {
@@ -85,11 +95,11 @@ const errors = computed(() => {
 
 const readonly = computed(() => {
   if (isCreating.value) return false;
-  return !allowChange.value;
+  return !allowChange.value || isSheetOversize.value;
 });
 
 const close = () => {
-  flags.value = cloneDeep(config.value?.ghostFlags ?? {});
+  flags.value = cloneDeep(currentFlags.value);
   emits("update:show", false);
 };
 
@@ -98,31 +108,22 @@ const trySave = async () => {
     return;
   }
 
-  if (isCreating.value) {
-    if (
-      !selectedSpec.value ||
-      selectedSpec.value.config?.case !== "changeDatabaseConfig"
-    )
-      return;
-    selectedSpec.value.config.value.ghostFlags = cloneDeep(flags.value);
-  } else {
-    const planPatch = cloneDeep(plan.value);
-    const spec = (planPatch?.specs || []).find((spec) => {
-      return spec.id === selectedSpec.value?.id;
-    });
-    if (!planPatch || !spec || spec.config?.case !== "changeDatabaseConfig") {
-      // Should not reach here.
-      throw new Error(
-        "Plan or spec is not defined. Cannot update gh-ost flags."
-      );
-    }
+  const updatedStatement = updateGhostConfig(
+    sheetStatement.value,
+    cloneDeep(flags.value)
+  );
 
-    spec.config.value.ghostFlags = cloneDeep(flags.value);
-    const request = create(UpdatePlanRequestSchema, {
-      plan: planPatch,
-      updateMask: { paths: ["specs"] },
-    });
-    await planServiceClientConnect.updatePlan(request);
+  if (isCreating.value) {
+    // When creating a plan, update the local sheet directly.
+    if (!sheet.value) return;
+    setSheetStatement(sheet.value, updatedStatement);
+  } else {
+    // For created plans, create new sheet and update plan/spec
+    await updateSpecSheetWithStatement(
+      plan.value,
+      selectedSpec.value,
+      updatedStatement
+    );
     events.emit("update");
     pushNotification({
       module: "bytebase",
@@ -134,12 +135,12 @@ const trySave = async () => {
 };
 
 watch(
-  () => config.value?.ghostFlags,
+  currentFlags,
   (newFlags, oldFlags) => {
     if (isEqual(newFlags, oldFlags)) {
       return;
     }
-    flags.value = cloneDeep(newFlags ?? {});
+    flags.value = cloneDeep(newFlags);
   },
   { immediate: true, deep: true }
 );

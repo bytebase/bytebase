@@ -35,14 +35,14 @@
 <script lang="ts" setup>
 import { NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
-import { useRouter } from "vue-router";
+import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  autoInstanceRoute,
+  extractInstanceResourceName,
   hasWorkspacePermissionV2,
   instanceV1Name,
 } from "@/utils";
@@ -72,7 +72,6 @@ const props = withDefaults(
     keyword: "",
   }
 );
-const router = useRouter();
 
 const isArchived = computed(() => {
   return "state" in props.instance && props.instance.state === State.DELETED;
@@ -81,7 +80,12 @@ const isArchived = computed(() => {
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: autoInstanceRoute(router, props.instance),
+      to: {
+        name: INSTANCE_ROUTE_DETAIL,
+        params: {
+          instanceId: extractInstanceResourceName(props.instance.name),
+        },
+      },
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

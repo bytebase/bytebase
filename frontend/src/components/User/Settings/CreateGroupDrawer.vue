@@ -22,7 +22,7 @@
             </div>
             <EmailInput
               v-model:value="state.group.email"
-              :readonly="!isCreating"
+              :disabled="!isCreating"
               :show-domain="true"
             />
           </div>
@@ -58,7 +58,7 @@
                 class="w-full flex items-center gap-x-3"
               >
                 <UserSelect
-                  :value="extractUserId(member.member)"
+                  :value="member.member"
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
@@ -152,11 +152,7 @@ import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
 import { pushNotification, useCurrentUserV1, useGroupStore } from "@/store";
-import {
-  extractUserId,
-  groupNamePrefix,
-  userNamePrefix,
-} from "@/store/modules/v1/common";
+import { extractUserId, groupNamePrefix } from "@/store/modules/v1/common";
 import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
 import {
   GroupMember_Role,
@@ -202,7 +198,7 @@ const state = reactive<LocalState>({
       props.group?.members ?? [
         create(GroupMemberSchema, {
           role: GroupMember_Role.OWNER,
-          member: `${userNamePrefix}${currentUserV1.value.email}`,
+          member: currentUserV1.value.name,
         }),
       ]
     ),
@@ -213,9 +209,7 @@ const userFilter = (user: User, member: string) => {
   if (extractUserId(member) === user.email) {
     return true;
   }
-  return !state.group.members.find(
-    (member) => member.member === `${userNamePrefix}${user.email}`
-  );
+  return !state.group.members.find((member) => member.member === user.name);
 };
 
 const isCreating = computed(() => !props.group);
@@ -296,13 +290,13 @@ const addMember = () => {
   state.group.members.push(member);
 };
 
-const updateMemberEmail = (index: number, email: string | undefined) => {
-  if (!email) {
+const updateMemberEmail = (index: number, fullname: string | undefined) => {
+  if (!fullname) {
     return;
   }
   state.group.members[index] = {
     ...state.group.members[index],
-    member: `${userNamePrefix}${email}`,
+    member: fullname,
   };
 };
 

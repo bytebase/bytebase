@@ -198,7 +198,7 @@
     "configure": "設定",
     "groups": "グループ",
     "database-group": "データベースグループ | データベースグループ",
-    "members": "メンバー",
+    "members": "メンバー | メンバー",
     "warehouse": "倉庫",
     "schedule": "プラン",
     "state": "州",
@@ -513,6 +513,7 @@
       "view-by-roles": "役割ごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
+      "update-user": "ユーザーを更新",
       "entra-sync": {
         "self": "SCIM から同期",
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
@@ -1030,6 +1031,7 @@
     },
     "upload-sql": "SQLのアップロード",
     "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
+    "options-disabled-due-to-oversize": "SQL が大きすぎるため、オプションは無効になっています。",
     "overwrite-current-statement": "現在の SQL ステートメントを上書きする",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
     "transaction-mode": {
@@ -1089,17 +1091,6 @@
     "task-run": {
       "logs": "ログ",
       "session": "セッション",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "コマンド実行",
-          "schema-dump": "スキーマダンプ",
-          "transaction-control": "トランザクション制御",
-          "database-sync": "データベースの同期",
-          "prior-backup": "事前のバックアップ",
-          "retry-info": "情報を再試行します",
-          "compute-diff": "Diffを計算します"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "セッションのブロック",
@@ -1276,6 +1267,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "データベース '{0}' のスキーマを同期できませんでした。",
     "successfully-synced-schema-for-database-database-value-name": "データベース '{0}' のスキーマが正常に同期されました。",
     "start-to-sync-schema": "スキーマの同期を開始します",
+    "syncing-databases-for-instance": "{0} のデータベースを同期中...",
+    "n-databases-had-sync-errors": "{0} 個のデータベースで同期エラーが発生しました",
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
     "successfully-synced-schema": "スキーマの同期が完了しました",
     "procedures": "ストアドプロシージャ",
@@ -1320,7 +1313,6 @@
     "users": "ユーザー",
     "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
     "successfully-archived-instance": "インスタンス '{0}' を正常にアーカイブしました。",
-    "successfully-synced-schema-for-instance-instance-value-name": "インスタンス '{0}' のスキーマが正常に同期されました。",
     "archive-instance-instance-name": "インスタンス '{0}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
     "restore": "復元する",
@@ -1611,7 +1603,9 @@
     "failed-to-export-schema": "スキーマのエクスポートに失敗しました",
     "select": "データベースの選択",
     "sync-status": "同期ステータス",
-    "last-successful-sync": "最後に成功した同期",
+    "sync-status-failed": "同期に失敗しました",
+    "last-sync": "最後の同期",
+    "sync-complete-for-instance": "インスタンス '{0}' の同期が完了しました",
     "filter-database": "フィルターデータベース",
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
@@ -1892,7 +1886,8 @@
       "add-more": "さらに追加",
       "condition-name": "条件名",
       "workspace-level-roles": "ワークスペースレベルの役割",
-      "project-level-roles": "プロジェクトレベルの役割"
+      "project-level-roles": "プロジェクトレベルの役割",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "アイテムを選択",
     "all": "全てのアイテム",
@@ -2759,10 +2754,6 @@
     "vcs-source": "VCSソース",
     "view-all-files": "すべてのファイルを表示",
     "and-n-more-files": "および{n}個のファイル",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDLゴースト"
-    },
     "file-type": {
       "versioned": "バージョン",
       "declarative": "宣言",

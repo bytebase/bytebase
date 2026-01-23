@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-6 pb-2">
-    <div class="max-w-[850px]">
+    <div class="max-w-212.5">
       <InstanceEngineRadioGrid
         v-if="isCreating"
         :engine="basicInfo.engine"
@@ -49,7 +49,7 @@
           <label for="activation" class="textlabel block">
             {{ $t("subscription.instance-assignment.assign-license") }}
             (<router-link
-              :to="autoSubscriptionRoute($router)"
+              :to="autoSubscriptionRoute()"
               class="accent-link"
             >
               {{
@@ -59,7 +59,7 @@
               }}</router-link
             >)
           </label>
-          <div class="h-[34px] flex flex-row items-center mt-1">
+          <div class="h-8.5 flex flex-row items-center mt-1">
             <NSwitch
               :value="basicInfo.activation"
               :disabled="!basicInfo.activation && availableLicenseCount === 0"
@@ -305,7 +305,7 @@
                   :allow-input="onlyAllowNumber"
                 />
               </div>
-              <div class="h-[34px] flex flex-row items-center self-end">
+              <div class="h-8.5 flex flex-row items-center self-end">
                 <MiniActionButton
                   :disabled="!allowEdit"
                   @click.stop="removeDSAdditionalAddress(index)"

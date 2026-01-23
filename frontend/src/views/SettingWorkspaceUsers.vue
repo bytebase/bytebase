@@ -29,8 +29,9 @@
               :show-roles="false"
               :user-list="list"
               :loading="loading"
-              @select-group="handleUpdateGroup"
-              @update-user="handleUserUpdated"
+              @group-selected="handleGroupSelected"
+              @user-selected="handleUserSelected"
+              @user-updated="handleUserUpdated"
             />
           </template>
         </PagedTable>
@@ -55,8 +56,8 @@
               :groups="list"
               :loading="loading"
               v-model:expanded-keys="expandedKeys"
-              @update-group="handleUpdateGroup"
-              @remove-group="handleRemoveGroup"
+              @group-selected="handleGroupSelected"
+              @group-removed="handleGroupRemoved"
             />
           </template>
         </PagedTable>
@@ -188,15 +189,22 @@
 
   <CreateUserDrawer
     v-if="state.showCreateUserDrawer"
-    @close="state.showCreateUserDrawer = false"
+    :user="state.editingUser"
+    @close="() => {
+      state.showCreateUserDrawer = false
+      state.editingUser = undefined
+    }"
     @created="handleUserCreated"
   />
   <CreateGroupDrawer
     v-if="state.showCreateGroupDrawer"
     :group="state.editingGroup"
-    @close="state.showCreateGroupDrawer = false"
+    @close="() => {
+      state.showCreateGroupDrawer = false
+      state.editingGroup = undefined
+    }"
     @removed="(group) => {
-      handleRemoveGroup(group)
+      handleGroupRemoved(group)
       state.showCreateGroupDrawer = false
     }"
     @updated="handleGroupUpdated"
@@ -225,6 +233,7 @@ import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import { SearchBox } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
@@ -239,7 +248,7 @@ import { groupNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { type User } from "@/types/proto-es/v1/user_service_pb";
+import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -256,6 +265,7 @@ type LocalState = {
   showCreateGroupDrawer: boolean;
   showAadSyncDrawer: boolean;
   editingGroup?: Group;
+  editingUser?: User;
 };
 
 const state = reactive<LocalState>({
@@ -433,12 +443,29 @@ const handleCreateGroup = () => {
   state.showCreateGroupDrawer = true;
 };
 
-const handleUpdateGroup = (group: Group) => {
+const handleUserSelected = (user: User) => {
+  if (
+    user.userType === UserType.SERVICE_ACCOUNT ||
+    user.userType === UserType.WORKLOAD_IDENTITY
+  ) {
+    state.editingUser = user;
+    state.showCreateUserDrawer = true;
+  } else {
+    router.push({
+      name: WORKSPACE_ROUTE_USER_PROFILE,
+      params: {
+        principalEmail: user.email,
+      },
+    });
+  }
+};
+
+const handleGroupSelected = (group: Group) => {
   state.editingGroup = group;
   state.showCreateGroupDrawer = true;
 };
 
-const handleRemoveGroup = (group: Group) => {
+const handleGroupRemoved = (group: Group) => {
   groupPagedTable.value?.removeCache(group);
 };
 

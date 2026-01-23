@@ -211,13 +211,22 @@ func getTaskCreatesFromChangeDatabaseConfig(
 			}
 		}
 
-		// Add ghost flags if specified
-		if c.EnableGhost {
-			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-				return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+		// Validate ghost directive at task creation time (parsed at execution time)
+		if c.SheetSha256 != "" {
+			sheetContent, err := getSheetContentBySha256(ctx, s, c.SheetSha256)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get sheet content")
 			}
-			payload.Flags = c.GhostFlags
-			payload.EnableGhost = c.EnableGhost
+
+			if ghost.IsGhostEnabled(sheetContent) {
+				ghostFlags, err := ghost.ParseGhostDirective(sheetContent)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse ghost directive")
+				}
+				if _, err := ghost.GetUserFlags(ghostFlags); err != nil {
+					return nil, errors.Wrapf(err, "invalid ghost flags %q", ghostFlags)
+				}
+			}
 		}
 
 		taskCreate := &store.TaskMessage{
@@ -434,4 +443,15 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 	default:
 		return "", errors.Errorf("unsupported database type %s", dbType)
 	}
+}
+
+func getSheetContentBySha256(ctx context.Context, s *store.Store, sha256 string) (string, error) {
+	sheet, err := s.GetSheetFull(ctx, sha256)
+	if err != nil {
+		return "", err
+	}
+	if sheet == nil {
+		return "", errors.Errorf("sheet not found for sha256: %s", sha256)
+	}
+	return sheet.Statement, nil
 }

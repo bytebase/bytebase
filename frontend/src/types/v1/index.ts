@@ -4,7 +4,6 @@ export * from "./database";
 export * from "./dataSource";
 export * from "./project";
 export * from "./projectWebhook";
-export * from "./role";
 export * from "./user";
 export * from "./sql";
 export * from "./webTerminal";

@@ -420,23 +420,11 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
   release: string;
 
   /**
-   * @generated from field: map<string, string> ghost_flags = 5;
-   */
-  ghostFlags: { [key: string]: string };
-
-  /**
    * If set, a backup of the modified data will be created automatically before any changes are applied.
    *
    * @generated from field: bool enable_prior_backup = 6;
    */
   enablePriorBackup: boolean;
-
-  /**
-   * Whether to use gh-ost for online schema migration.
-   *
-   * @generated from field: bool enable_ghost = 7;
-   */
-  enableGhost: boolean;
 };
 
 /**

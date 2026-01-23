@@ -26,14 +26,14 @@ export type WebTerminalQueryItemV1 = {
   status: "IDLE" | "RUNNING" | "FINISHED";
 };
 
-export type QueryTimer = {
+type QueryTimer = {
   start(): void;
   stop(): void;
   elapsedMS: ComputedRef<number>;
   expired: ComputedRef<boolean>;
 };
 
-export type QueryEvents = Emittery<{
+type QueryEvents = Emittery<{
   query: SQLEditorQueryParams;
   result: SQLResultSetV1;
 }>;

@@ -32,12 +32,13 @@ require (
 	github.com/beltran/gohive/v2 v2.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.9.2
+	github.com/bytebase/gomongo v0.0.0-20260122102630-d4856f4d6ca0
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible
-	github.com/databricks/databricks-sdk-go v0.99.0
+	github.com/databricks/databricks-sdk-go v0.100.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/elastic/go-elasticsearch/v7 v7.13.1
 	github.com/fsnotify/fsnotify v1.9.0
@@ -54,7 +55,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/gosimple/slug v1.15.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.4
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.5
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/hashicorp/vault/api/auth/approle v0.11.0
@@ -90,15 +91,15 @@ require (
 	github.com/xuri/excelize/v2 v2.10.0
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.0.2
-	go.mongodb.org/mongo-driver/v2 v2.4.1
+	go.mongodb.org/mongo-driver/v2 v2.4.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/text v0.33.0
-	google.golang.org/api v0.260.0
-	google.golang.org/genproto v0.0.0-20260114163908-3f89685c29c3
-	google.golang.org/genproto/googleapis/api v0.0.0-20260114163908-3f89685c29c3
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260114163908-3f89685c29c3
+	google.golang.org/api v0.261.0
+	google.golang.org/genproto v0.0.0-20260120221211-b8f7ae30c516
+	google.golang.org/genproto/googleapis/api v0.0.0-20260120221211-b8f7ae30c516
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/inf.v0 v0.9.1
@@ -299,7 +300,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20260113041207-12c6f17e2d8e
+	github.com/bytebase/parser v0.0.0-20260121030202-698704919f24
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
@@ -320,7 +321,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.9 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect

@@ -62,7 +62,7 @@ const columns = computed(() => {
   return [
     {
       key: "role-members",
-      title: `${t("common.role.self")} / ${t("common.members")}`,
+      title: `${t("common.role.self")} / ${t("common.members", 2 /* multiply*/)}`,
       className: "flex items-center",
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {

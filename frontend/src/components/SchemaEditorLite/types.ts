@@ -23,7 +23,7 @@ export type CommonTabContext = {
 };
 
 // Tab context for editing database.
-export type DatabaseTabContext = CommonTabContext & {
+type DatabaseTabContext = CommonTabContext & {
   type: "database";
   database: Database;
   metadata: {

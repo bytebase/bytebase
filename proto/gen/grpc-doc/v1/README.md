@@ -333,6 +333,7 @@
     - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
+    - [SyncStatus](#bytebase-v1-SyncStatus)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-v1-TaskMetadata-State)
   
@@ -453,7 +454,6 @@
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
-    - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
@@ -2752,7 +2752,7 @@ Binding associates members with a role and optional conditions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
@@ -4717,6 +4717,8 @@ This field is populated when syncing from the database. When empty (e.g., when p
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
 | instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 | backup_available | [bool](#bool) |  | The database is available for DML prior backup. |
+| sync_status | [SyncStatus](#bytebase-v1-SyncStatus) |  | The sync status of the database. |
+| sync_error | [string](#string) |  | The error message if sync failed. |
 
 
 
@@ -5766,6 +5768,19 @@ SDLFormat specifies the output format for SDL schema.
 
 
 
+<a name="bytebase-v1-SyncStatus"></a>
+
+### SyncStatus
+SyncStatus is the status of the database sync operation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SYNC_STATUS_UNSPECIFIED | 0 |  |
+| OK | 1 | The database was synced successfully. |
+| FAILED | 2 | The database sync failed. |
+
+
+
 <a name="bytebase-v1-TablePartitionMetadata-Type"></a>
 
 ### TablePartitionMetadata.Type
@@ -6542,7 +6557,7 @@ MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| members | [string](#string) | repeated | Specifies the principals who are exempt from masking. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
+| members | [string](#string) | repeated | Specifies the principals who are exempt from masking. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec If the condition is empty, means the user can access all databases without expiration.
 
 Support variables: resource.instance_id: the instance resource id. Only support &#34;==&#34; operation. resource.database_name: the database name. Only support &#34;==&#34; operation. resource.schema_name: the schema name. Only support &#34;==&#34; operation. resource.table_name: the table name. Only support &#34;==&#34; operation. resource.column_name: the column name. Only support &#34;==&#34; operation. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)` All variables should join with &#34;&amp;&amp;&#34; condition.
@@ -6949,7 +6964,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} Format: instances/{instance} Format: projects/{project}/rollouts/{rollout} Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
+| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} Format: instances/{instance} Format: projects/{project}/plans/{plan}/rollout Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
@@ -7568,25 +7583,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
-| ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry"></a>
-
-### Plan.ChangeDatabaseConfig.GhostFlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
@@ -8505,7 +8502,6 @@ A SQL file in a release.
 | ----- | ---- | ----- | ----------- |
 | path | [string](#string) |  | The path of the file. e.g., `2.2/V0001_create_table.sql`. |
 | version | [string](#string) |  | The version identifier for the file. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | sheet | [string](#string) |  | For inputs, we must either use `sheet` or `statement`. For outputs, we always use `sheet`. `statement` is the preview of the sheet content.
 
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
@@ -10165,7 +10161,7 @@ RolloutService manages the execution of deployment plans.
 | ----------- | ------------ | ------------- | ------------|
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Retrieves a rollout by its plan name. Permissions required: bb.rollouts.get |
 | ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) | Lists rollouts in a project. Permissions required: bb.rollouts.list |
-| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout for a plan. Permissions required: bb.rollouts.create |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout for a plan. Permissions required: bb.rollouts.create (or issue creator for data export issues) |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) | Lists task run executions for a task. Permissions required: bb.taskRuns.list |
 | GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) | Retrieves a task run by name. Permissions required: bb.taskRuns.list |
 | GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) | Retrieves execution logs for a task run. Permissions required: bb.taskRuns.list |

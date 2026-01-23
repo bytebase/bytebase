@@ -2,7 +2,6 @@ import type { OAuthState } from "@/types";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
-export const SSOConfigSessionKey = "sso-config";
 const OAUTH_STATE_PREFIX = "oauth_state_";
 const OAUTH_STATE_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds
 

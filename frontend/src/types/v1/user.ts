@@ -52,6 +52,18 @@ export const getGroupEmailInBinding = (email: string) => {
   return `${groupBindingPrefix}${email}`;
 };
 
+export const serviceAccountBindingPrefix = "serviceAccount:";
+
+export const getServiceAccountNameInBinding = (email: string) => {
+  return `${serviceAccountBindingPrefix}${email}`;
+};
+
+export const workloadIdentityBindingPrefix = "workloadIdentity:";
+
+export const getWorkloadIdentityNameInBinding = (name: string) => {
+  return `${workloadIdentityBindingPrefix}${name}`;
+};
+
 export const isValidUserName = (name: string) => {
   return (
     !!name &&

@@ -106,7 +106,17 @@ function computeExportArchiveReady(
     return false;
   }
 
-  const exportTaskRuns = exportTasks
+  // Only consider DONE tasks for archive readiness (skipped tasks don't have archives)
+  const doneTasks = exportTasks.filter(
+    (task) => task.status === Task_Status.DONE
+  );
+
+  // Need at least one DONE task to have an archive to download
+  if (doneTasks.length === 0) {
+    return false;
+  }
+
+  const exportTaskRuns = doneTasks
     .map((task) => {
       const taskRunsForTask = taskRuns.filter(
         (taskRun) => extractTaskUID(taskRun.name) === extractTaskUID(task.name)
@@ -181,12 +191,8 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
       hasProjectPermissionV2(project, "bb.plans.update"),
     createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
-    // Check both permissions: developers have bb.rollouts.create (for legacy UI)
-    // but not bb.taskRuns.create, so they can't create rollouts in the new CI/CD workflow.
-    // Releasers have both permissions.
-    createRollout:
-      hasProjectPermissionV2(project, "bb.rollouts.create") &&
-      hasProjectPermissionV2(project, "bb.taskRuns.create"),
+    // For data export issues, creators use ROLLOUT_START which checks runTasks instead.
+    createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
     runTasks:
       issue?.type === Issue_Type.DATABASE_EXPORT
         ? currentUserEmail === extractUserId(issue.creator)

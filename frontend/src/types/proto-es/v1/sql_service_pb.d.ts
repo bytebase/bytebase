@@ -998,8 +998,8 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * The name is the resource name to execute the export against.
    * Format: instances/{instance}/databases/{database}
    * Format: instances/{instance}
-   * Format: projects/{project}/rollouts/{rollout}
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+   * Format: projects/{project}/plans/{plan}/rollout
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
    *
    * @generated from field: string name = 1;
    */

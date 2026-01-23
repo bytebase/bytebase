@@ -73,7 +73,6 @@ import {
 import type { Defer, VueStyle } from "@/utils";
 import { defer } from "@/utils";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
-import { getSpecChangeType } from "./common";
 import { usePlanSQLCheckContext } from "./context";
 
 withDefaults(
@@ -102,8 +101,6 @@ const advices = computed(() => {
   return checkResult.value?.results.flatMap((r) => r.advices);
 });
 
-const migrationType = computed(() => getSpecChangeType(selectedSpec.value));
-
 const statementErrors = asyncComputed(async () => {
   if (sheetStatement.value.length === 0) {
     return [t("issue.sql-check.statement-is-required")];
@@ -123,8 +120,8 @@ const runCheckInternal = async (statement: string) => {
         {
           // Use "0" for dummy version.
           version: "0",
+          // Ghost directive (-- ghost = {...}) is embedded in the statement if enabled
           statement: new TextEncoder().encode(statement),
-          enableGhost: migrationType.value,
         },
       ],
     },

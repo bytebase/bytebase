@@ -1450,6 +1450,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SyncStatus"><span class="badge">E</span>SyncStatus</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TablePartitionMetadata.Type"><span class="badge">E</span>TablePartitionMetadata.Type</a>
                 </li>
               
@@ -1905,10 +1909,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Plan.ChangeDatabaseConfig"><span class="badge">M</span>Plan.ChangeDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>Plan.ChangeDatabaseConfig.GhostFlagsEntry</a>
                 </li>
               
                 <li>
@@ -8296,7 +8296,9 @@ Format: roles/{role} </p></td>
                   <td>repeated</td>
                   <td><p>Specifies the principals requesting access for a Bytebase resource.
 For users, the member should be: user:{email}
-For groups, the member should be: group:{email} </p></td>
+For groups, the member should be: group:{email}
+For service accounts, the member should be: serviceAccount:{email}
+For workload identities, the member should be: workloadIdentity:{email} </p></td>
                 </tr>
               
                 <tr>
@@ -13435,6 +13437,20 @@ https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
                   <td><p>The database is available for DML prior backup. </p></td>
                 </tr>
               
+                <tr>
+                  <td>sync_status</td>
+                  <td><a href="#bytebase.v1.SyncStatus">SyncStatus</a></td>
+                  <td></td>
+                  <td><p>The sync status of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sync_error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The error message if sync failed. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -16422,6 +16438,35 @@ multiple files organized by schema objects (tables, views, functions, etc.).</p>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.SyncStatus">SyncStatus</h3>
+        <p>SyncStatus is the status of the database sync operation.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SYNC_STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OK</td>
+                <td>1</td>
+                <td><p>The database was synced successfully.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>2</td>
+                <td><p>The database sync failed.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.TablePartitionMetadata.Type">TablePartitionMetadata.Type</h3>
         <p>Type is the type of a table partition, some database engines may not</p><p>support all types. Only avilable for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,</p><p>LINEAR_KEY</p><p>(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:</p><p>RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,</p><p>LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
         <table class="enum-table">
@@ -18547,7 +18592,9 @@ Format: {resource type}/{resource id} </p></td>
                   <td>repeated</td>
                   <td><p>Specifies the principals who are exempt from masking.
 For users, the member should be: user:{email}
-For groups, the member should be: group:{email} </p></td>
+For groups, the member should be: group:{email}
+For service accounts, the member should be: serviceAccount:{email}
+For workload identities, the member should be: workloadIdentity:{email} </p></td>
                 </tr>
               
                 <tr>
@@ -19699,8 +19746,8 @@ TODO: use range instead </p></td>
                   <td><p>The name is the resource name to execute the export against.
 Format: instances/{instance}/databases/{database}
 Format: instances/{instance}
-Format: projects/{project}/rollouts/{rollout}
-Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+Format: projects/{project}/plans/{plan}/rollout
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
                 </tr>
               
                 <tr>
@@ -21065,14 +21112,14 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*}:export</td>
+                <td>/v1/{name=projects/*/plans/*/rollout}:export</td>
                 <td>*</td>
               </tr>
               
               <tr>
                 <td>Export</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*/stages/*}:export</td>
+                <td>/v1/{name=projects/*/plans/*/rollout/stages/*}:export</td>
                 <td>*</td>
               </tr>
               
@@ -21466,55 +21513,10 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>enable_prior_backup</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry">Plan.ChangeDatabaseConfig.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -24038,13 +24040,6 @@ Set by Bytebase action during release creation. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The version identifier for the file. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
                 </tr>
               
                 <tr>
@@ -28478,7 +28473,7 @@ Permissions required: bb.rollouts.list</p></td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
                 <td><p>Creates a new rollout for a plan.
-Permissions required: bb.rollouts.create</p></td>
+Permissions required: bb.rollouts.create (or issue creator for data export issues)</p></td>
               </tr>
             
               <tr>

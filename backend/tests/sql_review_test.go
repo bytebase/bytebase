@@ -471,9 +471,8 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-							Targets:     []string{database.Name},
-							Sheet:       sheet.Msg.Name,
-							EnableGhost: false,
+							Targets: []string{database.Name},
+							Sheet:   sheet.Msg.Name,
 						},
 					},
 				},

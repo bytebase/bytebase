@@ -6679,7 +6679,7 @@ paths:
       summary: CreateRollout
       description: |-
         Creates a new rollout for a plan.
-         Permissions required: bb.rollouts.create
+         Permissions required: bb.rollouts.create (or issue creator for data export issues)
       operationId: RolloutService_CreateRollout
       parameters:
         - name: project
@@ -7120,6 +7120,166 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchSkipTasksResponse'
+  /v1/projects/{project}/plans/{plan}/rollout/stages/{stage}:export:
+    post:
+      tags:
+        - SQLService
+      summary: Export
+      description: |-
+        Exports query results to a file format.
+         Permissions required: bb.databases.get
+      operationId: SQLService_Export3
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: plan
+          in: path
+          description: The plan id.
+          required: true
+          schema:
+            type: string
+        - name: stage
+          in: path
+          description: The stage id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                statement:
+                  type: string
+                  title: statement
+                  description: The SQL statement to execute.
+                limit:
+                  type: integer
+                  title: limit
+                  format: int32
+                  description: The maximum number of rows to return.
+                format:
+                  title: format
+                  description: The export format.
+                  $ref: '#/components/schemas/bytebase.v1.ExportFormat'
+                admin:
+                  type: boolean
+                  title: admin
+                  description: |-
+                    The admin is used for workspace owner and DBA for exporting data from SQL
+                     Editor Admin mode. The exported data is not masked.
+                password:
+                  type: string
+                  title: password
+                  description: The zip password provide by users.
+                dataSourceId:
+                  type: string
+                  title: data_source_id
+                  description: |-
+                    The id of data source.
+                     It is used for querying admin data source even if the instance has
+                     read-only data sources. Or it can be used to query a specific read-only
+                     data source.
+                schema:
+                  type:
+                    - string
+                    - "null"
+                  title: schema
+                  description: |-
+                    The default schema to search objects. Equals to the current schema in
+                     Oracle and search path in Postgres.
+              title: ExportRequest
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ExportResponse'
+  /v1/projects/{project}/plans/{plan}/rollout:export:
+    post:
+      tags:
+        - SQLService
+      summary: Export
+      description: |-
+        Exports query results to a file format.
+         Permissions required: bb.databases.get
+      operationId: SQLService_Export2
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: plan
+          in: path
+          description: The plan id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                statement:
+                  type: string
+                  title: statement
+                  description: The SQL statement to execute.
+                limit:
+                  type: integer
+                  title: limit
+                  format: int32
+                  description: The maximum number of rows to return.
+                format:
+                  title: format
+                  description: The export format.
+                  $ref: '#/components/schemas/bytebase.v1.ExportFormat'
+                admin:
+                  type: boolean
+                  title: admin
+                  description: |-
+                    The admin is used for workspace owner and DBA for exporting data from SQL
+                     Editor Admin mode. The exported data is not masked.
+                password:
+                  type: string
+                  title: password
+                  description: The zip password provide by users.
+                dataSourceId:
+                  type: string
+                  title: data_source_id
+                  description: |-
+                    The id of data source.
+                     It is used for querying admin data source even if the instance has
+                     read-only data sources. Or it can be used to query a specific read-only
+                     data source.
+                schema:
+                  type:
+                    - string
+                    - "null"
+                  title: schema
+                  description: |-
+                    The default schema to search objects. Equals to the current schema in
+                     Oracle and search path in Postgres.
+              title: ExportRequest
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ExportResponse'
   /v1/projects/{project}/plans/{plan}:runPlanChecks:
     post:
       tags:
@@ -7807,166 +7967,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListRolloutsResponse'
-  /v1/projects/{project}/rollouts/{rollout}/stages/{stage}:export:
-    post:
-      tags:
-        - SQLService
-      summary: Export
-      description: |-
-        Exports query results to a file format.
-         Permissions required: bb.databases.get
-      operationId: SQLService_Export3
-      parameters:
-        - name: project
-          in: path
-          description: The project id.
-          required: true
-          schema:
-            type: string
-        - name: rollout
-          in: path
-          description: The rollout id.
-          required: true
-          schema:
-            type: string
-        - name: stage
-          in: path
-          description: The stage id.
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                statement:
-                  type: string
-                  title: statement
-                  description: The SQL statement to execute.
-                limit:
-                  type: integer
-                  title: limit
-                  format: int32
-                  description: The maximum number of rows to return.
-                format:
-                  title: format
-                  description: The export format.
-                  $ref: '#/components/schemas/bytebase.v1.ExportFormat'
-                admin:
-                  type: boolean
-                  title: admin
-                  description: |-
-                    The admin is used for workspace owner and DBA for exporting data from SQL
-                     Editor Admin mode. The exported data is not masked.
-                password:
-                  type: string
-                  title: password
-                  description: The zip password provide by users.
-                dataSourceId:
-                  type: string
-                  title: data_source_id
-                  description: |-
-                    The id of data source.
-                     It is used for querying admin data source even if the instance has
-                     read-only data sources. Or it can be used to query a specific read-only
-                     data source.
-                schema:
-                  type:
-                    - string
-                    - "null"
-                  title: schema
-                  description: |-
-                    The default schema to search objects. Equals to the current schema in
-                     Oracle and search path in Postgres.
-              title: ExportRequest
-              additionalProperties: false
-        required: true
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ExportResponse'
-  /v1/projects/{project}/rollouts/{rollout}:export:
-    post:
-      tags:
-        - SQLService
-      summary: Export
-      description: |-
-        Exports query results to a file format.
-         Permissions required: bb.databases.get
-      operationId: SQLService_Export2
-      parameters:
-        - name: project
-          in: path
-          description: The project id.
-          required: true
-          schema:
-            type: string
-        - name: rollout
-          in: path
-          description: The rollout id.
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                statement:
-                  type: string
-                  title: statement
-                  description: The SQL statement to execute.
-                limit:
-                  type: integer
-                  title: limit
-                  format: int32
-                  description: The maximum number of rows to return.
-                format:
-                  title: format
-                  description: The export format.
-                  $ref: '#/components/schemas/bytebase.v1.ExportFormat'
-                admin:
-                  type: boolean
-                  title: admin
-                  description: |-
-                    The admin is used for workspace owner and DBA for exporting data from SQL
-                     Editor Admin mode. The exported data is not masked.
-                password:
-                  type: string
-                  title: password
-                  description: The zip password provide by users.
-                dataSourceId:
-                  type: string
-                  title: data_source_id
-                  description: |-
-                    The id of data source.
-                     It is used for querying admin data source even if the instance has
-                     read-only data sources. Or it can be used to query a specific read-only
-                     data source.
-                schema:
-                  type:
-                    - string
-                    - "null"
-                  title: schema
-                  description: |-
-                    The default schema to search objects. Equals to the current schema in
-                     Oracle and search path in Postgres.
-              title: ExportRequest
-              additionalProperties: false
-        required: true
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ExportResponse'
   /v1/projects/{project}/serviceAccounts:
     get:
       tags:
@@ -11824,6 +11824,8 @@ components:
             Specifies the principals requesting access for a Bytebase resource.
              For users, the member should be: user:{email}
              For groups, the member should be: group:{email}
+             For service accounts, the member should be: serviceAccount:{email}
+             For workload identities, the member should be: workloadIdentity:{email}
         condition:
           title: condition
           description: |-
@@ -13195,6 +13197,16 @@ components:
           title: backup_available
           description: The database is available for DML prior backup.
           readOnly: true
+        syncStatus:
+          title: sync_status
+          description: The sync status of the database.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.SyncStatus'
+        syncError:
+          type: string
+          title: sync_error
+          description: The error message if sync failed.
+          readOnly: true
       title: Database
       additionalProperties: false
     bytebase.v1.Database.LabelsEntry:
@@ -13991,8 +14003,8 @@ components:
             The name is the resource name to execute the export against.
              Format: instances/{instance}/databases/{database}
              Format: instances/{instance}
-             Format: projects/{project}/rollouts/{rollout}
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+             Format: projects/{project}/plans/{plan}/rollout
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
         statement:
           type: string
           title: statement
@@ -16899,6 +16911,8 @@ components:
             Specifies the principals who are exempt from masking.
              For users, the member should be: user:{email}
              For groups, the member should be: group:{email}
+             For service accounts, the member should be: serviceAccount:{email}
+             For workload identities, the member should be: workloadIdentity:{email}
         condition:
           title: condition
           description: |-
@@ -17394,32 +17408,11 @@ components:
           description: |-
             The resource name of the release.
              Format: projects/{project}/releases/{release}
-        ghostFlags:
-          type: object
-          title: ghost_flags
-          additionalProperties:
-            type: string
-            title: value
         enablePriorBackup:
           type: boolean
           title: enable_prior_backup
           description: If set, a backup of the modified data will be created automatically before any changes are applied.
-        enableGhost:
-          type: boolean
-          title: enable_ghost
-          description: Whether to use gh-ost for online schema migration.
       title: ChangeDatabaseConfig
-      additionalProperties: false
-    bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry:
-      type: object
-      properties:
-        key:
-          type: string
-          title: key
-        value:
-          type: string
-          title: value
-      title: GhostFlagsEntry
       additionalProperties: false
     bytebase.v1.Plan.CreateDatabaseConfig:
       type: object
@@ -18610,10 +18603,6 @@ components:
           type: string
           title: version
           description: The version identifier for the file.
-        enableGhost:
-          type: boolean
-          title: enable_ghost
-          description: Whether to use gh-ost for online schema migration.
         sheet:
           type: string
           title: sheet
@@ -20401,6 +20390,14 @@ components:
           description: All database name list in the instance.
       title: SyncInstanceResponse
       additionalProperties: false
+    bytebase.v1.SyncStatus:
+      type: string
+      title: SyncStatus
+      enum:
+        - SYNC_STATUS_UNSPECIFIED
+        - OK
+        - FAILED
+      description: SyncStatus is the status of the database sync operation.
     bytebase.v1.TableCatalog:
       type: object
       allOf:

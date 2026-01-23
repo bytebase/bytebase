@@ -14,11 +14,11 @@ const (
 	// ServiceAccountAccessKeyPrefix is the prefix for service account access key.
 	ServiceAccountAccessKeyPrefix = "bbs_"
 
-	// WorkloadIdentityEmailSuffix is the email suffix for workload identities.
-	WorkloadIdentityEmailSuffix = "@workload.bytebase.com"
+	// WorkloadIdentitySuffix is the email suffix for workload identities.
+	WorkloadIdentitySuffix = "workload.bytebase.com"
 
-	// ServiceAccountEmailSuffix is the email suffix for workspace-level service accounts.
-	ServiceAccountEmailSuffix = "@service.bytebase.com"
+	// ServiceAccountSuffix is the email suffix for service accounts.
+	ServiceAccountSuffix = "service.bytebase.com"
 )
 
 const (

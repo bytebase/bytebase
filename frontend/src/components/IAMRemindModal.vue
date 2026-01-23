@@ -50,8 +50,8 @@ import {
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
   autoProjectRoute,
-  bindingListInIAM,
   displayRoleTitle,
+  filterBindingsByUserName,
   useDynamicLocalStorage,
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -95,9 +95,9 @@ const pendingExpireRoles = computed(
     expiration: dayjs.Dayjs;
   }[] => {
     const policy = projectIamPolicyStore.getProjectIamPolicy(props.projectName);
-    const bindings = bindingListInIAM({
+    const bindings = filterBindingsByUserName({
       policy,
-      email: me.value.email,
+      name: me.value.name,
       ignoreGroup: true,
     });
 
@@ -168,7 +168,7 @@ const onClose = () => {
 const onClick = () => {
   state.showModal = false;
   router.push({
-    ...autoProjectRoute(router, project.value),
+    ...autoProjectRoute(project.value),
   });
 };
 </script>

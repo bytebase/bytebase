@@ -465,6 +465,21 @@ message Database {
 
   // The database is available for DML prior backup.
   bool backup_available = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The sync status of the database.
+  SyncStatus sync_status = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The error message if sync failed.
+  string sync_error = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// SyncStatus is the status of the database sync operation.
+enum SyncStatus {
+  SYNC_STATUS_UNSPECIFIED = 0;
+  // The database was synced successfully.
+  OK = 1;
+  // The database sync failed.
+  FAILED = 2;
 }
 
 // DatabaseMetadata is the metadata for databases.

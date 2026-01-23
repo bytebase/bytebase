@@ -90,9 +90,9 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	updated := false
 
-	email := strings.TrimPrefix(grantRequest.User, "users/")
-	if email == "" {
-		return errors.New("invalid empty user identifier")
+	email, err := extractEmailFromUserIdentifier(grantRequest.User)
+	if err != nil {
+		return err
 	}
 	newUser, err := stores.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -101,6 +101,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	if newUser == nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user %s not found", email))
 	}
+	memberName := formatMemberNameByType(newUser)
 	for _, binding := range policyMessage.Policy.Bindings {
 		if binding.Role != grantRequest.Role {
 			continue
@@ -113,7 +114,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 			continue
 		}
 		// Append
-		binding.Members = append(binding.Members, common.FormatUserEmail(newUser.Email))
+		binding.Members = append(binding.Members, memberName)
 		updated = true
 		break
 	}
@@ -125,7 +126,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		condition.Description = fmt.Sprintf("#%d", issue.UID)
 		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
 			Role:      grantRequest.Role,
-			Members:   []string{common.FormatUserEmail(newUser.Email)},
+			Members:   []string{memberName},
 			Condition: condition,
 		})
 	}
@@ -203,4 +204,46 @@ func IsSpaceOrSemicolon(r rune) bool {
 		return true
 	}
 	return r == ';'
+}
+
+// extractEmailFromUserIdentifier extracts email from user identifier.
+// Supported formats: users/{email}, serviceAccounts/{email}, workloadIdentities/{email}
+func extractEmailFromUserIdentifier(identifier string) (string, error) {
+	if strings.HasPrefix(identifier, common.UserNamePrefix) {
+		email := strings.TrimPrefix(identifier, common.UserNamePrefix)
+		if email == "" {
+			return "", errors.New("invalid empty user identifier")
+		}
+		return email, nil
+	}
+	if strings.HasPrefix(identifier, common.ServiceAccountNamePrefix) {
+		email := strings.TrimPrefix(identifier, common.ServiceAccountNamePrefix)
+		if email == "" {
+			return "", errors.New("invalid empty service account identifier")
+		}
+		return email, nil
+	}
+	if strings.HasPrefix(identifier, common.WorkloadIdentityNamePrefix) {
+		email := strings.TrimPrefix(identifier, common.WorkloadIdentityNamePrefix)
+		if email == "" {
+			return "", errors.New("invalid empty workload identity identifier")
+		}
+		return email, nil
+	}
+	return "", errors.Errorf("invalid user identifier format: %s", identifier)
+}
+
+// formatMemberNameByType returns the appropriate member name format based on user type.
+// For regular users: users/{email}
+// For service accounts: serviceAccounts/{email}
+// For workload identities: workloadIdentities/{email}
+func formatMemberNameByType(user *store.UserMessage) string {
+	switch user.Type {
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
+		return common.FormatServiceAccountEmail(user.Email)
+	case storepb.PrincipalType_WORKLOAD_IDENTITY:
+		return common.FormatWorkloadIdentityEmail(user.Email)
+	default:
+		return common.FormatUserEmail(user.Email)
+	}
 }

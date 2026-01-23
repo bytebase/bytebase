@@ -24,7 +24,6 @@ const (
 	UserNamePrefix             = "users/"
 	IdentityProviderNamePrefix = "idps/"
 	SettingNamePrefix          = "settings/"
-	RolloutPrefix              = "rollouts/"
 	StagePrefix                = "stages/"
 	TaskPrefix                 = "tasks/"
 	TaskRunPrefix              = "taskRuns/"
@@ -59,8 +58,10 @@ const (
 	MetadataSuffix  = "/metadata"
 	CatalogSuffix   = "/catalog"
 
-	UserBindingPrefix  = "user:"
-	GroupBindingPrefix = "group:"
+	UserBindingPrefix             = "user:"
+	GroupBindingPrefix            = "group:"
+	ServiceAccountBindingPrefix   = "serviceAccount:"
+	WorkloadIdentityBindingPrefix = "workloadIdentity:"
 )
 
 // GetProjectID returns the project ID from a resource name.
@@ -518,18 +519,18 @@ func FormatGroupEmail(email string) string {
 
 // IsWorkloadIdentityEmail checks if the email is a workload identity email.
 func IsWorkloadIdentityEmail(email string) bool {
-	return strings.HasSuffix(email, WorkloadIdentityEmailSuffix) || isProjectWorkloadIdentityEmail(email)
+	return strings.HasSuffix(email, fmt.Sprintf("@%s", WorkloadIdentitySuffix)) || isProjectLevelEmail(email, WorkloadIdentitySuffix)
 }
 
-// isProjectWorkloadIdentityEmail checks if the email is a project-level workload identity email.
-func isProjectWorkloadIdentityEmail(email string) bool {
-	// Format: {name}@{project-id}.workload.bytebase.com
+// isProjectLevelEmail checks if the email is a project-level email.
+func isProjectLevelEmail(email, suffix string) bool {
+	// Format: {name}@{project-id}.{suffix}
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
 		return false
 	}
 	domain := parts[1]
-	return strings.HasSuffix(domain, ".workload.bytebase.com") && domain != WorkloadIdentityEmailSuffix
+	return strings.HasSuffix(domain, fmt.Sprintf(".%s", suffix))
 }
 
 func FormatReviewConfig(id string) string {
@@ -654,18 +655,7 @@ func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resour
 
 // IsServiceAccountEmail checks if the email is a service account email.
 func IsServiceAccountEmail(email string) bool {
-	return strings.HasSuffix(email, ServiceAccountEmailSuffix) || isProjectServiceAccountEmail(email)
-}
-
-// isProjectServiceAccountEmail checks if the email is a project-level service account email.
-func isProjectServiceAccountEmail(email string) bool {
-	// Format: {name}@{project-id}.service.bytebase.com
-	parts := strings.Split(email, "@")
-	if len(parts) != 2 {
-		return false
-	}
-	domain := parts[1]
-	return strings.HasSuffix(domain, ".service.bytebase.com")
+	return strings.HasSuffix(email, fmt.Sprintf("@%s", ServiceAccountSuffix)) || isProjectLevelEmail(email, ServiceAccountSuffix)
 }
 
 // FormatServiceAccountEmail formats a service account email from email.
@@ -699,15 +689,15 @@ func GetWorkloadIdentityEmail(name string) (string, error) {
 // BuildServiceAccountEmail constructs a full email from name and optional project ID.
 func BuildServiceAccountEmail(name, projectID string) string {
 	if projectID == "" {
-		return fmt.Sprintf("%s%s", name, ServiceAccountEmailSuffix)
+		return fmt.Sprintf("%s@%s", name, ServiceAccountSuffix)
 	}
-	return fmt.Sprintf("%s@%s.service.bytebase.com", name, projectID)
+	return fmt.Sprintf("%s@%s.%s", name, projectID, ServiceAccountSuffix)
 }
 
 // BuildWorkloadIdentityEmail constructs a full email from name and optional project ID.
 func BuildWorkloadIdentityEmail(name, projectID string) string {
 	if projectID == "" {
-		return fmt.Sprintf("%s%s", name, WorkloadIdentityEmailSuffix)
+		return fmt.Sprintf("%s@%s", name, WorkloadIdentitySuffix)
 	}
-	return fmt.Sprintf("%s@%s.workload.bytebase.com", name, projectID)
+	return fmt.Sprintf("%s@%s.%s", name, projectID, WorkloadIdentitySuffix)
 }

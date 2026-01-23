@@ -352,6 +352,12 @@ func (x *Database) Equal(y *Database) bool {
 	if x.BackupAvailable != y.BackupAvailable {
 		return false
 	}
+	if x.SyncStatus != y.SyncStatus {
+		return false
+	}
+	if x.SyncError != y.SyncError {
+		return false
+	}
 	return true
 }
 

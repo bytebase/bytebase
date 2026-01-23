@@ -2,18 +2,24 @@ import {
   customStorageEventName,
   defaultWindow,
   getSSRHandler,
-  type MaybeRefOrGetter,
   pausableWatch,
   type RemovableRef,
   type StorageEventLike,
   type StorageLike,
   StorageSerializers,
-  toValue,
   tryOnMounted,
   type UseStorageOptions,
   useEventListener,
 } from "@vueuse/core";
-import { nextTick, type Ref, ref, shallowRef, watch } from "vue";
+import {
+  type MaybeRefOrGetter,
+  nextTick,
+  type Ref,
+  ref,
+  shallowRef,
+  toValue,
+  watch,
+} from "vue";
 
 export class WebStorageHelper {
   storage: Storage;

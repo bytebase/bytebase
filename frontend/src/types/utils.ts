@@ -6,5 +6,3 @@ export type ValidatedMessage = {
   type: "warning" | "error";
   message: string;
 };
-
-export type PickLiteral<A, B extends A> = B;

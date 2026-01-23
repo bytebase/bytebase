@@ -229,7 +229,7 @@ const rules: FormRules = {
         }
         return true;
       },
-      trigger: ["input", "blur-sm"],
+      trigger: ["input"],
     },
   ],
   format: [

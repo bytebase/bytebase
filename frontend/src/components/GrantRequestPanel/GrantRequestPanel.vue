@@ -19,8 +19,8 @@
           :allow-remove="false"
           :disable-member-change="true"
           :require-reason="project.enforceIssueTitle"
-          :support-roles="supportRoles"
           :database-resources="databaseResources"
+          :required-permissions="requiredPermissions"
         />
         <IssueLabels :project="project" v-model:value="labels" />
       </div>
@@ -78,8 +78,8 @@ const props = withDefaults(
     projectName: string;
     role?: string;
     databaseResources?: DatabaseResource[];
+    requiredPermissions?: string[];
     placement?: "left" | "right";
-    supportRoles?: string[];
   }>(),
   {
     databaseResources: () => [],

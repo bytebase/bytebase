@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { UNKNOWN_ID } from "@/types/const";
 import {
   StageSchema,
-  Task_Type,
   TaskSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { UNKNOWN_ROLLOUT_NAME } from "@/types/rollout";
@@ -24,11 +23,3 @@ export const unknownTask = () => {
     name: UNKNOWN_TASK_NAME,
   });
 };
-
-export const TaskTypeListWithStatement: Task_Type[] = [
-  Task_Type.GENERAL,
-  Task_Type.DATABASE_CREATE,
-  Task_Type.DATABASE_MIGRATE,
-
-  Task_Type.DATABASE_EXPORT,
-];

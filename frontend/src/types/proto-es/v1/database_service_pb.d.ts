@@ -623,6 +623,20 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * @generated from field: bool backup_available = 10;
    */
   backupAvailable: boolean;
+
+  /**
+   * The sync status of the database.
+   *
+   * @generated from field: bytebase.v1.SyncStatus sync_status = 11;
+   */
+  syncStatus: SyncStatus;
+
+  /**
+   * The error message if sync failed.
+   *
+   * @generated from field: string sync_error = 12;
+   */
+  syncError: string;
 };
 
 /**
@@ -3211,6 +3225,37 @@ export declare type GetSchemaStringResponse = Message<"bytebase.v1.GetSchemaStri
  * Use `create(GetSchemaStringResponseSchema)` to create a new message.
  */
 export declare const GetSchemaStringResponseSchema: GenMessage<GetSchemaStringResponse>;
+
+/**
+ * SyncStatus is the status of the database sync operation.
+ *
+ * @generated from enum bytebase.v1.SyncStatus
+ */
+export enum SyncStatus {
+  /**
+   * @generated from enum value: SYNC_STATUS_UNSPECIFIED = 0;
+   */
+  SYNC_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * The database was synced successfully.
+   *
+   * @generated from enum value: OK = 1;
+   */
+  OK = 1,
+
+  /**
+   * The database sync failed.
+   *
+   * @generated from enum value: FAILED = 2;
+   */
+  FAILED = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.SyncStatus.
+ */
+export declare const SyncStatusSchema: GenEnum<SyncStatus>;
 
 /**
  * @generated from enum bytebase.v1.ChangelogView

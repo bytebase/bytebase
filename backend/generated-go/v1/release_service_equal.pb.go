@@ -260,9 +260,6 @@ func (x *Release_File) Equal(y *Release_File) bool {
 	if x.Version != y.Version {
 		return false
 	}
-	if x.EnableGhost != y.EnableGhost {
-		return false
-	}
 	if x.Sheet != y.Sheet {
 		return false
 	}

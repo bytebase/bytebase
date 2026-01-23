@@ -23,9 +23,10 @@
 
       <MiniActionButton
         v-if="allowUpdateUser"
-        @click="(e) => $emit('click-user', user, e)"
+        @click="(e) => $emit('user-selected', user, e)"
       >
-        <PencilIcon />
+        <PencilIcon v-if="user.userType === UserType.WORKLOAD_IDENTITY || user.userType ===  UserType.SERVICE_ACCOUNT" />
+        <EyeIcon v-else />
       </MiniActionButton>
 
       <NPopconfirm
@@ -49,12 +50,21 @@
 </template>
 
 <script lang="ts" setup>
-import { PencilIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
+import { EyeIcon, PencilIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
-import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
+import {
+  getUserFullNameByType,
+  pushNotification,
+  serviceAccountToUser,
+  useCurrentUserV1,
+  useServiceAccountStore,
+  useUserStore,
+  useWorkloadIdentityStore,
+  workloadIdentityToUser,
+} from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -64,11 +74,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "click-user", user: User, e: MouseEvent): void;
-  (event: "update-user", user: User): void;
+  (event: "user-selected", user: User, e: MouseEvent): void;
+  (event: "user-updated", user: User): void;
 }>();
 
 const userStore = useUserStore();
+const serviceAccountStore = useServiceAccountStore();
+const workloadIdentityStore = useWorkloadIdentityStore();
 const { t } = useI18n();
 const me = useCurrentUserV1();
 
@@ -101,14 +113,52 @@ const allowReactiveUser = computed(() => {
   return allowUndelete.value && props.user.state === State.DELETED;
 });
 
+const archiveUser = async (user: User): Promise<User> => {
+  const fullname = getUserFullNameByType(user);
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT: {
+      await serviceAccountStore.deleteServiceAccount(fullname);
+      break;
+    }
+    case UserType.WORKLOAD_IDENTITY: {
+      await workloadIdentityStore.deleteWorkloadIdentity(fullname);
+      break;
+    }
+    default: {
+      await userStore.archiveUser(fullname);
+    }
+  }
+  return {
+    ...user,
+    state: State.DELETED,
+  };
+};
+
+const restoreUser = async (user: User): Promise<User> => {
+  const fullname = getUserFullNameByType(user);
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT: {
+      const sa = await serviceAccountStore.undeleteServiceAccount(fullname);
+      return serviceAccountToUser(sa);
+    }
+    case UserType.WORKLOAD_IDENTITY: {
+      const wi = await workloadIdentityStore.undeleteWorkloadIdentity(fullname);
+      return workloadIdentityToUser(wi);
+    }
+    default: {
+      return await userStore.restoreUser(fullname);
+    }
+  }
+};
+
 const changeRowStatus = async (state: State) => {
   let user = props.user;
   if (state === State.ACTIVE) {
-    user = await userStore.restoreUser(props.user);
+    user = await restoreUser(props.user);
   } else {
-    user = await userStore.archiveUser(props.user);
+    user = await archiveUser(props.user);
   }
-  emit("update-user", user);
+  emit("user-updated", user);
   pushNotification({
     module: "bytebase",
     style: "INFO",

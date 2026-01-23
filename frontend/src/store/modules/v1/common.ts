@@ -1,5 +1,6 @@
 import { UNKNOWN_ID } from "@/types/const";
 import type { ResourceId } from "@/types/id";
+import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 
 export const workspaceNamePrefix = "workspaces/";
 export const userNamePrefix = "users/";
@@ -21,12 +22,24 @@ export const groupNamePrefix = "groups/";
 export const reviewConfigNamePrefix = "reviewConfigs/";
 export const planNamePrefix = "plans/";
 export const planCheckRunPrefix = "planCheckRuns/";
-export const rolloutNamePrefix = "rollouts/";
 export const stageNamePrefix = "stages/";
 export const taskNamePrefix = "tasks/";
 export const taskRunNamePrefix = "taskRuns/";
 export const releaseNamePrefix = "releases/";
 export const revisionNamePrefix = "revisions/";
+export const serviceAccountNamePrefix = "serviceAccounts/";
+export const workloadIdentityNamePrefix = "workloadIdentities/";
+
+export const getUserFullNameByType = (user: User): string => {
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT:
+      return `${serviceAccountNamePrefix}${user.email}`;
+    case UserType.WORKLOAD_IDENTITY:
+      return `${workloadIdentityNamePrefix}${user.email}`;
+    default:
+      return `${userNamePrefix}${user.email}`;
+  }
+};
 
 export const getNameParentTokens = (
   name: string,
@@ -166,6 +179,20 @@ export const getInstanceAndDatabaseId = (name: string): string[] => {
 
 export const extractUserId = (identifier: string) => {
   const matches = identifier.match(/^(?:user:|users\/)(.+)$/);
+  return matches?.[1] ?? identifier;
+};
+
+export const extractServiceAccountId = (identifier: string) => {
+  const matches = identifier.match(
+    /^(?:serviceAccount:|serviceAccounts\/)(.+)$/
+  );
+  return matches?.[1] ?? identifier;
+};
+
+export const extractWorkloadIdentityId = (identifier: string) => {
+  const matches = identifier.match(
+    /^(?:workloadIdentity:|workloadIdentities\/)(.+)$/
+  );
   return matches?.[1] ?? identifier;
 };
 

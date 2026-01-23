@@ -36,11 +36,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRouter } from "vue-router";
-import { NULL_ENVIRONMENT_NAME, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import {
+  formatEnvironmentName,
+  NULL_ENVIRONMENT_NAME,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import type { VueClass } from "@/utils";
-import { autoEnvironmentRoute, hexToRgb } from "@/utils";
+import { hexToRgb } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
@@ -75,8 +78,6 @@ const props = withDefaults(
   }
 );
 
-const router = useRouter();
-
 const isUnknown = computed(
   () =>
     props.environment.name === UNKNOWN_ENVIRONMENT_NAME ||
@@ -89,7 +90,7 @@ const bindings = computed(() => {
   if (isLink.value) {
     return {
       to: {
-        ...autoEnvironmentRoute(router, props.environment),
+        path: `/${formatEnvironmentName(props.environment.id)}`,
       },
       activeClass: "",
       exactActiveClass: "",

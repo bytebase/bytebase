@@ -3,7 +3,7 @@
   "extends": ["config:recommended"],
   "schedule": ["* * 31 2 *"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "allowedCommands": ["^pnpm install --no-frozen-lockfile$"],
+  "allowedPostUpgradeCommands": ["^pnpm install --no-frozen-lockfile$"],
   "packageRules": [
     {
       "matchManagers": ["npm"],

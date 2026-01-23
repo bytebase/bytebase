@@ -1,6 +1,5 @@
 export * from "./actuator";
 export * from "./appProfile";
-export * from "./approvalFlow";
 export * from "./auditLog";
 export * from "./common";
 export * from "./const";
@@ -16,14 +15,11 @@ export * from "./notification";
 export * from "./oauth";
 export * from "./plan";
 export * from "./release";
-export * from "./risk";
 export * from "./rollout";
 export * from "./semanticTypes";
 export * from "./setting";
-export * from "./sheet";
 export * from "./sqlEditor";
 export * from "./sqlReview";
-export * from "./store";
 export * from "./utils";
 export * from "./workspaceApprovalSetting";
 

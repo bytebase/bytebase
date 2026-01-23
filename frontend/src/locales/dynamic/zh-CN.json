@@ -1,24 +1,4 @@
 {
-  "custom-approval": {
-    "approval-flow-builtin": {
-      "project-owner": "系统定义的流程。只需要项目所有者审批。",
-      "workspace-dba": "系统定义的流程。只需要 DBA 审批。",
-      "workspace-admin": "系统定义的流程。只需要管理员审批。",
-      "project-owner-workspace-dba": "系统定义的流程。先由项目所有者审批，再由 DBA 审批。",
-      "project-owner-workspace-dba-workspace-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
-    },
-    "risk-rule": {
-      "template": {
-        "presets": {
-          "request-role-high": "申请成为项目所有者，将会被认为是高风险",
-          "environment-prod-high": "生产环境，默认为高风险",
-          "environment-dev-low": "开发环境，默认为低风险",
-          "dml-in-environment-prod-10k-rows-high": "生产环境中更新或删除的数据行数超过 10000，默认为高风险",
-          "create-database-in-environment-prod-moderate": "在生产环境中创建数据库，默认为中风险"
-        }
-      }
-    }
-  },
   "activity": {
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",

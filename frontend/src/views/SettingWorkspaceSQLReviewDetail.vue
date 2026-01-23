@@ -198,7 +198,6 @@ import {
   convertRuleMapToPolicyRuleList,
   getRuleMapByEngine,
   UNKNOWN_ID,
-  unknown,
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
@@ -269,7 +268,13 @@ onMounted(() => {
 
 const reviewPolicy = computed(() => {
   return (
-    store.getReviewPolicyByName(sqlReviewName.value) ?? unknown("SQL_REVIEW")
+    store.getReviewPolicyByName(sqlReviewName.value) ?? {
+      id: `${UNKNOWN_ID}`,
+      enforce: false,
+      name: "",
+      ruleList: [],
+      resources: [],
+    }
   );
 });
 

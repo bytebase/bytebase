@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { revisionServiceClientConnect } from "@/connect";
-import type { Pagination } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import {
   DeleteRevisionRequestSchema,
@@ -20,7 +19,10 @@ export const useRevisionStore = defineStore("revision", () => {
 
   const fetchRevisionsByDatabase = async (
     database: string,
-    pagination?: Pagination
+    pagination?: {
+      pageSize?: number;
+      pageToken?: string;
+    }
   ) => {
     const request = create(ListRevisionsRequestSchema, {
       parent: database,

@@ -31,16 +31,15 @@ import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import {
+  getUserFullNameByType,
   pushNotification,
+  serviceAccountToUser,
   useGroupStore,
-  useUserStore,
+  useServiceAccountStore,
   useWorkspaceV1Store,
 } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
-import {
-  UpdateUserRequestSchema,
-  type User,
-} from "@/types/proto-es/v1/user_service_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import GroupsCell from "./cells/GroupsCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
@@ -61,14 +60,15 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "update-user", user: User): void;
-  (event: "select-group", group: Group): void;
+  (event: "user-updated", user: User): void;
+  (event: "user-selected", user: User): void;
+  (event: "group-selected", group: Group): void;
 }>();
 
 const { t } = useI18n();
-const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
 const groupStore = useGroupStore();
+const serviceAccountStore = useServiceAccountStore();
 
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
   legacy: true,
@@ -107,7 +107,11 @@ const columns = computed(() => {
       hide: !props.showRoles,
       render: (user: User) => {
         return h(UserRolesCell, {
-          roles: [...workspaceStore.getWorkspaceRolesByEmail(user.email)],
+          roles: [
+            ...workspaceStore.getWorkspaceRolesByName(
+              getUserFullNameByType(user)
+            ),
+          ],
         });
       },
     },
@@ -118,7 +122,7 @@ const columns = computed(() => {
       render: (user: User) => {
         return h(GroupsCell, {
           user,
-          "onSelect-group": (group) => emit("select-group", group),
+          "onGroup-selected": (group) => emit("group-selected", group),
         });
       },
     },
@@ -129,9 +133,8 @@ const columns = computed(() => {
       render: (user: User) => {
         return h(UserOperationsCell, {
           user,
-          "onUpdate-user": (user: User) => {
-            emit("update-user", user);
-          },
+          "onUser-updated": (user: User) => emit("user-updated", user),
+          "onUser-selected": (user: User) => emit("user-selected", user),
         });
       },
     },
@@ -151,19 +154,19 @@ const resetServiceKey = () => {
   if (!user) {
     return;
   }
-  userStore
-    .updateUser(
-      create(UpdateUserRequestSchema, {
-        user,
-        updateMask: create(FieldMaskSchema, {
-          paths: ["service_key"],
-        }),
-        regenerateRecoveryCodes: false,
-        regenerateTempMfaSecret: false,
+
+  serviceAccountStore
+    .updateServiceAccount(
+      {
+        name: user.name,
+      },
+      create(FieldMaskSchema, {
+        paths: ["service_key"],
       })
     )
-    .then((updatedUser) => {
-      emit("update-user", updatedUser);
+    .then((sa) => {
+      const updatedUser = serviceAccountToUser(sa);
+      emit("user-updated", updatedUser);
       if (updatedUser.serviceKey && isSupported.value) {
         copyTextToClipboard(updatedUser.serviceKey).then(() => {
           pushNotification({
