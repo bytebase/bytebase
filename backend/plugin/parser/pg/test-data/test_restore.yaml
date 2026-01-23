@@ -114,3 +114,31 @@
     UPDATE test SET c = 1 WHERE a = 1
     */
     INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test" ON CONFLICT ON CONSTRAINT "test_pk" DO UPDATE SET "c" = EXCLUDED."c";
+- input: |-
+    SET ROLE admin;
+    UPDATE test SET c = 1 WHERE a = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: |-
+    SET ROLE admin;
+    /*
+    Original SQL:
+    UPDATE test SET c = 1 WHERE a = 1
+    */
+    INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test" ON CONFLICT ON CONSTRAINT "test_pk" DO UPDATE SET "c" = EXCLUDED."c";
+- input: |-
+    SET search_path = myschema, public;
+    DELETE FROM test WHERE a = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: |-
+    SET search_path = myschema, public;
+    /*
+    Original SQL:
+    DELETE FROM test WHERE a = 1
+    */
+    INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test";
