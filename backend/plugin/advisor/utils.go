@@ -16,8 +16,9 @@ import (
 // NormalizeStatement limit the max length of the statements.
 func NormalizeStatement(statement string) string {
 	maxLength := 1000
-	if len(statement) > maxLength {
-		return statement[:maxLength] + "..."
+	runes := []rune(statement)
+	if len(runes) > maxLength {
+		return string(runes[:maxLength]) + "..."
 	}
 	return statement
 }
