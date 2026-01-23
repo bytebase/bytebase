@@ -24,6 +24,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/telemetry"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -92,25 +93,6 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	statement = strings.Trim(statement, " \t\n\r\f;")
-
-	var gomongoErr error
-	if d.client != nil {
-		gmClient := gomongo.NewClient(d.client)
-		_, gomongoErr = gmClient.Execute(ctx, d.databaseName, statement)
-		if gomongoErr == nil {
-			return 0, nil
-		}
-	}
-
-	err := d.executeWithMongosh(ctx, statement)
-	if err == nil && gomongoErr != nil {
-		slog.Debug("executed statement with mongosh fallback", slog.String("statement", statement), log.BBError(gomongoErr))
-	}
-	return 0, err
-}
-
-func (d *Driver) executeWithMongosh(ctx context.Context, statement string) error {
 	connectionURI := getBasicMongoDBConnectionURI(d.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
@@ -148,7 +130,7 @@ func (d *Driver) executeWithMongosh(ctx context.Context, statement string) error
 				_ = os.Remove(caFileName)
 			}()
 			if err := os.WriteFile(caFileName, []byte(d.connCfg.DataSource.GetSslCa()), 0400); err != nil {
-				return errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+				return 0, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
 			mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
 		}
@@ -161,16 +143,16 @@ func (d *Driver) executeWithMongosh(ctx context.Context, statement string) error
 			}()
 			var sb strings.Builder
 			if _, err := sb.WriteString(d.connCfg.DataSource.GetSslKey()); err != nil {
-				return errors.Wrapf(err, "failed to write ssl key into string builder")
+				return 0, errors.Wrapf(err, "failed to write ssl key into string builder")
 			}
 			if _, err := sb.WriteString("\n"); err != nil {
-				return errors.Wrapf(err, "failed to write new line into string builder")
+				return 0, errors.Wrapf(err, "failed to write new line into string builder")
 			}
 			if _, err := sb.WriteString(d.connCfg.DataSource.GetSslCert()); err != nil {
-				return errors.Wrapf(err, "failed to write ssl cert into string builder")
+				return 0, errors.Wrapf(err, "failed to write ssl cert into string builder")
 			}
 			if err := os.WriteFile(clientCertName, []byte(sb.String()), 0400); err != nil {
-				return errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+				return 0, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
 			mongoshArgs = append(mongoshArgs, "--tlsCertificateKeyFile", clientCertName)
 		}
@@ -180,14 +162,14 @@ func (d *Driver) executeWithMongosh(ctx context.Context, statement string) error
 	tempDir := os.TempDir()
 	tempFile, err := os.CreateTemp(tempDir, "mongodb-statement")
 	if err != nil {
-		return errors.Wrap(err, "failed to create temporary file")
+		return 0, errors.Wrap(err, "failed to create temporary file")
 	}
 	defer os.Remove(tempFile.Name())
 	if _, err := tempFile.WriteString(statement); err != nil {
-		return errors.Wrap(err, "failed to write statement to temporary file")
+		return 0, errors.Wrap(err, "failed to write statement to temporary file")
 	}
 	if err := tempFile.Close(); err != nil {
-		return errors.Wrap(err, "failed to close temporary file")
+		return 0, errors.Wrap(err, "failed to close temporary file")
 	}
 	mongoshArgs = append(mongoshArgs, "--file", tempFile.Name())
 
@@ -197,9 +179,9 @@ func (d *Driver) executeWithMongosh(ctx context.Context, statement string) error
 	mongoshCmd.Stderr = &errContent
 	mongoshCmd.Stdout = &outContent
 	if err := mongoshCmd.Run(); err != nil {
-		return errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
+		return 0, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
 	}
-	return nil
+	return 0, nil
 }
 
 // Dump dumps the database.
@@ -289,6 +271,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	results, err := d.queryConnWithMongosh(ctx, statement, queryContext, startTime)
 	if err == nil && gomongoErr != nil {
 		slog.Debug("executed query with mongosh fallback", slog.String("statement", statement), log.BBError(gomongoErr))
+		telemetry.ReportGomongoFallback(ctx, statement, gomongoErr.Error())
 	}
 	return results, err
 }

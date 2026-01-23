@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/component/telemetry"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/demo"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -186,6 +187,15 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to get system setting")
 	}
 	secret := systemSetting.AuthSecret
+
+	// Initialize telemetry reporter for hub.bytebase.com event reporting.
+	telemetry.InitGlobalReporter(
+		systemSetting.GetWorkspaceId(),
+		profile.Version,
+		profile.GitCommit,
+		workspaceProfile.GetEnableMetricCollection(),
+	)
+
 	s.iamManager, err = iam.NewManager(stores, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, errors.Wrapf(err, "failed to reload iam cache")
