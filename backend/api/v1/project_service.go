@@ -1204,13 +1204,13 @@ func validateMember(member string) error {
 		return nil
 	}
 
-	userIdentifierMap := map[string]bool{
-		common.UserBindingPrefix:             true,
-		common.GroupBindingPrefix:            true,
-		common.ServiceAccountBindingPrefix:   true,
-		common.WorkloadIdentityBindingPrefix: true,
+	validPrefixes := []string{
+		common.UserBindingPrefix,
+		common.GroupBindingPrefix,
+		common.ServiceAccountBindingPrefix,
+		common.WorkloadIdentityBindingPrefix,
 	}
-	for prefix := range userIdentifierMap {
+	for _, prefix := range validPrefixes {
 		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {
 			return nil
 		}

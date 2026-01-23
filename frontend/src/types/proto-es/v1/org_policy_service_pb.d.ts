@@ -396,6 +396,8 @@ export declare type MaskingExemptionPolicy_Exemption = Message<"bytebase.v1.Mask
    * Specifies the principals who are exempt from masking.
    * For users, the member should be: user:{email}
    * For groups, the member should be: group:{email}
+   * For service accounts, the member should be: serviceAccount:{email}
+   * For workload identities, the member should be: workloadIdentity:{email}
    *
    * @generated from field: repeated string members = 1;
    */

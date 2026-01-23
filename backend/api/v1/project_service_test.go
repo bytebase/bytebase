@@ -39,6 +39,34 @@ func TestValidateMembers(t *testing.T) {
 			member:  "user:foo",
 			wantErr: false,
 		},
+		{
+			member:  "group:team@example.com",
+			wantErr: false,
+		},
+		{
+			member:  "serviceAccount:sa@service.bytebase.com",
+			wantErr: false,
+		},
+		{
+			member:  "serviceAccount:sa@project.service.bytebase.com",
+			wantErr: false,
+		},
+		{
+			member:  "workloadIdentity:wi@workload.bytebase.com",
+			wantErr: false,
+		},
+		{
+			member:  "workloadIdentity:wi@project.workload.bytebase.com",
+			wantErr: false,
+		},
+		{
+			member:  "serviceAccount:",
+			wantErr: true,
+		},
+		{
+			member:  "workloadIdentity:",
+			wantErr: true,
+		},
 	}
 
 	a := require.New(t)
