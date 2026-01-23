@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"io/fs"
 	"log/slog"
-	"net/http"
 	"sync"
 
 	"github.com/labstack/echo/v5"
@@ -65,13 +64,13 @@ func loadCSPHashes() []string {
 	return cspHashesCache
 }
 
-func getFileSystem(path string) http.FileSystem {
-	fs, err := fs.Sub(embeddedFiles, path)
+func getFileSystem(path string) fs.FS {
+	subFS, err := fs.Sub(embeddedFiles, path)
 	if err != nil {
 		panic(err)
 	}
 
-	return http.FS(fs)
+	return subFS
 }
 
 func embedFrontend(e *echo.Echo) {
@@ -105,7 +104,7 @@ func embedFrontend(e *echo.Echo) {
 }
 
 // defaultAPIRequestSkipper is echo skipper for api requests.
-func defaultAPIRequestSkipper(c echo.Context) bool {
+func defaultAPIRequestSkipper(c *echo.Context) bool {
 	path := c.Request().URL.Path
 	return common.HasPrefixes(path, "/api", "/v1", "/.well-known", webhookAPIPrefix)
 }

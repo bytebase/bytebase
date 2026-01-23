@@ -312,12 +312,13 @@ func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *st
 	}
 	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:    common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
-		SpecId:  task.Payload.GetSpecId(),
-		Type:    convertToTaskType(task),
-		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
-		Target:  targetDatabaseName,
-		Payload: &v1pbTaskPayload,
+		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
+		SpecId:        task.Payload.GetSpecId(),
+		Type:          convertToTaskType(task),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
+		SkippedReason: task.Payload.GetSkippedReason(),
+		Target:        targetDatabaseName,
+		Payload:       &v1pbTaskPayload,
 	}
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)

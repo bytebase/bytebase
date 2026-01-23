@@ -17,6 +17,13 @@
             size="medium"
             class="flex-1 min-w-0"
           />
+          <TaskStatusActions
+            :task="task"
+            :task-runs="getTaskRunsForTask(task)"
+            :rollout="rollout"
+            :size="'tiny'"
+            @action-confirmed="handleActionConfirmed"
+          />
         </div>
       </div>
     </template>
@@ -30,10 +37,12 @@
 import { computed, watchEffect } from "vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { useDatabaseV1Store } from "@/store";
+import TaskStatusActions from "@/components/RolloutV1/components/TaskStatusActions.vue";
+import { taskRunNamePrefix, useDatabaseV1Store } from "@/store";
+import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
 
-const { plan, rollout } = usePlanContextWithRollout();
+const { plan, rollout, taskRuns, events } = usePlanContextWithRollout();
 const dbStore = useDatabaseV1Store();
 
 const tasks = computed(() => {
@@ -46,6 +55,18 @@ const tasks = computed(() => {
     .flatMap((stage) => stage.tasks)
     .filter((task) => task.specId === exportDataSpec.id);
 });
+
+// Get task runs for a specific task
+const getTaskRunsForTask = (task: Task) => {
+  return taskRuns.value.filter((run) =>
+    run.name.startsWith(`${task.name}/${taskRunNamePrefix}`)
+  );
+};
+
+// Handle action confirmed - trigger data refresh
+const handleActionConfirmed = () => {
+  events.emit("status-changed", { eager: true });
+};
 
 // Fetch task target databases
 watchEffect(() => {
