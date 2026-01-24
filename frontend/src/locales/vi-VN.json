@@ -539,6 +539,8 @@
       "revoke-allusers-alert": "Thu hồi \"@:{'settings.members.all-users'}\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
       "grant-access": "Cấp Quyền truy cập",
       "select-user": "Chọn người dùng | Chọn người dùng",
+      "select-service-account": "Chọn tài khoản dịch vụ | Chọn tài khoản dịch vụ",
+      "select-workload-identity": "Chọn danh tính khối lượng công việc | Chọn danh tính khối lượng công việc",
       "select-group": "Chọn nhóm | Chọn nhóm",
       "select-in-project": "Chọn người dùng hoặc nhóm trong {project}",
       "select-role": "Chọn vai trò | Chọn vai trò",

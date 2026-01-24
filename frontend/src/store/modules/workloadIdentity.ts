@@ -20,6 +20,7 @@ import {
   UpdateWorkloadIdentityRequestSchema,
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
+import { type AccountFilter, getAccountListFilter } from "./serviceAccount";
 import { useActuatorV1Store } from "./v1/actuator";
 import {
   extractWorkloadIdentityId,
@@ -35,15 +36,22 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   const actuatorStore = useActuatorV1Store();
   const cacheByName = ref<Map<string, WorkloadIdentity>>(new Map());
 
-  const listWorkloadIdentities = async (
-    pageSize: number,
-    pageToken: string | undefined,
-    showDeleted: boolean
-  ) => {
+  const listWorkloadIdentities = async ({
+    pageSize,
+    pageToken,
+    showDeleted,
+    filter,
+  }: {
+    pageSize: number;
+    pageToken: string | undefined;
+    showDeleted: boolean;
+    filter?: AccountFilter;
+  }) => {
     const request = create(ListWorkloadIdentitiesRequestSchema, {
       pageSize,
       pageToken,
       showDeleted,
+      filter: getAccountListFilter(filter ?? {}),
     });
     return workloadIdentityServiceClientConnect.listWorkloadIdentities(request);
   };

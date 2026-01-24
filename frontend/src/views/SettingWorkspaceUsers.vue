@@ -618,11 +618,11 @@ const fetchServiceAccountList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const response = await serviceAccountStore.listServiceAccounts(
+  const response = await serviceAccountStore.listServiceAccounts({
     pageSize,
     pageToken,
-    false
-  );
+    showDeleted: false,
+  });
   const users: User[] = response.serviceAccounts.map(serviceAccountToUser);
   return { list: users, nextPageToken: response.nextPageToken };
 };
@@ -634,11 +634,11 @@ const fetchWorkloadIdentityList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const response = await workloadIdentityStore.listWorkloadIdentities(
+  const response = await workloadIdentityStore.listWorkloadIdentities({
     pageSize,
     pageToken,
-    false
-  );
+    showDeleted: false,
+  });
   const users: User[] = response.workloadIdentities.map(workloadIdentityToUser);
   return { list: users, nextPageToken: response.nextPageToken };
 };
@@ -650,11 +650,11 @@ const fetchInactiveServiceAccountList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const response = await serviceAccountStore.listServiceAccounts(
+  const response = await serviceAccountStore.listServiceAccounts({
     pageSize,
     pageToken,
-    true
-  );
+    showDeleted: true,
+  });
   const users: User[] = response.serviceAccounts
     .filter((sa) => sa.state === State.DELETED)
     .map(serviceAccountToUser);
@@ -668,11 +668,11 @@ const fetchInactiveWorkloadIdentityList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const response = await workloadIdentityStore.listWorkloadIdentities(
+  const response = await workloadIdentityStore.listWorkloadIdentities({
     pageSize,
     pageToken,
-    true
-  );
+    showDeleted: true,
+  });
   const users: User[] = response.workloadIdentities
     .filter((wi) => wi.state === State.DELETED)
     .map(workloadIdentityToUser);

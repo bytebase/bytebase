@@ -539,6 +539,8 @@
       "revoke-allusers-alert": "撤销“@:{'settings.members.all-users'}”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
       "grant-access": "授予访问权限",
       "select-user": "选择用户 | 选择用户",
+      "select-service-account": "选择服务账号 | 选择服务账号",
+      "select-workload-identity": "选择工作负载身份 | 选择工作负载身份",
       "select-group": "选择组 | 选择组",
       "select-in-project": "选择 {project} 内的用户或群组",
       "select-role": "选择角色 | 选择角色",

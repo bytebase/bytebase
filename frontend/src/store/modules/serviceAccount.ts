@@ -23,6 +23,19 @@ import {
 import { useActuatorV1Store } from "./v1/actuator";
 import { extractServiceAccountId, serviceAccountNamePrefix } from "./v1/common";
 
+export interface AccountFilter {
+  query?: string;
+}
+
+export const getAccountListFilter = (params: AccountFilter) => {
+  const filter = [];
+  const search = params.query?.trim()?.toLowerCase();
+  if (search) {
+    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+  }
+  return filter.join(" && ");
+};
+
 const ensureServiceAccountFullName = (identifier: string) => {
   const id = extractServiceAccountId(identifier);
   return `${serviceAccountNamePrefix}${id}`;
@@ -32,15 +45,22 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
   const actuatorStore = useActuatorV1Store();
   const cacheByName = ref<Map<string, ServiceAccount>>(new Map());
 
-  const listServiceAccounts = async (
-    pageSize: number,
-    pageToken: string | undefined,
-    showDeleted: boolean
-  ) => {
+  const listServiceAccounts = async ({
+    pageSize,
+    pageToken,
+    showDeleted,
+    filter,
+  }: {
+    pageSize: number;
+    pageToken: string | undefined;
+    showDeleted: boolean;
+    filter?: AccountFilter;
+  }) => {
     const request = create(ListServiceAccountsRequestSchema, {
       pageSize,
       pageToken,
       showDeleted,
+      filter: getAccountListFilter(filter ?? {}),
     });
     return serviceAccountServiceClientConnect.listServiceAccounts(request);
   };

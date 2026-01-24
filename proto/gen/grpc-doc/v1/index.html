@@ -28816,6 +28816,24 @@ the call that provided the page token. </p></td>
                   <td><p>Show deleted service accounts if specified. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter service accounts returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- name: the service account name, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- email: the service account email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+
+For example:
+name == &#34;ed&#34;
+name.matches(&#34;ed&#34;)
+email == &#34;ed@service.bytebase.com&#34;
+email.matches(&#34;ed&#34;) </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -30282,6 +30300,24 @@ the call that provided the page token. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Show deleted workload identities if specified. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter workload identities returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter:
+- name: the workload identity name, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- email: the workload identity email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+
+For example:
+name == &#34;ed&#34;
+name.matches(&#34;ed&#34;)
+email == &#34;ed@workload.bytebase.com&#34;
+email.matches(&#34;ed&#34;) </p></td>
                 </tr>
               
             </tbody>

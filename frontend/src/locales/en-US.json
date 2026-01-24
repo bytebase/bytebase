@@ -539,6 +539,8 @@
       "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "grant-access": "Grant Access",
       "select-user": "Select user | Select users",
+      "select-service-account": "Select service account | Select service accounts",
+      "select-workload-identity": "Select workload-identity | Select workload identities",
       "select-group": "Select group | Select groups",
       "select-in-project": "Select users or groups in {project}",
       "select-role": "Select role | Select roles",

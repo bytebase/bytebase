@@ -170,6 +170,24 @@ export declare type ListWorkloadIdentitiesRequest = Message<"bytebase.v1.ListWor
    * @generated from field: bool show_deleted = 4;
    */
   showDeleted: boolean;
+
+  /**
+   * Filter is used to filter workload identities returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * - name: the workload identity name, support "==" and ".matches()" operator.
+   * - email: the workload identity email, support "==" and ".matches()" operator.
+   *
+   * For example:
+   * name == "ed"
+   * name.matches("ed")
+   * email == "ed@workload.bytebase.com"
+   * email.matches("ed")
+   *
+   * @generated from field: string filter = 5;
+   */
+  filter: string;
 };
 
 /**
