@@ -19,22 +19,27 @@
           </div>
         </template>
 
-        <PagedTable
-          ref="userPagedTable"
-          session-key="bb.paged-user-table.active"
-          :fetch-list="fetchUserList"
+        <ComponentPermissionGuard
+          :permissions="['bb.users.list']"
         >
-          <template #table="{ list, loading }">
-            <UserDataTable
-              :show-roles="false"
-              :user-list="list"
-              :loading="loading"
-              @group-selected="handleGroupSelected"
-              @user-selected="handleUserSelected"
-              @user-updated="handleUserUpdated"
-            />
-          </template>
-        </PagedTable>
+          <PagedTable
+            ref="userPagedTable"
+            session-key="bb.paged-user-table.active"
+            :fetch-list="fetchUserList"
+          >
+            <template #table="{ list, loading }">
+              <UserDataTable
+                :show-roles="false"
+                :user-list="list"
+                :loading="loading"
+                :keyword="state.activeUserFilterText"
+                @group-selected="handleGroupSelected"
+                @user-selected="handleUserSelected"
+                @user-updated="handleUserUpdated"
+              />
+            </template>
+          </PagedTable>
+        </ComponentPermissionGuard>
       </NTabPane>
 
       <NTabPane name="SERVICE_ACCOUNTS">
@@ -49,21 +54,25 @@
           </div>
         </template>
 
-        <PagedTable
-          ref="serviceAccountPagedTable"
-          session-key="bb.paged-service-account-table.active"
-          :fetch-list="fetchServiceAccountList"
+        <ComponentPermissionGuard
+          :permissions="['bb.serviceAccounts.list']"
         >
-          <template #table="{ list, loading }">
-            <UserDataTable
-              :show-roles="false"
-              :user-list="list"
-              :loading="loading"
-              @user-selected="handleUserSelected"
-              @user-updated="handleUserUpdated"
-            />
-          </template>
-        </PagedTable>
+          <PagedTable
+            ref="serviceAccountPagedTable"
+            session-key="bb.paged-service-account-table.active"
+            :fetch-list="fetchServiceAccountList"
+          >
+            <template #table="{ list, loading }">
+              <UserDataTable
+                :show-roles="false"
+                :user-list="list"
+                :loading="loading"
+                @user-selected="handleUserSelected"
+                @user-updated="handleUserUpdated"
+              />
+            </template>
+          </PagedTable>
+        </ComponentPermissionGuard>
       </NTabPane>
 
       <NTabPane name="WORKLOAD_IDENTITIES">
@@ -78,21 +87,25 @@
           </div>
         </template>
 
-        <PagedTable
-          ref="workloadIdentityPagedTable"
-          session-key="bb.paged-workload-identity-table.active"
-          :fetch-list="fetchWorkloadIdentityList"
+        <ComponentPermissionGuard
+          :permissions="['bb.workloadIdentities.list']"
         >
-          <template #table="{ list, loading }">
-            <UserDataTable
-              :show-roles="false"
-              :user-list="list"
-              :loading="loading"
-              @user-selected="handleUserSelected"
-              @user-updated="handleUserUpdated"
-            />
-          </template>
-        </PagedTable>
+          <PagedTable
+            ref="workloadIdentityPagedTable"
+            session-key="bb.paged-workload-identity-table.active"
+            :fetch-list="fetchWorkloadIdentityList"
+          >
+            <template #table="{ list, loading }">
+              <UserDataTable
+                :show-roles="false"
+                :user-list="list"
+                :loading="loading"
+                @user-selected="handleUserSelected"
+                @user-updated="handleUserUpdated"
+              />
+            </template>
+          </PagedTable>
+        </ComponentPermissionGuard>
       </NTabPane>
 
       <NTabPane name="GROUPS">
@@ -104,30 +117,34 @@
           </div>
         </template>
 
-        <PagedTable
-          ref="groupPagedTable"
-          session-key="bb.paged-group-table"
-          :fetch-list="fetchGroupList"
+        <ComponentPermissionGuard
+          :permissions="['bb.groups.list']"
         >
-          <template #table="{ list, loading }">
-            <UserDataTableByGroup
-              :groups="list"
-              :loading="loading"
-              v-model:expanded-keys="expandedKeys"
-              @group-selected="handleGroupSelected"
-              @group-removed="handleGroupRemoved"
-            />
-          </template>
-        </PagedTable>
+          <PagedTable
+            ref="groupPagedTable"
+            session-key="bb.paged-group-table"
+            :fetch-list="fetchGroupList"
+          >
+            <template #table="{ list, loading }">
+              <UserDataTableByGroup
+                :groups="list"
+                :loading="loading"
+                :keyword="state.activeUserFilterText"
+                v-model:expanded-keys="expandedKeys"
+                @group-selected="handleGroupSelected"
+                @group-removed="handleGroupRemoved"
+              />
+            </template>
+          </PagedTable>
+        </ComponentPermissionGuard>
       </NTabPane>
 
       <template #suffix>
         <div class="flex items-center gap-x-2">
           <SearchBox
-            v-if="state.typeTab !== 'GROUPS'"
+            v-if="state.typeTab === 'USERS' || state.typeTab === 'GROUPS'"
             v-model:value="state.activeUserFilterText"
           />
-          <SearchBox v-else v-model:value="state.activeUserFilterText" />
 
           <!-- USERS tab actions -->
           <template v-if="state.typeTab === 'USERS'">
@@ -174,7 +191,7 @@
           <template v-if="state.typeTab === 'SERVICE_ACCOUNTS'">
             <PermissionGuardWrapper
               v-slot="slotProps"
-              :permissions="['bb.users.create']"
+              :permissions="['bb.serviceAccounts.create']"
             >
               <NButton
                 type="primary"
@@ -194,7 +211,7 @@
           <template v-if="state.typeTab === 'WORKLOAD_IDENTITIES'">
             <PermissionGuardWrapper
               v-slot="slotProps"
-              :permissions="['bb.users.create']"
+              :permissions="['bb.workloadIdentities.create']"
             >
               <NButton
                 type="primary"
@@ -212,6 +229,27 @@
 
           <!-- GROUPS tab actions -->
           <template v-if="state.typeTab === 'GROUPS'">
+            <PermissionGuardWrapper
+              v-slot="slotProps"
+              :permissions="['bb.settings.get']"
+            >
+              <NButton
+                class="capitalize"
+                :disabled="!hasDirectorySyncFeature || slotProps.disabled"
+                @click="
+                  () => {
+                    state.showAadSyncDrawer = true;
+                  }
+                "
+              >
+                <template #icon>
+                  <SettingsIcon class="h-5 w-5" />
+                  <FeatureBadge :feature="PlanFeature.FEATURE_DIRECTORY_SYNC" />
+                </template>
+                {{ $t(`settings.members.entra-sync.self`) }}
+              </NButton>
+            </PermissionGuardWrapper>
+
             <PermissionGuardWrapper
               v-slot="slotProps"
               :permissions="['bb.groups.create']"
@@ -255,7 +293,7 @@
     </NTabs>
 
     <!-- Inactive users section for USERS tab -->
-    <div v-if="state.typeTab === 'USERS'">
+    <div v-if="state.typeTab === 'USERS' && hasListPermission">
       <NCheckbox v-model:checked="state.showInactiveUserList">
         <span class="textinfolabel">
           {{ $t("settings.members.show-inactive") }}
@@ -286,6 +324,7 @@
               :loading="loading"
               :show-roles="false"
               :user-list="list"
+              :keyword="state.inactiveUserFilterText"
               @update-user="handleUserRestore"
             />
           </template>
@@ -294,7 +333,7 @@
     </div>
 
     <!-- Inactive service accounts section for SERVICE_ACCOUNTS tab -->
-    <div v-if="state.typeTab === 'SERVICE_ACCOUNTS'">
+    <div v-if="state.typeTab === 'SERVICE_ACCOUNTS' && hasListPermission">
       <NCheckbox v-model:checked="state.showInactiveServiceAccountList">
         <span class="textinfolabel">
           {{ $t("settings.members.show-inactive") }}
@@ -329,7 +368,7 @@
     </div>
 
     <!-- Inactive workload identities section for WORKLOAD_IDENTITIES tab -->
-    <div v-if="state.typeTab === 'WORKLOAD_IDENTITIES'">
+    <div v-if="state.typeTab === 'WORKLOAD_IDENTITIES' && hasListPermission">
       <NCheckbox v-model:checked="state.showInactiveWorkloadIdentityList">
         <span class="textinfolabel">
           {{ $t("settings.members.show-inactive") }}
@@ -406,6 +445,7 @@ import { useI18n } from "vue-i18n";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
@@ -438,6 +478,7 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = [
   "USERS",
@@ -522,6 +563,18 @@ watch(
     router.push({ hash: `#${tab}` });
   }
 );
+
+const hasListPermission = computed(() => {
+  switch (state.typeTab) {
+    case "USERS":
+      return hasWorkspacePermissionV2("bb.users.list");
+    case "SERVICE_ACCOUNTS":
+      return hasWorkspacePermissionV2("bb.serviceAccounts.list");
+    case "WORKLOAD_IDENTITIES":
+      return hasWorkspacePermissionV2("bb.workloadIdentities.list");
+  }
+  return false;
+});
 
 const fetchGroupList = async ({
   pageToken,

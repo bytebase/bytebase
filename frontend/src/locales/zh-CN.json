@@ -515,7 +515,7 @@
       "reset-service-key": "重置 Service Key",
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "service-key-copied": "Service Key 已复制，请勿泄漏",
-      "show-inactive": "查看未激活的用户",
+      "show-inactive": "显示已停用账户",
       "view-by-roles": "按角色查看",
       "add-member": "添加成员",
       "add-user": "添加用户",

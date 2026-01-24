@@ -50,7 +50,11 @@
             :line-clamp="1"
             :tooltip="true"
           >
-            {{ user.email }}
+            <HighlightLabelText
+              class="truncate max-w-40 cursor-pointer"
+              :keyword="keyword"
+              :text="user.email"
+            />
           </NEllipsis>
         </slot>
       </div>
