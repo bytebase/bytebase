@@ -253,12 +253,12 @@ type ListWorkloadIdentitiesRequest struct {
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Show deleted workload identities if specified.
 	ShowDeleted bool `protobuf:"varint,4,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
-	// Filter is used to filter users returned in the list.
+	// Filter is used to filter workload identities returned in the list.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Supported filter:
-	// - name: the user name, support "==" and ".matches()" operator.
-	// - email: the user email, support "==" and ".matches()" operator.
+	// - name: the workload identity name, support "==" and ".matches()" operator.
+	// - email: the workload identity email, support "==" and ".matches()" operator.
 	//
 	// For example:
 	// name == "ed"
