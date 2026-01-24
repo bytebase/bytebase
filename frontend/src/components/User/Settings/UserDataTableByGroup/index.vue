@@ -48,6 +48,7 @@ const props = withDefaults(
   defineProps<{
     groups: Group[];
     loading: boolean;
+    keyword?: string;
     showGroupRole?: boolean;
     expandedKeys?: string[];
   }>(),
@@ -111,7 +112,13 @@ const columns = computed(() => {
       className: "flex items-center",
       render: (row: GroupRowData | UserRowData) => {
         if (row.type === "group") {
-          return <GroupNameCell group={row.group} link={false} />;
+          return (
+            <GroupNameCell
+              group={row.group}
+              link={false}
+              keyword={props.keyword}
+            />
+          );
         }
         return (
           <GroupMemberNameCell

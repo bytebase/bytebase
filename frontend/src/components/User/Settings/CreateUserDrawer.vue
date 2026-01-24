@@ -48,6 +48,7 @@
                 :input-props="{ type: 'text', autocomplete: 'off' }"
                 placeholder="GitHub Deploy"
                 :maxlength="200"
+                :disabled="!allowUpdate"
               />
             </div>
 
@@ -74,6 +75,7 @@
               <NSelect
                 v-model:value="state.wif.providerType"
                 :options="platformOptions"
+                :disabled="!allowUpdate"
                 @update:value="onPlatformChange"
               />
             </div>
@@ -104,6 +106,7 @@
                     : 'my-org'
                 "
                 :maxlength="200"
+                :disabled="!allowUpdate"
               />
             </div>
 
@@ -132,6 +135,7 @@
                     : 'my-repo'
                 "
                 :maxlength="200"
+                :disabled="!allowUpdate"
               />
               <span class="text-xs text-gray-500">
                 <template
@@ -168,6 +172,7 @@
               <NSelect
                 v-model:value="state.wif.refType"
                 :options="refTypeOptions"
+                :disabled="!allowUpdate"
               />
             </div>
 
@@ -199,6 +204,7 @@
                 :input-props="{ type: 'text', autocomplete: 'off' }"
                 :placeholder="state.wif.refType === 'tag' ? 'v1.0.0' : 'main'"
                 :maxlength="200"
+                :disabled="!allowUpdate"
               />
               <span class="text-xs text-gray-500">
                 <template
@@ -242,6 +248,7 @@
                     v-model:value="state.wif.issuerUrl"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
+                    :disabled="!allowUpdate"
                   />
                   <span
                     v-if="
@@ -269,6 +276,7 @@
                     v-model:value="state.wif.audience"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
+                    :disabled="!allowUpdate"
                   />
                 </div>
 
@@ -283,6 +291,7 @@
                     v-model:value="state.wif.subjectPattern"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
+                    :disabled="!allowUpdate"
                   />
                 </div>
               </div>
@@ -314,6 +323,7 @@
                 :input-props="{ type: 'text', autocomplete: 'off' }"
                 placeholder="Foo"
                 :maxlength="200"
+                :disabled="!allowUpdate"
               />
             </div>
 
@@ -335,14 +345,25 @@
             </div>
           </template>
 
-          <div class="flex flex-col gap-y-2">
-            <div>
-              <label class="block text-sm font-medium leading-5 text-control">
-                {{ $t("settings.members.table.roles") }}
-              </label>
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              'bb.workspaces.setIamPolicy'
+            ]"
+          >
+            <div class="flex flex-col gap-y-2">
+              <div>
+                <label class="block text-sm font-medium leading-5 text-control">
+                  {{ $t("settings.members.table.roles") }}
+                </label>
+              </div>
+              <RoleSelect
+                  v-model:value="state.roles"
+                  :multiple="true"
+                  :disabled="slotProps.disabled"
+                />
             </div>
-            <RoleSelect v-model:value="state.roles" :multiple="true" />
-          </div>
+          </PermissionGuardWrapper>
 
           <template v-if="state.user.userType === UserType.USER">
             <div class="flex flex-col gap-y-2">
@@ -361,6 +382,7 @@
                   type: 'tel',
                   autocomplete: 'new-password',
                 }"
+                :disabled="!allowUpdate"
               />
             </div>
 
@@ -369,6 +391,7 @@
               v-model:password="state.user.password"
               v-model:password-confirm="state.passwordConfirm"
               :password-restriction="passwordRestrictionSetting"
+              :disabled="!allowUpdate"
             />
           </template>
         </div>
@@ -378,16 +401,24 @@
           <NButton @click="$emit('close')">
             {{ $t("common.cancel") }}
           </NButton>
-          <NButton
-            type="primary"
-            :disabled="!allowConfirm"
-            :loading="state.isRequesting"
-            @click="createOrUpdateUser"
+
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              isEditMode ? updatePermission : createPermission
+            ]"
           >
-            {{
-              isEditMode ? $t("common.update") : $t("common.confirm")
-            }}
-          </NButton>
+            <NButton
+              type="primary"
+              :disabled="!allowConfirm || slotProps.disabled"
+              :loading="state.isRequesting"
+              @click="createOrUpdateUser"
+            >
+              {{
+                isEditMode ? $t("common.update") : $t("common.confirm")
+              }}
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
     </DrawerContent>
@@ -409,6 +440,7 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
@@ -440,6 +472,7 @@ import {
   WorkloadIdentityConfig_ProviderType,
   WorkloadIdentityConfigSchema,
 } from "@/types/proto-es/v1/user_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import UserPassword from "./UserPassword.vue";
 
 interface WifState {
@@ -501,7 +534,38 @@ const state = reactive<LocalState>({
   },
 });
 
-const isEditMode = computed(() => !!props.user);
+const isEditMode = computed(
+  () => !!props.user && props.user.name !== unknownUser().name
+);
+
+const updatePermission = computed(() => {
+  switch (state.user.userType) {
+    case UserType.SERVICE_ACCOUNT:
+      return "bb.serviceAccounts.update";
+    case UserType.WORKLOAD_IDENTITY:
+      return "bb.workloadIdentities.update";
+    default:
+      return "bb.users.update";
+  }
+});
+
+const createPermission = computed(() => {
+  switch (state.user.userType) {
+    case UserType.SERVICE_ACCOUNT:
+      return "bb.serviceAccounts.create";
+    case UserType.WORKLOAD_IDENTITY:
+      return "bb.workloadIdentities.create";
+    default:
+      return "bb.users.create";
+  }
+});
+
+const allowUpdate = computed(() => {
+  if (!isEditMode.value) {
+    return true;
+  }
+  return hasWorkspacePermissionV2(updatePermission.value);
+});
 
 const initialRoles = computed(() => {
   if (!props.user) {

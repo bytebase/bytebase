@@ -57,6 +57,7 @@ const props = defineProps<{
   showRoles: boolean;
   userList: User[];
   loading: boolean;
+  keyword?: string;
 }>();
 
 const emit = defineEmits<{
@@ -96,6 +97,7 @@ const columns = computed(() => {
       render: (user) => {
         return h(UserNameCell, {
           user,
+          keyword: props.keyword,
           "onReset-service-key": tryResetServiceKey,
         });
       },

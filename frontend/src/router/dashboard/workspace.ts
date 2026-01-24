@@ -284,7 +284,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_USERS,
         meta: {
           title: () => t("settings.sidebar.users-and-groups"),
-          requiredPermissionList: () => ["bb.users.list", "bb.groups.list"],
         },
         component: () => import("@/views/SettingWorkspaceUsers.vue"),
         props: true,

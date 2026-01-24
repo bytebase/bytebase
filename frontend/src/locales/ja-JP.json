@@ -515,7 +515,7 @@
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "service-key-copied": "サービスキーはコピーされています。公開しないでください",
-      "show-inactive": "非アクティブなユーザーを表示",
+      "show-inactive": "非アクティブなアカウントを表示",
       "view-by-roles": "役割ごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",

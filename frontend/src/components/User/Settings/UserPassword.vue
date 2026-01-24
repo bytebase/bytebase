@@ -40,6 +40,7 @@
             :status="passwordHint ? 'error' : undefined"
             :input-props="{ autocomplete: 'new-password' }"
             :placeholder="$t('common.sensitive-placeholder')"
+            :disabled="disabled"
             @update:value="$emit('update:password', $event)"
           />
           <div
@@ -72,6 +73,7 @@
             :status="passwordMismatch ? 'error' : undefined"
             :input-props="{ autocomplete: 'new-password' }"
             :placeholder="$t('settings.profile.password-confirm-placeholder')"
+            :disabled="disabled"
             @update:value="$emit('update:passwordConfirm', $event)"
           />
           <div
@@ -117,6 +119,7 @@ const props = withDefaults(
     passwordConfirm: string;
     passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
     showLearnMore?: boolean;
+    disabled?: boolean;
   }>(),
   {
     showLearnMore: true,
