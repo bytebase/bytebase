@@ -252,7 +252,20 @@ type ListWorkloadIdentitiesRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Show deleted workload identities if specified.
-	ShowDeleted   bool `protobuf:"varint,4,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	ShowDeleted bool `protobuf:"varint,4,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	// Filter is used to filter users returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filter:
+	// - name: the user name, support "==" and ".matches()" operator.
+	// - email: the user email, support "==" and ".matches()" operator.
+	//
+	// For example:
+	// name == "ed"
+	// name.matches("ed")
+	// email == "ed@workload.bytebase.com"
+	// email.matches("ed")
+	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -313,6 +326,13 @@ func (x *ListWorkloadIdentitiesRequest) GetShowDeleted() bool {
 		return x.ShowDeleted
 	}
 	return false
+}
+
+func (x *ListWorkloadIdentitiesRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
 }
 
 // Response message for listing workload identities.
@@ -545,14 +565,15 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x11workload_identity\x18\x03 \x01(\v2\x1d.bytebase.v1.WorkloadIdentityB\x03\xe0A\x02R\x10workloadIdentity\"W\n" +
 	"\x1aGetWorkloadIdentityRequest\x129\n" +
 	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
-	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\xb1\x01\n" +
+	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\xc9\x01\n" +
 	"\x1dListWorkloadIdentitiesRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12!\n" +
-	"\fshow_deleted\x18\x04 \x01(\bR\vshowDeleted\"\x98\x01\n" +
+	"\fshow_deleted\x18\x04 \x01(\bR\vshowDeleted\x12\x16\n" +
+	"\x06filter\x18\x05 \x01(\tR\x06filter\"\x98\x01\n" +
 	"\x1eListWorkloadIdentitiesResponse\x12N\n" +
 	"\x13workload_identities\x18\x01 \x03(\v2\x1d.bytebase.v1.WorkloadIdentityR\x12workloadIdentities\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xad\x01\n" +

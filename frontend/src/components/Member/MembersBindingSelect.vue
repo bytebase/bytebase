@@ -11,6 +11,12 @@
         @update:value="onTypeChange"
       >
         <NRadio value="USERS">{{ $t("common.users") }}</NRadio>
+        <NRadio v-if="includeServiceAccount" value="SERVICE_ACCOUNTS">
+          {{ $t("settings.members.service-accounts") }}
+        </NRadio>
+        <NRadio v-if="includeWorkloadIdentity" value="WORKLOAD_IDENTITIES">
+          {{ $t("settings.members.workload-identities") }}
+        </NRadio>
         <NRadio value="GROUPS">
           {{ $t("common.groups") }}
         </NRadio>
@@ -44,13 +50,47 @@
         :disabled="disabled"
         :project-name="projectName"
         :include-all-users="includeAllUsers"
-        :include-service-account="includeServiceAccount"
-        :include-workload-identity="includeWorkloadIdentity"
         @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
     <div
-      v-else
+      v-else-if="memberType === 'SERVICE_ACCOUNTS'"
+      :class="[
+        'w-full flex flex-col gap-y-2',
+      ]"
+    >
+      <div class="flex text-main items-center gap-x-1">
+        {{ $t("settings.members.select-service-account", 2 /* multiply*/) }}
+        <RequiredStar v-if="required" />
+      </div>
+      <ServiceAccountSelect
+        key="service-account-select"
+        :value="memberList"
+        :multiple="true"
+        :disabled="disabled"
+        @update:value="onMemberListUpdate($event as string[])"
+      />
+    </div>
+    <div
+      v-else-if="memberType === 'WORKLOAD_IDENTITIES'"
+      :class="[
+        'w-full flex flex-col gap-y-2',
+      ]"
+    >
+      <div class="flex text-main items-center gap-x-1">
+        {{ $t("settings.members.select-workload-identity", 2 /* multiply*/) }}
+        <RequiredStar v-if="required" />
+      </div>
+      <WorkloadIdentitySelect
+        key="workload-identity-select"
+        :value="memberList"
+        :multiple="true"
+        :disabled="disabled"
+        @update:value="onMemberListUpdate($event as string[])"
+      />
+    </div>
+    <div
+      v-else-if="memberType === 'GROUPS'"
       :class="[
         'w-full flex flex-col gap-y-2',
       ]"
@@ -77,7 +117,12 @@ import { uniq } from "lodash-es";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, ref } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { GroupSelect, UserSelect } from "@/components/v2";
+import {
+  GroupSelect,
+  ServiceAccountSelect,
+  UserSelect,
+  WorkloadIdentitySelect,
+} from "@/components/v2";
 import {
   extractGroupEmail,
   extractServiceAccountId,
@@ -93,10 +138,16 @@ import {
   getUserEmailInBinding,
   getWorkloadIdentityNameInBinding,
   groupBindingPrefix,
+  serviceAccountBindingPrefix,
+  workloadIdentityBindingPrefix,
 } from "@/types";
 import { convertMemberToFullname } from "@/utils";
 
-type MemberType = "USERS" | "GROUPS";
+type MemberType =
+  | "USERS"
+  | "SERVICE_ACCOUNTS"
+  | "WORKLOAD_IDENTITIES"
+  | "GROUPS";
 
 const props = withDefaults(
   defineProps<{
@@ -129,11 +180,16 @@ const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;
 }>();
 
-// TODO(ed): we'd probably support "SERVICE_ACCOUNT" and "WORKLOAD_IDENTITY"
 const initMemberType = computed((): MemberType => {
   for (const binding of props.value) {
     if (binding.startsWith(groupBindingPrefix)) {
       return "GROUPS";
+    }
+    if (binding.startsWith(serviceAccountBindingPrefix)) {
+      return "SERVICE_ACCOUNTS";
+    }
+    if (binding.startsWith(workloadIdentityBindingPrefix)) {
+      return "WORKLOAD_IDENTITIES";
     }
     return "USERS";
   }

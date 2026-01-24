@@ -10243,6 +10243,11 @@ Request message for listing service accounts.
 
 When paginating, all other parameters provided to `ListServiceAccounts` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted service accounts if specified. |
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@service.bytebase.com&#34; email.matches(&#34;ed&#34;) |
 
 
 
@@ -10722,6 +10727,11 @@ Request message for listing workload identities.
 
 When paginating, all other parameters provided to `ListWorkloadIdentities` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted workload identities if specified. |
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@workload.bytebase.com&#34; email.matches(&#34;ed&#34;) |
 
 
 

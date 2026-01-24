@@ -30,14 +30,9 @@ import {
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
-import { serviceAccountToUser, useServiceAccountStore } from "./serviceAccount";
 import { useActuatorV1Store } from "./v1/actuator";
 import { extractUserId, userNamePrefix } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
-import {
-  useWorkloadIdentityStore,
-  workloadIdentityToUser,
-} from "./workloadIdentity";
 
 export interface UserFilter {
   query?: string;
@@ -69,8 +64,6 @@ const getListUserFilter = (params: UserFilter) => {
 
 export const useUserStore = defineStore("user", () => {
   const actuatorStore = useActuatorV1Store();
-  const serviceAccountStore = useServiceAccountStore();
-  const workloadIdentityStore = useWorkloadIdentityStore();
   const allUser = computed(() => allUsersUser());
   const userRequestCache = new Map<string, Promise<User>>();
 
@@ -105,81 +98,21 @@ export const useUserStore = defineStore("user", () => {
       };
     }
 
-    const requestedTypes = params.filter?.types ?? [
-      UserType.USER,
-      UserType.SERVICE_ACCOUNT,
-      UserType.WORKLOAD_IDENTITY,
-      UserType.SYSTEM_BOT,
-    ];
     const showDeleted = params.filter?.state === State.DELETED;
-    const allUsers: User[] = [];
-
-    const needsUserService = requestedTypes.some(
-      (t) => t === UserType.USER || t === UserType.SYSTEM_BOT
-    );
-    const needsServiceAccountService = requestedTypes.includes(
-      UserType.SERVICE_ACCOUNT
-    );
-    const needsWorkloadIdentityService = requestedTypes.includes(
-      UserType.WORKLOAD_IDENTITY
-    );
-
-    const promises: Promise<void>[] = [];
-
-    if (needsUserService) {
-      const userPromise = (async () => {
-        const request = create(ListUsersRequestSchema, {
-          pageSize: params.pageSize,
-          pageToken: params.pageToken,
-          filter: getListUserFilter(params.filter ?? {}),
-          showDeleted,
-        });
-        const response = await userServiceClientConnect.listUsers(request);
-        for (const user of response.users) {
-          setUser(user);
-          allUsers.push(user);
-        }
-      })();
-      promises.push(userPromise);
+    const request = create(ListUsersRequestSchema, {
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      filter: getListUserFilter(params.filter ?? {}),
+      showDeleted,
+    });
+    const response = await userServiceClientConnect.listUsers(request);
+    for (const user of response.users) {
+      setUser(user);
     }
-
-    if (needsServiceAccountService) {
-      const saPromise = (async () => {
-        const response = await serviceAccountStore.listServiceAccounts(
-          params.pageSize,
-          params.pageToken,
-          showDeleted
-        );
-        for (const sa of response.serviceAccounts) {
-          const user = serviceAccountToUser(sa);
-          setUser(user);
-          allUsers.push(user);
-        }
-      })();
-      promises.push(saPromise);
-    }
-
-    if (needsWorkloadIdentityService) {
-      const wiPromise = (async () => {
-        const response = await workloadIdentityStore.listWorkloadIdentities(
-          params.pageSize,
-          params.pageToken,
-          showDeleted
-        );
-        for (const wi of response.workloadIdentities) {
-          const user = workloadIdentityToUser(wi);
-          setUser(user);
-          allUsers.push(user);
-        }
-      })();
-      promises.push(wiPromise);
-    }
-
-    await Promise.all(promises);
 
     return {
-      users: allUsers,
-      nextPageToken: "",
+      users: response.users,
+      nextPageToken: response.nextPageToken,
     };
   };
 

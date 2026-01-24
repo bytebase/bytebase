@@ -8024,6 +8024,37 @@ paths:
             type: boolean
             title: show_deleted
             description: Show deleted service accounts if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter users returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the user name, support "==" and ".matches()" operator.
+             - email: the user email, support "==" and ".matches()" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             email == "ed@service.bytebase.com"
+             email.matches("ed")
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter users returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filter:
+               - name: the user name, support "==" and ".matches()" operator.
+               - email: the user email, support "==" and ".matches()" operator.
+
+               For example:
+               name == "ed"
+               name.matches("ed")
+               email == "ed@service.bytebase.com"
+               email.matches("ed")
       responses:
         "200":
           description: Success
@@ -8340,6 +8371,37 @@ paths:
             type: boolean
             title: show_deleted
             description: Show deleted workload identities if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter users returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the user name, support "==" and ".matches()" operator.
+             - email: the user email, support "==" and ".matches()" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             email == "ed@workload.bytebase.com"
+             email.matches("ed")
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter users returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filter:
+               - name: the user name, support "==" and ".matches()" operator.
+               - email: the user email, support "==" and ".matches()" operator.
+
+               For example:
+               name == "ed"
+               name.matches("ed")
+               email == "ed@workload.bytebase.com"
+               email.matches("ed")
       responses:
         "200":
           description: Success
@@ -9032,6 +9094,37 @@ paths:
             type: boolean
             title: show_deleted
             description: Show deleted service accounts if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter users returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the user name, support "==" and ".matches()" operator.
+             - email: the user email, support "==" and ".matches()" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             email == "ed@service.bytebase.com"
+             email.matches("ed")
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter users returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filter:
+               - name: the user name, support "==" and ".matches()" operator.
+               - email: the user email, support "==" and ".matches()" operator.
+
+               For example:
+               name == "ed"
+               name.matches("ed")
+               email == "ed@service.bytebase.com"
+               email.matches("ed")
       responses:
         "200":
           description: Success
@@ -9804,6 +9897,37 @@ paths:
             type: boolean
             title: show_deleted
             description: Show deleted workload identities if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter users returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the user name, support "==" and ".matches()" operator.
+             - email: the user email, support "==" and ".matches()" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             email == "ed@workload.bytebase.com"
+             email.matches("ed")
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter users returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filter:
+               - name: the user name, support "==" and ".matches()" operator.
+               - email: the user email, support "==" and ".matches()" operator.
+
+               For example:
+               name == "ed"
+               name.matches("ed")
+               email == "ed@workload.bytebase.com"
+               email.matches("ed")
       responses:
         "200":
           description: Success
@@ -16625,6 +16749,22 @@ components:
           type: boolean
           title: show_deleted
           description: Show deleted service accounts if specified.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter users returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the user name, support "==" and ".matches()" operator.
+             - email: the user email, support "==" and ".matches()" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             email == "ed@service.bytebase.com"
+             email.matches("ed")
       title: ListServiceAccountsRequest
       additionalProperties: false
       description: Request message for listing service accounts.
@@ -16787,6 +16927,22 @@ components:
           type: boolean
           title: show_deleted
           description: Show deleted workload identities if specified.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter users returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the user name, support "==" and ".matches()" operator.
+             - email: the user email, support "==" and ".matches()" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             email == "ed@workload.bytebase.com"
+             email.matches("ed")
       title: ListWorkloadIdentitiesRequest
       additionalProperties: false
       description: Request message for listing workload identities.

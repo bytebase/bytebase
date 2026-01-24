@@ -21,9 +21,8 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { getUserFullNameByType, type UserFilter, useUserStore } from "@/store";
-import { allUsersUser } from "@/types";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { serviceAccountToUser, useServiceAccountStore } from "@/store";
+import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
@@ -39,67 +38,46 @@ const props = defineProps<{
   multiple?: boolean;
   disabled?: boolean;
   size?: SelectSize;
-  value?: string | string[] | undefined; // user fullname
-  projectName?: string;
-  // allUsers is a special user that represents all users in the project.
-  includeAllUsers?: boolean;
-  includeSystemBot?: boolean;
-  filter?: (user: User) => boolean;
+  value?: string | string[] | undefined; // serviceAccounts/{email}
+  filter?: (serviceAccount: ServiceAccount) => boolean;
 }>();
 
 defineEmits<{
-  // the value is user fullname
+  // the value is serviceAccounts/{email}
   (event: "update:value", value: string[] | string | undefined): void;
 }>();
 
-const userStore = useUserStore();
+const serviceAccountStore = useServiceAccountStore();
 
-const hasPermission = computed(() => hasWorkspacePermissionV2("bb.users.list"));
+const hasPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.serviceAccounts.list")
+);
 
-const getFilter = (search: string): UserFilter => {
-  const filter = [];
-  if (search) {
-    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
-  }
-  const allowedType = [UserType.USER];
-  if (props.includeSystemBot) {
-    allowedType.push(UserType.SYSTEM_BOT);
-  }
-
-  return {
-    query: search,
-    project: props.projectName,
-    types: allowedType,
-  };
-};
-
-const getOption = (user: User): ResourceSelectOption<User> => ({
-  resource: user,
-  value: getUserFullNameByType(user),
-  label: user.title,
+const getOption = (
+  serviceAccount: ServiceAccount
+): ResourceSelectOption<ServiceAccount> => ({
+  resource: serviceAccount,
+  value: serviceAccount.name,
+  label: serviceAccount.title,
 });
 
 const additionalOptions = computedAsync(async () => {
-  const options: ResourceSelectOption<User>[] = [];
-  if (props.includeAllUsers) {
-    options.push(getOption(allUsersUser()));
-  }
+  const options: ResourceSelectOption<ServiceAccount>[] = [];
 
-  let userEmails: string[] = [];
+  let names: string[] = [];
   if (Array.isArray(props.value)) {
-    userEmails = props.value;
+    names = props.value;
   } else if (props.value) {
-    userEmails = [props.value];
+    names = [props.value];
   }
 
-  // Ensure users are fetched into store
-  await userStore.batchGetOrFetchUsers(userEmails);
-
-  // Get all users from store
-  for (const email of userEmails) {
-    const user = userStore.getUserByIdentifier(email);
-    if (user) {
-      options.push(getOption(user));
+  for (const name of names) {
+    const serviceAccount = await serviceAccountStore.getOrFetchServiceAccount(
+      name,
+      true
+    );
+    if (serviceAccount) {
+      options.push(getOption(serviceAccount));
     }
   }
 
@@ -111,20 +89,24 @@ const handleSearch = async (params: {
   pageToken: string;
   pageSize: number;
 }) => {
-  const filter = getFilter(params.search);
+  const { serviceAccounts, nextPageToken } =
+    await serviceAccountStore.listServiceAccounts({
+      pageSize: params.pageSize,
+      pageToken: params.pageToken,
+      showDeleted: false,
+      filter: {
+        query: params.search.toLowerCase(),
+      },
+    });
 
-  const { users, nextPageToken } = await userStore.fetchUserList({
-    filter,
-    pageToken: params.pageToken,
-    pageSize: params.pageSize,
-  });
   return {
     nextPageToken,
-    options: users.map(getOption),
+    options: serviceAccounts.map(getOption),
   };
 };
 
-const customLabel = (user: User, keyword: string) => {
+const customLabel = (serviceAccount: ServiceAccount, keyword: string) => {
+  const user = serviceAccountToUser(serviceAccount);
   return (
     <UserNameCell
       user={user}
@@ -140,7 +122,9 @@ const customLabel = (user: User, keyword: string) => {
       {{
         suffix: () => (
           <span class="textinfolabel truncate">
-            (<HighlightLabelText keyword={keyword} text={user.email} />)
+            (
+            <HighlightLabelText keyword={keyword} text={serviceAccount.email} />
+            )
           </span>
         ),
       }}

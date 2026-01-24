@@ -87,6 +87,9 @@ func (x *ListWorkloadIdentitiesRequest) Equal(y *ListWorkloadIdentitiesRequest) 
 	if x.ShowDeleted != y.ShowDeleted {
 		return false
 	}
+	if x.Filter != y.Filter {
+		return false
+	}
 	return true
 }
 

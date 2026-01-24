@@ -144,12 +144,18 @@ func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, re
 	}
 	limitPlusOne := offset.limit + 1
 
+	filterResult, err := store.GetAccountListFilter(request.Msg.Filter)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// List workload identities using the store method with project filtering
 	wis, err := s.store.ListWorkloadIdentities(ctx, &store.FindWorkloadIdentityMessage{
 		Project:     projectID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
+		FilterQ:     filterResult.Query,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list workload identities"))

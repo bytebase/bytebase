@@ -539,6 +539,8 @@
       "revoke-allusers-alert": "Revocar \"@:{'settings.members.all-users'}\" revocará los roles relacionados de todos los demás usuarios de su espacio de trabajo. ¿Desea continuar?",
       "grant-access": "Conceder acceso",
       "select-user": "Seleccionar usuario | Seleccionar usuarios",
+      "select-service-account": "Seleccionar cuenta de servicio | Seleccionar cuentas de servicio",
+      "select-workload-identity": "Seleccionar identidad de carga de trabajo | Seleccionar identidades de carga de trabajo",
       "select-group": "Seleccionar grupo | Seleccionar grupos",
       "select-in-project": "Seleccione usuarios o grupos en {project}",
       "select-role": "Seleccionar rol | Seleccionar roles",
