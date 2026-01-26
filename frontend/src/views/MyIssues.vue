@@ -29,7 +29,7 @@
 
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
@@ -83,9 +83,17 @@ const defaultSearchParams = (): SearchParams => {
   };
 };
 
-// Initialize with empty params - AdvancedSearch will set from cache or defaults
+// Initialize params synchronously: URL params take precedence, otherwise use defaults
+const getInitialParams = (): SearchParams => {
+  const queryString = route.query.q as string;
+  if (queryString) {
+    return buildSearchParamsBySearchText(queryString);
+  }
+  return defaultSearchParams();
+};
+
 const state = reactive<LocalState>({
-  params: { query: "", scopes: [] },
+  params: getInitialParams(),
 });
 
 // Always provide defaultParams for AdvancedSearch to use as fallback
@@ -127,22 +135,8 @@ const isDefaultPreset = (params: SearchParams): boolean => {
   return paramsQuery === defaultQuery;
 };
 
-// Track the initial URL query string to distinguish between user-provided URLs
-// and programmatic navigation to default state
-const initialQueryString = ref<string | null>(null);
-
-// Initialize params from URL query on mount
-onMounted(() => {
-  const queryString = route.query.q as string;
-  initialQueryString.value = queryString || null;
-
-  if (queryString) {
-    const urlParams = buildSearchParamsBySearchText(queryString);
-    // Use URL params directly, don't merge with defaults
-    state.params = urlParams;
-  }
-  // No else - keep URL clean for default preset
-});
+// Track initial URL query to distinguish user-provided URLs from programmatic navigation
+const initialQueryString = (route.query.q as string) || null;
 
 // Sync params to URL query when params change
 let isUpdatingFromUrl = false;
@@ -159,7 +153,7 @@ watch(
     // Only update URL if query string has actually changed
     if (queryString !== currentQuery) {
       // Special case: if at default preset and we didn't start with a URL, keep URL clean
-      if (isDefaultPreset(params) && !initialQueryString.value) {
+      if (isDefaultPreset(params) && !initialQueryString) {
         // Remove URL query
         if (route.query.q) {
           isUpdatingFromUrl = true;

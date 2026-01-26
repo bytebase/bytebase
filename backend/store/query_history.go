@@ -145,19 +145,13 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		q.Space("OFFSET ?", *v)
 	}
 
-	sql, args, err := q.ToSQL()
+	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	var queryHistories []*QueryHistoryMessage
-	rows, err := tx.QueryContext(ctx, sql, args...)
+	rows, err := s.GetDB().QueryContext(ctx, sqlStr, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -188,10 +182,6 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		queryHistories = append(queryHistories, queryHistory)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
