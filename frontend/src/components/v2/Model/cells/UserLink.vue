@@ -42,6 +42,6 @@ const isEndUser = computed(
 
 const isLink = computed(
   () =>
-    props.link && isEndUser.value && hasWorkspacePermissionV2("bb.users.get")
+    props.email && props.link && isEndUser.value && hasWorkspacePermissionV2("bb.users.get")
 );
 </script>
