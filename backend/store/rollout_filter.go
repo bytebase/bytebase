@@ -45,6 +45,18 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 					q.And("?", qq)
 				}
 				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				switch variable {
+				case "release":
+					releaseName, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("release value must be a string")
+					}
+					return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = ?)", releaseName), nil
+				default:
+					return nil, errors.Errorf("unsupported variable %q for == operator", variable)
+				}
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {

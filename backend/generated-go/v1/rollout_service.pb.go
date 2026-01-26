@@ -778,10 +778,12 @@ type ListRolloutsRequest struct {
 	// Supported filters:
 	// - update_time: rollout update time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	// - task_type: the task type, support "in" operator, check the Task.Type enum for the values.
+	// - release: the release resource name in "projects/{project}/releases/{release}" format, support "==" operator. Filters rollouts that reference the specified release.
 	//
 	// For example:
 	// update_time >= "2025-01-02T15:04:05Z07:00"
 	// task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
+	// release == "projects/myproject/releases/123"
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

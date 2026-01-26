@@ -27,6 +27,13 @@ func TestGetListRolloutFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "release filter",
+			filter:   `release == "projects/myproject/releases/123"`,
+			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1))",
+			wantArgs: []any{"projects/myproject/releases/123"},
+			wantErr:  false,
+		},
+		{
 			name:     "task_type in filter",
 			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]`,
 			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)))",
@@ -74,6 +81,23 @@ func TestGetListRolloutFilter(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:     "AND condition with release and task_type",
+			filter:   `release == "projects/myproject/releases/456" && task_type in ["DATABASE_MIGRATE"]`,
+			wantSQL:  "((EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1) AND EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($2))))",
+			wantArgs: []any{"projects/myproject/releases/456", []string{"DATABASE_MIGRATE"}},
+			wantErr:  false,
+		},
+		{
+			name:    "AND condition with release and update_time",
+			filter:  `release == "projects/test/releases/789" && update_time >= "2024-01-01T00:00:00Z"`,
+			wantSQL: "((EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1) AND " + updatedAtSubquery + " >= $2))",
+			wantArgs: []any{"projects/test/releases/789", func() time.Time {
+				ts, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+				return ts
+			}()},
+			wantErr: false,
+		},
+		{
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
@@ -114,6 +138,18 @@ func TestGetListRolloutFilter(t *testing.T) {
 			filter:      `task_type in []`,
 			wantErr:     true,
 			errContains: "empty list value for filter",
+		},
+		{
+			name:        "release with non-string value",
+			filter:      `release == 123`,
+			wantErr:     true,
+			errContains: "release value must be a string",
+		},
+		{
+			name:        "unsupported variable for == operator",
+			filter:      `creator == "test"`,
+			wantErr:     true,
+			errContains: `unsupported variable "creator" for == operator`,
 		},
 	}
 
