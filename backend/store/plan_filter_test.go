@@ -102,6 +102,34 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "release filter",
+			filter:   `release == "projects/myproject/releases/123"`,
+			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1))",
+			wantArgs: []any{"projects/myproject/releases/123"},
+			wantErr:  false,
+		},
+		{
+			name:     "release filter with has_rollout",
+			filter:   `release == "projects/myproject/releases/456" && has_rollout == true`,
+			wantSQL:  "((EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1) AND plan.config->>'hasRollout' = $2))",
+			wantArgs: []any{"projects/myproject/releases/456", "true"},
+			wantErr:  false,
+		},
+		{
+			name:     "release filter with state",
+			filter:   `release == "projects/test/releases/789" && state == "STATE_ACTIVE"`,
+			wantSQL:  "((EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1) AND plan.deleted = $2))",
+			wantArgs: []any{"projects/test/releases/789", false},
+			wantErr:  false,
+		},
+		{
+			name:     "release filter with has_issue",
+			filter:   `release == "projects/proj/releases/abc" && has_issue == true`,
+			wantSQL:  "((EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1) AND issue.id IS NOT NULL))",
+			wantArgs: []any{"projects/proj/releases/abc"},
+			wantErr:  false,
+		},
+		{
 			name:    "create_time greater than or equal",
 			filter:  `create_time >= "2024-01-01T00:00:00Z"`,
 			wantSQL: "(plan.created_at >= $1)",
@@ -177,6 +205,12 @@ func TestGetListPlanFilter(t *testing.T) {
 			filter:      `has_issue == "true"`,
 			wantErr:     true,
 			errContains: `"has_issue" should be bool`,
+		},
+		{
+			name:        "release with non-string value",
+			filter:      `release == 123`,
+			wantErr:     true,
+			errContains: "release value must be a string",
 		},
 		{
 			name:        "invalid time format",

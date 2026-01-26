@@ -21324,6 +21324,7 @@ Supported filters:
 - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match.
 - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
 - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
+- release: the release resource name in &#34;projects/{project}/releases/{release}&#34; format, support &#34;==&#34; operator. Filters plans that reference the specified release.
 
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
@@ -21331,7 +21332,8 @@ has_rollout == false &amp;&amp; has_issue == true
 title == &#34;My Plan&#34;
 title.matches(&#34;database migration&#34;)
 spec_type == &#34;change_database_config&#34;
-state == &#34;ACTIVE&#34; </p></td>
+state == &#34;ACTIVE&#34;
+release == &#34;projects/myproject/releases/123&#34; </p></td>
                 </tr>
               
             </tbody>

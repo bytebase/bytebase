@@ -206,6 +206,7 @@ type ListPlansRequest struct {
 	// - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
 	// - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
 	// - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
+	// - release: the release resource name in "projects/{project}/releases/{release}" format, support "==" operator. Filters plans that reference the specified release.
 	//
 	// For example:
 	// creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
@@ -214,6 +215,7 @@ type ListPlansRequest struct {
 	// title.matches("database migration")
 	// spec_type == "change_database_config"
 	// state == "ACTIVE"
+	// release == "projects/myproject/releases/123"
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

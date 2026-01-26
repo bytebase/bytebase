@@ -350,6 +350,12 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return nil, errors.Errorf("invalid state filter %q", value)
 					}
 					return qb.Q().Space("plan.deleted = ?", v1pb.State(v1State) == v1pb.State_DELETED), nil
+				case "release":
+					releaseName, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("release value must be a string")
+					}
+					return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = ?)", releaseName), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
