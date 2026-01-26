@@ -7,9 +7,11 @@
     </span>
     <template v-if="changelogSourceSchema">
       <NTag round @click="gotoDatabase">
-        <span class="opacity-60 mr-1">{{ t("common.database") }}</span>
-        <EngineIcon custom-class="inline-flex w-4 h-auto" :engine="engine" />
-        <span>{{ extractDatabaseResourceName(databaseFromChangelog.name).databaseName }}</span>
+        <div class="flex items-center gap-x-1">
+          <span class="opacity-60">{{ t("common.database") }}</span>
+          <EngineIcon custom-class="inline-flex w-4 h-auto" :engine="engine" />
+          <span>{{ extractDatabaseResourceName(databaseFromChangelog.name).databaseName }}</span>
+        </div>
       </NTag>
       <NTag round @click="gotoChangelog">
         <span class="opacity-60 mr-1">{{ t("common.changelog") }}</span>
