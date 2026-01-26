@@ -773,6 +773,8 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 		"Source-specific rule should take priority over fallback even when fallback is first in list")
 }
 
+// TestSelfApprovalBlocked tests that when a project has allowSelfApproval disabled,
+// the issue creator cannot approve or reject their own issue, but another eligible user can.
 func TestSelfApprovalBlocked(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -783,22 +785,25 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Ensure self-approval is enabled for database creation
-	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	// Create a dedicated project (initially with self-approval enabled for database creation)
+	projectID := generateRandomString("self-approval-test")
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:              ctl.project.Name,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
 			AllowSelfApproval: true,
 		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+		ProjectId: projectID,
 	}))
 	a.NoError(err)
+	project := projectResp.Msg
 
-	// Create instance and database FIRST (before disabling self-approval)
+	// Create instance
 	instanceDir := t.TempDir()
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Test Instance",
+			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
 			Environment: stringPtr("environments/prod"),
 			Activation:  true,
@@ -811,51 +816,22 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	// Create database in the dedicated project
 	dbName := generateRandomString("db")
-	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
-	// Create a second user who will create the issue
-	creatorEmail := "creator@example.com"
-	creatorPassword := "1024bytebase"
-	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
-		User: &v1pb.User{
-			Email:    creatorEmail,
-			Password: creatorPassword,
-			Title:    "Creator",
-			UserType: v1pb.UserType_USER,
-		},
-	}))
-	a.NoError(err)
-
-	// Grant creator projectDeveloper role
-	projectID := strings.TrimPrefix(ctl.project.Name, "projects/")
-	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
-		Resource: ctl.project.Name,
-	}))
-	a.NoError(err)
-	policy := policyResp.Msg
-	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
-		Role:    "roles/projectDeveloper",
-		Members: []string{fmt.Sprintf("user:%s", creatorEmail)},
-	})
-	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Resource: ctl.project.Name,
-		Policy:   policy,
-	}))
-	a.NoError(err)
-
-	// Disable self-approval for the project (after database creation)
+	// Now disable self-approval for the test
 	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
-			Name:              ctl.project.Name,
+			Name:              project.Name,
 			AllowSelfApproval: false,
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
 	}))
 	a.NoError(err)
 
-	// Create approval rule requiring projectDeveloper
+	// Create approval rule requiring projectOwner for this project
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
@@ -870,9 +846,9 @@ func TestSelfApprovalBlocked(t *testing.T) {
 									Expression: fmt.Sprintf(`resource.project_id == "%s"`, projectID),
 								},
 								Template: &v1pb.ApprovalTemplate{
-									Title: "Developer Approval",
+									Title: "Project Owner Approval",
 									Flow: &v1pb.ApprovalFlow{
-										Roles: []string{"roles/projectDeveloper"},
+										Roles: []string{"roles/projectOwner"},
 									},
 								},
 							},
@@ -884,26 +860,17 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// Login as creator
-	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-		Email:    creatorEmail,
-		Password: creatorPassword,
-	}))
-	a.NoError(err)
-	ctl.authInterceptor.token = loginResp.Msg.Token
-
-	// Create sheet
+	// demo@example.com creates the issue (already has projectOwner role as project creator)
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
-		Parent: ctl.project.Name,
+		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
 			Content: []byte("CREATE TABLE self_approval_test (id INTEGER PRIMARY KEY);"),
 		},
 	}))
 	a.NoError(err)
 
-	// Create plan
 	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
-		Parent: ctl.project.Name,
+		Parent: project.Name,
 		Plan: &v1pb.Plan{
 			Title: "Self Approval Test Plan",
 			Specs: []*v1pb.Plan_Spec{{
@@ -919,9 +886,8 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// Create issue as creator
 	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
-		Parent: ctl.project.Name,
+		Parent: project.Name,
 		Issue: &v1pb.Issue{
 			Title:       "Self Approval Test Issue",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
@@ -949,10 +915,67 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	a.NotNil(issue)
 	a.Equal(v1pb.Issue_PENDING, issue.ApprovalStatus)
 
-	// Try to approve as creator (should fail)
+	// Try to approve as creator (should fail due to self-approval restriction)
 	_, err = ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
 		Name: issue.Name,
 	}))
 	a.Error(err, "Self-approval should be blocked")
 	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// Try to reject as creator (should fail due to self-approval restriction)
+	_, err = ctl.issueServiceClient.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{
+		Name: issue.Name,
+	}))
+	a.Error(err, "Self-reject should be blocked")
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// Create another project owner who can approve
+	approverEmail := fmt.Sprintf("approver-%s@example.com", projectID)
+	approverPassword := "1024bytebase"
+	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    approverEmail,
+			Password: approverPassword,
+			Title:    "Approver",
+			UserType: v1pb.UserType_USER,
+		},
+	}))
+	a.NoError(err)
+
+	// Grant approver projectOwner role via project IAM
+	approverPolicyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: project.Name,
+	}))
+	a.NoError(err)
+	approverPolicy := approverPolicyResp.Msg
+	approverPolicy.Bindings = append(approverPolicy.Bindings, &v1pb.Binding{
+		Role:    "roles/projectOwner",
+		Members: []string{fmt.Sprintf("user:%s", approverEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: project.Name,
+		Policy:   approverPolicy,
+	}))
+	a.NoError(err)
+
+	// Login as approver
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    approverEmail,
+		Password: approverPassword,
+	}))
+	a.NoError(err)
+	ctl.authInterceptor.token = loginResp.Msg.Token
+
+	// Approve as different user (should succeed)
+	_, err = ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+		Name: issue.Name,
+	}))
+	a.NoError(err, "Approval by different user should succeed")
+
+	// Verify the issue is now approved
+	issueGetResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+		Name: issue.Name,
+	}))
+	a.NoError(err)
+	a.Equal(v1pb.Issue_APPROVED, issueGetResp.Msg.ApprovalStatus)
 }
