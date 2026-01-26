@@ -47,7 +47,8 @@ export interface ContextBuilderInput {
 
 function computeIsApprovalCandidate(
   issue: Issue | undefined,
-  currentUser: User
+  currentUser: User,
+  project: Project
 ): boolean {
   if (!issue) return false;
 
@@ -77,7 +78,16 @@ function computeIsApprovalCandidate(
   if (!currentRole) return false;
 
   const candidates = candidatesOfApprovalStepV1(issue, currentRole);
-  return isUserIncludedInList(currentUser.email, candidates);
+  if (!isUserIncludedInList(currentUser.email, candidates)) return false;
+
+  // Block self-approval even when matched via ALL_USERS
+  if (
+    !project.allowSelfApproval &&
+    currentUser.email === extractUserId(issue.creator)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function computeExportArchiveReady(
@@ -184,7 +194,11 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     (issue ? currentUserEmail === extractUserId(issue.creator) : false);
 
   // Compute permissions
-  const isApprovalCandidate = computeIsApprovalCandidate(issue, currentUser);
+  const isApprovalCandidate = computeIsApprovalCandidate(
+    issue,
+    currentUser,
+    project
+  );
   const permissions: ActionPermissions = {
     updatePlan:
       currentUserEmail === extractUserId(plan.creator || "") ||
