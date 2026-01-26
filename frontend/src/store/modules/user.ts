@@ -87,6 +87,7 @@ export const useUserStore = defineStore("user", () => {
     pageSize: number;
     pageToken?: string;
     filter?: UserFilter;
+    showDeleted?: boolean;
   }): Promise<{
     users: User[];
     nextPageToken: string;
@@ -98,7 +99,8 @@ export const useUserStore = defineStore("user", () => {
       };
     }
 
-    const showDeleted = params.filter?.state === State.DELETED;
+    const showDeleted =
+      params.showDeleted ?? params.filter?.state === State.DELETED;
     const request = create(ListUsersRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
