@@ -108,6 +108,7 @@ const scopeOptions = computed((): ScopeOption[] => {
           .fetchUserList({
             pageToken: nextPageToken,
             pageSize: getDefaultPagination(),
+            showDeleted: true,
             filter: {
               types: [UserType.USER],
               query: keyword,
