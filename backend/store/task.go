@@ -232,7 +232,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 	return tasks, nil
 }
 
-func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*TaskMessage, error) {
+func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*TaskMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			task.id,
@@ -355,7 +355,7 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 	}
 	defer tx.Rollback()
 
-	tasks, err := s.listTasksTx(ctx, tx, find)
+	tasks, err := s.listTasksImpl(ctx, tx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list tasks")
 	}
@@ -393,7 +393,7 @@ func (s *Store) CreateTasks(ctx context.Context, planUID int64, tasks []*TaskMes
 	defer tx.Rollback()
 
 	// Check existing tasks to avoid duplicates
-	existingTasks, err := s.listTasksTx(ctx, tx, &TaskFind{
+	existingTasks, err := s.listTasksImpl(ctx, tx, &TaskFind{
 		PlanID: &planUID,
 	})
 	if err != nil {
