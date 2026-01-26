@@ -612,6 +612,10 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot approve because the user does not have the required permission"))
 	}
 
+	if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == user.Email {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot approve because self-approval is not allowed for this project"))
+	}
+
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
 		Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
 		Principal: common.FormatUserEmail(user.Email),

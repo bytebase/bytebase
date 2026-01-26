@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -770,4 +771,188 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 	a.NotNil(issue.ApprovalTemplate)
 	a.Equal("Source Specific Rule (should be used)", issue.GetApprovalTemplate().GetTitle(),
 		"Source-specific rule should take priority over fallback even when fallback is first in list")
+}
+
+func TestSelfApprovalBlocked(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Ensure self-approval is enabled for database creation
+	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:              ctl.project.Name,
+			AllowSelfApproval: true,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+	}))
+	a.NoError(err)
+
+	// Create instance and database FIRST (before disabling self-approval)
+	instanceDir := t.TempDir()
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			Title:       "Test Instance",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: stringPtr("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{
+				Type: v1pb.DataSourceType_ADMIN,
+				Host: instanceDir,
+				Id:   "admin",
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	dbName := generateRandomString("db")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	a.NoError(err)
+
+	// Create a second user who will create the issue
+	creatorEmail := "creator@example.com"
+	creatorPassword := "1024bytebase"
+	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Email:    creatorEmail,
+			Password: creatorPassword,
+			Title:    "Creator",
+			UserType: v1pb.UserType_USER,
+		},
+	}))
+	a.NoError(err)
+
+	// Grant creator projectDeveloper role
+	projectID := strings.TrimPrefix(ctl.project.Name, "projects/")
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	policy := policyResp.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    "roles/projectDeveloper",
+		Members: []string{fmt.Sprintf("user:%s", creatorEmail)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policy,
+	}))
+	a.NoError(err)
+
+	// Disable self-approval for the project (after database creation)
+	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:              ctl.project.Name,
+			AllowSelfApproval: false,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+	}))
+	a.NoError(err)
+
+	// Create approval rule requiring projectDeveloper
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
+						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
+							{
+								Source: v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED,
+								Condition: &expr.Expr{
+									Expression: fmt.Sprintf(`resource.project_id == "%s"`, projectID),
+								},
+								Template: &v1pb.ApprovalTemplate{
+									Title: "Developer Approval",
+									Flow: &v1pb.ApprovalFlow{
+										Roles: []string{"roles/projectDeveloper"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	// Login as creator
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    creatorEmail,
+		Password: creatorPassword,
+	}))
+	a.NoError(err)
+	ctl.authInterceptor.token = loginResp.Msg.Token
+
+	// Create sheet
+	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet: &v1pb.Sheet{
+			Content: []byte("CREATE TABLE self_approval_test (id INTEGER PRIMARY KEY);"),
+		},
+	}))
+	a.NoError(err)
+
+	// Create plan
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan: &v1pb.Plan{
+			Title: "Self Approval Test Plan",
+			Specs: []*v1pb.Plan_Spec{{
+				Id: uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)},
+						Sheet:   sheet.Msg.Name,
+					},
+				},
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	// Create issue as creator
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: ctl.project.Name,
+		Issue: &v1pb.Issue{
+			Title:       "Self Approval Test Issue",
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Description: "Testing self-approval is blocked",
+			Plan:        planResp.Msg.Name,
+		},
+	}))
+	a.NoError(err)
+
+	// Wait for approval finding to complete
+	var issue *v1pb.Issue
+	for i := 0; i < 5; i++ {
+		if i > 0 {
+			time.Sleep(3 * time.Second)
+		}
+		issueGetResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+			Name: issueResp.Msg.Name,
+		}))
+		a.NoError(err)
+		issue = issueGetResp.Msg
+		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+			break
+		}
+	}
+	a.NotNil(issue)
+	a.Equal(v1pb.Issue_PENDING, issue.ApprovalStatus)
+
+	// Try to approve as creator (should fail)
+	_, err = ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+		Name: issue.Name,
+	}))
+	a.Error(err, "Self-approval should be blocked")
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
 }
