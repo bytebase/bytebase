@@ -93,8 +93,8 @@ const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 const {
   state: selectionState,
   disabled: selectionDisabled,
-  selectCell,
-  selectRow,
+  toggleSelectCell,
+  toggleSelectRow,
 } = useSelectionContext();
 const wrapperRef = ref<HTMLDivElement>();
 const cellRef = ref<HTMLDivElement>();
@@ -228,9 +228,9 @@ const handleClick = (e: MouseEvent) => {
   }
   // If the user is holding the ctrl/cmd key, select the row.
   if (e.ctrlKey || e.metaKey) {
-    selectRow(props.rowIndex);
+    toggleSelectRow(props.rowIndex);
   } else {
-    selectCell(props.rowIndex, props.colIndex);
+    toggleSelectCell(props.rowIndex, props.colIndex);
   }
   e.stopPropagation();
 };

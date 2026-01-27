@@ -48,7 +48,7 @@
                 selectionState.columns.includes(columnIndex),
             }"
             v-bind="tableResize.getColumnProps(columnIndex + 1)"
-            @click.stop="selectColumn(columnIndex)"
+            @click="e => handleSelectColumn(e, columnIndex)"
           >
             <div class="flex items-center overflow-hidden">
               <span class="flex flex-row items-center select-none">
@@ -133,7 +133,7 @@
               'border-r': true,
               'border-b': true,
               'bg-accent/10! dark:bg-accent/40!': activeRowIndex === rowIndex,
-              'bg-accent/20! dark:bg-accent/40!': selectionState.rows.includes(rowIndex)
+              'bg-accent/20! dark:bg-accent/40!': selectionState.columns.length === 0 && selectionState.rows.includes(rowIndex)
             }"
             :data-col-index="0"
             :style="{
@@ -162,9 +162,7 @@
                     rowIndex
                   ),
               }"
-              @click.prevent.stop="
-                selectRow(rowIndex)
-              "
+              @click="e => handleSelectRow(e, rowIndex)"
             ></div>
           </div>
 
@@ -211,8 +209,9 @@
 
 <script lang="ts" setup>
 import { useWindowSize, watchDebounced } from "@vueuse/core";
+import { head, last } from "lodash-es";
 import { NPerformantEllipsis, NVirtualList } from "naive-ui";
-import { nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
@@ -271,8 +270,9 @@ const handleHeaderClick = (columnIndex: number) => {
 const {
   state: selectionState,
   disabled: selectionDisabled,
-  selectColumn,
-  selectRow,
+  toggleSelectColumn,
+  toggleSelectRow,
+  deselect,
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
@@ -297,6 +297,64 @@ const getRowCellContent = (columnIndex: number): string | undefined => {
     }
   }
   return undefined;
+};
+
+const hasRowSelect = computed(() => {
+  return (
+    selectionState.value.columns.length === 0 &&
+    selectionState.value.rows.length > 0
+  );
+});
+
+const handleSelectRow = (e: MouseEvent, index: number) => {
+  e.stopPropagation();
+
+  if ((e.metaKey || e.ctrlKey) && hasRowSelect.value) {
+    const firstRowIndex = head(selectionState.value.rows);
+    const lastRowIndex = last(selectionState.value.rows);
+    if (lastRowIndex !== undefined && index > lastRowIndex) {
+      for (let i = lastRowIndex + 1; i <= index; i++) {
+        toggleSelectRow(i);
+      }
+    } else if (firstRowIndex !== undefined && index < firstRowIndex) {
+      deselect();
+      for (let i = index; i <= firstRowIndex; i++) {
+        toggleSelectRow(i);
+      }
+    }
+    return;
+  }
+
+  toggleSelectRow(index);
+};
+
+const hasColumnSelect = computed(() => {
+  return (
+    selectionState.value.columns.length > 0 &&
+    selectionState.value.rows.length === 0
+  );
+});
+
+const handleSelectColumn = (e: MouseEvent, index: number) => {
+  e.stopPropagation();
+
+  if ((e.metaKey || e.ctrlKey) && hasColumnSelect.value) {
+    const firstColumnIndex = head(selectionState.value.columns);
+    const lastColumnIndex = last(selectionState.value.columns);
+    if (lastColumnIndex !== undefined && index > lastColumnIndex) {
+      for (let i = lastColumnIndex + 1; i <= index; i++) {
+        toggleSelectColumn(i);
+      }
+    } else if (firstColumnIndex !== undefined && index < firstColumnIndex) {
+      deselect();
+      for (let i = index; i <= firstColumnIndex; i++) {
+        toggleSelectColumn(i);
+      }
+    }
+    return;
+  }
+
+  toggleSelectColumn(index);
 };
 
 const tableResize = useTableColumnWidthLogic({
