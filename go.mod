@@ -32,7 +32,7 @@ require (
 	github.com/beltran/gohive/v2 v2.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.9.2
-	github.com/bytebase/gomongo v0.0.0-20260123064557-5e3ae906bb2c
+	github.com/bytebase/gomongo v0.0.0-20260127074220-ca70aee87419
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3

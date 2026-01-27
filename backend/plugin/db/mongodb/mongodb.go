@@ -278,10 +278,15 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 func (*Driver) convertGomongoResult(res *gomongo.Result, statement string, startTime time.Time) []*v1pb.QueryResult {
 	rows := []*v1pb.QueryRow{}
-	for _, r := range res.Rows {
+	for _, v := range res.Value {
+		str, err := marshalValueToExtJSON(v)
+		if err != nil {
+			slog.Error("failed to marshal gomongo result value", log.BBError(err))
+			str = fmt.Sprintf("%v", v)
+		}
 		rows = append(rows, &v1pb.QueryRow{
 			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_StringValue{StringValue: r}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: str}},
 			},
 		})
 	}
@@ -290,10 +295,29 @@ func (*Driver) convertGomongoResult(res *gomongo.Result, statement string, start
 		ColumnNames:     []string{"result"},
 		ColumnTypeNames: []string{"TEXT"},
 		Rows:            rows,
-		RowsCount:       int64(res.RowCount),
+		RowsCount:       int64(len(res.Value)),
 		Latency:         durationpb.New(time.Since(startTime)),
 		Statement:       statement,
 	}}
+}
+
+// marshalValueToExtJSON marshals a value to Extended JSON (relaxed) format.
+// The frontend expects each row to be a JSON object with key-value pairs,
+// so primitive values are wrapped in an object with a "value" key.
+func marshalValueToExtJSON(v any) (string, error) {
+	var toMarshal any
+	switch val := v.(type) {
+	case string, int64, bool:
+		// For primitive results, wrap as JSON object
+		toMarshal = bson.M{"value": val}
+	default:
+		toMarshal = val
+	}
+	jsonBytes, err := bson.MarshalExtJSON(toMarshal, false, false)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }
 
 func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, queryContext db.QueryContext, startTime time.Time) ([]*v1pb.QueryResult, error) {

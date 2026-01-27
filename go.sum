@@ -857,8 +857,8 @@ github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c h1:scJ4ycKuUAaA
 github.com/bytebase/gh-ost2 v1.1.7-0.20251002210738-35e5dddaad7c/go.mod h1:X0CGYwIZUnjfrv02/nBlftxqSBMm4mYJzFwiyn2D4d8=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898/go.mod h1:2KhUz4GSLcdJGXSJMXAf2BjmakcgoOkNyPpHdGAxRpY=
-github.com/bytebase/gomongo v0.0.0-20260123064557-5e3ae906bb2c h1:e1yWka4+s62d7rInxzkJZXmeu5ntH66TqLilqOuqqUE=
-github.com/bytebase/gomongo v0.0.0-20260123064557-5e3ae906bb2c/go.mod h1:tmnMdRvFw6R4jYLWnPCtGMsCh2McnCXBLW4ZonyShsE=
+github.com/bytebase/gomongo v0.0.0-20260127074220-ca70aee87419 h1:1c35jlaOeYDpok/IUHKsYnd3UVXN8BMXJO0jAy9VvF0=
+github.com/bytebase/gomongo v0.0.0-20260127074220-ca70aee87419/go.mod h1:tmnMdRvFw6R4jYLWnPCtGMsCh2McnCXBLW4ZonyShsE=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/parser v0.0.0-20260123082732-e9723d1469a0 h1:a8xGDaGm0w1AgPgZSO5eqJcuSjeut8jDMrVfyaVLyII=
