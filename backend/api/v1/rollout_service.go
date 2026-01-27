@@ -245,6 +245,34 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+
+	// Fetch issue associated with this plan (if any)
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectID: &projectID,
+		PlanUID:   &planID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
+	}
+
+	// Check permission: allow if user has bb.rollouts.create permission
+	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.RolloutsCreate, user, project.ResourceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
+	}
+
+	if !hasPermission {
+		// Allow data export issue creators to create rollout for their own issues
+		if issue == nil || issue.Type != storepb.Issue_DATABASE_EXPORT || issue.CreatorEmail != user.Email {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied to create rollout"))
+		}
+	}
+
+
 	tasks, err := GetPipelineCreate(ctx, s.store, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get pipeline create"))
@@ -256,7 +284,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
-	if err := CreateRolloutAndPendingTasks(ctx, s.store, plan, nil, project, tasks); err != nil {
+	if err := CreateRolloutAndPendingTasks(ctx, s.store, plan, issue, project, tasks); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
