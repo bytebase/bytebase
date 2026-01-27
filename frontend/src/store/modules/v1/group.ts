@@ -16,7 +16,7 @@ import {
   UpdateGroupRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { groupNamePrefix } from "./common";
+import { extractGroupEmail, groupNamePrefix } from "./common";
 
 export interface GroupFilter {
   query?: string;
@@ -34,11 +34,6 @@ const getListGroupFilter = (params: GroupFilter) => {
   }
 
   return filter.join(" && ");
-};
-
-export const extractGroupEmail = (emailResource: string) => {
-  const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
-  return matches?.[1] ?? emailResource;
 };
 
 export const ensureGroupIdentifier = (id: string) => {
@@ -70,6 +65,12 @@ export const useGroupStore = defineStore("group", () => {
     groups: Group[];
     nextPageToken: string;
   }> => {
+    if (!hasWorkspacePermissionV2("bb.groups.list")) {
+      return {
+        groups: [],
+        nextPageToken: "",
+      };
+    }
     const request = create(ListGroupsRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,

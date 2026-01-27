@@ -15,12 +15,13 @@ export const unknownUser = (name: string = ""): User => {
     name: UNKNOWN_USER_NAME,
     state: State.ACTIVE,
     userType: UserType.USER,
+    title: t("common.unknown"),
   });
   if (name) {
     user.name = name;
     const email = extractUserId(name);
     user.email = email;
-    user.title = email;
+    user.title = email.split("@")[0];
   }
   return user;
 };

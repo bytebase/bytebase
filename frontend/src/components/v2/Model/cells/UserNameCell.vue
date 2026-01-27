@@ -26,22 +26,17 @@
           <NTag v-if="isDeleted" :size="tagSize" type="error" round>
             {{$t("common.deleted")}}
           </NTag>
-          <NTag v-if="user.profile?.source && showSource" :size="tagSize" round type="primary">
-            {{ user.profile.source }}
-          </NTag>
-          <YouTag v-if="currentUserV1.name === user.name" :size="tagSize"/>
-          <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" :size="tagSize"/>
-          <ServiceAccountTag
-            v-if="user.userType === UserType.SERVICE_ACCOUNT"
-            :size="tagSize"
-          />
-          <WorkloadIdentityTag
-            v-if="user.userType === UserType.WORKLOAD_IDENTITY"
-            :size="tagSize"
-          />
-          <NTag v-if="user.mfaEnabled && showMfaEnabled" :size="tagSize" type="success" round>
-            {{ $t("two-factor.enabled") }}
-          </NTag>
+          <template v-else>
+            <NTag v-if="user.profile?.source && showSource" :size="tagSize" round type="info">
+              {{ user.profile.source }}
+            </NTag>
+            <YouTag v-if="currentUserV1.name === user.name" :size="tagSize"/>
+            <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" :size="tagSize"/>
+            <AccountTag :user="user" :size="tagSize" />
+            <NTag v-if="user.mfaEnabled && showMfaEnabled" :size="tagSize" type="success" round>
+              {{ $t("two-factor.enabled") }}
+            </NTag>
+          </template>
         </div>
         <slot name="footer">
           <NEllipsis
@@ -51,7 +46,7 @@
             :tooltip="true"
           >
             <HighlightLabelText
-              class="truncate max-w-40 cursor-pointer"
+              class="truncate max-w-40"
               :keyword="keyword"
               :text="user.email"
             />
@@ -92,9 +87,8 @@
 import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
-import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
+import AccountTag from "@/components/misc/AccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import WorkloadIdentityTag from "@/components/misc/WorkloadIdentityTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton, HighlightLabelText } from "@/components/v2";

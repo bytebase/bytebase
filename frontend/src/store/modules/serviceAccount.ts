@@ -25,6 +25,7 @@ import { extractServiceAccountId, serviceAccountNamePrefix } from "./v1/common";
 
 export interface AccountFilter {
   query?: string;
+  state?: State;
 }
 
 export const getAccountListFilter = (params: AccountFilter) => {
@@ -33,10 +34,13 @@ export const getAccountListFilter = (params: AccountFilter) => {
   if (search) {
     filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
   }
+  if (params.state === State.DELETED) {
+    filter.push(`state == "${State[params.state]}"`);
+  }
   return filter.join(" && ");
 };
 
-const ensureServiceAccountFullName = (identifier: string) => {
+export const ensureServiceAccountFullName = (identifier: string) => {
   const id = extractServiceAccountId(identifier);
   return `${serviceAccountNamePrefix}${id}`;
 };
@@ -83,7 +87,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
         name,
         email,
         state: State.ACTIVE,
-        title: email,
+        title: email.split("@")[0],
       })
     );
   };

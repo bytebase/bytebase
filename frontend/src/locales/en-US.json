@@ -261,7 +261,8 @@
     "line": "Line",
     "column": "Column",
     "apply-to-database": "Apply to database",
-    "unlimited": "Unlimited"
+    "unlimited": "Unlimited",
+    "unknown": "Unknown"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -538,10 +539,8 @@
       "revoke-access-alert": "Are you sure to revoke access?",
       "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "grant-access": "Grant Access",
-      "select-user": "Select user | Select users",
-      "select-service-account": "Select service account | Select service accounts",
-      "select-workload-identity": "Select workload-identity | Select workload identities",
-      "select-group": "Select group | Select groups",
+      "select-account": "Select account | Select accounts",
+      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
       "select-in-project": "Select users or groups in {project}",
       "select-role": "Select role | Select roles",
       "assign-role": "Assign role | Assign roles"

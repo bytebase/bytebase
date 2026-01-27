@@ -31,6 +31,7 @@ import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import {
+  ensureServiceAccountFullName,
   getUserFullNameByType,
   pushNotification,
   serviceAccountToUser,
@@ -160,7 +161,7 @@ const resetServiceKey = () => {
   serviceAccountStore
     .updateServiceAccount(
       {
-        name: user.name,
+        name: ensureServiceAccountFullName(user.email),
       },
       create(FieldMaskSchema, {
         paths: ["service_key"],

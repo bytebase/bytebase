@@ -234,6 +234,24 @@ func GetAccountListFilter(filter string) (*GetAccountListFilterResult, error) {
 			return qb.Q().Space("principal.email = ?", value.(string)), nil
 		case "name":
 			return qb.Q().Space("principal.name = ?", value.(string)), nil
+		case "state":
+			stateStr, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("state value must be string, got %T", value)
+			}
+			// Try with STATE_ prefix first (e.g., "STATE_ACTIVE", "STATE_DELETED")
+			v1State, ok := v1pb.State_value[stateStr]
+			if !ok {
+				// If not found, try without STATE_ prefix (e.g., "ACTIVE", "DELETED")
+				if v, exists := v1pb.State_value[strings.TrimPrefix(stateStr, "STATE_")]; exists {
+					v1State = v
+					ok = true
+				}
+			}
+			if !ok {
+				return nil, errors.Errorf("invalid state filter %q", value)
+			}
+			return qb.Q().Space("principal.deleted = ?", v1pb.State(v1State) == v1pb.State_DELETED), nil
 		default:
 			return nil, errors.Errorf("unsupported variable %q", variable)
 		}

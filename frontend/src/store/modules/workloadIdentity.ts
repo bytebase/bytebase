@@ -27,7 +27,7 @@ import {
   workloadIdentityNamePrefix,
 } from "./v1/common";
 
-const ensureWorkloadIdentityFullName = (identifier: string) => {
+export const ensureWorkloadIdentityFullName = (identifier: string) => {
   const id = extractWorkloadIdentityId(identifier);
   return `${workloadIdentityNamePrefix}${id}`;
 };
@@ -74,7 +74,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         name,
         email,
         state: State.ACTIVE,
-        title: email,
+        title: email.split("@")[0],
       })
     );
   };
@@ -87,7 +87,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     if (cacheByName.value.has(validName)) {
       return cacheByName.value.get(validName)!;
     }
-    const wi = await fetchWorkloadIdentity(name, silent);
+    const wi = await fetchWorkloadIdentity(validName, silent);
     cacheByName.value.set(wi.name, wi);
     return wi;
   };

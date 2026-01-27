@@ -177,10 +177,12 @@ export declare type ListServiceAccountsRequest = Message<"bytebase.v1.ListServic
    * Supported filter:
    * - name: the service account name, support "==" and ".matches()" operator.
    * - email: the service account email, support "==" and ".matches()" operator.
+   * - state: check State enum for values, support "==" operator.
    *
    * For example:
    * name == "ed"
    * name.matches("ed")
+   * state == "DELETED"
    * email == "ed@service.bytebase.com"
    * email.matches("ed")
    *

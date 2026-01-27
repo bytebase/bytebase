@@ -428,7 +428,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { isEqual } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import {
   NButton,
   NCollapseTransition,
@@ -445,6 +445,8 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
+  ensureServiceAccountFullName,
+  ensureWorkloadIdentityFullName,
   getUserFullNameByType,
   pushNotification,
   serviceAccountToUser,
@@ -460,6 +462,7 @@ import {
   getUserEmailInBinding,
   getWorkloadIdentityNameInBinding,
   serviceAccountSuffix,
+  UNKNOWN_USER_NAME,
   unknownUser,
   workloadIdentitySuffix,
 } from "@/types";
@@ -498,7 +501,6 @@ interface LocalState {
 
 const props = defineProps<{
   user?: User;
-  initialUserType?: UserType;
 }>();
 
 const emit = defineEmits<{
@@ -568,7 +570,7 @@ const allowUpdate = computed(() => {
 });
 
 const initialRoles = computed(() => {
-  if (!props.user) {
+  if (!props.user || props.user.name === UNKNOWN_USER_NAME) {
     return [PresetRoleType.WORKSPACE_MEMBER];
   }
 
@@ -649,13 +651,9 @@ watch(
   () => props.user,
   (user) => {
     if (!user) {
-      // Apply initialUserType when creating a new user
-      if (props.initialUserType) {
-        state.user.userType = props.initialUserType;
-      }
       return;
     }
-    state.user = create(UserSchema, user);
+    state.user = cloneDeep(create(UserSchema, user));
     state.roles = [...initialRoles.value];
 
     if (user.userType === UserType.WORKLOAD_IDENTITY) {
@@ -950,7 +948,7 @@ const updateUser = async () => {
     case UserType.WORKLOAD_IDENTITY: {
       const wi = await workloadIdentityStore.updateWorkloadIdentity(
         {
-          name: payload.name,
+          name: ensureWorkloadIdentityFullName(payload.email),
           title: payload.title,
           workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
             providerType: state.wif.providerType,
@@ -968,16 +966,16 @@ const updateUser = async () => {
     }
     case UserType.SERVICE_ACCOUNT: {
       if (updateMask.length > 0) {
-        const se = await serviceAccountStore.updateServiceAccount(
+        const sa = await serviceAccountStore.updateServiceAccount(
           {
-            name: payload.name,
+            name: ensureServiceAccountFullName(payload.email),
             title: payload.title,
           },
           create(FieldMaskSchema, {
             paths: [...updateMask],
           })
         );
-        updatedUser = serviceAccountToUser(se);
+        updatedUser = serviceAccountToUser(sa);
       }
       break;
     }

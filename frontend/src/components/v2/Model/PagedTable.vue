@@ -264,10 +264,12 @@ const updateCache = (items: T[]) => {
   let hasChanges = false;
 
   for (const item of items) {
+    hasChanges = true;
     const index = updated.findIndex((d) => d.name === item.name);
     if (index >= 0) {
       updated[index] = item;
-      hasChanges = true;
+    } else {
+      updated.push(item);
     }
   }
 
