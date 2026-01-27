@@ -119,10 +119,10 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 	query := `
 	SELECT
 		n.nspname AS fk_schema,
-		conrelid::regclass AS fk_table,
+		quote_ident(fk_nsp.nspname) || '.' || quote_ident(fk_cls.relname) AS fk_table,
 		conname AS fk_name,
-		(SELECT nspname FROM pg_namespace JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace WHERE c.confrelid = pg_class.oid) AS fk_ref_schema,
-		confrelid::regclass AS fk_ref_table,
+		ref_nsp.nspname AS fk_ref_schema,
+		quote_ident(ref_nsp.nspname) || '.' || quote_ident(ref_cls.relname) AS fk_ref_table,
 		confdeltype AS delete_option,
 		confupdtype AS update_option,
 		confmatchtype AS match_option,
@@ -130,6 +130,10 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 	FROM
 		pg_constraint c
 		JOIN pg_namespace n ON n.oid = c.connamespace
+		JOIN pg_class fk_cls ON fk_cls.oid = c.conrelid
+		JOIN pg_namespace fk_nsp ON fk_nsp.oid = fk_cls.relnamespace
+		JOIN pg_class ref_cls ON ref_cls.oid = c.confrelid
+		JOIN pg_namespace ref_nsp ON ref_nsp.oid = ref_cls.relnamespace
 	WHERE
 		n.nspname NOT IN('pg_catalog', 'information_schema')
 		AND c.contype = 'f'
