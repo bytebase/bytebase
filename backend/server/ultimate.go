@@ -32,6 +32,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"

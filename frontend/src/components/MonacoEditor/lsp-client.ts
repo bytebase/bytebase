@@ -133,7 +133,8 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
     name: "Bytebase Language Client",
     clientOptions: {
       // use a language id as a document selector
-      documentSelector: ["sql"],
+      // "sql" for SQL-based engines, "javascript" for MongoDB
+      documentSelector: ["sql", "javascript"],
       // Optimize initialization options
       initializationOptions: {
         // Request server to batch/throttle expensive operations
