@@ -455,8 +455,10 @@
     "members": {
       "service-accounts": "Cuentas de Servicio",
       "add-service-account": "Añadir Cuenta de Servicio",
+      "update-service-account": "Actualizar Cuenta de Servicio",
       "workload-identities": "Identidades de Carga de Trabajo",
       "add-workload-identity": "Añadir Identidad de Carga de Trabajo",
+      "update-workload-identity": "Actualizar Identidad de Carga de Trabajo",
       "inactive-users": "Usuarios inactivos",
       "inactive-service-accounts": "Cuentas de servicio inactivas",
       "inactive-workload-identities": "Identidades de carga de trabajo inactivas",

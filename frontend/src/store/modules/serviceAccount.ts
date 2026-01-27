@@ -50,17 +50,20 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
   const cacheByName = ref<Map<string, ServiceAccount>>(new Map());
 
   const listServiceAccounts = async ({
+    parent,
     pageSize,
     pageToken,
     showDeleted,
     filter,
   }: {
+    parent?: string;
     pageSize: number;
     pageToken: string | undefined;
     showDeleted: boolean;
     filter?: AccountFilter;
   }) => {
     const request = create(ListServiceAccountsRequestSchema, {
+      parent: parent ?? "",
       pageSize,
       pageToken,
       showDeleted,
@@ -104,9 +107,11 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
 
   const createServiceAccount = async (
     serviceAccountId: string,
-    serviceAccount: Partial<ServiceAccount>
+    serviceAccount: Partial<ServiceAccount>,
+    parent?: string
   ) => {
     const request = create(CreateServiceAccountRequestSchema, {
+      parent: parent ?? "",
       serviceAccountId,
       serviceAccount: create(
         ServiceAccountSchema,

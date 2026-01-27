@@ -455,8 +455,10 @@
     "members": {
       "service-accounts": "Tài khoản dịch vụ",
       "add-service-account": "Thêm tài khoản dịch vụ",
+      "update-service-account": "Cập nhật tài khoản dịch vụ",
       "workload-identities": "Danh tính Workload",
       "add-workload-identity": "Thêm danh tính Workload",
+      "update-workload-identity": "Cập nhật danh tính Workload",
       "inactive-users": "Người dùng không hoạt động",
       "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
       "inactive-workload-identities": "Danh tính Workload không hoạt động",

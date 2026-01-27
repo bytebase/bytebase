@@ -455,8 +455,10 @@
     "members": {
       "service-accounts": "Service Accounts",
       "add-service-account": "Add Service Account",
+      "update-service-account": "Update Service Account",
       "workload-identities": "Workload Identities",
       "add-workload-identity": "Add Workload Identity",
+      "update-workload-identity": "Update Workload Identity",
       "inactive-users": "Inactive users",
       "inactive-service-accounts": "Inactive service accounts",
       "inactive-workload-identities": "Inactive workload identities",

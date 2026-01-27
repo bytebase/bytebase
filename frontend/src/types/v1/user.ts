@@ -63,6 +63,20 @@ export const getServiceAccountNameInBinding = (email: string) => {
 export const workloadIdentitySuffix = "workload.bytebase.com";
 export const workloadIdentityBindingPrefix = "workloadIdentity:";
 
+export const getServiceAccountSuffix = (projectId?: string) => {
+  if (projectId) {
+    return `${projectId}.service.bytebase.com`;
+  }
+  return serviceAccountSuffix;
+};
+
+export const getWorkloadIdentitySuffix = (projectId?: string) => {
+  if (projectId) {
+    return `${projectId}.workload.bytebase.com`;
+  }
+  return workloadIdentitySuffix;
+};
+
 export const getWorkloadIdentityNameInBinding = (name: string) => {
   return `${workloadIdentityBindingPrefix}${name}`;
 };
