@@ -5,34 +5,19 @@ import {
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/router/dashboard/projectV1";
-import {
-  Issue_ApprovalStatus,
-  Issue_Type,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
-import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContext } from "./context";
 
-const ACTIONABLE_TASK_STATUSES = new Set([
-  Task_Status.NOT_STARTED,
-  Task_Status.PENDING,
-  Task_Status.RUNNING,
-  Task_Status.FAILED,
-  Task_Status.CANCELED,
-]);
-
 /**
- * Composable that determines whether the "Ready for Rollout" link should be shown.
+ * Composable that determines whether the "Rollout" link should be shown.
  * This link appears when:
  * - User is not already on the rollout tab
- * - Rollout exists
- * - For plans without issue: always show when rollout exists
- * - For plans with issue: issue is a database change AND
- *   (issue is DONE, OR issue is OPEN and approved with actionable tasks)
+ * - Plan has a rollout (plan.hasRollout is true)
+ * - Rollout does not contain database creation/export tasks
  */
 export const useRolloutReadyLink = () => {
   const route = useRoute();
-  const { plan, issue, rollout } = usePlanContext();
+  const { plan, rollout } = usePlanContext();
 
   // Defined inside the function to avoid circular dependency issues
   // when the module is imported before the router is initialized
@@ -52,7 +37,8 @@ export const useRolloutReadyLink = () => {
       return false;
     }
 
-    if (!rollout.value) {
+    // Show if plan has rollout
+    if (!plan.value.hasRollout || !rollout.value) {
       return false;
     }
 
@@ -68,44 +54,7 @@ export const useRolloutReadyLink = () => {
       return false;
     }
 
-    // For plans without issue but with rollout, show the link
-    if (!issue.value && plan.value.hasRollout) {
-      return true;
-    }
-
-    if (!issue.value) {
-      return false;
-    }
-
-    // Only show for database change issues
-    if (issue.value.type !== Issue_Type.DATABASE_CHANGE) {
-      return false;
-    }
-
-    // For DONE issues with rollout, always show link for navigation
-    if (issue.value.status === IssueStatus.DONE) {
-      return true;
-    }
-
-    // For OPEN issues, check if approved and has actionable tasks
-    if (issue.value.status === IssueStatus.OPEN) {
-      // Check if issue is approved or has no approval required (empty flow)
-      const roles = issue.value.approvalTemplate?.flow?.roles ?? [];
-      const noApprovalRequired = roles.length === 0;
-      if (
-        issue.value.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
-        issue.value.approvalStatus !== Issue_ApprovalStatus.SKIPPED &&
-        !noApprovalRequired
-      ) {
-        return false;
-      }
-
-      // Check if there's any task that needs action
-      const allTasks = rollout.value.stages.flatMap((stage) => stage.tasks);
-      return allTasks.some((task) => ACTIONABLE_TASK_STATUSES.has(task.status));
-    }
-
-    return false;
+    return true;
   });
 
   return {
