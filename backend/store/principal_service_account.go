@@ -32,8 +32,6 @@ type FindServiceAccountMessage struct {
 	Offset      *int
 	// Project filters by owning project. Use empty string for workspace-level service accounts.
 	Project *string
-	// FilterQ is the CEL filter query.
-	FilterQ *qb.Query
 }
 
 // CreateServiceAccountMessage is the message for creating a service account.
@@ -84,9 +82,6 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 		} else {
 			where.And("project = ?", *v)
 		}
-	}
-	if v := find.FilterQ; v != nil {
-		where.And("?", v)
 	}
 
 	q := qb.Q().Space(`

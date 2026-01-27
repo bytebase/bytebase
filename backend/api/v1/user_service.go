@@ -55,9 +55,6 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if err := validateEndUserEmail(email); err != nil {
-		return nil, err
-	}
 
 	// Special case for SYSTEM_BOT user which is a built-in resource.
 	// SYSTEM_BOT is stored in principal table with type='SYSTEM_BOT', but GetEndUserByEmail
@@ -86,35 +83,14 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 
 // BatchGetUsers get users in batch.
 func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Request[v1pb.BatchGetUsersRequest]) (*connect.Response[v1pb.BatchGetUsersResponse], error) {
-	// Extract and validate emails from names
-	emails := make([]string, 0, len(request.Msg.Names))
+	response := &v1pb.BatchGetUsersResponse{}
 	for _, name := range request.Msg.Names {
-		email, err := common.GetUserEmail(name)
+		user, err := s.GetUser(ctx, connect.NewRequest(&v1pb.GetUserRequest{Name: name}))
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		if err := validateEndUserEmail(email); err != nil {
 			return nil, err
 		}
-		emails = append(emails, email)
+		response.Users = append(response.Users, user.Msg)
 	}
-
-	// Batch get from store
-	users, err := s.store.BatchGetUsersByEmails(ctx, emails)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
-	}
-
-	// Build a map for quick lookup
-	response := &v1pb.BatchGetUsersResponse{}
-	for _, user := range users {
-		v1User, err := convertToUser(ctx, s.iamManager, user)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
-		}
-		response.Users = append(response.Users, v1User)
-	}
-
 	return connect.NewResponse(response), nil
 }
 
@@ -143,19 +119,21 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	}
 	limitPlusOne := offset.limit + 1
 
+	endUserType := storepb.PrincipalType_END_USER
 	find := &store.FindUserMessage{
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
+		Type:        &endUserType,
 	}
 	filterResult, err := store.GetListUserFilter(request.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	find.FilterQ = filterResult.Query
-	find.ProjectID = filterResult.ProjectID
-	find.UserTypes = &filterResult.UserTypes
-
+	if filterResult != nil {
+		find.FilterQ = filterResult.Query
+		find.ProjectID = filterResult.ProjectID
+	}
 	if v := find.ProjectID; v != nil {
 		user, ok := GetUserFromContext(ctx)
 		if !ok {
@@ -364,9 +342,6 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if err := validateEndUserEmail(email); err != nil {
-		return nil, err
-	}
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
@@ -556,9 +531,6 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if err := validateEndUserEmail(email); err != nil {
-		return nil, err
-	}
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
@@ -651,9 +623,6 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	email, err := common.GetUserEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	if err := validateEndUserEmail(email); err != nil {
-		return nil, err
 	}
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
@@ -804,20 +773,7 @@ func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, erro
 	return t, nil
 }
 
-func validateEndUserEmail(email string) error {
-	if common.IsServiceAccountEmail(email) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email for end users cannot end with %v", common.ServiceAccountSuffix))
-	}
-	if common.IsWorkloadIdentityEmail(email) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email for end users cannot end with %v", common.WorkloadIdentitySuffix))
-	}
-	return nil
-}
-
 func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.LicenseService, stores *store.Store, email string, checkDomainSetting bool) error {
-	if err := validateEndUserEmail(email); err != nil {
-		return err
-	}
 	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.

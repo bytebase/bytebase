@@ -70,7 +70,13 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +105,9 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 		sqlReviewList = append(sqlReviewList, &sqlReview)
 	}
 	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

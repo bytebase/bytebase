@@ -20,38 +20,25 @@ import {
   UpdateWorkloadIdentityRequestSchema,
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { type AccountFilter, getAccountListFilter } from "./serviceAccount";
 import { useActuatorV1Store } from "./v1/actuator";
-import {
-  extractWorkloadIdentityId,
-  workloadIdentityNamePrefix,
-} from "./v1/common";
-
-export const ensureWorkloadIdentityFullName = (identifier: string) => {
-  const id = extractWorkloadIdentityId(identifier);
-  return `${workloadIdentityNamePrefix}${id}`;
-};
 
 export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   const actuatorStore = useActuatorV1Store();
   const cacheByName = ref<Map<string, WorkloadIdentity>>(new Map());
 
-  const listWorkloadIdentities = async ({
-    pageSize,
-    pageToken,
-    showDeleted,
-    filter,
-  }: {
-    pageSize: number;
-    pageToken: string | undefined;
-    showDeleted: boolean;
-    filter?: AccountFilter;
-  }) => {
+  // List workload identities.
+  // parent: empty for workspace-level, "projects/{project}" for project-level
+  const listWorkloadIdentities = async (
+    pageSize: number,
+    pageToken: string | undefined,
+    showDeleted: boolean,
+    parent = ""
+  ) => {
     const request = create(ListWorkloadIdentitiesRequestSchema, {
+      parent,
       pageSize,
       pageToken,
       showDeleted,
-      filter: getAccountListFilter(filter ?? {}),
     });
     return workloadIdentityServiceClientConnect.listWorkloadIdentities(request);
   };
@@ -66,37 +53,31 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   };
 
   const getWorkloadIdentity = (name: string) => {
-    const validName = ensureWorkloadIdentityFullName(name);
-    const email = extractWorkloadIdentityId(validName);
-    return (
-      cacheByName.value.get(ensureWorkloadIdentityFullName(name)) ??
-      create(WorkloadIdentitySchema, {
-        name,
-        email,
-        state: State.ACTIVE,
-        title: email.split("@")[0],
-      })
-    );
+    return cacheByName.value.get(name);
   };
 
   const getOrFetchWorkloadIdentity = async (
     name: string,
     silent = false
   ): Promise<WorkloadIdentity> => {
-    const validName = ensureWorkloadIdentityFullName(name);
-    if (cacheByName.value.has(validName)) {
-      return cacheByName.value.get(validName)!;
+    const cached = getWorkloadIdentity(name);
+    if (cached) {
+      return cached;
     }
-    const wi = await fetchWorkloadIdentity(validName, silent);
-    cacheByName.value.set(wi.name, wi);
+    const wi = await fetchWorkloadIdentity(name, silent);
+    cacheByName.value.set(name, wi);
     return wi;
   };
 
+  // Create workload identity.
+  // parent: empty for workspace-level, "projects/{project}" for project-level
   const createWorkloadIdentity = async (
     workloadIdentityId: string,
-    workloadIdentity: Partial<WorkloadIdentity>
+    workloadIdentity: Partial<WorkloadIdentity>,
+    parent = ""
   ) => {
     const request = create(CreateWorkloadIdentityRequestSchema, {
+      parent,
       workloadIdentityId,
       workloadIdentity: create(
         WorkloadIdentitySchema,
@@ -108,13 +89,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         request
       );
     cacheByName.value.set(wi.name, wi);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.WORKLOAD_IDENTITY,
-      },
-    ]);
+    await actuatorStore.fetchServerInfo();
     return wi;
   };
 
@@ -146,18 +121,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     if (wi) {
       wi.state = State.DELETED;
     }
-    actuatorStore.updateUserStat([
-      {
-        count: -1,
-        state: State.ACTIVE,
-        userType: UserType.WORKLOAD_IDENTITY,
-      },
-      {
-        count: 1,
-        state: State.DELETED,
-        userType: UserType.WORKLOAD_IDENTITY,
-      },
-    ]);
+    await actuatorStore.fetchServerInfo();
   };
 
   const undeleteWorkloadIdentity = async (name: string) => {
@@ -169,18 +133,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         request
       );
     cacheByName.value.set(wi.name, wi);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.WORKLOAD_IDENTITY,
-      },
-      {
-        count: -1,
-        state: State.DELETED,
-        userType: UserType.WORKLOAD_IDENTITY,
-      },
-    ]);
+    await actuatorStore.fetchServerInfo();
     return wi;
   };
 

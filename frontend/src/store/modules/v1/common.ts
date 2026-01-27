@@ -177,11 +177,6 @@ export const getInstanceAndDatabaseId = (name: string): string[] => {
   return tokens;
 };
 
-export const extractGroupEmail = (emailResource: string) => {
-  const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
-  return matches?.[1] ?? emailResource;
-};
-
 export const extractUserId = (identifier: string) => {
   const matches = identifier.match(/^(?:user:|users\/)(.+)$/);
   return matches?.[1] ?? identifier;

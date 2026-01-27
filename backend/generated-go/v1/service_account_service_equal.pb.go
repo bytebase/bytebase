@@ -87,9 +87,6 @@ func (x *ListServiceAccountsRequest) Equal(y *ListServiceAccountsRequest) bool {
 	if x.ShowDeleted != y.ShowDeleted {
 		return false
 	}
-	if x.Filter != y.Filter {
-		return false
-	}
 	return true
 }
 

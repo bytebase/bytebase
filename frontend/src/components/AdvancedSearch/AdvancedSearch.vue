@@ -81,7 +81,7 @@
 
 <script lang="ts" setup>
 import { onClickOutside, useDebounceFn } from "@vueuse/core";
-import { cloneDeep, isEqual, last } from "lodash-es";
+import { cloneDeep, last } from "lodash-es";
 import { FilterIcon, XIcon } from "lucide-vue-next";
 import { type InputInst, NButton, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
@@ -471,10 +471,7 @@ const maybeDeselectMismatchedScope = () => {
 };
 
 const maybeEmitIncompleteValue = () => {
-  if (
-    !inputText.value.startsWith(`${state.currentScope}:`) &&
-    props.params.query !== inputText.value
-  ) {
+  if (!inputText.value.startsWith(`${state.currentScope}:`)) {
     const updated = cloneDeep(props.params);
     updated.query = inputText.value;
     updateParams(updated);
@@ -697,13 +694,10 @@ watch(visibleValueOptions, (newOptions, oldOptions) => {
 
 watch(
   () => props.params,
-  (newParams, oldParams) => {
-    if (isEqual(newParams, oldParams)) {
-      return;
-    }
-    inputText.value = newParams.query;
+  (params) => {
+    inputText.value = params.query;
     if (props.cacheQuery) {
-      cachedQuery.value = buildSearchTextBySearchParams(newParams);
+      cachedQuery.value = buildSearchTextBySearchParams(params);
     }
   },
   { deep: true }

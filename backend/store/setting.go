@@ -238,6 +238,12 @@ func (s *Store) GetSetting(ctx context.Context, name storepb.SettingName) (*Sett
 
 // ListSettings returns a list of settings.
 func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*SettingMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
 	q := qb.Q().Space(`
 		SELECT
 			name,
@@ -252,7 +258,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +294,10 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
 	for _, setting := range settingMessages {

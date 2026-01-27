@@ -31,9 +31,11 @@ import {
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
+  WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
+  WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
@@ -124,6 +126,16 @@ export const useDashboardSidebar = () => {
           {
             title: t("settings.sidebar.users-and-groups"),
             name: WORKSPACE_ROUTE_USERS,
+            type: "route",
+          },
+          {
+            title: t("settings.members.service-accounts"),
+            name: WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+            type: "route",
+          },
+          {
+            title: t("settings.members.workload-identities"),
+            name: WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
             type: "route",
           },
           {

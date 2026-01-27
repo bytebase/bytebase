@@ -169,26 +169,6 @@ export declare type ListServiceAccountsRequest = Message<"bytebase.v1.ListServic
    * @generated from field: bool show_deleted = 4;
    */
   showDeleted: boolean;
-
-  /**
-   * Filter is used to filter service accounts returned in the list.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filter:
-   * - name: the service account name, support "==" and ".matches()" operator.
-   * - email: the service account email, support "==" and ".matches()" operator.
-   * - state: check State enum for values, support "==" operator.
-   *
-   * For example:
-   * name == "ed"
-   * name.matches("ed")
-   * state == "DELETED"
-   * email == "ed@service.bytebase.com"
-   * email.matches("ed")
-   *
-   * @generated from field: string filter = 5;
-   */
-  filter: string;
 };
 
 /**

@@ -261,8 +261,7 @@
     "line": "Line",
     "column": "Column",
     "apply-to-database": "Apply to database",
-    "unlimited": "Unlimited",
-    "unknown": "Unknown"
+    "unlimited": "Unlimited"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -455,8 +454,10 @@
     "members": {
       "service-accounts": "Service Accounts",
       "add-service-account": "Add Service Account",
+      "update-service-account": "Update Service Account",
       "workload-identities": "Workload Identities",
       "add-workload-identity": "Add Workload Identity",
+      "update-workload-identity": "Update Workload Identity",
       "inactive-users": "Inactive users",
       "inactive-service-accounts": "Inactive service accounts",
       "inactive-workload-identities": "Inactive workload identities",
@@ -516,7 +517,7 @@
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
-      "show-inactive": "Show inactive accounts",
+      "show-inactive": "Show inactive users",
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
@@ -539,8 +540,8 @@
       "revoke-access-alert": "Are you sure to revoke access?",
       "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "grant-access": "Grant Access",
-      "select-account": "Select account | Select accounts",
-      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
+      "select-user": "Select user | Select users",
+      "select-group": "Select group | Select groups",
       "select-in-project": "Select users or groups in {project}",
       "select-role": "Select role | Select roles",
       "assign-role": "Assign role | Assign roles"

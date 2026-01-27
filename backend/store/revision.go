@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -91,7 +92,13 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}
@@ -125,6 +132,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return revisions, nil

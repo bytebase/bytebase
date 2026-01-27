@@ -599,7 +599,7 @@ func GetListDatabaseFilter(filter string) (*qb.Query, error) {
 						SELECT 1
 						FROM json_array_elements(ds.metadata->'schemas') AS s,
 						 	 json_array_elements(s->'tables') AS t
-						WHERE t->>'name' LIKE ?)`, "%"+strValue+"%"), nil
+						WHERE t->>'name' LIKE ?`, "%"+strValue+"%"), nil
 				default:
 					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Matches, variable)
 				}

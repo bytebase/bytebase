@@ -162,9 +162,7 @@ import {
   useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { State } from "@/types/proto-es/v1/common_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -190,9 +188,9 @@ const disabled = computed((): boolean => {
 });
 
 const activeUserCountWithoutBot = computed(() =>
-  actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [UserType.USER],
+  actuatorStore.getActiveUserCount({
+    includeBot: false,
+    includeServiceAccount: false,
   })
 );
 

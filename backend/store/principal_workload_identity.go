@@ -28,8 +28,6 @@ type WorkloadIdentityMessage struct {
 	// LastLoginTime is the last login time of the workload identity.
 	LastLoginTime *timestamppb.Timestamp
 }
-
-// FindWorkloadIdentityMessage is the message for finding workload identities.
 type FindWorkloadIdentityMessage struct {
 	ID          *int
 	Email       *string
@@ -38,8 +36,6 @@ type FindWorkloadIdentityMessage struct {
 	Offset      *int
 	// Project filters by owning project. Use empty string for workspace-level workload identities.
 	Project *string
-	// FilterQ is the CEL filter query.
-	FilterQ *qb.Query
 }
 
 // CreateWorkloadIdentityMessage is the message for creating a workload identity.
@@ -92,9 +88,6 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 		} else {
 			where.And("project = ?", *v)
 		}
-	}
-	if v := find.FilterQ; v != nil {
-		where.And("?", v)
 	}
 
 	q := qb.Q().Space(`

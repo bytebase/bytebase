@@ -25,6 +25,8 @@ export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
 export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.detail`;
 export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
+export const PROJECT_V1_ROUTE_SERVICE_ACCOUNTS = `${PROJECT_V1_ROUTE_DASHBOARD}.service-accounts`;
+export const PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES = `${PROJECT_V1_ROUTE_DASHBOARD}.workload-identities`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
@@ -327,6 +329,28 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "service-accounts",
+        name: PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
+        meta: {
+          title: () => t("settings.members.service-accounts"),
+          requiredPermissionList: () => ["bb.projects.get"],
+        },
+        component: () =>
+          import("@/views/project/ProjectServiceAccountDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "workload-identities",
+        name: PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
+        meta: {
+          title: () => t("settings.members.workload-identities"),
+          requiredPermissionList: () => ["bb.projects.get"],
+        },
+        component: () =>
+          import("@/views/project/ProjectWorkloadIdentityDashboard.vue"),
         props: true,
       },
       {

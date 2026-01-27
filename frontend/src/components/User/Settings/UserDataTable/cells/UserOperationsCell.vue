@@ -1,49 +1,51 @@
 <template>
   <div class="flex justify-end gap-x-2">
-    <NPopconfirm
-      v-if="allowDeleteUser"
-      :positive-button-props="{
-        type: 'error',
-      }"
-      @positive-click="() => changeRowStatus(State.DELETED)"
-    >
-      <template #trigger>
-        <MiniActionButton @click.stop type="error">
-          <Trash2Icon />
-        </MiniActionButton>
-      </template>
+    <template v-if="allowEdit">
+      <NPopconfirm
+        v-if="allowDeleteUser"
+        :positive-button-props="{
+          type: 'error',
+        }"
+        @positive-click="() => changeRowStatus(State.DELETED)"
+      >
+        <template #trigger>
+          <MiniActionButton @click.stop type="error">
+            <Trash2Icon />
+          </MiniActionButton>
+        </template>
 
-      <template #default>
-        <div>
-          {{ $t("settings.members.action.deactivate-confirm-title") }}
-        </div>
-      </template>
-    </NPopconfirm>
+        <template #default>
+          <div>
+            {{ $t("settings.members.action.deactivate-confirm-title") }}
+          </div>
+        </template>
+      </NPopconfirm>
 
-    <MiniActionButton
-      v-if="allowViewUser"
-      @click="(e) => $emit('user-selected', user, e)"
-    >
-      <PencilIcon v-if="user.userType === UserType.WORKLOAD_IDENTITY || user.userType ===  UserType.SERVICE_ACCOUNT" />
-      <EyeIcon v-else />
-    </MiniActionButton>
+      <MiniActionButton
+        v-if="allowUpdateUser"
+        @click="(e) => $emit('user-selected', user, e)"
+      >
+        <PencilIcon v-if="user.userType === UserType.WORKLOAD_IDENTITY || user.userType ===  UserType.SERVICE_ACCOUNT" />
+        <EyeIcon v-else />
+      </MiniActionButton>
 
-    <NPopconfirm
-      v-if="allowReactiveUser"
-      @positive-click="() => changeRowStatus(State.ACTIVE)"
-    >
-      <template #trigger>
-        <MiniActionButton @click.stop>
-          <Undo2Icon />
-        </MiniActionButton>
-      </template>
+      <NPopconfirm
+        v-if="allowReactiveUser"
+        @positive-click="() => changeRowStatus(State.ACTIVE)"
+      >
+        <template #trigger>
+          <MiniActionButton @click.stop>
+            <Undo2Icon />
+          </MiniActionButton>
+        </template>
 
-      <template #default>
-        <div>
-          {{ $t("settings.members.action.reactivate-confirm-title") }}
-        </div>
-      </template>
-    </NPopconfirm>
+        <template #default>
+          <div>
+            {{ $t("settings.members.action.reactivate-confirm-title") }}
+          </div>
+        </template>
+      </NPopconfirm>
+    </template>
   </div>
 </template>
 
@@ -82,52 +84,25 @@ const workloadIdentityStore = useWorkloadIdentityStore();
 const { t } = useI18n();
 const me = useCurrentUserV1();
 
-const allowView = computed(() => {
-  switch (props.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
-      return hasWorkspacePermissionV2("bb.serviceAccounts.get");
-    case UserType.WORKLOAD_IDENTITY:
-      return hasWorkspacePermissionV2("bb.workloadIdentities.get");
-    default:
-      return hasWorkspacePermissionV2("bb.users.get");
-  }
+const allowEdit = computed(() => {
+  return hasWorkspacePermissionV2("bb.users.update");
 });
-
 const allowDelete = computed(() => {
-  switch (props.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
-      return hasWorkspacePermissionV2("bb.serviceAccounts.delete");
-    case UserType.WORKLOAD_IDENTITY:
-      return hasWorkspacePermissionV2("bb.workloadIdentities.delete");
-    default:
-      return hasWorkspacePermissionV2("bb.users.delete");
-  }
+  return hasWorkspacePermissionV2("bb.users.delete");
 });
-
 const allowUndelete = computed(() => {
-  switch (props.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
-      return hasWorkspacePermissionV2("bb.serviceAccounts.undelete");
-    case UserType.WORKLOAD_IDENTITY:
-      return hasWorkspacePermissionV2("bb.workloadIdentities.undelete");
-    default:
-      return hasWorkspacePermissionV2("bb.users.undelete");
-  }
+  return hasWorkspacePermissionV2("bb.users.undelete");
 });
 
-const canEdit = computed(() => {
+const allowUpdateUser = computed(() => {
   if (props.user.userType === UserType.SYSTEM_BOT) {
     return false;
   }
   return props.user.state === State.ACTIVE;
 });
 
-const allowViewUser = computed(() => {
-  return canEdit.value && allowView.value;
-});
-
 const allowDeleteUser = computed(() => {
-  if (!canEdit.value) {
+  if (!allowUpdateUser.value) {
     return false;
   }
   // cannot delete self.

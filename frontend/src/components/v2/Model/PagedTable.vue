@@ -3,7 +3,7 @@
     <slot
       name="table"
       :list="dataList"
-      :loading="isLoading"
+      :loading="state.loading"
       :sorters="sorters"
       :on-sorters-update="onSortersUpdate"
     />
@@ -16,18 +16,18 @@
         <NSelect
           :value="pageSize"
           style="width: 5rem"
-          size="small"
-          :options="pageSizeOptions"
+          :size="'small'"
+          :options="options"
           @update:value="onPageSizeChange"
         />
       </div>
 
       <NButton
-        v-if="!hideLoadMore && hasMore"
+        v-if="!hideLoadMore && state.paginationToken"
         quaternary
-        size="small"
-        :loading="isFetching"
-        @click="loadMore"
+        :size="'small'"
+        :loading="state.loading"
+        @click="fetchNextPage"
       >
         <span class="textinfolabel">
           {{ $t("common.load-more") }}
@@ -41,16 +41,24 @@
 import { useDebounceFn } from "@vueuse/core";
 import { sortBy, uniq } from "lodash-es";
 import { type DataTableSortState, NButton, NSelect } from "naive-ui";
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, type Ref, reactive, ref, watch } from "vue";
 import { useAuthStore, useCurrentUserV1 } from "@/store";
 import { getDefaultPagination, useDynamicLocalStorage } from "@/utils";
 
-// ============================================================================
-// Props & Emits
-// ============================================================================
+type LocalState = {
+  loading: boolean;
+  paginationToken: string;
+};
+
+type SessionState = {
+  // Help us to check if the session is outdated.
+  updatedTs: number;
+  pageSize: number;
+};
 
 const props = withDefaults(
   defineProps<{
+    // A unique key to identify the session state.
     sessionKey: string;
     hideLoadMore?: boolean;
     footerClass?: string;
@@ -72,47 +80,11 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "list:update": [list: T[]];
+  (event: "list:update", list: T[]): void;
 }>();
-
-// ============================================================================
-// Stores
-// ============================================================================
 
 const authStore = useAuthStore();
 const currentUser = useCurrentUserV1();
-
-// ============================================================================
-// State
-// ============================================================================
-
-// Core data state
-const dataList = shallowRef<T[]>([]);
-const nextPageToken = ref("");
-
-// Fetch state
-const isFetching = ref(false);
-const ready = ref(false);
-const error = ref<Error | null>(null);
-
-// Request management
-let abortController: AbortController | null = null;
-
-// ============================================================================
-// Computed
-// ============================================================================
-
-// Loading state: true if fetching OR if no fetch has completed yet
-// This prevents showing "No Data" before the first request finishes
-const isLoading = computed(() => isFetching.value || !ready.value);
-
-// Whether there are more pages to load
-const hasMore = computed(() => Boolean(nextPageToken.value));
-
-// ============================================================================
-// Sorting
-// ============================================================================
-
 const sorters = ref<DataTableSortState[]>(
   props.orderKeys.map((key) => ({
     columnKey: key,
@@ -121,224 +93,171 @@ const sorters = ref<DataTableSortState[]>(
   }))
 );
 
-const orderBy = computed(() =>
-  sorters.value
-    .filter((sorter) => sorter.order)
-    .map((sorter) => {
-      const key = sorter.columnKey.toString();
-      const order = sorter.order === "ascend" ? "asc" : "desc";
-      return `${key} ${order}`;
-    })
-    .join(", ")
-);
-
 const onSortersUpdate = (
   sortStates: DataTableSortState[] | DataTableSortState | null
 ) => {
-  if (!sortStates) return;
-
-  const states = Array.isArray(sortStates) ? sortStates : [sortStates];
-  for (const state of states) {
-    const index = sorters.value.findIndex(
-      (s) => s.columnKey === state.columnKey
+  if (!sortStates) {
+    return;
+  }
+  let states: DataTableSortState[] = [];
+  if (Array.isArray(sortStates)) {
+    states = sortStates;
+  } else {
+    states = [sortStates];
+  }
+  for (const sortState of states) {
+    const sorterIndex = sorters.value.findIndex(
+      (s) => s.columnKey === sortState.columnKey
     );
-    if (index >= 0) {
-      sorters.value[index] = state;
+    if (sorterIndex >= 0) {
+      sorters.value[sorterIndex] = sortState;
     }
   }
 };
 
-// ============================================================================
-// Pagination
-// ============================================================================
+const orderBy = computed(() => {
+  return sorters.value
+    .filter((sorter) => sorter.order)
+    .map((sorter) => {
+      const key = sorter.columnKey.toString();
+      const order = sorter.order == "ascend" ? "asc" : "desc";
+      return `${key} ${order}`;
+    })
+    .join(", ");
+});
 
-const pageSizeOptions = computed(() => {
+const options = computed(() => {
   const defaultPageSize = getDefaultPagination();
-  return sortBy(uniq([defaultPageSize, 50, 100, 200, 500])).map((num) => ({
+  const list = [defaultPageSize, 50, 100, 200, 500];
+  return sortBy(uniq(list)).map((num) => ({
     value: num,
-    label: String(num),
+    label: `${num}`,
   }));
 });
 
-const sessionState = useDynamicLocalStorage<{ pageSize: number }>(
+const state = reactive<LocalState>({
+  loading: false,
+  paginationToken: "",
+});
+
+// https://stackoverflow.com/questions/69813587/vue-unwraprefsimplet-generics-type-cant-assignable-to-t-at-reactive
+const dataList = ref([]) as Ref<T[]>;
+
+const sessionState = useDynamicLocalStorage<SessionState>(
   computed(() => `${props.sessionKey}.${currentUser.value.name}`),
-  { pageSize: pageSizeOptions.value[0].value }
+  {
+    updatedTs: 0,
+    pageSize: options.value[0].value,
+  }
 );
 
 const pageSize = computed(() => {
-  const stored = sessionState.value.pageSize;
-  const defaultSize = pageSizeOptions.value[0].value;
-
-  // Guard against invalid values from corrupted localStorage
+  const sizeInSession = sessionState.value.pageSize ?? 0;
+  // Guard against NaN/invalid values from corrupted localStorage data
   if (
-    !Number.isFinite(stored) ||
-    !pageSizeOptions.value.some((o) => o.value === stored)
+    !Number.isFinite(sizeInSession) ||
+    !options.value.find((o) => o.value === sizeInSession)
   ) {
-    return defaultSize;
+    return options.value[0].value;
   }
-  return Math.max(defaultSize, stored);
+  return Math.max(options.value[0].value, sizeInSession);
 });
 
-// ============================================================================
-// Data Fetching
-// ============================================================================
+const onPageSizeChange = (size: number) => {
+  sessionState.value.pageSize = size;
+  refresh();
+};
 
-const fetchData = async (isRefresh: boolean) => {
+const fetchData = async (refresh = false) => {
   if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
     return;
   }
 
-  // Cancel any in-flight request
-  abortController?.abort();
-  abortController = new AbortController();
-
-  isFetching.value = true;
-  error.value = null;
+  state.loading = true;
 
   try {
-    const result = await props.fetchList({
+    const { nextPageToken, list } = await props.fetchList({
       pageSize: pageSize.value,
-      pageToken: isRefresh ? "" : nextPageToken.value,
-      refresh: isRefresh,
+      pageToken: state.paginationToken,
+      refresh,
       orderBy: orderBy.value,
     });
-
-    // Check if request was aborted
-    if (abortController.signal.aborted) {
-      return;
-    }
-
-    if (isRefresh) {
-      dataList.value = result.list;
+    if (refresh) {
+      dataList.value = list;
     } else {
-      dataList.value = [...dataList.value, ...result.list];
+      dataList.value.push(...list);
     }
 
-    nextPageToken.value = result.nextPageToken ?? "";
-    ready.value = true;
+    sessionState.value.updatedTs = Date.now();
+    state.paginationToken = nextPageToken ?? "";
   } catch (e) {
-    // Ignore abort errors
-    if (e instanceof Error && e.name === "AbortError") {
-      return;
-    }
     console.error(e);
-    error.value = e instanceof Error ? e : new Error(String(e));
-    ready.value = true;
   } finally {
-    isFetching.value = false;
+    state.loading = false;
   }
 };
 
-// Debounced refresh for internal triggers (watchers)
-const debouncedRefresh = useDebounceFn(() => {
-  nextPageToken.value = "";
-  fetchData(true);
-}, props.debounce);
+const resetSession = () => {
+  sessionState.value = {
+    updatedTs: 0,
+    pageSize: pageSize.value,
+  };
+};
 
-// Immediate refresh that returns a Promise - for external callers
 const refresh = async () => {
-  nextPageToken.value = "";
+  state.paginationToken = "";
   await fetchData(true);
 };
 
-const loadMore = async () => {
-  if (!hasMore.value || isFetching.value) return;
-  await fetchData(false);
+const fetchNextPage = () => {
+  fetchData(false);
 };
 
-// ============================================================================
-// Event Handlers
-// ============================================================================
+fetchData(true);
 
-const onPageSizeChange = (size: number) => {
-  sessionState.value.pageSize = size;
-  debouncedRefresh();
-};
-
-// ============================================================================
-// Cache Management
-// ============================================================================
-
-const updateCache = (items: T[]) => {
-  const updated = [...dataList.value];
-  let hasChanges = false;
-
-  for (const item of items) {
-    hasChanges = true;
-    const index = updated.findIndex((d) => d.name === item.name);
-    if (index >= 0) {
-      updated[index] = item;
-    } else {
-      updated.push(item);
-    }
-  }
-
-  if (hasChanges) {
-    dataList.value = updated;
-  }
-};
-
-const removeCache = (item: T) => {
-  const index = dataList.value.findIndex((d) => d.name === item.name);
-  if (index >= 0) {
-    const updated = [...dataList.value];
-    updated.splice(index, 1);
-    dataList.value = updated;
-  }
-};
-
-// ============================================================================
-// Lifecycle
-// ============================================================================
-
-onMounted(() => {
-  fetchData(true);
-});
-
-onUnmounted(() => {
-  abortController?.abort();
-});
-
-// ============================================================================
-// Watchers
-// ============================================================================
-
-// Re-fetch on auth changes
 watch(
   () => authStore.authSessionKey,
   () => {
     if (!authStore.isLoggedIn || authStore.unauthenticatedOccurred) {
       return;
     }
-    sessionState.value = { pageSize: pageSize.value };
-    debouncedRefresh();
+    // Reset session when logging status changed.
+    resetSession();
+    refresh();
   }
 );
 
-// Emit list updates
-watch(dataList, (list) => emit("list:update", list));
+watch(
+  () => dataList.value,
+  (list) => emit("list:update", list)
+);
 
-// Re-fetch when sort order changes (debounced to handle rapid changes)
-watch(orderBy, () => debouncedRefresh());
+watch(
+  () => orderBy.value,
+  () => refresh()
+);
 
-// ============================================================================
-// Exposed API
-// ============================================================================
+const updateCache = (data: T[]) => {
+  for (const item of data) {
+    const index = dataList.value.findIndex((d) => d.name === item.name);
+    if (index >= 0) {
+      dataList.value[index] = item;
+    }
+  }
+};
+
+const removeCache = (data: T) => {
+  const index = dataList.value.findIndex((d) => d.name === data.name);
+  dataList.value.splice(index, 1);
+};
 
 defineExpose({
-  // Methods
-  refresh,
-  loadMore,
+  refresh: useDebounceFn(async () => {
+    await refresh();
+  }, props.debounce),
   updateCache,
   removeCache,
-
-  // State (readonly access)
   dataList,
   orderBy,
-  isLoading,
-  isFetching,
-  hasMore,
-  ready,
-  error,
 });
 </script>

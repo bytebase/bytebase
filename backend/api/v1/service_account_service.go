@@ -156,18 +156,12 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 	}
 	limitPlusOne := offset.limit + 1
 
-	filterResult, err := store.GetAccountListFilter(request.Msg.Filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
 	// List service accounts using the store method with project filtering
 	sas, err := s.store.ListServiceAccounts(ctx, &store.FindServiceAccountMessage{
 		Project:     projectID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
-		FilterQ:     filterResult.Query,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list service accounts"))

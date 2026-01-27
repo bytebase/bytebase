@@ -21,7 +21,12 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { getUserFullNameByType, type UserFilter, useUserStore } from "@/store";
+import {
+  getUserFullNameByType,
+  type UserFilter,
+  userNamePrefix,
+  useUserStore,
+} from "@/store";
 import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -44,6 +49,8 @@ const props = defineProps<{
   // allUsers is a special user that represents all users in the project.
   includeAllUsers?: boolean;
   includeSystemBot?: boolean;
+  includeServiceAccount?: boolean;
+  includeWorkloadIdentity?: boolean;
   filter?: (user: User) => boolean;
 }>();
 
@@ -57,9 +64,19 @@ const userStore = useUserStore();
 const hasPermission = computed(() => hasWorkspacePermissionV2("bb.users.list"));
 
 const getFilter = (search: string): UserFilter => {
+  const filter = [];
+  if (search) {
+    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+  }
   const allowedType = [UserType.USER];
+  if (props.includeServiceAccount) {
+    allowedType.push(UserType.SERVICE_ACCOUNT);
+  }
   if (props.includeSystemBot) {
     allowedType.push(UserType.SYSTEM_BOT);
+  }
+  if (props.includeWorkloadIdentity) {
+    allowedType.push(UserType.WORKLOAD_IDENTITY);
   }
 
   return {
@@ -89,7 +106,9 @@ const additionalOptions = computedAsync(async () => {
   }
 
   // Ensure users are fetched into store
-  await userStore.batchGetOrFetchUsers(userEmails);
+  await userStore.batchGetOrFetchUsers(
+    userEmails.map((email) => `${userNamePrefix}${email}`)
+  );
 
   // Get all users from store
   for (const email of userEmails) {

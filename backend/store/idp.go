@@ -104,6 +104,12 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 
 // ListIdentityProviders lists identity providers.
 func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	q := qb.Q().Space(`
 		SELECT
 			resource_id,
@@ -126,7 +132,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,12 +159,33 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
 	return identityProviderMessages, nil
 }
 
 // UpdateIdentityProvider updates an identity provider.
 func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	identityProvider, err := s.updateIdentityProviderImpl(ctx, tx, patch)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return identityProvider, nil
+}
+
+func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch *UpdateIdentityProviderMessage) (*IdentityProviderMessage, error) {
 	set := qb.Q()
 	if v := patch.Title; v != nil {
 		set.Comma("name = ?", *v)
@@ -197,7 +224,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 	identityProvider := &IdentityProviderMessage{}
 	var identityProviderType string
 	var identityProviderConfig string
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&identityProvider.ResourceID,
 		&identityProvider.Title,
 		&identityProvider.Domain,

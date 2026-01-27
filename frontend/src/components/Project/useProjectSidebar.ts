@@ -21,9 +21,11 @@ import {
   PROJECT_V1_ROUTE_PLANS,
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_ROLLOUTS,
+  PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
   PROJECT_V1_ROUTE_SETTINGS,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_WEBHOOKS,
+  PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -123,6 +125,16 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
           {
             title: t("common.members", 2 /* multiply*/),
             path: PROJECT_V1_ROUTE_MEMBERS,
+            type: "div",
+          },
+          {
+            title: t("settings.members.service-accounts"),
+            path: PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
+            type: "div",
+          },
+          {
+            title: t("settings.members.workload-identities"),
+            path: PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
             type: "div",
           },
           {

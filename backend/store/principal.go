@@ -29,11 +29,11 @@ type FindUserMessage struct {
 	ID          *int
 	Email       *string
 	ShowDeleted bool
+	Type        *storepb.PrincipalType
 	Limit       *int
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
-	UserTypes   *[]storepb.PrincipalType
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -152,98 +152,6 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 
 	user, _ := s.userEmailCache.Get(email)
 	return user, nil
-}
-
-// BatchGetUsersByEmails gets users (of any type) by emails in batch using a single SQL query.
-func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*UserMessage, error) {
-	if len(emails) == 0 {
-		return nil, nil
-	}
-
-	// Normalize emails to lowercase
-	normalizedEmails := make([]string, len(emails))
-	for i, email := range emails {
-		normalizedEmails[i] = strings.ToLower(email)
-	}
-
-	q := qb.Q().Space(`
-		SELECT
-			id,
-			deleted,
-			email,
-			name,
-			type,
-			password_hash,
-			mfa_config,
-			phone,
-			profile,
-			created_at
-		FROM principal
-		WHERE email = ANY(?)
-		ORDER BY created_at ASC
-	`, normalizedEmails)
-
-	sqlStr, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, sqlStr, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []*UserMessage
-	for rows.Next() {
-		var user UserMessage
-		var mfaConfigBytes []byte
-		var profileBytes []byte
-		var typeString string
-		if err := rows.Scan(
-			&user.ID,
-			&user.MemberDeleted,
-			&user.Email,
-			&user.Name,
-			&typeString,
-			&user.PasswordHash,
-			&mfaConfigBytes,
-			&user.Phone,
-			&profileBytes,
-			&user.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
-			user.Type = storepb.PrincipalType(typeValue)
-		} else {
-			return nil, errors.Errorf("invalid principal type string: %s", typeString)
-		}
-
-		mfaConfig := storepb.MFAConfig{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
-			return nil, err
-		}
-		user.MFAConfig = &mfaConfig
-
-		profile := storepb.UserProfile{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(profileBytes, &profile); err != nil {
-			return nil, err
-		}
-		user.Profile = &profile
-
-		users = append(users, &user)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to scan rows")
-	}
-
-	// Update cache
-	for _, user := range users {
-		s.userEmailCache.Add(user.Email, user)
-	}
-
-	return users, nil
 }
 
 func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
@@ -371,12 +279,8 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			where.And("principal.email = ?", strings.ToLower(*v))
 		}
 	}
-	if v := find.UserTypes; v != nil {
-		typeStrings := make([]string, 0, len(*v))
-		for _, t := range *v {
-			typeStrings = append(typeStrings, t.String())
-		}
-		where.And("principal.type = ANY(?)", typeStrings)
+	if v := find.Type; v != nil {
+		where.And("principal.type = ?", v.String())
 	}
 	if !find.ShowDeleted {
 		where.And("principal.deleted = ?", false)

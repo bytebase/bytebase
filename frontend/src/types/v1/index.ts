@@ -5,7 +5,6 @@ export * from "./dataSource";
 export * from "./project";
 export * from "./projectWebhook";
 export * from "./user";
-export * from "./group";
 export * from "./sql";
 export * from "./webTerminal";
 export * from "./issue";

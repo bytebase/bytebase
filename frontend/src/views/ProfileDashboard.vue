@@ -52,6 +52,9 @@
             <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
               {{ user.title }}
             </h1>
+            <ServiceAccountTag
+              v-if="user.userType === UserType.SERVICE_ACCOUNT"
+            />
           </div>
         </div>
       </div>
@@ -217,21 +220,14 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { EllipsisIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NInput, NTag } from "naive-ui";
-import {
-  computed,
-  nextTick,
-  onBeforeMount,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-} from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
@@ -239,10 +235,7 @@ import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { MiniActionButton } from "@/components/v2";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
-import {
-  WORKSPACE_ROUTE_404,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
@@ -258,7 +251,6 @@ import {
 } from "@/store";
 import {
   ALL_USERS_USER_EMAIL,
-  getUserTypeByEmail,
   SYSTEM_BOT_USER_NAME,
   unknownUser,
 } from "@/types";
@@ -297,17 +289,6 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   showDisable2FAConfirmModal: false,
   showRegenerateRecoveryCodesView: false,
-});
-
-onBeforeMount(() => {
-  if (props.principalEmail) {
-    const userType = getUserTypeByEmail(props.principalEmail);
-    if (userType !== UserType.USER) {
-      router.replace({
-        name: WORKSPACE_ROUTE_404,
-      });
-    }
-  }
 });
 
 const editNameTextField = ref<InstanceType<typeof NInput>>();

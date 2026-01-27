@@ -50,6 +50,8 @@
           v-model:value="state.memberList"
           :required="true"
           :include-all-users="false"
+          :include-service-account="false"
+          :include-workload-identity="false"
         />
       </div>
     </template>

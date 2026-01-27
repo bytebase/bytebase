@@ -69,6 +69,7 @@
           :required="true"
           :allow-change-type="false"
           :include-all-users="true"
+          :include-service-account="true"
         />
       </div>
       <template #footer>

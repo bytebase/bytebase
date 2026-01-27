@@ -31,7 +31,6 @@ import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import {
-  ensureServiceAccountFullName,
   getUserFullNameByType,
   pushNotification,
   serviceAccountToUser,
@@ -58,7 +57,6 @@ const props = defineProps<{
   showRoles: boolean;
   userList: User[];
   loading: boolean;
-  keyword?: string;
 }>();
 
 const emit = defineEmits<{
@@ -98,7 +96,6 @@ const columns = computed(() => {
       render: (user) => {
         return h(UserNameCell, {
           user,
-          keyword: props.keyword,
           "onReset-service-key": tryResetServiceKey,
         });
       },
@@ -161,7 +158,7 @@ const resetServiceKey = () => {
   serviceAccountStore
     .updateServiceAccount(
       {
-        name: ensureServiceAccountFullName(user.email),
+        name: user.name,
       },
       create(FieldMaskSchema, {
         paths: ["service_key"],

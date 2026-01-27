@@ -2,15 +2,15 @@
   <Drawer @close="$emit('close')">
     <DrawerContent
       class="w-[40rem] max-w-[100vw]"
-      :title="
-        isEditMode
-          ? $t('settings.members.update-user')
-          : $t('settings.members.add-user')
-      "
+      :title="drawerTitle"
     >
       <template #default>
         <div class="flex flex-col gap-y-6">
-          <div class="w-full flex flex-col gap-y-2">
+          <!-- Only show type selector when no initialUserType is provided and not in edit mode -->
+          <div
+            v-if="!props.initialUserType && !isEditMode"
+            class="w-full flex flex-col gap-y-2"
+          >
             <div class="flex items-center gap-x-1">
               <div class="text-sm font-medium">{{ $t("common.type") }}</div>
               <a
@@ -20,10 +20,7 @@
                 <heroicons-outline:question-mark-circle class="w-4 h-4" />
               </a>
             </div>
-            <NRadioGroup
-              v-model:value="state.user.userType"
-              :disabled="isEditMode"
-            >
+            <NRadioGroup v-model:value="state.user.userType">
               <NRadio :value="UserType.USER" :label="$t('common.user')" />
               <NRadio
                 :value="UserType.SERVICE_ACCOUNT"
@@ -48,7 +45,6 @@
                 :input-props="{ type: 'text', autocomplete: 'off' }"
                 placeholder="GitHub Deploy"
                 :maxlength="200"
-                :disabled="!allowUpdate"
               />
             </div>
 
@@ -59,8 +55,8 @@
                 <RequiredStar class="ml-0.5" />
               </label>
               <EmailInput
-                v-model:value="state.user.email"
-                :domain="workloadIdentitySuffix"
+                v-model:value="state.wif.emailPrefix"
+                :domain="workloadIdentityDomain"
                 :show-domain="true"
                 :disabled="isEditMode"
               />
@@ -75,7 +71,6 @@
               <NSelect
                 v-model:value="state.wif.providerType"
                 :options="platformOptions"
-                :disabled="!allowUpdate"
                 @update:value="onPlatformChange"
               />
             </div>
@@ -106,7 +101,6 @@
                     : 'my-org'
                 "
                 :maxlength="200"
-                :disabled="!allowUpdate"
               />
             </div>
 
@@ -135,7 +129,6 @@
                     : 'my-repo'
                 "
                 :maxlength="200"
-                :disabled="!allowUpdate"
               />
               <span class="text-xs text-gray-500">
                 <template
@@ -172,7 +165,6 @@
               <NSelect
                 v-model:value="state.wif.refType"
                 :options="refTypeOptions"
-                :disabled="!allowUpdate"
               />
             </div>
 
@@ -204,7 +196,6 @@
                 :input-props="{ type: 'text', autocomplete: 'off' }"
                 :placeholder="state.wif.refType === 'tag' ? 'v1.0.0' : 'main'"
                 :maxlength="200"
-                :disabled="!allowUpdate"
               />
               <span class="text-xs text-gray-500">
                 <template
@@ -248,7 +239,6 @@
                     v-model:value="state.wif.issuerUrl"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
-                    :disabled="!allowUpdate"
                   />
                   <span
                     v-if="
@@ -276,7 +266,6 @@
                     v-model:value="state.wif.audience"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
-                    :disabled="!allowUpdate"
                   />
                 </div>
 
@@ -291,7 +280,6 @@
                     v-model:value="state.wif.subjectPattern"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
-                    :disabled="!allowUpdate"
                   />
                 </div>
               </div>
@@ -323,7 +311,6 @@
                 :input-props="{ type: 'text', autocomplete: 'off' }"
                 placeholder="Foo"
                 :maxlength="200"
-                :disabled="!allowUpdate"
               />
             </div>
 
@@ -336,8 +323,8 @@
                 v-model:value="state.user.email"
                 :domain="
                   state.user.userType === UserType.SERVICE_ACCOUNT
-                   ? serviceAccountSuffix
-                   : ''
+                    ? serviceAccountDomain
+                    : ''
                 "
                 :show-domain="state.user.userType === UserType.SERVICE_ACCOUNT"
                 :disabled="isEditMode"
@@ -345,25 +332,14 @@
             </div>
           </template>
 
-          <PermissionGuardWrapper
-            v-slot="slotProps"
-            :permissions="[
-              'bb.workspaces.setIamPolicy'
-            ]"
-          >
-            <div class="flex flex-col gap-y-2">
-              <div>
-                <label class="block text-sm font-medium leading-5 text-control">
-                  {{ $t("settings.members.table.roles") }}
-                </label>
-              </div>
-              <RoleSelect
-                  v-model:value="state.roles"
-                  :multiple="true"
-                  :disabled="slotProps.disabled"
-                />
+          <div class="flex flex-col gap-y-2">
+            <div>
+              <label class="block text-sm font-medium leading-5 text-control">
+                {{ $t("settings.members.table.roles") }}
+              </label>
             </div>
-          </PermissionGuardWrapper>
+            <RoleSelect v-model:value="state.roles" :multiple="true" />
+          </div>
 
           <template v-if="state.user.userType === UserType.USER">
             <div class="flex flex-col gap-y-2">
@@ -382,7 +358,6 @@
                   type: 'tel',
                   autocomplete: 'new-password',
                 }"
-                :disabled="!allowUpdate"
               />
             </div>
 
@@ -391,7 +366,6 @@
               v-model:password="state.user.password"
               v-model:password-confirm="state.passwordConfirm"
               :password-restriction="passwordRestrictionSetting"
-              :disabled="!allowUpdate"
             />
           </template>
         </div>
@@ -401,24 +375,16 @@
           <NButton @click="$emit('close')">
             {{ $t("common.cancel") }}
           </NButton>
-
-          <PermissionGuardWrapper
-            v-slot="slotProps"
-            :permissions="[
-              isEditMode ? updatePermission : createPermission
-            ]"
+          <NButton
+            type="primary"
+            :disabled="!allowConfirm"
+            :loading="state.isRequesting"
+            @click="createOrUpdateUser"
           >
-            <NButton
-              type="primary"
-              :disabled="!allowConfirm || slotProps.disabled"
-              :loading="state.isRequesting"
-              @click="createOrUpdateUser"
-            >
-              {{
-                isEditMode ? $t("common.update") : $t("common.confirm")
-              }}
-            </NButton>
-          </PermissionGuardWrapper>
+            {{
+              isEditMode ? $t("common.update") : $t("common.confirm")
+            }}
+          </NButton>
         </div>
       </template>
     </DrawerContent>
@@ -428,7 +394,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { cloneDeep, isEqual } from "lodash-es";
+import { isEqual } from "lodash-es";
 import {
   NButton,
   NCollapseTransition,
@@ -440,13 +406,11 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
-import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
-  ensureServiceAccountFullName,
-  ensureWorkloadIdentityFullName,
+  getProjectName,
   getUserFullNameByType,
   pushNotification,
   serviceAccountToUser,
@@ -461,10 +425,7 @@ import {
   getServiceAccountNameInBinding,
   getUserEmailInBinding,
   getWorkloadIdentityNameInBinding,
-  serviceAccountSuffix,
-  UNKNOWN_USER_NAME,
   unknownUser,
-  workloadIdentitySuffix,
 } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -475,7 +436,6 @@ import {
   WorkloadIdentityConfig_ProviderType,
   WorkloadIdentityConfigSchema,
 } from "@/types/proto-es/v1/user_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import UserPassword from "./UserPassword.vue";
 
 interface WifState {
@@ -499,9 +459,14 @@ interface LocalState {
   wif: WifState;
 }
 
-const props = defineProps<{
+interface Props {
   user?: User;
-}>();
+  initialUserType?: UserType;
+  // Project context for project-level service accounts and workload identities
+  project?: { name: string };
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -520,7 +485,7 @@ const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 const state = reactive<LocalState>({
   isRequesting: false,
   user: unknownUser(),
-  roles: [PresetRoleType.WORKSPACE_MEMBER],
+  roles: [],
   passwordConfirm: "",
   wif: {
     emailPrefix: "",
@@ -536,41 +501,61 @@ const state = reactive<LocalState>({
   },
 });
 
-const isEditMode = computed(
-  () => !!props.user && props.user.name !== unknownUser().name
-);
+const isEditMode = computed(() => !!props.user);
 
-const updatePermission = computed(() => {
+const drawerTitle = computed(() => {
+  if (isEditMode.value) {
+    switch (state.user.userType) {
+      case UserType.SERVICE_ACCOUNT:
+        return t("settings.members.update-service-account");
+      case UserType.WORKLOAD_IDENTITY:
+        return t("settings.members.update-workload-identity");
+      default:
+        return t("settings.members.update-user");
+    }
+  }
   switch (state.user.userType) {
     case UserType.SERVICE_ACCOUNT:
-      return "bb.serviceAccounts.update";
+      return t("settings.members.add-service-account");
     case UserType.WORKLOAD_IDENTITY:
-      return "bb.workloadIdentities.update";
+      return t("settings.members.add-workload-identity");
     default:
-      return "bb.users.update";
+      return t("settings.members.add-user");
   }
 });
 
-const createPermission = computed(() => {
-  switch (state.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
-      return "bb.serviceAccounts.create";
-    case UserType.WORKLOAD_IDENTITY:
-      return "bb.workloadIdentities.create";
-    default:
-      return "bb.users.create";
-  }
+// Get project ID from project name (e.g., "projects/my-project" -> "my-project")
+const projectId = computed(() => {
+  if (!props.project?.name) return "";
+  return getProjectName(props.project.name);
 });
 
-const allowUpdate = computed(() => {
-  if (!isEditMode.value) {
-    return true;
+// Email domain for service accounts
+// Workspace-level: service.bytebase.com
+// Project-level: {project-id}.service.bytebase.com
+const serviceAccountDomain = computed(() => {
+  if (projectId.value) {
+    return `${projectId.value}.service.bytebase.com`;
   }
-  return hasWorkspacePermissionV2(updatePermission.value);
+  return "service.bytebase.com";
+});
+
+// Email domain for workload identities
+// Workspace-level: workload.bytebase.com
+// Project-level: {project-id}.workload.bytebase.com
+const workloadIdentityDomain = computed(() => {
+  if (projectId.value) {
+    return `${projectId.value}.workload.bytebase.com`;
+  }
+  return "workload.bytebase.com";
 });
 
 const initialRoles = computed(() => {
-  if (!props.user || props.user.name === UNKNOWN_USER_NAME) {
+  if (!props.user) {
+    // For project-level SA/WI, default to no roles
+    if (props.project) {
+      return [];
+    }
     return [PresetRoleType.WORKSPACE_MEMBER];
   }
 
@@ -651,9 +636,15 @@ watch(
   () => props.user,
   (user) => {
     if (!user) {
+      // Apply initialUserType when creating a new user
+      if (props.initialUserType) {
+        state.user.userType = props.initialUserType;
+      }
+      // Apply initial roles based on context (workspace vs project)
+      state.roles = [...initialRoles.value];
       return;
     }
-    state.user = cloneDeep(create(UserSchema, user));
+    state.user = create(UserSchema, user);
     state.roles = [...initialRoles.value];
 
     if (user.userType === UserType.WORKLOAD_IDENTITY) {
@@ -876,6 +867,9 @@ const convertUserToMember = (user: User) => {
 const createUser = async () => {
   let createdUser: User;
 
+  // Parent for project-level SA/WI
+  const parent = props.project?.name || "";
+
   switch (state.user.userType) {
     case UserType.WORKLOAD_IDENTITY: {
       const wi = await workloadIdentityStore.createWorkloadIdentity(
@@ -888,7 +882,8 @@ const createUser = async () => {
             allowedAudiences: state.wif.audience ? [state.wif.audience] : [],
             subjectPattern: state.wif.subjectPattern,
           }),
-        }
+        },
+        parent
       );
       createdUser = workloadIdentityToUser(wi);
       break;
@@ -899,7 +894,8 @@ const createUser = async () => {
         serviceAccountId,
         {
           title: state.user.title,
-        }
+        },
+        parent
       );
       createdUser = serviceAccountToUser(sa);
       break;
@@ -948,7 +944,7 @@ const updateUser = async () => {
     case UserType.WORKLOAD_IDENTITY: {
       const wi = await workloadIdentityStore.updateWorkloadIdentity(
         {
-          name: ensureWorkloadIdentityFullName(payload.email),
+          name: payload.name,
           title: payload.title,
           workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
             providerType: state.wif.providerType,
@@ -966,16 +962,16 @@ const updateUser = async () => {
     }
     case UserType.SERVICE_ACCOUNT: {
       if (updateMask.length > 0) {
-        const sa = await serviceAccountStore.updateServiceAccount(
+        const se = await serviceAccountStore.updateServiceAccount(
           {
-            name: ensureServiceAccountFullName(payload.email),
+            name: payload.name,
             title: payload.title,
           },
           create(FieldMaskSchema, {
             paths: [...updateMask],
           })
         );
-        updatedUser = serviceAccountToUser(sa);
+        updatedUser = serviceAccountToUser(se);
       }
       break;
     }

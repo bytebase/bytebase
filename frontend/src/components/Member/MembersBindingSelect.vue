@@ -1,5 +1,22 @@
 <template>
   <div class="w-full flex flex-col gap-y-2">
+    <div
+      v-if="allowChangeType"
+      class="w-full flex items-center justify-between"
+    >
+      <NRadioGroup
+        :value="memberType"
+        class="flex gap-x-2"
+        :disabled="disabled"
+        @update:value="onTypeChange"
+      >
+        <NRadio value="USERS">{{ $t("common.users") }}</NRadio>
+        <NRadio value="GROUPS">
+          {{ $t("common.groups") }}
+        </NRadio>
+      </NRadioGroup>
+      <slot name="suffix" />
+    </div>
     <i18n-t
       v-if="projectName"
       keypath="settings.members.select-in-project"
@@ -11,27 +28,44 @@
       </template>
     </i18n-t>
     <div
-      class="w-full flex flex-col gap-y-2"
+      v-if="memberType === 'USERS'"
+      :class="[
+        'w-full flex flex-col gap-y-2',
+      ]"
     >
       <div class="flex text-main items-center gap-x-1">
-        {{ $t("settings.members.select-account", 2 /* multiply*/) }}
+        {{ $t("settings.members.select-user", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />
-        <NTooltip>
-          <template #trigger>
-            <CircleHelpIcon class="w-4 textinfolabel" />
-          </template>
-          <span>
-            {{ $t("settings.members.select-account-hint") }}
-          </span>
-        </NTooltip>
       </div>
-      <AccountSelect
-        key="account-select"
+      <UserSelect
+        key="user-select"
         :value="memberList"
         :multiple="true"
         :disabled="disabled"
         :project-name="projectName"
         :include-all-users="includeAllUsers"
+        :include-service-account="includeServiceAccount"
+        :include-workload-identity="includeWorkloadIdentity"
+        @update:value="onMemberListUpdate($event as string[])"
+      />
+    </div>
+    <div
+      v-else
+      :class="[
+        'w-full flex flex-col gap-y-2',
+      ]"
+    >
+      <div class="flex text-main items-center gap-x-1">
+        {{ $t("settings.members.select-group", 2 /* multiply*/) }}
+        <RequiredStar v-if="required" />
+      </div>
+
+      <GroupSelect
+        key="group-select"
+        :value="memberList"
+        :disabled="disabled"
+        :multiple="true"
+        :project-name="projectName"
         @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
@@ -40,11 +74,10 @@
 
 <script setup lang="ts">
 import { uniq } from "lodash-es";
-import { CircleHelpIcon } from "lucide-vue-next";
-import { NTooltip } from "naive-ui";
-import { computed } from "vue";
+import { NRadio, NRadioGroup } from "naive-ui";
+import { computed, ref } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { AccountSelect } from "@/components/v2";
+import { GroupSelect, UserSelect } from "@/components/v2";
 import {
   extractGroupEmail,
   extractServiceAccountId,
@@ -59,8 +92,11 @@ import {
   getServiceAccountNameInBinding,
   getUserEmailInBinding,
   getWorkloadIdentityNameInBinding,
+  groupBindingPrefix,
 } from "@/types";
 import { convertMemberToFullname } from "@/utils";
+
+type MemberType = "USERS" | "GROUPS";
 
 const props = withDefaults(
   defineProps<{
@@ -76,12 +112,16 @@ const props = withDefaults(
     disabled?: boolean;
     allowChangeType?: boolean;
     includeAllUsers?: boolean;
+    includeServiceAccount?: boolean;
+    includeWorkloadIdentity?: boolean;
   }>(),
   {
     disabled: false,
     projectName: undefined,
     allowChangeType: true,
     includeAllUsers: false,
+    includeServiceAccount: false,
+    includeWorkloadIdentity: false,
   }
 );
 
@@ -89,11 +129,28 @@ const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;
 }>();
 
+const initMemberType = computed((): MemberType => {
+  for (const binding of props.value) {
+    if (binding.startsWith(groupBindingPrefix)) {
+      return "GROUPS";
+    }
+    return "USERS";
+  }
+  return "USERS";
+});
+
+const memberType = ref<MemberType>(initMemberType.value);
+
+const onTypeChange = (type: MemberType) => {
+  emit("update:value", []);
+  memberType.value = type;
+};
+
 const memberList = computed(() => {
   return props.value.map(convertMemberToFullname);
 });
 
-const convertFullnameToMember = (fullname: string) => {
+const convertNameToMember = (fullname: string) => {
   if (fullname.startsWith(groupNamePrefix)) {
     const email = extractGroupEmail(fullname);
     return getGroupEmailInBinding(email);
@@ -111,7 +168,7 @@ const convertFullnameToMember = (fullname: string) => {
 
 const onMemberListUpdate = (fullnameList: string[]) => {
   const memberListInBinding = uniq(fullnameList)
-    .map(convertFullnameToMember)
+    .map(convertNameToMember)
     .filter((member) => !!member);
 
   emit("update:value", memberListInBinding);

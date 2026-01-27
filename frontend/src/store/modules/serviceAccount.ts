@@ -21,50 +21,24 @@ import {
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { useActuatorV1Store } from "./v1/actuator";
-import { extractServiceAccountId, serviceAccountNamePrefix } from "./v1/common";
-
-export interface AccountFilter {
-  query?: string;
-  state?: State;
-}
-
-export const getAccountListFilter = (params: AccountFilter) => {
-  const filter = [];
-  const search = params.query?.trim()?.toLowerCase();
-  if (search) {
-    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
-  }
-  if (params.state === State.DELETED) {
-    filter.push(`state == "${State[params.state]}"`);
-  }
-  return filter.join(" && ");
-};
-
-export const ensureServiceAccountFullName = (identifier: string) => {
-  const id = extractServiceAccountId(identifier);
-  return `${serviceAccountNamePrefix}${id}`;
-};
 
 export const useServiceAccountStore = defineStore("serviceAccount", () => {
   const actuatorStore = useActuatorV1Store();
   const cacheByName = ref<Map<string, ServiceAccount>>(new Map());
 
-  const listServiceAccounts = async ({
-    pageSize,
-    pageToken,
-    showDeleted,
-    filter,
-  }: {
-    pageSize: number;
-    pageToken: string | undefined;
-    showDeleted: boolean;
-    filter?: AccountFilter;
-  }) => {
+  // List service accounts.
+  // parent: empty for workspace-level, "projects/{project}" for project-level
+  const listServiceAccounts = async (
+    pageSize: number,
+    pageToken: string | undefined,
+    showDeleted: boolean,
+    parent = ""
+  ) => {
     const request = create(ListServiceAccountsRequestSchema, {
+      parent,
       pageSize,
       pageToken,
       showDeleted,
-      filter: getAccountListFilter(filter ?? {}),
     });
     return serviceAccountServiceClientConnect.listServiceAccounts(request);
   };
@@ -79,34 +53,28 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
   };
 
   const getServiceAccount = (name: string) => {
-    const validName = ensureServiceAccountFullName(name);
-    const email = extractServiceAccountId(validName);
-    return (
-      cacheByName.value.get(validName) ??
-      create(ServiceAccountSchema, {
-        name,
-        email,
-        state: State.ACTIVE,
-        title: email.split("@")[0],
-      })
-    );
+    return cacheByName.value.get(name);
   };
 
   const getOrFetchServiceAccount = async (name: string, silent = false) => {
-    const validName = ensureServiceAccountFullName(name);
-    if (cacheByName.value.has(validName)) {
-      return cacheByName.value.get(validName)!;
+    const cached = getServiceAccount(name);
+    if (cached) {
+      return cached;
     }
-    const sa = await fetchServiceAccount(validName, silent);
-    cacheByName.value.set(sa.name, sa);
+    const sa = await fetchServiceAccount(name, silent);
+    cacheByName.value.set(name, sa);
     return sa;
   };
 
+  // Create service account.
+  // parent: empty for workspace-level, "projects/{project}" for project-level
   const createServiceAccount = async (
     serviceAccountId: string,
-    serviceAccount: Partial<ServiceAccount>
+    serviceAccount: Partial<ServiceAccount>,
+    parent = ""
   ) => {
     const request = create(CreateServiceAccountRequestSchema, {
+      parent,
       serviceAccountId,
       serviceAccount: create(
         ServiceAccountSchema,
@@ -116,13 +84,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.createServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-    ]);
+    await actuatorStore.fetchServerInfo();
     return sa;
   };
 
@@ -152,18 +114,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     if (sa) {
       sa.state = State.DELETED;
     }
-    actuatorStore.updateUserStat([
-      {
-        count: -1,
-        state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-      {
-        count: 1,
-        state: State.DELETED,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-    ]);
+    await actuatorStore.fetchServerInfo();
   };
 
   const undeleteServiceAccount = async (name: string) => {
@@ -173,18 +124,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.undeleteServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-      {
-        count: -1,
-        state: State.DELETED,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-    ]);
+    await actuatorStore.fetchServerInfo();
     return sa;
   };
 

@@ -22,11 +22,13 @@ import {
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
+  WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
+  WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "./workspaceRoutes";
 
 const rootRoute: RouteRecordRaw = {
@@ -284,6 +286,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_USERS,
         meta: {
           title: () => t("settings.sidebar.users-and-groups"),
+          requiredPermissionList: () => ["bb.users.list", "bb.groups.list"],
         },
         component: () => import("@/views/SettingWorkspaceUsers.vue"),
         props: true,
@@ -300,6 +303,27 @@ const workspaceRoutes: RouteRecordRaw[] = [
           ],
         },
         component: () => import("@/views/SettingWorkspaceMembers.vue"),
+        props: true,
+      },
+      {
+        path: "service-accounts",
+        name: WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
+        meta: {
+          title: () => t("settings.members.service-accounts"),
+          requiredPermissionList: () => ["bb.users.list"],
+        },
+        component: () => import("@/views/SettingWorkspaceServiceAccounts.vue"),
+        props: true,
+      },
+      {
+        path: "workload-identities",
+        name: WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
+        meta: {
+          title: () => t("settings.members.workload-identities"),
+          requiredPermissionList: () => ["bb.users.list"],
+        },
+        component: () =>
+          import("@/views/SettingWorkspaceWorkloadIdentities.vue"),
         props: true,
       },
       {

@@ -10,7 +10,9 @@ import {
   workloadIdentityToUser,
 } from "@/store";
 import {
+  extractServiceAccountId,
   extractUserId,
+  extractWorkloadIdentityId,
   groupNamePrefix,
   serviceAccountNamePrefix,
   workloadIdentityNamePrefix,
@@ -74,10 +76,32 @@ const getMemberBinding = (
     const fullname = convertMemberToFullname(member);
     if (fullname.startsWith(serviceAccountNamePrefix)) {
       const sa = serviceAccountStore.getServiceAccount(fullname);
-      user = serviceAccountToUser(sa);
+      if (sa) {
+        user = serviceAccountToUser(sa);
+      } else {
+        const email = extractServiceAccountId(fullname);
+        user = create(UserSchema, {
+          title: email,
+          name: fullname,
+          email: email,
+          userType: UserType.SERVICE_ACCOUNT,
+          state: State.DELETED,
+        });
+      }
     } else if (fullname.startsWith(workloadIdentityNamePrefix)) {
       const wi = workloadIdentityStore.getWorkloadIdentity(fullname);
-      user = workloadIdentityToUser(wi);
+      if (wi) {
+        user = workloadIdentityToUser(wi);
+      } else {
+        const email = extractWorkloadIdentityId(fullname);
+        user = create(UserSchema, {
+          title: email,
+          name: fullname,
+          email: email,
+          userType: UserType.WORKLOAD_IDENTITY,
+          state: State.DELETED,
+        });
+      }
     } else {
       user = userStore.getUserByIdentifier(member);
       if (!user) {
