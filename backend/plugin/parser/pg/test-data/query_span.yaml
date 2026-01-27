@@ -2805,3 +2805,108 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+- description: Test table.* with JOIN on different tables for masking
+  statement: SELECT users.*, payments.* FROM users JOIN payments ON users.id = payments.user_id;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {"name": "id"},
+                {"name": "name"},
+                {"name": "email"}
+              ]
+            },
+            {
+              "name": "payments",
+              "columns": [
+                {"name": "id"},
+                {"name": "user_id"},
+                {"name": "amount"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: id
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: users
+              column: id
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: name
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: users
+              column: name
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: email
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: users
+              column: email
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: id
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: payments
+              column: id
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: user_id
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: payments
+              column: user_id
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: amount
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: payments
+              column: amount
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: payments
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: users
+          column: ""
+    predicatecolumns: []
