@@ -2814,15 +2814,15 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefCo
 			// Return empty set as this should be handled by star expansion logic
 			switch len(parts) {
 			case 1:
-				// table.* case
-				columnName = ""
+				// table.* case - columnName contains the table name from Colid()
 				tableName = columnName
+				columnName = ""
 				schemaName = ""
 			case 2:
-				// schema.table.* case
-				columnName = ""
+				// schema.table.* case - columnName contains the schema name from Colid()
 				schemaName = columnName
 				tableName = parts[0]
+				columnName = ""
 			default:
 				// More complex indirection with star, ignore
 				return []base.QuerySpanResult{}, nil
