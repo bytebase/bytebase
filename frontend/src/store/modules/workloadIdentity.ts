@@ -37,17 +37,20 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   const cacheByName = ref<Map<string, WorkloadIdentity>>(new Map());
 
   const listWorkloadIdentities = async ({
+    parent,
     pageSize,
     pageToken,
     showDeleted,
     filter,
   }: {
+    parent?: string;
     pageSize: number;
     pageToken: string | undefined;
     showDeleted: boolean;
     filter?: AccountFilter;
   }) => {
     const request = create(ListWorkloadIdentitiesRequestSchema, {
+      parent: parent ?? "",
       pageSize,
       pageToken,
       showDeleted,
@@ -94,9 +97,11 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
 
   const createWorkloadIdentity = async (
     workloadIdentityId: string,
-    workloadIdentity: Partial<WorkloadIdentity>
+    workloadIdentity: Partial<WorkloadIdentity>,
+    parent?: string
   ) => {
     const request = create(CreateWorkloadIdentityRequestSchema, {
+      parent: parent ?? "",
       workloadIdentityId,
       workloadIdentity: create(
         WorkloadIdentitySchema,

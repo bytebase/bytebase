@@ -21,6 +21,9 @@ export const WORKSPACE_ROUTE_DATA_CLASSIFICATION =
   "workspace.data-classification";
 export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
 export const WORKSPACE_ROUTE_USERS = "workspace.users";
+export const WORKSPACE_ROUTE_SERVICE_ACCOUNTS = "workspace.service-accounts";
+export const WORKSPACE_ROUTE_WORKLOAD_IDENTITIES =
+  "workspace.workload-identities";
 export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
 export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 

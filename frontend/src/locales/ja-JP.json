@@ -455,8 +455,10 @@
     "members": {
       "service-accounts": "サービスアカウント",
       "add-service-account": "サービスアカウントを追加",
+      "update-service-account": "サービスアカウントを更新",
       "workload-identities": "ワークロードID",
       "add-workload-identity": "ワークロードIDを追加",
+      "update-workload-identity": "ワークロードIDを更新",
       "inactive-users": "非アクティブユーザー",
       "inactive-service-accounts": "非アクティブサービスアカウント",
       "inactive-workload-identities": "非アクティブワークロードID",

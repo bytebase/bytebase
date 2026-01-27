@@ -54,12 +54,18 @@ defineOptions({
   name: "UserDataTable",
 });
 
-const props = defineProps<{
-  showRoles: boolean;
-  userList: User[];
-  loading: boolean;
-  keyword?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    showRoles: boolean;
+    showGroups?: boolean;
+    userList: User[];
+    loading: boolean;
+    keyword?: string;
+  }>(),
+  {
+    showGroups: true,
+  }
+);
 
 const emit = defineEmits<{
   (event: "user-updated", user: User): void;
@@ -122,6 +128,7 @@ const columns = computed(() => {
       key: "groups",
       title: t("settings.members.table.groups"),
       resizable: true,
+      hide: !props.showGroups,
       render: (user: User) => {
         return h(GroupsCell, {
           user,
