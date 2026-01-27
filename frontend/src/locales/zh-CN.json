@@ -742,7 +742,7 @@
           "rows": {
             "self": "SQL结果行数上限",
             "rows": "行",
-            "description": "限制SQL查询结果的输出行数，值 <=0 表示不限制。"
+            "description": "限制SQL查询结果的输出行数。"
           }
         },
         "no-limit": "当值 <= 0 时无限制",
