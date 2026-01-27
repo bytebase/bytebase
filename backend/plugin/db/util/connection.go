@@ -37,9 +37,11 @@ func GetAWSConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (a
 }
 
 func GetGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*cloudsqlconn.Dialer, error) {
-	if gcpCredential := connCfg.DataSource.GetGcpCredential(); gcpCredential != nil {
+	if gcpCredential := connCfg.DataSource.GetGcpCredential(); gcpCredential != nil && len(gcpCredential.Content) > 0 {
+		// Need BOTH: WithCredentialsJSON for API access AND WithIAMAuthN for IAM database authentication
 		return cloudsqlconn.NewDialer(ctx,
 			cloudsqlconn.WithCredentialsJSON([]byte(gcpCredential.Content)),
+			cloudsqlconn.WithIAMAuthN(),
 		)
 	}
 	return cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
