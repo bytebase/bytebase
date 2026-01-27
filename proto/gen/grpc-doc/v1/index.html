@@ -28694,7 +28694,7 @@ Permissions required: bb.taskRuns.list</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource where this service account will be created.
-Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -28785,7 +28785,7 @@ Format: serviceAccounts/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource.
-Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -29016,7 +29016,7 @@ Supported fields: title, service_key (triggers key rotation) </p></td>
                 <td><a href="#bytebase.v1.CreateServiceAccountRequest">CreateServiceAccountRequest</a></td>
                 <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
                 <td><p>Creates a new service account.
-For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
 For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.</p></td>
               </tr>
             
@@ -29033,7 +29033,7 @@ Permissions required: bb.serviceAccounts.get</p></td>
                 <td><a href="#bytebase.v1.ListServiceAccountsRequest">ListServiceAccountsRequest</a></td>
                 <td><a href="#bytebase.v1.ListServiceAccountsResponse">ListServiceAccountsResponse</a></td>
                 <td><p>Lists service accounts.
-For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
 For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.</p></td>
               </tr>
             
@@ -29091,7 +29091,7 @@ Permissions required: bb.serviceAccounts.undelete</p></td>
               <tr>
                 <td>CreateServiceAccount</td>
                 <td>POST</td>
-                <td>/v1/serviceAccounts</td>
+                <td>/v1/{parent=workspaces/*}/serviceAccounts</td>
                 <td>service_account</td>
               </tr>
               
@@ -29118,7 +29118,7 @@ Permissions required: bb.serviceAccounts.undelete</p></td>
               <tr>
                 <td>ListServiceAccounts</td>
                 <td>GET</td>
-                <td>/v1/serviceAccounts</td>
+                <td>/v1/{parent=workspaces/*}/serviceAccounts</td>
                 <td></td>
               </tr>
               
@@ -30182,7 +30182,7 @@ Permissions required: bb.settings.set</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource where this workload identity will be created.
-Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -30273,7 +30273,7 @@ Format: workloadIdentities/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource.
-Format: projects/{project} for project-level, empty for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -30504,7 +30504,7 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                 <td><a href="#bytebase.v1.CreateWorkloadIdentityRequest">CreateWorkloadIdentityRequest</a></td>
                 <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
                 <td><p>Creates a new workload identity.
-For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
 For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.</p></td>
               </tr>
             
@@ -30521,7 +30521,7 @@ Permissions required: bb.workloadIdentities.get</p></td>
                 <td><a href="#bytebase.v1.ListWorkloadIdentitiesRequest">ListWorkloadIdentitiesRequest</a></td>
                 <td><a href="#bytebase.v1.ListWorkloadIdentitiesResponse">ListWorkloadIdentitiesResponse</a></td>
                 <td><p>Lists workload identities.
-For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
 For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.</p></td>
               </tr>
             
@@ -30579,7 +30579,7 @@ Permissions required: bb.workloadIdentities.undelete</p></td>
               <tr>
                 <td>CreateWorkloadIdentity</td>
                 <td>POST</td>
-                <td>/v1/workloadIdentities</td>
+                <td>/v1/{parent=workspaces/*}/workloadIdentities</td>
                 <td>workload_identity</td>
               </tr>
               
@@ -30606,7 +30606,7 @@ Permissions required: bb.workloadIdentities.undelete</p></td>
               <tr>
                 <td>ListWorkloadIdentities</td>
                 <td>GET</td>
-                <td>/v1/workloadIdentities</td>
+                <td>/v1/{parent=workspaces/*}/workloadIdentities</td>
                 <td></td>
               </tr>
               

@@ -37,17 +37,19 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 	// Parse parent to determine workspace vs project level
 	var projectID *string
 	parent := request.Msg.Parent
-	if parent != "" {
+	switch {
+	case strings.HasPrefix(parent, common.ProjectNamePrefix):
 		// project-level service account: parent = "projects/{project}"
-		if strings.HasPrefix(parent, common.ProjectNamePrefix) {
-			pid, err := common.GetProjectID(parent)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid parent %q", parent))
-			}
-			projectID = &pid
-		} else {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or empty", parent))
+		pid, err := common.GetProjectID(parent)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid parent %q", parent))
 		}
+		projectID = &pid
+	case strings.HasPrefix(parent, common.WorkspacePrefix):
+		// workspace-level service account: parent = "workspaces/-"
+		// projectID remains nil
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/-", parent))
 	}
 
 	serviceAccountID := request.Msg.ServiceAccountId
@@ -130,20 +132,21 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 	// Parse parent to determine workspace vs project level
 	var projectID *string
 	parent := request.Msg.Parent
-	if parent != "" {
-		if strings.HasPrefix(parent, common.ProjectNamePrefix) {
-			pid, err := common.GetProjectID(parent)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid parent %q", parent))
-			}
-			projectID = &pid
-		} else {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or empty", parent))
+	switch {
+	case strings.HasPrefix(parent, common.ProjectNamePrefix):
+		// project-level service account: parent = "projects/{project}"
+		pid, err := common.GetProjectID(parent)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid parent %q", parent))
 		}
-	} else {
-		// workspace-level list - use empty string to filter workspace-level SAs
+		projectID = &pid
+	case strings.HasPrefix(parent, common.WorkspacePrefix):
+		// workspace-level list: parent = "workspaces/-"
+		// use empty string to filter workspace-level SAs
 		emptyProjectID := ""
 		projectID = &emptyProjectID
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/-", parent))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{

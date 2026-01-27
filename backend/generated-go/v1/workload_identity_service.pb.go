@@ -124,7 +124,7 @@ func (x *WorkloadIdentity) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
 type CreateWorkloadIdentityRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this workload identity will be created.
-	// Format: projects/{project} for project-level, empty for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The ID to use for the workload identity, which will become the final component
 	// of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
@@ -238,7 +238,7 @@ func (x *GetWorkloadIdentityRequest) GetName() string {
 type ListWorkloadIdentitiesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource.
-	// Format: projects/{project} for project-level, empty for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of workload identities to return. The service may return fewer than
 	// this value.
@@ -588,12 +588,11 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x1dbytebase.com/WorkloadIdentityR\x04name\"\\\n" +
 	"\x1fUndeleteWorkloadIdentityRequest\x129\n" +
 	"\x04name\x18\x01 \x01(\tB%\xe0A\x02\xfaA\x1f\n" +
-	"\x1dbytebase.com/WorkloadIdentityR\x04name2\xe7\n" +
-	"\n" +
-	"\x17WorkloadIdentityService\x12\xb0\x02\n" +
-	"\x16CreateWorkloadIdentity\x12*.bytebase.v1.CreateWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"\xca\x01\xdaA-parent,workload_identity,workload_identity_id\x8a\xea0\x1cbb.workloadIdentities.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02l:\x11workload_identityZ+:\x11workload_identity\"\x16/v1/workloadIdentities\"*/v1/{parent=projects/*}/workloadIdentities\x12\xae\x01\n" +
-	"\x13GetWorkloadIdentity\x12'.bytebase.v1.GetWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"O\xdaA\x04name\x8a\xea0\x19bb.workloadIdentities.get\x90\xea0\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/{name=workloadIdentities/*}\x12\xea\x01\n" +
-	"\x16ListWorkloadIdentities\x12*.bytebase.v1.ListWorkloadIdentitiesRequest\x1a+.bytebase.v1.ListWorkloadIdentitiesResponse\"w\xdaA\x06parent\x8a\xea0\x1abb.workloadIdentities.list\x90\xea0\x01\x82\xd3\xe4\x93\x02FZ\x18\x12\x16/v1/workloadIdentities\x12*/v1/{parent=projects/*}/workloadIdentities\x12\xfa\x01\n" +
+	"\x1dbytebase.com/WorkloadIdentityR\x04name2\x95\v\n" +
+	"\x17WorkloadIdentityService\x12\xc7\x02\n" +
+	"\x16CreateWorkloadIdentity\x12*.bytebase.v1.CreateWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"\xe1\x01\xdaA-parent,workload_identity,workload_identity_id\x8a\xea0\x1cbb.workloadIdentities.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x82\x01:\x11workload_identityZA:\x11workload_identity\",/v1/{parent=workspaces/*}/workloadIdentities\"*/v1/{parent=projects/*}/workloadIdentities\x12\xae\x01\n" +
+	"\x13GetWorkloadIdentity\x12'.bytebase.v1.GetWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"O\xdaA\x04name\x8a\xea0\x19bb.workloadIdentities.get\x90\xea0\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/{name=workloadIdentities/*}\x12\x81\x02\n" +
+	"\x16ListWorkloadIdentities\x12*.bytebase.v1.ListWorkloadIdentitiesRequest\x1a+.bytebase.v1.ListWorkloadIdentitiesResponse\"\x8d\x01\xdaA\x06parent\x8a\xea0\x1abb.workloadIdentities.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\\Z.\x12,/v1/{parent=workspaces/*}/workloadIdentities\x12*/v1/{parent=projects/*}/workloadIdentities\x12\xfa\x01\n" +
 	"\x16UpdateWorkloadIdentity\x12*.bytebase.v1.UpdateWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"\x94\x01\xdaA\x1dworkload_identity,update_mask\x8a\xea0\x1cbb.workloadIdentities.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02F:\x11workload_identity21/v1/{workload_identity.name=workloadIdentities/*}\x12\xb4\x01\n" +
 	"\x16DeleteWorkloadIdentity\x12*.bytebase.v1.DeleteWorkloadIdentityRequest\x1a\x16.google.protobuf.Empty\"V\xdaA\x04name\x8a\xea0\x1cbb.workloadIdentities.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02!*\x1f/v1/{name=workloadIdentities/*}\x12\xc6\x01\n" +
 	"\x18UndeleteWorkloadIdentity\x12,.bytebase.v1.UndeleteWorkloadIdentityRequest\x1a\x1d.bytebase.v1.WorkloadIdentity\"]\x8a\xea0\x1ebb.workloadIdentities.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=workloadIdentities/*}:undeleteB\xb2\x01\n" +

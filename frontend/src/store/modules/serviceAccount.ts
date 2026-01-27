@@ -63,7 +63,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     filter?: AccountFilter;
   }) => {
     const request = create(ListServiceAccountsRequestSchema, {
-      parent: parent ?? "",
+      parent: parent ?? "workspaces/-",
       pageSize,
       pageToken,
       showDeleted,
@@ -111,7 +111,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     parent?: string
   ) => {
     const request = create(CreateServiceAccountRequestSchema, {
-      parent: parent ?? "",
+      parent: parent ?? "workspaces/-",
       serviceAccountId,
       serviceAccount: create(
         ServiceAccountSchema,

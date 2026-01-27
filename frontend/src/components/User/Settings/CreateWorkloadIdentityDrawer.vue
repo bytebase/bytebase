@@ -420,7 +420,7 @@ const parent = computed(() => {
   if (props.projectId) {
     return `projects/${props.projectId}`;
   }
-  return undefined;
+  return "workspaces/-";
 });
 
 const emailSuffix = computed(() => getWorkloadIdentitySuffix(props.projectId));

@@ -166,7 +166,7 @@ const deletedSessionKey = computed(() =>
 );
 
 const parent = computed(() =>
-  props.projectId ? `projects/${props.projectId}` : undefined
+  props.projectId ? `projects/${props.projectId}` : "workspaces/-"
 );
 
 const allowEdit = computed(() => {

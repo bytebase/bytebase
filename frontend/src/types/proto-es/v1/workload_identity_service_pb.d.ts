@@ -79,7 +79,7 @@ export declare const WorkloadIdentitySchema: GenMessage<WorkloadIdentity>;
 export declare type CreateWorkloadIdentityRequest = Message<"bytebase.v1.CreateWorkloadIdentityRequest"> & {
   /**
    * The parent resource where this workload identity will be created.
-   * Format: projects/{project} for project-level, empty for workspace-level.
+   * Format: projects/{project} for project-level, workspaces/- for workspace-level.
    *
    * @generated from field: string parent = 1;
    */
@@ -137,7 +137,7 @@ export declare const GetWorkloadIdentityRequestSchema: GenMessage<GetWorkloadIde
 export declare type ListWorkloadIdentitiesRequest = Message<"bytebase.v1.ListWorkloadIdentitiesRequest"> & {
   /**
    * The parent resource.
-   * Format: projects/{project} for project-level, empty for workspace-level.
+   * Format: projects/{project} for project-level, workspaces/- for workspace-level.
    *
    * @generated from field: string parent = 1;
    */
@@ -307,7 +307,7 @@ export declare const UndeleteWorkloadIdentityRequestSchema: GenMessage<UndeleteW
 export declare const WorkloadIdentityService: GenService<{
   /**
    * Creates a new workload identity.
-   * For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+   * For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
    * For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
    *
    * @generated from rpc bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity
@@ -330,7 +330,7 @@ export declare const WorkloadIdentityService: GenService<{
   },
   /**
    * Lists workload identities.
-   * For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+   * For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
    * For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
    *
    * @generated from rpc bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities
