@@ -32,9 +32,9 @@ export type SelectionState = {
 export type SelectionContext = {
   state: Ref<SelectionState>;
   disabled: Ref<boolean>;
-  selectRow: (row: number) => void;
-  selectColumn: (column: number) => void;
-  selectCell: (row: number, column: number) => void;
+  toggleSelectRow: (row: number) => void;
+  toggleSelectColumn: (column: number) => void;
+  toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
   copy: () => boolean;
 };
@@ -69,14 +69,18 @@ export const provideSelectionContext = ({
   const isCellSelected = computed(
     () => state.value.rows.length === 1 && state.value.columns.length === 1
   );
-  const selectRow = (row: number) => {
+
+  const deselect = () => {
+    state.value = {
+      rows: [],
+      columns: [],
+    };
+  };
+
+  const toggleSelectRow = (row: number) => {
     if (disabled.value) return;
     if (isCellSelected.value) {
-      state.value = {
-        rows: [row],
-        columns: [],
-      };
-      return;
+      deselect();
     }
     state.value = {
       rows: sortBy(
@@ -87,14 +91,11 @@ export const provideSelectionContext = ({
       columns: [],
     };
   };
-  const selectColumn = (column: number) => {
+
+  const toggleSelectColumn = (column: number) => {
     if (disabled.value) return;
     if (isCellSelected.value) {
-      state.value = {
-        rows: [],
-        columns: [column],
-      };
-      return;
+      deselect();
     }
     state.value = {
       rows: [],
@@ -105,7 +106,8 @@ export const provideSelectionContext = ({
       ),
     };
   };
-  const selectCell = (row: number, column: number) => {
+
+  const toggleSelectCell = (row: number, column: number) => {
     if (disabled.value) return;
     if (
       state.value.rows.includes(row) &&
@@ -117,12 +119,6 @@ export const provideSelectionContext = ({
     state.value = {
       rows: [row],
       columns: [column],
-    };
-  };
-  const deselect = () => {
-    state.value = {
-      rows: [],
-      columns: [],
     };
   };
 
@@ -177,7 +173,8 @@ export const provideSelectionContext = ({
   };
 
   const getValues = () => {
-    if (state.value.rows.length === 1 && state.value.columns.length === 1) {
+    if (isCellSelected.value) {
+      // single cell selected
       const row = rows.value[state.value.rows[0]];
       if (!row) {
         return "";
@@ -193,7 +190,18 @@ export const provideSelectionContext = ({
         colIndex: state.value.columns[0],
         rowIndex: state.value.rows[0],
       });
-    } else if (state.value.rows.length > 0) {
+    }
+
+    // build column name
+    let columnNames = ["index", ...columns.value.map((c) => c.name)];
+    if (state.value.columns.length > 0) {
+      columnNames = state.value.columns.map(
+        (columnIndex) => columns.value[columnIndex]?.name ?? ""
+      );
+    }
+
+    if (state.value.rows.length > 0) {
+      // multi-rows selected
       const data: QueryRow[] = [];
       for (const rowIndex of state.value.rows) {
         const d = rows.value[rowIndex].item;
@@ -205,7 +213,8 @@ export const provideSelectionContext = ({
       if (data.length === 0) {
         return "";
       }
-      return data
+
+      const value = data
         .map((row, rowIdx) => {
           return row.values
             .map((cell, colIdx) => {
@@ -218,7 +227,12 @@ export const provideSelectionContext = ({
             .join("\t");
         })
         .join("\n");
-    } else if (state.value.columns.length > 0) {
+
+      return `${columnNames.join("\t")}\n${value}`;
+    }
+
+    if (state.value.columns.length > 0) {
+      // multi-columns selected
       const values: RowValue[][] = [];
       for (const row of rows.value) {
         const cells: RowValue[] = [];
@@ -232,7 +246,7 @@ export const provideSelectionContext = ({
       if (values.length === 0) {
         return "";
       }
-      return values
+      const value = values
         .map((cells, rowIdx) =>
           cells
             .map((cell, colIdx) => {
@@ -245,6 +259,8 @@ export const provideSelectionContext = ({
             .join("\t")
         )
         .join("\n");
+
+      return `${columnNames.join("\t")}\n${value}`;
     }
 
     return "";
@@ -305,9 +321,9 @@ export const provideSelectionContext = ({
   const context: SelectionContext = {
     state,
     disabled,
-    selectRow,
-    selectColumn,
-    selectCell,
+    toggleSelectRow,
+    toggleSelectColumn,
+    toggleSelectCell,
     deselect,
     copy,
   };
