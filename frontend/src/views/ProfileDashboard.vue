@@ -52,9 +52,6 @@
             <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
               {{ user.title }}
             </h1>
-            <ServiceAccountTag
-              v-if="user.userType === UserType.SERVICE_ACCOUNT"
-            />
           </div>
         </div>
       </div>
@@ -235,7 +232,6 @@ import EmailInput from "@/components/EmailInput.vue";
 import { FeatureModal } from "@/components/FeatureGuard";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";

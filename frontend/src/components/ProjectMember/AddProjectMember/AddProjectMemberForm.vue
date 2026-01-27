@@ -4,8 +4,6 @@
       v-model:value="state.memberList"
       :required="true"
       :include-all-users="true"
-      :include-service-account="true"
-      :include-workload-identity="true"
       :disabled="disableMemberChange"
     >
       <template #suffix>

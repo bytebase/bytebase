@@ -10245,9 +10245,9 @@ When paginating, all other parameters provided to `ListServiceAccounts` must mat
 | show_deleted | [bool](#bool) |  | Show deleted service accounts if specified. |
 | filter | [string](#string) |  | Filter is used to filter service accounts returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - name: the service account name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the service account email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+Supported filter: - name: the service account name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the service account email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator.
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@service.bytebase.com&#34; email.matches(&#34;ed&#34;) |
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) state == &#34;DELETED&#34; email == &#34;ed@service.bytebase.com&#34; email.matches(&#34;ed&#34;) |
 
 
 
@@ -10729,9 +10729,9 @@ When paginating, all other parameters provided to `ListWorkloadIdentities` must 
 | show_deleted | [bool](#bool) |  | Show deleted workload identities if specified. |
 | filter | [string](#string) |  | Filter is used to filter workload identities returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - name: the workload identity name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the workload identity email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+Supported filter: - name: the workload identity name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the workload identity email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator.
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@workload.bytebase.com&#34; email.matches(&#34;ed&#34;) |
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) state == &#34;DELETED&#34; email == &#34;ed@workload.bytebase.com&#34; email.matches(&#34;ed&#34;) |
 
 
 

@@ -57,10 +57,6 @@ const userStore = useUserStore();
 const hasPermission = computed(() => hasWorkspacePermissionV2("bb.users.list"));
 
 const getFilter = (search: string): UserFilter => {
-  const filter = [];
-  if (search) {
-    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
-  }
   const allowedType = [UserType.USER];
   if (props.includeSystemBot) {
     allowedType.push(UserType.SYSTEM_BOT);

@@ -129,7 +129,7 @@
               <UserDataTableByGroup
                 :groups="list"
                 :loading="loading"
-                :keyword="state.activeUserFilterText"
+                :keyword="state.activeGroupFilterText"
                 v-model:expanded-keys="expandedKeys"
                 @group-selected="handleGroupSelected"
                 @group-removed="handleGroupRemoved"
@@ -141,13 +141,11 @@
 
       <template #suffix>
         <div class="flex items-center gap-x-2">
-          <SearchBox
-            v-if="state.typeTab === 'USERS' || state.typeTab === 'GROUPS'"
-            v-model:value="state.activeUserFilterText"
-          />
-
           <!-- USERS tab actions -->
           <template v-if="state.typeTab === 'USERS'">
+            <SearchBox
+              v-model:value="state.activeUserFilterText"
+            />
             <PermissionGuardWrapper
               v-slot="slotProps"
               :permissions="['bb.settings.get']"
@@ -177,7 +175,7 @@
                 type="primary"
                 class="capitalize"
                 :disabled="slotProps.disabled"
-                @click="handleCreateUser"
+                @click="() => handleCreateUser(UserType.USER)"
               >
                 <template #icon>
                   <PlusIcon class="h-5 w-5" />
@@ -197,7 +195,7 @@
                 type="primary"
                 class="capitalize"
                 :disabled="slotProps.disabled"
-                @click="handleCreateServiceAccount"
+                @click="() => handleCreateUser(UserType.SERVICE_ACCOUNT)"
               >
                 <template #icon>
                   <PlusIcon class="h-5 w-5" />
@@ -217,7 +215,7 @@
                 type="primary"
                 class="capitalize"
                 :disabled="slotProps.disabled"
-                @click="handleCreateWorkloadIdentity"
+                @click="() => handleCreateUser(UserType.WORKLOAD_IDENTITY)"
               >
                 <template #icon>
                   <PlusIcon class="h-5 w-5" />
@@ -229,6 +227,9 @@
 
           <!-- GROUPS tab actions -->
           <template v-if="state.typeTab === 'GROUPS'">
+            <SearchBox
+              v-model:value="state.activeGroupFilterText"
+            />
             <PermissionGuardWrapper
               v-slot="slotProps"
               :permissions="['bb.settings.get']"
@@ -259,6 +260,7 @@
               >
                 <template #trigger>
                   <NButton
+                    type="primary"
                     :disabled="
                       slotProps.disabled ||
                       settingV1Store.workspaceProfile.domains.length === 0 ||
@@ -304,9 +306,6 @@
         <div class="flex justify-between items-center mt-2 mb-4">
           <p class="text-lg font-medium leading-7">
             <span>{{ $t("settings.members.inactive-users") }}</span>
-            <span class="ml-1 font-normal text-control-light">
-              ({{ inactiveUserCount }})
-            </span>
           </p>
 
           <div>
@@ -325,7 +324,7 @@
               :show-roles="false"
               :user-list="list"
               :keyword="state.inactiveUserFilterText"
-              @update-user="handleUserRestore"
+              @user-updated="handleUserRestore"
             />
           </template>
         </PagedTable>
@@ -344,9 +343,6 @@
         <div class="flex justify-between items-center mt-2 mb-4">
           <p class="text-lg font-medium leading-7">
             <span>{{ $t("settings.members.inactive-service-accounts") }}</span>
-            <span class="ml-1 font-normal text-control-light">
-              ({{ inactiveServiceAccountCount }})
-            </span>
           </p>
         </div>
 
@@ -360,7 +356,7 @@
               :loading="loading"
               :show-roles="false"
               :user-list="list"
-              @update-user="handleServiceAccountRestore"
+              @user-updated="handleUserRestore"
             />
           </template>
         </PagedTable>
@@ -381,9 +377,6 @@
             <span>{{
               $t("settings.members.inactive-workload-identities")
             }}</span>
-            <span class="ml-1 font-normal text-control-light">
-              ({{ inactiveWorkloadIdentityCount }})
-            </span>
           </p>
         </div>
 
@@ -397,7 +390,7 @@
               :loading="loading"
               :show-roles="false"
               :user-list="list"
-              @update-user="handleWorkloadIdentityRestore"
+              @user-updated="handleUserRestore"
             />
           </template>
         </PagedTable>
@@ -408,13 +401,12 @@
   <CreateUserDrawer
     v-if="state.showCreateUserDrawer"
     :user="state.editingUser"
-    :initial-user-type="state.createUserType"
     @close="() => {
       state.showCreateUserDrawer = false
       state.editingUser = undefined
-      state.createUserType = undefined
     }"
-    @created="handleUserCreated"
+    @created="handleUserUpdated"
+    @updated="handleUserUpdated"
   />
   <CreateGroupDrawer
     v-if="state.showCreateGroupDrawer"
@@ -474,6 +466,7 @@ import {
   useWorkloadIdentityStore,
   workloadIdentityToUser,
 } from "@/store/modules/workloadIdentity";
+import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -494,6 +487,7 @@ const defaultTab: MemberTab = "USERS";
 type LocalState = {
   typeTab: MemberTab;
   activeUserFilterText: string;
+  activeGroupFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
   showInactiveServiceAccountList: boolean;
@@ -503,12 +497,12 @@ type LocalState = {
   showAadSyncDrawer: boolean;
   editingGroup?: Group;
   editingUser?: User;
-  createUserType?: UserType;
 };
 
 const state = reactive<LocalState>({
   typeTab: defaultTab,
   activeUserFilterText: "",
+  activeGroupFilterText: "",
   inactiveUserFilterText: "",
   showInactiveUserList: false,
   showInactiveServiceAccountList: false,
@@ -587,7 +581,7 @@ const fetchGroupList = async ({
     pageToken,
     pageSize,
     filter: {
-      query: state.activeUserFilterText,
+      query: state.activeGroupFilterText,
     },
   });
   return { list: groups, nextPageToken };
@@ -654,10 +648,11 @@ const fetchInactiveServiceAccountList = async ({
     pageSize,
     pageToken,
     showDeleted: true,
+    filter: {
+      state: State.DELETED,
+    },
   });
-  const users: User[] = response.serviceAccounts
-    .filter((sa) => sa.state === State.DELETED)
-    .map(serviceAccountToUser);
+  const users: User[] = response.serviceAccounts.map(serviceAccountToUser);
   return { list: users, nextPageToken: response.nextPageToken };
 };
 
@@ -672,27 +667,13 @@ const fetchInactiveWorkloadIdentityList = async ({
     pageSize,
     pageToken,
     showDeleted: true,
+    filter: {
+      state: State.DELETED,
+    },
   });
-  const users: User[] = response.workloadIdentities
-    .filter((wi) => wi.state === State.DELETED)
-    .map(workloadIdentityToUser);
+  const users: User[] = response.workloadIdentities.map(workloadIdentityToUser);
   return { list: users, nextPageToken: response.nextPageToken };
 };
-
-watch(
-  () => state.activeUserFilterText,
-  () => {
-    if (state.typeTab === "USERS") {
-      userPagedTable.value?.refresh();
-    } else if (state.typeTab === "SERVICE_ACCOUNTS") {
-      serviceAccountPagedTable.value?.refresh();
-    } else if (state.typeTab === "WORKLOAD_IDENTITIES") {
-      workloadIdentityPagedTable.value?.refresh();
-    } else {
-      groupPagedTable.value?.refresh();
-    }
-  }
-);
 
 const fetchInactiveUserList = async ({
   pageToken,
@@ -705,6 +686,7 @@ const fetchInactiveUserList = async ({
     pageToken,
     pageSize,
     filter: {
+      query: state.inactiveUserFilterText,
       state: State.DELETED,
       types: [UserType.USER, UserType.SYSTEM_BOT],
     },
@@ -751,27 +733,6 @@ const activeServiceAccountCount = computed(() => {
 const activeWorkloadIdentityCount = computed(() => {
   return actuatorStore.countUser({
     state: State.ACTIVE,
-    userTypes: [UserType.WORKLOAD_IDENTITY],
-  });
-});
-
-const inactiveUserCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.DELETED,
-    userTypes: [UserType.USER, UserType.SYSTEM_BOT],
-  });
-});
-
-const inactiveServiceAccountCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.DELETED,
-    userTypes: [UserType.SERVICE_ACCOUNT],
-  });
-});
-
-const inactiveWorkloadIdentityCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.DELETED,
     userTypes: [UserType.WORKLOAD_IDENTITY],
   });
 });
@@ -836,81 +797,74 @@ const handleGroupRemoved = (group: Group) => {
   groupPagedTable.value?.removeCache(group);
 };
 
-const handleCreateUser = () => {
-  state.createUserType = UserType.USER;
+const handleCreateUser = (userType: UserType) => {
+  state.editingUser = {
+    ...unknownUser(),
+    userType,
+    title: "",
+  };
   state.showCreateUserDrawer = true;
-};
-
-const handleCreateServiceAccount = () => {
-  state.createUserType = UserType.SERVICE_ACCOUNT;
-  state.showCreateUserDrawer = true;
-};
-
-const handleCreateWorkloadIdentity = () => {
-  state.createUserType = UserType.WORKLOAD_IDENTITY;
-  state.showCreateUserDrawer = true;
-};
-
-const handleUserCreated = (user: User) => {
-  if (user.userType === UserType.SERVICE_ACCOUNT) {
-    serviceAccountPagedTable.value?.refresh().then(() => {
-      serviceAccountPagedTable.value?.updateCache([user]);
-    });
-  } else if (user.userType === UserType.WORKLOAD_IDENTITY) {
-    workloadIdentityPagedTable.value?.refresh().then(() => {
-      workloadIdentityPagedTable.value?.updateCache([user]);
-    });
-  } else {
-    userPagedTable.value?.refresh().then(() => {
-      userPagedTable.value?.updateCache([user]);
-    });
-  }
 };
 
 const handleUserUpdated = (user: User) => {
-  if (user.userType === UserType.SERVICE_ACCOUNT) {
-    if (user.state === State.DELETED) {
-      serviceAccountPagedTable.value?.removeCache(user);
-    } else {
-      serviceAccountPagedTable.value?.updateCache([user]);
-    }
-  } else if (user.userType === UserType.WORKLOAD_IDENTITY) {
-    if (user.state === State.DELETED) {
-      workloadIdentityPagedTable.value?.removeCache(user);
-    } else {
-      workloadIdentityPagedTable.value?.updateCache([user]);
-    }
-  } else {
-    if (user.state === State.DELETED) {
-      userPagedTable.value?.removeCache(user);
-    } else {
-      userPagedTable.value?.updateCache([user]);
-    }
+  if (user.state === State.DELETED) {
+    return handleUserArchived(user);
   }
-};
 
-const handleServiceAccountRestore = (user: User) => {
-  if (user.state !== State.ACTIVE) {
-    return;
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT:
+      return serviceAccountPagedTable.value?.updateCache([user]);
+    case UserType.WORKLOAD_IDENTITY:
+      return workloadIdentityPagedTable.value?.updateCache([user]);
+    default:
+      return userPagedTable.value?.updateCache([user]);
   }
-  deletedServiceAccountPagedTable.value?.removeCache(user);
-  serviceAccountPagedTable.value?.refresh();
-};
-
-const handleWorkloadIdentityRestore = (user: User) => {
-  if (user.state !== State.ACTIVE) {
-    return;
-  }
-  deletedWorkloadIdentityPagedTable.value?.removeCache(user);
-  workloadIdentityPagedTable.value?.refresh();
 };
 
 const handleUserRestore = (user: User) => {
   if (user.state !== State.ACTIVE) {
     return;
   }
-  deletedUserPagedTable.value?.removeCache(user);
-  userPagedTable.value?.refresh();
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT: {
+      deletedServiceAccountPagedTable.value?.removeCache(user);
+      serviceAccountPagedTable.value?.refresh();
+      break;
+    }
+    case UserType.WORKLOAD_IDENTITY: {
+      deletedWorkloadIdentityPagedTable.value?.removeCache(user);
+      workloadIdentityPagedTable.value?.refresh();
+      break;
+    }
+    default: {
+      deletedUserPagedTable.value?.removeCache(user);
+      userPagedTable.value?.updateCache([user]);
+      break;
+    }
+  }
+};
+
+const handleUserArchived = (user: User) => {
+  if (user.state !== State.DELETED) {
+    return;
+  }
+  switch (user.userType) {
+    case UserType.SERVICE_ACCOUNT: {
+      serviceAccountPagedTable.value?.removeCache(user);
+      deletedServiceAccountPagedTable.value?.refresh();
+      break;
+    }
+    case UserType.WORKLOAD_IDENTITY: {
+      workloadIdentityPagedTable.value?.removeCache(user);
+      deletedWorkloadIdentityPagedTable.value?.refresh();
+      break;
+    }
+    default: {
+      userPagedTable.value?.removeCache(user);
+      deletedUserPagedTable.value?.updateCache([user]);
+      break;
+    }
+  }
 };
 
 const handleGroupUpdated = (group: Group) => {

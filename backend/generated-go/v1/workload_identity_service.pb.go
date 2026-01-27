@@ -259,10 +259,12 @@ type ListWorkloadIdentitiesRequest struct {
 	// Supported filter:
 	// - name: the workload identity name, support "==" and ".matches()" operator.
 	// - email: the workload identity email, support "==" and ".matches()" operator.
+	// - state: check State enum for values, support "==" operator.
 	//
 	// For example:
 	// name == "ed"
 	// name.matches("ed")
+	// state == "DELETED"
 	// email == "ed@workload.bytebase.com"
 	// email.matches("ed")
 	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
