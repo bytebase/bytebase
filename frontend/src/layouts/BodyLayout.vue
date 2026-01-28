@@ -2,73 +2,32 @@
   <div class="h-full flex flex-col overflow-hidden">
     <div class="flex-1 flex overflow-hidden">
       <template v-if="!isRootPath">
-        <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
-        <div
-          v-show="state.showMobileOverlay"
-          :class="[sidebarView === 'MOBILE' ? 'block' : 'hidden']"
-          class="fixed inset-0 flex z-40"
+        <!-- Mobile sidebar drawer -->
+        <NDrawer
+          v-model:show="state.showMobileOverlay"
+          placement="left"
+          :width="208"
+          :class="[sidebarView === 'MOBILE' ? '' : 'hidden!']"
         >
-          <div class="fixed inset-0">
-            <div
-              class="absolute inset-0 bg-gray-600 opacity-75"
-              @click.prevent="state.showMobileOverlay = false"
-            ></div>
-          </div>
-          <div
-            tabindex="0"
-            class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-hidden"
-          >
-            <div class="absolute top-0 right-0 -mr-12 pt-2">
-              <button
-                type="button"
-                class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white"
-                @click.prevent="state.showMobileOverlay = false"
-              >
-                <span class="sr-only">Close sidebar</span>
-                <!-- Heroicon name: x -->
-                <heroicons-solid:x class="h-6 w-6 text-white" />
-              </button>
+          <NDrawerContent body-content-class="!p-0">
+            <div class="h-full overflow-y-auto bg-control-bg">
+              <router-view v-if="sidebarView === 'MOBILE'" name="leftSidebar" />
             </div>
-            <!-- Mobile Sidebar -->
-            <div id="sidebar-mobile" class="flex-1 h-0 py-0 overflow-y-auto">
-              <!-- Empty as teleport placeholder -->
-            </div>
-          </div>
-          <div class="shrink-0 w-14" aria-hidden="true">
-            <!-- Force sidebar to shrink to fit close icon -->
-          </div>
-        </div>
+          </NDrawerContent>
+        </NDrawer>
 
         <!-- Static sidebar for desktop -->
         <aside
-          class="shrink-0"
+          v-if="sidebarView === 'DESKTOP'"
+          class="shrink-0 flex"
           data-label="bb-dashboard-static-sidebar"
-          :class="[sidebarView === 'DESKTOP' ? 'flex' : 'hidden']"
         >
           <div class="flex flex-col w-52 bg-control-bg">
-            <!-- Sidebar component, swap this element with another sidebar if you like -->
-            <div
-              id="sidebar-desktop"
-              class="flex-1 flex flex-col py-0 overflow-y-auto"
-            >
-              <!-- Empty as teleport placeholder -->
+            <div class="flex-1 flex flex-col py-0 overflow-y-auto">
+              <router-view name="leftSidebar" />
             </div>
           </div>
         </aside>
-
-        <!--
-          Do not render two instances of sidebars to desktop and mobile sidebars
-          but render one sidebar and teleport it to a correct container when
-          screen size varies
-        -->
-        <teleport
-          v-if="mounted"
-          :to="
-            sidebarView === 'DESKTOP' ? '#sidebar-desktop' : '#sidebar-mobile'
-          "
-        >
-          <router-view name="leftSidebar" />
-        </teleport>
       </template>
 
       <div
@@ -81,28 +40,13 @@
           data-label="bb-dashboard-header"
         >
           <div class="max-w-full mx-auto">
-            <DashboardHeader :show-logo="false" />
+            <DashboardHeader
+              :show-logo="false"
+              :show-mobile-sidebar-toggle="true"
+              @toggle-mobile-sidebar="state.showMobileOverlay = true"
+            />
           </div>
         </nav>
-
-        <aside v-if="!isRootPath" class="md:hidden">
-          <!-- Static sidebar for mobile -->
-          <div
-            class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4"
-          >
-            <div>
-              <button
-                type="button"
-                class="-mr-3 h-8 w-8 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900"
-                @click.prevent="state.showMobileOverlay = true"
-              >
-                <span class="sr-only">Open sidebar</span>
-                <!-- Heroicon name: menu -->
-                <heroicons-outline:menu class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </aside>
 
         <!-- This area may scroll -->
         <div
@@ -138,8 +82,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useMounted, useWindowSize } from "@vueuse/core";
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { useWindowSize } from "@vueuse/core";
+import { NDrawer, NDrawerContent } from "naive-ui";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
@@ -172,13 +117,20 @@ const permissionStore = usePermissionStore();
 const subscriptionStore = useSubscriptionV1Store();
 const route = useRoute();
 const router = useRouter();
-const mounted = useMounted();
 
 const state = reactive<LocalState>({
   showMobileOverlay: false,
   showReleaseModal: false,
   showRefreshRemindModal: false,
 });
+
+// Close mobile drawer on route change
+watch(
+  () => route.fullPath,
+  () => {
+    state.showMobileOverlay = false;
+  }
+);
 
 const mainContainerRef = ref<HTMLDivElement>();
 const { width: windowWidth } = useWindowSize();
