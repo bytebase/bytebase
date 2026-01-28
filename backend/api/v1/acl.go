@@ -275,6 +275,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
+					ShowDeleted:  true,
 				})
 				if err != nil {
 					return errors.Wrapf(err, "failed to get database")
