@@ -7974,7 +7974,7 @@ paths:
       summary: ListServiceAccounts
       description: |-
         Lists service accounts.
-         For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
       operationId: ServiceAccountService_ListServiceAccounts
       parameters:
@@ -8072,7 +8072,7 @@ paths:
       summary: CreateServiceAccount
       description: |-
         Creates a new service account.
-         For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
       operationId: ServiceAccountService_CreateServiceAccount
       parameters:
@@ -8325,7 +8325,7 @@ paths:
       summary: ListWorkloadIdentities
       description: |-
         Lists workload identities.
-         For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
       operationId: WorkloadIdentityService_ListWorkloadIdentities
       parameters:
@@ -8423,7 +8423,7 @@ paths:
       summary: CreateWorkloadIdentity
       description: |-
         Creates a new workload identity.
-         For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
       operationId: WorkloadIdentityService_CreateWorkloadIdentity
       parameters:
@@ -9040,160 +9040,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.DiffMetadataResponse'
-  /v1/serviceAccounts:
-    get:
-      tags:
-        - ServiceAccountService
-      summary: ListServiceAccounts
-      description: |-
-        Lists service accounts.
-         For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
-         For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
-      operationId: ServiceAccountService_ListServiceAccounts2
-      parameters:
-        - name: parent
-          in: query
-          description: |-
-            The parent resource.
-             Format: projects/{project} for project-level, empty for workspace-level.
-          schema:
-            type: string
-            title: parent
-            description: |-
-              The parent resource.
-               Format: projects/{project} for project-level, empty for workspace-level.
-        - name: pageSize
-          in: query
-          description: |-
-            The maximum number of service accounts to return. The service may return fewer than
-             this value.
-             If unspecified, at most 10 service accounts will be returned.
-             The maximum value is 1000; values above 1000 will be coerced to 1000.
-          schema:
-            type: integer
-            title: page_size
-            format: int32
-            description: |-
-              The maximum number of service accounts to return. The service may return fewer than
-               this value.
-               If unspecified, at most 10 service accounts will be returned.
-               The maximum value is 1000; values above 1000 will be coerced to 1000.
-        - name: pageToken
-          in: query
-          description: |-
-            A page token, received from a previous `ListServiceAccounts` call.
-             Provide this to retrieve the subsequent page.
-
-             When paginating, all other parameters provided to `ListServiceAccounts` must match
-             the call that provided the page token.
-          schema:
-            type: string
-            title: page_token
-            description: |-
-              A page token, received from a previous `ListServiceAccounts` call.
-               Provide this to retrieve the subsequent page.
-
-               When paginating, all other parameters provided to `ListServiceAccounts` must match
-               the call that provided the page token.
-        - name: showDeleted
-          in: query
-          description: Show deleted service accounts if specified.
-          schema:
-            type: boolean
-            title: show_deleted
-            description: Show deleted service accounts if specified.
-        - name: filter
-          in: query
-          description: |-
-            Filter is used to filter service accounts returned in the list.
-             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-             Supported filter:
-             - name: the service account name, support "==" and ".matches()" operator.
-             - email: the service account email, support "==" and ".matches()" operator.
-             - state: check State enum for values, support "==" operator.
-
-             For example:
-             name == "ed"
-             name.matches("ed")
-             state == "DELETED"
-             email == "ed@service.bytebase.com"
-             email.matches("ed")
-          schema:
-            type: string
-            title: filter
-            description: |-
-              Filter is used to filter service accounts returned in the list.
-               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-               Supported filter:
-               - name: the service account name, support "==" and ".matches()" operator.
-               - email: the service account email, support "==" and ".matches()" operator.
-               - state: check State enum for values, support "==" operator.
-
-               For example:
-               name == "ed"
-               name.matches("ed")
-               state == "DELETED"
-               email == "ed@service.bytebase.com"
-               email.matches("ed")
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListServiceAccountsResponse'
-    post:
-      tags:
-        - ServiceAccountService
-      summary: CreateServiceAccount
-      description: |-
-        Creates a new service account.
-         For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
-         For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
-      operationId: ServiceAccountService_CreateServiceAccount2
-      parameters:
-        - name: parent
-          in: query
-          description: |-
-            The parent resource where this service account will be created.
-             Format: projects/{project} for project-level, empty for workspace-level.
-          schema:
-            type: string
-            title: parent
-            description: |-
-              The parent resource where this service account will be created.
-               Format: projects/{project} for project-level, empty for workspace-level.
-        - name: serviceAccountId
-          in: query
-          description: |-
-            The ID to use for the service account, which will become the final component
-             of the service account's email in the format: {service_account_id}@service.bytebase.com
-             or {service_account_id}@{project-id}.service.bytebase.com
-          required: true
-          schema:
-            type: string
-            title: service_account_id
-            description: |-
-              The ID to use for the service account, which will become the final component
-               of the service account's email in the format: {service_account_id}@service.bytebase.com
-               or {service_account_id}@{project-id}.service.bytebase.com
-      requestBody:
-        description: The service account to create.
-        content:
-          application/json:
-            schema:
-              title: service_account
-              description: The service account to create.
-              $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
   /v1/serviceAccounts/{serviceAccount}:
     get:
       tags:
@@ -9847,160 +9693,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchGetUsersResponse'
-  /v1/workloadIdentities:
-    get:
-      tags:
-        - WorkloadIdentityService
-      summary: ListWorkloadIdentities
-      description: |-
-        Lists workload identities.
-         For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
-         For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
-      operationId: WorkloadIdentityService_ListWorkloadIdentities2
-      parameters:
-        - name: parent
-          in: query
-          description: |-
-            The parent resource.
-             Format: projects/{project} for project-level, empty for workspace-level.
-          schema:
-            type: string
-            title: parent
-            description: |-
-              The parent resource.
-               Format: projects/{project} for project-level, empty for workspace-level.
-        - name: pageSize
-          in: query
-          description: |-
-            The maximum number of workload identities to return. The service may return fewer than
-             this value.
-             If unspecified, at most 10 workload identities will be returned.
-             The maximum value is 1000; values above 1000 will be coerced to 1000.
-          schema:
-            type: integer
-            title: page_size
-            format: int32
-            description: |-
-              The maximum number of workload identities to return. The service may return fewer than
-               this value.
-               If unspecified, at most 10 workload identities will be returned.
-               The maximum value is 1000; values above 1000 will be coerced to 1000.
-        - name: pageToken
-          in: query
-          description: |-
-            A page token, received from a previous `ListWorkloadIdentities` call.
-             Provide this to retrieve the subsequent page.
-
-             When paginating, all other parameters provided to `ListWorkloadIdentities` must match
-             the call that provided the page token.
-          schema:
-            type: string
-            title: page_token
-            description: |-
-              A page token, received from a previous `ListWorkloadIdentities` call.
-               Provide this to retrieve the subsequent page.
-
-               When paginating, all other parameters provided to `ListWorkloadIdentities` must match
-               the call that provided the page token.
-        - name: showDeleted
-          in: query
-          description: Show deleted workload identities if specified.
-          schema:
-            type: boolean
-            title: show_deleted
-            description: Show deleted workload identities if specified.
-        - name: filter
-          in: query
-          description: |-
-            Filter is used to filter workload identities returned in the list.
-             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-             Supported filter:
-             - name: the workload identity name, support "==" and ".matches()" operator.
-             - email: the workload identity email, support "==" and ".matches()" operator.
-             - state: check State enum for values, support "==" operator.
-
-             For example:
-             name == "ed"
-             name.matches("ed")
-             state == "DELETED"
-             email == "ed@workload.bytebase.com"
-             email.matches("ed")
-          schema:
-            type: string
-            title: filter
-            description: |-
-              Filter is used to filter workload identities returned in the list.
-               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-               Supported filter:
-               - name: the workload identity name, support "==" and ".matches()" operator.
-               - email: the workload identity email, support "==" and ".matches()" operator.
-               - state: check State enum for values, support "==" operator.
-
-               For example:
-               name == "ed"
-               name.matches("ed")
-               state == "DELETED"
-               email == "ed@workload.bytebase.com"
-               email.matches("ed")
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ListWorkloadIdentitiesResponse'
-    post:
-      tags:
-        - WorkloadIdentityService
-      summary: CreateWorkloadIdentity
-      description: |-
-        Creates a new workload identity.
-         For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
-         For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
-      operationId: WorkloadIdentityService_CreateWorkloadIdentity2
-      parameters:
-        - name: parent
-          in: query
-          description: |-
-            The parent resource where this workload identity will be created.
-             Format: projects/{project} for project-level, empty for workspace-level.
-          schema:
-            type: string
-            title: parent
-            description: |-
-              The parent resource where this workload identity will be created.
-               Format: projects/{project} for project-level, empty for workspace-level.
-        - name: workloadIdentityId
-          in: query
-          description: |-
-            The ID to use for the workload identity, which will become the final component
-             of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
-             or {workload_identity_id}@{project-id}.workload.bytebase.com
-          required: true
-          schema:
-            type: string
-            title: workload_identity_id
-            description: |-
-              The ID to use for the workload identity, which will become the final component
-               of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
-               or {workload_identity_id}@{project-id}.workload.bytebase.com
-      requestBody:
-        description: The workload identity to create.
-        content:
-          application/json:
-            schema:
-              title: workload_identity
-              description: The workload identity to create.
-              $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
   /v1/workloadIdentities/{workloadIdentity}:
     get:
       tags:
@@ -10499,6 +10191,294 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListDatabasesResponse'
+  /v1/workspaces/{workspace}/serviceAccounts:
+    get:
+      tags:
+        - ServiceAccountService
+      summary: ListServiceAccounts
+      description: |-
+        Lists service accounts.
+         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
+         For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
+      operationId: ServiceAccountService_ListServiceAccounts2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          description: |-
+            The maximum number of service accounts to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 service accounts will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+          schema:
+            type: integer
+            title: page_size
+            format: int32
+            description: |-
+              The maximum number of service accounts to return. The service may return fewer than
+               this value.
+               If unspecified, at most 10 service accounts will be returned.
+               The maximum value is 1000; values above 1000 will be coerced to 1000.
+        - name: pageToken
+          in: query
+          description: |-
+            A page token, received from a previous `ListServiceAccounts` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListServiceAccounts` must match
+             the call that provided the page token.
+          schema:
+            type: string
+            title: page_token
+            description: |-
+              A page token, received from a previous `ListServiceAccounts` call.
+               Provide this to retrieve the subsequent page.
+
+               When paginating, all other parameters provided to `ListServiceAccounts` must match
+               the call that provided the page token.
+        - name: showDeleted
+          in: query
+          description: Show deleted service accounts if specified.
+          schema:
+            type: boolean
+            title: show_deleted
+            description: Show deleted service accounts if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter service accounts returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the service account name, support "==" and ".matches()" operator.
+             - email: the service account email, support "==" and ".matches()" operator.
+             - state: check State enum for values, support "==" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             state == "DELETED"
+             email == "ed@service.bytebase.com"
+             email.matches("ed")
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter service accounts returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filter:
+               - name: the service account name, support "==" and ".matches()" operator.
+               - email: the service account email, support "==" and ".matches()" operator.
+               - state: check State enum for values, support "==" operator.
+
+               For example:
+               name == "ed"
+               name.matches("ed")
+               state == "DELETED"
+               email == "ed@service.bytebase.com"
+               email.matches("ed")
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListServiceAccountsResponse'
+    post:
+      tags:
+        - ServiceAccountService
+      summary: CreateServiceAccount
+      description: |-
+        Creates a new service account.
+         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
+         For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
+      operationId: ServiceAccountService_CreateServiceAccount2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+        - name: serviceAccountId
+          in: query
+          description: |-
+            The ID to use for the service account, which will become the final component
+             of the service account's email in the format: {service_account_id}@service.bytebase.com
+             or {service_account_id}@{project-id}.service.bytebase.com
+          required: true
+          schema:
+            type: string
+            title: service_account_id
+            description: |-
+              The ID to use for the service account, which will become the final component
+               of the service account's email in the format: {service_account_id}@service.bytebase.com
+               or {service_account_id}@{project-id}.service.bytebase.com
+      requestBody:
+        description: The service account to create.
+        content:
+          application/json:
+            schema:
+              title: service_account
+              description: The service account to create.
+              $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ServiceAccount'
+  /v1/workspaces/{workspace}/workloadIdentities:
+    get:
+      tags:
+        - WorkloadIdentityService
+      summary: ListWorkloadIdentities
+      description: |-
+        Lists workload identities.
+         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
+         For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
+      operationId: WorkloadIdentityService_ListWorkloadIdentities2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          description: |-
+            The maximum number of workload identities to return. The service may return fewer than
+             this value.
+             If unspecified, at most 10 workload identities will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+          schema:
+            type: integer
+            title: page_size
+            format: int32
+            description: |-
+              The maximum number of workload identities to return. The service may return fewer than
+               this value.
+               If unspecified, at most 10 workload identities will be returned.
+               The maximum value is 1000; values above 1000 will be coerced to 1000.
+        - name: pageToken
+          in: query
+          description: |-
+            A page token, received from a previous `ListWorkloadIdentities` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListWorkloadIdentities` must match
+             the call that provided the page token.
+          schema:
+            type: string
+            title: page_token
+            description: |-
+              A page token, received from a previous `ListWorkloadIdentities` call.
+               Provide this to retrieve the subsequent page.
+
+               When paginating, all other parameters provided to `ListWorkloadIdentities` must match
+               the call that provided the page token.
+        - name: showDeleted
+          in: query
+          description: Show deleted workload identities if specified.
+          schema:
+            type: boolean
+            title: show_deleted
+            description: Show deleted workload identities if specified.
+        - name: filter
+          in: query
+          description: |-
+            Filter is used to filter workload identities returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             - name: the workload identity name, support "==" and ".matches()" operator.
+             - email: the workload identity email, support "==" and ".matches()" operator.
+             - state: check State enum for values, support "==" operator.
+
+             For example:
+             name == "ed"
+             name.matches("ed")
+             state == "DELETED"
+             email == "ed@workload.bytebase.com"
+             email.matches("ed")
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter is used to filter workload identities returned in the list.
+               The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+               Supported filter:
+               - name: the workload identity name, support "==" and ".matches()" operator.
+               - email: the workload identity email, support "==" and ".matches()" operator.
+               - state: check State enum for values, support "==" operator.
+
+               For example:
+               name == "ed"
+               name.matches("ed")
+               state == "DELETED"
+               email == "ed@workload.bytebase.com"
+               email.matches("ed")
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorkloadIdentitiesResponse'
+    post:
+      tags:
+        - WorkloadIdentityService
+      summary: CreateWorkloadIdentity
+      description: |-
+        Creates a new workload identity.
+         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
+         For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
+      operationId: WorkloadIdentityService_CreateWorkloadIdentity2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+        - name: workloadIdentityId
+          in: query
+          description: |-
+            The ID to use for the workload identity, which will become the final component
+             of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
+             or {workload_identity_id}@{project-id}.workload.bytebase.com
+          required: true
+          schema:
+            type: string
+            title: workload_identity_id
+            description: |-
+              The ID to use for the workload identity, which will become the final component
+               of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
+               or {workload_identity_id}@{project-id}.workload.bytebase.com
+      requestBody:
+        description: The workload identity to create.
+        content:
+          application/json:
+            schema:
+              title: workload_identity
+              description: The workload identity to create.
+              $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.WorkloadIdentity'
   /v1/workspaces/{workspace}:getIamPolicy:
     get:
       tags:
@@ -12678,7 +12658,7 @@ components:
           title: parent
           description: |-
             The parent resource where this service account will be created.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         serviceAccountId:
           type: string
           title: service_account_id
@@ -12733,7 +12713,7 @@ components:
           title: parent
           description: |-
             The parent resource where this workload identity will be created.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         workloadIdentityId:
           type: string
           title: workload_identity_id
@@ -16742,7 +16722,7 @@ components:
           title: parent
           description: |-
             The parent resource.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         pageSize:
           type: integer
           title: page_size
@@ -16922,7 +16902,7 @@ components:
           title: parent
           description: |-
             The parent resource.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         pageSize:
           type: integer
           title: page_size

@@ -5183,10 +5183,10 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Creates a new service account.  For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.'
+      summary: 'Creates a new service account.  For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.'
       description: |-
         Creates a new service account.
-         For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
       operationId: bytebase.v1.ServiceAccountService.CreateServiceAccount
       parameters:
@@ -5298,10 +5298,10 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Lists service accounts.  For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.'
+      summary: 'Lists service accounts.  For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.'
       description: |-
         Lists service accounts.
-         For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
       operationId: bytebase.v1.ServiceAccountService.ListServiceAccounts
       parameters:
@@ -6065,10 +6065,10 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Creates a new workload identity.  For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.'
+      summary: 'Creates a new workload identity.  For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.'
       description: |-
         Creates a new workload identity.
-         For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
       operationId: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity
       parameters:
@@ -6180,10 +6180,10 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Lists workload identities.  For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.'
+      summary: 'Lists workload identities.  For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.'
       description: |-
         Lists workload identities.
-         For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
       operationId: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities
       parameters:
@@ -8569,7 +8569,7 @@ components:
           title: parent
           description: |-
             The parent resource where this service account will be created.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         serviceAccountId:
           type: string
           title: service_account_id
@@ -8616,7 +8616,7 @@ components:
           title: parent
           description: |-
             The parent resource where this workload identity will be created.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         workloadIdentityId:
           type: string
           title: workload_identity_id
@@ -12447,7 +12447,7 @@ components:
           title: parent
           description: |-
             The parent resource.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         pageSize:
           type: integer
           title: page_size
@@ -12625,7 +12625,7 @@ components:
           title: parent
           description: |-
             The parent resource.
-             Format: projects/{project} for project-level, empty for workspace-level.
+             Format: projects/{project} for project-level, workspaces/- for workspace-level.
         pageSize:
           type: integer
           title: page_size

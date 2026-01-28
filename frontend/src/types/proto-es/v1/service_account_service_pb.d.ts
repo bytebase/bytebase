@@ -78,7 +78,7 @@ export declare const ServiceAccountSchema: GenMessage<ServiceAccount>;
 export declare type CreateServiceAccountRequest = Message<"bytebase.v1.CreateServiceAccountRequest"> & {
   /**
    * The parent resource where this service account will be created.
-   * Format: projects/{project} for project-level, empty for workspace-level.
+   * Format: projects/{project} for project-level, workspaces/- for workspace-level.
    *
    * @generated from field: string parent = 1;
    */
@@ -136,7 +136,7 @@ export declare const GetServiceAccountRequestSchema: GenMessage<GetServiceAccoun
 export declare type ListServiceAccountsRequest = Message<"bytebase.v1.ListServiceAccountsRequest"> & {
   /**
    * The parent resource.
-   * Format: projects/{project} for project-level, empty for workspace-level.
+   * Format: projects/{project} for project-level, workspaces/- for workspace-level.
    *
    * @generated from field: string parent = 1;
    */
@@ -306,7 +306,7 @@ export declare const UndeleteServiceAccountRequestSchema: GenMessage<UndeleteSer
 export declare const ServiceAccountService: GenService<{
   /**
    * Creates a new service account.
-   * For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+   * For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
    * For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
    *
    * @generated from rpc bytebase.v1.ServiceAccountService.CreateServiceAccount
@@ -329,7 +329,7 @@ export declare const ServiceAccountService: GenService<{
   },
   /**
    * Lists service accounts.
-   * For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+   * For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
    * For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
    *
    * @generated from rpc bytebase.v1.ServiceAccountService.ListServiceAccounts

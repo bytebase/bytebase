@@ -57,14 +57,14 @@ const (
 // ServiceAccountServiceClient is a client for the bytebase.v1.ServiceAccountService service.
 type ServiceAccountServiceClient interface {
 	// Creates a new service account.
-	// For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
 	CreateServiceAccount(context.Context, *connect.Request[v1.CreateServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error)
 	// Gets a service account by name.
 	// Permissions required: bb.serviceAccounts.get
 	GetServiceAccount(context.Context, *connect.Request[v1.GetServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error)
 	// Lists service accounts.
-	// For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
 	ListServiceAccounts(context.Context, *connect.Request[v1.ListServiceAccountsRequest]) (*connect.Response[v1.ListServiceAccountsResponse], error)
 	// Updates a service account.
@@ -172,14 +172,14 @@ func (c *serviceAccountServiceClient) UndeleteServiceAccount(ctx context.Context
 // service.
 type ServiceAccountServiceHandler interface {
 	// Creates a new service account.
-	// For workspace-level: parent is empty, permission bb.serviceAccounts.create on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
 	CreateServiceAccount(context.Context, *connect.Request[v1.CreateServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error)
 	// Gets a service account by name.
 	// Permissions required: bb.serviceAccounts.get
 	GetServiceAccount(context.Context, *connect.Request[v1.GetServiceAccountRequest]) (*connect.Response[v1.ServiceAccount], error)
 	// Lists service accounts.
-	// For workspace-level: parent is empty, permission bb.serviceAccounts.list on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
 	ListServiceAccounts(context.Context, *connect.Request[v1.ListServiceAccountsRequest]) (*connect.Response[v1.ListServiceAccountsResponse], error)
 	// Updates a service account.

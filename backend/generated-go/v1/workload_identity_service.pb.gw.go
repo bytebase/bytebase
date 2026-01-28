@@ -94,18 +94,27 @@ func local_request_WorkloadIdentityService_CreateWorkloadIdentity_0(ctx context.
 	return msg, metadata, err
 }
 
-var filter_WorkloadIdentityService_CreateWorkloadIdentity_1 = &utilities.DoubleArray{Encoding: map[string]int{"workload_identity": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+var filter_WorkloadIdentityService_CreateWorkloadIdentity_1 = &utilities.DoubleArray{Encoding: map[string]int{"workload_identity": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 
 func request_WorkloadIdentityService_CreateWorkloadIdentity_1(ctx context.Context, marshaler runtime.Marshaler, client WorkloadIdentityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq CreateWorkloadIdentityRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.WorkloadIdentity); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -121,9 +130,18 @@ func local_request_WorkloadIdentityService_CreateWorkloadIdentity_1(ctx context.
 	var (
 		protoReq CreateWorkloadIdentityRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.WorkloadIdentity); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -227,15 +245,24 @@ func local_request_WorkloadIdentityService_ListWorkloadIdentities_0(ctx context.
 	return msg, metadata, err
 }
 
-var filter_WorkloadIdentityService_ListWorkloadIdentities_1 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+var filter_WorkloadIdentityService_ListWorkloadIdentities_1 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_WorkloadIdentityService_ListWorkloadIdentities_1(ctx context.Context, marshaler runtime.Marshaler, client WorkloadIdentityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq ListWorkloadIdentitiesRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -251,7 +278,16 @@ func local_request_WorkloadIdentityService_ListWorkloadIdentities_1(ctx context.
 	var (
 		protoReq ListWorkloadIdentitiesRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -459,7 +495,7 @@ func RegisterWorkloadIdentityServiceHandlerServer(ctx context.Context, mux *runt
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity", runtime.WithHTTPPathPattern("/v1/workloadIdentities"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/workloadIdentities"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -519,7 +555,7 @@ func RegisterWorkloadIdentityServiceHandlerServer(ctx context.Context, mux *runt
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities", runtime.WithHTTPPathPattern("/v1/workloadIdentities"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/workloadIdentities"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -654,7 +690,7 @@ func RegisterWorkloadIdentityServiceHandlerClient(ctx context.Context, mux *runt
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity", runtime.WithHTTPPathPattern("/v1/workloadIdentities"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/workloadIdentities"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -705,7 +741,7 @@ func RegisterWorkloadIdentityServiceHandlerClient(ctx context.Context, mux *runt
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities", runtime.WithHTTPPathPattern("/v1/workloadIdentities"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.WorkloadIdentityService/ListWorkloadIdentities", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/workloadIdentities"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -774,10 +810,10 @@ func RegisterWorkloadIdentityServiceHandlerClient(ctx context.Context, mux *runt
 
 var (
 	pattern_WorkloadIdentityService_CreateWorkloadIdentity_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "workloadIdentities"}, ""))
-	pattern_WorkloadIdentityService_CreateWorkloadIdentity_1   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "workloadIdentities"}, ""))
+	pattern_WorkloadIdentityService_CreateWorkloadIdentity_1   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "workspaces", "parent", "workloadIdentities"}, ""))
 	pattern_WorkloadIdentityService_GetWorkloadIdentity_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "workloadIdentities", "name"}, ""))
 	pattern_WorkloadIdentityService_ListWorkloadIdentities_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "workloadIdentities"}, ""))
-	pattern_WorkloadIdentityService_ListWorkloadIdentities_1   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "workloadIdentities"}, ""))
+	pattern_WorkloadIdentityService_ListWorkloadIdentities_1   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "workspaces", "parent", "workloadIdentities"}, ""))
 	pattern_WorkloadIdentityService_UpdateWorkloadIdentity_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "workloadIdentities", "workload_identity.name"}, ""))
 	pattern_WorkloadIdentityService_DeleteWorkloadIdentity_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "workloadIdentities", "name"}, ""))
 	pattern_WorkloadIdentityService_UndeleteWorkloadIdentity_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "workloadIdentities", "name"}, "undelete"))

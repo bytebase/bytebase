@@ -124,7 +124,7 @@ func (x *ServiceAccount) GetCreateTime() *timestamppb.Timestamp {
 type CreateServiceAccountRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this service account will be created.
-	// Format: projects/{project} for project-level, empty for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The ID to use for the service account, which will become the final component
 	// of the service account's email in the format: {service_account_id}@service.bytebase.com
@@ -238,7 +238,7 @@ func (x *GetServiceAccountRequest) GetName() string {
 type ListServiceAccountsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource.
-	// Format: projects/{project} for project-level, empty for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of service accounts to return. The service may return fewer than
 	// this value.
@@ -589,12 +589,12 @@ const file_v1_service_account_service_proto_rawDesc = "" +
 	"\x1bbytebase.com/ServiceAccountR\x04name\"X\n" +
 	"\x1dUndeleteServiceAccountRequest\x127\n" +
 	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/ServiceAccountR\x04name2\x88\n" +
+	"\x1bbytebase.com/ServiceAccountR\x04name2\xb5\n" +
 	"\n" +
-	"\x15ServiceAccountService\x12\x99\x02\n" +
-	"\x14CreateServiceAccount\x12(.bytebase.v1.CreateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\xb9\x01\xdaA)parent,service_account,service_account_id\x8a\xea0\x19bb.serviceAccounts.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02b:\x0fservice_accountZ&:\x0fservice_account\"\x13/v1/serviceAccounts\"'/v1/{parent=projects/*}/serviceAccounts\x12\xa2\x01\n" +
-	"\x11GetServiceAccount\x12%.bytebase.v1.GetServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"I\xdaA\x04name\x8a\xea0\x16bb.serviceAccounts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/{name=serviceAccounts/*}\x12\xd8\x01\n" +
-	"\x13ListServiceAccounts\x12'.bytebase.v1.ListServiceAccountsRequest\x1a(.bytebase.v1.ListServiceAccountsResponse\"n\xdaA\x06parent\x8a\xea0\x17bb.serviceAccounts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02@Z\x15\x12\x13/v1/serviceAccounts\x12'/v1/{parent=projects/*}/serviceAccounts\x12\xe8\x01\n" +
+	"\x15ServiceAccountService\x12\xaf\x02\n" +
+	"\x14CreateServiceAccount\x12(.bytebase.v1.CreateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\xcf\x01\xdaA)parent,service_account,service_account_id\x8a\xea0\x19bb.serviceAccounts.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02x:\x0fservice_accountZ<:\x0fservice_account\")/v1/{parent=workspaces/*}/serviceAccounts\"'/v1/{parent=projects/*}/serviceAccounts\x12\xa2\x01\n" +
+	"\x11GetServiceAccount\x12%.bytebase.v1.GetServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"I\xdaA\x04name\x8a\xea0\x16bb.serviceAccounts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/{name=serviceAccounts/*}\x12\xef\x01\n" +
+	"\x13ListServiceAccounts\x12'.bytebase.v1.ListServiceAccountsRequest\x1a(.bytebase.v1.ListServiceAccountsResponse\"\x84\x01\xdaA\x06parent\x8a\xea0\x17bb.serviceAccounts.list\x90\xea0\x01\x82\xd3\xe4\x93\x02VZ+\x12)/v1/{parent=workspaces/*}/serviceAccounts\x12'/v1/{parent=projects/*}/serviceAccounts\x12\xe8\x01\n" +
 	"\x14UpdateServiceAccount\x12(.bytebase.v1.UpdateServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"\x88\x01\xdaA\x1bservice_account,update_mask\x8a\xea0\x19bb.serviceAccounts.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\x0fservice_account2,/v1/{service_account.name=serviceAccounts/*}\x12\xaa\x01\n" +
 	"\x14DeleteServiceAccount\x12(.bytebase.v1.DeleteServiceAccountRequest\x1a\x16.google.protobuf.Empty\"P\xdaA\x04name\x8a\xea0\x19bb.serviceAccounts.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1e*\x1c/v1/{name=serviceAccounts/*}\x12\xba\x01\n" +
 	"\x16UndeleteServiceAccount\x12*.bytebase.v1.UndeleteServiceAccountRequest\x1a\x1b.bytebase.v1.ServiceAccount\"W\x8a\xea0\x1bbb.serviceAccounts.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=serviceAccounts/*}:undeleteB\xb0\x01\n" +

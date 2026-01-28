@@ -57,14 +57,14 @@ const (
 // WorkloadIdentityServiceClient is a client for the bytebase.v1.WorkloadIdentityService service.
 type WorkloadIdentityServiceClient interface {
 	// Creates a new workload identity.
-	// For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
 	CreateWorkloadIdentity(context.Context, *connect.Request[v1.CreateWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error)
 	// Gets a workload identity by name.
 	// Permissions required: bb.workloadIdentities.get
 	GetWorkloadIdentity(context.Context, *connect.Request[v1.GetWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error)
 	// Lists workload identities.
-	// For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
 	ListWorkloadIdentities(context.Context, *connect.Request[v1.ListWorkloadIdentitiesRequest]) (*connect.Response[v1.ListWorkloadIdentitiesResponse], error)
 	// Updates a workload identity.
@@ -172,14 +172,14 @@ func (c *workloadIdentityServiceClient) UndeleteWorkloadIdentity(ctx context.Con
 // service.
 type WorkloadIdentityServiceHandler interface {
 	// Creates a new workload identity.
-	// For workspace-level: parent is empty, permission bb.workloadIdentities.create on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
 	CreateWorkloadIdentity(context.Context, *connect.Request[v1.CreateWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error)
 	// Gets a workload identity by name.
 	// Permissions required: bb.workloadIdentities.get
 	GetWorkloadIdentity(context.Context, *connect.Request[v1.GetWorkloadIdentityRequest]) (*connect.Response[v1.WorkloadIdentity], error)
 	// Lists workload identities.
-	// For workspace-level: parent is empty, permission bb.workloadIdentities.list on workspace.
+	// For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
 	// For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
 	ListWorkloadIdentities(context.Context, *connect.Request[v1.ListWorkloadIdentitiesRequest]) (*connect.Response[v1.ListWorkloadIdentitiesResponse], error)
 	// Updates a workload identity.
