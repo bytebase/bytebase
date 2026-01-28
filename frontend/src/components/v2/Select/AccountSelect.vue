@@ -1,25 +1,31 @@
 <template>
-  <RemoteResourceSelector
-    v-bind="$attrs"
-    :multiple="multiple"
-    :disabled="disabled"
-    :size="size"
-    :value="value"
-    :tag="true"
-    :remote="true"
-    :additional-options="additionalOptions"
-    :render-label="renderLabel"
-    :render-tag="renderTag"
-    :search="handleSearch"
-    @update:value="(val) => $emit('update:value', val)"
-  />
+  <div>
+    <RemoteResourceSelector
+      ref="remoteResourceSelectorRef"
+      v-bind="$attrs"
+      :multiple="multiple"
+      :disabled="disabled"
+      :size="size"
+      :value="value"
+      :tag="true"
+      :remote="true"
+      :additional-options="additionalOptions"
+      :render-label="renderLabel"
+      :render-tag="renderTag"
+      :search="handleSearch"
+      @update:value="(val) => $emit('update:value', val)"
+    />
+    <div v-if="errorMessage" class="text-red-600 mt-0.5">
+      {{ errorMessage }}
+    </div>
+  </div>
 </template>
 
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
-import EllipsisText from "@/components/EllipsisText.vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
@@ -33,7 +39,6 @@ import {
   groupNamePrefix,
   serviceAccountToUser,
   useGroupStore,
-  userNamePrefix,
   useServiceAccountStore,
   useUserStore,
   useWorkloadIdentityStore,
@@ -50,6 +55,7 @@ import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_servic
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
@@ -89,6 +95,10 @@ const combinedPageToken = ref<{
   user: "",
   group: "",
 });
+const errorMessage = ref<string | undefined>();
+const remoteResourceSelectorRef =
+  ref<ComponentExposed<typeof RemoteResourceSelector<AccountResource>>>();
+
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const serviceAccountStore = useServiceAccountStore();
@@ -202,14 +212,38 @@ const handleSearch = async (params: {
   pageToken: string;
   pageSize: number;
 }) => {
-  const loadNextPage = !!params.pageToken;
-  if (!loadNextPage) {
+  errorMessage.value = undefined;
+  if (!params.pageToken) {
     combinedPageToken.value = {
       user: "",
       group: "",
     };
   }
 
+  try {
+    const resp = await fetchAccounts(params);
+    return resp;
+  } catch (error) {
+    errorMessage.value = extractGrpcErrorMessage(error);
+    return {
+      nextPageToken: "",
+      options: [],
+    };
+  } finally {
+    if (errorMessage.value) {
+      setTimeout(() => remoteResourceSelectorRef.value?.close(), 500);
+    }
+  }
+};
+
+const fetchAccounts = async (params: {
+  search: string;
+  pageToken: string;
+  pageSize: number;
+}): Promise<{
+  nextPageToken: string;
+  options: ResourceSelectOption<AccountResource>[];
+}> => {
   const userType = getUserTypeByEmail(params.search);
   switch (userType) {
     case UserType.SERVICE_ACCOUNT:
@@ -230,6 +264,7 @@ const handleSearch = async (params: {
           ],
         };
       }
+
       const sa = await serviceAccountStore.getOrFetchServiceAccount(
         params.search,
         true
@@ -256,6 +291,7 @@ const handleSearch = async (params: {
           ],
         };
       }
+
       const wi = await workloadIdentityStore.getOrFetchWorkloadIdentity(
         params.search,
         true
@@ -269,7 +305,7 @@ const handleSearch = async (params: {
 
   const requests: Promise<ResourceSelectOption<AccountResource>[]>[] = [];
 
-  if (!loadNextPage) {
+  if (!params.pageToken) {
     requests.push(
       handleSearchUser({
         search: params.search,
@@ -319,10 +355,7 @@ const handleSearchUser = async (params: {
   pageToken: string;
   pageSize: number;
 }) => {
-  if (
-    !hasListUserPermission.value &&
-    params.search.startsWith(userNamePrefix)
-  ) {
+  if (!hasListUserPermission.value) {
     return [getUserOption(unknownUser(ensureUserFullName(params.search)))];
   }
 
@@ -370,22 +403,13 @@ const customLabel = (
 ) => {
   if (resource.type === "group") {
     return (
-      <div>
-        <GroupNameCell
-          showEmail={false}
-          group={resource.resource as Group}
-          showIcon={false}
-          link={false}
-          keyword={keyword}
-        />
-        {showName && (
-          <div>
-            <EllipsisText class="opacity-60 textinfolabel">
-              <HighlightLabelText keyword={keyword} text={resource.name} />
-            </EllipsisText>
-          </div>
-        )}
-      </div>
+      <GroupNameCell
+        showName={showName}
+        group={resource.resource as Group}
+        showIcon={false}
+        link={false}
+        keyword={keyword}
+      />
     );
   }
 
@@ -396,18 +420,19 @@ const customLabel = (
       allowEdit={false}
       showMfaEnabled={false}
       showSource={false}
-      showEmail={false}
+      showEmail={showName}
       link={false}
       size="small"
       keyword={keyword}
       onClickUser={() => {}}
     >
       {{
-        suffix: () => (
-          <span class="textinfolabel truncate">
-            (<HighlightLabelText keyword={keyword} text={user.email} />)
-          </span>
-        ),
+        suffix: () =>
+          !showName && (
+            <span class="textinfolabel truncate">
+              (<HighlightLabelText keyword={keyword} text={user.email} />)
+            </span>
+          ),
       }}
     </UserNameCell>
   );

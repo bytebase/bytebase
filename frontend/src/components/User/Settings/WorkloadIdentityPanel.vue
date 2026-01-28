@@ -29,27 +29,22 @@
       </PermissionGuardWrapper>
     </div>
 
-    <ComponentPermissionGuard
-      :permissions="['bb.workloadIdentities.list']"
-      :project="project"
+    <PagedTable
+      ref="workloadIdentityPagedTable"
+      :session-key="sessionKey"
+      :fetch-list="fetchWorkloadIdentityList"
     >
-      <PagedTable
-        ref="workloadIdentityPagedTable"
-        :session-key="sessionKey"
-        :fetch-list="fetchWorkloadIdentityList"
-      >
-        <template #table="{ list, loading }">
-          <UserDataTable
-            :show-roles="false"
-            :show-groups="false"
-            :user-list="list"
-            :loading="loading"
-            @user-selected="handleWorkloadIdentitySelected"
-            @user-updated="handleWorkloadIdentityUpdated"
-          />
-        </template>
-      </PagedTable>
-    </ComponentPermissionGuard>
+      <template #table="{ list, loading }">
+        <UserDataTable
+          :show-roles="false"
+          :show-groups="false"
+          :user-list="list"
+          :loading="loading"
+          @user-selected="handleWorkloadIdentitySelected"
+          @user-updated="handleWorkloadIdentityUpdated"
+        />
+      </template>
+    </PagedTable>
 
     <div>
       <NCheckbox v-model:checked="state.showInactiveList">
@@ -89,7 +84,7 @@
   <CreateWorkloadIdentityDrawer
     v-if="state.showCreateDrawer"
     :workload-identity="state.editingWorkloadIdentity"
-    :project-id="projectId"
+    :project="project.name"
     @close="
       () => {
         state.showCreateDrawer = false;
@@ -106,7 +101,6 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
@@ -121,7 +115,6 @@ import { DEFAULT_PROJECT_NAME, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
   projectId?: string;
@@ -166,20 +159,17 @@ const deletedSessionKey = computed(() =>
 );
 
 const parent = computed(() =>
-  props.projectId ? `projects/${props.projectId}` : "workspaces/-"
+  props.projectId ? `${projectNamePrefix}${props.projectId}` : "workspaces/-"
 );
 
 const allowEdit = computed(() => {
-  if (!props.projectId) {
-    return true;
-  }
   if (project.value.name === DEFAULT_PROJECT_NAME) {
     return false;
   }
   if (project.value.state === State.DELETED) {
     return false;
   }
-  return hasProjectPermissionV2(project.value, "bb.workloadIdentities.create");
+  return true;
 });
 
 const fetchWorkloadIdentityList = async ({

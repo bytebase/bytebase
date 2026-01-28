@@ -75,7 +75,14 @@
     <div
       v-if="
         state.role !== PresetRoleType.PROJECT_OWNER &&
-        checkRoleContainsAnyPermission(state.role, 'bb.sql.select')
+        checkRoleContainsAnyPermission(
+          state.role,
+          'bb.sql.select',
+          'bb.sql.ddl',
+          'bb.sql.dml',
+          'bb.sql.explain',
+          'bb.sql.info'
+        )
       "
       class="w-full flex flex-col gap-y-2"
     >

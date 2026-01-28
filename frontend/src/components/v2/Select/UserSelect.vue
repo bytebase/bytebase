@@ -21,8 +21,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { getUserFullNameByType, type UserFilter, useUserStore } from "@/store";
-import { allUsersUser } from "@/types";
+import { getUserFullNameByType, useUserStore } from "@/store";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
@@ -41,9 +40,6 @@ const props = defineProps<{
   size?: SelectSize;
   value?: string | string[] | undefined; // user fullname
   projectName?: string;
-  // allUsers is a special user that represents all users in the project.
-  includeAllUsers?: boolean;
-  includeSystemBot?: boolean;
   filter?: (user: User) => boolean;
 }>();
 
@@ -56,19 +52,6 @@ const userStore = useUserStore();
 
 const hasPermission = computed(() => hasWorkspacePermissionV2("bb.users.list"));
 
-const getFilter = (search: string): UserFilter => {
-  const allowedType = [UserType.USER];
-  if (props.includeSystemBot) {
-    allowedType.push(UserType.SYSTEM_BOT);
-  }
-
-  return {
-    query: search,
-    project: props.projectName,
-    types: allowedType,
-  };
-};
-
 const getOption = (user: User): ResourceSelectOption<User> => ({
   resource: user,
   value: getUserFullNameByType(user),
@@ -77,9 +60,6 @@ const getOption = (user: User): ResourceSelectOption<User> => ({
 
 const additionalOptions = computedAsync(async () => {
   const options: ResourceSelectOption<User>[] = [];
-  if (props.includeAllUsers) {
-    options.push(getOption(allUsersUser()));
-  }
 
   let userEmails: string[] = [];
   if (Array.isArray(props.value)) {
@@ -107,10 +87,12 @@ const handleSearch = async (params: {
   pageToken: string;
   pageSize: number;
 }) => {
-  const filter = getFilter(params.search);
-
   const { users, nextPageToken } = await userStore.fetchUserList({
-    filter,
+    filter: {
+      query: params.search,
+      project: props.projectName,
+      types: [UserType.USER],
+    },
     pageToken: params.pageToken,
     pageSize: params.pageSize,
   });

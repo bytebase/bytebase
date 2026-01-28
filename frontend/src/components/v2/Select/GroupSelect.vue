@@ -92,7 +92,7 @@ const handleSearch = async (params: {
 const customLabel = (group: Group, keyword: string) => {
   return (
     <GroupNameCell
-      showEmail={false}
+      showName={false}
       group={group}
       showIcon={false}
       link={false}
