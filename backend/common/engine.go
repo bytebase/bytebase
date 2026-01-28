@@ -140,13 +140,13 @@ func EngineSupportAutoComplete(e storepb.Engine) bool {
 		storepb.Engine_ORACLE,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_DYNAMODB,
-		storepb.Engine_TRINO:
+		storepb.Engine_TRINO,
+		storepb.Engine_MONGODB:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
-		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
