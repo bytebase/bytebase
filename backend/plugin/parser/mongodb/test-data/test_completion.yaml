@@ -1,0 +1,1461 @@
+- input: db.|
+  want:
+    - text: adminCommand()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: createCollection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dropDatabase()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getCollectionInfos()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getCollectionNames()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getMongo()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getName()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getSiblingDB()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hostInfo()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: listCommands()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: runCommand()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: serverBuildInfo()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: serverStatus()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: stats()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: version()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '["my-collection"]'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: orders
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db.u|
+  want:
+    - text: adminCommand()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: createCollection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dropDatabase()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getCollectionInfos()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getCollectionNames()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getMongo()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getName()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getSiblingDB()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hostInfo()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: listCommands()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: runCommand()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: serverBuildInfo()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: serverStatus()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: stats()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: version()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: my-collection
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: orders
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db[|
+  want:
+    - text: '"my-collection"]'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"orders"]'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"users"]'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db.users.|
+  want:
+    - text: addOption()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: aggregate()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: allowDiskUse()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: batchSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: close()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: collation()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: comment()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: count()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: countDocuments()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: createIndex()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: createIndexes()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dataSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: deleteMany()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: deleteOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: distinct()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: drop()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dropIndex()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dropIndexes()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: estimatedDocumentCount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: explain()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: find()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOneAndDelete()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOneAndReplace()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOneAndUpdate()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: forEach()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getIndexes()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hasNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hint()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: initializeOrderedBulkOp()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: initializeUnorderedBulkOp()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: insertMany()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: insertOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isCapped()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isClosed()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isExhausted()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: itcount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: latencyStats()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: limit()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: map()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: max()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxAwaitTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: min()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: next()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: noCursorTimeout()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: objsLeftInBatch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: pretty()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: project()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: projection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readConcern()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readPref()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: renameCollection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: replaceOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: returnKey()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: showRecordId()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: size()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: skip()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: sort()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: stats()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: storageSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tailable()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: toArray()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: totalIndexSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: totalSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tryNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: updateMany()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: updateOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: validate()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: watch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getPlanCache
+      type: KEYWORD
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db["users"].|
+  want:
+    - text: addOption()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: aggregate()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: allowDiskUse()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: batchSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: close()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: collation()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: comment()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: count()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: countDocuments()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: createIndex()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: createIndexes()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dataSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: deleteMany()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: deleteOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: distinct()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: drop()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dropIndex()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: dropIndexes()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: estimatedDocumentCount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: explain()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: find()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOneAndDelete()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOneAndReplace()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: findOneAndUpdate()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: forEach()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getIndexes()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hasNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hint()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: initializeOrderedBulkOp()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: initializeUnorderedBulkOp()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: insertMany()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: insertOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isCapped()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isClosed()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isExhausted()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: itcount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: latencyStats()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: limit()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: map()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: max()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxAwaitTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: min()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: next()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: noCursorTimeout()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: objsLeftInBatch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: pretty()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: project()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: projection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readConcern()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readPref()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: renameCollection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: replaceOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: returnKey()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: showRecordId()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: size()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: skip()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: sort()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: stats()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: storageSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tailable()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: toArray()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: totalIndexSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: totalSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tryNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: updateMany()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: updateOne()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: validate()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: watch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: getPlanCache
+      type: KEYWORD
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db.users.find().|
+  want:
+    - text: addOption()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: allowDiskUse()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: batchSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: close()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: collation()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: comment()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: count()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: explain()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: forEach()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hasNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hint()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isClosed()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isExhausted()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: itcount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: limit()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: map()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: max()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxAwaitTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: min()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: next()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: noCursorTimeout()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: objsLeftInBatch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: pretty()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: project()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: projection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readConcern()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readPref()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: returnKey()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: showRecordId()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: size()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: skip()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: sort()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tailable()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: toArray()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tryNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db.users.find().sort().|
+  want:
+    - text: addOption()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: allowDiskUse()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: batchSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: close()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: collation()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: comment()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: count()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: explain()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: forEach()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hasNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hint()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isClosed()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isExhausted()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: itcount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: limit()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: map()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: max()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxAwaitTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: min()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: next()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: noCursorTimeout()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: objsLeftInBatch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: pretty()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: project()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: projection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readConcern()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readPref()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: returnKey()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: showRecordId()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: size()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: skip()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: sort()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tailable()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: toArray()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tryNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+- input: db["users"].find().|
+  want:
+    - text: addOption()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: allowDiskUse()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: batchSize()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: close()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: collation()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: comment()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: count()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: explain()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: forEach()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hasNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: hint()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isClosed()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: isExhausted()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: itcount()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: limit()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: map()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: max()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxAwaitTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: maxTimeMS()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: min()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: next()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: noCursorTimeout()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: objsLeftInBatch()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: pretty()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: project()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: projection()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readConcern()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: readPref()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: returnKey()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: showRecordId()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: size()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: skip()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: sort()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tailable()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: toArray()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: tryNext()
+      type: FUNCTION
+      definition: ""
+      comment: ""
+      priority: 0
