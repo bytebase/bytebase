@@ -102,6 +102,33 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 			slog.String("issue_title", issue.Title),
 			log.BBError(err))
 		// Don't persist error - user can rerun plan check to retry
+		return
+	}
+
+	// After approval finding is done, check if the issue is now approved
+	// (e.g., skip approval case where no template is required).
+	// If approved, trigger rollout creation.
+	if issue.PlanUID != nil {
+		// Re-fetch issue to get updated approval state
+		issue, err = r.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+		if err != nil {
+			slog.Error("failed to re-fetch issue after approval finding",
+				slog.Int64("issue_uid", issueUID), log.BBError(err))
+			return
+		}
+		if issue == nil {
+			return
+		}
+
+		approved, err := utils.CheckIssueApproved(issue)
+		if err != nil {
+			slog.Error("failed to check if issue is approved",
+				slog.Int64("issue_uid", issueUID), log.BBError(err))
+			return
+		}
+		if approved {
+			r.bus.RolloutCreationChan <- *issue.PlanUID
+		}
 	}
 }
 
