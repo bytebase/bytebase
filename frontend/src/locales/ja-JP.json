@@ -323,7 +323,7 @@
     "no-cancellable-tasks": "キャンセル可能なタスクはありません",
     "no-selectable-tasks": "タスクを選択できません",
     "no-permission": "この操作を実行する権限がありません",
-    "data-export-creator-only": "問題作成者のみがデータエクスポートタスクを実行できます",
+    "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",
     "scheduled-time": "予定時刻",
     "scheduled-at": "予定日時",
     "run-history": "実行履歴",
@@ -343,7 +343,7 @@
           "database-doesnt-meet-ghost-requirement": "データベース {database} は gh-ost の要件を満たしていません"
         }
       },
-      "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
+      "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行イシューに分割することをアドバイスします。"
     },
     "prior-backup-tips": "影響を受けるデータを事前にバックアップします。データ変更（UPDATE、DELETE）のみに適用され、スキーマ変更には適用されません。",
     "executed-by": "実行者",
@@ -825,7 +825,7 @@
           "self": "デフォルトのランディングページ",
           "workspace": {
             "self": "ワークスペース",
-            "description": "問題を使用して、データベースの変更をリクエスト、レビュー、ロールアウト、バージョン管理します。これは、アクセス制御と CI および CD ワークフローを備えたチームに適しています。"
+            "description": "イシューを使用して、データベースの変更をリクエスト、レビュー、ロールアウト、バージョン管理します。これは、アクセス制御と CI および CD ワークフローを備えたチームに適しています。"
           },
           "sql-editor": {
             "self": "SQLエディター",
@@ -951,14 +951,14 @@
   },
   "issue": {
     "labels": "イシューラベル",
-    "subtitle": "問題には、データベースの変更、データのエクスポート、アクセス要求が含まれます。実行前に確認と承認が必要です。",
+    "subtitle": "イシューには、データベースの変更、データのエクスポート、アクセス要求が含まれます。実行前に確認と承認が必要です。",
     "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
     "create-rollout": "ロールアウトを作成",
     "status-transition": {
       "modal": {
         "reopen": "イシューを再開しますか?",
-        "close": "問題を閉じますか?"
+        "close": "イシューを閉じますか?"
       }
     },
     "leave-a-comment": "コメントを残す…",
@@ -998,7 +998,7 @@
         },
         "current-approver": {
           "title": "現在の承認者",
-          "description": "問題の現在の承認者による検索"
+          "description": "イシューの現在の承認者による検索"
         },
         "approval": {
           "value": {
@@ -1009,8 +1009,8 @@
           "title": "承認状況"
         },
         "issue-label": {
-          "title": "問題ラベル",
-          "description": "問題ラベルでフィルタリング"
+          "title": "イシューラベル",
+          "description": "イシューラベルでフィルタリング"
         },
         "table": {
           "title": "テーブル",
@@ -1087,7 +1087,7 @@
       "sql-review-violations": "SQL監査ルール違反"
     },
     "error": {
-      "statement-cannot-be-modified": "問題の作成後にステートメントを変更することはできません"
+      "statement-cannot-be-modified": "イシューの作成後にステートメントを変更することはできません"
     },
     "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "data-export": {
@@ -1122,16 +1122,16 @@
     "review": {
       "self": "レビュー",
       "comment-description": "承認なしで一般的なフィードバックを送信する",
-      "approve-description": "フィードバックを送信してこの問題を承認する",
+      "approve-description": "フィードバックを送信してこのイシューを承認する",
       "reject-description": "フィードバックを送信して変更をリクエストする"
     },
     "approval": {
-      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
+      "approved-and-waiting-for-rollout": "このイシューは承認されており、展開する準備ができています。"
     }
   },
   "plan": {
     "plans": "プラン",
-    "subtitle": "承認のために問題を作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
+    "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "new-plan": "プランの作成",
     "add-spec": "仕様を追加",
     "select-targets": "ターゲットを選択",
@@ -1818,7 +1818,7 @@
         "self": "イシュー関連",
         "labels": {
           "self": "イシューラベル",
-          "description": "問題にラベルを貼って管理できる",
+          "description": "イシューにラベルを貼って管理できる",
           "configure-labels": "ラベルを設定する",
           "placeholder": "Enterキーを押してタグを追加してください",
           "force-issue-labels": {
@@ -1837,11 +1837,11 @@
         },
         "allow-self-approval": {
           "self": "自己承認を許可する",
-          "description": "問題の作成者が問題を承認できるようにします。"
+          "description": "イシューの作成者がイシューを承認できるようにします。"
         },
         "auto-enable-backup": {
           "self": "バックアップの自動有効化",
-          "description": "すべてのデータ変更の問題に対してバックアップを自動的に有効にします。"
+          "description": "すべてのデータ変更のイシューに対してバックアップを自動的に有効にします。"
         },
         "skip-backup-errors": {
           "self": "バックアップエラーをスキップ",
@@ -1849,7 +1849,7 @@
         },
         "postgres-database-tenant-mode": {
           "self": "Postgres データベーステナントモード",
-          "description": "Postgres データベーステナントモード。有効にすると、問題はデータベースのOWNERによって実行されます。無効にすると、このイシューはインスタンス接続ユーザーによって実行されます。"
+          "description": "Postgres データベーステナントモード。有効にすると、イシューはデータベースのOWNERによって実行されます。無効にすると、イシューはインスタンス接続ユーザーによって実行されます。"
         },
         "max-retries": {
           "self": "ロックタイムアウトの最大レトリカウント",
@@ -1916,7 +1916,7 @@
       "delete": {
         "title": "{count} 件のプロジェクトを削除しますか? | {count} 件のプロジェクトを削除しますか?",
         "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
-        "warning": "この操作は元に戻せません。問題、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。",
+        "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。",
         "success": "{count} 件のプロジェクトを正常に削除しました | {count} 件のプロジェクトを正常に削除しました",
         "error": "プロジェクトを削除できませんでした"
       },
@@ -1924,7 +1924,7 @@
       "projects-to-delete": "削除するプロジェクト",
       "resource-warning": {
         "title": "リソースのあるプロジェクト",
-        "description": "次のプロジェクトには、データベースまたは未解決の問題が含まれています。"
+        "description": "次のプロジェクトには、データベースまたは未解決のイシューが含まれています。"
       }
     }
   },
