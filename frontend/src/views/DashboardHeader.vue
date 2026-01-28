@@ -1,13 +1,21 @@
 <template>
-  <div class="flex items-center justify-between h-10 px-4 my-1 gap-x-3">
+  <div class="flex items-center justify-between h-10 px-3 sm:px-4 my-1 gap-x-1 sm:gap-x-3">
     <BytebaseLogo
       v-if="showLogo"
       class="h-10"
       :redirect="WORKSPACE_ROUTE_LANDING"
     />
+    <button
+      v-if="showMobileSidebarToggle"
+      type="button"
+      class="md:hidden p-1 text-gray-500 hover:text-gray-900"
+      @click="$emit('toggle-mobile-sidebar')"
+    >
+      <MenuIcon class="w-4 h-4" />
+    </button>
     <ProjectSwitchPopover />
 
-    <div class="flex-1 flex justify-end items-center gap-x-3">
+    <div class="flex-1 flex justify-end items-center gap-x-2 sm:gap-x-3">
       <NButton
         v-if="currentPlan === PlanType.FREE"
         size="small"
@@ -62,6 +70,7 @@
 import { computedAsync, useLocalStorage, useWindowSize } from "@vueuse/core";
 import {
   CircleDotIcon,
+  MenuIcon,
   MessagesSquareIcon,
   SquareTerminalIcon,
 } from "lucide-vue-next";
@@ -106,6 +115,11 @@ import {
 
 defineProps<{
   showLogo: boolean;
+  showMobileSidebarToggle?: boolean;
+}>();
+
+defineEmits<{
+  "toggle-mobile-sidebar": [];
 }>();
 
 interface LocalState {
