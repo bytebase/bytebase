@@ -44,13 +44,13 @@
         <UserRolesCell v-if="role" :role="role" />
       </div>
       <NEllipsis
-        v-if="showEmail && group.email"
+        v-if="showName"
         :line-clamp="1"
         :tooltip="true"
       >
         <HighlightLabelText
           class="textinfolabel text-sm"
-          :text="group.email"
+          :text="group.name"
           :keyword="keyword"
         />
       </NEllipsis>
@@ -75,7 +75,7 @@ const props = withDefaults(
     group: Group;
     role?: MemberRole;
     showIcon?: boolean;
-    showEmail?: boolean;
+    showName?: boolean;
     showMember?: boolean;
     link?: boolean;
     deleted?: boolean;
@@ -83,7 +83,7 @@ const props = withDefaults(
   }>(),
   {
     showIcon: true,
-    showEmail: true,
+    showName: true,
     role: undefined,
     link: true,
     deleted: false,

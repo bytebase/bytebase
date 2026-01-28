@@ -211,5 +211,8 @@ defineExpose({
     await handleSearch("", false);
   },
   options,
+  close: () => {
+    nextTick(() => (show.value = false));
+  },
 });
 </script>

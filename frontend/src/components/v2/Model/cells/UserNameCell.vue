@@ -128,7 +128,7 @@ defineEmits<{
 const currentUserV1 = useCurrentUserV1();
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasWorkspacePermissionV2("bb.serviceAccounts.update");
 });
 
 const isDeleted = computed(() => props.user.state === State.DELETED);

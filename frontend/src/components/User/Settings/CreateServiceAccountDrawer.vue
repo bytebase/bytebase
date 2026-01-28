@@ -19,7 +19,6 @@
               :input-props="{ type: 'text', autocomplete: 'off' }"
               placeholder="Foo"
               :maxlength="200"
-              :disabled="!allowUpdate"
             />
           </div>
 
@@ -36,19 +35,25 @@
             />
           </div>
 
-          <div class="flex flex-col gap-y-2">
-            <div>
-              <label class="block text-sm font-medium leading-5 text-control">
-                {{ $t("settings.members.table.roles") }}
-              </label>
+          <PermissionGuardWrapper
+            v-if="!isEditMode"
+            v-slot="slotProps"
+            :project="projectEntity"
+            :permissions="[project ? 'bb.projects.setIamPolicy' : 'bb.workspaces.setIamPolicy']"
+          >
+            <div class="flex flex-col gap-y-2">
+              <div>
+                <label class="block text-sm font-medium leading-5 text-control">
+                  {{ $t("settings.members.table.roles") }}
+                </label>
+              </div>
+              <RoleSelect
+                v-model:value="state.roles"
+                :multiple="true"
+                :disabled="slotProps.disabled"
+              />
             </div>
-            <RoleSelect
-              v-model:value="state.roles"
-              :multiple="true"
-              :disabled="!allowUpdateRoles"
-              :project="project"
-            />
-          </div>
+          </PermissionGuardWrapper>
         </div>
       </template>
       <template #footer>
@@ -57,16 +62,22 @@
             {{ $t("common.cancel") }}
           </NButton>
 
-          <NButton
-            type="primary"
-            :disabled="!allowConfirm"
-            :loading="state.isRequesting"
-            @click="createOrUpdateServiceAccount"
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="projectEntity"
+            :permissions="[isEditMode ? 'bb.serviceAccounts.update' : 'bb.serviceAccounts.create']"
           >
-            {{
-              isEditMode ? $t("common.update") : $t("common.confirm")
-            }}
-          </NButton>
+            <NButton
+              type="primary"
+              :disabled="!allowConfirm || slotProps.disabled"
+              :loading="state.isRequesting"
+              @click="createOrUpdateServiceAccount"
+            >
+              {{
+                isEditMode ? $t("common.update") : $t("common.confirm")
+              }}
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
     </DrawerContent>
@@ -76,16 +87,18 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
   ensureServiceAccountFullName,
+  getProjectName,
   pushNotification,
   serviceAccountToUser,
   useProjectIamPolicyStore,
@@ -96,14 +109,12 @@ import {
 import {
   getServiceAccountNameInBinding,
   getServiceAccountSuffix,
-  UNKNOWN_USER_NAME,
   unknownUser,
 } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   isRequesting: boolean;
@@ -113,7 +124,7 @@ interface LocalState {
 
 const props = defineProps<{
   serviceAccount?: User;
-  projectId?: string;
+  project?: string;
 }>();
 
 const emit = defineEmits<{
@@ -131,72 +142,29 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 const state = reactive<LocalState>({
   isRequesting: false,
   serviceAccount: unknownUser(),
-  roles: props.projectId ? [] : [PresetRoleType.WORKSPACE_MEMBER],
+  roles: props.project ? [] : [PresetRoleType.WORKSPACE_MEMBER],
 });
 
-const project = computed(() => {
-  if (!props.projectId) return undefined;
-  return projectStore.getProjectByName(`projects/${props.projectId}`);
+const projectEntity = computed(() => {
+  if (!props.project) return undefined;
+  return projectStore.getProjectByName(props.project);
 });
 
 const parent = computed(() => {
-  if (props.projectId) {
-    return `projects/${props.projectId}`;
+  if (props.project) {
+    return props.project;
   }
   return "workspaces/-";
 });
 
-const emailSuffix = computed(() => getServiceAccountSuffix(props.projectId));
+const emailSuffix = computed(() =>
+  getServiceAccountSuffix(getProjectName(props.project ?? ""))
+);
 
 const isEditMode = computed(
   () =>
     !!props.serviceAccount && props.serviceAccount.name !== unknownUser().name
 );
-
-const allowUpdate = computed(() => {
-  if (!isEditMode.value) {
-    return true;
-  }
-  if (props.projectId && project.value) {
-    return hasProjectPermissionV2(project.value, "bb.serviceAccounts.update");
-  }
-  return hasWorkspacePermissionV2("bb.serviceAccounts.update");
-});
-
-const allowUpdateRoles = computed(() => {
-  if (props.projectId && project.value) {
-    return hasProjectPermissionV2(project.value, "bb.projects.setIamPolicy");
-  }
-  return hasWorkspacePermissionV2("bb.workspaces.setIamPolicy");
-});
-
-const initialRoles = computed(() => {
-  if (
-    !props.serviceAccount ||
-    props.serviceAccount.name === UNKNOWN_USER_NAME
-  ) {
-    return props.projectId ? [] : [PresetRoleType.WORKSPACE_MEMBER];
-  }
-
-  if (props.projectId && project.value) {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(
-      project.value.name
-    );
-    const roles = policy.bindings
-      .filter((binding: Binding) =>
-        binding.members.includes(
-          getServiceAccountNameInBinding(props.serviceAccount!.email)
-        )
-      )
-      .map((binding: Binding) => binding.role);
-    return roles;
-  }
-
-  const roles = workspaceStore.userMapToRoles.get(
-    `serviceAccounts/${props.serviceAccount.email}`
-  );
-  return roles ? [...roles] : [];
-});
 
 watch(
   () => props.serviceAccount,
@@ -205,7 +173,6 @@ watch(
       return;
     }
     state.serviceAccount = cloneDeep(create(UserSchema, sa));
-    state.roles = [...initialRoles.value];
   },
   {
     immediate: true,
@@ -294,9 +261,9 @@ const createServiceAccount = async () => {
   const createdUser = serviceAccountToUser(sa);
 
   if (state.roles.length > 0) {
-    if (props.projectId && project.value) {
+    if (projectEntity.value) {
       await updateProjectIamPolicyForMember(
-        project.value.name,
+        projectEntity.value.name,
         getServiceAccountNameInBinding(createdUser.email),
         state.roles
       );
@@ -342,23 +309,6 @@ const updateServiceAccount = async () => {
       })
     );
     updatedUser = serviceAccountToUser(updated);
-  }
-
-  if (!isEqual([...initialRoles.value].sort(), [...state.roles].sort())) {
-    if (props.projectId && project.value) {
-      await updateProjectIamPolicyForMember(
-        project.value.name,
-        getServiceAccountNameInBinding(updatedUser.email),
-        state.roles
-      );
-    } else {
-      await workspaceStore.patchIamPolicy([
-        {
-          member: getServiceAccountNameInBinding(updatedUser.email),
-          roles: state.roles,
-        },
-      ]);
-    }
   }
 
   emit("updated", updatedUser);

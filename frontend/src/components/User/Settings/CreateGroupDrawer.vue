@@ -61,7 +61,6 @@
                   :value="member.member"
                   :multiple="false"
                   :size="'medium'"
-                  :include-all="false"
                   :disabled="!allowEdit"
                   :filter="(user) => userFilter(user, member.member)"
                   @update:value="($event) => updateMemberEmail(i, $event as (string | undefined))"
