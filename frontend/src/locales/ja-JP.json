@@ -71,7 +71,7 @@
     "updated": "更新しました",
     "visit": "アクセス",
     "role": {
-      "self": "役割"
+      "self": "ロール"
     },
     "revert": "元に戻す",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
@@ -442,7 +442,7 @@
     },
     "profile": {
       "email": "メールアドレス",
-      "role": "役割",
+      "role": "ロール",
       "phone": "電話番号",
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "password": "パスワード",
@@ -464,9 +464,9 @@
       "inactive-workload-identities": "非アクティブワークロードID",
       "table": {
         "account": "アカウント",
-        "role": "役割",
+        "role": "ロール",
         "groups": "グループ",
-        "roles": "役割"
+        "roles": "ロール"
       },
       "groups": {
         "self": "グループ",
@@ -519,7 +519,7 @@
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "service-key-copied": "サービスキーはコピーされています。公開しないでください",
       "show-inactive": "非アクティブなアカウントを表示",
-      "view-by-roles": "役割ごとに表示",
+      "view-by-roles": "ロールごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
       "update-user": "ユーザーを更新",
@@ -544,8 +544,8 @@
       "select-account": "アカウントを選択 | アカウントを選択",
       "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
       "select-in-project": "{project} 内のユーザーまたはグループを選択してください",
-      "select-role": "役割を選択 | 役割を選択",
-      "assign-role": "役割の割り当て | 役割の割り当て"
+      "select-role": "ロールを選択 | ロールを選択",
+      "assign-role": "ロールの割り当て | ロールの割り当て"
     },
     "im-integration": {
       "description": "IM 統合は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
@@ -932,7 +932,7 @@
     },
     "role-expire": {
       "title": "ロールの有効期限通知",
-      "content": "次の役割は期限切れになります",
+      "content": "次のロールは期限切れになります",
       "checkbox": "更新があるまで通知しない",
       "go-to-project": "プロジェクトページへ"
     }
@@ -1116,7 +1116,7 @@
       "change-database": "データベースの変更",
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
-      "request-role": "役割をリクエストする",
+      "request-role": "ロールをリクエスト",
       "request-specific-role": "「{role}」ロールをリクエスト"
     },
     "review": {
@@ -1581,7 +1581,7 @@
     "rollout": {
       "name": "リリース戦略",
       "tip": "新しいポリシーは古いイシューにも適用されます",
-      "info": "タスクは、「{permission}」許可または次の役割でユーザーが実行できます。",
+      "info": "タスクは、「{permission}」許可または次のロールでユーザーが実行できます。",
       "auto": "自動",
       "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。"
     },
@@ -1884,18 +1884,18 @@
       "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone."
     },
     "members": {
-      "description": "プロジェクト メンバーの役割により、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "edit": "メンバーの編集 - {member}",
       "view-by-members": "メンバー別に見る",
-      "view-by-roles": "役割ごとに表示",
+      "view-by-roles": "ロールごとに表示",
       "revoke-role-from-user": "「{user}」{role} のロールを削除します",
       "never-expires": "有効期限が切れることはありません",
-      "role-description": "役割の説明",
-      "role-never-expires": "この役割には有効期限はありません。",
+      "role-description": "ロールの説明",
+      "role-never-expires": "このロールには有効期限はありません。",
       "add-more": "さらに追加",
       "condition-name": "条件名",
-      "workspace-level-roles": "ワークスペースレベルの役割",
-      "project-level-roles": "プロジェクトレベルの役割",
+      "workspace-level-roles": "ワークスペースレベルのロール",
+      "project-level-roles": "プロジェクトレベルのロール",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "アイテムを選択",
@@ -2653,23 +2653,23 @@
     }
   },
   "role": {
-    "self": "役割",
+    "self": "ロール",
     "setting": {
-      "description": "プロジェクト メンバーとカスタム承認に適用できるカスタム ロールを定義します。",
-      "add": "役割の追加",
-      "edit": "役割の編集",
-      "title-placeholder": "役割のタイトルを入力してください",
-      "description-placeholder": "役割の説明を入力してください"
+      "description": "プロジェクトメンバーとカスタム承認に適用できるカスタムロールを定義します。",
+      "add": "ロールの追加",
+      "edit": "ロールの編集",
+      "title-placeholder": "ロールのタイトルを入力してください",
+      "description-placeholder": "ロールの説明を入力してください"
     },
     "title": "タイトル",
-    "select-role": "役割の選択",
-    "expired-tip": "役割の有効期限が切れている可能性があります。",
+    "select-role": "ロールの選択",
+    "expired-tip": "ロールの有効期限が切れている可能性があります。",
     "import-from-role": "ロールからインポート",
     "workspace-roles": {
-      "self": "ワークスペースの役割"
+      "self": "ワークスペースのロール"
     },
     "project-roles": {
-      "self": "プロジェクトの役割",
+      "self": "プロジェクトのロール",
       "apply-to-all-projects": "すべてのプロジェクトに適用する"
     },
     "custom-roles": {
