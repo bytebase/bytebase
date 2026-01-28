@@ -55,6 +55,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, req *connect.Request[
 	databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
@@ -94,6 +95,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
 			DatabaseName: &databaseName,
+			ShowDeleted:  true,
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
@@ -536,6 +538,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
@@ -586,6 +589,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
@@ -630,6 +634,7 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
@@ -977,6 +982,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %q", req.Msg.Name))

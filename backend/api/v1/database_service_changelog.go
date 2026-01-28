@@ -124,6 +124,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
@@ -200,6 +201,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

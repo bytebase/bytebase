@@ -41,6 +41,7 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
