@@ -278,7 +278,7 @@
     },
     "check-type": {
       "sql-review": {
-        "self": "SQLレビュー",
+        "self": "SQL レビュー",
         "description": "SQL文を分析し、潜在的な問題点を特定し、推奨事項を提示します。組み込みルールとカスタムルールが含まれます。"
       },
       "ghost-sync": "gh-ost同期",
@@ -1084,7 +1084,7 @@
       "statement-is-required": "SQL文が必要です",
       "statement-is-too-large": "現在のステートメント サイズが 1MB を超えているため、SQL チェックはスキップされます。",
       "back-to-edit": "編集に戻る",
-      "sql-review-violations": "SQL監査ルール違反"
+      "sql-review-violations": "SQL レビュールール違反"
     },
     "error": {
       "statement-cannot-be-modified": "イシューの作成後にステートメントを変更することはできません"
@@ -2335,42 +2335,42 @@
     "move-worksheets": "ワークシートを移動する"
   },
   "sql-review": {
-    "title": "SQL監査ポリシー",
-    "description": "SQL 監査ポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL 監査ルールによって対応する実行ステートメントがチェックされます。",
-    "disabled": "SQL監査ポリシーが無効になっています",
-    "create-policy": "監査ポリシーを作成する",
-    "select-review": "SQLレビューを選択",
-    "select-review-rules": "SQLレビュールールを選択",
+    "title": "SQL レビューポリシー",
+    "description": "SQL レビューポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL レビュールールによって対応する実行ステートメントがチェックされます。",
+    "disabled": "SQL レビューポリシーが無効になっています",
+    "create-policy": "SQL レビューポリシーを作成する",
+    "select-review": "SQL レビューを選択",
+    "select-review-rules": "SQL レビュールールを選択",
     "select-all": "すべて選択",
-    "select-review-label": "既存の SQL レビュー ポリシーをリソースまたは {create} に添付できます。",
-    "configure-policy": "監査ポリシーを設定する",
-    "policy-removed": "監査ポリシーが削除されました",
-    "policy-created": "監査ポリシーが作成されました",
-    "policy-create-failed": "監査ポリシーの作成に失敗しました",
-    "policy-updated": "監査ポリシーが更新されました",
+    "select-review-label": "既存の SQL レビューポリシーをリソースまたは {create} に添付できます。",
+    "configure-policy": "SQL レビューポリシーを設定する",
+    "policy-removed": "SQL レビューポリシーが削除されました",
+    "policy-created": "SQL レビューポリシーが作成されました",
+    "policy-create-failed": "SQL レビューポリシーの作成に失敗しました",
+    "policy-updated": "SQL レビューポリシーが更新されました",
     "policy-update-failed": "レビューポリシーの更新に失敗しました。",
     "add-rules": "ルールを追加する",
     "add-or-remove-rules": "ルールを追加または削除する",
-    "no-permission": "管理者または DBA のみが監査ポリシーを作成または更新する権限を持っています。",
-    "delete": "監査ポリシーの削除",
+    "no-permission": "管理者または DBA のみが SQL レビューポリシーを作成または更新する権限を持っています。",
+    "delete": "SQL レビューポリシーの削除",
     "input-then-press-enter": "入力後、Enterを押して追加します",
     "attach-resource": {
       "no-linked-resources": "リソースのバインドはありません",
       "change-resources": "バインドされたリソースを変更する",
       "self": "リソースにバインドする",
-      "label": "監査ポリシーは環境リソースまたはプロジェクト リソースにバインドする必要があり、対応するリソースの下にあるすべてのデータベースに影響します。データベースがプロジェクト レベルと環境レベルの両方のポリシーの影響を受ける場合、プロジェクト レベルのポリシーのみが有効になります。",
-      "label-environment": "SQL 監査ポリシーは、選択した環境に属するすべてのデータベースに影響します。",
-      "label-project": "SQL 監査ポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL 監査ポリシーは無視されます。",
-      "override-warning": "次のリソースは、他の SQL 監査ポリシーにバインドされています。 \"{button}\" をクリックすると設定が上書きされます。"
+      "label": "SQL レビューポリシーは環境リソースまたはプロジェクト リソースにバインドする必要があり、対応するリソースの下にあるすべてのデータベースに影響します。データベースがプロジェクト レベルと環境レベルの両方のポリシーの影響を受ける場合、プロジェクト レベルのポリシーのみが有効になります。",
+      "label-environment": "SQL レビューポリシーは、選択した環境に属するすべてのデータベースに影響します。",
+      "label-project": "SQL レビューポリシーは、選択したプロジェクト内のすべてのデータベースに影響します。環境の SQL レビューポリシーは無視されます。",
+      "override-warning": "次のリソースは、他の SQL レビューポリシーにバインドされています。 \"{button}\" をクリックすると設定が上書きされます。"
     },
     "create": {
-      "breadcrumb": "監査ポリシーを作成する",
+      "breadcrumb": "SQL レビューポリシーを作成する",
       "basic-info": {
         "name": "基本情報",
         "display-name": "名前",
-        "display-name-placeholder": "監査ポリシー名",
-        "display-name-default": "SQL監査ポリシー",
-        "display-name-label": "さまざまな監査ポリシーを区別するために使用される名前。",
+        "display-name-placeholder": "SQL レビューポリシー名",
+        "display-name-default": "SQL レビューポリシー",
+        "display-name-label": "さまざまな SQL レビューポリシーを区別するために使用される名前。",
         "choose-template": "テンプレートを選択"
       },
       "configure-rule": {
