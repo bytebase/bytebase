@@ -26,8 +26,9 @@ func TestGitOpsCheck(t *testing.T) {
 	projectID := generateRandomString("gitops-check")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
@@ -159,8 +160,9 @@ func TestGitOpsRollout(t *testing.T) {
 	projectID := generateRandomString("gitops-rollout")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
@@ -324,8 +326,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	projectID := generateRandomString("gitops-multi")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
@@ -571,8 +574,9 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	projectID := generateRandomString("gitops-changed")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
@@ -777,8 +781,9 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 	projectID := generateRandomString("gitops-decl")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
@@ -917,8 +922,9 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 			projectID := generateRandomString("gitops-disallow")
 			projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 				Project: &v1pb.Project{
-					Name:  fmt.Sprintf("projects/%s", projectID),
-					Title: projectID,
+					Name:              fmt.Sprintf("projects/%s", projectID),
+					Title:             projectID,
+					AllowSelfApproval: true,
 				},
 				ProjectId: projectID,
 			}))
@@ -1064,8 +1070,9 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			projectID := generateRandomString("gitops-dep")
 			projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 				Project: &v1pb.Project{
-					Name:  fmt.Sprintf("projects/%s", projectID),
-					Title: projectID,
+					Name:              fmt.Sprintf("projects/%s", projectID),
+					Title:             projectID,
+					AllowSelfApproval: true,
 				},
 				ProjectId: projectID,
 			}))
@@ -1193,8 +1200,9 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 	projectID := generateRandomString("gitops-multi-decl")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
