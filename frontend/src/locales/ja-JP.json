@@ -421,7 +421,7 @@
     "sidebar": {
       "profile": "プロフィール",
       "security-and-policy": "セキュリティポリシー",
-      "integration": "インテグレーション",
+      "integration": "連携",
       "general": "全般",
       "members": "メンバー",
       "users-and-groups": "ユーザーとグループ",
@@ -437,7 +437,7 @@
       "custom-roles": "カスタムロール"
     },
     "im": {
-      "add-im-integration": "IM統合を追加する",
+      "add-im-integration": "IM 連携の追加",
       "add-another-im": "別のIMを追加"
     },
     "profile": {
@@ -548,10 +548,10 @@
       "assign-role": "ロールの割り当て | ロールの割り当て"
     },
     "im-integration": {
-      "description": "IM 統合は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
+      "description": "IM 連携は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
     },
     "mcp": {
-      "title": "MCP 統合",
+      "title": "MCP 連携",
       "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
       "auth": {
         "title": "認証が必要",
@@ -2622,8 +2622,8 @@
       "risk-level-low": "低リスクの操作には、SELECTクエリや問題を引き起こす可能性が低い軽微なスキーマ変更が含まれます。",
       "risk-level-moderate": "中リスクの操作には、カラムやインデックスの追加などの標準的なDDL変更が含まれます。",
       "risk-level-high": "高リスクの操作には、DROP TABLE、TRUNCATE、または大規模なデータ変更などの破壊的な変更が含まれます。",
-      "integration": "承認フローとの統合",
-      "integration-description": "リスクレベルはカスタム承認システムと統合されています。変更の評価されたリスクレベルに基づいて、異なるレベルのレビューを必要とする承認フローを設定できます。"
+      "integration": "承認フローとの連携",
+      "integration-description": "リスクレベルはカスタム承認システムと連携しています。変更の評価されたリスクレベルに基づいて、異なるレベルのレビューを必要とする承認フローを設定できます。"
     },
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
