@@ -82,7 +82,7 @@
   <CreateServiceAccountDrawer
     v-if="state.showCreateDrawer"
     :service-account="state.editingServiceAccount"
-    :project="projectId ? project.name : undefined"
+    :project="project?.name"
     @close="
       () => {
         state.showCreateDrawer = false;
@@ -103,20 +103,15 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import CreateServiceAccountDrawer from "@/components/User/Settings/CreateServiceAccountDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useActuatorV1Store, useProjectByName } from "@/store";
+import { useActuatorV1Store, useCurrentProjectV1 } from "@/store";
 import {
   serviceAccountToUser,
   useServiceAccountStore,
 } from "@/store/modules/serviceAccount";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME, unknownUser } from "@/types";
+import { isValidProjectName, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
-
-const props = defineProps<{
-  projectId?: string;
-}>();
 
 type LocalState = {
   showInactiveList: boolean;
@@ -136,38 +131,32 @@ const serviceAccountPagedTable =
 const deletedServiceAccountPagedTable =
   ref<ComponentExposed<typeof PagedTable<User>>>();
 
-const { project } = useProjectByName(
-  computed(() =>
-    props.projectId ? `${projectNamePrefix}${props.projectId}` : ""
-  )
+const { project: currentProject } = useCurrentProjectV1();
+const project = computed(() =>
+  isValidProjectName(currentProject.value.name)
+    ? currentProject.value
+    : undefined
 );
 
-const showCount = computed(() => !props.projectId);
+const showCount = computed(() => !project.value);
 
-const sessionKey = computed(() =>
-  props.projectId
-    ? `bb.paged-service-account-table.project.${props.projectId}.active`
-    : "bb.paged-service-account-table.active"
+const sessionKey = computed(
+  () =>
+    `bb.paged-service-account-table${project.value ? `.${project.value.name}` : ""}.active`
 );
 
-const deletedSessionKey = computed(() =>
-  props.projectId
-    ? `bb.paged-service-account-table.project.${props.projectId}.deleted`
-    : "bb.paged-service-account-table.deleted"
+const deletedSessionKey = computed(
+  () =>
+    `bb.paged-service-account-table${project.value ? `.${project.value.name}` : ""}.deleted`
 );
 
-const parent = computed(() =>
-  props.projectId ? `${projectNamePrefix}${props.projectId}` : "workspaces/-"
-);
+const parent = computed(() => project.value?.name ?? "workspaces/-");
 
 const allowEdit = computed(() => {
-  if (project.value.name === DEFAULT_PROJECT_NAME) {
-    return false;
+  if (!project.value) {
+    return true;
   }
-  if (project.value.state === State.DELETED) {
-    return false;
-  }
-  return true;
+  return project.value.state === State.ACTIVE;
 });
 
 const fetchServiceAccountList = async ({
