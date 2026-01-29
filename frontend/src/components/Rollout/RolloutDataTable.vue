@@ -1,20 +1,24 @@
 <template>
-  <NDataTable
-    size="small"
-    :columns="columnList"
-    :data="rolloutList"
-    :striped="true"
-    :bordered="bordered"
-    :loading="loading"
-    :row-key="(rollout) => rollout.name"
-    :row-props="rowProps"
-  />
+  <div ref="tableRef">
+    <NDataTable
+      size="small"
+      :columns="columnList"
+      :data="rolloutList"
+      :striped="true"
+      :bordered="bordered"
+      :loading="loading"
+      :scroll-x="scrollX"
+      :row-key="(rollout) => rollout.name"
+      :row-props="rowProps"
+    />
+  </div>
 </template>
 
 <script lang="tsx" setup>
+import { useElementSize } from "@vueuse/core";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NPerformantEllipsis, NTooltip } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Timestamp from "@/components/misc/Timestamp.vue";
@@ -33,6 +37,7 @@ import {
   extractProjectResourceName,
   getStageStatus,
   stringifyTaskStatus,
+  TailwindBreakpoints,
 } from "@/utils";
 
 withDefaults(
@@ -52,6 +57,11 @@ withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 const environmentStore = useEnvironmentV1Store();
+const tableRef = ref<HTMLDivElement>();
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(
+  () => tableWidth.value > TailwindBreakpoints.md
+);
 
 const getStageTaskCount = (stage: Stage, status: Task_Status) => {
   return stage.tasks.filter((task) => task.status === status).length;
@@ -63,6 +73,7 @@ const columnList = computed(
       {
         key: "title",
         title: t("issue.table.name"),
+        minWidth: 160,
         resizable: true,
         ellipsis: true,
         render: (rollout) => {
@@ -92,8 +103,8 @@ const columnList = computed(
       {
         key: "stages",
         title: t("rollout.stage.self", 2),
+        minWidth: 160,
         resizable: true,
-        ellipsis: true,
         render: (rollout) => {
           if (rollout.stages.length === 0) {
             return (
@@ -114,17 +125,19 @@ const columnList = computed(
                     <NTooltip key={stage.name} placement="top">
                       {{
                         trigger: () => (
-                          <div class="flex items-center gap-1 cursor-pointer">
+                          <div class="flex items-center gap-1 cursor-pointer shrink-0">
                             <TaskStatus
                               status={stageStatus}
                               size="small"
                               disabled
                             />
-                            <EnvironmentV1Name
-                              environment={environment}
-                              link={false}
-                              nullEnvironmentPlaceholder="Null"
-                            />
+                            {showExtendedColumns.value && (
+                              <EnvironmentV1Name
+                                environment={environment}
+                                link={false}
+                                nullEnvironmentPlaceholder="Null"
+                              />
+                            )}
                           </div>
                         ),
                         default: () => {
@@ -178,13 +191,19 @@ const columnList = computed(
       {
         key: "updateTime",
         title: t("common.updated-at"),
-        width: 128,
+        minWidth: 128,
         render: (rollout) => <Timestamp timestamp={rollout.updateTime} />,
       },
     ];
     return columns.filter((column) => !column.hide);
   }
 );
+
+const scrollX = computed(() => {
+  return columnList.value.reduce((sum, col) => {
+    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
+  }, 0);
+});
 
 const rowProps = (rollout: Rollout) => {
   return {

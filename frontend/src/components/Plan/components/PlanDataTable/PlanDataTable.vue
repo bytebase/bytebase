@@ -1,21 +1,25 @@
 <template>
-  <NDataTable
-    key="plan-table"
-    size="small"
-    :columns="columnList"
-    :data="planList"
-    :striped="true"
-    :bordered="true"
-    :loading="loading"
-    :row-key="(plan: Plan) => plan.name"
-    :row-props="rowProps"
-  />
+  <div ref="tableRef">
+    <NDataTable
+      key="plan-table"
+      size="small"
+      :columns="columnList"
+      :data="planList"
+      :striped="true"
+      :bordered="true"
+      :loading="loading"
+      :scroll-x="scrollX"
+      :row-key="(plan: Plan) => plan.name"
+      :row-props="rowProps"
+    />
+  </div>
 </template>
 
 <script lang="tsx" setup>
+import { useElementSize } from "@vueuse/core";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NPerformantEllipsis, NTag } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Timestamp from "@/components/misc/Timestamp.vue";
@@ -25,7 +29,11 @@ import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import { extractPlanUID, extractProjectResourceName } from "@/utils";
+import {
+  extractPlanUID,
+  extractProjectResourceName,
+  TailwindBreakpoints,
+} from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 withDefaults(
@@ -39,12 +47,18 @@ withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
+const tableRef = ref<HTMLDivElement>();
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(
+  () => tableWidth.value > TailwindBreakpoints.md
+);
 
 const columnList = computed((): DataTableColumn<Plan>[] => {
   const columns: (DataTableColumn<Plan> & { hide?: boolean })[] = [
     {
       key: "title",
       title: t("issue.table.name"),
+      minWidth: 200,
       ellipsis: true,
       resizable: true,
       render: (plan) => {
@@ -89,13 +103,15 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     {
       key: "updateTime",
       title: t("issue.table.updated"),
-      width: 128,
+      minWidth: 128,
+      hide: !showExtendedColumns.value,
       render: (plan) => <Timestamp timestamp={plan.updateTime} />,
     },
     {
       key: "creator",
       title: t("issue.table.creator"),
-      width: 200,
+      minWidth: 200,
+      hide: !showExtendedColumns.value,
       resizable: true,
       ellipsis: true,
       render: (plan) => {
@@ -116,6 +132,12 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     },
   ];
   return columns.filter((column) => !column.hide);
+});
+
+const scrollX = computed(() => {
+  return columnList.value.reduce((sum, col) => {
+    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
+  }, 0);
 });
 
 const rowProps = (plan: Plan) => {
