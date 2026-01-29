@@ -297,7 +297,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.members.service-accounts"),
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
-        component: () => import("@/views/SettingWorkspaceServiceAccounts.vue"),
+        component: () =>
+          import("@/components/User/Settings/ServiceAccountPanel.vue"),
         props: true,
       },
       {
@@ -308,7 +309,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.workloadIdentities.list"],
         },
         component: () =>
-          import("@/views/SettingWorkspaceWorkloadIdentities.vue"),
+          import("@/components/User/Settings/WorkloadIdentityPanel.vue"),
         props: true,
       },
       {

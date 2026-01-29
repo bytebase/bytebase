@@ -339,7 +339,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
         component: () =>
-          import("@/views/project/ProjectServiceAccountDashboard.vue"),
+          import("@/components/User/Settings/ServiceAccountPanel.vue"),
         props: true,
       },
       {
@@ -350,7 +350,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.workloadIdentities.list"],
         },
         component: () =>
-          import("@/views/project/ProjectWorkloadIdentityDashboard.vue"),
+          import("@/components/User/Settings/WorkloadIdentityPanel.vue"),
         props: true,
       },
       {
