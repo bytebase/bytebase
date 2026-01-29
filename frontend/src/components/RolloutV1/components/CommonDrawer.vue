@@ -2,7 +2,7 @@
   <Drawer :show="show" :mask-closable="true" @close="$emit('close')">
     <DrawerContent
       :title="title"
-      class="relative overflow-hidden w-128 max-w-[100vw]"
+      class="relative overflow-hidden w-128 max-w-[calc(100vw-2rem)]"
     >
       <template #default>
         <slot />
