@@ -1,34 +1,29 @@
 <template>
   <div class="flex flex-row items-center flex-wrap gap-2">
-    <NTag v-for="r in workspaceLevelRoles" :key="r">
-      <template #avatar>
-        <NTooltip>
-          <template #trigger>
-            <Building2Icon class="w-4 h-auto" />
-          </template>
-          {{ $t("project.members.workspace-level-roles") }}
-        </NTooltip>
-      </template>
-      {{ displayRoleTitle(r) }}
-    </NTag>
-    <NTag
+    <RoleCell
+      v-for="r in workspaceLevelRoles"
+      :key="r"
+      :binding="create(BindingSchema, {
+        role: r,
+      })"
+      :scope="'workspace'"
+    />
+    <RoleCell
       v-for="binding in projectRoleBindings"
       :key="binding.role"
-      :class="isBindingPolicyExpired(binding) ? 'line-through' : ''"
-    >
-      {{ displayRoleTitle(binding.role) }}
-    </NTag>
+      :binding="binding" :scope="'project'"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
-import { Building2Icon } from "lucide-vue-next";
-import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { displayRoleTitle, isBindingPolicyExpired, sortRoles } from "@/utils";
+import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import { isBindingPolicyExpired, sortRoles } from "@/utils";
 import type { MemberRole } from "../../types";
+import RoleCell from "./RoleCell.vue";
 
 const props = defineProps<{
   role: MemberRole;

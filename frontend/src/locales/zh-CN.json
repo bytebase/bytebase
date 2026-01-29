@@ -214,6 +214,8 @@
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
     "only-creator-allowed-action": "只有创建者才能执行此操作",
     "only-creator-allowed-export": "只有创建者才能执行导出",
+    "workspace-initialize-error": "工作空间初始化失败",
+    "required-workspace-permission": "初始化工作空间需要以下权限",
     "required-permission": "所需权限",
     "resource-not-found": "未找到请求的资源",
     "continue-anyway": "仍要继续",
