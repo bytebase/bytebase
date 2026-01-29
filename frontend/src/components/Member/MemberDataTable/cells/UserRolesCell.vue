@@ -1,16 +1,18 @@
 <template>
-  <div class="flex flex-row items-center flex-wrap gap-2">
+  <div class="flex flex-row items-center flex-wrap gap-1">
     <RoleCell
       v-for="r in workspaceLevelRoles"
       :key="r"
       :binding="create(BindingSchema, {
         role: r,
       })"
+      :bordered="true"
       :scope="'workspace'"
     />
     <RoleCell
       v-for="binding in projectRoleBindings"
       :key="binding.role"
+      :bordered="true"
       :binding="binding" :scope="'project'"
     />
   </div>

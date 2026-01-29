@@ -70,6 +70,7 @@ const columns = computed(() => {
         if (row.type === "role") {
           return (
             <RoleCell
+              bordered={false}
               scope={row.scope}
               binding={row.binding}
               count={row.children.length}

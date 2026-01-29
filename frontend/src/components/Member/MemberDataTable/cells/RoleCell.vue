@@ -37,5 +37,6 @@ defineProps<{
   binding: Binding;
   scope: "workspace" | "project";
   count?: number;
+  bordered: boolean;
 }>();
 </script>
