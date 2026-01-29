@@ -82,7 +82,7 @@
   <CreateServiceAccountDrawer
     v-if="state.showCreateDrawer"
     :service-account="state.editingServiceAccount"
-    :project="project.name"
+    :project="projectId ? project.name : undefined"
     @close="
       () => {
         state.showCreateDrawer = false;

@@ -105,6 +105,7 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 			ID:            sa.ID,
 			Email:         sa.Email,
 			Name:          sa.Name,
+			PasswordHash:  sa.PasswordHash,
 			Type:          storepb.PrincipalType_SERVICE_ACCOUNT,
 			MemberDeleted: sa.MemberDeleted,
 			MFAConfig:     &storepb.MFAConfig{},
