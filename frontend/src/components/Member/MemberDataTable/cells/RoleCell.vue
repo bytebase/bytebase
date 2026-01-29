@@ -8,7 +8,9 @@
     }"
   >
     <NTag
+      :bordered="bordered"
       :class="isBindingPolicyExpired(binding) ? 'line-through' : ''"
+      style="background-color: transparent !important;"
     >
       <div class="flex items-center gap-x-1 cursor-pointer">
         <NTooltip v-if="scope === 'workspace'">
