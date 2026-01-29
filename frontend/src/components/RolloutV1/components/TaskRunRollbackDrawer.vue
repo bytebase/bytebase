@@ -1,6 +1,10 @@
 <template>
   <Drawer v-model:show="show" :width="720" placement="right">
-    <DrawerContent :title="$t('common.rollback')" :closable="!state.loading">
+    <DrawerContent
+      :title="$t('common.rollback')"
+      :closable="!state.loading"
+      class="max-w-[calc(100vw-2rem)]"
+    >
       <div class="flex flex-col gap-y-4">
         <!-- Steps indicator -->
         <NSteps :current="currentStep" size="small">

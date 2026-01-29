@@ -1,9 +1,12 @@
 <template>
+  <!-- Desktop: NPopover -->
   <NPopover
+    v-if="!isMobile"
     trigger="click"
     placement="bottom-end"
-    :show="showPopover"
-    @update:show="showPopover = $event"
+    :show="showPanel"
+    :show-arrow="false"
+    @update:show="showPanel = $event"
   >
     <template #trigger>
       <NTooltip :disabled="errors.length === 0" placement="top">
@@ -28,142 +31,75 @@
     </template>
 
     <template #default>
-      <div class="w-128 flex flex-col gap-y-4 p-1">
-        <!-- Comment editor -->
-        <MarkdownEditor
-          mode="editor"
-          :content="comment"
-          :project="project"
-          :maxlength="65536"
-          @change="(val: string) => (comment = val)"
-        />
-
-        <!-- Review action radio group -->
-        <NRadioGroup
-          v-model:value="selectedAction"
-          :disabled="loading"
-          class="flex! flex-col gap-y-2"
-        >
-          <!-- Comment option (always available) -->
-          <NRadio value="COMMENT">
-            <div class="flex items-start gap-2">
-              <MessageCircleIcon class="w-4 h-4 mt-0.5 text-gray-600 shrink-0" />
-              <div class="flex flex-col">
-                <span class="font-medium">{{ $t("common.comment") }}</span>
-                <span class="text-control-light text-xs">
-                  {{ $t("issue.review.comment-description") }}
-                </span>
-              </div>
-            </div>
-          </NRadio>
-
-          <!-- Approve option -->
-          <NRadio v-if="canApprove" value="APPROVE">
-            <div class="flex items-start gap-2">
-              <CheckIcon class="w-4 h-4 mt-0.5 text-green-600 shrink-0" />
-              <div class="flex flex-col">
-                <span class="font-medium">{{ $t("common.approve") }}</span>
-                <span class="text-control-light text-xs">
-                  {{ $t("issue.review.approve-description") }}
-                </span>
-              </div>
-            </div>
-          </NRadio>
-
-          <!-- Reject option -->
-          <NRadio v-if="canReject" value="REJECT">
-            <div class="flex items-start gap-2">
-              <XIcon class="w-4 h-4 mt-0.5 text-red-600 shrink-0" />
-              <div class="flex flex-col">
-                <span class="font-medium">{{ $t("common.reject") }}</span>
-                <span class="text-control-light text-xs">
-                  {{ $t("issue.review.reject-description") }}
-                </span>
-              </div>
-            </div>
-          </NRadio>
-        </NRadioGroup>
-
-        <!-- Plan check warnings -->
-        <NAlert
-          v-if="
-            selectedAction === 'APPROVE' &&
-            planCheckWarnings.length > 0
-          "
-          type="warning"
-          size="small"
-        >
-          <ul class="text-sm">
-            <li
-              v-for="(warning, index) in planCheckWarnings"
-              :key="index"
-              class="list-disc list-inside"
-            >
-              {{ warning }}
-            </li>
-          </ul>
-          <NCheckbox
-            v-model:checked="performActionAnyway"
-            class="mt-2"
-            size="small"
-          >
-            {{
-              $t("issue.action-anyway", {
-                action: $t("common.approve"),
-              })
-            }}
-          </NCheckbox>
-        </NAlert>
-
-        <!-- Footer -->
-        <div class="flex justify-end gap-x-2">
-          <NButton quaternary @click="showPopover = false">
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NTooltip :disabled="confirmErrors.length === 0" placement="top">
-            <template #trigger>
-              <NButton
-                type="primary"
-                :disabled="confirmErrors.length > 0 || loading"
-                :loading="loading"
-                @click="handleSubmit"
-              >
-                {{ $t("common.submit") }}
-              </NButton>
-            </template>
-            <template #default>
-              <ErrorList :errors="confirmErrors" />
-            </template>
-          </NTooltip>
-        </div>
-      </div>
+      <IssueReviewForm
+        v-if="showPanel"
+        class="w-128 p-1"
+        :can-approve="canApprove"
+        :can-reject="canReject"
+        :loading="loading"
+        :plan-check-warnings="planCheckWarnings"
+        :project="project"
+        @cancel="showPanel = false"
+        @submit="handleSubmit"
+      />
     </template>
   </NPopover>
+
+  <!-- Mobile: Button + Drawer -->
+  <template v-else>
+    <NTooltip :disabled="errors.length === 0" placement="top">
+      <template #trigger>
+        <NButton
+          type="primary"
+          size="medium"
+          tag="div"
+          :disabled="errors.length > 0 || loading || disabled"
+          icon-placement="right"
+          @click="showPanel = true"
+        >
+          {{ $t("issue.review.self") }}
+          <template #icon>
+            <ChevronDownIcon class="w-4 h-4" />
+          </template>
+        </NButton>
+      </template>
+      <template #default>
+        <ErrorList :errors="errors" />
+      </template>
+    </NTooltip>
+
+    <Drawer :show="showPanel" @close="showPanel = false">
+      <DrawerContent
+        :title="$t('issue.review.self')"
+        class="w-[calc(100vw-2rem)] max-w-128"
+      >
+        <IssueReviewForm
+          v-if="showPanel"
+          compact
+          :can-approve="canApprove"
+          :can-reject="canReject"
+          :loading="loading"
+          :plan-check-warnings="planCheckWarnings"
+          :project="project"
+          @cancel="showPanel = false"
+          @submit="handleSubmit"
+        />
+      </DrawerContent>
+    </Drawer>
+  </template>
 </template>
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  MessageCircleIcon,
-  XIcon,
-} from "lucide-vue-next";
-import {
-  NAlert,
-  NButton,
-  NCheckbox,
-  NPopover,
-  NRadio,
-  NRadioGroup,
-  NTooltip,
-} from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
+import { ChevronDownIcon } from "lucide-vue-next";
+import { NButton, NPopover, NTooltip } from "naive-ui";
+import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import MarkdownEditor from "@/components/MarkdownEditor";
 import { ErrorList } from "@/components/Plan/components/common";
 import { usePlanContext } from "@/components/Plan/logic";
+import { useSidebarContext } from "@/components/Plan/logic/sidebar";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClientConnect } from "@/connect";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -186,9 +122,7 @@ import {
   extractProjectResourceName,
   flattenTaskV1List,
 } from "@/utils";
-
-// Internal action type for the review button
-type ReviewAction = "APPROVE" | "REJECT" | "COMMENT";
+import IssueReviewForm, { type ReviewAction } from "./IssueReviewForm.vue";
 
 const props = defineProps<{
   canApprove: boolean;
@@ -202,14 +136,12 @@ const router = useRouter();
 const { project } = useCurrentProjectV1();
 const { issue, rollout, planCheckRuns, events } = usePlanContext();
 const issueCommentStore = useIssueCommentStore();
+const { mode: sidebarMode } = useSidebarContext();
 
+const isMobile = computed(() => sidebarMode.value === "MOBILE");
 const loading = ref(false);
-const showPopover = ref(false);
-const comment = ref("");
-const selectedAction = ref<ReviewAction>("COMMENT");
-const performActionAnyway = ref(false);
+const showPanel = ref(false);
 
-// Errors that disable the main button
 const errors = computed(() => {
   const list: string[] = [];
   if (props.disabledReason) {
@@ -218,16 +150,6 @@ const errors = computed(() => {
   return list;
 });
 
-// Reset state when popover opens
-watch(showPopover, (show) => {
-  if (show) {
-    comment.value = "";
-    selectedAction.value = "COMMENT";
-    performActionAnyway.value = false;
-  }
-});
-
-// Plan check warnings for approve action
 const planCheckWarnings = computed(() => {
   const warnings: string[] = [];
   if (!planCheckRuns.value) return warnings;
@@ -257,35 +179,11 @@ const planCheckWarnings = computed(() => {
   return warnings;
 });
 
-// Errors that disable the confirm button
-const confirmErrors = computed(() => {
-  const list: string[] = [];
-
-  // Comment is required for comment action
-  if (selectedAction.value === "COMMENT" && !comment.value.trim()) {
-    list.push(
-      t(
-        "custom-approval.issue-review.disallow-approve-reason.x-field-is-required",
-        { field: t("common.comment") }
-      )
-    );
-  }
-
-  // Plan check warnings block approve unless acknowledged
-  if (
-    selectedAction.value === "APPROVE" &&
-    planCheckWarnings.value.length > 0 &&
-    !performActionAnyway.value
-  ) {
-    list.push(...planCheckWarnings.value);
-  }
-
-  return list;
-});
-
-const handleSubmit = async () => {
+const handleSubmit = async (payload: {
+  action: ReviewAction;
+  comment: string;
+}) => {
   if (loading.value) return;
-  if (confirmErrors.value.length > 0) return;
 
   const issueValue = issue?.value;
   if (!issueValue) return;
@@ -293,33 +191,29 @@ const handleSubmit = async () => {
   loading.value = true;
 
   try {
-    const action = selectedAction.value;
+    const { action, comment } = payload;
 
     if (action === "APPROVE") {
       const request = create(ApproveIssueRequestSchema, {
         name: issueValue.name,
-        comment: comment.value,
+        comment,
       });
       await issueServiceClientConnect.approveIssue(request);
     } else if (action === "REJECT") {
       const request = create(RejectIssueRequestSchema, {
         name: issueValue.name,
-        comment: comment.value,
+        comment,
       });
       await issueServiceClientConnect.rejectIssue(request);
     } else if (action === "COMMENT") {
       await issueCommentStore.createIssueComment({
         issueName: issueValue.name,
-        comment: comment.value,
+        comment,
       });
     }
 
-    // Emit event to refresh issue and comments
     events.emit("perform-issue-review-action", { action: "ISSUE_REVIEW" });
-
-    showPopover.value = false;
-
-    // Handle navigation after action
+    showPanel.value = false;
     handlePostActionNavigation(action, issueValue);
   } catch (error) {
     pushNotification({
@@ -337,13 +231,11 @@ const handlePostActionNavigation = (
   action: ReviewAction,
   issueValue: NonNullable<typeof issue.value>
 ) => {
-  // No navigation for comment-only action
   if (action === "COMMENT") return;
 
   const rolloutValue = rollout?.value;
   if (!rolloutValue) return;
 
-  // Skip redirect for database create/export tasks
   const hasSpecialTasks = flattenTaskV1List(rolloutValue).some(
     (task) =>
       task.type === Task_Type.DATABASE_CREATE ||
@@ -351,7 +243,6 @@ const handlePostActionNavigation = (
   );
   if (hasSpecialTasks) return;
 
-  // For APPROVE, check if this is the last approval needed
   if (action === "APPROVE") {
     const { approvalTemplate, approvers } = issueValue;
     const roles = approvalTemplate?.flow?.roles ?? [];
@@ -378,7 +269,6 @@ const handlePostActionNavigation = (
     }
   }
 
-  // For APPROVE (not last) and REJECT, redirect to issue page
   nextTick(() => {
     router.push({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

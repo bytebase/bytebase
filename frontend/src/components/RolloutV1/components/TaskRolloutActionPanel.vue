@@ -93,7 +93,7 @@
           <NRadioGroup
             :size="'large'"
             :value="runTimeInMS === undefined ? 'immediate' : 'scheduled'"
-            class="flex! flex-row gap-x-4"
+            class="flex! flex-col sm:flex-row gap-2 sm:gap-4"
             @update:value="handleExecutionModeChange"
           >
             <NRadio value="immediate">

@@ -10,7 +10,7 @@
     >
       <NTab name="write" :tab="$t('issue.comment-editor.write')" />
       <NTab name="preview" :tab="$t('issue.comment-editor.preview')" />
-      <template v-if="state.activeTab === 'write'" #suffix>
+      <template v-if="!compact && state.activeTab === 'write'" #suffix>
         <div class="flex items-center justify-end">
           <NTooltip
             v-for="(toolbar, i) in toolbarItems"
@@ -129,6 +129,7 @@ const props = withDefaults(
     autofocus?: boolean;
     maxlength?: number;
     maxHeight?: number;
+    compact?: boolean;
   }>(),
   {
     maxHeight: 192,

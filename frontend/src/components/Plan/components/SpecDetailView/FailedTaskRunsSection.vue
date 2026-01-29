@@ -36,7 +36,7 @@
     <Drawer v-model:show="taskRunDetailContext.show">
       <DrawerContent
         :title="$t('common.detail')"
-        style="width: calc(100vw - 14rem)"
+        class="max-w-[calc(100vw-2rem)]"
       >
         <TaskRunDetail
           v-if="taskRunDetailContext.taskRun && selectedDatabase"
