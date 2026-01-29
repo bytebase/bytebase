@@ -730,8 +730,8 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\x05email\x18\x06 \x01(\tR\x05email:'\xeaA$\n" +
 	"\x12bytebase.com/Group\x12\x0egroups/{group}2\xbb\x06\n" +
 	"\fGroupService\x12u\n" +
-	"\bGetGroup\x12\x1c.bytebase.v1.GetGroupRequest\x1a\x12.bytebase.v1.Group\"7\xdaA\x04name\x8a\xea0\rbb.groups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/{name=groups/*}\x12\x8b\x01\n" +
-	"\x0eBatchGetGroups\x12\".bytebase.v1.BatchGetGroupsRequest\x1a#.bytebase.v1.BatchGetGroupsResponse\"0\x8a\xea0\rbb.groups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/groups:batchGet\x12z\n" +
+	"\bGetGroup\x12\x1c.bytebase.v1.GetGroupRequest\x1a\x12.bytebase.v1.Group\"7\xdaA\x04name\x8a\xea0\rbb.groups.get\x90\xea0\x02\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/{name=groups/*}\x12\x8b\x01\n" +
+	"\x0eBatchGetGroups\x12\".bytebase.v1.BatchGetGroupsRequest\x1a#.bytebase.v1.BatchGetGroupsResponse\"0\x8a\xea0\rbb.groups.get\x90\xea0\x02\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/groups:batchGet\x12z\n" +
 	"\n" +
 	"ListGroups\x12\x1e.bytebase.v1.ListGroupsRequest\x1a\x1f.bytebase.v1.ListGroupsResponse\"+\xdaA\x00\x8a\xea0\x0ebb.groups.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\f\x12\n" +
 	"/v1/groups\x12\x81\x01\n" +

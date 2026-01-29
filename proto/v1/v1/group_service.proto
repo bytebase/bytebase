@@ -21,7 +21,7 @@ service GroupService {
     option (google.api.http) = {get: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.groups.get";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Gets multiple groups in a single request.
@@ -29,7 +29,7 @@ service GroupService {
   rpc BatchGetGroups(BatchGetGroupsRequest) returns (BatchGetGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups:batchGet"};
     option (bytebase.v1.permission) = "bb.groups.get";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Lists all groups in the workspace.

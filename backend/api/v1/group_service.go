@@ -47,6 +47,10 @@ func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.G
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the group %v", req.Msg.Name))
 	}
 
+	if err := s.checkGroupPermission(ctx, req, group); err != nil {
+		return nil, err
+	}
+
 	result, err := s.convertToV1Group(group)
 	if err != nil {
 		return nil, err
@@ -359,4 +363,39 @@ func (*GroupService) convertToV1Group(groupMessage *store.GroupMessage) (*v1pb.G
 	}
 
 	return group, nil
+}
+
+func (s *GroupService) checkGroupPermission(ctx context.Context, req connect.AnyRequest, group *store.GroupMessage) error {
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	if !isGroupMember(user, group) {
+		ok, err := s.iamManager.CheckPermission(ctx, permission.GroupsGet, user)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+		}
+		if !ok {
+			err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.GroupsGet))
+			if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
+				Method:              req.Spec().Procedure,
+				RequiredPermissions: []string{string(permission.GroupsGet)},
+			}); detailErr == nil {
+				err.AddDetail(detail)
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func isGroupMember(user *store.UserMessage, group *store.GroupMessage) bool {
+	for _, member := range group.Payload.Members {
+		if member.Member == common.FormatUserEmail(user.Email) {
+			return true
+		}
+	}
+	return false
 }

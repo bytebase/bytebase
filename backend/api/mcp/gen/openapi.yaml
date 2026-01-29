@@ -5,7 +5,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ActuatorService
-      summary: 'Clears the system cache to force data refresh.  Permissions required: None'
+      summary: DeleteCache
       description: |-
         Clears the system cache to force data refresh.
          Permissions required: None
@@ -43,7 +43,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ActuatorService
-      summary: 'Gets system information and health status of the Bytebase instance.  Permissions required: None'
+      summary: GetActuatorInfo
       description: |-
         Gets system information and health status of the Bytebase instance.
          Permissions required: None
@@ -81,7 +81,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ActuatorService
-      summary: 'Gets custom branding resources such as logos.  Permissions required: None'
+      summary: GetResourcePackage
       description: |-
         Gets custom branding resources such as logos.
          Permissions required: None
@@ -119,7 +119,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ActuatorService
-      summary: 'Sets up sample data for demonstration and testing purposes.  Permissions required: bb.projects.create'
+      summary: SetupSample
       description: |-
         Sets up sample data for demonstration and testing purposes.
          Permissions required: bb.projects.create
@@ -157,7 +157,7 @@ paths:
     post:
       tags:
         - bytebase.v1.AuditLogService
-      summary: 'Exports audit logs in a specified format for external analysis.  Permissions required: bb.auditLogs.export'
+      summary: ExportAuditLogs
       description: |-
         Exports audit logs in a specified format for external analysis.
          Permissions required: bb.auditLogs.export
@@ -195,7 +195,7 @@ paths:
     post:
       tags:
         - bytebase.v1.AuditLogService
-      summary: 'Searches audit logs with optional filtering and pagination.  Permissions required: bb.auditLogs.search'
+      summary: SearchAuditLogs
       description: |-
         Searches audit logs with optional filtering and pagination.
          Permissions required: bb.auditLogs.search
@@ -233,7 +233,7 @@ paths:
     post:
       tags:
         - bytebase.v1.AuthService
-      summary: 'Exchanges an external OIDC token for a Bytebase access token.  Used by CI/CD pipelines with Workload Identity Federation.  Permissions required: None (validates via OIDC token)'
+      summary: ExchangeToken
       description: |-
         Exchanges an external OIDC token for a Bytebase access token.
          Used by CI/CD pipelines with Workload Identity Federation.
@@ -272,7 +272,7 @@ paths:
     post:
       tags:
         - bytebase.v1.AuthService
-      summary: 'Authenticates a user and returns access tokens.  Permissions required: None'
+      summary: Login
       description: |-
         Authenticates a user and returns access tokens.
          Permissions required: None
@@ -310,7 +310,7 @@ paths:
     post:
       tags:
         - bytebase.v1.AuthService
-      summary: 'Logs out the current user session.  Permissions required: None'
+      summary: Logout
       description: |-
         Logs out the current user session.
          Permissions required: None
@@ -348,7 +348,7 @@ paths:
     post:
       tags:
         - bytebase.v1.AuthService
-      summary: 'Refreshes the access token using the refresh token cookie.  Permissions required: None (validates via refresh token cookie)'
+      summary: Refresh
       description: |-
         Refreshes the access token using the refresh token cookie.
          Permissions required: None (validates via refresh token cookie)
@@ -386,7 +386,7 @@ paths:
     post:
       tags:
         - bytebase.v1.CelService
-      summary: 'Converts multiple CEL AST representations back into expression strings.  Permissions required: None'
+      summary: BatchDeparse
       description: |-
         Converts multiple CEL AST representations back into expression strings.
          Permissions required: None
@@ -424,7 +424,7 @@ paths:
     post:
       tags:
         - bytebase.v1.CelService
-      summary: 'Parses multiple CEL expression strings into AST representations.  Permissions required: None'
+      summary: BatchParse
       description: |-
         Parses multiple CEL expression strings into AST representations.
          Permissions required: None
@@ -462,7 +462,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseCatalogService
-      summary: 'Gets the catalog metadata for a database.  Permissions required: bb.databaseCatalogs.get'
+      summary: GetDatabaseCatalog
       description: |-
         Gets the catalog metadata for a database.
          Permissions required: bb.databaseCatalogs.get
@@ -500,7 +500,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseCatalogService
-      summary: 'Updates catalog metadata such as classifications and labels.  Permissions required: bb.databaseCatalogs.update'
+      summary: UpdateDatabaseCatalog
       description: |-
         Updates catalog metadata such as classifications and labels.
          Permissions required: bb.databaseCatalogs.update
@@ -538,7 +538,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseGroupService
-      summary: 'Creates a new database group.  Permissions required: bb.databaseGroups.create'
+      summary: CreateDatabaseGroup
       description: |-
         Creates a new database group.
          Permissions required: bb.databaseGroups.create
@@ -576,7 +576,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseGroupService
-      summary: 'Deletes a database group.  Permissions required: bb.databaseGroups.delete'
+      summary: DeleteDatabaseGroup
       description: |-
         Deletes a database group.
          Permissions required: bb.databaseGroups.delete
@@ -614,7 +614,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseGroupService
-      summary: 'Gets a database group by name.  Permissions required: bb.databaseGroups.get'
+      summary: GetDatabaseGroup
       description: |-
         Gets a database group by name.
          Permissions required: bb.databaseGroups.get
@@ -652,7 +652,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseGroupService
-      summary: 'Lists database groups in a project.  Permissions required: bb.databaseGroups.list'
+      summary: ListDatabaseGroups
       description: |-
         Lists database groups in a project.
          Permissions required: bb.databaseGroups.list
@@ -690,7 +690,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseGroupService
-      summary: 'Updates a database group.  Permissions required: bb.databaseGroups.update  When allow_missing=true, also requires: bb.databaseGroups.create'
+      summary: UpdateDatabaseGroup
       description: |-
         Updates a database group.
          Permissions required: bb.databaseGroups.update
@@ -729,7 +729,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Retrieves multiple databases by their names.  Permissions required: bb.databases.get'
+      summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
          Permissions required: bb.databases.get
@@ -767,7 +767,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Synchronizes multiple databases in a single batch operation.  Permissions required: bb.databases.sync'
+      summary: BatchSyncDatabases
       description: |-
         Synchronizes multiple databases in a single batch operation.
          Permissions required: bb.databases.sync
@@ -805,7 +805,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Updates multiple databases in a single batch operation.  Permissions required: bb.databases.update'
+      summary: BatchUpdateDatabases
       description: |-
         Updates multiple databases in a single batch operation.
          Permissions required: bb.databases.update
@@ -843,7 +843,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Compares and generates migration statements between two schemas.  Permissions required: bb.databases.get'
+      summary: DiffSchema
       description: |-
         Compares and generates migration statements between two schemas.
          Permissions required: bb.databases.get
@@ -881,7 +881,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Retrieves a specific changelog entry.  Permissions required: bb.changelogs.get'
+      summary: GetChangelog
       description: |-
         Retrieves a specific changelog entry.
          Permissions required: bb.changelogs.get
@@ -919,7 +919,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Retrieves a database by name.  Permissions required: bb.databases.get'
+      summary: GetDatabase
       description: |-
         Retrieves a database by name.
          Permissions required: bb.databases.get
@@ -957,7 +957,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Retrieves database metadata including tables, columns, and indexes.  Permissions required: bb.databases.getSchema'
+      summary: GetDatabaseMetadata
       description: |-
         Retrieves database metadata including tables, columns, and indexes.
          Permissions required: bb.databases.getSchema
@@ -995,7 +995,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Retrieves database schema in SDL (Schema Definition Language) format.  Permissions required: bb.databases.getSchema'
+      summary: GetDatabaseSDLSchema
       description: |-
         Retrieves database schema in SDL (Schema Definition Language) format.
          Permissions required: bb.databases.getSchema
@@ -1033,7 +1033,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Retrieves database schema as DDL statements.  Permissions required: bb.databases.getSchema'
+      summary: GetDatabaseSchema
       description: |-
         Retrieves database schema as DDL statements.
          Permissions required: bb.databases.getSchema
@@ -1071,7 +1071,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Generates schema DDL for a database object.  Permissions required: bb.databases.getSchema'
+      summary: GetSchemaString
       description: |-
         Generates schema DDL for a database object.
          Permissions required: bb.databases.getSchema
@@ -1109,7 +1109,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Lists migration history for a database.  Permissions required: bb.changelogs.list'
+      summary: ListChangelogs
       description: |-
         Lists migration history for a database.
          Permissions required: bb.changelogs.list
@@ -1147,7 +1147,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Lists databases in a project, instance, or workspace.  Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)'
+      summary: ListDatabases
       description: |-
         Lists databases in a project, instance, or workspace.
          Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
@@ -1185,7 +1185,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Synchronizes database schema from the instance.  Permissions required: bb.databases.sync'
+      summary: SyncDatabase
       description: |-
         Synchronizes database schema from the instance.
          Permissions required: bb.databases.sync
@@ -1223,7 +1223,7 @@ paths:
     post:
       tags:
         - bytebase.v1.DatabaseService
-      summary: 'Updates database properties such as labels and project assignment.  Permissions required: bb.databases.update'
+      summary: UpdateDatabase
       description: |-
         Updates database properties such as labels and project assignment.
          Permissions required: bb.databases.update
@@ -1261,7 +1261,7 @@ paths:
     post:
       tags:
         - bytebase.v1.GroupService
-      summary: 'Gets multiple groups in a single request.  Permissions required: bb.groups.get'
+      summary: BatchGetGroups
       description: |-
         Gets multiple groups in a single request.
          Permissions required: bb.groups.get
@@ -1299,7 +1299,7 @@ paths:
     post:
       tags:
         - bytebase.v1.GroupService
-      summary: 'Creates a new group.  Permissions required: bb.groups.create'
+      summary: CreateGroup
       description: |-
         Creates a new group.
          Permissions required: bb.groups.create
@@ -1337,7 +1337,7 @@ paths:
     post:
       tags:
         - bytebase.v1.GroupService
-      summary: 'Deletes a group. Group owners or users with bb.groups.delete permission can delete.  Permissions required: bb.groups.delete OR caller is group owner'
+      summary: DeleteGroup
       description: |-
         Deletes a group. Group owners or users with bb.groups.delete permission can delete.
          Permissions required: bb.groups.delete OR caller is group owner
@@ -1375,7 +1375,7 @@ paths:
     post:
       tags:
         - bytebase.v1.GroupService
-      summary: 'Gets a group by name.  Permissions required: bb.groups.get'
+      summary: GetGroup
       description: |-
         Gets a group by name.
          Permissions required: bb.groups.get
@@ -1413,7 +1413,7 @@ paths:
     post:
       tags:
         - bytebase.v1.GroupService
-      summary: 'Lists all groups in the workspace.  Permissions required: bb.groups.list'
+      summary: ListGroups
       description: |-
         Lists all groups in the workspace.
          Permissions required: bb.groups.list
@@ -1451,7 +1451,7 @@ paths:
     post:
       tags:
         - bytebase.v1.GroupService
-      summary: 'Updates a group. Group owners or users with bb.groups.update permission can update.  Permissions required: bb.groups.update OR caller is group owner  When allow_missing=true, also requires: bb.groups.create'
+      summary: UpdateGroup
       description: |-
         Updates a group. Group owners or users with bb.groups.update permission can update.
          Permissions required: bb.groups.update OR caller is group owner
@@ -1490,7 +1490,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IdentityProviderService
-      summary: 'Creates a new identity provider.  Permissions required: bb.identityProviders.create'
+      summary: CreateIdentityProvider
       description: |-
         Creates a new identity provider.
          Permissions required: bb.identityProviders.create
@@ -1528,7 +1528,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IdentityProviderService
-      summary: 'Deletes an identity provider.  Permissions required: bb.identityProviders.delete'
+      summary: DeleteIdentityProvider
       description: |-
         Deletes an identity provider.
          Permissions required: bb.identityProviders.delete
@@ -1566,7 +1566,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IdentityProviderService
-      summary: 'Gets an identity provider by name.  Permissions required: bb.identityProviders.get'
+      summary: GetIdentityProvider
       description: |-
         Gets an identity provider by name.
          Permissions required: bb.identityProviders.get
@@ -1604,7 +1604,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IdentityProviderService
-      summary: 'Lists all configured identity providers (public endpoint for login page).  Permissions required: None'
+      summary: ListIdentityProviders
       description: |-
         Lists all configured identity providers (public endpoint for login page).
          Permissions required: None
@@ -1642,7 +1642,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IdentityProviderService
-      summary: 'Tests the connection and configuration of an identity provider.  Permissions required: bb.identityProviders.update'
+      summary: TestIdentityProvider
       description: |-
         Tests the connection and configuration of an identity provider.
          Permissions required: bb.identityProviders.update
@@ -1680,7 +1680,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IdentityProviderService
-      summary: 'Updates an identity provider.  Permissions required: bb.identityProviders.update  When allow_missing=true, also requires: bb.identityProviders.create'
+      summary: UpdateIdentityProvider
       description: |-
         Updates an identity provider.
          Permissions required: bb.identityProviders.update
@@ -1719,7 +1719,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceRoleService
-      summary: 'Lists all database roles in an instance.  Permissions required: bb.instanceRoles.list'
+      summary: ListInstanceRoles
       description: |-
         Lists all database roles in an instance.
          Permissions required: bb.instanceRoles.list
@@ -1757,7 +1757,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Adds a read-only data source to an instance.  Permissions required: bb.instances.update'
+      summary: AddDataSource
       description: |-
         Adds a read-only data source to an instance.
          Permissions required: bb.instances.update
@@ -1795,7 +1795,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Syncs multiple instances in a single request.  Permissions required: bb.instances.sync'
+      summary: BatchSyncInstances
       description: |-
         Syncs multiple instances in a single request.
          Permissions required: bb.instances.sync
@@ -1833,7 +1833,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Updates multiple instances in a single request.  Permissions required: bb.instances.update'
+      summary: BatchUpdateInstances
       description: |-
         Updates multiple instances in a single request.
          Permissions required: bb.instances.update
@@ -1871,7 +1871,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Creates a new database instance.  Permissions required: bb.instances.create'
+      summary: CreateInstance
       description: |-
         Creates a new database instance.
          Permissions required: bb.instances.create
@@ -1909,7 +1909,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Deletes or soft-deletes a database instance.  Permissions required: bb.instances.delete'
+      summary: DeleteInstance
       description: |-
         Deletes or soft-deletes a database instance.
          Permissions required: bb.instances.delete
@@ -1947,7 +1947,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Gets a database instance by name.  Permissions required: bb.instances.get'
+      summary: GetInstance
       description: |-
         Gets a database instance by name.
          Permissions required: bb.instances.get
@@ -1985,7 +1985,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Lists all databases within an instance without creating them.  Permissions required: bb.instances.get'
+      summary: ListInstanceDatabase
       description: |-
         Lists all databases within an instance without creating them.
          Permissions required: bb.instances.get
@@ -2023,7 +2023,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Lists all database instances.  Permissions required: bb.instances.list'
+      summary: ListInstances
       description: |-
         Lists all database instances.
          Permissions required: bb.instances.list
@@ -2061,7 +2061,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Removes a read-only data source from an instance.  Permissions required: bb.instances.update'
+      summary: RemoveDataSource
       description: |-
         Removes a read-only data source from an instance.
          Permissions required: bb.instances.update
@@ -2099,7 +2099,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Syncs database schemas and metadata from an instance.  Permissions required: bb.instances.sync'
+      summary: SyncInstance
       description: |-
         Syncs database schemas and metadata from an instance.
          Permissions required: bb.instances.sync
@@ -2137,7 +2137,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Restores a soft-deleted database instance.  Permissions required: bb.instances.undelete'
+      summary: UndeleteInstance
       description: |-
         Restores a soft-deleted database instance.
          Permissions required: bb.instances.undelete
@@ -2175,7 +2175,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Updates a data source configuration.  Permissions required: bb.instances.update'
+      summary: UpdateDataSource
       description: |-
         Updates a data source configuration.
          Permissions required: bb.instances.update
@@ -2213,7 +2213,7 @@ paths:
     post:
       tags:
         - bytebase.v1.InstanceService
-      summary: 'Updates a database instance.  Permissions required: bb.instances.update'
+      summary: UpdateInstance
       description: |-
         Updates a database instance.
          Permissions required: bb.instances.update
@@ -2251,7 +2251,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.  Permissions required: None (determined by approval flow)'
+      summary: ApproveIssue
       description: |-
         Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
          Permissions required: None (determined by approval flow)
@@ -2289,7 +2289,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Updates the status of multiple issues in a single operation.  Permissions required: bb.issues.update'
+      summary: BatchUpdateIssuesStatus
       description: |-
         Updates the status of multiple issues in a single operation.
          Permissions required: bb.issues.update
@@ -2327,7 +2327,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Creates a new issue for database changes or tasks.  Permissions required: bb.issues.create'
+      summary: CreateIssue
       description: |-
         Creates a new issue for database changes or tasks.
          Permissions required: bb.issues.create
@@ -2365,7 +2365,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Adds a comment to an issue.  Permissions required: bb.issueComments.create'
+      summary: CreateIssueComment
       description: |-
         Adds a comment to an issue.
          Permissions required: bb.issueComments.create
@@ -2403,7 +2403,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Retrieves an issue by name.  Permissions required: bb.issues.get'
+      summary: GetIssue
       description: |-
         Retrieves an issue by name.
          Permissions required: bb.issues.get
@@ -2441,7 +2441,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Lists comments on an issue.  Permissions required: bb.issueComments.list'
+      summary: ListIssueComments
       description: |-
         Lists comments on an issue.
          Permissions required: bb.issueComments.list
@@ -2479,7 +2479,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Lists issues in a project.  Permissions required: bb.issues.list'
+      summary: ListIssues
       description: |-
         Lists issues in a project.
          Permissions required: bb.issues.list
@@ -2517,7 +2517,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.  Permissions required: None (determined by approval flow)'
+      summary: RejectIssue
       description: |-
         Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
          Permissions required: None (determined by approval flow)
@@ -2555,7 +2555,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.  Permissions required: None (determined by approval flow)'
+      summary: RequestIssue
       description: |-
         Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
          Permissions required: None (determined by approval flow)
@@ -2593,7 +2593,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.  Permissions required: bb.issues.get'
+      summary: SearchIssues
       description: |-
         Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
          Permissions required: bb.issues.get
@@ -2631,7 +2631,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Updates an issue''s properties such as title, description, or labels.  Permissions required: bb.issues.update'
+      summary: UpdateIssue
       description: |-
         Updates an issue's properties such as title, description, or labels.
          Permissions required: bb.issues.update
@@ -2669,7 +2669,7 @@ paths:
     post:
       tags:
         - bytebase.v1.IssueService
-      summary: 'Updates an existing issue comment.  Permissions required: bb.issueComments.update'
+      summary: UpdateIssueComment
       description: |-
         Updates an existing issue comment.
          Permissions required: bb.issueComments.update
@@ -2707,7 +2707,7 @@ paths:
     post:
       tags:
         - bytebase.v1.OrgPolicyService
-      summary: 'Creates a new organizational policy.  Permissions required: bb.policies.create'
+      summary: CreatePolicy
       description: |-
         Creates a new organizational policy.
          Permissions required: bb.policies.create
@@ -2745,7 +2745,7 @@ paths:
     post:
       tags:
         - bytebase.v1.OrgPolicyService
-      summary: 'Deletes an organizational policy.  Permissions required: bb.policies.delete'
+      summary: DeletePolicy
       description: |-
         Deletes an organizational policy.
          Permissions required: bb.policies.delete
@@ -2783,7 +2783,7 @@ paths:
     post:
       tags:
         - bytebase.v1.OrgPolicyService
-      summary: 'Retrieves a policy by name.  Permissions required: bb.policies.get'
+      summary: GetPolicy
       description: |-
         Retrieves a policy by name.
          Permissions required: bb.policies.get
@@ -2821,7 +2821,7 @@ paths:
     post:
       tags:
         - bytebase.v1.OrgPolicyService
-      summary: 'Lists policies at a specified resource level.  Permissions required: bb.policies.list'
+      summary: ListPolicies
       description: |-
         Lists policies at a specified resource level.
          Permissions required: bb.policies.list
@@ -2859,7 +2859,7 @@ paths:
     post:
       tags:
         - bytebase.v1.OrgPolicyService
-      summary: 'Updates an existing organizational policy.  Permissions required: bb.policies.update'
+      summary: UpdatePolicy
       description: |-
         Updates an existing organizational policy.
          Permissions required: bb.policies.update
@@ -2897,7 +2897,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Cancels the plan check run for a deployment plan.  Permissions required: bb.planCheckRuns.run'
+      summary: CancelPlanCheckRun
       description: |-
         Cancels the plan check run for a deployment plan.
          Permissions required: bb.planCheckRuns.run
@@ -2935,7 +2935,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Creates a new deployment plan.  Permissions required: bb.plans.create'
+      summary: CreatePlan
       description: |-
         Creates a new deployment plan.
          Permissions required: bb.plans.create
@@ -2973,7 +2973,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Retrieves a deployment plan by name.  Permissions required: bb.plans.get'
+      summary: GetPlan
       description: |-
         Retrieves a deployment plan by name.
          Permissions required: bb.plans.get
@@ -3011,7 +3011,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Gets the plan check run for a deployment plan.  Permissions required: bb.planCheckRuns.get'
+      summary: GetPlanCheckRun
       description: |-
         Gets the plan check run for a deployment plan.
          Permissions required: bb.planCheckRuns.get
@@ -3049,7 +3049,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Lists deployment plans in a project.  Permissions required: bb.plans.list'
+      summary: ListPlans
       description: |-
         Lists deployment plans in a project.
          Permissions required: bb.plans.list
@@ -3087,7 +3087,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Executes validation checks on a deployment plan.  Permissions required: bb.planCheckRuns.run'
+      summary: RunPlanChecks
       description: |-
         Executes validation checks on a deployment plan.
          Permissions required: bb.planCheckRuns.run
@@ -3125,7 +3125,7 @@ paths:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'UpdatePlan updates the plan.  The plan creator and the user with bb.plans.update permission on the project can update the plan.  Permissions required: bb.plans.update (or creator)'
+      summary: UpdatePlan
       description: |-
         UpdatePlan updates the plan.
          The plan creator and the user with bb.plans.update permission on the project can update the plan.
@@ -3164,7 +3164,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Adds a webhook to a project for notifications.  Permissions required: bb.projects.update'
+      summary: AddWebhook
       description: |-
         Adds a webhook to a project for notifications.
          Permissions required: bb.projects.update
@@ -3202,7 +3202,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Deletes multiple projects in a single operation.  Permissions required: bb.projects.delete'
+      summary: BatchDeleteProjects
       description: |-
         Deletes multiple projects in a single operation.
          Permissions required: bb.projects.delete
@@ -3240,7 +3240,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'BatchGetProjects retrieves multiple projects by their names.  Permissions required: bb.projects.get'
+      summary: BatchGetProjects
       description: |-
         BatchGetProjects retrieves multiple projects by their names.
          Permissions required: bb.projects.get
@@ -3278,7 +3278,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Creates a new project in the workspace.  Permissions required: bb.projects.create'
+      summary: CreateProject
       description: |-
         Creates a new project in the workspace.
          Permissions required: bb.projects.create
@@ -3316,7 +3316,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Deletes (soft-delete or purge) a project.  Permissions required: bb.projects.delete'
+      summary: DeleteProject
       description: |-
         Deletes (soft-delete or purge) a project.
          Permissions required: bb.projects.delete
@@ -3354,7 +3354,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Retrieves the IAM policy for a project.  Permissions required: bb.projects.getIamPolicy'
+      summary: GetIamPolicy
       description: |-
         Retrieves the IAM policy for a project.
          Permissions required: bb.projects.getIamPolicy
@@ -3392,7 +3392,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'GetProject retrieves a project by name.  Users with "bb.projects.get" permission on the workspace or the project owner can access this method.  Permissions required: bb.projects.get'
+      summary: GetProject
       description: |-
         GetProject retrieves a project by name.
          Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
@@ -3431,7 +3431,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Lists all projects in the workspace with optional filtering.  Permissions required: bb.projects.list'
+      summary: ListProjects
       description: |-
         Lists all projects in the workspace with optional filtering.
          Permissions required: bb.projects.list
@@ -3469,7 +3469,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Removes a webhook from a project.  Permissions required: bb.projects.update'
+      summary: RemoveWebhook
       description: |-
         Removes a webhook from a project.
          Permissions required: bb.projects.update
@@ -3507,7 +3507,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Searches for projects with advanced filtering capabilities.  Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)'
+      summary: SearchProjects
       description: |-
         Searches for projects with advanced filtering capabilities.
          Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects)
@@ -3545,7 +3545,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Sets the IAM policy for a project.  Permissions required: bb.projects.setIamPolicy'
+      summary: SetIamPolicy
       description: |-
         Sets the IAM policy for a project.
          Permissions required: bb.projects.setIamPolicy
@@ -3583,7 +3583,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Tests a webhook by sending a test notification.  Permissions required: bb.projects.update'
+      summary: TestWebhook
       description: |-
         Tests a webhook by sending a test notification.
          Permissions required: bb.projects.update
@@ -3621,7 +3621,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Restores a soft-deleted project.  Permissions required: bb.projects.undelete'
+      summary: UndeleteProject
       description: |-
         Restores a soft-deleted project.
          Permissions required: bb.projects.undelete
@@ -3659,7 +3659,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Updates an existing project''s properties.  Permissions required: bb.projects.update'
+      summary: UpdateProject
       description: |-
         Updates an existing project's properties.
          Permissions required: bb.projects.update
@@ -3697,7 +3697,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ProjectService
-      summary: 'Updates an existing webhook configuration.  Permissions required: bb.projects.update'
+      summary: UpdateWebhook
       description: |-
         Updates an existing webhook configuration.
          Permissions required: bb.projects.update
@@ -3735,7 +3735,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Validates a release by dry-running checks on target databases.  Permissions required: bb.releases.check'
+      summary: CheckRelease
       description: |-
         Validates a release by dry-running checks on target databases.
          Permissions required: bb.releases.check
@@ -3773,7 +3773,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Creates a new release with SQL files.  Permissions required: bb.releases.create'
+      summary: CreateRelease
       description: |-
         Creates a new release with SQL files.
          Permissions required: bb.releases.create
@@ -3811,7 +3811,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Deletes a release.  Permissions required: bb.releases.delete'
+      summary: DeleteRelease
       description: |-
         Deletes a release.
          Permissions required: bb.releases.delete
@@ -3849,7 +3849,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Retrieves a release by name.  Permissions required: bb.releases.get'
+      summary: GetRelease
       description: |-
         Retrieves a release by name.
          Permissions required: bb.releases.get
@@ -3887,7 +3887,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Lists all unique categories in a project.  Permissions required: bb.releases.list'
+      summary: ListReleaseCategories
       description: |-
         Lists all unique categories in a project.
          Permissions required: bb.releases.list
@@ -3925,7 +3925,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Lists releases in a project.  Permissions required: bb.releases.list'
+      summary: ListReleases
       description: |-
         Lists releases in a project.
          Permissions required: bb.releases.list
@@ -3963,7 +3963,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Restores a deleted release.  Permissions required: bb.releases.undelete'
+      summary: UndeleteRelease
       description: |-
         Restores a deleted release.
          Permissions required: bb.releases.undelete
@@ -4001,7 +4001,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReleaseService
-      summary: 'Updates an existing release.  Permissions required: bb.releases.update  When allow_missing=true, also requires: bb.releases.create'
+      summary: UpdateRelease
       description: |-
         Updates an existing release.
          Permissions required: bb.releases.update
@@ -4040,7 +4040,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReviewConfigService
-      summary: 'Creates a new SQL review configuration.  Permissions required: bb.reviewConfigs.create'
+      summary: CreateReviewConfig
       description: |-
         Creates a new SQL review configuration.
          Permissions required: bb.reviewConfigs.create
@@ -4078,7 +4078,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReviewConfigService
-      summary: 'Deletes a SQL review configuration.  Permissions required: bb.reviewConfigs.delete'
+      summary: DeleteReviewConfig
       description: |-
         Deletes a SQL review configuration.
          Permissions required: bb.reviewConfigs.delete
@@ -4116,7 +4116,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReviewConfigService
-      summary: 'Retrieves a SQL review configuration by name.  Permissions required: bb.reviewConfigs.get'
+      summary: GetReviewConfig
       description: |-
         Retrieves a SQL review configuration by name.
          Permissions required: bb.reviewConfigs.get
@@ -4154,7 +4154,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReviewConfigService
-      summary: 'Lists all SQL review configurations.  Permissions required: bb.reviewConfigs.list'
+      summary: ListReviewConfigs
       description: |-
         Lists all SQL review configurations.
          Permissions required: bb.reviewConfigs.list
@@ -4192,7 +4192,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ReviewConfigService
-      summary: 'Updates a SQL review configuration.  Permissions required: bb.reviewConfigs.update  When allow_missing=true, also requires: bb.reviewConfigs.create'
+      summary: UpdateReviewConfig
       description: |-
         Updates a SQL review configuration.
          Permissions required: bb.reviewConfigs.update
@@ -4231,7 +4231,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RevisionService
-      summary: 'Creates multiple schema revisions in a single operation.  Permissions required: bb.revisions.create'
+      summary: BatchCreateRevisions
       description: |-
         Creates multiple schema revisions in a single operation.
          Permissions required: bb.revisions.create
@@ -4269,7 +4269,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RevisionService
-      summary: 'Deletes a schema revision.  Permissions required: bb.revisions.delete'
+      summary: DeleteRevision
       description: |-
         Deletes a schema revision.
          Permissions required: bb.revisions.delete
@@ -4307,7 +4307,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RevisionService
-      summary: 'Retrieves a schema revision by name.  Permissions required: bb.revisions.get'
+      summary: GetRevision
       description: |-
         Retrieves a schema revision by name.
          Permissions required: bb.revisions.get
@@ -4345,7 +4345,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RevisionService
-      summary: 'Lists schema revisions for a database.  Permissions required: bb.revisions.list'
+      summary: ListRevisions
       description: |-
         Lists schema revisions for a database.
          Permissions required: bb.revisions.list
@@ -4383,7 +4383,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RoleService
-      summary: 'Creates a new custom role.  Permissions required: bb.roles.create'
+      summary: CreateRole
       description: |-
         Creates a new custom role.
          Permissions required: bb.roles.create
@@ -4421,7 +4421,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RoleService
-      summary: 'Deletes a custom role.  Permissions required: bb.roles.delete'
+      summary: DeleteRole
       description: |-
         Deletes a custom role.
          Permissions required: bb.roles.delete
@@ -4459,7 +4459,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RoleService
-      summary: 'Retrieves a role by name.  Permissions required: bb.roles.get'
+      summary: GetRole
       description: |-
         Retrieves a role by name.
          Permissions required: bb.roles.get
@@ -4497,7 +4497,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RoleService
-      summary: 'Lists roles in the workspace.  Permissions required: bb.roles.list'
+      summary: ListRoles
       description: |-
         Lists roles in the workspace.
          Permissions required: bb.roles.list
@@ -4535,7 +4535,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RoleService
-      summary: 'Updates a role''s properties.  Permissions required: bb.roles.update  When allow_missing=true, also requires: bb.roles.create'
+      summary: UpdateRole
       description: |-
         Updates a role's properties.
          Permissions required: bb.roles.update
@@ -4574,7 +4574,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Cancels multiple running task executions.  Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)'
+      summary: BatchCancelTaskRuns
       description: |-
         Cancels multiple running task executions.
          Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
@@ -4612,7 +4612,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Executes multiple tasks in a rollout stage.  Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)'
+      summary: BatchRunTasks
       description: |-
         Executes multiple tasks in a rollout stage.
          Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
@@ -4650,7 +4650,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Skips multiple tasks in a rollout stage.  Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)'
+      summary: BatchSkipTasks
       description: |-
         Skips multiple tasks in a rollout stage.
          Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
@@ -4688,7 +4688,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Creates a new rollout for a plan.  Permissions required: bb.rollouts.create (or issue creator for data export issues)'
+      summary: CreateRollout
       description: |-
         Creates a new rollout for a plan.
          Permissions required: bb.rollouts.create (or issue creator for data export issues)
@@ -4726,7 +4726,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Retrieves a rollout by its plan name.  Permissions required: bb.rollouts.get'
+      summary: GetRollout
       description: |-
         Retrieves a rollout by its plan name.
          Permissions required: bb.rollouts.get
@@ -4764,7 +4764,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Retrieves a task run by name.  Permissions required: bb.taskRuns.list'
+      summary: GetTaskRun
       description: |-
         Retrieves a task run by name.
          Permissions required: bb.taskRuns.list
@@ -4802,7 +4802,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Retrieves execution logs for a task run.  Permissions required: bb.taskRuns.list'
+      summary: GetTaskRunLog
       description: |-
         Retrieves execution logs for a task run.
          Permissions required: bb.taskRuns.list
@@ -4840,7 +4840,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Retrieves database session information for a running task.  Permissions required: bb.taskRuns.list'
+      summary: GetTaskRunSession
       description: |-
         Retrieves database session information for a running task.
          Permissions required: bb.taskRuns.list
@@ -4878,7 +4878,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Lists rollouts in a project.  Permissions required: bb.rollouts.list'
+      summary: ListRollouts
       description: |-
         Lists rollouts in a project.
          Permissions required: bb.rollouts.list
@@ -4916,7 +4916,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Lists task run executions for a task.  Permissions required: bb.taskRuns.list'
+      summary: ListTaskRuns
       description: |-
         Lists task run executions for a task.
          Permissions required: bb.taskRuns.list
@@ -4954,7 +4954,7 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Generates rollback SQL for a completed task run.  Permissions required: bb.taskRuns.list'
+      summary: PreviewTaskRunRollback
       description: |-
         Generates rollback SQL for a completed task run.
          Permissions required: bb.taskRuns.list
@@ -4992,7 +4992,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SQLService
-      summary: 'Provides AI-powered SQL completion and generation.  Permissions required: None (authenticated users only, requires AI to be enabled)'
+      summary: AICompletion
       description: |-
         Provides AI-powered SQL completion and generation.
          Permissions required: None (authenticated users only, requires AI to be enabled)
@@ -5031,7 +5031,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SQLService
-      summary: 'Computes schema differences between two database metadata.  Permissions required: None'
+      summary: DiffMetadata
       description: |-
         Computes schema differences between two database metadata.
          Permissions required: None
@@ -5069,7 +5069,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SQLService
-      summary: 'Exports query results to a file format.  Permissions required: bb.databases.get'
+      summary: Export
       description: |-
         Exports query results to a file format.
          Permissions required: bb.databases.get
@@ -5107,7 +5107,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SQLService
-      summary: 'Executes a read-only SQL query against a database.  Permissions required: bb.databases.get'
+      summary: Query
       description: |-
         Executes a read-only SQL query against a database.
          Permissions required: bb.databases.get
@@ -5145,7 +5145,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SQLService
-      summary: 'SearchQueryHistories searches query histories for the caller.  Permissions required: None (only returns caller''s own query histories)'
+      summary: SearchQueryHistories
       description: |-
         SearchQueryHistories searches query histories for the caller.
          Permissions required: None (only returns caller's own query histories)
@@ -5183,7 +5183,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Creates a new service account.  For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.'
+      summary: CreateServiceAccount
       description: |-
         Creates a new service account.
          For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
@@ -5222,7 +5222,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Deletes a service account.  Permissions required: bb.serviceAccounts.delete'
+      summary: DeleteServiceAccount
       description: |-
         Deletes a service account.
          Permissions required: bb.serviceAccounts.delete
@@ -5260,7 +5260,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Gets a service account by name.  Permissions required: bb.serviceAccounts.get'
+      summary: GetServiceAccount
       description: |-
         Gets a service account by name.
          Permissions required: bb.serviceAccounts.get
@@ -5298,7 +5298,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Lists service accounts.  For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.  For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.'
+      summary: ListServiceAccounts
       description: |-
         Lists service accounts.
          For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
@@ -5337,7 +5337,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Restores a deleted service account.  Permissions required: bb.serviceAccounts.undelete'
+      summary: UndeleteServiceAccount
       description: |-
         Restores a deleted service account.
          Permissions required: bb.serviceAccounts.undelete
@@ -5375,7 +5375,7 @@ paths:
     post:
       tags:
         - bytebase.v1.ServiceAccountService
-      summary: 'Updates a service account.  Permissions required: bb.serviceAccounts.update'
+      summary: UpdateServiceAccount
       description: |-
         Updates a service account.
          Permissions required: bb.serviceAccounts.update
@@ -5413,7 +5413,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SettingService
-      summary: 'Retrieves a workspace setting by name.  Permissions required: bb.settings.get'
+      summary: GetSetting
       description: |-
         Retrieves a workspace setting by name.
          Permissions required: bb.settings.get
@@ -5451,7 +5451,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SettingService
-      summary: 'Lists all workspace settings.  Permissions required: bb.settings.list'
+      summary: ListSettings
       description: |-
         Lists all workspace settings.
          Permissions required: bb.settings.list
@@ -5489,7 +5489,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SettingService
-      summary: 'Updates a workspace setting.  Permissions required: bb.settings.set'
+      summary: UpdateSetting
       description: |-
         Updates a workspace setting.
          Permissions required: bb.settings.set
@@ -5527,7 +5527,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SheetService
-      summary: 'Creates multiple SQL sheets in a single operation.  Permissions required: bb.sheets.create'
+      summary: BatchCreateSheets
       description: |-
         Creates multiple SQL sheets in a single operation.
          Permissions required: bb.sheets.create
@@ -5565,7 +5565,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SheetService
-      summary: 'Creates a new SQL sheet.  Permissions required: bb.sheets.create'
+      summary: CreateSheet
       description: |-
         Creates a new SQL sheet.
          Permissions required: bb.sheets.create
@@ -5603,7 +5603,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SheetService
-      summary: 'Retrieves a SQL sheet by name.  Permissions required: bb.sheets.get'
+      summary: GetSheet
       description: |-
         Retrieves a SQL sheet by name.
          Permissions required: bb.sheets.get
@@ -5641,7 +5641,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SubscriptionService
-      summary: 'GetSubscription returns the current subscription.  If there is no license, we will return a free plan subscription without expiration time.  If there is expired license, we will return a free plan subscription with the expiration time of the expired license.  Permissions required: None'
+      summary: GetSubscription
       description: |-
         GetSubscription returns the current subscription.
          If there is no license, we will return a free plan subscription without expiration time.
@@ -5681,7 +5681,7 @@ paths:
     post:
       tags:
         - bytebase.v1.SubscriptionService
-      summary: 'Updates the enterprise license subscription.  Permissions required: bb.settings.set'
+      summary: UpdateSubscription
       description: |-
         Updates the enterprise license subscription.
          Permissions required: bb.settings.set
@@ -5719,7 +5719,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Get the users in batch.  Any authenticated user can batch get users.  Permissions required: bb.users.get'
+      summary: BatchGetUsers
       description: |-
         Get the users in batch.
          Any authenticated user can batch get users.
@@ -5758,7 +5758,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.  Permissions required: bb.users.create (only when Disallow Signup is enabled)'
+      summary: CreateUser
       description: |-
         Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
          Permissions required: bb.users.create (only when Disallow Signup is enabled)
@@ -5796,7 +5796,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.  Permissions required: bb.users.delete'
+      summary: DeleteUser
       description: |-
         Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
          Permissions required: bb.users.delete
@@ -5834,7 +5834,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Get the current authenticated user.  Permissions required: None'
+      summary: GetCurrentUser
       description: |-
         Get the current authenticated user.
          Permissions required: None
@@ -5872,7 +5872,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Get the user.  Any authenticated user can get the user.  Permissions required: bb.users.get'
+      summary: GetUser
       description: |-
         Get the user.
          Any authenticated user can get the user.
@@ -5911,7 +5911,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'List all users.  Any authenticated user can list users.  Permissions required: bb.users.list'
+      summary: ListUsers
       description: |-
         List all users.
          Any authenticated user can list users.
@@ -5950,7 +5950,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Restores a deleted user.  Permissions required: bb.users.undelete'
+      summary: UndeleteUser
       description: |-
         Restores a deleted user.
          Permissions required: bb.users.undelete
@@ -5988,7 +5988,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Updates a user''s email address.  Permissions required: bb.users.updateEmail'
+      summary: UpdateEmail
       description: |-
         Updates a user's email address.
          Permissions required: bb.users.updateEmail
@@ -6026,7 +6026,7 @@ paths:
     post:
       tags:
         - bytebase.v1.UserService
-      summary: 'Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.  Note: Email updates are not supported through this API. Use UpdateEmail instead.  Permissions required: bb.users.update (or self)'
+      summary: UpdateUser
       description: |-
         Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
          Note: Email updates are not supported through this API. Use UpdateEmail instead.
@@ -6065,7 +6065,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Creates a new workload identity.  For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.'
+      summary: CreateWorkloadIdentity
       description: |-
         Creates a new workload identity.
          For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
@@ -6104,7 +6104,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Deletes a workload identity.  Permissions required: bb.workloadIdentities.delete'
+      summary: DeleteWorkloadIdentity
       description: |-
         Deletes a workload identity.
          Permissions required: bb.workloadIdentities.delete
@@ -6142,7 +6142,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Gets a workload identity by name.  Permissions required: bb.workloadIdentities.get'
+      summary: GetWorkloadIdentity
       description: |-
         Gets a workload identity by name.
          Permissions required: bb.workloadIdentities.get
@@ -6180,7 +6180,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Lists workload identities.  For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.  For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.'
+      summary: ListWorkloadIdentities
       description: |-
         Lists workload identities.
          For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
@@ -6219,7 +6219,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Restores a deleted workload identity.  Permissions required: bb.workloadIdentities.undelete'
+      summary: UndeleteWorkloadIdentity
       description: |-
         Restores a deleted workload identity.
          Permissions required: bb.workloadIdentities.undelete
@@ -6257,7 +6257,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkloadIdentityService
-      summary: 'Updates a workload identity.  Permissions required: bb.workloadIdentities.update'
+      summary: UpdateWorkloadIdentity
       description: |-
         Updates a workload identity.
          Permissions required: bb.workloadIdentities.update
@@ -6295,7 +6295,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Batch update the organizers of worksheets.  The access is the same as UpdateWorksheet method.  Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)'
+      summary: BatchUpdateWorksheetOrganizer
       description: |-
         Batch update the organizers of worksheets.
          The access is the same as UpdateWorksheet method.
@@ -6334,7 +6334,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.  Permissions required: None (authenticated users only)'
+      summary: CreateWorksheet
       description: |-
         Creates a personal worksheet used in SQL Editor. Any authenticated user can create their own worksheets.
          Permissions required: None (authenticated users only)
@@ -6372,7 +6372,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Delete a worksheet.  The access is the same as UpdateWorksheet method.  Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)'
+      summary: DeleteWorksheet
       description: |-
         Delete a worksheet.
          The access is the same as UpdateWorksheet method.
@@ -6411,7 +6411,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Get a worksheet by name.  The users can access this method if,  - they are the creator of the worksheet;  - they have bb.worksheets.get permission on the workspace;  - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.  Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)'
+      summary: GetWorksheet
       description: |-
         Get a worksheet by name.
          The users can access this method if,
@@ -6453,7 +6453,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Search for worksheets.  This is used for finding my worksheets or worksheets shared by other people.  The sheet accessibility is the same as GetWorksheet().  Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)'
+      summary: SearchWorksheets
       description: |-
         Search for worksheets.
          This is used for finding my worksheets or worksheets shared by other people.
@@ -6493,7 +6493,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Update a worksheet.  The users can access this method if,  - they are the creator of the worksheet;  - they have bb.worksheets.manage permission on the workspace;  - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.  Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)'
+      summary: UpdateWorksheet
       description: |-
         Update a worksheet.
          The users can access this method if,
@@ -6535,7 +6535,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorksheetService
-      summary: 'Update the organizer of a worksheet.  The access is the same as UpdateWorksheet method.  Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)'
+      summary: UpdateWorksheetOrganizer
       description: |-
         Update the organizer of a worksheet.
          The access is the same as UpdateWorksheet method.
@@ -6574,7 +6574,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkspaceService
-      summary: 'Retrieves IAM policy for the workspace.  Permissions required: bb.workspaces.getIamPolicy'
+      summary: GetIamPolicy
       description: |-
         Retrieves IAM policy for the workspace.
          Permissions required: bb.workspaces.getIamPolicy
@@ -6612,7 +6612,7 @@ paths:
     post:
       tags:
         - bytebase.v1.WorkspaceService
-      summary: 'Sets IAM policy for the workspace.  Permissions required: bb.workspaces.setIamPolicy'
+      summary: SetIamPolicy
       description: |-
         Sets IAM policy for the workspace.
          Permissions required: bb.workspaces.setIamPolicy
@@ -7696,9 +7696,11 @@ components:
             The tasks to run.
              Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
         runTime:
+          oneOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+            - type: "null"
           title: run_time
           description: The task run should run after run_time.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: BatchRunTasksRequest
       additionalProperties: false
     bytebase.v1.BatchRunTasksResponse:
@@ -8170,9 +8172,11 @@ components:
           title: classification
           description: The data classification level for this column.
         objectSchema:
+          oneOf:
+            - $ref: '#/components/schemas/bytebase.v1.ObjectSchema'
+            - type: "null"
           title: object_schema
           description: Object schema for complex column types like JSON.
-          $ref: '#/components/schemas/bytebase.v1.ObjectSchema'
       title: ColumnCatalog
       additionalProperties: false
       description: Column metadata within a table.
@@ -11341,11 +11345,15 @@ components:
             - "null"
           title: to_description
         fromStatus:
+          oneOf:
+            - $ref: '#/components/schemas/bytebase.v1.IssueStatus'
+            - type: "null"
           title: from_status
-          $ref: '#/components/schemas/bytebase.v1.IssueStatus'
         toStatus:
+          oneOf:
+            - $ref: '#/components/schemas/bytebase.v1.IssueStatus'
+            - type: "null"
           title: to_status
-          $ref: '#/components/schemas/bytebase.v1.IssueStatus'
         fromLabels:
           type: array
           items:
@@ -11783,9 +11791,11 @@ components:
             The name of the instance.
              Format: instances/{instance}
         instance:
+          oneOf:
+            - $ref: '#/components/schemas/bytebase.v1.Instance'
+            - type: "null"
           title: instance
           description: The target instance. We need to set this field if the target instance is not created yet.
-          $ref: '#/components/schemas/bytebase.v1.Instance'
       title: ListInstanceDatabaseRequest
       additionalProperties: false
     bytebase.v1.ListInstanceDatabaseResponse:
@@ -12139,9 +12149,11 @@ components:
             The parent, which owns this collection of policies.
              Format: {resource type}/{resource id}
         policyType:
+          oneOf:
+            - $ref: '#/components/schemas/bytebase.v1.PolicyType'
+            - type: "null"
           title: policy_type
           description: Filter by specific policy type.
-          $ref: '#/components/schemas/bytebase.v1.PolicyType'
         showDeleted:
           type: boolean
           title: show_deleted
@@ -16495,17 +16507,21 @@ components:
                 Format: instances/{instance} if the task is DatabaseCreate.
                  Format: instances/{instance}/databases/{database}
             updateTime:
+              oneOf:
+                - $ref: '#/components/schemas/google.protobuf.Timestamp'
+                - type: "null"
               title: update_time
               description: |-
                 The update_time is the update time of latest task run.
                  If there are no task runs, it will be empty.
-              $ref: '#/components/schemas/google.protobuf.Timestamp'
             runTime:
+              oneOf:
+                - $ref: '#/components/schemas/google.protobuf.Timestamp'
+                - type: "null"
               title: run_time
               description: |-
                 The run_time is the scheduled run time of latest task run.
                  If there are no task runs or the task run is not scheduled, it will be empty.
-              $ref: '#/components/schemas/google.protobuf.Timestamp'
         - oneOf:
             - properties:
                 databaseCreate:
@@ -16698,11 +16714,13 @@ components:
           description: Scheduling information about the task run.
           $ref: '#/components/schemas/bytebase.v1.TaskRun.SchedulerInfo'
         runTime:
+          oneOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+            - type: "null"
           title: run_time
           description: |-
             The task run should run after run_time.
              This can only be set when creating the task run calling BatchRunTasks.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: TaskRun
       additionalProperties: false
     bytebase.v1.TaskRun.ExportArchiveStatus:
@@ -17182,13 +17200,17 @@ components:
           description: When the backend process started.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
         xactStart:
+          oneOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+            - type: "null"
           title: xact_start
           description: When the current transaction started.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         queryStart:
+          oneOf:
+            - $ref: '#/components/schemas/google.protobuf.Timestamp'
+            - type: "null"
           title: query_start
           description: When the current query started.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: Session
       additionalProperties: false
       description: PostgreSQL session information read from `pg_stat_activity`.
