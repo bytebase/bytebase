@@ -210,6 +210,7 @@
     "license": "Licencia",
     "view-details": "Ver detalles",
     "untitled": "Intitulado",
+    "add-permissions": "Agregar permisos",
     "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
     "only-creator-allowed-action": "Solo el creador puede realizar esta acción",

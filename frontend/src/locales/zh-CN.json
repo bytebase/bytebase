@@ -210,6 +210,7 @@
     "license": "证书",
     "view-details": "查看详情",
     "untitled": "未命名",
+    "add-permissions": "添加权限",
     "missing-required-permission": "缺少必需的权限 {permissions}",
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
     "only-creator-allowed-action": "只有创建者才能执行此操作",

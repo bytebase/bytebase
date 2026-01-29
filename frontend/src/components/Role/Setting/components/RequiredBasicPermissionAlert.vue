@@ -15,6 +15,7 @@
           {{ permission }}
         </li>
       </ul>
+      <slot name="action" />
     </div>
   </NAlert>
 </template>

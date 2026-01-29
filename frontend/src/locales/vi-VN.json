@@ -210,6 +210,7 @@
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
     "untitled": "Không tiêu đề",
+    "add-permissions": "Thêm quyền",
     "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
     "only-creator-allowed-action": "Chỉ người tạo mới được phép thực hiện hành động này",

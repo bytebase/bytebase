@@ -210,6 +210,7 @@
     "license": "ライセンス",
     "view-details": "詳細を確認する",
     "untitled": "名前のない",
+    "add-permissions": "権限を追加",
     "missing-required-permission": "必要な権限がありません {permissions}",
     "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
     "only-creator-allowed-action": "この操作は作成者のみが実行できます",
