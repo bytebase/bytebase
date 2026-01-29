@@ -3,6 +3,16 @@ import { computed, type Raw, ref, unref, watchEffect } from "vue";
 import type { MaybeRef } from "@/types";
 import type { VueClass } from "./types";
 
+// Tailwind CSS default breakpoints
+// https://tailwindcss.com/docs/responsive-design
+export const TailwindBreakpoints = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  "2xl": 1536,
+} as const;
+
 export const rgbToHex = (r: number, g: number, b: number) => {
   const hex = [r, g, b]
     .map((decimal) => decimal.toString(16).padStart(2, "0"))

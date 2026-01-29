@@ -1,24 +1,28 @@
 <template>
-  <NDataTable
-    key="database-table"
-    size="small"
-    :columns="columnList"
-    :data="databaseList"
-    :striped="true"
-    :bordered="bordered"
-    :pagination="pagination"
-    :loading="loading"
-    :row-key="(data: Database) => data.name"
-    :checked-row-keys="props.selectedDatabaseNames"
-    :row-props="rowProps"
-    @update:checked-row-keys="
-      (val) => $emit('update:selected-database-names', val as string[])
-    "
-    @update:sorter="$emit('update:sorters', $event)"
-  />
+  <div ref="tableRef">
+    <NDataTable
+      key="database-table"
+      size="small"
+      :columns="columnList"
+      :data="databaseList"
+      :striped="true"
+      :bordered="bordered"
+      :pagination="pagination"
+      :loading="loading"
+      :scroll-x="scrollX"
+      :row-key="(data: Database) => data.name"
+      :checked-row-keys="props.selectedDatabaseNames"
+      :row-props="rowProps"
+      @update:checked-row-keys="
+        (val) => $emit('update:selected-database-names', val as string[])
+      "
+      @update:sorter="$emit('update:sorters', $event)"
+    />
+  </div>
 </template>
 
 <script setup lang="tsx">
+import { useElementSize } from "@vueuse/core";
 import { CheckCircleIcon, XCircleIcon } from "lucide-vue-next";
 import {
   type DataTableColumn,
@@ -26,7 +30,7 @@ import {
   NDataTable,
   NTooltip,
 } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import {
@@ -43,6 +47,7 @@ import {
   getDatabaseProject,
   getInstanceResource,
   hostPortOfInstanceV1,
+  TailwindBreakpoints,
 } from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
 import { mapSorterStatus } from "../utils";
@@ -99,6 +104,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const tableRef = ref<HTMLDivElement>();
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(
+  () => tableWidth.value > TailwindBreakpoints.md
+);
 
 const columnList = computed((): DatabaseDataTableColumn[] => {
   const SELECTION: DatabaseDataTableColumn = {
@@ -117,6 +127,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const NAME: DatabaseDataTableColumn = {
     key: "name",
     title: t("common.name"),
+    minWidth: 120,
     resizable: true,
     render: (data) => {
       return <DatabaseNameCell database={data} keyword={props.keyword} />;
@@ -142,7 +153,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.release"),
     minWidth: 140,
     resizable: true,
-    hide: props.schemaless,
+    hide: props.schemaless || !showExtendedColumns.value,
     render: (data) => {
       const release = data.release;
       return release ? extractReleaseUID(release) : "-";
@@ -153,6 +164,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.project"),
     resizable: true,
     ellipsis: true,
+    hide: !showExtendedColumns.value,
     render: (data) => (
       <ProjectNameCell
         project={getDatabaseProject(data)}
@@ -163,6 +175,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const INSTANCE: DatabaseDataTableColumn = {
     key: "instance",
     title: t("common.instance"),
+    minWidth: 120,
     resizable: true,
     render: (data) => (
       <InstanceV1Name
@@ -176,6 +189,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     key: "address",
     title: t("common.address"),
     resizable: true,
+    hide: !showExtendedColumns.value,
     ellipsis: {
       tooltip: true,
     },
@@ -185,6 +199,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     key: "labels",
     title: t("common.labels"),
     resizable: true,
+    hide: !showExtendedColumns.value,
     render: (data) => (
       <LabelsCell labels={data.labels} showCount={1} placeholder="-" />
     ),
@@ -192,7 +207,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const SYNC_STATUS: DatabaseDataTableColumn = {
     key: "sync-status",
     title: t("database.sync-status"),
-    width: 100,
+    minWidth: 100,
     render: (data) => {
       if (data.syncStatus === SyncStatus.FAILED) {
         return (
@@ -263,6 +278,12 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     ] as DatabaseDataTableColumn[]
   ).filter((column) => !column.hide);
   return mapSorterStatus(columns, props.sorters);
+});
+
+const scrollX = computed(() => {
+  return columnList.value.reduce((sum, col) => {
+    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
+  }, 0);
 });
 
 const rowProps = (database: Database) => {

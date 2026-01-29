@@ -58,6 +58,7 @@ import {
   getIssueRoute,
   humanizeTs,
   projectOfIssue,
+  TailwindBreakpoints,
 } from "@/utils";
 import IssueLabelSelector, {
   getValidIssueLabels,
@@ -98,7 +99,7 @@ const tableRef = ref<HTMLDivElement>();
 const isTableInViewport = useElementVisibilityInScrollParent(tableRef);
 const { width: tableWidth } = useElementSize(tableRef);
 const showExtendedColumns = computed(() => {
-  return tableWidth.value > 800;
+  return tableWidth.value > TailwindBreakpoints.md;
 });
 
 const sortedIssueList = computed(() => {
