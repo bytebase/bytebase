@@ -570,13 +570,7 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 				break
 			}
 		}
-		var isBBGroupMember bool
-		for _, member := range bbGroup.Payload.Members {
-			if member.Member == common.FormatUserEmail(user.Email) {
-				isBBGroupMember = true
-				break
-			}
-		}
+		isBBGroupMember := getMemberInGroup(user, bbGroup) != nil
 		if isMember != isBBGroupMember {
 			if isMember {
 				// Add the user to the group.

@@ -6030,8 +6030,8 @@ GroupService manages user groups for organizing users and permissions.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Gets a group by name. Permissions required: bb.groups.get |
-| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Permissions required: bb.groups.get |
+| GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Gets a group by name. Group members or users with bb.groups.get permission can get the group. Permissions required: bb.groups.get OR caller is the group member |
+| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Group members or users with bb.groups.get permission can get the group. Permissions required: bb.groups.get OR caller is the group member |
 | ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Lists all groups in the workspace. Permissions required: bb.groups.list |
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Creates a new group. Permissions required: bb.groups.create |
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner When allow_missing=true, also requires: bb.groups.create |
