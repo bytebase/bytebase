@@ -370,7 +370,8 @@ export declare const GroupSchema: GenMessage<Group>;
 export declare const GroupService: GenService<{
   /**
    * Gets a group by name.
-   * Permissions required: bb.groups.get
+   * Group members or users with bb.groups.get permission can get the group.
+   * Permissions required: bb.groups.get OR caller is the group member
    *
    * @generated from rpc bytebase.v1.GroupService.GetGroup
    */
@@ -381,7 +382,8 @@ export declare const GroupService: GenService<{
   },
   /**
    * Gets multiple groups in a single request.
-   * Permissions required: bb.groups.get
+   * Group members or users with bb.groups.get permission can get the group.
+   * Permissions required: bb.groups.get OR caller is the group member
    *
    * @generated from rpc bytebase.v1.GroupService.BatchGetGroups
    */
