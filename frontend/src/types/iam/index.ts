@@ -11,7 +11,6 @@ export const PERMISSIONS: Permission[] = (
 
 // BASIC_WORKSPACE_PERMISSIONS is the minimum permissions to initalize the workspace
 export const BASIC_WORKSPACE_PERMISSIONS: Permission[] = [
-  "bb.groups.get",
   "bb.roles.list",
   "bb.workspaces.getIamPolicy",
   "bb.settings.getWorkspaceProfile",
