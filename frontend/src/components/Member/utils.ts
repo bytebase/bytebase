@@ -57,7 +57,6 @@ const getMemberBinding = (
           name: `${groupNamePrefix}${email}`,
           title: email,
         }),
-        deleted: true,
       };
     }
 
@@ -87,7 +86,6 @@ const getMemberBinding = (
           name: fullname,
           email: email,
           userType: UserType.USER,
-          state: State.DELETED,
         });
       }
     }
