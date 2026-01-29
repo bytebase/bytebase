@@ -262,7 +262,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1p
 
 func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMessage, user *store.UserMessage, permission string) error {
 	member := getMemberInGroup(user, group)
-	if member.Role == storepb.GroupMember_OWNER {
+	if member != nil && member.Role == storepb.GroupMember_OWNER {
 		return nil
 	}
 
