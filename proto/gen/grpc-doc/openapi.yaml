@@ -775,7 +775,8 @@ paths:
       summary: GetGroup
       description: |-
         Gets a group by name.
-         Permissions required: bb.groups.get
+         Group members or users with bb.groups.get permission can get the group.
+         Permissions required: bb.groups.get OR caller is the group member
       operationId: GroupService_GetGroup
       parameters:
         - name: group
@@ -1075,7 +1076,8 @@ paths:
       summary: BatchGetGroups
       description: |-
         Gets multiple groups in a single request.
-         Permissions required: bb.groups.get
+         Group members or users with bb.groups.get permission can get the group.
+         Permissions required: bb.groups.get OR caller is the group member
       operationId: GroupService_BatchGetGroups
       parameters:
         - name: names

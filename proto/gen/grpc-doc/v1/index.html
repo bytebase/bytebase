@@ -17288,7 +17288,8 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><a href="#bytebase.v1.GetGroupRequest">GetGroupRequest</a></td>
                 <td><a href="#bytebase.v1.Group">Group</a></td>
                 <td><p>Gets a group by name.
-Permissions required: bb.groups.get</p></td>
+Group members or users with bb.groups.get permission can get the group.
+Permissions required: bb.groups.get OR caller is the group member</p></td>
               </tr>
             
               <tr>
@@ -17296,7 +17297,8 @@ Permissions required: bb.groups.get</p></td>
                 <td><a href="#bytebase.v1.BatchGetGroupsRequest">BatchGetGroupsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetGroupsResponse">BatchGetGroupsResponse</a></td>
                 <td><p>Gets multiple groups in a single request.
-Permissions required: bb.groups.get</p></td>
+Group members or users with bb.groups.get permission can get the group.
+Permissions required: bb.groups.get OR caller is the group member</p></td>
               </tr>
             
               <tr>

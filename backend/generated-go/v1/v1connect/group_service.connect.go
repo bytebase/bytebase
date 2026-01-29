@@ -55,10 +55,12 @@ const (
 // GroupServiceClient is a client for the bytebase.v1.GroupService service.
 type GroupServiceClient interface {
 	// Gets a group by name.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
 	// Gets multiple groups in a single request.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
@@ -168,10 +170,12 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Reque
 // GroupServiceHandler is an implementation of the bytebase.v1.GroupService service.
 type GroupServiceHandler interface {
 	// Gets a group by name.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
 	// Gets multiple groups in a single request.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
