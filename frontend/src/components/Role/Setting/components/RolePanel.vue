@@ -21,7 +21,6 @@
               :placeholder="$t('role.setting.title-placeholder')"
               :status="state.role.title?.length === 0 ? 'error' : undefined"
               :maxlength="200"
-              :disabled="!allowUpdate"
             />
           </div>
           <div class="-mt-2">
@@ -48,7 +47,6 @@
               :autosize="{ minRows: 2, maxRows: 4 }"
               :placeholder="$t('role.setting.description-placeholder')"
               :maxlength="1000"
-              :disabled="!allowUpdate"
             />
           </div>
         </div>
@@ -61,20 +59,35 @@
             </div>
             <NButton
               size="small"
-              :disabled="!allowUpdate"
               @click="state.showImportPermissionFromRoleModal = true"
             >
               <PlusIcon class="w-4 h-auto mr-1" />
               <span>{{ $t("role.import-from-role") }}</span>
             </NButton>
           </div>
+          <RequiredBasicPermissionAlert
+            v-if="missedBasicPermission.length > 0"
+            :permissions="missedBasicPermission"
+            :title="$t('common.missing-required-permission')"
+          >
+            <template #action>
+              <div class="mt-2">
+                <NButton
+                  type="primary"
+                  size="small"
+                  @click="addPermissions"
+                >
+                  {{ $t("common.add-permissions") }}
+                </NButton>
+              </div>
+            </template>
+          </RequiredBasicPermissionAlert>
           <NTransfer
             v-model:value="state.role.permissions"
             class="h-[32rem]!"
             source-filterable
             source-filter-placeholder="Search"
             :options="permissionOptions"
-            :disabled="!allowUpdate"
           />
         </div>
       </div>
@@ -89,13 +102,24 @@
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
-          <NButton type="primary" :disabled="!allowSave" @click="handleSave">
-            <FeatureBadge
-              :feature="PlanFeature.FEATURE_CUSTOM_ROLES"
-              class="mr-1 text-white"
-            />
-            {{ mode === "ADD" ? $t("common.add") : $t("common.update") }}
-          </NButton>
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :permissions="[
+              mode === 'ADD' ? 'bb.roles.create' : 'bb.roles.update'
+            ]"
+          >
+            <NButton
+              type="primary"
+              :disabled="!allowSave || slotProps.disabled"
+              @click="handleSave"
+            >
+              <FeatureBadge
+                :feature="PlanFeature.FEATURE_CUSTOM_ROLES"
+                class="mr-1 text-white"
+              />
+              {{ mode === "ADD" ? $t("common.add") : $t("common.update") }}
+            </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
     </DrawerContent>
@@ -117,17 +141,19 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
-import { PERMISSIONS } from "@/types";
+import { BASIC_WORKSPACE_PERMISSIONS, PERMISSIONS } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { extractRoleResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { extractRoleResourceName } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
+import RequiredBasicPermissionAlert from "./RequiredBasicPermissionAlert.vue";
 
 type LocalState = {
   role: Role;
@@ -151,13 +177,23 @@ const roleStore = useRoleStore();
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const state = reactive<LocalState>({
-  role: create(RoleSchema, {}),
+  role: create(RoleSchema, {
+    permissions: [...BASIC_WORKSPACE_PERMISSIONS],
+  }),
   dirty: false,
   loading: false,
   showImportPermissionFromRoleModal: false,
 });
 
-const allowUpdate = computed(() => hasWorkspacePermissionV2("bb.roles.update"));
+const missedBasicPermission = computed(() => {
+  return BASIC_WORKSPACE_PERMISSIONS.filter(
+    (p) => !state.role.permissions.includes(p)
+  );
+});
+
+const addPermissions = () => {
+  state.role.permissions.push(...missedBasicPermission.value);
+};
 
 const resourceId = computed({
   get() {

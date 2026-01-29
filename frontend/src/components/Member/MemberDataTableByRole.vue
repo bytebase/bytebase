@@ -11,18 +11,20 @@
 </template>
 
 <script lang="tsx" setup>
+import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
-import { Building2Icon, Trash2Icon } from "lucide-vue-next";
+import { Trash2Icon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable, NPopconfirm, NTooltip } from "naive-ui";
+import { NDataTable, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { PresetRoleType, unknownUser } from "@/types";
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { displayRoleTitle, isBindingPolicyExpired } from "@/utils";
+import { isBindingPolicyExpired } from "@/utils";
+import RoleCell from "./MemberDataTable/cells/RoleCell.vue";
 import UserOperationsCell from "./MemberDataTable/cells/UserOperationsCell.vue";
 import type { MemberBinding } from "./types";
 
@@ -33,7 +35,7 @@ interface RoleRowData {
   type: "role";
   name: string;
   scope: Scope;
-  binding?: Binding;
+  binding: Binding;
   children: BindingRowData[];
 }
 
@@ -67,22 +69,12 @@ const columns = computed(() => {
       render: (row: RoleRowData | BindingRowData) => {
         if (row.type === "role") {
           return (
-            <div class="flex items-center gap-x-1">
-              {row.scope === "workspace" && (
-                <NTooltip
-                  v-slots={{
-                    trigger: () => <Building2Icon class="w-4 h-auto mr-1" />,
-                    default: () => t("project.members.workspace-level-roles"),
-                  }}
-                />
-              )}
-              <span
-                class={`font-medium ${row.binding && isBindingPolicyExpired(row.binding) ? "line-through" : ""}`}
-              >
-                {displayRoleTitle(row.name)}
-              </span>
-              <span class="font-normal text-control-light">{`(${row.children.length})`}</span>
-            </div>
+            <RoleCell
+              bordered={false}
+              scope={row.scope}
+              binding={row.binding}
+              count={row.children.length}
+            />
           );
         }
 
@@ -166,7 +158,7 @@ const userListByRole = computed(() => {
 
   const getRoleRowData = (
     memberBinding: MemberBinding,
-    data: { name: string; scope: Scope; binding?: Binding | undefined }
+    data: { name: string; scope: Scope; binding: Binding }
   ) => {
     const roleData: RoleRowData = {
       id: "",
@@ -191,6 +183,9 @@ const userListByRole = computed(() => {
       getRoleRowData(memberBinding, {
         name: role,
         scope: "workspace",
+        binding: create(BindingSchema, {
+          role,
+        }),
       });
     }
 

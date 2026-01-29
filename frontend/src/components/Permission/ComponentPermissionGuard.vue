@@ -1,26 +1,34 @@
 <template>
-  <slot v-if="missedPermissions.length === 0" />
-  <NoPermissionPlaceholder
-    v-else
+  <RequiredBasicPermissionAlert
+    v-if="missedBasicPermission.length > 0"
     v-bind="$attrs"
-    :path="requestPath"
-    :resources="project ? [project.name] : []"
-    :permissions="missedPermissions"
-  >
-    <template #action>
-      <div v-if="allowRequestRole" class="mt-2">
-        <NButton
-          type="primary"
-          @click="showRequestRolePanel = true"
-        >
-          <template #icon>
-            <heroicons-outline:user-add class="w-4 h-4" />
-          </template>
-          {{ $t("issue.title.request-role") }}
-        </NButton>
-      </div>
-    </template>
-  </NoPermissionPlaceholder>
+    :permissions="missedBasicPermission"
+    :title="$t('common.workspace-initialize-error')"
+  />
+  <template v-else>
+    <slot v-if="missedPermissions.length === 0" />
+    <NoPermissionPlaceholder
+      v-else
+      v-bind="$attrs"
+      :path="requestPath"
+      :resources="project ? [project.name] : []"
+      :permissions="missedPermissions"
+    >
+      <template #action>
+        <div v-if="allowRequestRole" class="mt-2">
+          <NButton
+            type="primary"
+            @click="showRequestRolePanel = true"
+          >
+            <template #icon>
+              <heroicons-outline:user-add class="w-4 h-4" />
+            </template>
+            {{ $t("issue.title.request-role") }}
+          </NButton>
+        </div>
+      </template>
+    </NoPermissionPlaceholder>
+  </template>
 
   <GrantRequestPanel
     v-if="showRequestRolePanel && project"
@@ -37,8 +45,9 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
 import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
+import RequiredBasicPermissionAlert from "@/components/Role/Setting/components/RequiredBasicPermissionAlert.vue";
 import { hasFeature } from "@/store";
-import { type Permission } from "@/types";
+import { BASIC_WORKSPACE_PERMISSIONS, type Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
@@ -70,5 +79,11 @@ const missedPermissions = computed(() => {
     );
   }
   return props.permissions.filter((p) => !hasWorkspacePermissionV2(p));
+});
+
+const missedBasicPermission = computed(() => {
+  return BASIC_WORKSPACE_PERMISSIONS.filter(
+    (p) => !hasWorkspacePermissionV2(p)
+  );
 });
 </script>

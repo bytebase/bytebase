@@ -61,12 +61,13 @@ import { sortBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
-import { featureToRef, useRoleStore } from "@/store";
-import { PRESET_ROLES } from "@/types";
+import { featureToRef, roleNamePrefix, useRoleStore } from "@/store";
+import { BASIC_WORKSPACE_PERMISSIONS, PRESET_ROLES } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -84,6 +85,7 @@ type LocalState = {
   };
 };
 
+const route = useRoute();
 const roleStore = useRoleStore();
 const state = reactive<LocalState>({
   ready: false,
@@ -116,7 +118,12 @@ const filteredRoleList = computed(() => {
 });
 
 const addRole = () => {
-  selectRole(create(RoleSchema, {}), "ADD");
+  selectRole(
+    create(RoleSchema, {
+      permissions: [...BASIC_WORKSPACE_PERMISSIONS],
+    }),
+    "ADD"
+  );
 };
 
 const selectRole = (role: Role | undefined, mode?: "ADD" | "EDIT") => {
@@ -126,14 +133,21 @@ const selectRole = (role: Role | undefined, mode?: "ADD" | "EDIT") => {
   }
 };
 
-const prepare = async () => {
+onMounted(async () => {
   try {
     await roleStore.fetchRoleList();
   } finally {
     state.ready = true;
   }
-};
-onMounted(prepare);
+
+  const name = route.query.role as string;
+  if (name?.startsWith(roleNamePrefix)) {
+    const role = roleStore.getRoleByName(name);
+    if (role) {
+      selectRole(role, "EDIT");
+    }
+  }
+});
 
 provideCustomRoleSettingContext({
   hasCustomRoleFeature,
