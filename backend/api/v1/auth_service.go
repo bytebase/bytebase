@@ -570,7 +570,7 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 				break
 			}
 		}
-		isBBGroupMember := isGroupMember(user, bbGroup)
+		isBBGroupMember := getMemberInGroup(user, bbGroup) != nil
 		if isMember != isBBGroupMember {
 			if isMember {
 				// Add the user to the group.

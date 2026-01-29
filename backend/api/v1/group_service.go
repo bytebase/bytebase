@@ -261,16 +261,12 @@ func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMessage, user *store.UserMessage, permission string) error {
-	userName := common.FormatUserEmail(user.Email)
+	member := getMemberInGroup(user, group)
+	if member.Role == storepb.GroupMember_OWNER {
+		return nil
+	}
 
-	ok, err := func() (bool, error) {
-		for _, member := range group.Payload.GetMembers() {
-			if member.Role == storepb.GroupMember_OWNER && member.Member == userName {
-				return true, nil
-			}
-		}
-		return s.iamManager.CheckPermission(ctx, permission, user)
-	}()
+	ok, err := s.iamManager.CheckPermission(ctx, permission, user)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 	}
@@ -371,7 +367,7 @@ func (s *GroupService) checkGroupPermission(ctx context.Context, req connect.Any
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	if !isGroupMember(user, group) {
+	if getMemberInGroup(user, group) == nil {
 		ok, err := s.iamManager.CheckPermission(ctx, permission.GroupsGet, user)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
@@ -391,11 +387,12 @@ func (s *GroupService) checkGroupPermission(ctx context.Context, req connect.Any
 	return nil
 }
 
-func isGroupMember(user *store.UserMessage, group *store.GroupMessage) bool {
+func getMemberInGroup(user *store.UserMessage, group *store.GroupMessage) *storepb.GroupMember {
+	userName := common.FormatUserEmail(user.Email)
 	for _, member := range group.Payload.Members {
-		if member.Member == common.FormatUserEmail(user.Email) {
-			return true
+		if member.Member == userName {
+			return member
 		}
 	}
-	return false
+	return nil
 }
