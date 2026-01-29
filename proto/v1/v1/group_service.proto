@@ -16,20 +16,22 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 // GroupService manages user groups for organizing users and permissions.
 service GroupService {
   // Gets a group by name.
-  // Permissions required: bb.groups.get
+  // Group members or users with bb.groups.get permission can get the group.
+  // Permissions required: bb.groups.get OR caller is the group member
   rpc GetGroup(GetGroupRequest) returns (Group) {
     option (google.api.http) = {get: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.groups.get";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Gets multiple groups in a single request.
-  // Permissions required: bb.groups.get
+  // Group members or users with bb.groups.get permission can get the group.
+  // Permissions required: bb.groups.get OR caller is the group member
   rpc BatchGetGroups(BatchGetGroupsRequest) returns (BatchGetGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups:batchGet"};
     option (bytebase.v1.permission) = "bb.groups.get";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   // Lists all groups in the workspace.

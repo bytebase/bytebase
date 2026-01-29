@@ -35,10 +35,12 @@ const (
 // GroupService manages user groups for organizing users and permissions.
 type GroupServiceClient interface {
 	// Gets a group by name.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// Gets multiple groups in a single request.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(ctx context.Context, in *BatchGetGroupsRequest, opts ...grpc.CallOption) (*BatchGetGroupsResponse, error)
 	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
@@ -130,10 +132,12 @@ func (c *groupServiceClient) DeleteGroup(ctx context.Context, in *DeleteGroupReq
 // GroupService manages user groups for organizing users and permissions.
 type GroupServiceServer interface {
 	// Gets a group by name.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
 	// Gets multiple groups in a single request.
-	// Permissions required: bb.groups.get
+	// Group members or users with bb.groups.get permission can get the group.
+	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *BatchGetGroupsRequest) (*BatchGetGroupsResponse, error)
 	// Lists all groups in the workspace.
 	// Permissions required: bb.groups.list
