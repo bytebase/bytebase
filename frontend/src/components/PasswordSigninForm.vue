@@ -34,7 +34,7 @@
         <router-link
           v-if="showForgotPassword"
           :to="{
-            path: '/auth/password-forgot',
+            name: AUTH_PASSWORD_FORGOT_MODULE,
             query: {
               hint: route.query.hint,
             },
@@ -92,6 +92,7 @@ import { computed, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
+import { AUTH_PASSWORD_FORGOT_MODULE } from "@/router/auth";
 import { useActuatorV1Store } from "@/store";
 import {
   type LoginRequest,

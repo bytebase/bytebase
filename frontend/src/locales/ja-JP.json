@@ -214,6 +214,8 @@
     "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
     "only-creator-allowed-action": "この操作は作成者のみが実行できます",
     "only-creator-allowed-export": "エクスポートは作成者のみが実行できます",
+    "workspace-initialize-error": "ワークスペースの初期化に失敗しました",
+    "required-workspace-permission": "ワークスペースの初期化には以下の権限が必要です",
     "required-permission": "必要な権限",
     "resource-not-found": "リソースが見つかりません",
     "continue-anyway": "まだ続けたい",

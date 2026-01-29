@@ -214,6 +214,8 @@
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
     "only-creator-allowed-action": "Only the creator is allowed to take action",
     "only-creator-allowed-export": "Only the creator is allowed to export",
+    "workspace-initialize-error": "Failed to initialize the workspace",
+    "required-workspace-permission": "Following permissions are required to initialize the workspace",
     "required-permission": "Required permissions",
     "resource-not-found": "Resource not found",
     "continue-anyway": "Continue anyway",
