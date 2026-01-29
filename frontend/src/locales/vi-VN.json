@@ -215,7 +215,7 @@
     "only-creator-allowed-action": "Chỉ người tạo mới được phép thực hiện hành động này",
     "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
     "workspace-initialize-error": "Không thể khởi tạo không gian làm việc",
-    "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc",
+    "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
     "required-permission": "Quyền hạn cần thiết",
     "resource-not-found": "Không tìm thấy tài nguyên",
     "continue-anyway": "Tiếp tục",

@@ -215,7 +215,7 @@
     "only-creator-allowed-action": "Solo el creador puede realizar esta acción",
     "only-creator-allowed-export": "Solo el creador puede exportar",
     "workspace-initialize-error": "Error al inicializar el espacio de trabajo",
-    "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo",
+    "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
     "required-permission": "Permisos necesarios",
     "resource-not-found": "Recurso no encontrado",
     "continue-anyway": "De todas maneras, continúe",
