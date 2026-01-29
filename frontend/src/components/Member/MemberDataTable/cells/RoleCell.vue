@@ -1,5 +1,6 @@
 <template>
-  <router-link
+  <component
+    :is="hasRolePermission ? 'router-link' : 'div'"
     :to="{
       name: WORKSPACE_ROUTE_ROLES,
       query: {
@@ -25,15 +26,20 @@
         </span>
       </div>
     </NTag>
-  </router-link>
+  </component>
 </template>
 
 <script lang="tsx" setup>
 import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { WORKSPACE_ROUTE_ROLES } from "@/router/dashboard/workspaceRoutes";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { displayRoleTitle, isBindingPolicyExpired } from "@/utils";
+import {
+  displayRoleTitle,
+  hasWorkspacePermissionV2,
+  isBindingPolicyExpired,
+} from "@/utils";
 
 defineProps<{
   binding: Binding;
@@ -41,4 +47,8 @@ defineProps<{
   count?: number;
   bordered: boolean;
 }>();
+
+const hasRolePermission = computed(() =>
+  hasWorkspacePermissionV2("bb.roles.list")
+);
 </script>
