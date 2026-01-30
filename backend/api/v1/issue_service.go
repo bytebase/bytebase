@@ -423,7 +423,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if approval is approved"))
 			}
 			if approved {
-				issue, err = s.completeGrantRequestIssue(ctx, issue, issue.Payload.GrantRequest)
+				issue, err = s.completeGrantRequestIssue(ctx, user.Email, issue, issue.Payload.GrantRequest)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal,
 						errors.Wrapf(err, "failed to complete grant request"))
@@ -653,7 +653,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	// If the issue is a grant request and approved, complete it
 	if issue.Type == storepb.Issue_GRANT_REQUEST && approved {
-		issue, err = s.completeGrantRequestIssue(ctx, issue, payload.GrantRequest)
+		issue, err = s.completeGrantRequestIssue(ctx, user.Email, issue, payload.GrantRequest)
 		if err != nil {
 			slog.Debug("failed to complete grant request issue", log.BBError(err))
 		}
@@ -1250,7 +1250,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 // 2. Issue approval flow completes
 //
 // Returns the updated issue with DONE status.
-func (s *IssueService) completeGrantRequestIssue(ctx context.Context, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) (*store.IssueMessage, error) {
+func (s *IssueService) completeGrantRequestIssue(ctx context.Context, userEmail string, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) (*store.IssueMessage, error) {
 	// Grant the privilege
 	if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, grantRequest); err != nil {
 		return nil, err
@@ -1264,7 +1264,7 @@ func (s *IssueService) completeGrantRequestIssue(ctx context.Context, issue *sto
 	}
 
 	// Create issue comment documenting the status change
-	if _, err := s.store.CreateIssueComments(ctx, "", &store.IssueCommentMessage{
+	if _, err := s.store.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Event: &storepb.IssueCommentPayload_IssueUpdate_{

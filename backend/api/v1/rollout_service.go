@@ -283,7 +283,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
-	if err := CreateRolloutAndPendingTasks(ctx, s.store, plan, issue, project, tasks); err != nil {
+	if err := CreateRolloutAndPendingTasks(ctx, s.store, user.Email, plan, issue, project, tasks); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -363,6 +363,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 func CreateRolloutAndPendingTasks(
 	ctx context.Context,
 	s *store.Store,
+	userEmail string,
 	plan *store.PlanMessage,
 	issue *store.IssueMessage,
 	project *store.ProjectMessage,
@@ -401,7 +402,7 @@ func CreateRolloutAndPendingTasks(
 			return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 		}
 
-		if _, err := s.CreateIssueComments(ctx, "", &store.IssueCommentMessage{
+		if _, err := s.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_IssueUpdate_{
