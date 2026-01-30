@@ -337,6 +337,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		Metadata:   metadata,
 	}
 	updateActivation := false
+	updateSyncInterval := false
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "title":
@@ -377,9 +378,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			}
 			patch.Metadata.Activation = req.Msg.Instance.Activation
 		case "sync_interval":
-			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, instance); err != nil {
-				return nil, connect.NewError(connect.CodePermissionDenied, err)
-			}
+			updateSyncInterval = true
 			patch.Metadata.SyncInterval = req.Msg.Instance.SyncInterval
 		case "sync_databases":
 			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
@@ -390,6 +389,16 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			patch.Metadata.Labels = req.Msg.Instance.Labels
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
+		}
+	}
+
+	// Check feature gates after all fields are processed so that activation
+	// changes in the same request are visible to the license check.
+	if updateSyncInterval {
+		patchedInstance := *instance
+		patchedInstance.Metadata = patch.Metadata
+		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, &patchedInstance); err != nil {
+			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 	}
 
