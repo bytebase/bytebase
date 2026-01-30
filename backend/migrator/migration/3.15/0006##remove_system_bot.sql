@@ -26,13 +26,6 @@ ALTER TABLE plan ADD CONSTRAINT plan_creator_fkey
   FOREIGN KEY (creator) REFERENCES principal(email)
   ON UPDATE CASCADE ON DELETE SET NULL;
 
--- Make release.creator nullable
-ALTER TABLE release ALTER COLUMN creator DROP NOT NULL;
-ALTER TABLE release DROP CONSTRAINT release_creator_fkey;
-ALTER TABLE release ADD CONSTRAINT release_creator_fkey
-  FOREIGN KEY (creator) REFERENCES principal(email)
-  ON UPDATE CASCADE ON DELETE SET NULL;
-
 -- Update revision.deleter to cascade delete (already nullable)
 ALTER TABLE revision DROP CONSTRAINT revision_deleter_fkey;
 ALTER TABLE revision ADD CONSTRAINT revision_deleter_fkey
@@ -50,9 +43,6 @@ UPDATE issue SET creator = NULL
   WHERE creator = 'support@bytebase.com';
 
 UPDATE plan SET creator = NULL
-  WHERE creator = 'support@bytebase.com';
-
-UPDATE release SET creator = NULL
   WHERE creator = 'support@bytebase.com';
 
 UPDATE revision SET deleter = NULL

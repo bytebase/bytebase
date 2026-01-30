@@ -536,7 +536,7 @@ CREATE TABLE release (
     deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
     release_id text NOT NULL DEFAULT '',
-    creator text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     train text NOT NULL DEFAULT '',
     iteration integer NOT NULL DEFAULT 0,
