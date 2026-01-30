@@ -40,23 +40,6 @@ BEGIN
   UPDATE release SET creator = fallback_user WHERE creator = 'support@bytebase.com';
 END $$;
 
--- Clean up other tables that might reference SystemBot
--- Set revision.deleter to NULL for SystemBot-deleted revisions
-UPDATE revision SET deleter = NULL
-  WHERE deleter = 'support@bytebase.com';
-
--- Remove worksheet organizer entries for SystemBot
-DELETE FROM worksheet_organizer
-  WHERE principal = 'support@bytebase.com';
-
--- Remove oauth2 tokens for SystemBot (if any)
-DELETE FROM oauth2_authorization_code
-  WHERE user_email = 'support@bytebase.com';
-DELETE FROM oauth2_refresh_token
-  WHERE user_email = 'support@bytebase.com';
-DELETE FROM web_refresh_token
-  WHERE user_email = 'support@bytebase.com';
-
 -- Delete the SystemBot principal row
 DELETE FROM principal WHERE id = 1 AND email = 'support@bytebase.com';
 
