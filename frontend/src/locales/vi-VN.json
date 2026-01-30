@@ -948,8 +948,7 @@
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "reopened-issue": "đã mở lại vấn đề",
       "resolved-issue": "đã hoàn tất vấn đề",
-      "canceled-issue": "đã đóng vấn đề",
-      "xxx-automatically": "{verb} tự động"
+      "canceled-issue": "đã đóng vấn đề"
     }
   },
   "issue": {
