@@ -948,8 +948,7 @@
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "reopened-issue": "イシューを再開する",
       "resolved-issue": "イシューを完了する",
-      "canceled-issue": "イシューを閉じた",
-      "xxx-automatically": "自動{verb}"
+      "canceled-issue": "イシューを閉じた"
     }
   },
   "issue": {

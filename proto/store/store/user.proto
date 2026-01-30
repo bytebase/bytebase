@@ -11,12 +11,10 @@ enum PrincipalType {
   PRINCIPAL_TYPE_UNSPECIFIED = 0;
   // END_USER represents the human being using Bytebase.
   END_USER = 1;
-  // SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI.
-  SERVICE_ACCOUNT = 2;
-  // SYSTEM_BOT represents the internal system bot performing operations.
-  SYSTEM_BOT = 3;
   // WORKLOAD_IDENTITY represents external CI/CD workload identity.
-  WORKLOAD_IDENTITY = 4;
+  WORKLOAD_IDENTITY = 2;
+  // SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI.
+  SERVICE_ACCOUNT = 3;
 }
 
 // MFAConfig is the MFA configuration for a user.

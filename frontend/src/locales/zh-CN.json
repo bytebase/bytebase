@@ -948,8 +948,7 @@
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "reopened-issue": "重开工单",
       "resolved-issue": "完成工单",
-      "canceled-issue": "关闭工单",
-      "xxx-automatically": "自动{verb}"
+      "canceled-issue": "关闭工单"
     }
   },
   "issue": {

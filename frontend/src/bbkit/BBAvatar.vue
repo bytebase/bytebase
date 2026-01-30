@@ -14,13 +14,9 @@
 <script lang="ts" setup>
 import isChinese from "is-chinese";
 import { computed } from "vue";
-import { SYSTEM_BOT_EMAIL } from "@/types";
 import type { VueClass } from "@/utils";
-import { callCssVariable } from "@/utils";
 import { hashCode } from "./BBUtil";
 import type { BBAvatarSizeType } from "./types";
-
-const DEFAULT_BRANDING_COLOR = "#4f46e5";
 
 const BACKGROUND_COLOR_LIST: string[] = [
   "#64748B",
@@ -85,10 +81,6 @@ const initials = computed(() => {
     return "?";
   }
 
-  if (props.email === SYSTEM_BOT_EMAIL) {
-    return "BB";
-  }
-
   // Priority
   // 1. First Chinese character
   // 2. At most the first 2 letters in email
@@ -134,9 +126,6 @@ const initials = computed(() => {
 });
 
 const backgroundColor = computed(() => {
-  if (props.email === SYSTEM_BOT_EMAIL) {
-    return callCssVariable("--color-accent") || DEFAULT_BRANDING_COLOR;
-  }
   return (
     props.backgroundColor ||
     BACKGROUND_COLOR_LIST[

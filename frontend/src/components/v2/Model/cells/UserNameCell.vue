@@ -31,7 +31,6 @@
               {{ user.profile.source }}
             </NTag>
             <YouTag v-if="currentUserV1.name === user.name" :size="tagSize"/>
-            <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" :size="tagSize"/>
             <AccountTag :user="user" :size="tagSize" />
             <NTag v-if="user.mfaEnabled && showMfaEnabled" :size="tagSize" type="success" round>
               {{ $t("two-factor.enabled") }}
@@ -40,7 +39,7 @@
         </div>
         <slot name="footer">
           <NEllipsis
-            v-if="user.name !== SYSTEM_BOT_USER_NAME && showEmail"
+            v-if="showEmail"
             class="textinfolabel"
             :line-clamp="1"
             :tooltip="true"
@@ -88,12 +87,10 @@ import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import AccountTag from "@/components/misc/AccountTag.vue";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton, HighlightLabelText } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";

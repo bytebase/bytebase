@@ -7,7 +7,7 @@ import type { WatchCallback } from "vue";
 import { ref, watch } from "vue";
 import { issueServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { type IssueFilter, SYSTEM_BOT_EMAIL } from "@/types";
+import { type IssueFilter } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetIssueRequestSchema,
@@ -21,7 +21,7 @@ import {
   memberMapToRolesInProjectIAM,
 } from "@/utils";
 import { useUserStore } from "../user";
-import { projectNamePrefix, userNamePrefix } from "./common";
+import { projectNamePrefix } from "./common";
 import { useProjectV1Store } from "./project";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
@@ -135,10 +135,6 @@ export const candidatesOfApprovalStepV1 = (issue: Issue, role: string) => {
 
   return uniq(
     candidates.filter((user) => {
-      // Exclude system bot user.
-      if (user === `${userNamePrefix}${SYSTEM_BOT_EMAIL}`) {
-        return false;
-      }
       // If the project does not allow self-approval, exclude the creator.
       if (!project.allowSelfApproval && user === issue.creator) {
         return false;

@@ -1,13 +1,6 @@
 <template>
   <div class="relative">
-    <div v-if="iconConfig.type === 'system'" class="relative pl-0.5">
-      <div
-        class="w-7 h-7 bg-control-bg rounded-full ring-4 ring-white flex items-center justify-center"
-      >
-        <img class="mt-1" src="@/assets/logo-icon.svg" alt="Bytebase" />
-      </div>
-    </div>
-    <div v-else-if="iconConfig.type === 'avatar'" class="relative pl-0.5">
+    <div v-if="iconConfig.type === 'avatar'" class="relative pl-0.5">
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
@@ -46,18 +39,12 @@ import type { Component } from "vue";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import {
-  extractUserId,
-  getIssueCommentType,
-  IssueCommentType,
-  useUserStore,
-} from "@/store";
+import { getIssueCommentType, IssueCommentType, useUserStore } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueComment_Approval_Status } from "@/types/proto-es/v1/issue_service_pb";
 
 type ActionIconType =
   | "avatar"
-  | "system"
   | "create"
   | "update"
   | "run"
@@ -72,7 +59,7 @@ type ActionIconType =
   | "commit";
 
 interface IconConfig {
-  type: "system" | "avatar" | "icon";
+  type: "avatar" | "icon";
   wrapper?: string;
   container?: string;
   icon?: Component;
@@ -80,7 +67,7 @@ interface IconConfig {
 }
 
 const ICON_CONFIGS: Record<
-  Exclude<ActionIconType, "system" | "avatar">,
+  Exclude<ActionIconType, "avatar">,
   Omit<IconConfig, "type">
 > = {
   create: {
@@ -206,14 +193,13 @@ const iconType = computed((): ActionIconType => {
     return "update";
   }
 
-  return extractUserId(issueComment.creator) === userStore.systemBotUser?.email
-    ? "system"
-    : "avatar";
+  // Issue comments always have a real user creator
+  return "avatar";
 });
 
 const iconConfig = computed((): IconConfig => {
   const type = iconType.value;
-  if (type === "system" || type === "avatar") {
+  if (type === "avatar") {
     return { type };
   }
   return { type: "icon", ...ICON_CONFIGS[type] };

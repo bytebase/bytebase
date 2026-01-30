@@ -116,9 +116,6 @@ const allowUndelete = computed(() => {
 });
 
 const canEdit = computed(() => {
-  if (props.user.userType === UserType.SYSTEM_BOT) {
-    return false;
-  }
   return props.user.state === State.ACTIVE;
 });
 

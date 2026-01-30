@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -118,7 +117,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:          taskRunUID,
-			Updater:     common.SystemBotEmail,
+			Updater:     "",
 			Status:      storepb.TaskRun_CANCELED,
 			ResultProto: &storepb.TaskRunResult{},
 		}
@@ -140,7 +139,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:      taskRunUID,
-			Updater: common.SystemBotEmail,
+			Updater: "",
 			Status:  storepb.TaskRun_FAILED,
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
@@ -185,7 +184,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 	// Success case
 	taskRunStatusPatch := &store.TaskRunStatusPatch{
 		ID:          taskRunUID,
-		Updater:     common.SystemBotEmail,
+		Updater:     "",
 		Status:      storepb.TaskRun_DONE,
 		ResultProto: result,
 	}

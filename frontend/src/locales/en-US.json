@@ -948,8 +948,7 @@
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "reopened-issue": "reopened issue",
       "resolved-issue": "completed the issue",
-      "canceled-issue": "closed the issue",
-      "xxx-automatically": "{verb} automatically"
+      "canceled-issue": "closed the issue"
     }
   },
   "issue": {

@@ -256,12 +256,7 @@ import {
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
-import {
-  ALL_USERS_USER_EMAIL,
-  getUserTypeByEmail,
-  SYSTEM_BOT_USER_NAME,
-  unknownUser,
-} from "@/types";
+import { ALL_USERS_USER_EMAIL, getUserTypeByEmail, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -369,7 +364,6 @@ const allowGet = computed(
 // Besides, owner can also change anyone's info. This is for resetting password in case user forgets.
 const allowEdit = computed(() => {
   if (
-    user.value.name === SYSTEM_BOT_USER_NAME ||
     user.value.email === ALL_USERS_USER_EMAIL ||
     user.value.userType !== UserType.USER
   ) {

@@ -7203,7 +7203,7 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 Supported filter:
 - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator.
 - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- user_type: the type, check UserType enum for values, support &#34;SYSTEM_BOT&#34; or &#34;USER&#34; value, support &#34;==&#34; and &#34;in [xx]&#34; operator.
+- user_type: the type, check UserType enum for values, support &#34;USER&#34;, &#34;SERVICE_ACCOUNT&#34;, or &#34;WORKLOAD_IDENTITY&#34; value, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 - state: check State enum for values, support &#34;==&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
@@ -7213,7 +7213,7 @@ name.matches(&#34;ed&#34;)
 email == &#34;ed@bytebase.com&#34;
 email.matches(&#34;ed&#34;)
 user_type == &#34;USER&#34;
-user_type in [&#34;SYSTEM_BOT&#34;, &#34;USER&#34;]
+user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
 state == &#34;DELETED&#34;
 project == &#34;projects/sample-project&#34;
 You can combine filter conditions like:
@@ -7613,21 +7613,15 @@ Format: groups/{email} </p></td>
               </tr>
             
               <tr>
-                <td>SYSTEM_BOT</td>
+                <td>WORKLOAD_IDENTITY</td>
                 <td>2</td>
-                <td><p>System-managed bot account for automated operations.</p></td>
+                <td><p>External CI/CD workload identity.</p></td>
               </tr>
             
               <tr>
                 <td>SERVICE_ACCOUNT</td>
                 <td>3</td>
                 <td><p>Service account for API integrations.</p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKLOAD_IDENTITY</td>
-                <td>4</td>
-                <td><p>External CI/CD workload identity.</p></td>
               </tr>
             
           </tbody>

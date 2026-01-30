@@ -948,8 +948,7 @@
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "reopened-issue": "incidencia reabierta",
       "resolved-issue": "completó la incidencia",
-      "canceled-issue": "cerró la incidencia",
-      "xxx-automatically": "{verb} automáticamente"
+      "canceled-issue": "cerró la incidencia"
     }
   },
   "issue": {

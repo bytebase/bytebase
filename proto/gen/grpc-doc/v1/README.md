@@ -2386,9 +2386,9 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
 | filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - user_type: the type, check UserType enum for values, support &#34;SYSTEM_BOT&#34; or &#34;USER&#34; value, support &#34;==&#34; and &#34;in [xx]&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - user_type: the type, check UserType enum for values, support &#34;USER&#34;, &#34;SERVICE_ACCOUNT&#34;, or &#34;WORKLOAD_IDENTITY&#34; value, support &#34;==&#34; and &#34;in [xx]&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) user_type == &#34;USER&#34; user_type in [&#34;SYSTEM_BOT&#34;, &#34;USER&#34;] state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) user_type == &#34;USER&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
 
 
 
@@ -2539,9 +2539,8 @@ WorkloadIdentityConfig for API layer
 | ---- | ------ | ----------- |
 | USER_TYPE_UNSPECIFIED | 0 | Unspecified user type. |
 | USER | 1 | Regular human user account. |
-| SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
+| WORKLOAD_IDENTITY | 2 | External CI/CD workload identity. |
 | SERVICE_ACCOUNT | 3 | Service account for API integrations. |
-| WORKLOAD_IDENTITY | 4 | External CI/CD workload identity. |
 
 
 
