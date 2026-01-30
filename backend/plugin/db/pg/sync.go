@@ -576,10 +576,16 @@ func getTables(
 		table := &storepb.TableMetadata{}
 		var oid int
 		var schemaName string
+		var dataSize, indexSize sql.NullInt64
 		var comment sql.NullString
-		if err := rows.Scan(&oid, &schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment, &table.Owner); err != nil {
+		if err := rows.Scan(&oid, &schemaName, &table.Name, &dataSize, &indexSize, &table.RowCount, &comment, &table.Owner); err != nil {
 			return nil, nil, nil, err
 		}
+		if !dataSize.Valid || !indexSize.Valid {
+			return nil, nil, nil, errors.Errorf("pg_table_size or pg_indexes_size returned NULL for table %q.%q — this typically means the database user lacks permission; grant the pg_read_all_stats role to fix this", schemaName, table.Name)
+		}
+		table.DataSize = dataSize.Int64
+		table.IndexSize = indexSize.Int64
 		if pgparser.IsSystemTable(table.Name) {
 			continue
 		}
