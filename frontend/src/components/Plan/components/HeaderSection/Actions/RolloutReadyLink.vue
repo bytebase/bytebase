@@ -1,5 +1,5 @@
 <template>
-  <RouterLink v-if="rollout" :to="rolloutRoute">
+  <RouterLink :to="rolloutRoute">
     <NButton icon-placement="right" quaternary>
       <TaskStatus :status="rolloutStatus" size="tiny" />
       <span class="mx-1">{{ $t("common.rollout") }}</span>
@@ -20,7 +20,7 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
-  extractPlanUIDFromRolloutName,
+  extractPlanUID,
   extractProjectResourceName,
   getRolloutStatus,
 } from "@/utils";
@@ -32,16 +32,13 @@ const rolloutStatus = computed(() => {
   return getRolloutStatus(rollout.value);
 });
 
-const planID = computed(() => {
-  if (!rollout.value?.name) return "";
-  return extractPlanUIDFromRolloutName(rollout.value.name);
-});
+const planID = computed(() => extractPlanUID(plan.value.name));
 
 const rolloutRoute = computed(() => ({
   name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   params: {
     projectId: extractProjectResourceName(plan.value.name),
-    planId: extractPlanUIDFromRolloutName(rollout.value?.name ?? ""),
+    planId: planID.value,
   },
 }));
 </script>
