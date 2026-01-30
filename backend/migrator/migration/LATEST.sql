@@ -33,7 +33,7 @@ CREATE TABLE principal (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
-    type text NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY')),
+    type text NOT NULL CHECK (type IN ('END_USER', 'SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY')),
     name text NOT NULL,
     email text NOT NULL,
     password_hash text NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE principal (
     -- NULL for END_USER/SYSTEM_BOT, and for workspace-level SERVICE_ACCOUNT/WORKLOAD_IDENTITY.
     project text REFERENCES project(resource_id),
     CONSTRAINT principal_project_type_check CHECK (
-        (type IN ('END_USER', 'SYSTEM_BOT') AND project IS NULL) OR
+        (type = 'END_USER' AND project IS NULL) OR
         (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
     )
 );
