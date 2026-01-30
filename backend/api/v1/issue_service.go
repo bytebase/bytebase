@@ -1264,7 +1264,7 @@ func (s *IssueService) completeGrantRequestIssue(ctx context.Context, issue *sto
 	}
 
 	// Create issue comment documenting the status change
-	if _, err := s.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+	if _, err := s.store.CreateIssueComments(ctx, "", &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Event: &storepb.IssueCommentPayload_IssueUpdate_{

@@ -401,7 +401,7 @@ func CreateRolloutAndPendingTasks(
 			return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 		}
 
-		if _, err := s.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+		if _, err := s.CreateIssueComments(ctx, "", &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -455,8 +455,8 @@ func CreateRolloutAndPendingTasks(
 				TaskUID: task.ID,
 			}
 
-			// Use SystemBot for auto-rollout
-			if err := s.CreatePendingTaskRuns(ctx, common.SystemBotEmail, create); err != nil {
+			// System-generated task run for auto-rollout
+			if err := s.CreatePendingTaskRuns(ctx, "", create); err != nil {
 				return errors.Wrapf(err, "failed to create pending task runs for task %d", task.ID)
 			}
 		}
