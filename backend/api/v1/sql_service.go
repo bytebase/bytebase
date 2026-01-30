@@ -1477,7 +1477,13 @@ func (s *SQLService) accessCheck(
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
 		}
 		if !ok {
-			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user %q does not have permission for database %q", user.Email, databaseFullName))
+			return &queryError{
+				err: connect.NewError(
+					connect.CodePermissionDenied,
+					errors.Errorf("permission denied to access resources: %v", databaseFullName),
+				),
+				resources: []string{databaseFullName},
+			}
 		}
 		return nil
 	}
