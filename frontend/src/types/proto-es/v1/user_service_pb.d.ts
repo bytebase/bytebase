@@ -107,7 +107,7 @@ export declare type ListUsersRequest = Message<"bytebase.v1.ListUsersRequest"> &
    * Supported filter:
    * - name: the user name, support "==" and ".matches()" operator.
    * - email: the user email, support "==" and ".matches()" operator.
-   * - user_type: the type, check UserType enum for values, support "SYSTEM_BOT" or "USER" value, support "==" and "in [xx]" operator.
+   * - user_type: the type, check UserType enum for values, support "USER", "SERVICE_ACCOUNT", or "WORKLOAD_IDENTITY" value, support "==" and "in [xx]" operator.
    * - state: check State enum for values, support "==" operator.
    * - project: the project full name in "projects/{id}" format, support "==" operator.
    *
@@ -117,7 +117,7 @@ export declare type ListUsersRequest = Message<"bytebase.v1.ListUsersRequest"> &
    * email == "ed@bytebase.com"
    * email.matches("ed")
    * user_type == "USER"
-   * user_type in ["SYSTEM_BOT", "USER"]
+   * user_type in ["SERVICE_ACCOUNT", "USER"]
    * state == "DELETED"
    * project == "projects/sample-project"
    * You can combine filter conditions like:
@@ -540,11 +540,11 @@ export enum UserType {
   USER = 1,
 
   /**
-   * System-managed bot account for automated operations.
+   * External CI/CD workload identity.
    *
-   * @generated from enum value: SYSTEM_BOT = 2;
+   * @generated from enum value: WORKLOAD_IDENTITY = 2;
    */
-  SYSTEM_BOT = 2,
+  WORKLOAD_IDENTITY = 2,
 
   /**
    * Service account for API integrations.
@@ -552,13 +552,6 @@ export enum UserType {
    * @generated from enum value: SERVICE_ACCOUNT = 3;
    */
   SERVICE_ACCOUNT = 3,
-
-  /**
-   * External CI/CD workload identity.
-   *
-   * @generated from enum value: WORKLOAD_IDENTITY = 4;
-   */
-  WORKLOAD_IDENTITY = 4,
 }
 
 /**

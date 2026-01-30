@@ -27,7 +27,6 @@ func TestGetListUserFilter(t *testing.T) {
 			wantErr:  false,
 			wantUserTypes: []storepb.PrincipalType{
 				storepb.PrincipalType_END_USER,
-				storepb.PrincipalType_SYSTEM_BOT,
 			},
 		},
 		{
@@ -59,10 +58,14 @@ func TestGetListUserFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:        "user_type filter - SERVICE_ACCOUNT",
-			filter:      `user_type == "SERVICE_ACCOUNT"`,
-			wantErr:     true,
-			errContains: "invalid user type SERVICE_ACCOUNT",
+			name:     "user_type filter - SERVICE_ACCOUNT",
+			filter:   `user_type == "SERVICE_ACCOUNT"`,
+			wantSQL:  "(TRUE)",
+			wantArgs: []any{},
+			wantErr:  false,
+			wantUserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_SERVICE_ACCOUNT,
+			},
 		},
 		{
 			name:     "user_type filter - USER",
@@ -75,21 +78,26 @@ func TestGetListUserFilter(t *testing.T) {
 			},
 		},
 		{
-			name:     "user_type filter - USER",
-			filter:   `user_type in ["SYSTEM_BOT", "USER"]`,
+			name:     "user_type filter - USER and WORKLOAD_IDENTITY",
+			filter:   `user_type in ["WORKLOAD_IDENTITY", "USER"]`,
 			wantSQL:  "(TRUE)",
 			wantArgs: []any{},
 			wantErr:  false,
 			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_SYSTEM_BOT,
+				storepb.PrincipalType_WORKLOAD_IDENTITY,
 				storepb.PrincipalType_END_USER,
 			},
 		},
 		{
-			name:        "user_type in list",
-			filter:      `user_type in ["SERVICE_ACCOUNT", "USER"]`,
-			wantErr:     true,
-			errContains: "invalid user type SERVICE_ACCOUNT",
+			name:     "user_type in list",
+			filter:   `user_type in ["SERVICE_ACCOUNT", "USER"]`,
+			wantSQL:  "(TRUE)",
+			wantArgs: []any{},
+			wantErr:  false,
+			wantUserTypes: []storepb.PrincipalType{
+				storepb.PrincipalType_SERVICE_ACCOUNT,
+				storepb.PrincipalType_END_USER,
+			},
 		},
 		{
 			name:        "user_type not in list",

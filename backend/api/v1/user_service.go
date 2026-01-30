@@ -728,8 +728,6 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 	switch userType {
 	case storepb.PrincipalType_END_USER:
 		return v1pb.UserType_USER
-	case storepb.PrincipalType_SYSTEM_BOT:
-		return v1pb.UserType_SYSTEM_BOT
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
 		return v1pb.UserType_SERVICE_ACCOUNT
 	case storepb.PrincipalType_WORKLOAD_IDENTITY:
@@ -776,8 +774,10 @@ func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, erro
 	switch userType {
 	case v1pb.UserType_USER:
 		t = storepb.PrincipalType_END_USER
-	case v1pb.UserType_SYSTEM_BOT:
-		t = storepb.PrincipalType_SYSTEM_BOT
+	case v1pb.UserType_SERVICE_ACCOUNT:
+		t = storepb.PrincipalType_SERVICE_ACCOUNT
+	case v1pb.UserType_WORKLOAD_IDENTITY:
+		t = storepb.PrincipalType_WORKLOAD_IDENTITY
 	default:
 		return t, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user type %s", userType))
 	}

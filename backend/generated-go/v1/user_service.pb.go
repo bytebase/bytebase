@@ -33,12 +33,10 @@ const (
 	UserType_USER_TYPE_UNSPECIFIED UserType = 0
 	// Regular human user account.
 	UserType_USER UserType = 1
-	// System-managed bot account for automated operations.
-	UserType_SYSTEM_BOT UserType = 2
+	// External CI/CD workload identity.
+	UserType_WORKLOAD_IDENTITY UserType = 2
 	// Service account for API integrations.
 	UserType_SERVICE_ACCOUNT UserType = 3
-	// External CI/CD workload identity.
-	UserType_WORKLOAD_IDENTITY UserType = 4
 )
 
 // Enum value maps for UserType.
@@ -46,16 +44,14 @@ var (
 	UserType_name = map[int32]string{
 		0: "USER_TYPE_UNSPECIFIED",
 		1: "USER",
-		2: "SYSTEM_BOT",
+		2: "WORKLOAD_IDENTITY",
 		3: "SERVICE_ACCOUNT",
-		4: "WORKLOAD_IDENTITY",
 	}
 	UserType_value = map[string]int32{
 		"USER_TYPE_UNSPECIFIED": 0,
 		"USER":                  1,
-		"SYSTEM_BOT":            2,
+		"WORKLOAD_IDENTITY":     2,
 		"SERVICE_ACCOUNT":       3,
-		"WORKLOAD_IDENTITY":     4,
 	}
 )
 
@@ -294,7 +290,7 @@ type ListUsersRequest struct {
 	// Supported filter:
 	// - name: the user name, support "==" and ".matches()" operator.
 	// - email: the user email, support "==" and ".matches()" operator.
-	// - user_type: the type, check UserType enum for values, support "SYSTEM_BOT" or "USER" value, support "==" and "in [xx]" operator.
+	// - user_type: the type, check UserType enum for values, support "USER", "SERVICE_ACCOUNT", or "WORKLOAD_IDENTITY" value, support "==" and "in [xx]" operator.
 	// - state: check State enum for values, support "==" operator.
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	//
@@ -304,7 +300,7 @@ type ListUsersRequest struct {
 	// email == "ed@bytebase.com"
 	// email.matches("ed")
 	// user_type == "USER"
-	// user_type in ["SYSTEM_BOT", "USER"]
+	// user_type in ["SERVICE_ACCOUNT", "USER"]
 	// state == "DELETED"
 	// project == "projects/sample-project"
 	// You can combine filter conditions like:
@@ -1104,14 +1100,12 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06GITHUB\x10\x01\x12\n" +
 	"\n" +
-	"\x06GITLAB\x10\x02*k\n" +
+	"\x06GITLAB\x10\x02*[\n" +
 	"\bUserType\x12\x19\n" +
 	"\x15USER_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04USER\x10\x01\x12\x0e\n" +
-	"\n" +
-	"SYSTEM_BOT\x10\x02\x12\x13\n" +
-	"\x0fSERVICE_ACCOUNT\x10\x03\x12\x15\n" +
-	"\x11WORKLOAD_IDENTITY\x10\x042\xd3\b\n" +
+	"\x04USER\x10\x01\x12\x15\n" +
+	"\x11WORKLOAD_IDENTITY\x10\x02\x12\x13\n" +
+	"\x0fSERVICE_ACCOUNT\x10\x032\xd3\b\n" +
 	"\vUserService\x12p\n" +
 	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"5\xdaA\x04name\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12\x86\x01\n" +
 	"\rBatchGetUsers\x12!.bytebase.v1.BatchGetUsersRequest\x1a\".bytebase.v1.BatchGetUsersResponse\".\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/users:batchGet\x12Y\n" +

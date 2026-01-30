@@ -5142,9 +5142,8 @@ PrincipalType is the type of a principal.
 | ---- | ------ | ----------- |
 | PRINCIPAL_TYPE_UNSPECIFIED | 0 |  |
 | END_USER | 1 | END_USER represents the human being using Bytebase. |
-| SERVICE_ACCOUNT | 2 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
-| SYSTEM_BOT | 3 | SYSTEM_BOT represents the internal system bot performing operations. |
-| WORKLOAD_IDENTITY | 4 | WORKLOAD_IDENTITY represents external CI/CD workload identity. |
+| WORKLOAD_IDENTITY | 2 | WORKLOAD_IDENTITY represents external CI/CD workload identity. |
+| SERVICE_ACCOUNT | 3 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
 
 
 
