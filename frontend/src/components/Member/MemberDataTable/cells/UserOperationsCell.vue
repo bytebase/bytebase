@@ -37,7 +37,7 @@ import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { MiniActionButton } from "@/components/v2";
-import { SYSTEM_BOT_USER_NAME, unknownUser } from "@/types";
+import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { MemberBinding } from "../../types";
 
@@ -53,11 +53,7 @@ defineEmits<{
 }>();
 
 const allowRevoke = computed(() => {
-  if (props.binding.type === "groups") {
-    return true;
-  }
-  const user = props.binding.user ?? unknownUser();
-  return user.name !== SYSTEM_BOT_USER_NAME;
+  return true;
 });
 
 const allowUpdate = computed(() => {
@@ -66,10 +62,6 @@ const allowUpdate = computed(() => {
   }
 
   const user = props.binding.user ?? unknownUser();
-  if (user.name === SYSTEM_BOT_USER_NAME) {
-    // Cannot edit the member binding for support@bytebase.com, but can edit allUsers
-    return false;
-  }
   return user.state === State.ACTIVE;
 });
 </script>

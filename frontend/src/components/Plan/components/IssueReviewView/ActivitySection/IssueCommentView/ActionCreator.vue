@@ -1,20 +1,12 @@
 <template>
-  <div v-if="userEmail === userStore.systemBotUser?.email" class="inline-flex items-center gap-1">
-    <span class="font-medium text-main whitespace-nowrap">
-      {{ user?.title }}
-    </span>
-    <SystemBotTag />
-  </div>
-  <UserLink v-else-if="user" :title="user.title" :email="user.email" />
-  <span v-else class="font-medium text-main whitespace-nowrap">-</span>
+  <UserLink v-if="user" :title="user.title" :email="user.email" />
+  <span v-else class="font-medium text-main whitespace-nowrap">{{ $t("common.system") }}</span>
 </template>
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { computed } from "vue";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import { UserLink } from "@/components/v2/Model/cells";
-import { extractUserId, useUserStore } from "@/store";
+import { useUserStore } from "@/store";
 
 const props = defineProps<{
   // Format: users/{email}
@@ -23,11 +15,8 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 
-const userEmail = computed(() => {
-  return extractUserId(props.creator);
-});
-
 const user = computedAsync(() => {
+  if (!props.creator) return undefined;
   return userStore.getOrFetchUserByIdentifier(props.creator);
 });
 </script>

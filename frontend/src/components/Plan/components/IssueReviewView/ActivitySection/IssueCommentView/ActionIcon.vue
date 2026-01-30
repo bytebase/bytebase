@@ -206,9 +206,8 @@ const iconType = computed((): ActionIconType => {
     return "update";
   }
 
-  return extractUserId(issueComment.creator) === userStore.systemBotUser?.email
-    ? "system"
-    : "avatar";
+  const creatorEmail = extractUserId(issueComment.creator);
+  return creatorEmail ? "avatar" : "system";
 });
 
 const iconConfig = computed((): IconConfig => {

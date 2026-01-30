@@ -73,7 +73,6 @@ import type {
   ValueOption,
 } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { getLocalSheetByName, targetsForSpec } from "@/components/Plan";
@@ -92,7 +91,7 @@ import {
   buildPlanFindBySearchParams,
   usePlanStore,
 } from "@/store/modules/v1/plan";
-import { isValidDatabaseGroupName, SYSTEM_BOT_USER_NAME } from "@/types";
+import { isValidDatabaseGroupName } from "@/types";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
@@ -192,7 +191,6 @@ const scopeOptions = computed((): ScopeOption[] => {
             return {
               value: user.email,
               keywords: [user.email, user.title],
-              bot: user.name === SYSTEM_BOT_USER_NAME,
               render: () => {
                 const children = [
                   h(BBAvatar, { size: "TINY", username: user.title }),
@@ -200,9 +198,6 @@ const scopeOptions = computed((): ScopeOption[] => {
                 ];
                 if (user.name === me.value.name) {
                   children.push(h(YouTag));
-                }
-                if (user.name === SYSTEM_BOT_USER_NAME) {
-                  children.push(h(SystemBotTag));
                 }
                 return h(
                   "div",

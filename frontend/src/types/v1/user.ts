@@ -1,14 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
 import { extractUserId } from "@/store/modules/v1/common";
-import { SYSTEM_BOT_EMAIL } from "../common";
 import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { User } from "../proto-es/v1/user_service_pb";
 import { UserSchema, UserType } from "../proto-es/v1/user_service_pb";
 
 export const UNKNOWN_USER_NAME = `users/${UNKNOWN_ID}`;
-export const SYSTEM_BOT_USER_NAME = `users/${SYSTEM_BOT_EMAIL}`;
 
 export const unknownUser = (name: string = ""): User => {
   const user = create(UserSchema, {
@@ -91,9 +89,6 @@ export const isValidUserName = (name: string) => {
 };
 
 export const getUserTypeByEmail = (email: string): UserType => {
-  if (email === SYSTEM_BOT_EMAIL) {
-    return UserType.SYSTEM_BOT;
-  }
   if (email.endsWith(serviceAccountSuffix)) {
     return UserType.SERVICE_ACCOUNT;
   }

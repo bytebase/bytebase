@@ -8,10 +8,9 @@ import type {
   ValueOption,
 } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
-import { isValidProjectName, SYSTEM_BOT_USER_NAME } from "@/types";
+import { isValidProjectName } from "@/types";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -87,7 +86,6 @@ export const useIssueSearchScopeOptions = (
             return {
               value: user.email,
               keywords: [user.email, user.title],
-              bot: user.name === SYSTEM_BOT_USER_NAME,
               render: () => {
                 const children = [
                   h(BBAvatar, { size: "TINY", username: user.title }),
@@ -95,9 +93,6 @@ export const useIssueSearchScopeOptions = (
                 ];
                 if (user.name === me.value.name) {
                   children.push(h(YouTag));
-                }
-                if (user.name === SYSTEM_BOT_USER_NAME) {
-                  children.push(h(SystemBotTag));
                 }
                 return h(
                   "div",
