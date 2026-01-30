@@ -78,6 +78,14 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	// Compute release_id = train + formatted iteration
 	releaseID := fmt.Sprintf("%s%02d", release.Train, nextIteration)
 
+	// Convert empty creator to NULL for system-generated releases
+	var creatorPtr any
+	if creator == "" {
+		creatorPtr = nil
+	} else {
+		creatorPtr = creator
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO release (
 			creator,
@@ -96,7 +104,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 			?,
 			?
 		) RETURNING id, created_at
-	`, creator, release.ProjectID, p, releaseID, release.Train, nextIteration, release.Category)
+	`, creatorPtr, release.ProjectID, p, releaseID, release.Train, nextIteration, release.Category)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -189,11 +197,12 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			Payload: &storepb.ReleasePayload{},
 		}
 		var payload []byte
+		var creator sql.NullString
 
 		if err := rows.Scan(
 			&r.Deleted,
 			&r.ProjectID,
-			&r.Creator,
+			&creator,
 			&r.At,
 			&payload,
 			&r.ReleaseID,
@@ -202,6 +211,9 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			&r.Category,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
+		}
+		if creator.Valid {
+			r.Creator = creator.String
 		}
 
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, r.Payload); err != nil {
