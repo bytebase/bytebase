@@ -15,12 +15,12 @@ func init() {
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := []base.Diagnostic{}
 
-	parseResult := ParseMongoShell(statement)
-	if parseResult == nil {
+	raw := parseMongoShellRaw(statement)
+	if raw == nil {
 		return diagnostics, nil
 	}
 
-	for _, err := range parseResult.Errors {
+	for _, err := range raw.Errors {
 		if err != nil {
 			diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(err, statement))
 		}

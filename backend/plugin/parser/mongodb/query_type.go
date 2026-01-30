@@ -12,15 +12,20 @@ import (
 
 // GetQueryType parses a MongoDB shell statement and returns its query type.
 func GetQueryType(statement string) base.QueryType {
-	parseResult := ParseMongoShell(statement)
-	if parseResult.Tree == nil {
+	stmts, err := ParseMongoShell(statement)
+	if err != nil || len(stmts) == 0 {
+		return base.DML
+	}
+
+	ast, ok := stmts[0].AST.(*base.ANTLRAST)
+	if !ok || ast.Tree == nil {
 		return base.DML
 	}
 
 	l := &queryTypeListener{
 		result: base.DML,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(l, ast.Tree)
 	return l.result
 }
 
