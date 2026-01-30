@@ -1867,11 +1867,11 @@
           "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
         },
         "require-issue-approval": {
-          "self": "发布前需要工单审批",
+          "self": "创建发布前需要工单审批",
           "description": "工单必须在创建发布前获得批准。"
         },
         "require-plan-check-no-error": {
-          "self": "发布前要求变更检查通过",
+          "self": "创建发布前要求变更检查通过",
           "description": "所有变更检查必须无错误才能创建发布。"
         },
         "allow-request-role": {
