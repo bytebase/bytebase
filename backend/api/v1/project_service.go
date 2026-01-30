@@ -960,9 +960,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Payload.GetTitle()),
 			Description: "This is a test",
 			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", externalURL, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
-			ActorID:     1,
-			ActorName:   "Bytebase",
-			ActorEmail:  "support@bytebase.com",
+			ActorID:     0,
+			ActorName:   "",
+			ActorEmail:  "",
 			CreatedTS:   time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
 				ID:          1,
@@ -971,8 +971,8 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 				Type:        "bb.issue.database.create",
 				Description: "This is a test issue",
 				Creator: webhookplugin.Creator{
-					Name:  "Bytebase",
-					Email: "support@bytebase.com",
+					Name:  "",
+					Email: "",
 				},
 			},
 
