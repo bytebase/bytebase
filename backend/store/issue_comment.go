@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -96,19 +95,15 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			Payload: &storepb.IssueCommentPayload{},
 		}
 		var p []byte
-		var creatorEmail sql.NullString
 		if err := rows.Scan(
 			&ic.UID,
-			&creatorEmail,
+			&ic.CreatorEmail,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
 			&p,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
-		}
-		if creatorEmail.Valid {
-			ic.CreatorEmail = creatorEmail.String
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(p, ic.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal")
@@ -143,19 +138,11 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		payloads = append(payloads, payload)
 	}
 
-	// Convert empty string to NULL for system-generated comments.
-	var creatorPtr any
-	if creator == "" {
-		creatorPtr = nil
-	} else {
-		creatorPtr = creator
-	}
-
 	// Use UNNEST to insert all comments in one query.
 	q := qb.Q().Space(`
 		INSERT INTO issue_comment (creator, issue_id, payload)
 		SELECT ?, unnest(?::INT[]), unnest(?::JSONB[])
-	`, creatorPtr, issueIDs, payloads)
+	`, creator, issueIDs, payloads)
 
 	// For single comment, use RETURNING to get the created comment details.
 	if len(creates) == 1 {

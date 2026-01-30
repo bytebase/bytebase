@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -102,14 +101,6 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 	}
 	tsVector := getTSVector(fmt.Sprintf("%s %s", create.Title, create.Description))
 
-	// Convert empty creator email to NULL for system-generated issues
-	var creatorPtr any
-	if create.CreatorEmail == "" {
-		creatorPtr = nil
-	} else {
-		creatorPtr = create.CreatorEmail
-	}
-
 	q := qb.Q().Space(`
 		INSERT INTO issue (
 			creator,
@@ -124,7 +115,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id`,
-		creatorPtr,
+		create.CreatorEmail,
 		create.ProjectID,
 		create.PlanUID,
 		create.Title,
@@ -305,10 +296,9 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		var payload []byte
 		var statusString string
 		var typeString string
-		var creatorEmail sql.NullString
 		if err := rows.Scan(
 			&issue.UID,
-			&creatorEmail,
+			&issue.CreatorEmail,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
 			&issue.ProjectID,
@@ -320,9 +310,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			&payload,
 		); err != nil {
 			return nil, err
-		}
-		if creatorEmail.Valid {
-			issue.CreatorEmail = creatorEmail.String
 		}
 		if statusValue, ok := storepb.Issue_Status_value[statusString]; ok {
 			issue.Status = storepb.Issue_Status(statusValue)

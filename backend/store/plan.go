@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -67,14 +66,6 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, errors.Wrap(err, "failed to marshal plan config")
 	}
 
-	// Convert empty creator to NULL for system-generated plans
-	var creatorPtr any
-	if creator == "" {
-		creatorPtr = nil
-	} else {
-		creatorPtr = creator
-	}
-
 	q := qb.Q().Space(`
 		INSERT INTO plan (
 			creator,
@@ -85,7 +76,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		) VALUES (
 			?, ?, ?, ?, ?
 		) RETURNING id, created_at, updated_at
-	`, creatorPtr, plan.ProjectID, plan.Name, plan.Description, config)
+	`, creator, plan.ProjectID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -184,10 +175,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			Config: &storepb.PlanConfig{},
 		}
 		var config []byte
-		var creator sql.NullString
 		if err := rows.Scan(
 			&plan.UID,
-			&creator,
+			&plan.Creator,
 			&plan.CreatedAt,
 			&plan.UpdatedAt,
 			&plan.ProjectID,
@@ -197,9 +187,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.Deleted,
 		); err != nil {
 			return nil, errors.Wrap(err, "failed to scan plan")
-		}
-		if creator.Valid {
-			plan.Creator = creator.String
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")

@@ -203,7 +203,7 @@ ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
-    creator text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -316,7 +316,7 @@ ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 -- issue
 CREATE TABLE issue (
     id serial PRIMARY KEY,
-    creator text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -373,7 +373,7 @@ ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
     id bigserial PRIMARY KEY,
-    creator text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     issue_id integer NOT NULL REFERENCES issue(id),
@@ -486,7 +486,7 @@ CREATE TABLE revision (
     instance text NOT NULL,
     db_name text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    deleter text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
+    deleter text REFERENCES principal(email) ON UPDATE CASCADE,
     deleted_at timestamptz,
     version text NOT NULL,
     -- Stored as RevisionPayload (proto/store/store/revision.proto)
