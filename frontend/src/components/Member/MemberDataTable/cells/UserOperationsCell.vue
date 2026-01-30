@@ -1,10 +1,7 @@
 <template>
   <div v-if="allowEdit" class="flex justify-end gap-x-2">
     <NPopconfirm
-      v-if="
-        allowRevoke &&
-        (scope === 'workspace' || binding.projectRoleBindings.length > 0)
-      "
+      v-if="scope === 'workspace' || binding.projectRoleBindings.length > 0"
       :positive-button-props="{
         type: 'error',
       }"
@@ -51,10 +48,6 @@ defineEmits<{
   (event: "update-binding"): void;
   (event: "revoke-binding"): void;
 }>();
-
-const allowRevoke = computed(() => {
-  return true;
-});
 
 const allowUpdate = computed(() => {
   if (props.binding.type === "groups") {
