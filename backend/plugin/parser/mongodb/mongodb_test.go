@@ -11,102 +11,96 @@ import (
 
 func TestParseMongoShell(t *testing.T) {
 	testCases := []struct {
-		description     string
-		statement       string
-		wantStatements  int
-		wantHasErrors   bool
-		wantStartOffset int
-		wantEndOffset   int
+		description    string
+		statement      string
+		wantStatements int
+		wantText       string
 	}{
 		{
-			description:     "single find statement",
-			statement:       `db.collection.find({})`,
-			wantStatements:  1,
-			wantHasErrors:   false,
-			wantStartOffset: 0,
-			wantEndOffset:   22,
+			description:    "single find statement",
+			statement:      `db.collection.find({})`,
+			wantStatements: 1,
+			wantText:       `db.collection.find({})`,
 		},
 		{
-			description:     "single find with filter",
-			statement:       `db.users.find({ name: "John" })`,
-			wantStatements:  1,
-			wantHasErrors:   false,
-			wantStartOffset: 0,
-			wantEndOffset:   31,
+			description:    "single find with filter",
+			statement:      `db.users.find({ name: "John" })`,
+			wantStatements: 1,
+			wantText:       `db.users.find({ name: "John" })`,
 		},
 		{
 			description:    "multiple statements",
 			statement:      "db.users.find({});\ndb.products.insertOne({ name: \"test\" })",
 			wantStatements: 2,
-			wantHasErrors:  false,
 		},
 		{
 			description:    "show databases command",
 			statement:      "show dbs",
 			wantStatements: 1,
-			wantHasErrors:  false,
 		},
 		{
 			description:    "show collections command",
 			statement:      "show collections",
 			wantStatements: 1,
-			wantHasErrors:  false,
 		},
 		{
 			description:    "aggregation pipeline",
 			statement:      `db.orders.aggregate([{ $match: { status: "A" } }, { $group: { _id: "$cust_id", total: { $sum: "$amount" } } }])`,
 			wantStatements: 1,
-			wantHasErrors:  false,
 		},
 		{
 			description:    "bracket notation for collection",
 			statement:      `db["my-collection"].find({})`,
 			wantStatements: 1,
-			wantHasErrors:  false,
 		},
 		{
 			description:    "method chaining",
 			statement:      `db.users.find({}).sort({ name: 1 }).limit(10)`,
 			wantStatements: 1,
-			wantHasErrors:  false,
-		},
-		{
-			description:   "syntax error - missing closing paren",
-			statement:     `db.collection.find({`,
-			wantHasErrors: true,
 		},
 		{
 			description:    "empty input",
 			statement:      "",
 			wantStatements: 0,
-			wantHasErrors:  false,
 		},
 		{
 			description:    "whitespace only",
 			statement:      "   \n\t  ",
 			wantStatements: 0,
-			wantHasErrors:  false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			result := ParseMongoShell(tc.statement)
-			require.NotNil(t, result)
+			result, err := ParseMongoShell(tc.statement)
+			require.NoError(t, err)
 
-			if !tc.wantHasErrors {
-				require.Len(t, result.Statements, tc.wantStatements, "statement count mismatch")
-				require.Empty(t, result.Errors, "expected no errors")
-			} else {
-				require.NotEmpty(t, result.Errors, "expected errors")
+			require.Len(t, result, tc.wantStatements, "statement count mismatch")
+
+			if tc.wantStatements > 0 {
+				// Verify all statements have position and AST info.
+				for i, ps := range result {
+					require.NotNil(t, ps.Start, "statement %d should have Start", i)
+					require.NotNil(t, ps.End, "statement %d should have End", i)
+					require.NotNil(t, ps.Range, "statement %d should have Range", i)
+					require.NotNil(t, ps.AST, "statement %d should have AST", i)
+					require.NotEmpty(t, ps.Text, "statement %d should have text", i)
+				}
 			}
 
-			if tc.wantStatements > 0 && tc.wantStartOffset != 0 && tc.wantEndOffset != 0 {
-				require.Equal(t, tc.wantStartOffset, result.Statements[0].StartOffset)
-				require.Equal(t, tc.wantEndOffset, result.Statements[0].EndOffset)
+			if tc.wantText != "" {
+				require.Equal(t, tc.wantText, result[0].Text)
 			}
 		})
 	}
+}
+
+func TestParseMongoShellSyntaxError(t *testing.T) {
+	// Syntax errors are handled by parseMongoShellRaw, used by Diagnose.
+	// ParseMongoShell returns whatever statements the error recovery produces.
+	raw := parseMongoShellRaw(`db.collection.find({`)
+	require.NotNil(t, raw)
+	require.NotEmpty(t, raw.Errors, "expected errors")
 }
 
 func TestGetStatementRanges(t *testing.T) {

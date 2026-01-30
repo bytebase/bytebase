@@ -57,13 +57,13 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 		storepb.Engine_TIDB,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_SPANNER,
-		storepb.Engine_BIGQUERY:
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_MONGODB:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
 		storepb.Engine_SQLITE,
-		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_OCEANBASE,

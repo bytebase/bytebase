@@ -15,8 +15,8 @@ func init() {
 
 // GetStatementRanges returns the ranges of statements in the MongoDB shell script.
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	parseResult := ParseMongoShell(statement)
-	if parseResult == nil {
+	raw := parseMongoShellRaw(statement)
+	if raw == nil || raw.Tree == nil {
 		return []base.Range{}, nil
 	}
 
@@ -26,13 +26,21 @@ func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, stateme
 
 	var ranges []base.Range
 
-	for _, stmt := range parseResult.Statements {
-		if stmt.EndOffset <= stmt.StartOffset {
+	for _, stmt := range raw.Tree.AllStatement() {
+		if stmt == nil {
+			continue
+		}
+		start := stmt.GetStart()
+		stop := stmt.GetStop()
+		if start == nil || stop == nil {
 			continue
 		}
 
-		startPosition := getPositionByRuneOffset(stmt.StartOffset, runePositions)
-		endPosition := getPositionByRuneOffset(stmt.EndOffset, runePositions)
+		startOffset := start.GetStart()
+		endOffset := stop.GetStop() + 1
+
+		startPosition := getPositionByRuneOffset(startOffset, runePositions)
+		endPosition := getPositionByRuneOffset(endOffset, runePositions)
 		if startPosition == nil || endPosition == nil {
 			continue
 		}
