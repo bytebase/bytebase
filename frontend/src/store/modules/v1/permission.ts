@@ -12,9 +12,6 @@ import { useWorkspaceV1Store } from "./workspace";
 
 export const usePermissionStore = defineStore("permission", () => {
   const projectRoleListCache = shallowReactive(new Map<string, string[]>());
-  const projectPermissionsCache = shallowReactive(
-    new Map<string, Set<Permission>>()
-  );
   const roleStore = useRoleStore();
   const currentUser = useCurrentUserV1();
   const workspaceStore = useWorkspaceV1Store();
@@ -65,23 +62,12 @@ export const usePermissionStore = defineStore("permission", () => {
   };
 
   const currentPermissionsInProjectV1 = (project: Project): Set<Permission> => {
-    const key = `${currentUser.value.name}@@${project.name}`;
-    const cached = projectPermissionsCache.get(key);
-    if (cached) {
-      return cached;
-    }
-
     const roles = currentRoleListInProjectV1(project);
     const permissions = new Set(
       roles
         .map((role) => roleStore.getRoleByName(role))
         .flatMap((role) => (role ? role.permissions : []) as Permission[])
     );
-    if (permissions.size > 0) {
-      // Note: do not set cache if no project IAM policy.
-      // The project IAM policy may not initialized at this time.
-      projectPermissionsCache.set(key, permissions);
-    }
     return permissions;
   };
 
@@ -90,11 +76,6 @@ export const usePermissionStore = defineStore("permission", () => {
       key.endsWith(`@@${project}`)
     );
     roleListKeys.forEach((key) => projectRoleListCache.delete(key));
-
-    const permissionsKeys = Array.from(projectPermissionsCache.keys()).filter(
-      (key) => key.endsWith(`@@${project}`)
-    );
-    permissionsKeys.forEach((key) => projectPermissionsCache.delete(key));
   };
 
   const invalidCacheByUser = (user: User) => {
@@ -102,11 +83,6 @@ export const usePermissionStore = defineStore("permission", () => {
       key.startsWith(`${user.name}@@`)
     );
     roleListKeys.forEach((key) => projectRoleListCache.delete(key));
-
-    const permissionsKeys = Array.from(projectPermissionsCache.keys()).filter(
-      (key) => key.startsWith(`${user.name}@@`)
-    );
-    permissionsKeys.forEach((key) => projectPermissionsCache.delete(key));
   };
 
   return {
