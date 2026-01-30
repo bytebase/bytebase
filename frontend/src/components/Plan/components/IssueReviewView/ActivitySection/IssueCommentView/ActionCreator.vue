@@ -1,6 +1,6 @@
 <template>
   <UserLink v-if="user" :title="user.title" :email="user.email" />
-  <span v-else class="font-medium text-main whitespace-nowrap">{{ $t("common.system") }}</span>
+  <span v-else class="font-medium text-error">{{ $t("common.unknown") }}</span>
 </template>
 
 <script lang="ts" setup>
@@ -10,13 +10,13 @@ import { useUserStore } from "@/store";
 
 const props = defineProps<{
   // Format: users/{email}
+  // Issue comments always have a real user creator
   creator: string;
 }>();
 
 const userStore = useUserStore();
 
 const user = computedAsync(() => {
-  if (!props.creator) return undefined;
   return userStore.getOrFetchUserByIdentifier(props.creator);
 });
 </script>
