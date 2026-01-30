@@ -1968,12 +1968,16 @@
           "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
         },
         "require-issue-approval": {
-          "self": "Require issue approval",
-          "description": "Issue must be approved before rollout."
+          "self": "Require issue approval before creating rollout",
+          "description": "Issue must be approved before creating rollout."
         },
         "require-plan-check-no-error": {
-          "self": "Require plan check no error",
-          "description": "Block rollout if plan check has errors."
+          "self": "Require plan checks to pass before creating rollout",
+          "description": "All plan checks must pass without errors before creating rollout."
+        },
+        "allow-request-role": {
+          "self": "Allow request role",
+          "description": "Non-project-owner users can request project-level roles themselves"
         }
       },
       "project-labels": {
