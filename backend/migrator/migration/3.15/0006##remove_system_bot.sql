@@ -35,8 +35,6 @@ BEGIN
   UPDATE plan SET creator = fallback_user WHERE creator = 'support@bytebase.com';
   UPDATE issue SET creator = fallback_user WHERE creator = 'support@bytebase.com';
   UPDATE issue_comment SET creator = fallback_user WHERE creator = 'support@bytebase.com';
-  UPDATE query_history SET creator = fallback_user WHERE creator = 'support@bytebase.com';
-  UPDATE worksheet SET creator = fallback_user WHERE creator = 'support@bytebase.com';
   UPDATE release SET creator = fallback_user WHERE creator = 'support@bytebase.com';
 END $$;
 
