@@ -15,7 +15,8 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="showRequestQueryButton"
+              v-if="isPermissionDenied"
+              :text="false"
               :database-resources="missingResources"
             />
           </template>
@@ -67,7 +68,8 @@
             >
               <template #suffix>
                 <RequestQueryButton
-                  v-if="showRequestQueryButton"
+                  v-if="isPermissionDenied"
+                  :text="false"
                   :database-resources="missingResources"
                 />
               </template>
@@ -127,7 +129,8 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="showRequestQueryButton"
+              v-if="isPermissionDenied"
+              :text="false"
               :database-resources="missingResources"
             />
             <SyncDatabaseButton
@@ -242,6 +245,15 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 
 provideBinaryFormatContext(computed(() => props.contextId));
 
+const isPermissionDenied = computed(() => {
+  for (const result of props.resultSet?.results ?? []) {
+    if (result.detailedError.case === "permissionDenied") {
+      return true;
+    }
+  }
+  return false;
+});
+
 const missingResources = computed((): DatabaseResource[] => {
   const resources: DatabaseResource[] = [];
   for (const result of props.resultSet?.results ?? []) {
@@ -258,10 +270,6 @@ const missingResources = computed((): DatabaseResource[] => {
     }
   }
   return resources;
-});
-
-const showRequestQueryButton = computed(() => {
-  return missingResources.value.length > 0;
 });
 
 const viewMode = computed((): ViewMode => {

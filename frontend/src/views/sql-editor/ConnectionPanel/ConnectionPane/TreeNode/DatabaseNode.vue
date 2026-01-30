@@ -26,6 +26,7 @@
     </span>
     <RequestQueryButton
       v-if="showRequestQueryButton"
+      :text="true"
       :database-resources="[
         {
           databaseFullName: database.name,

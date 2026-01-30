@@ -158,7 +158,6 @@ import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
-  checkRoleContainsAnyPermission,
   displayRoleTitle,
   extractDatabaseResourceName,
   getInstanceResource,
@@ -166,6 +165,7 @@ import {
 } from "@/utils";
 import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
+import { roleHasDatabaseLimitation } from "../utils";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
@@ -229,13 +229,6 @@ const allowRevokeMember = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
-const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
-  return (
-    role !== PresetRoleType.PROJECT_OWNER &&
-    checkRoleContainsAnyPermission(role, "bb.sql.select")
-  );
-};
-
 const getDataTableColumns = (
   role: string
 ): DataTableColumn<SingleBinding>[] => {
@@ -251,7 +244,7 @@ const getDataTableColumns = (
     },
   ];
 
-  if (isRoleShouldShowDatabaseRelatedColumns(role)) {
+  if (roleHasDatabaseLimitation(role)) {
     columns.push(
       {
         title: t("common.database"),

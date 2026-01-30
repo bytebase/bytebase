@@ -43,7 +43,7 @@
             v-if="shouldShowRequestRoleButton"
             v-slot="slotProps"
             :project="project"
-            :permissions="['bb.issues.create']"
+            :permissions="['bb.issues.create', 'bb.roles.list']"
           >
             <NButton
               type="primary"
@@ -150,11 +150,7 @@ import {
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-  isBindingPolicyExpired,
-} from "@/utils";
+import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
 import GrantRequestPanel from "../GrantRequestPanel";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -229,11 +225,7 @@ const hasRequestRoleFeature = computed(() =>
 );
 
 const shouldShowRequestRoleButton = computed(() => {
-  return (
-    props.project.allowRequestRole &&
-    hasWorkspacePermissionV2("bb.roles.list") &&
-    hasMissingPermission.value
-  );
+  return props.project.allowRequestRole && hasMissingPermission.value;
 });
 
 const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
