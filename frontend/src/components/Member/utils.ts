@@ -20,7 +20,6 @@ import {
   groupBindingPrefix,
   unknownUser,
 } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import {
@@ -57,7 +56,6 @@ const getMemberBinding = (
           name: `${groupNamePrefix}${email}`,
           title: email,
         }),
-        deleted: true,
       };
     }
 
@@ -87,7 +85,6 @@ const getMemberBinding = (
           name: fullname,
           email: email,
           userType: UserType.USER,
-          state: State.DELETED,
         });
       }
     }
