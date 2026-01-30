@@ -16,15 +16,23 @@
     >
       <template #action>
         <div v-if="allowRequestRole" class="mt-2">
-          <NButton
-            type="primary"
-            @click="showRequestRolePanel = true"
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="project"
+            :permissions="['bb.issues.create', 'bb.roles.list']"
           >
+            <NButton
+              type="primary"
+              :disabled="slotProps.disabled || !hasRequestRoleFeature"
+              @click="showRequestRolePanel = true"
+            >
             <template #icon>
-              <heroicons-outline:user-add class="w-4 h-4" />
+              <ShieldUserIcon v-if="hasRequestRoleFeature" class="w-4 h-4" />
+              <FeatureBadge v-else :clickable="false" :feature="PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW" />
             </template>
             {{ $t("issue.title.request-role") }}
           </NButton>
+          </PermissionGuardWrapper>
         </div>
       </template>
     </NoPermissionPlaceholder>
@@ -40,11 +48,14 @@
 
 
 <script lang="tsx" setup>
+import { ShieldUserIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
 import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredBasicPermissionAlert from "@/components/Role/Setting/components/RequiredBasicPermissionAlert.vue";
 import { hasFeature } from "@/store";
 import { BASIC_WORKSPACE_PERMISSIONS, type Permission } from "@/types";
@@ -59,13 +70,12 @@ const props = defineProps<{
 
 const showRequestRolePanel = ref(false);
 const router = useRouter();
+const hasRequestRoleFeature = computed(() =>
+  hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+);
+
 const allowRequestRole = computed(() => {
-  return (
-    props.project?.allowRequestRole &&
-    hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW) &&
-    hasProjectPermissionV2(props.project, "bb.issues.create") &&
-    hasWorkspacePermissionV2("bb.roles.list")
-  );
+  return props.project?.allowRequestRole;
 });
 
 const requestPath = computed(() => {

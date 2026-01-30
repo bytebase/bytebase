@@ -1,12 +1,28 @@
 <template>
   <div v-if="available">
-    <NButton text type="primary" :size="size" @click="onClick">
-      {{ $t("sql-editor.request-query") }}
-    </NButton>
+    <PermissionGuardWrapper
+      v-slot="slotProps"
+      :project="project"
+      :permissions="['bb.issues.create']"
+    >
+      <NButton
+        type="primary"
+        :text="text"
+        :size="size"
+        :disabled="slotProps.disabled || !hasRequestRoleFeature"
+        @click="onClick"
+      >
+        <template #icon>
+          <ShieldUserIcon v-if="hasRequestRoleFeature" class="w-4 h-4" />
+          <FeatureBadge v-else :clickable="false" :feature="PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW" />
+        </template>
+        {{ $t("sql-editor.request-query") }}
+      </NButton>
+    </PermissionGuardWrapper>
 
     <GrantRequestPanel
       v-if="showPanel"
-      :project-name="database.project"
+      :project-name="project.name"
       :database-resources="databaseResources"
       :placement="'right'"
       :role="PresetRoleType.SQL_EDITOR_USER"
@@ -16,21 +32,21 @@
 </template>
 
 <script setup lang="ts">
+import { ShieldUserIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
-import { useDatabaseV1ByName } from "@/store";
-import {
-  type DatabaseResource,
-  isValidDatabaseName,
-  PresetRoleType,
-} from "@/types";
-import { getDatabaseProject, hasProjectPermissionV2 } from "@/utils";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
+import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
+import { type DatabaseResource, PresetRoleType } from "@/types";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     databaseResources: DatabaseResource[];
     size?: "tiny" | "medium";
+    text: boolean;
   }>(),
   {
     size: "medium",
@@ -38,29 +54,18 @@ const props = withDefaults(
 );
 
 const showPanel = ref(false);
+const editorStore = useSQLEditorStore();
+const projectStore = useProjectV1Store();
+const hasRequestRoleFeature = computed(() =>
+  hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+);
 
-const primaryDatabase = computed(() => {
-  return props.databaseResources[0];
-});
-
-const { database } = useDatabaseV1ByName(
-  computed(() => primaryDatabase.value?.databaseFullName ?? "")
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
 );
 
 const available = computed(() => {
-  if (props.databaseResources.length === 0) {
-    return false;
-  }
-
-  if (!isValidDatabaseName(database.value.name)) {
-    return false;
-  }
-
-  const project = getDatabaseProject(database.value);
-  return (
-    project.allowRequestRole &&
-    hasProjectPermissionV2(project, "bb.issues.create")
-  );
+  return project.value.allowRequestRole;
 });
 
 const onClick = (e: MouseEvent) => {

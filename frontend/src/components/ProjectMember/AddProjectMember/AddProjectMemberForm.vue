@@ -74,15 +74,7 @@
     </div>
     <div
       v-if="
-        state.role !== PresetRoleType.PROJECT_OWNER &&
-        checkRoleContainsAnyPermission(
-          state.role,
-          'bb.sql.select',
-          'bb.sql.ddl',
-          'bb.sql.dml',
-          'bb.sql.explain',
-          'bb.sql.info'
-        )
+        roleHasDatabaseLimitation(state.role)
       "
       class="w-full flex flex-col gap-y-2"
     >
@@ -125,12 +117,12 @@ import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RoleSelect } from "@/components/v2/Select";
 import { useRoleStore } from "@/store";
-import { type DatabaseResource, PresetRoleType } from "@/types";
+import { type DatabaseResource } from "@/types";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { checkRoleContainsAnyPermission } from "@/utils";
 import { buildConditionExpr } from "@/utils/issue/cel";
+import { roleHasDatabaseLimitation } from "../utils";
 
 const props = withDefaults(
   defineProps<{

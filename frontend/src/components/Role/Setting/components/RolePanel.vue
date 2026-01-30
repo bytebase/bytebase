@@ -21,6 +21,7 @@
               :placeholder="$t('role.setting.title-placeholder')"
               :status="state.role.title?.length === 0 ? 'error' : undefined"
               :maxlength="200"
+              :disabled="isBuiltinRole"
             />
           </div>
           <div class="-mt-2">
@@ -47,6 +48,7 @@
               :autosize="{ minRows: 2, maxRows: 4 }"
               :placeholder="$t('role.setting.description-placeholder')"
               :maxlength="1000"
+              :disabled="isBuiltinRole"
             />
           </div>
         </div>
@@ -58,6 +60,7 @@
               <span class="ml-0.5 text-error">*</span>
             </div>
             <NButton
+              v-if="!isBuiltinRole"
               size="small"
               @click="state.showImportPermissionFromRoleModal = true"
             >
@@ -66,7 +69,7 @@
             </NButton>
           </div>
           <RequiredBasicPermissionAlert
-            v-if="missedBasicPermission.length > 0"
+            v-if="missedBasicPermission.length > 0 && !isBuiltinRole"
             :permissions="missedBasicPermission"
             :title="$t('common.missing-required-permission')"
           >
@@ -88,6 +91,7 @@
             source-filterable
             source-filter-placeholder="Search"
             :options="permissionOptions"
+            :disabled="isBuiltinRole"
           />
         </div>
       </div>
@@ -100,7 +104,7 @@
       </div>
 
       <template #footer>
-        <div class="flex items-center justify-end gap-x-2">
+        <div v-if="!isBuiltinRole" class="flex items-center justify-end gap-x-2">
           <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
           <PermissionGuardWrapper
             v-slot="slotProps"
@@ -150,7 +154,7 @@ import { BASIC_WORKSPACE_PERMISSIONS, PERMISSIONS } from "@/types";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { extractRoleResourceName } from "@/utils";
+import { extractRoleResourceName, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 import RequiredBasicPermissionAlert from "./RequiredBasicPermissionAlert.vue";
@@ -210,6 +214,8 @@ const permissionOptions = computed(() => {
     value: p,
   }));
 });
+
+const isBuiltinRole = computed(() => !isCustomRole(state.role.name));
 
 const allowSave = computed(() => {
   if (!state.dirty) return false;
