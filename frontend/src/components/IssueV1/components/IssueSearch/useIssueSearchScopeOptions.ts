@@ -163,7 +163,7 @@ export const useIssueSearchScopeOptions = (
         search: searchPrincipalSearchValueOptions([
           UserType.USER,
           UserType.SERVICE_ACCOUNT,
-          UserType.SYSTEM_BOT,
+          UserType.WORKLOAD_IDENTITY,
         ]),
       },
       {

@@ -32,7 +32,7 @@ export const allUsersUser = (): User => {
     state: State.ACTIVE,
     title: t("settings.members.all-users"),
     email: ALL_USERS_USER_EMAIL,
-    userType: UserType.SYSTEM_BOT,
+    userType: UserType.USER,
   });
 };
 

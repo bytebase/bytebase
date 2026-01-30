@@ -12,10 +12,7 @@
           :allow-edit="allowEdit"
           :bindings="memberBindings"
           :selected-bindings="state.selectedMembers"
-          :select-disabled="
-            (member: MemberBinding) =>
-              member.user?.userType === UserType.SYSTEM_BOT
-          "
+          :select-disabled="() => false"
           :on-click-user="onClickUser"
           @update-binding="selectMember"
           @revoke-binding="revokeMember"
@@ -103,7 +100,6 @@ import {
 } from "@/store";
 import { userBindingPrefix } from "@/types";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
