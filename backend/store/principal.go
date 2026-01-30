@@ -15,15 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// SystemBotUser is the static system bot user.
-var SystemBotUser = &UserMessage{
-	ID:      common.SystemBotID,
-	Name:    "Bytebase",
-	Email:   "support@bytebase.com",
-	Type:    storepb.PrincipalType_SYSTEM_BOT,
-	Profile: &storepb.UserProfile{},
-}
-
 // FindUserMessage is the message for finding users.
 type FindUserMessage struct {
 	ID          *int
@@ -572,10 +563,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 
 // UpdateUser updates a user.
 func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch *UpdateUserMessage) (*UserMessage, error) {
-	if currentUser.ID == common.SystemBotID {
-		return nil, errors.Errorf("cannot update system bot")
-	}
-
 	set := qb.Q()
 	if v := patch.Delete; v != nil {
 		set.Comma("deleted = ?", *v)

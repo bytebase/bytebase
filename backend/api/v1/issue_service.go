@@ -753,8 +753,8 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	// Get issue creator for webhook event
 	creator, err := s.store.GetPrincipalByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
-		slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
-		creator = store.SystemBotUser
+		slog.Warn("failed to get issue creator", log.BBError(err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get issue creator"))
 	}
 
 	// Trigger ISSUE_SENT_BACK webhook

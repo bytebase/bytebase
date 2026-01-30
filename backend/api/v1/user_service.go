@@ -59,17 +59,6 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 		return nil, err
 	}
 
-	// Special case for SYSTEM_BOT user which is a built-in resource.
-	// SYSTEM_BOT is stored in principal table with type='SYSTEM_BOT', but GetEndUserByEmail
-	// only queries END_USER type. We use the static SystemBotUser here to avoid mixing user types.
-	if email == common.SystemBotEmail {
-		v1User, err := convertToUser(ctx, s.iamManager, store.SystemBotUser)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
-		}
-		return connect.NewResponse(v1User), nil
-	}
-
 	user, err := s.store.GetEndUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
@@ -187,15 +176,6 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		NextPageToken: nextPageToken,
 	}
 	for _, user := range users {
-		// Because FindUserMessage.Type is an equality filter, we can't filter for OR (END_USER OR SYSTEM_BOT).
-		// So we filter on the result set for SYSTEM_BOT if the request allows (though FindUserMessage forced END_USER).
-		// Wait, FindUserMessage forced END_USER above. So we won't get SYSTEM_BOT.
-		// If we want to support SYSTEM_BOT in ListUsers, we need to handle it.
-		// Usually ListUsers is for management UI, which mainly deals with END_USER.
-		// If we need SYSTEM_BOT, we might need a more flexible store filter or just rely on END_USER.
-		// Let's assume ListUsers is strictly for END_USERs for now as per separation concern.
-		// SystemBot is a special singleton usually fetched by ID or known email.
-
 		v1User, err := convertToUser(ctx, s.iamManager, user)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))

@@ -897,8 +897,8 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	// Get issue creator as actor
 	creator, err := stores.GetPrincipalByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
-		slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
-		creator = store.SystemBotUser
+		slog.Warn("failed to get issue creator", log.BBError(err))
+		return
 	}
 
 	// Get approvers for this role
