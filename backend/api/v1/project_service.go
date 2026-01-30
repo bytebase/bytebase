@@ -949,6 +949,19 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
 	}
 
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	userMessage, err := s.store.GetUserByEmail(ctx, user.Email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
+	}
+	if userMessage == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found for email %q", user.Email))
+	}
+
 	resp := &v1pb.TestWebhookResponse{}
 	err = webhookplugin.Post(
 		webhook.Payload.GetType(),
@@ -960,9 +973,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Payload.GetTitle()),
 			Description: "This is a test",
 			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", externalURL, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
-			ActorID:     0,
-			ActorName:   "",
-			ActorEmail:  "",
+			ActorID:     userMessage.ID,
+			ActorName:   userMessage.Name,
+			ActorEmail:  userMessage.Email,
 			CreatedTS:   time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
 				ID:          1,
@@ -971,8 +984,8 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 				Type:        "bb.issue.database.create",
 				Description: "This is a test issue",
 				Creator: webhookplugin.Creator{
-					Name:  "",
-					Email: "",
+					Name:  userMessage.Name,
+					Email: userMessage.Email,
 				},
 			},
 
