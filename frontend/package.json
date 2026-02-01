@@ -22,7 +22,7 @@
     "@codingame/monaco-vscode-api": "25.0.1",
     "@codingame/monaco-vscode-javascript-default-extension": "25.0.1",
     "@codingame/monaco-vscode-languages-service-override": "25.0.1",
-    "@codingame/monaco-vscode-sql-default-extension": "25.0.1",
+    "@codingame/monaco-vscode-sql-default-extension": "25.1.0",
     "@codingame/monaco-vscode-textmate-service-override": "25.0.1",
     "@codingame/monaco-vscode-theme-defaults-default-extension": "25.0.1",
     "@codingame/monaco-vscode-theme-service-override": "25.0.1",
