@@ -1142,6 +1142,7 @@
     "overview": {
       "no-checks": "Không kiểm tra"
     },
+    "run": "Chạy kiểm tra",
     "navigator": {
       "changes": "Thay đổi",
       "checks": "Kiểm tra",

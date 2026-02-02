@@ -1142,6 +1142,7 @@
     "overview": {
       "no-checks": "Sin controles"
     },
+    "run": "Ejecutar verificación",
     "navigator": {
       "changes": "Cambios",
       "checks": "Verificaciones",

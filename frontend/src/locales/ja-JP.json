@@ -56,7 +56,7 @@
     "approve": "承認する",
     "done": "仕上げる",
     "create": "作成する",
-    "run": "走る",
+    "run": "実行",
     "retry": "リトライ",
     "skip": "飛び越える",
     "skipped": "スキップ",
@@ -1142,6 +1142,7 @@
     "overview": {
       "no-checks": "チェックなし"
     },
+    "run": "チェックを実行",
     "navigator": {
       "changes": "変更点",
       "checks": "チェック",
