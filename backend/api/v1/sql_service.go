@@ -1077,13 +1077,11 @@ func doExport(
 	exportCount := 0
 	for i, result := range results {
 		if result.GetError() != "" {
-			logExportError(database, "failed to query result", errors.New(result.GetError()))
-			continue
+			return nil, duration, errors.Errorf("failed to exec the SQL with error: %v", result.GetError())
 		}
 
 		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, i+1); err != nil {
-			logExportError(database, "failed to export result to zip", err)
-			continue
+			return nil, duration, errors.Errorf("failed to export result to zip with error: %v", result.GetError())
 		}
 
 		exportCount++
@@ -1100,16 +1098,6 @@ func doExport(
 	}
 
 	return buf.Bytes(), duration, nil
-}
-
-// logExportError logs export-related errors with consistent database context.
-func logExportError(database *store.DatabaseMessage, message string, err error) {
-	slog.Error(message,
-		log.BBError(err),
-		slog.String("instance", database.InstanceID),
-		slog.String("database", database.DatabaseName),
-		slog.String("project", database.ProjectID),
-	)
 }
 
 // exportResultToZip exports a single query result to the ZIP archive.

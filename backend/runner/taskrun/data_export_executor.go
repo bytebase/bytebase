@@ -104,7 +104,13 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	// For approved DATABASE_EXPORT tasks, the approval itself authorizes access to the data.
 	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, exportConfig.Format, creatorUser)
 	if exportErr != nil {
-		return nil, errors.Wrap(exportErr, "failed to export data")
+		slog.Error("failed to export",
+			log.BBError(err),
+			slog.String("instance", database.InstanceID),
+			slog.String("database", database.DatabaseName),
+			slog.String("project", database.ProjectID),
+		)
+		return nil, exportErr
 	}
 
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
@@ -223,13 +229,11 @@ func (exec *DataExportExecutor) formatAndZipResults(
 	exportCount := 0
 	for i, result := range results {
 		if result.GetError() != "" {
-			logExportError(database, "failed to query result", errors.New(result.GetError()))
-			continue
+			return nil, errors.Errorf("failed to exec the SQL with error: %v", result.GetError())
 		}
 
 		if err := exec.exportResultToZip(ctx, zipw, instance, database, result, format, statement, i+1); err != nil {
-			logExportError(database, "failed to export result to zip", err)
-			continue
+			return nil, errors.Errorf("failed to export result to zip with error: %v", result.GetError())
 		}
 
 		exportCount++
@@ -335,14 +339,4 @@ func (exec *DataExportExecutor) exportSQLWithContext(
 		return err
 	}
 	return export.SQLToWriter(w, instance.Metadata.GetEngine(), statementPrefix, result)
-}
-
-// logExportError logs export-related errors with consistent database context.
-func logExportError(database *store.DatabaseMessage, message string, err error) {
-	slog.Error(message,
-		log.BBError(err),
-		slog.String("instance", database.InstanceID),
-		slog.String("database", database.DatabaseName),
-		slog.String("project", database.ProjectID),
-	)
 }
