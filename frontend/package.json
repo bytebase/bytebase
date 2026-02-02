@@ -134,7 +134,7 @@
     "vite-bundle-visualizer": "^1.2.1",
     "vitest": "4.0.17",
     "vscode-oniguruma": "^2.0.1",
-    "vscode-textmate": "^9.3.0",
+    "vscode-textmate": "^9.3.2",
     "vue-component-type-helpers": "^3.1.5",
     "vue-i18n": "11.2.8",
     "vue-router": "4.6.4",
