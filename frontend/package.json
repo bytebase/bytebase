@@ -146,5 +146,10 @@
   },
   "browserslist": [
     "> 0.08%, not dead"
-  ]
+  ],
+  "pnpm": {
+    "patchedDependencies": {
+      "naive-ui@2.43.2": "patches/naive-ui@2.43.2.patch"
+    }
+  }
 }
