@@ -56,7 +56,7 @@
     "approve": "承認する",
     "done": "仕上げる",
     "create": "作成する",
-    "run": "走る",
+    "run": "実行",
     "retry": "リトライ",
     "skip": "飛び越える",
     "skipped": "スキップ",
@@ -87,7 +87,7 @@
     "updated-at": "更新日時",
     "statement": "ステートメント",
     "snapshot": "スナップショット",
-    "status": "州",
+    "status": "ステータス",
     "stage": "ステージ",
     "task": "タスク",
     "sql": "SQL",
@@ -201,7 +201,7 @@
     "members": "メンバー | メンバー",
     "warehouse": "倉庫",
     "schedule": "プラン",
-    "state": "州",
+    "state": "ステート",
     "condition": "状態",
     "info": "情報",
     "minutes": "分",
@@ -364,7 +364,7 @@
     "latest-logs": "最新のログ",
     "latest": "最新の実行",
     "status": {
-      "enqueued": "処刑を待っています。",
+      "enqueued": "実行を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
       "waiting-max-tasks-per-rollout": "他のタスクが完了するのを待っています。ロールアウトごとの最大実行タスク数制限に達しました。最後の報告は {time} です。"
     },
@@ -987,7 +987,7 @@
           "description": "プロジェクトでフィルターする"
         },
         "instance": {
-          "title": "例",
+          "title": "インスタンス",
           "description": "インスタンスによるフィルター"
         },
         "environment": {
@@ -1142,13 +1142,14 @@
     "overview": {
       "no-checks": "チェックなし"
     },
+    "run": "チェックを実行",
     "navigator": {
       "changes": "変更点",
-      "checks": "小切手",
+      "checks": "チェック",
       "statement-empty": "ステートメントが空です"
     },
     "checks": {
-      "self": "小切手",
+      "self": "チェック",
       "no-results-match-filters": "フィルターに一致する結果がありません",
       "no-check-results": "チェック結果がありません"
     },
@@ -1208,7 +1209,7 @@
       "last-refresh": "最終更新: {time}"
     },
     "state": {
-      "description": "州別にプランをフィルタリング",
+      "description": "ステータスでプランをフィルタリング",
       "close-confirm": "このプランを閉じてもよろしいですか?",
       "reopen-confirm": "このプランを再開してもよろしいですか?"
     },
@@ -1298,7 +1299,7 @@
     },
     "triggers": "トリガー",
     "trigger": {
-      "body": "体",
+      "body": "本文",
       "timing": "タイミング",
       "event": "イベント"
     },
@@ -1330,7 +1331,7 @@
     "restore-instance-instance-name-to-normal-state": "インスタンス '{0}' を通常の状態に復元しますか?",
     "account-locator": "アカウントロケーター",
     "host-or-socket": "ホストまたはソケット",
-    "endpoint": "終点",
+    "endpoint": "エンドポイント",
     "project-id": "プロジェクトID",
     "instance-id": "インスタンスID",
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター",
@@ -1519,8 +1520,7 @@
     "create": "環境を作成する",
     "reorder": "環境の並べ替え",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました",
-    "production-environment": "本番環境",
-    "statement-execution": {}
+    "production-environment": "本番環境"
   },
   "quick-start": {
     "self": "クイックスタート",
@@ -1633,7 +1633,7 @@
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
     "successfully-transferred-databases": "データベースの移行が完了しました",
     "nullable": "null も可能",
-    "expression": "表現",
+    "expression": "式",
     "unique": "個性的",
     "visible": "見える",
     "comment": "コメント",
@@ -1641,8 +1641,8 @@
     "row-count-estimate": "推定行数",
     "data-size": "データサイズ",
     "index-size": "インデックスサイズ",
-    "column": "リスト",
-    "columns": "リスト",
+    "column": "カラム",
+    "columns": "カラム",
     "indexes": "索引",
     "row-count-est": "推定行数",
     "incorrect-project-warning": "SQL エディターは、ユーザーが使用できるプロジェクト内のデータベースのみをクエリできます。まず、このデータベースを作業中のプロジェクトに転送する必要があります。",
@@ -1968,8 +1968,8 @@
     "connection-type": "接続タイプ",
     "additional-node-addresses": "追加のノードアドレス",
     "replica-set": "レプリカセット",
-    "admin": "メインライブラリ",
-    "read-only": "図書館から",
+    "admin": "管理者",
+    "read-only": "読み取り専用",
     "direct-connection": "Direct Connection",
     "select-query-data-source": "クエリデータソースの選択"
   },
@@ -2168,7 +2168,7 @@
       "select": "テーブルの選択",
       "name": "テーブル名"
     },
-    "columns": "リスト",
+    "columns": "カラム",
     "column": {
       "select": "列を選択",
       "name": "名前",
@@ -2210,7 +2210,7 @@
       "partitions": "パーティション",
       "edit-partitions": "パーティションの編集",
       "expression": "表現",
-      "value": "価値",
+      "value": "値",
       "add-sub-partition": "サブパーティションの追加",
       "type": "タイプ"
     },
@@ -2284,7 +2284,7 @@
         "description": "ライセンスが有効かどうかを確認してください"
       }
     },
-    "plan-features": "{plan} 関数",
+    "plan-features": "{plan} の機能",
     "overuse-warning": "{neededPlan} は {currentPlan} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
@@ -2406,14 +2406,14 @@
       "method": "方法",
       "request": "リクエスト",
       "response": "応答",
-      "status": "ポジション",
+      "status": "ステータス",
       "latency": "遅延",
       "service-data": "サービスデータ"
     },
     "advanced-search": {
       "scope": {
         "actor": {
-          "title": "俳優",
+          "title": "実行者",
           "description": "監査ログアクターによる検索"
         },
         "method": {
@@ -2541,7 +2541,7 @@
         "history-conversations": "歴史対話",
         "view-history-conversations": "過去の会話を表示する",
         "new-conversation": "新しい会話を開始する",
-        "no-message": "ニュースはありません",
+        "no-message": "この会話にはメッセージはありません",
         "tips": {
           "suggest-prompt": "プロンプト単語を生成...",
           "no-more": "何も残っていない"
@@ -2587,7 +2587,7 @@
       "node": {
         "nodes": "承認ノード",
         "description": "ノードに複数の承認者がいる場合、必要な承認は 1 つだけです。",
-        "order": "注文",
+        "order": "順序",
         "approver": "承認者",
         "add": "ノードの追加",
         "delete": "承認ノードの削除"
