@@ -209,7 +209,7 @@
     "clear-filters": "Limpiar filtros",
     "license": "Licencia",
     "view-details": "Ver detalles",
-    "untitled": "Intitulado",
+    "untitled": "Sin título",
     "add-permissions": "Agregar permisos",
     "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
@@ -221,7 +221,7 @@
     "resource-not-found": "Recurso no encontrado",
     "continue-anyway": "De todas maneras, continúe",
     "permissions": "Permisos",
-    "leave-without-saving": "¿Salir sin ahorrar?",
+    "leave-without-saving": "¿Salir sin guardar?",
     "configure-now": "Configurar ahora",
     "connection": "Conexión",
     "resource": "Recurso",
@@ -239,8 +239,8 @@
     "title": "Título",
     "text-wrap": "Ajuste de texto",
     "catalog": "Catálogo",
-    "removed": "Remoto",
-    "submit": "Entregar",
+    "removed": "Eliminado",
+    "submit": "Enviar",
     "draft": "Borrador",
     "import": "Importar",
     "hard-delete": {
@@ -382,7 +382,7 @@
       "database-sync": "Sincronización de bases de datos",
       "transaction": "Transacción",
       "prior-backup": "Copia de seguridad previa",
-      "retry": "Rever",
+      "retry": "Reintentar",
       "compute-diff": "Calcular diferencia",
       "release-file-execute": "Archivo de lanzamiento"
     },
@@ -756,7 +756,7 @@
             "self": "Tiempo máximo de consulta",
             "description": "El tiempo máximo permitido para la ejecución de una consulta."
           },
-          "seconds": "Artículos de segunda clase",
+          "seconds": "Segundos",
           "project-scope": "proyecto",
           "environment-scope": "ambiente"
         },
@@ -1015,7 +1015,7 @@
           "description": "Filtrar por etiqueta de problema"
         },
         "table": {
-          "title": "Mesa",
+          "title": "Tabla",
           "description": "Ingrese el valor y luego presione Enter"
         },
         "label": {
@@ -1057,7 +1057,7 @@
       "reopened": "reabierto",
       "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
       "closed": "cerrado",
-      "close": "Cerca"
+      "close": "Cerrar"
     },
     "approval-flow": {
       "self": "Flujo de aprobación"
@@ -1144,11 +1144,11 @@
     },
     "navigator": {
       "changes": "Cambios",
-      "checks": "Cheques",
+      "checks": "Verificaciones",
       "statement-empty": "La declaración está vacía"
     },
     "checks": {
-      "self": "Cheques",
+      "self": "Verificaciones",
       "no-results-match-filters": "No hay resultados que coincidan con sus filtros",
       "no-check-results": "Sin resultados de verificación"
     },
@@ -1221,7 +1221,7 @@
     "bypass-stage-requirements": "Advertencias de bypass",
     "task-execution-errors": "Errores de ejecución de tareas",
     "stage": {
-      "self": "Escenario | Escenarios",
+      "self": "Etapa | Etapas",
       "run-stage": "Ejecutar tareas",
       "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?"
     },
@@ -1282,7 +1282,7 @@
     "n-databases-had-sync-errors": "{0} base(s) de datos tuvieron errores de sincronización",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "procedures": "Trámites",
+    "procedures": "Procedimientos",
     "partitions": "Particiones",
     "packages": "Paquetes",
     "sequences": "Secuencias",
@@ -1319,7 +1319,7 @@
       "sync-new": "Sincronizar únicamente bases de datos nuevas",
       "sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos."
     },
-    "no-environment": "Esta instancia no ha sido ligada al medio ambiente.",
+    "no-environment": "Esta instancia no ha sido ligada al entorno.",
     "selected-n-instances": "{n} instancia seleccionada | {n} instancias seleccionadas",
     "users": "Usuarios",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
@@ -1439,7 +1439,7 @@
       "vault-auth-type": {
         "self": "Tipo de autenticación",
         "token": {
-          "self": "Simbólico",
+          "self": "Token",
           "tips": "Un token raíz sin TTL."
         },
         "approle": {
@@ -1498,7 +1498,7 @@
     "advanced-search": {
       "scope": {
         "host": {
-          "title": "Anfitrión",
+          "title": "Host",
           "description": "Filtrar por host de instancia. Introduce el valor y pulsa Intro."
         },
         "port": {
@@ -1519,8 +1519,7 @@
     "create": "Crear entorno",
     "reorder": "Reordenar entornos",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
-    "production-environment": "Entorno de producción",
-    "statement-execution": {}
+    "production-environment": "Entorno de producción"
   },
   "quick-start": {
     "self": "Inicio rápido",
@@ -1705,7 +1704,7 @@
     "foreign-key": {
       "reference": "Referencia"
     },
-    "checks": "Cheques",
+    "checks": "Verificaciones",
     "engine-not-supported-for-backup": "No se admite la copia de seguridad previa para: {databases}",
     "revision": {
       "self": "Revisión",
@@ -1894,7 +1893,7 @@
       "never-expires": "Nunca caduca",
       "role-description": "El rol de un miembro determina qué puede hacer en el proyecto.",
       "role-never-expires": "Este rol nunca expira.",
-      "add-more": "Más información",
+      "add-more": "Agregar más",
       "condition-name": "Nombre de la condición",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
       "project-level-roles": "Roles a nivel de proyecto",
@@ -2044,12 +2043,12 @@
     "tab": {
       "context-menu": {
         "actions": {
-          "close": "Cerca",
+          "close": "Cerrar",
           "close-others": "cerrar otros",
-          "close-to-the-right": "Cerca de la derecha",
+          "close-to-the-right": "Cerrar a la derecha",
           "close-saved": "Cerrar guardado",
-          "close-all": "Cierra todo",
-          "rename": "Rebautizar",
+          "close-all": "Cerrar todo",
+          "rename": "Renombrar",
           "add-folder": "Agregar carpeta",
           "add-worksheet": "Agregar hoja de trabajo",
           "multi-select": "Selección múltiple"
@@ -2150,7 +2149,7 @@
       "drop-column": "Eliminar columna",
       "create-procedure": "Crear procedimiento",
       "create-function": "Crear función",
-      "drop": "Gota",
+      "drop": "Eliminar",
       "create-view": "Crear vista"
     },
     "database": {
@@ -2214,8 +2213,8 @@
       "add-sub-partition": "Agregar subpartición",
       "type": "Tipo"
     },
-    "views": "Puntos de vista",
-    "procedures": "Trámites",
+    "views": "Vistas",
+    "procedures": "Procedimientos",
     "functions": "Funciones",
     "preview-schema-text": "Vista previa del texto del esquema",
     "preview-view-definition": "Definición de vista previa"
@@ -2789,10 +2788,10 @@
   "branch": {
     "select-tables-to-rollout": "Seleccionar tablas para implementar",
     "index": {
-      "drop-index-confirm": "¿Índice de caída?"
+      "drop-index-confirm": "¿Eliminar índice?"
     },
     "table-partition": {
-      "drop-partition-confirm": "¿Eliminar partición de mesa?",
+      "drop-partition-confirm": "¿Eliminar partición de tabla?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
     }
   },

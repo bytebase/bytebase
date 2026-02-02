@@ -44,7 +44,7 @@
     "archived": "已归档",
     "abandon": "废弃",
     "abandoned": "已废弃",
-    "restored": "Restored",
+    "restored": "已恢复",
     "no-license": "无证书",
     "logout": "登出",
     "close": "关闭",
@@ -259,13 +259,13 @@
     "apply-to-database": "应用到数据库",
     "unlimited": "无限制",
     "unknown": "未知",
-    "danger-zone": "Danger Zone",
-    "archive-resource": "Archive {type}",
-    "delete-resource": "Delete {type}",
-    "confirm-archive": "Archive Resource?",
-    "confirm-delete": "Delete Resource?",
-    "archive-description": "Mark \"{name}\" as archived and read-only.",
-    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
+    "danger-zone": "危险区域",
+    "archive-resource": "归档{type}",
+    "delete-resource": "删除{type}",
+    "confirm-archive": "确定归档资源？",
+    "confirm-delete": "确定删除资源？",
+    "archive-description": "将「{name}」标记为已归档且只读。",
+    "delete-resource-description": "删除「{name}」后将无法恢复，请确认。"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -404,8 +404,8 @@
   },
   "banner": {
     "license-expired": "您的{plan}证书已在 {expireAt} 过期",
-    "license-expires": "您的{plan}证书将在 {days} 天后过期",
-    "trial-expires": "您的{plan}试用将在 {days} 天后过期",
+    "license-expires": "您的{plan}证书将在 {days} 天后（{expireAt}）过期",
+    "trial-expires": "您的{plan}试用将在 {days} 天后（{expireAt}）过期",
     "deploy": "本地部署",
     "cloud": "云服务",
     "request-demo": "预约一个 30 分钟的产品演示。",
@@ -1142,6 +1142,7 @@
     "overview": {
       "no-checks": "没有检查"
     },
+    "run": "运行检查",
     "navigator": {
       "changes": "变更项",
       "checks": "SQL 检查",
@@ -1219,7 +1220,7 @@
   "rollout": {
     "rollouts": "发布任务",
     "bypass-stage-requirements": "绕过提醒",
-    "task-execution-errors": "任务执行警告",
+    "task-execution-errors": "任务执行错误",
     "stage": {
       "self": "阶段 | 阶段",
       "run-stage": "运行任务",
@@ -1519,8 +1520,7 @@
     "create": "创建环境",
     "reorder": "重新排序环境",
     "successfully-updated-environment": "环境'{name}'更新成功",
-    "production-environment": "生产环境",
-    "statement-execution": {}
+    "production-environment": "生产环境"
   },
   "quick-start": {
     "self": "新手任务",
@@ -1556,7 +1556,7 @@
     },
     "password-forget": {
       "title": "忘记了您的密码？",
-      "selfhost": "请联系的您的 Bytebase 管理员重置密码",
+      "selfhost": "请联系您的 Bytebase 管理员重置密码",
       "cloud": "请登录 {link} 并重置密码",
       "return-to-sign-in": "返回登录"
     },
@@ -1882,8 +1882,8 @@
         "self": "项目标签",
         "description": "用键值标签组织项目（最多64个）"
       },
-      "confirm-archive-project": "Archiving \"{name}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
-      "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone."
+      "confirm-archive-project": "归档「{name}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
+      "confirm-delete-project": "删除「{name}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。"
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
@@ -1910,23 +1910,23 @@
     "batch": {
       "selected": "已选择 {count} 个项目 | 已选择 {count} 个项目",
       "archive": {
-        "title": "存档 {count} 项目？| 存档 {count} 项目？",
-        "description": "这将存档所选项目。如有需要，您可以稍后恢复它们。",
+        "title": "归档 {count} 个项目？| 归档 {count} 个项目？",
+        "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。",
         "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
-        "error": "无法存档项目"
+        "error": "无法归档项目"
       },
       "delete": {
         "title": "删除 {count} 个项目？| 删除 {count} 个项目？",
         "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
-        "warning": "此操作无法撤消。包括问题、配置和历史记录在内的所有项目数据将被永久删除。",
+        "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。",
         "success": "成功删除 {count} 个项目 | 成功删除 {count} 个项目",
         "error": "无法删除项目"
       },
-      "projects-to-archive": "要存档的项目",
+      "projects-to-archive": "要归档的项目",
       "projects-to-delete": "要删除的项目",
       "resource-warning": {
         "title": "项目与资源",
-        "description": "以下项目包含数据库或未解决的问题："
+        "description": "以下项目包含数据库或未解决的工单："
       }
     }
   },
@@ -2226,7 +2226,7 @@
       "key-necessary": "需要指定 Key",
       "value-necessary": "需要指定值",
       "key-duplicated": "Key 重复了",
-      "max-value-length-exceeded": "值长的度不能超过 {length} 字符"
+      "max-value-length-exceeded": "值的长度不能超过 {length} 字符"
     },
     "add-label": "添加标签"
   },
