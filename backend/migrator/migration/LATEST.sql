@@ -183,22 +183,6 @@ CREATE TABLE sheet_blob (
 	content text NOT NULL
 );
 
--- sheet table stores general statements.
-CREATE TABLE sheet (
-    id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL,
-    sha256 bytea NOT NULL,
-    -- Stored as SheetPayload (proto/store/store/sheet.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_sheet_project ON sheet(project);
-
-ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
-
 -- plan table stores the plan for a project
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
