@@ -20,7 +20,7 @@
     "@buf/googleapis_googleapis.bufbuild_es": "2.10.2-20251126203132-004180b77378.1",
     "@bufbuild/protobuf": "2.11.0",
     "@codingame/monaco-vscode-api": "25.0.1",
-    "@codingame/monaco-vscode-javascript-default-extension": "25.0.1",
+    "@codingame/monaco-vscode-javascript-default-extension": "25.1.0",
     "@codingame/monaco-vscode-languages-service-override": "25.0.1",
     "@codingame/monaco-vscode-sql-default-extension": "25.1.0",
     "@codingame/monaco-vscode-textmate-service-override": "25.0.1",

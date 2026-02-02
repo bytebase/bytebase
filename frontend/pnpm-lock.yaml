@@ -20,8 +20,8 @@ importers:
         specifier: 25.0.1
         version: 25.0.1
       '@codingame/monaco-vscode-javascript-default-extension':
-        specifier: 25.0.1
-        version: 25.0.1
+        specifier: 25.1.0
+        version: 25.1.0
       '@codingame/monaco-vscode-languages-service-override':
         specifier: 25.0.1
         version: 25.0.1
@@ -1056,8 +1056,8 @@ packages:
   '@codingame/monaco-vscode-host-service-override@25.1.0':
     resolution: {integrity: sha512-zdu+ubCJ/Qdv8vweN4HiYL4YGTGbl7bO5GiEqXFDamMBLnyvTmAPD2r0eQReYF0KkIe+gqC3aNAfMKa9hgFR9A==}
 
-  '@codingame/monaco-vscode-javascript-default-extension@25.0.1':
-    resolution: {integrity: sha512-/PVzmyxGx4842FpFxHlrWvB7cbGQVpjYzmzQzyP8+ZCv6bdtn+Eu7KEeA62y6cFRo8vjNADRpIZaMw8gbKrW7g==}
+  '@codingame/monaco-vscode-javascript-default-extension@25.1.0':
+    resolution: {integrity: sha512-oigAATkQbM8YIqRSNeD9m174JzARZTWoZtTODR0KVQfB0N8WP3oVZThZE8/6Ik/HfJ8oXDaG6aCS9lMAskXM0g==}
 
   '@codingame/monaco-vscode-keybindings-service-override@25.0.0':
     resolution: {integrity: sha512-MffsjLsaF3E4f6nNX0Lw1Q0WGr7ArvIcvYbXcoJjmQsz9twkz7zHOs/kmyEhPOLh+luFDYQynGmcG6DoMyibkw==}
@@ -5812,9 +5812,9 @@ snapshots:
     dependencies:
       '@codingame/monaco-vscode-api': 25.1.0
 
-  '@codingame/monaco-vscode-javascript-default-extension@25.0.1':
+  '@codingame/monaco-vscode-javascript-default-extension@25.1.0':
     dependencies:
-      '@codingame/monaco-vscode-api': 25.0.1
+      '@codingame/monaco-vscode-api': 25.1.0
 
   '@codingame/monaco-vscode-keybindings-service-override@25.0.0':
     dependencies:
