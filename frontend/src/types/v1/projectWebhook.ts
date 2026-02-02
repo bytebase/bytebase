@@ -45,9 +45,10 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       type: WebhookType.TEAMS,
       name: t("common.teams"),
       urlPrefix: "",
-      urlPlaceholder: "https://acme123.webhook.office.com/webhookb2/...",
+      urlPlaceholder:
+        "https://xxx.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/...",
       docUrl:
-        "https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook",
+        "https://support.microsoft.com/en-us/office/create-incoming-webhooks-with-workflows-for-microsoft-teams-8ae491c7-0394-4861-ba59-055e33f75498",
       supportDirectMessage: true,
     },
     {

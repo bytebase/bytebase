@@ -193,7 +193,11 @@
           </div>
         </div>
         <div class="mt-4">
-          <NButton @click.prevent="testWebhook">
+          <NButton
+            :loading="state.loading"
+            :disabled="!state.webhook.url"
+            @click.prevent="testWebhook"
+          >
             {{ $t("project.webhook.test-webhook") }}
           </NButton>
         </div>
@@ -212,7 +216,8 @@
             <NButton
               v-if="create"
               type="primary"
-              :disabled="!allowCreate"
+              :loading="state.loading"
+              :disabled="!allowCreate || state.loading"
               @click.prevent="createWebhook"
             >
               {{ $t("common.create") }}
@@ -220,8 +225,9 @@
             <NButton
               v-else
               type="primary"
+              :loading="state.loading"
               :disabled="
-                !valueChanged || state.webhook.notificationTypes.length === 0
+                state.loading || !valueChanged || state.webhook.notificationTypes.length === 0
               "
               @click.prevent="updateWebhook"
             >
@@ -264,7 +270,6 @@ import {
 import { WORKSPACE_ROUTE_IM } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
-  useGracefulRequest,
   useProjectV1Store,
   useProjectWebhookV1Store,
   useSettingV1Store,
@@ -284,6 +289,7 @@ import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
 
 interface LocalState {
   webhook: Webhook;
+  loading: boolean;
 }
 
 const props = withDefaults(
@@ -315,6 +321,7 @@ onMounted(async () => {
 
 const state = reactive<LocalState>({
   webhook: cloneDeep(props.webhook),
+  loading: false,
 });
 
 watch(
@@ -375,8 +382,13 @@ const imApp = computed(() => {
   );
 });
 
+const isPowerAutomateURL = computed(() => {
+  const url = state.webhook.url.toLowerCase();
+  return url.includes(".powerplatform.com") || url.includes(".logic.azure.com");
+});
+
 const webhookSupportDirectMessage = computed(
-  () => selectedWebhook.value?.supportDirectMessage
+  () => selectedWebhook.value?.supportDirectMessage && !isPowerAutomateURL.value
 );
 
 const activitySupportDirectMessage = computed(() => {
@@ -407,6 +419,7 @@ const dropdownOptions = computed((): DropdownOption[] => {
     {
       key: "delete",
       label: t("common.delete"),
+      disabled: state.loading,
     },
   ];
 });
@@ -431,6 +444,19 @@ const cancel = () => {
   router.push({
     name: PROJECT_V1_ROUTE_WEBHOOKS,
   });
+};
+
+// biome-ignore format: ESLint requires trailing comma for generic type parameter
+const useGracefulRequest = async <T,>(
+  fn: () => Promise<T>
+): Promise<T | void> => {
+  state.loading = true;
+  try {
+    const result = await fn();
+    return result;
+  } finally {
+    state.loading = false;
+  }
 };
 
 const createWebhook = () => {
@@ -528,7 +554,7 @@ const deleteWebhook = () => {
 
 const testWebhook = () => {
   useGracefulRequest(async () => {
-    const result = await useProjectWebhookV1Store().testProjectWebhook(
+    const result = await projectWebhookV1Store.testProjectWebhook(
       props.project,
       state.webhook
     );

@@ -84,6 +84,18 @@ func TestValidateWebhookURL(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "valid teams Power Automate URL",
+			webhookType: storepb.WebhookType_TEAMS,
+			webhookURL:  "https://prod-03.westus.logic.azure.com:443/workflows/abc123/triggers/manual/paths/invoke?api-version=2016-06-01",
+			wantErr:     false,
+		},
+		{
+			name:        "valid teams Power Automate powerplatform URL",
+			webhookType: storepb.WebhookType_TEAMS,
+			webhookURL:  "https://default1234.aa.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/abc123/triggers/manual/paths/invoke",
+			wantErr:     false,
+		},
+		{
 			name:        "invalid teams domain",
 			webhookType: storepb.WebhookType_TEAMS,
 			webhookURL:  "https://evil-office.com/webhook/xxx",
