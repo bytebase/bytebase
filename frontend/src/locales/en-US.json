@@ -438,7 +438,7 @@
     },
     "im": {
       "add-im-integration": "Add IM Integration",
-      "add-another-im": "Add Anothr IM"
+      "add-another-im": "Add Another IM"
     },
     "profile": {
       "email": "Email",
@@ -1167,6 +1167,7 @@
     "overview": {
       "no-checks": "No checks"
     },
+    "run": "Run check",
     "navigator": {
       "changes": "Changes",
       "checks": "Checks",

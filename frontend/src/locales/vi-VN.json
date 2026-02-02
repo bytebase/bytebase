@@ -171,7 +171,7 @@
     "regenerate": "Tạo lại",
     "download": "Tải xuống",
     "deleted": "Đã xóa",
-    "active": "Tích cực",
+    "active": "Hoạt động",
     "reopen": "Mở lại",
     "plan": "Kế hoạch",
     "rollout": "Triển khai",
@@ -239,7 +239,7 @@
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
     "draft": "Bản nháp",
-    "import": "Nhập khẩu",
+    "import": "Nhập",
     "hard-delete": {
       "self": "Xóa cứng",
       "title": "Xóa cứng {name}?",
@@ -247,7 +247,7 @@
       "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
       "notification": "Xóa thành công tài nguyên '{name}'."
     },
-    "collapse": "Sụp đổ",
+    "collapse": "Thu gọn",
     "show-more": "Hiển thị thêm",
     "n-more": "+{n} nữa",
     "remaining": "còn lại",
@@ -368,13 +368,13 @@
     "rollback": {
       "available": "Có thể khôi phục lại cho tác vụ {n} | Có thể khôi phục lại cho tác vụ {n}",
       "preview-statement": {
-        "self": "Xem trước tuyên bố",
+        "self": "Xem trước câu lệnh",
         "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục."
       },
       "no-statement-generated": "Không có câu lệnh khôi phục nào được tạo ra"
     },
     "log-type": {
-      "schema-dump": "Sơ đồ đổ",
+      "schema-dump": "Xuất schema",
       "command-execute": "Lệnh thực thi",
       "database-sync": "Đồng bộ cơ sở dữ liệu",
       "transaction": "Giao dịch",
@@ -384,7 +384,7 @@
       "release-file-execute": "Tệp phát hành"
     },
     "log-detail": {
-      "dumping": "đổ rác...",
+      "dumping": "đang xuất...",
       "syncing": "đang đồng bộ hóa...",
       "backup-completed": "đã hoàn thành ({count} bảng)",
       "backing-up": "đang sao lưu...",
@@ -1011,15 +1011,15 @@
           "description": "Lọc theo nhãn vấn đề"
         },
         "table": {
-          "title": "bề mặt",
+          "title": "Bảng",
           "description": "Nhập giá trị sau đó nhấn Enter"
         },
         "label": {
           "description": "Nhập cặp \"key:value\" rồi nhấn Enter"
         },
         "engine": {
-          "title": "Động cơ",
-          "description": "Lọc theo động cơ"
+          "title": "Engine",
+          "description": "Lọc theo engine"
         }
       }
     },
@@ -1144,7 +1144,7 @@
       "request-specific-role": "Yêu cầu vai trò \"{role}\""
     },
     "review": {
-      "self": "Ôn tập",
+      "self": "Xem xét",
       "comment-description": "Gửi phản hồi chung mà không cần phê duyệt",
       "approve-description": "Gửi phản hồi và phê duyệt vấn đề này.",
       "reject-description": "Gửi phản hồi và yêu cầu thay đổi"
@@ -1167,6 +1167,7 @@
     "overview": {
       "no-checks": "Không kiểm tra"
     },
+    "run": "Chạy kiểm tra",
     "navigator": {
       "changes": "Thay đổi",
       "checks": "Kiểm tra",
@@ -1529,11 +1530,11 @@
     "advanced-search": {
       "scope": {
         "host": {
-          "title": "Chủ nhà",
+          "title": "Host",
           "description": "Lọc theo máy chủ lưu trữ. Vui lòng nhập giá trị rồi nhấn Enter."
         },
         "port": {
-          "title": "Cảng",
+          "title": "Port",
           "description": "Lọc theo cổng phiên bản. Vui lòng nhập giá trị rồi nhấn Enter."
         }
       }
@@ -1683,7 +1684,7 @@
     "unique": "Duy nhất",
     "visible": "Hiển thị",
     "comment": "Bình luận",
-    "engine": "Động cơ",
+    "engine": "Engine",
     "row-count-estimate": "Ước tính số hàng",
     "data-size": "Kích thước dữ liệu",
     "index-size": "Kích thước chỉ mục",
@@ -1785,7 +1786,7 @@
       "content-preview": "Xem trước nội dung",
       "revision-type": "Loại sửa đổi",
       "type-versioned": "Phiên bản",
-      "type-declarative": "Tuyên bố",
+      "type-declarative": "Khai báo",
       "invalid-version-format": "Phiên bản phải là các phần số được phân tách bằng dấu chấm (ví dụ: 1.0.0)",
       "version-already-exists": "Phiên bản này đã tồn tại trong cơ sở dữ liệu",
       "delete-confirm-dialog": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
@@ -2198,7 +2199,7 @@
     },
     "database": {
       "name": "Tên",
-      "engine": "Động cơ",
+      "engine": "Engine",
       "collation": "Đối chiếu",
       "comment": "Bình luận"
     },
@@ -2802,7 +2803,7 @@
     }
   },
   "release": {
-    "title": "Giải phóng",
+    "title": "Phát hành",
     "releases": "Bản phát hành",
     "files": "Tệp",
     "archive-this-release": "Lưu trữ bản phát hành này",

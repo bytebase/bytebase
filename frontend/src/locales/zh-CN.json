@@ -401,8 +401,8 @@
   },
   "banner": {
     "license-expired": "您的{plan}证书已在 {expireAt} 过期",
-    "license-expires": "您的{plan}证书将在 {days} 天后过期",
-    "trial-expires": "您的{plan}试用将在 {days} 天后过期",
+    "license-expires": "您的{plan}证书将在 {days} 天后（{expireAt}）过期",
+    "trial-expires": "您的{plan}试用将在 {days} 天后（{expireAt}）过期",
     "deploy": "本地部署",
     "cloud": "云服务",
     "request-demo": "预约一个 30 分钟的产品演示。",
@@ -1167,6 +1167,7 @@
     "overview": {
       "no-checks": "没有检查"
     },
+    "run": "运行检查",
     "navigator": {
       "changes": "变更项",
       "checks": "SQL 检查",
@@ -1248,7 +1249,7 @@
     "rollouts": "发布任务",
     "bypass-stage-requirements": "绕过提醒",
     "task-execution-notices": "任务执行提醒",
-    "task-execution-errors": "任务执行警告",
+    "task-execution-errors": "任务执行错误",
     "no-active-task-to-cancel": "没有要取消的任务。",
     "stage": {
       "self": "阶段 | 阶段",
@@ -1600,7 +1601,7 @@
     },
     "password-forget": {
       "title": "忘记了您的密码？",
-      "selfhost": "请联系的您的 Bytebase 管理员重置密码",
+      "selfhost": "请联系您的 Bytebase 管理员重置密码",
       "cloud": "请登录 {link} 并重置密码",
       "return-to-sign-in": "返回登录"
     },
@@ -1959,16 +1960,17 @@
     "batch": {
       "selected": "已选择 {count} 个项目 | 已选择 {count} 个项目",
       "archive": {
-        "title": "存档 {count} 项目？| 存档 {count} 项目？",
-        "description": "这将存档所选项目。如有需要，您可以稍后恢复它们。",
+        "title": "归档 {count} 个项目？| 归档 {count} 个项目？",
+        "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。",
         "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
-        "error": "无法存档项目"
+        "error": "无法归档项目"
       },
       "force-archive-description": "即使项目有数据库也强制存档（数据库将被移动到默认项目）",
-      "projects-to-archive": "要存档的项目",
+      "delete": {},
+      "projects-to-archive": "要归档的项目",
       "resource-warning": {
         "title": "项目与资源",
-        "description": "以下项目包含数据库或未解决的问题："
+        "description": "以下项目包含数据库或未解决的工单："
       }
     }
   },
@@ -2269,7 +2271,7 @@
       "key-necessary": "需要指定 Key",
       "value-necessary": "需要指定值",
       "key-duplicated": "Key 重复了",
-      "max-value-length-exceeded": "值长的度不能超过 {length} 字符"
+      "max-value-length-exceeded": "值的长度不能超过 {length} 字符"
     },
     "add-label": "添加标签"
   },

@@ -14,7 +14,7 @@
         <template #icon>
           <PlayIcon class="w-4 h-4" />
         </template>
-        {{ $t("common.run") }}
+        {{ $t("plan.run") }}
       </NButton>
     </div>
 
