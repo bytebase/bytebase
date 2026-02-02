@@ -368,6 +368,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.SQLSelect,
 			permission.UsersGet,
 			permission.UsersList,
+			permission.TaskRunsCreate,
 			permission.TaskRunsList,
 			permission.WorksheetsGet,
 		),
