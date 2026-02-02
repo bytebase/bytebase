@@ -38,8 +38,8 @@ BEGIN
   UPDATE release SET creator = fallback_user WHERE creator = 'support@bytebase.com';
 END $$;
 
--- Delete the SystemBot principal row
-DELETE FROM principal WHERE id = 1 AND email = 'support@bytebase.com';
+-- Delete all SYSTEM_BOT principal rows (support@bytebase.com and allUsers)
+DELETE FROM principal WHERE type = 'SYSTEM_BOT';
 
 -- Remove SYSTEM_BOT from principal type constraint
 ALTER TABLE principal DROP CONSTRAINT principal_type_check;
