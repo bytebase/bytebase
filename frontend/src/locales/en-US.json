@@ -20,6 +20,7 @@
     "sign-in-as-admin": "Sign in as administrator",
     "sign-up": "Sign up",
     "email": "Email",
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
     "username": "Username",
     "password": "Password",
     "save": "Save",
@@ -41,6 +42,9 @@
     "environment-name": "Environment Name",
     "archive": "Archive",
     "archived": "Archived",
+    "abandon": "Abandon",
+    "abandoned": "Abandoned",
+    "restored": "Restored",
     "no-license": "No license",
     "logout": "Logout",
     "close": "Close",
@@ -82,12 +86,10 @@
     "created-at": "Created",
     "updated-at": "Updated",
     "statement": "Statement",
-    "statement-size": "Statement size",
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
     "task": "Task | Tasks",
-    "blocking-task": "Blocking task",
     "sql": "SQL",
     "unassigned": "Unassigned",
     "new": "New",
@@ -108,7 +110,7 @@
     "confirm": "Confirm",
     "learn-more": "Learn more",
     "troubleshoot": "Troubleshoot",
-    "schema-version": "Schema version",
+    "release": "Release",
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
@@ -140,6 +142,7 @@
     "search": "Search",
     "search-for-more": "Search for more",
     "warning": "Warning",
+    "notices": "Notices",
     "edited": "edited",
     "preview": "Preview",
     "file-selector": {
@@ -160,7 +163,6 @@
     "load-more": "Load more",
     "rows-per-page": "Rows per page",
     "access-denied": "Access denied",
-    "restart": "Restart",
     "want-help": "Want help",
     "operation": "Operation",
     "discard-changes": "Discard changes",
@@ -174,6 +176,7 @@
     "deleted": "Deleted",
     "active": "Active",
     "reopen": "Reopen",
+    "plan": "Plan",
     "rollout": "Rollout",
     "upload": "Upload",
     "clear": "Clear",
@@ -195,7 +198,7 @@
     "configure": "Configure",
     "groups": "Groups",
     "database-group": "Database Group | Database Groups",
-    "members": "Members",
+    "members": "Member | Members",
     "warehouse": "Warehouse",
     "schedule": "Schedule",
     "state": "State",
@@ -203,22 +206,36 @@
     "info": "Info",
     "minutes": "Minutes",
     "filter-by-name": "Filter by name",
+    "clear-filters": "Clear filters",
     "license": "License",
     "view-details": "View details",
-    "force-verb": "Force {verb}",
     "untitled": "Untitled",
-    "missing-required-permission": "Missing required permissions",
+    "add-permissions": "Add permissions",
+    "missing-required-permission": "Missing required permissions {permissions}",
+    "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
+    "only-creator-allowed-action": "Only the creator is allowed to take action",
+    "only-creator-allowed-export": "Only the creator is allowed to export",
+    "workspace-initialize-error": "Failed to initialize the workspace",
+    "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
+    "required-permission": "Required permissions",
     "resource-not-found": "Resource not found",
     "continue-anyway": "Continue anyway",
     "permissions": "Permissions",
-    "baseline": "Baseline",
     "leave-without-saving": "Leave without saving?",
     "configure-now": "Configure now",
     "connection": "Connection",
     "resource": "Resource",
     "resources": "Resources",
+    "danger-zone": "Danger Zone",
+    "archive-resource": "Archive {type}",
+    "delete-resource": "Delete {type}",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "archive-description": "Mark \"{name}\" as archived and read-only.",
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "closed": "Closed",
     "refresh": "Refresh",
+    "reject": "Reject",
     "rollback": "Rollback",
     "rows": {
       "self": "rows",
@@ -229,8 +246,6 @@
     "title": "Title",
     "text-wrap": "Text Wrap",
     "catalog": "Catalog",
-    "summary": "Summary",
-    "errors": "Errors",
     "removed": "Removed",
     "submit": "Submit",
     "draft": "Draft",
@@ -248,7 +263,9 @@
     "remaining": "remaining",
     "line": "Line",
     "column": "Column",
-    "apply-to-database": "Apply to database"
+    "apply-to-database": "Apply to database",
+    "unlimited": "Unlimited",
+    "unknown": "Unknown"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -258,14 +275,11 @@
     "description": "Detect outdated version. Please refresh the page."
   },
   "task": {
-    "current-task": "Current task",
     "checking": "Checking...",
     "check-result": {
       "title-general": "Check result"
     },
     "check-type": {
-      "fake": "Fake",
-      "connection": "Connection",
       "sql-review": {
         "self": "SQL review",
         "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules."
@@ -279,9 +293,9 @@
     },
     "comment": "Comment",
     "started": "Started",
-    "view-change": "View change",
     "status": {
       "running": "Running",
+      "available": "Available",
       "failed": "Failed",
       "canceled": "Canceled",
       "skipped": "Skipped",
@@ -289,13 +303,10 @@
       "pending": "Pending",
       "not-started": "Not started"
     },
-    "skip": "Skip",
     "task-checks": "Task checks",
     "prior-backup": "Prior backup",
-    "skip-failed-in-current-stage": "Skip failed tasks in current stage",
     "execution-time": "Execution time",
     "run-checks": "Run checks",
-    "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
     "skip-task": "Skip task | Skip tasks",
     "run-task": "Run task | Run tasks",
@@ -338,16 +349,11 @@
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
     "prior-backup-tips": "Backup affected data ahead of time. Only applies to data changes (UPDATE, DELETE), not schema changes.",
-    "database-create": {
-      "created": "Created",
-      "pending": "Pending"
-    },
     "executed-by": "Executed by",
     "affected-rows": "Affected rows",
     "type": {
       "database-create": "Create Database",
       "migrate": "Migrate",
-      "database-sdl": "SDL",
       "database-export": "Data Export",
       "general": "General"
     }
@@ -360,8 +366,6 @@
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
-      "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit set on Bytebase. Last report at {time}.",
-      "waiting-task": "Waiting for another task to finish. Last report at {time}.",
       "waiting-max-tasks-per-rollout": "Waiting for other tasks to finish. Maximum running tasks limit per rollout has been reached. Last report at {time}."
     },
     "rollback": {
@@ -376,26 +380,23 @@
       "schema-dump": "Schema Dump",
       "command-execute": "Command Execute",
       "database-sync": "Database Sync",
-      "status-update": "Status Update",
       "transaction": "Transaction",
       "prior-backup": "Prior Backup",
       "retry": "Retry",
-      "compute-diff": "Compute Diff"
+      "compute-diff": "Compute Diff",
+      "release-file-execute": "Release File"
     },
     "log-detail": {
       "dumping": "dumping...",
       "syncing": "syncing...",
-      "waiting-to-execute": "waiting to execute",
-      "executing": "executing",
-      "status-changed": "status changed",
       "backup-completed": "completed ({count} tables)",
       "backing-up": "backing up...",
       "retry-attempt": "attempt {current}/{max}",
       "computing": "computing..."
     },
     "log-viewer": {
-      "multiple-deploys-notice": "Server restart detected during execution. Logs are grouped by deployment.",
-      "deployment-n": "Deployment #{n}",
+      "multiple-replicas-notice": "Server restart detected during execution. Logs are grouped by replica.",
+      "replica-n": "Replica #{n}",
       "expand-all": "Expand all",
       "collapse-all": "Collapse all",
       "summary": "{sections} sections · {entries} entries"
@@ -408,12 +409,13 @@
     "deploy": "Self Host",
     "cloud": "Cloud",
     "request-demo": "Book a 30-minute product demo.",
-    "external-url": "Bytebase has not configured --external-url"
+    "external-url": "Bytebase has not configured --external-url",
+    "ha-not-licensed": "Multiple replicas detected without HA license. Backend runners are disabled."
   },
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "Are you sure to delete?",
-      "sure-to-archive": "Are you sure to archive?",
+      "sure-to-abandon": "Are you sure to abandon?",
       "cannot-undo": "You cannot undo this action.",
       "can-undo": "You can undo this action later."
     }
@@ -439,7 +441,7 @@
     },
     "im": {
       "add-im-integration": "Add IM Integration",
-      "add-another-im": "Add Anothr IM"
+      "add-another-im": "Add Another IM"
     },
     "profile": {
       "email": "Email",
@@ -454,7 +456,15 @@
       "subscription": "(Upgrade to enable role management)"
     },
     "members": {
+      "service-accounts": "Service Accounts",
+      "add-service-account": "Add Service Account",
+      "update-service-account": "Update Service Account",
+      "workload-identities": "Workload Identities",
+      "add-workload-identity": "Add Workload Identity",
+      "update-workload-identity": "Update Workload Identity",
       "inactive-users": "Inactive users",
+      "inactive-service-accounts": "Inactive service accounts",
+      "inactive-workload-identities": "Inactive workload identities",
       "table": {
         "account": "Account",
         "role": "Role",
@@ -511,10 +521,11 @@
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
-      "show-inactive": "Show inactive users",
+      "show-inactive": "Show inactive accounts",
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
+      "update-user": "Update User",
       "entra-sync": {
         "self": "Sync from SCIM",
         "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
@@ -533,8 +544,8 @@
       "revoke-access-alert": "Are you sure to revoke access?",
       "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "grant-access": "Grant Access",
-      "select-user": "Select user | Select users",
-      "select-group": "Select group | Select groups",
+      "select-account": "Select account | Select accounts",
+      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
       "select-in-project": "Select users or groups in {project}",
       "select-role": "Select role | Select roles",
       "assign-role": "Assign role | Assign roles"
@@ -655,7 +666,6 @@
         "id": "Workspace ID",
         "id-description": "The unique, read-only workspace id.",
         "branding": "Branding",
-        "only-admin-can-edit": "Only workspace admin can update the settings.",
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
         "select-logo": "Upload a file",
@@ -663,13 +673,16 @@
         "logo-upload-tip": "{extension} up to {size} MiB",
         "security": "Security",
         "account": "Account",
+        "log": "Log",
         "watermark": {
           "description": "Display watermarks on pages, including username, ID and email.",
           "enable": "Enable watermark"
         },
-        "data-export": {
-          "enable": "Enable data export",
-          "description": "Allow users to export data in SQL Editor"
+        "data-export": "Enable data export",
+        "disable-copy-data": "Restrict data copying",
+        "allow-admin-data-source": {
+          "self": "Allow querying the admin data source",
+          "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources."
         },
         "product-improvement": {
           "self": "Product Improvement",
@@ -677,9 +690,11 @@
           "description": "Help improve Bytebase by sharing anonymous usage data"
         },
         "audit-log-stdout": {
-          "self": "Audit Log Export",
           "enable": "Enable audit logging to stdout",
           "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
+        },
+        "enable-debug": {
+          "enable": "Enable debug level log for the backend service"
         },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
@@ -700,9 +715,15 @@
           "managed-by-flag": "This setting is managed via the --external-url command-line flag",
           "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
         },
-        "sign-in-frequency": {
-          "self": "Sign-in frequency",
-          "description": "Sign-in frequency defines how often users must reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
           "hours": "Hour(s)",
           "days": "Day(s)"
         },
@@ -733,13 +754,11 @@
         "query-data-policy": {
           "timeout": {
             "self": "Maximum query time",
-            "description": "The maximum time allowed for a query to run in SQL Editor."
+            "description": "The maximum time allowed for a query to run."
           },
           "seconds": "Seconds",
           "project-scope": "project",
-          "workspace-scope": "workspace",
-          "environment-scope": "environment",
-          "tooltip": "It's also configurable at the {scope} level. Bytebase will apply the most strict value."
+          "environment-scope": "environment"
         },
         "domain-restriction": {
           "self": "Workspace Domain",
@@ -791,8 +810,7 @@
           }
         },
         "announcement": {
-          "self": "Announcement",
-          "admin-or-dba-can-edit": "Only workspace admin or DBA can update announcement setting."
+          "self": "Announcement"
         },
         "announcement-alert-level": {
           "description": "Level"
@@ -929,30 +947,22 @@
       "changed-labels": "changed labels",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "reopened-issue": "reopened issue",
-      "resolved-issue": "resolved issue",
-      "canceled-issue": "canceled issue",
-      "xxx-automatically": "{verb} automatically"
-    },
-    "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
+      "resolved-issue": "completed the issue",
+      "canceled-issue": "closed the issue"
+    }
   },
   "issue": {
     "labels": "Issue Labels",
+    "subtitle": "Issues cover database changes, data exports, and access requests. Review and approve before execution.",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
+    "create-rollout": "Create Rollout",
     "status-transition": {
       "modal": {
-        "resolve": "Resolve issue?",
         "reopen": "Reopen issue?",
         "close": "Close issue?"
-      },
-      "warning": {
-        "some-previous-stages-are-not-done": "Some previous stages are not done."
-      },
-      "error": {
-        "some-tasks-are-still-running": "Some tasks are still running"
       }
     },
-    "add-some-description": "Add some description...",
     "leave-a-comment": "Leave a comment...",
     "no-description-provided": "No description provided",
     "comment-editor": {
@@ -983,10 +993,6 @@
         "environment": {
           "title": "Environment",
           "description": "Filter by environment"
-        },
-        "database": {
-          "title": "Database",
-          "description": "Filter by database"
         },
         "creator": {
           "title": "Creator",
@@ -1029,33 +1035,24 @@
       "creator": "Creator",
       "current-approver": "Current approver"
     },
-    "stage-select": {
-      "current": "{name} (current)"
-    },
-    "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
       "online": {
         "description": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds {link}."
       }
     },
-    "new-issue": "@:common.new @:common.issue",
-    "action-to-current-stage": "{action} current stage",
     "upload-sql": "Upload SQL",
     "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
+    "options-disabled-due-to-oversize": "Options are disabled because the SQL is oversized.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "transaction-mode": {
       "label": "Transaction Mode",
-      "on": "ON",
-      "off": "OFF",
       "on-tooltip": "Wraps all statements in a single transaction (BEGIN/COMMIT).",
       "off-tooltip": "Executes statements individually in auto-commit mode. Statements are committed immediately and cannot be rolled back if a later statement fails.",
       "execution-order-note": "Non-transactional statements will be executed last."
     },
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
-      "resolve": "Resolve",
-      "resolved": "resolved",
       "reopen": "Reopen",
       "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues",
@@ -1063,8 +1060,7 @@
       "close": "Close"
     },
     "approval-flow": {
-      "self": "Approval flow",
-      "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval based on the type and risk level of the issue."
+      "self": "Approval flow"
     },
     "risk-level": {
       "self": "Risk level",
@@ -1072,8 +1068,6 @@
       "moderate": "Moderate",
       "high": "High"
     },
-    "awaiting-rollout": "Awaiting rollout",
-    "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
       "details": "Request Details",
@@ -1081,10 +1075,10 @@
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
+      "use-cel": "Use CEL Expression",
       "custom-date": "Custom date",
       "custom-date-placeholder": "Select expiration date and time"
     },
-    "review-sent-back": "Review sent back",
     "action-anyway": "{action} anyway",
     "sql-check": {
       "sql-checks": "SQL checks",
@@ -1095,17 +1089,12 @@
       "sql-review-violations": "SQL Review Violations"
     },
     "error": {
-      "you-don-have-privilege-to-edit-this-issue": "You don't have privilege to edit this issue",
-      "you-are-not-allowed-to-perform-this-action": "You are not allowed to perform this action",
-      "cannot-close-issue-with-running-tasks": "Cannot close issue with running tasks",
       "statement-cannot-be-modified": "Statement cannot be modified after the issue is created"
     },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
-    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
-    "missing-sql-statement": "SQL statement missing.",
-    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
     "data-export": {
       "options": "Options",
+      "limits": "Limits",
       "format": "Format",
       "download-tooltip": "Available for 24 hours",
       "file-expired": "File Expired"
@@ -1113,18 +1102,6 @@
     "task-run": {
       "logs": "Logs",
       "session": "Session",
-      "task-run-log": {
-        "entry-type": {
-          "command-execute": "Command execute",
-          "schema-dump": "Schema dump",
-          "task-run-status-update": "Status update",
-          "transaction-control": "Transaction control",
-          "database-sync": "Database sync",
-          "prior-backup": "Prior backup",
-          "retry-info": "Retry information",
-          "compute-diff": "Compute diff"
-        }
-      },
       "task-run-session": {
         "blocking-sessions": {
           "self": "Blocking sessions",
@@ -1144,25 +1121,19 @@
       "request-role": "Request role",
       "request-specific-role": "Request \"{role}\" role"
     },
-    "schema-drift-detected": {
-      "self": "Schema drift detected",
-      "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
-    },
     "review": {
-      "approved": "Approved",
-      "rejected": "Rejected",
-      "under-review": "Under review"
+      "self": "Review",
+      "comment-description": "Submit general feedback without approval",
+      "approve-description": "Submit feedback and approve this issue",
+      "reject-description": "Submit feedback and request changes"
     },
     "approval": {
-      "rejected-error": "Issue approval has been rejected.",
-      "pending-error": "Issue approval is pending.",
-      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout.",
-      "ready-for-rollout": "Ready to rollout"
-    },
-    "new-layout": "New CI/CD Layout"
+      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
+    }
   },
   "plan": {
     "plans": "Plans",
+    "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "new-plan": "New Plan",
     "add-spec": "Add Change",
     "select-targets": "Select Targets",
@@ -1171,10 +1142,10 @@
     "overview": {
       "no-checks": "No checks"
     },
+    "run": "Run check",
     "navigator": {
       "changes": "Changes",
       "checks": "Checks",
-      "rollout": "Rollout",
       "statement-empty": "Statement is empty"
     },
     "checks": {
@@ -1212,9 +1183,6 @@
     },
     "options": {
       "self": "Options",
-      "applies-to-all-tasks": "Applies to all tasks",
-      "applies-to-some-tasks": "Applies to some tasks {count}/{total}",
-      "split-into-multiple-issues-tip": "If you want to configure different options for each task, please split into multiple issues.",
       "no-options-available": "No options available"
     },
     "editor": {
@@ -1226,7 +1194,10 @@
       "only-some-databases-checked": "Only some databases are checked",
       "some-databases-not-meeting-requirements": "Some databases ({databases}) don't meet requirements",
       "some-databases-have-issues": "{count} database has issues | {count} databases have issues",
-      "configuration-has-issues": "Configuration has {count} issue | Configuration has {count} issues"
+      "configuration-has-issues": "Configuration has {count} issue | Configuration has {count} issues",
+      "missing-backup-schema-postgres": "Create schema 'bbdataarchive' in database '{database}', then sync the database",
+      "missing-backup-database": "Create database 'bbdataarchive' on instance '{instance}', then sync the instance and database",
+      "missing-backup-database-oracle": "Create database 'BBDATAARCHIVE' on instance '{instance}', then sync the instance and database"
     },
     "ghost": {
       "only-some-databases-checked": "Only some databases are checked",
@@ -1249,18 +1220,11 @@
   "rollout": {
     "rollouts": "Rollouts",
     "bypass-stage-requirements": "Bypass warnings",
-    "task-execution-notices": "Task execution notices",
     "task-execution-errors": "Task execution errors",
-    "no-active-task-to-cancel": "No active task to cancel.",
-    "no-runnable-task": "No runnable task available.",
-    "automatic-rollout": {
-      "description": "This environment has automatic rollout enabled."
-    },
     "stage": {
       "self": "Stage | Stages",
       "run-stage": "Run Tasks",
-      "confirm-create": "Confirm to create tasks for this stage?",
-      "back-to-stage": "Back to Stage {stage}"
+      "confirm-create": "Confirm to create tasks for this stage?"
     },
     "task": {
       "selected-count": "{count} task selected | {count} tasks selected",
@@ -1269,7 +1233,15 @@
       "view-full-details": "View Details",
       "statement-truncated-hint": "Statement truncated due to large size."
     },
-    "no-stages": "No stages available"
+    "no-stages": "No stages available",
+    "no-tasks-created": "No tasks created yet",
+    "pending-tasks-preview": {
+      "title": "Pending Tasks",
+      "description": "The following tasks have not been created yet.",
+      "action": "Preview",
+      "task-count": "{count} task | {count} tasks",
+      "no-pending-tasks": "No pending tasks"
+    }
   },
   "quick-action": {
     "create-db": "Create database",
@@ -1307,6 +1279,8 @@
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
+    "syncing-databases-for-instance": "Syncing databases for {0}...",
+    "n-databases-had-sync-errors": "{0} database(s) had sync errors",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
     "procedures": "Procedures",
@@ -1351,11 +1325,8 @@
     "users": "Users",
     "successfully-restored-instance": "Successfully restored the instance '{0}'.",
     "successfully-archived-instance": "Successfully archived the instance '{0}'.",
-    "successfully-synced-schema-for-instance-instance-value-name": "Successfully synced schema for instance '{0}'.",
-    "archive-this-instance": "Archive this instance",
     "archive-instance-instance-name": "Archive instance '{0}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
-    "restore-this-instance": "Restore this instance",
     "restore": "Restore",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
     "account-locator": "Account Locator",
@@ -1518,12 +1489,6 @@
       "description": "Bytebase periodically syncs instance schema and detects anomalies.",
       "min-value": "Min value {value} minutes"
     },
-    "maximum-connections": {
-      "self": "Maximum Connections",
-      "default-value": "Default (10)",
-      "description": "Limiting connection and resource usage is achieved by setting the maximum number of connections to the instance.",
-      "max-value": "Maximum {value} connections"
-    },
     "sync-databases": {
       "self": "Sync Databases",
       "description": "Only sync selected databases.",
@@ -1616,7 +1581,7 @@
     },
     "login-as-another": {
       "title": "You have logged in as another user",
-      "content": "We will refirect you to the home page."
+      "content": "We will redirect you to the home page."
     },
     "token-expired-title": "Token expired",
     "token-expired-description": "Token has expired, please login again",
@@ -1645,22 +1610,10 @@
   "changelog": {
     "self": "Changelog",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "change-type": "Type",
-    "type": {
-      "migrate": "Migrate"
-    },
     "no-schema-change": "this migration has no schema change",
     "show-diff": "Show diff",
     "schema-snapshot-after-change": "The schema snapshot recorded after applying this change",
-    "current-schema-empty": "Current schema is empty",
-    "establish-baseline": "Establish new baseline",
-    "refreshing": "Refreshing changelog ...",
-    "establish-baseline-description": "Bytebase will use the current schema as the new baseline. This would reconcile the actual schema state with the recorded schema state in Bytebase and fix the reported schema drift. You should only do this if the current schema does reflect the desired state.",
-    "establish-database-baseline": "Establish \"{name}\" baseline",
-    "export": "Export Changelog",
-    "need-to-select-first": "Need to select changelog first",
-    "rollback-tip": "Select a specific DDL changelog to rollback.",
-    "task-at": "Task at {time}"
+    "current-schema-empty": "Current schema is empty"
   },
   "database": {
     "labels": "Database Labels",
@@ -1675,7 +1628,9 @@
     "failed-to-export-schema": "Failed to export schema",
     "select": "Select database",
     "sync-status": "Sync status",
-    "last-successful-sync": "Last successful sync",
+    "sync-status-failed": "Sync failed",
+    "last-sync": "Last sync",
+    "sync-complete-for-instance": "Sync complete for instance '{0}'",
     "filter-database": "Filter database",
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
@@ -1688,7 +1643,6 @@
     "mixed-values-for-label": "This selected label have mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "table-detail": "Table detail",
-    "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
     "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -1713,14 +1667,10 @@
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
-      "schema-history-version": "Schema History Version",
       "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "source-schema": "Source schema",
-      "schema-version": {
-        "self": "Schema version"
-      },
       "target-databases": "Target databases",
       "with-diff": "With diff",
       "no-diff": "No diff",
@@ -1773,7 +1723,6 @@
     "engine-not-supported-for-backup": "Prior backup is not supported for: {databases}",
     "revision": {
       "self": "Revision",
-      "applied-at": "Applied at",
       "filename": "Filename",
       "import-revision": "Import Revision",
       "select-source": "Select Source",
@@ -1805,19 +1754,7 @@
       "version-already-exists": "This version already exists in the database",
       "delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
     },
-    "not-found": "Cannot found the database",
-    "drifted": {
-      "self": "Schema drifted",
-      "schema-drift-detected": {
-        "self": "Schema drift detected",
-        "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
-      },
-      "new-baseline": {
-        "self": "New baseline",
-        "successfully-established": "Successfully established new baseline"
-      },
-      "view-diff": "View diff"
-    }
+    "not-found": "Cannot found the database"
   },
   "project": {
     "filter-projects": "Filter projects",
@@ -1849,8 +1786,7 @@
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
-        "btn-text": "Delete this webhook",
-        "confirm-title": "Delete webhook '{title}' and all its execution history?"
+        "confirm-title": "Delete webhook '{title}'?"
       },
       "direct-messages": "Direct messages",
       "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
@@ -1863,37 +1799,21 @@
           "title": "Issue creation",
           "label": "When new issue has been created"
         },
-        "issue-status-change": {
-          "title": "Issue status change",
-          "label": "When issue status has changed"
-        },
-        "issue-stage-status-change": {
-          "title": "Issue stage status change",
-          "label": "When issue's enclosing stage status has changed"
-        },
-        "issue-task-status-change": {
-          "title": "Issue task status change",
-          "label": "When issue's enclosing task status has changed"
-        },
-        "issue-info-change": {
-          "title": "Issue info change",
-          "label": "When issue info (e.g. title, description) has changed"
-        },
-        "issue-comment-creation": {
-          "title": "Issue comment creation",
-          "label": "When new issue comment has been created"
-        },
         "issue-approval-notify": {
           "title": "Issue approval needed",
           "label": "When issue is pending approval"
         },
-        "notify-issue-approved": {
-          "title": "Issue approved",
-          "label": "When issue is approved"
+        "issue-sent-back": {
+          "title": "Issue sent back",
+          "label": "When issue is sent back by an approver"
         },
-        "notify-pipeline-rollout": {
-          "title": "Issue rollout needed",
-          "label": "When the issue is waiting for rollout"
+        "pipeline-failed": {
+          "title": "Pipeline failed",
+          "label": "When pipeline tasks fail"
+        },
+        "pipeline-completed": {
+          "title": "Pipeline completed",
+          "label": "When pipeline completes successfully"
         }
       }
     },
@@ -1910,6 +1830,8 @@
         "title": "Restore project",
         "btn-text": "Restore this @.lower:{'common.project'}"
       },
+      "confirm-archive-project": "Archiving \"{name}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
+      "confirm-delete-project": "Deleting \"{name}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "issue-related": {
         "self": "Issue Related",
         "labels": {
@@ -1923,17 +1845,9 @@
             "warning": "Require at least configured one label"
           }
         },
-        "allow-modify-statement": {
-          "self": "Allow modify statement",
-          "description": "Allow users to modify the statement of the issue after creation."
-        },
-        "auto-resolve-issue": {
-          "self": "Auto resolve issue",
-          "description": "Automatically resolve the issue after all tasks are completed."
-        },
         "enforce-issue-title": {
-          "self": "Enforce issue title",
-          "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
+          "self": "Require manual title",
+          "description": "Require titles for issues and plans to be created by user instead of auto-generated."
         },
         "enforce-sql-review": {
           "self": "Enforce SQL review",
@@ -1990,7 +1904,6 @@
       "edit": "Edit member - {member}",
       "view-by-members": "View by members",
       "view-by-roles": "View by roles",
-      "cannot-remove-last-owner": "Cannot remove the last owner of a project",
       "revoke-role-from-user": "Revoke '{role}' from '{user}'",
       "never-expires": "Never",
       "role-description": "Role description",
@@ -1998,7 +1911,8 @@
       "add-more": "Add more",
       "condition-name": "Condition name",
       "workspace-level-roles": "Workspace level roles",
-      "project-level-roles": "Project level roles"
+      "project-level-roles": "Project level roles",
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
     },
     "select": "Select Project",
     "all": "All projects",
@@ -2015,8 +1929,15 @@
         "success": "Successfully archived {count} project | Successfully archived {count} projects",
         "error": "Failed to archive projects"
       },
-      "force-archive-description": "Force archive even if projects have databases (databases will be moved to default project)",
+      "delete": {
+        "title": "Delete {count} Project? | Delete {count} Projects?",
+        "description": "This will permanently delete the selected projects and move all databases to the default project.",
+        "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed.",
+        "success": "Successfully deleted {count} project | Successfully deleted {count} projects",
+        "error": "Failed to delete projects"
+      },
       "projects-to-archive": "Projects to archive",
+      "projects-to-delete": "Projects to delete",
       "resource-warning": {
         "title": "Projects with Resources",
         "description": "The following projects contain databases or open issues:"
@@ -2203,8 +2124,7 @@
       }
     },
     "query-context": {
-      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query.",
-      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "Admin data source is disallowed to query when read-only data source is available."
+      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
@@ -2391,7 +2311,6 @@
     "expires-at": "Expires at",
     "plan-compare": "Compare plans",
     "trialing": "Trialing",
-    "unlimited": "Unlimited",
     "max-instance-count": "Max Instance Count",
     "plan": {
       "free": {
@@ -2435,7 +2354,6 @@
     "title": "SQL Review",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
-    "no-policy-set": "No SQL review policy",
     "create-policy": "Create SQL review",
     "select-review": "Select SQL review",
     "select-review-rules": "Select SQL review rules",
@@ -2727,20 +2645,16 @@
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },
     "issue-review": {
-      "approve-issue": "Approve issue?",
-      "you": "You",
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
+      "rejected-issue": "rejected issue",
       "disallow-approve-reason": {
         "some-task-checks-didnt-pass": "Some task checks didn't pass.",
         "some-task-checks-are-still-running": "Some task checks are still running.",
         "x-field-is-required": "{field} is required"
       },
-      "send-back": "Send back",
-      "send-back-issue": "Send back issue?",
       "re-request-review": "Re-request review",
-      "re-request-review-issue": "Re-request review issue?",
-      "sent-back-issue": "Sent back issue",
+      "re-request-review-success": "Review re-requested successfully",
       "re-requested-review": "re-requested issue review",
       "approved-by": "Approved by",
       "rejected-by": "Rejected by",
@@ -2811,7 +2725,7 @@
     },
     "project-viewer": {
       "self": "Project Viewer",
-      "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
+      "description": "Read-only permissions for viewing basic project and database information; users may self-initiate tickets to request data queries and exports."
     }
   },
   "database-group": {
@@ -2827,8 +2741,7 @@
     "delete-group": "Delete the database group {name}"
   },
   "export-center": {
-    "self": "Export Center",
-    "permission-denied": "Permission denied"
+    "self": "Export Center"
   },
   "schema-designer": {
     "use-tips": "Click a table to start."
@@ -2860,17 +2773,12 @@
     "title": "Release",
     "releases": "Releases",
     "files": "Files",
-    "archive-this-release": "Archive this release",
     "total-files": "Total {count} files",
     "change-tip": "This change is configured to use a release. Database changes will be executed using the SQL statements from the selected release files.",
     "not-found": "Not found",
     "vcs-source": "VCS Source",
     "view-all-files": "View all files",
     "and-n-more-files": "and {n} more files",
-    "change-type": {
-      "ddl": "DDL",
-      "ddl-ghost": "DDL Ghost"
-    },
     "file-type": {
       "versioned": "Versioned",
       "declarative": "Declarative",
@@ -2879,7 +2787,8 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
+    "filter-by-category": "Filter by category"
   },
   "export-data": {
     "export-rows": "Export rows",
