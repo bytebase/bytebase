@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mx-auto w-full h-full py-6 flex flex-col justify-center items-center"
+    class="mx-auto max-w-2xl h-full py-6 flex flex-col justify-center items-center"
   >
     <NCard class="w-80 p-8 py-6 shadow-sm">
       <img

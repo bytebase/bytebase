@@ -1,0 +1,44 @@
+diff --git a/es/input-otp/src/InputOtp.mjs b/es/input-otp/src/InputOtp.mjs
+index aaaaaaa..bbbbbbb 100644
+--- a/es/input-otp/src/InputOtp.mjs
++++ b/es/input-otp/src/InputOtp.mjs
+@@ -92,7 +92,7 @@
+     const inputTypeRef = computed(() => props.mask ? 'password' : 'text');
+     const handleFocus = (e, index) => {
+       // If it's focused from other input element inside the component, returns
+-      if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => inputInst.inputElRef === e.relatedTarget)) {
++      if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => (inputInst === null || inputInst === void 0 ? void 0 : inputInst.inputElRef) === e.relatedTarget)) {
+         return;
+       }
+       const {
+@@ -108,7 +108,7 @@
+     };
+     const handleBlur = (e, index) => {
+       // If it's blured to other input element inside the component, returns
+-      if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => inputInst.inputElRef === e.relatedTarget)) {
++      if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => (inputInst === null || inputInst === void 0 ? void 0 : inputInst.inputElRef) === e.relatedTarget)) {
+         return;
+       }
+       const {
+diff --git a/lib/input-otp/src/InputOtp.js b/lib/input-otp/src/InputOtp.js
+index aaaaaaa..bbbbbbb 100644
+--- a/lib/input-otp/src/InputOtp.js
++++ b/lib/input-otp/src/InputOtp.js
+@@ -64,7 +64,7 @@
+         const inputTypeRef = (0, vue_1.computed)(() => props.mask ? 'password' : 'text');
+         const handleFocus = (e, index) => {
+             // If it's focused from other input element inside the component, returns
+-            if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => inputInst.inputElRef === e.relatedTarget)) {
++            if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => (inputInst === null || inputInst === void 0 ? void 0 : inputInst.inputElRef) === e.relatedTarget)) {
+                 return;
+             }
+             const { onFocus } = props;
+@@ -76,7 +76,7 @@
+         };
+         const handleBlur = (e, index) => {
+             // If it's blured to other input element inside the component, returns
+-            if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => inputInst.inputElRef === e.relatedTarget)) {
++            if (inputRefList === null || inputRefList === void 0 ? void 0 : inputRefList.value.some(inputInst => (inputInst === null || inputInst === void 0 ? void 0 : inputInst.inputElRef) === e.relatedTarget)) {
+                 return;
+             }
+             const { onBlur } = props;
