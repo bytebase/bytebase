@@ -1966,7 +1966,6 @@
         "error": "无法归档项目"
       },
       "force-archive-description": "即使项目有数据库也强制存档（数据库将被移动到默认项目）",
-      "delete": {},
       "projects-to-archive": "要归档的项目",
       "resource-warning": {
         "title": "项目与资源",
