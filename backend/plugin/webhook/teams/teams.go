@@ -1,8 +1,8 @@
 // Package teams implements Microsoft Teams webhook and direct message integration.
 //
 // Documentation:
-// - Teams Webhooks (Incoming Webhook): https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook
-// - MessageCard Format: https://learn.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
+// - Power Automate Workflows: https://learn.microsoft.com/en-us/power-automate/overview-cloud
+// - Legacy Office 365 Connectors (deprecated): https://learn.microsoft.com/en-us/outlook/actionable-messages/message-card-reference
 // - Adaptive Cards: https://learn.microsoft.com/en-us/adaptive-cards/
 // - Proactive Messaging: https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/conversations/send-proactive-messages
 // - Graph API App Installation: https://learn.microsoft.com/en-us/microsoftteams/platform/graph-api/proactive-bots-and-messages/graph-proactive-bots-and-messages
@@ -16,6 +16,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -95,7 +97,66 @@ func (*Receiver) Post(context webhook.Context) error {
 			return nil
 		}
 	}
+	if isPowerAutomateURL(context.URL) {
+		return postPowerAutomateMessage(context)
+	}
 	return postMessage(context)
+}
+
+// isPowerAutomateURL returns true if the webhook URL is a Power Automate Workflow URL
+// (*.powerplatform.com or legacy *.logic.azure.com) rather than a legacy Office 365 Connector URL.
+func isPowerAutomateURL(webhookURL string) bool {
+	u, err := url.Parse(webhookURL)
+	if err != nil {
+		return false
+	}
+	hostname := strings.ToLower(u.Hostname())
+	return strings.HasSuffix(hostname, ".powerplatform.com") || strings.HasSuffix(hostname, ".logic.azure.com")
+}
+
+// postPowerAutomateMessage sends a webhook message to a Power Automate Workflow URL
+// using the Adaptive Card format wrapped in a message envelope.
+func postPowerAutomateMessage(context webhook.Context) error {
+	card := getAdaptiveCard(context)
+	msg := activity{
+		Type: "message",
+		Attachments: []attachment{
+			{
+				ContentType: "application/vnd.microsoft.card.adaptive",
+				Content:     card,
+			},
+		},
+	}
+
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", context.URL)
+	}
+	req, err := http.NewRequest("POST", context.URL, bytes.NewBuffer(body))
+	if err != nil {
+		return errors.Wrapf(err, "failed to construct webhook POST request to %s", context.URL)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{
+		Timeout: webhook.Timeout,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrapf(err, "failed to POST webhook to %s", context.URL)
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read POST webhook response from %s", context.URL)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return errors.Errorf("failed to POST webhook %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+	}
+
+	return nil
 }
 
 func postDirectMessage(webhookCtx webhook.Context) bool {

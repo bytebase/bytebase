@@ -21,8 +21,16 @@ var (
 			"discordapp.com",
 		},
 		storepb.WebhookType_TEAMS: {
-			".office.com",    // Matches *.office.com
-			".office365.com", // Matches *.office365.com
+			// Power Automate Workflows (recommended):
+			// https://learn.microsoft.com/en-us/power-automate/how-tos-bulk-update-trigger-urls
+			".powerplatform.com",
+			// Legacy Power Automate URLs (deprecated, retired Nov 2025):
+			// https://devblogs.microsoft.com/microsoft365dev/retirement-of-office-365-connectors-within-microsoft-teams/
+			".logic.azure.com",
+			// Legacy Office 365 Connectors (deprecated, retiring Mar 2026):
+			// https://devblogs.microsoft.com/microsoft365dev/retirement-of-office-365-connectors-within-microsoft-teams/
+			".office.com",
+			".office365.com",
 		},
 		storepb.WebhookType_DINGTALK: {
 			"oapi.dingtalk.com",
