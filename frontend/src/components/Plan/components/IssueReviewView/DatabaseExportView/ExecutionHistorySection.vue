@@ -10,7 +10,23 @@
 
       <!-- Task Runs Table -->
       <div v-if="allTaskRuns.length > 0">
-        <TaskRunTable :task-runs="allTaskRuns" :show-database-column="true" />
+        <TaskRunTable
+          :task-runs="visibleTaskRuns"
+          :show-database-column="true"
+          :virtual-scroll="expanded && allTaskRuns.length > VIRTUAL_SCROLL_THRESHOLD"
+          :max-height="expanded && allTaskRuns.length > VIRTUAL_SCROLL_THRESHOLD ? '80vh' : undefined"
+        />
+        <div v-if="hasMore" class="flex justify-center mt-2">
+          <NButton quaternary size="small" @click="expanded = !expanded">
+            <template v-if="expanded">
+              {{ $t("common.collapse") }}
+            </template>
+            <template v-else>
+              {{ $t("common.show-more") }}
+              ({{ remainingCount }} {{ $t("common.remaining") }})
+            </template>
+          </NButton>
+        </div>
       </div>
 
       <!-- No task runs message -->
@@ -22,11 +38,13 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskUID } from "@/utils";
 import { usePlanContext } from "../../../logic";
+import { useExpandableList, VIRTUAL_SCROLL_THRESHOLD } from ".";
 
 const { plan, rollout, taskRuns } = usePlanContext();
 
@@ -64,4 +82,11 @@ const allTaskRuns = computed((): TaskRun[] => {
     exportTaskUIDs.has(extractTaskUID(taskRun.name))
   );
 });
+
+const {
+  expanded,
+  hasMore,
+  visibleItems: visibleTaskRuns,
+  remainingCount,
+} = useExpandableList(allTaskRuns);
 </script>

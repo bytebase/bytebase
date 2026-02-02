@@ -6,6 +6,8 @@
     :data="sortedTaskRuns"
     :striped="true"
     :bordered="true"
+    :virtual-scroll="virtualScroll"
+    :max-height="maxHeight"
   />
 
   <Drawer v-model:show="taskRunDetailContext.show">
@@ -50,6 +52,8 @@ import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 const props = defineProps<{
   taskRuns: TaskRun[];
   showDatabaseColumn?: boolean; // Whether to show database column
+  virtualScroll?: boolean;
+  maxHeight?: string | number;
 }>();
 
 // Sort task runs by creation time descending (newest first)

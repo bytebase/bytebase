@@ -4,9 +4,12 @@
       <h3 class="text-base font-medium">
         {{ $t("common.task", tasks.length) }}
       </h3>
-      <div class="flex flex-wrap gap-2">
+      <div
+        class="flex flex-wrap gap-2"
+        :class="expanded && hasMore ? 'max-h-96 overflow-y-auto' : ''"
+      >
         <div
-          v-for="task in tasks"
+          v-for="task in visibleTasks"
           :key="task.name"
           class="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm min-w-0"
         >
@@ -25,6 +28,19 @@
             @action-confirmed="handleActionConfirmed"
           />
         </div>
+        <button
+          v-if="hasMore"
+          class="text-sm px-2 text-accent cursor-pointer"
+          @click="expanded = !expanded"
+        >
+          <template v-if="expanded">
+            {{ $t("common.collapse") }}
+          </template>
+          <template v-else>
+            {{ $t("common.show-more") }}
+            ({{ remainingCount }} {{ $t("common.remaining") }})
+          </template>
+        </button>
       </div>
     </template>
     <div v-else class="text-center text-control-light py-8">
@@ -41,6 +57,7 @@ import TaskStatusActions from "@/components/RolloutV1/components/TaskStatusActio
 import { taskRunNamePrefix, useDatabaseV1Store } from "@/store";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
+import { useExpandableList } from ".";
 
 const { plan, rollout, taskRuns, events } = usePlanContextWithRollout();
 const dbStore = useDatabaseV1Store();
@@ -55,6 +72,13 @@ const tasks = computed(() => {
     .flatMap((stage) => stage.tasks)
     .filter((task) => task.specId === exportDataSpec.id);
 });
+
+const {
+  expanded,
+  hasMore,
+  visibleItems: visibleTasks,
+  remainingCount,
+} = useExpandableList(tasks);
 
 // Get task runs for a specific task
 const getTaskRunsForTask = (task: Task) => {
