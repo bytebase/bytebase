@@ -948,8 +948,7 @@
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "reopened-issue": "incidencia reabierta",
       "resolved-issue": "completó la incidencia",
-      "canceled-issue": "cerró la incidencia",
-      "xxx-automatically": "{verb} automáticamente"
+      "canceled-issue": "cerró la incidencia"
     }
   },
   "issue": {
@@ -1867,11 +1866,11 @@
           "description": "Controle el número de tareas paralelas por despliegue. \nEstablecer esto en cero deshabilita cualquier estrangulamiento."
         },
         "require-issue-approval": {
-          "self": "Requiere aprobación de issue antes del despliegue",
+          "self": "Requiere aprobación de issue antes de crear el despliegue",
           "description": "El issue debe ser aprobado antes de crear un despliegue."
         },
         "require-plan-check-no-error": {
-          "self": "Requiere que las verificaciones del plan pasen antes del despliegue",
+          "self": "Requiere que las verificaciones del plan pasen antes de crear el despliegue",
           "description": "Todas las verificaciones del plan deben pasar sin errores antes de crear un despliegue."
         },
         "allow-request-role": {

@@ -32,7 +32,7 @@ require (
 	github.com/beltran/gohive/v2 v2.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.9.2
-	github.com/bytebase/gomongo v0.0.0-20260127074220-ca70aee87419
+	github.com/bytebase/gomongo v0.0.0-20260130091827-042518342705
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
@@ -91,7 +91,7 @@ require (
 	github.com/xuri/excelize/v2 v2.10.0
 	github.com/yterajima/go-sitemap v0.4.0
 	github.com/zeebo/xxh3 v1.0.2
-	go.mongodb.org/mongo-driver/v2 v2.4.2
+	go.mongodb.org/mongo-driver/v2 v2.5.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/oauth2 v0.34.0
@@ -300,7 +300,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20260127085040-91a7b9de8cfb
+	github.com/bytebase/parser v0.0.0-20260130090605-effef73942d9
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3

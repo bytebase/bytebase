@@ -336,12 +336,12 @@ func TestGetQueryType(t *testing.T) {
 			want:        base.DML,
 		},
 
-		// Parse error with partial AST: parser cannot recover "find" from the
-		// incomplete input, so it falls back to the default DML.
+		// Parse error with partial AST: parser recovers enough to identify "find"
+		// from the incomplete input.
 		{
 			description: "incomplete find statement",
 			statement:   `db.users.find({`,
-			want:        base.DML,
+			want:        base.Select,
 		},
 
 		// Completely unparseable.

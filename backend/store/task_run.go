@@ -118,11 +118,12 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 	for rows.Next() {
 		var taskRun TaskRunMessage
 		var startedAt, runAt sql.NullTime
+		var creatorEmail sql.NullString
 		var statusString string
 		var resultJSON, payloadJSON string
 		if err := rows.Scan(
 			&taskRun.ID,
-			&taskRun.CreatorEmail,
+			&creatorEmail,
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
@@ -136,6 +137,9 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			&taskRun.ProjectID,
 		); err != nil {
 			return nil, err
+		}
+		if creatorEmail.Valid {
+			taskRun.CreatorEmail = creatorEmail.String
 		}
 		if statusValue, ok := storepb.TaskRun_Status_value[statusString]; ok {
 			taskRun.Status = storepb.TaskRun_Status(statusValue)
@@ -303,6 +307,14 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		runAts = append(runAts, create.RunAt)
 	}
 
+	// Convert empty string to NULL for system-created task runs
+	var creatorPtr any
+	if creator == "" {
+		creatorPtr = nil
+	} else {
+		creatorPtr = creator
+	}
+
 	// Single query that:
 	// 1. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
 	// 2. Calculates next attempt for each remaining task
@@ -333,7 +345,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			AND task_run.status IN (?, ?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
-	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, runAts,
+	`, creatorPtr, storepb.TaskRun_PENDING.String(), taskUIDs, runAts,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()
@@ -376,11 +388,12 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	}
 
 	var taskRun TaskRunMessage
+	var creatorEmail sql.NullString
 	var statusString string
 	var resultJSON string
 	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&taskRun.ID,
-		&taskRun.CreatorEmail,
+		&creatorEmail,
 		&taskRun.CreatedAt,
 		&taskRun.UpdatedAt,
 		&taskRun.TaskUID,
@@ -391,6 +404,9 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
 		}
 		return nil, err
+	}
+	if creatorEmail.Valid {
+		taskRun.CreatorEmail = creatorEmail.String
 	}
 	if statusValue, ok := storepb.TaskRun_Status_value[statusString]; ok {
 		taskRun.Status = storepb.TaskRun_Status(statusValue)

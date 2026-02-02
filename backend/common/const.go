@@ -2,12 +2,6 @@
 package common
 
 const (
-	// SystemBotID is the ID of the system robot.
-	SystemBotID = 1
-
-	// SystemBotEmail is the email of the system robot.
-	SystemBotEmail = "support@bytebase.com"
-
 	// AllUsers is the email of the pseudo allUsers account.
 	AllUsers = "allUsers"
 

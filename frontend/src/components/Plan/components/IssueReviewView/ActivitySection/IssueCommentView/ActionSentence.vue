@@ -7,12 +7,7 @@ import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
 import { usePlanContext } from "@/components/Plan/logic";
 import { SpecLink } from "@/components/v2";
-import {
-  extractUserId,
-  getIssueCommentType,
-  IssueCommentType,
-  useUserStore,
-} from "@/store";
+import { getIssueCommentType, IssueCommentType } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueComment_Approval_Status,
@@ -30,20 +25,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const userStore = useUserStore();
 const { plan } = usePlanContext();
-
-const maybeAutomaticallyVerb = (
-  issueComment: IssueComment,
-  verb: string
-): string => {
-  if (extractUserId(issueComment.creator) !== userStore.systemBotUser?.email) {
-    return verb;
-  }
-  return t("activity.sentence.xxx-automatically", {
-    verb,
-  });
-};
 
 const renderActionSentence = () => {
   const { issueComment } = props;
@@ -62,7 +44,7 @@ const renderActionSentence = () => {
       verb = t("custom-approval.issue-review.re-requested-review");
     }
     if (verb) {
-      return maybeAutomaticallyVerb(issueComment, verb);
+      return verb;
     }
   } else if (
     commentType === IssueCommentType.ISSUE_UPDATE &&

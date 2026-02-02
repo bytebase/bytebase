@@ -948,8 +948,7 @@
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "reopened-issue": "đã mở lại vấn đề",
       "resolved-issue": "đã hoàn tất vấn đề",
-      "canceled-issue": "đã đóng vấn đề",
-      "xxx-automatically": "{verb} tự động"
+      "canceled-issue": "đã đóng vấn đề"
     }
   },
   "issue": {
@@ -1867,11 +1866,11 @@
           "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
         },
         "require-issue-approval": {
-          "self": "Yêu cầu phê duyệt issue trước khi triển khai",
+          "self": "Yêu cầu phê duyệt issue trước khi tạo triển khai",
           "description": "Issue phải được phê duyệt trước khi tạo triển khai."
         },
         "require-plan-check-no-error": {
-          "self": "Yêu cầu kiểm tra kế hoạch phải đạt trước khi triển khai",
+          "self": "Yêu cầu kiểm tra kế hoạch phải đạt trước khi tạo triển khai",
           "description": "Tất cả kiểm tra kế hoạch phải đạt không có lỗi trước khi tạo triển khai."
         },
         "allow-request-role": {

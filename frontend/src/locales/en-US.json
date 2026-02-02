@@ -948,8 +948,7 @@
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "reopened-issue": "reopened issue",
       "resolved-issue": "completed the issue",
-      "canceled-issue": "closed the issue",
-      "xxx-automatically": "{verb} automatically"
+      "canceled-issue": "closed the issue"
     }
   },
   "issue": {
@@ -1869,11 +1868,11 @@
           "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
         },
         "require-issue-approval": {
-          "self": "Require issue approval before rollout",
+          "self": "Require issue approval before creating rollout",
           "description": "Issue must be approved before creating rollout."
         },
         "require-plan-check-no-error": {
-          "self": "Require plan checks to pass before rollout",
+          "self": "Require plan checks to pass before creating rollout",
           "description": "All plan checks must pass without errors before creating rollout."
         },
         "allow-request-role": {

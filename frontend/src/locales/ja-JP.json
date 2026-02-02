@@ -948,8 +948,7 @@
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "reopened-issue": "イシューを再開する",
       "resolved-issue": "イシューを完了する",
-      "canceled-issue": "イシューを閉じた",
-      "xxx-automatically": "自動{verb}"
+      "canceled-issue": "イシューを閉じた"
     }
   },
   "issue": {
@@ -1867,11 +1866,11 @@
           "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
         },
         "require-issue-approval": {
-          "self": "ロールアウト前にイシュー承認が必要",
+          "self": "ロールアウト作成前にイシュー承認が必要",
           "description": "ロールアウトを作成する前にイシューの承認が必要です。"
         },
         "require-plan-check-no-error": {
-          "self": "ロールアウト前にプランチェック合格が必要",
+          "self": "ロールアウト作成前にプランチェック合格が必要",
           "description": "ロールアウトを作成する前にすべてのプランチェックがエラーなしで合格する必要があります。"
         },
         "allow-request-role": {

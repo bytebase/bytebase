@@ -11,15 +11,7 @@
       <div class="px-3 py-2" :class="$slots.comment ? 'bg-gray-50' : ''">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-x-2 text-sm min-w-0 flex-wrap">
-            <ActionCreator
-              v-if="
-                extractUserId(issueComment.creator) !==
-                  userStore.systemBotUser?.email ||
-                getIssueCommentType(issueComment) ===
-                  IssueCommentType.USER_COMMENT
-              "
-              :creator="issueComment.creator"
-            />
+            <ActionCreator :creator="issueComment.creator" />
 
             <ActionSentence
               :issue-comment="issueComment"
@@ -61,12 +53,7 @@
 
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import {
-  extractUserId,
-  getIssueCommentType,
-  IssueCommentType,
-  useUserStore,
-} from "@/store";
+import { getIssueCommentType, IssueCommentType } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import ActionCreator from "./ActionCreator.vue";
@@ -75,6 +62,4 @@ import ActionSentence from "./ActionSentence.vue";
 defineProps<{
   issueComment: IssueComment;
 }>();
-
-const userStore = useUserStore();
 </script>

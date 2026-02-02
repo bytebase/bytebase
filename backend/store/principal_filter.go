@@ -33,7 +33,6 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 		return &GetListUserFilterResult{
 			UserTypes: []storepb.PrincipalType{
 				storepb.PrincipalType_END_USER,
-				storepb.PrincipalType_SYSTEM_BOT,
 			},
 		}, nil
 	}
@@ -55,8 +54,10 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 		switch v1UserType {
 		case v1pb.UserType_USER:
 			return storepb.PrincipalType_END_USER, nil
-		case v1pb.UserType_SYSTEM_BOT:
-			return storepb.PrincipalType_SYSTEM_BOT, nil
+		case v1pb.UserType_SERVICE_ACCOUNT:
+			return storepb.PrincipalType_SERVICE_ACCOUNT, nil
+		case v1pb.UserType_WORKLOAD_IDENTITY:
+			return storepb.PrincipalType_WORKLOAD_IDENTITY, nil
 		default:
 			return storepb.PrincipalType_END_USER, errors.Errorf("invalid user type %s", v1UserType)
 		}
@@ -196,11 +197,10 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 	}
 
 	if len(userTypes) == 0 {
-		// Force to query end users and system bot.
+		// Force to query end users only.
 		userTypes = append(
 			userTypes,
 			storepb.PrincipalType_END_USER,
-			storepb.PrincipalType_SYSTEM_BOT,
 		)
 	}
 

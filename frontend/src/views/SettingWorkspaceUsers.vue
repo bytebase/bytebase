@@ -396,7 +396,7 @@ const fetchUserList = async ({
     pageSize,
     filter: {
       query: state.activeUserFilterText,
-      types: [UserType.USER, UserType.SYSTEM_BOT],
+      types: [UserType.USER],
     },
   });
   return { list: users, nextPageToken };
@@ -415,7 +415,7 @@ const fetchInactiveUserList = async ({
     filter: {
       query: state.inactiveUserFilterText,
       state: State.DELETED,
-      types: [UserType.USER, UserType.SYSTEM_BOT],
+      types: [UserType.USER],
     },
   });
   return { list: users, nextPageToken };
@@ -446,7 +446,7 @@ onMounted(async () => {
 const activeUserCount = computed(() => {
   return actuatorStore.countUser({
     state: State.ACTIVE,
-    userTypes: [UserType.SYSTEM_BOT, UserType.USER],
+    userTypes: [UserType.USER],
   });
 });
 

@@ -15,8 +15,7 @@ import {
   useRoleStore,
   useUserStore,
 } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
-import { groupBindingPrefix, PresetRoleType, SYSTEM_BOT_EMAIL } from "@/types";
+import { groupBindingPrefix, PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   Issue,
@@ -175,12 +174,7 @@ export function useApprovalStep(
       const memberMap = memberMapToRolesInProjectIAM(policy, role);
       candidates.push(...memberMap.keys());
     }
-    return uniq(
-      candidates.filter((user) => {
-        if (user === `${userNamePrefix}${SYSTEM_BOT_EMAIL}`) return false;
-        return true;
-      })
-    );
+    return uniq(candidates);
   });
 
   const isCurrentUserInCandidates = computed(() => {

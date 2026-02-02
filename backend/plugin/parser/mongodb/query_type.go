@@ -105,11 +105,6 @@ func (l *queryTypeListener) EnterGetMongo(_ *mongodb.GetMongoContext) {
 	l.result = base.DML
 }
 
-//nolint:staticcheck // Method name must match ANTLR-generated listener interface.
-func (l *queryTypeListener) EnterDbGenericMethod(_ *mongodb.DbGenericMethodContext) {
-	l.result = base.DML
-}
-
 // runCommand / adminCommand: classify by argument text.
 
 func (l *queryTypeListener) EnterRunCommand(ctx *mongodb.RunCommandContext) {
@@ -166,31 +161,35 @@ func (l *queryTypeListener) EnterCollectionOperation(ctx *mongodb.CollectionOper
 }
 
 func classifyMethodChain(chain mongodb.IMethodChainContext) base.QueryType {
-	calls := chain.AllMethodCall()
-	if len(calls) == 0 {
-		return base.DML
+	// Check if .explain() prefix exists (db.collection.explain().find())
+	if chain.CollectionExplainMethod() != nil {
+		return base.Explain
 	}
 
-	// Check if .explain() appears anywhere in the chain.
-	for _, call := range calls {
-		if call.ExplainMethod() != nil {
+	// Check cursor methods for explain().
+	for _, cursor := range chain.AllCursorMethodCall() {
+		if cursor.ExplainMethod() != nil {
 			return base.Explain
 		}
 	}
 
-	// Classify based on the first method call.
-	first := calls[0]
-	return classifyMethodCall(first)
+	// Classify based on the collection method call.
+	mc := chain.CollectionMethodCall()
+	if mc != nil {
+		return classifyCollectionMethodCall(mc)
+	}
+
+	return base.DML
 }
 
-func classifyMethodCall(mc mongodb.IMethodCallContext) base.QueryType {
+func classifyCollectionMethodCall(mc mongodb.ICollectionMethodCallContext) base.QueryType {
 	switch {
 	// Read methods -> Select.
 	case mc.FindMethod() != nil,
 		mc.FindOneMethod() != nil,
 		mc.CountDocumentsMethod() != nil,
 		mc.EstimatedDocumentCountMethod() != nil,
-		mc.CountMethod() != nil,
+		mc.CollectionCountMethod() != nil,
 		mc.DistinctMethod() != nil:
 		return base.Select
 
@@ -208,7 +207,13 @@ func classifyMethodCall(mc mongodb.IMethodCallContext) base.QueryType {
 		mc.ReplaceOneMethod() != nil,
 		mc.FindOneAndUpdateMethod() != nil,
 		mc.FindOneAndReplaceMethod() != nil,
-		mc.FindOneAndDeleteMethod() != nil:
+		mc.FindOneAndDeleteMethod() != nil,
+		mc.CollectionInsertMethod() != nil,
+		mc.CollectionRemoveMethod() != nil,
+		mc.UpdateMethod() != nil,
+		mc.BulkWriteMethod() != nil,
+		mc.FindAndModifyMethod() != nil,
+		mc.MapReduceMethod() != nil:
 		return base.DML
 
 	// DDL methods.
@@ -217,7 +222,14 @@ func classifyMethodCall(mc mongodb.IMethodCallContext) base.QueryType {
 		mc.DropIndexMethod() != nil,
 		mc.DropIndexesMethod() != nil,
 		mc.DropMethod() != nil,
-		mc.RenameCollectionMethod() != nil:
+		mc.RenameCollectionMethod() != nil,
+		mc.HideIndexMethod() != nil,
+		mc.UnhideIndexMethod() != nil,
+		mc.ReIndexMethod() != nil,
+		mc.CreateSearchIndexMethod() != nil,
+		mc.CreateSearchIndexesMethod() != nil,
+		mc.DropSearchIndexMethod() != nil,
+		mc.UpdateSearchIndexMethod() != nil:
 		return base.DDL
 
 	// Info methods -> SelectInfoSchema.
@@ -229,16 +241,15 @@ func classifyMethodCall(mc mongodb.IMethodCallContext) base.QueryType {
 		mc.DataSizeMethod() != nil,
 		mc.IsCappedMethod() != nil,
 		mc.ValidateMethod() != nil,
-		mc.LatencyStatsMethod() != nil:
+		mc.LatencyStatsMethod() != nil,
+		mc.GetShardDistributionMethod() != nil,
+		mc.GetShardVersionMethod() != nil,
+		mc.AnalyzeShardKeyMethod() != nil:
 		return base.SelectInfoSchema
 
 	// Explain.
-	case mc.ExplainMethod() != nil:
+	case mc.CollectionExplainMethod() != nil:
 		return base.Explain
-
-	// Generic/unknown method -> DML.
-	case mc.GenericMethod() != nil:
-		return base.DML
 
 	default:
 		return base.DML

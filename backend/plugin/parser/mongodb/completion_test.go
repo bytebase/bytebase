@@ -40,12 +40,12 @@ func TestCompletion(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, tc := range tests {
-		text, caretOffset := catchCaret(tc.Input)
+		text, caretLine, caretOffset := catchCaret(tc.Input)
 		result, err := base.Completion(context.Background(), storepb.Engine_MONGODB, base.CompletionContext{
 			Scene:           base.SceneTypeAll,
 			DefaultDatabase: "test",
 			Metadata:        getMetadataForTest,
-		}, text, 1, caretOffset)
+		}, text, caretLine, caretOffset)
 		a.NoError(err)
 
 		// Sort results for consistent comparison
@@ -100,11 +100,23 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 	}, nil, nil, storepb.Engine_MONGODB, true /* isObjectCaseSensitive */), nil
 }
 
-func catchCaret(s string) (string, int) {
+// catchCaret finds the | marker in the input and returns:
+// - the text with the marker removed
+// - the 1-based line number where the marker was
+// - the 0-based column offset on that line
+func catchCaret(s string) (string, int, int) {
+	line := 1
+	col := 0
 	for i, c := range s {
 		if c == '|' {
-			return s[:i] + s[i+1:], i
+			return s[:i] + s[i+1:], line, col
+		}
+		if c == '\n' {
+			line++
+			col = 0
+		} else {
+			col++
 		}
 	}
-	return s, -1
+	return s, -1, -1
 }

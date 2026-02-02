@@ -33,7 +33,7 @@ CREATE TABLE principal (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
-    type text NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY')),
+    type text NOT NULL CHECK (type IN ('END_USER', 'SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY')),
     name text NOT NULL,
     email text NOT NULL,
     password_hash text NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE principal (
     -- NULL for END_USER/SYSTEM_BOT, and for workspace-level SERVICE_ACCOUNT/WORKLOAD_IDENTITY.
     project text REFERENCES project(resource_id),
     CONSTRAINT principal_project_type_check CHECK (
-        (type IN ('END_USER', 'SYSTEM_BOT') AND project IS NULL) OR
+        (type = 'END_USER' AND project IS NULL) OR
         (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
     )
 );
@@ -263,7 +263,7 @@ ALTER SEQUENCE task_id_seq RESTART WITH 101;
 -- task run table stores the task run
 CREATE TABLE task_run (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     task_id integer NOT NULL REFERENCES task(id),
@@ -588,9 +588,6 @@ CREATE TABLE web_refresh_token (
 
 CREATE INDEX idx_web_refresh_token_user_email ON web_refresh_token(user_email);
 CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
-
--- Default bytebase system account id is 1.
-INSERT INTO principal (id, type, name, email, password_hash) VALUES (1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
 
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 

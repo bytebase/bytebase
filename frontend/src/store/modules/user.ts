@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { computedAsync } from "@vueuse/core";
 import { isEqual, isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
@@ -10,7 +9,6 @@ import {
   allUsersUser,
   isValidProjectName,
   isValidUserName,
-  SYSTEM_BOT_USER_NAME,
   unknownUser,
   userBindingPrefix,
 } from "@/types";
@@ -289,13 +287,8 @@ export const useUserStore = defineStore("user", () => {
     return userMapByName.value.get(`${userNamePrefix}${id}`);
   };
 
-  const systemBotUser = computedAsync(() => {
-    return getOrFetchUserByIdentifier(SYSTEM_BOT_USER_NAME);
-  });
-
   return {
     allUser,
-    systemBotUser,
     fetchCurrentUser,
     fetchUserList,
     createUser,

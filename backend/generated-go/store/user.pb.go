@@ -29,12 +29,10 @@ const (
 	PrincipalType_PRINCIPAL_TYPE_UNSPECIFIED PrincipalType = 0
 	// END_USER represents the human being using Bytebase.
 	PrincipalType_END_USER PrincipalType = 1
-	// SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI.
-	PrincipalType_SERVICE_ACCOUNT PrincipalType = 2
-	// SYSTEM_BOT represents the internal system bot performing operations.
-	PrincipalType_SYSTEM_BOT PrincipalType = 3
 	// WORKLOAD_IDENTITY represents external CI/CD workload identity.
-	PrincipalType_WORKLOAD_IDENTITY PrincipalType = 4
+	PrincipalType_WORKLOAD_IDENTITY PrincipalType = 2
+	// SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI.
+	PrincipalType_SERVICE_ACCOUNT PrincipalType = 3
 )
 
 // Enum value maps for PrincipalType.
@@ -42,16 +40,14 @@ var (
 	PrincipalType_name = map[int32]string{
 		0: "PRINCIPAL_TYPE_UNSPECIFIED",
 		1: "END_USER",
-		2: "SERVICE_ACCOUNT",
-		3: "SYSTEM_BOT",
-		4: "WORKLOAD_IDENTITY",
+		2: "WORKLOAD_IDENTITY",
+		3: "SERVICE_ACCOUNT",
 	}
 	PrincipalType_value = map[string]int32{
 		"PRINCIPAL_TYPE_UNSPECIFIED": 0,
 		"END_USER":                   1,
-		"SERVICE_ACCOUNT":            2,
-		"SYSTEM_BOT":                 3,
-		"WORKLOAD_IDENTITY":          4,
+		"WORKLOAD_IDENTITY":          2,
+		"SERVICE_ACCOUNT":            3,
 	}
 )
 
@@ -385,14 +381,12 @@ const file_store_user_proto_rawDesc = "" +
 	"\n" +
 	"\x06GITHUB\x10\x01\x12\n" +
 	"\n" +
-	"\x06GITLAB\x10\x02*y\n" +
+	"\x06GITLAB\x10\x02*i\n" +
 	"\rPrincipalType\x12\x1e\n" +
 	"\x1aPRINCIPAL_TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
-	"\bEND_USER\x10\x01\x12\x13\n" +
-	"\x0fSERVICE_ACCOUNT\x10\x02\x12\x0e\n" +
-	"\n" +
-	"SYSTEM_BOT\x10\x03\x12\x15\n" +
-	"\x11WORKLOAD_IDENTITY\x10\x04B\x8c\x01\n" +
+	"\bEND_USER\x10\x01\x12\x15\n" +
+	"\x11WORKLOAD_IDENTITY\x10\x02\x12\x13\n" +
+	"\x0fSERVICE_ACCOUNT\x10\x03B\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tUserProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
