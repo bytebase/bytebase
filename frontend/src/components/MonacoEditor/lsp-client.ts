@@ -8,6 +8,7 @@ import {
   WebSocketMessageWriter,
 } from "vscode-ws-jsonrpc";
 import { shallowReactive, toRef } from "vue";
+import { refreshTokens } from "@/connect/refreshToken";
 import { sleep } from "@/utils";
 import {
   createUrl,
@@ -177,6 +178,11 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
           console.debug("[MonacoLanguageClient] closed");
           conn.ws = undefined;
           try {
+            // The WebSocket relies on the access-token cookie which
+            // may have expired. Refresh first so the reconnection
+            // uses a valid cookie. refreshTokens() deduplicates
+            // concurrent calls via Web Lock API.
+            await refreshTokens();
             await connectWebSocket();
             return {
               action: CloseAction.Restart,
