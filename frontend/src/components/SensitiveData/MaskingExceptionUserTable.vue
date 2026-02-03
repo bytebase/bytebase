@@ -15,30 +15,25 @@
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
-import { InfoIcon, TrashIcon } from "lucide-vue-next";
+import { TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable, NDatePicker, NTooltip, useDialog } from "naive-ui";
+import { NDataTable, NDatePicker, NEllipsis, useDialog } from "naive-ui";
 import type { VNodeChild } from "vue";
 import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import {
-  DatabaseV1Name,
-  InstanceV1Name,
-  MiniActionButton,
-} from "@/components/v2";
+import { MiniActionButton } from "@/components/v2";
 import { UserLink } from "@/components/v2/Model/cells";
 import {
   composePolicyBindings,
   extractUserId,
   pushNotification,
-  useDatabaseV1Store,
   useGroupStore,
   usePolicyByParentAndType,
   usePolicyV1Store,
 } from "@/store";
-import { groupBindingPrefix, isValidDatabaseName } from "@/types";
+import { groupBindingPrefix } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
@@ -46,7 +41,7 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { autoDatabaseRoute, getInstanceResource } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import {
   batchConvertFromCELString,
   type ConditionExpression,
@@ -75,9 +70,12 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const router = useRouter();
 const groupStore = useGroupStore();
-const databaseStore = useDatabaseV1Store();
 const policyStore = usePolicyV1Store();
 const $dialog = useDialog();
+
+const hasGetDatabasePermission = computed(() =>
+  hasProjectPermissionV2(props.project, "bb.databases.get")
+);
 
 const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
@@ -90,69 +88,41 @@ const filteredList = computed(() =>
   state.rawAccessList.filter(props.filterAccessUser)
 );
 
-const isValidDatabaseResource = (access: AccessUser): boolean => {
-  if (!access.databaseResource) {
-    return false;
-  }
-  const database = databaseStore.getDatabaseByName(
-    access.databaseResource.databaseFullName
-  );
-  return isValidDatabaseName(database.name);
-};
-
 const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
   if (!access.databaseResource) {
     return <div class="textinfo">{t("database.all")}</div>;
   }
-  const database = databaseStore.getDatabaseByName(
-    access.databaseResource.databaseFullName
-  );
-  const validDatabase = isValidDatabaseResource(access);
 
   return (
     <div class="flex flex-col gap-y-1">
-      {validDatabase && (
-        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-          <span class="font-medium">{`${t("common.instance")}:`}</span>
-          <InstanceV1Name instance={getInstanceResource(database)} />
-        </div>
-      )}
       <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
         <span class="font-medium">{`${t("common.database")}:`}</span>
-        {validDatabase ? (
-          <div
-            class="normal-link hover:underline cursor-pointer"
-            onClick={() => {
-              const query: Record<string, string> = {};
-              if (access.databaseResource?.schema) {
-                query.schema = access.databaseResource.schema;
-              }
-              if (access.databaseResource?.table) {
-                query.table = access.databaseResource.table;
-              }
-              router.push({
-                ...autoDatabaseRoute(database),
-                query,
-              });
-            }}
-          >
-            <DatabaseV1Name database={database} link={false} />
-          </div>
-        ) : (
-          <div class="flex items-center gap-x-1">
-            <span class="line-through">
+        <NEllipsis>
+          {hasGetDatabasePermission.value ? (
+            <div
+              class="normal-link hover:underline cursor-pointer"
+              onClick={() => {
+                const query: Record<string, string> = {};
+                if (access.databaseResource?.schema) {
+                  query.schema = access.databaseResource.schema;
+                }
+                if (access.databaseResource?.table) {
+                  query.table = access.databaseResource.table;
+                }
+                router.push({
+                  path: access.databaseResource?.databaseFullName,
+                  query,
+                });
+              }}
+            >
               {access.databaseResource.databaseFullName}
-            </span>
-            {!isValidDatabaseResource(access) && (
-              <NTooltip>
-                {{
-                  trigger: () => <InfoIcon class="w-4 text-red-600" />,
-                  default: () => t("database.not-found"),
-                }}
-              </NTooltip>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div class="flex items-center gap-x-1">
+              {access.databaseResource.databaseFullName}
+            </div>
+          )}
+        </NEllipsis>
       </div>
       {access.databaseResource.schema && (
         <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
