@@ -1789,8 +1789,7 @@
       "invalid-version-format": "Phiên bản phải là các phần số được phân tách bằng dấu chấm (ví dụ: 1.0.0)",
       "version-already-exists": "Phiên bản này đã tồn tại trong cơ sở dữ liệu",
       "delete-confirm-dialog": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác."
-    },
-    "not-found": "Không tìm thấy cơ sở dữ liệu"
+    }
   },
   "project": {
     "filter-projects": "Lọc dự án",

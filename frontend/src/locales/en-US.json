@@ -1789,8 +1789,7 @@
       "invalid-version-format": "Version must be numeric parts separated by dots (e.g., 1.0.0)",
       "version-already-exists": "This version already exists in the database",
       "delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
-    },
-    "not-found": "Cannot found the database"
+    }
   },
   "project": {
     "filter-projects": "Filter projects",

@@ -1789,8 +1789,7 @@
       "invalid-version-format": "La versión debe tener partes numéricas separadas por puntos (por ejemplo, 1.0.0)",
       "version-already-exists": "Esta versión ya existe en la base de datos",
       "delete-confirm-dialog": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
-    },
-    "not-found": "No se puede encontrar la base de datos"
+    }
   },
   "project": {
     "filter-projects": "Filtrar proyectos",
