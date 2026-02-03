@@ -18,7 +18,7 @@
       <ErrorList v-if="errors.length > 0" :errors="errors" class="mt-2" />
       <LearnMoreLink
         v-if="databasesNotMeetingRequirements.length > 0"
-        :url="'https://docs.bytebase.com/change-database/rollback-data-changes?source=console'"
+        :url="'https://docs.bytebase.com/change-database/online-schema-migration-for-mysql?source=console'"
         color="light"
         class="mt-1 text-sm"
       />
