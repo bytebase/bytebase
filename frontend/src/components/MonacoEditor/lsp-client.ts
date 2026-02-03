@@ -179,29 +179,20 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
           console.debug("[MonacoLanguageClient] closed");
           conn.ws = undefined;
           try {
+            // The WebSocket relies on the access-token cookie which
+            // may have expired. Refresh first so the reconnection
+            // uses a valid cookie. refreshTokens() deduplicates
+            // concurrent calls via Web Lock API.
+            await refreshTokens();
             await connectWebSocket();
             return {
               action: CloseAction.Restart,
             };
-          } catch {
-            // All retries failed. The access-token cookie may have
-            // expired (HttpOnly, so we can't check directly).
-            // Refresh the token and try one more round.
-            conn.ws = undefined;
-            conn.state = "reconnecting";
-            conn.retries = 0;
-            try {
-              await refreshTokens();
-              await connectWebSocket();
-              return {
-                action: CloseAction.Restart,
-              };
-            } catch (err) {
-              errorNotification(err);
-              return {
-                action: CloseAction.DoNotRestart,
-              };
-            }
+          } catch (err) {
+            errorNotification(err);
+            return {
+              action: CloseAction.DoNotRestart,
+            };
           }
         },
       },
