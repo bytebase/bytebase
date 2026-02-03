@@ -1,5 +1,5 @@
 import type { InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
+import { computed, inject, provide } from "vue";
 import { useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
@@ -11,7 +11,6 @@ import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 
 export type DatabaseDetailContext = {
   database: Ref<Database>;
-  pagedRevisionTableSessionKey: Ref<string>;
   allowAlterSchema: Ref<boolean>;
   isDefaultProject: Ref<boolean>;
 };
@@ -35,10 +34,6 @@ export const provideDatabaseDetailContext = (
     )
   );
 
-  const pagedRevisionTableSessionKey = ref(
-    `bb.paged-revision-table.${Date.now()}`
-  );
-
   const isDefaultProject = computed(
     () => database.value.project === DEFAULT_PROJECT_NAME
   );
@@ -49,7 +44,6 @@ export const provideDatabaseDetailContext = (
 
   const context: DatabaseDetailContext = {
     database,
-    pagedRevisionTableSessionKey,
     allowAlterSchema,
     isDefaultProject,
   };

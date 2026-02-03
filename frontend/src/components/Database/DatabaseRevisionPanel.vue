@@ -7,8 +7,8 @@
       </NButton>
     </div>
     <PagedTable
-      :key="pagedRevisionTableSessionKey"
-      :session-key="pagedRevisionTableSessionKey"
+      ref="revisionPagedTable"
+      :session-key="`bb.paged-revision-table.${database.name}`"
       :fetch-list="fetchRevisionList"
     >
       <template #table="{ list, loading }">
@@ -35,19 +35,20 @@
 import { create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
 import { ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { RevisionDataTable } from "@/components/Revision";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { revisionServiceClientConnect } from "@/connect";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
-import { useDatabaseDetailContext } from "./context";
 
 const props = defineProps<{
   database: Database;
 }>();
 
-const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();
+const revisionPagedTable = ref<ComponentExposed<typeof PagedTable<Revision>>>();
 const showCreateRevisionDrawer = ref(false);
 
 const fetchRevisionList = async ({
@@ -72,10 +73,10 @@ const fetchRevisionList = async ({
 
 const handleRevisionCreated = () => {
   showCreateRevisionDrawer.value = false;
-  refreshList();
+  revisionPagedTable.value?.refresh();
 };
 
 const refreshList = () => {
-  pagedRevisionTableSessionKey.value = `bb.paged-revision-table.${Date.now()}`;
+  revisionPagedTable.value?.refresh();
 };
 </script>
