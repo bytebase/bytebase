@@ -8,6 +8,7 @@ import {
   WebSocketMessageWriter,
 } from "vscode-ws-jsonrpc";
 import { shallowReactive, toRef } from "vue";
+import { refreshTokens } from "@/connect/refreshToken";
 import { sleep } from "@/utils";
 import {
   createUrl,
@@ -182,11 +183,25 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
             return {
               action: CloseAction.Restart,
             };
-          } catch (err) {
-            errorNotification(err);
-            return {
-              action: CloseAction.DoNotRestart,
-            };
+          } catch {
+            // All retries failed. The access-token cookie may have
+            // expired (HttpOnly, so we can't check directly).
+            // Refresh the token and try one more round.
+            conn.ws = undefined;
+            conn.state = "reconnecting";
+            conn.retries = 0;
+            try {
+              await refreshTokens();
+              await connectWebSocket();
+              return {
+                action: CloseAction.Restart,
+              };
+            } catch (err) {
+              errorNotification(err);
+              return {
+                action: CloseAction.DoNotRestart,
+              };
+            }
           }
         },
       },
