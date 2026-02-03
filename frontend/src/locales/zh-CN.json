@@ -1739,8 +1739,7 @@
       "invalid-version-format": "版本必须是用点分隔的数字部分（例如，1.0.0）",
       "version-already-exists": "此版本已存在于数据库中",
       "delete-confirm-dialog": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
-    },
-    "not-found": "找不到数据库"
+    }
   },
   "project": {
     "filter-projects": "过滤项目",
