@@ -19,7 +19,7 @@ func GetBuiltinRules(engine storepb.Engine) []*storepb.SQLReviewRule {
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
 		rules = append(rules, &storepb.SQLReviewRule{
 			Type:   storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK,
-			Level:  storepb.SQLReviewRule_ERROR,
+			Level:  storepb.SQLReviewRule_WARNING,
 			Engine: engine,
 		})
 	default:
