@@ -49,7 +49,8 @@ func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine st
 		if err := tx.QueryRowContext(ctx, query).Scan(&owner); err != nil {
 			return nil, err
 		}
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s';", owner)); err != nil {
+		// Use SET SESSION ROLE to match the execution logic in backend/plugin/db/pg/pg.go
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s';", owner)); err != nil {
 			return nil, err
 		}
 	}
