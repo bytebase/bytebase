@@ -22,6 +22,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   getDefaultPagination,
   isDatabaseV1Queryable,
+  storageKeySqlEditorConnExpanded,
   useDynamicLocalStorage,
 } from "@/utils";
 
@@ -66,9 +67,8 @@ export const useSQLEditorTreeByEnvironment = (
     initialized: boolean;
     expandedKeys: string[];
   }>(
-    computed(
-      () =>
-        `bb.sql-editor.connection-pane.expanded_${environment}.${currentUser.value.email}`
+    computed(() =>
+      storageKeySqlEditorConnExpanded(environment, currentUser.value.email)
     ),
     {
       initialized: false,

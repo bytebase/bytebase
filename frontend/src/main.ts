@@ -17,10 +17,19 @@ import {
   useAuthStore,
   useSubscriptionV1Store,
 } from "./store";
-import { humanizeDate, humanizeTs, isDev, isRelease } from "./utils";
+import {
+  humanizeDate,
+  humanizeTs,
+  isDev,
+  isRelease,
+  migrateStorageKeys,
+} from "./utils";
 
 console.debug("dev:", isDev());
 console.debug("release:", isRelease());
+
+// Migrate renamed localStorage keys before any store reads from storage.
+migrateStorageKeys();
 
 (async () => {
   const app = createApp(App);

@@ -24,6 +24,8 @@ import {
   extractWorksheetConnection,
   getSheetStatement,
   isWorksheetReadableV1,
+  storageKeySqlEditorWorksheetFilter,
+  storageKeySqlEditorWorksheetTree,
   useDynamicLocalStorage,
 } from "@/utils";
 import { useFolderByView } from "./folder";
@@ -400,8 +402,8 @@ export const provideSheetContext = () => {
   const { project } = storeToRefs(useSQLEditorStore());
 
   const filter = useDynamicLocalStorage<WorksheetFilter>(
-    computed(
-      () => `bb.sql-editor.${project.value}.worksheet-filter.${me.value.name}`
+    computed(() =>
+      storageKeySqlEditorWorksheetFilter(project.value, me.value.email)
     ),
     {
       ...INITIAL_FILTER,
@@ -428,9 +430,8 @@ export const provideSheetContext = () => {
   };
 
   const expandedKeys = useDynamicLocalStorage<Set<string>>(
-    computed(
-      () =>
-        `bb.sql-editor.${project.value}.worksheet-tree-expand-keys.${me.value.name}`
+    computed(() =>
+      storageKeySqlEditorWorksheetTree(project.value, me.value.email)
     ),
     new Set([
       ...Object.values(viewContexts).map(

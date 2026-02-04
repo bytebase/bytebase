@@ -4,15 +4,20 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
+  STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
+  STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
+} from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const resultRowsLimit = useLocalStorage(
-    "bb.sql-editor.result-rows-limit",
+    STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
     1000
   );
   const redisCommandOption = useLocalStorage<QueryOption_RedisRunCommandsOn>(
-    "bb.sql-editor.redis-command-node",
+    STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
     QueryOption_RedisRunCommandsOn.SINGLE_NODE,
     {
       // Use a custom merge function to ensure the value is valid.
@@ -37,8 +42,9 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   // `false` if we are preparing project-scoped resources
   // we should render a skeleton layout with spinner placeholders
   const projectContextReady = ref<boolean>(false);
+
   const storedLastViewedProject = useLocalStorage<string>(
-    "bb.sql-editor.last-viewed-project",
+    STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
     "",
     { listenToStorageChanges: false }
   );

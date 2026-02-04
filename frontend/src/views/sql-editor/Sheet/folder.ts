@@ -1,7 +1,10 @@
 import { sortBy } from "lodash-es";
 import { type ComputedRef, computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { useDynamicLocalStorage } from "@/utils";
+import {
+  storageKeySqlEditorWorksheetFolder,
+  useDynamicLocalStorage,
+} from "@/utils";
 import type { SheetViewMode } from "./types";
 
 export const useFolderByView = (
@@ -11,9 +14,8 @@ export const useFolderByView = (
   const me = useCurrentUserV1();
 
   const rootPath = computed(() => `/${viewMode}`);
-  const localCacheKey = computed(
-    () =>
-      `bb.sql-editor.${project.value}.worksheet-folder.${viewMode}.${me.value.name}`
+  const localCacheKey = computed(() =>
+    storageKeySqlEditorWorksheetFolder(project.value, viewMode, me.value.email)
   );
   const localCache = useDynamicLocalStorage<Set<string>>(
     localCacheKey,

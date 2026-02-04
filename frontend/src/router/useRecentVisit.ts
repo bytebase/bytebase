@@ -1,16 +1,15 @@
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useDynamicLocalStorage } from "@/utils";
+import { storageKeyRecentVisit, useDynamicLocalStorage } from "@/utils";
 
-const STORAGE_KEY = "bb.space.recently_visited";
 const MAX_HISTORY = 10;
 
 export function useRecentVisit() {
   const currentUser = useCurrentUserV1();
 
   const recentVisit = useDynamicLocalStorage<string[]>(
-    computed(() => `${STORAGE_KEY}.${currentUser.value.email}`),
+    computed(() => storageKeyRecentVisit(currentUser.value.email)),
     []
   );
 

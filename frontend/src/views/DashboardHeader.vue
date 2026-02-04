@@ -102,6 +102,7 @@ import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
+  STORAGE_KEY_MY_ISSUES_TAB,
 } from "@/utils";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
@@ -202,10 +203,7 @@ const myIssueLink = computed(() => {
 const goToMyIssues = () => {
   record(myIssueLink.value.fullPath);
   // Trigger page reload manually.
-  useLocalStorage<string>(
-    `bb.components.${WORKSPACE_ROUTE_MY_ISSUES}.id`,
-    ""
-  ).value = uuidv4();
+  useLocalStorage<string>(STORAGE_KEY_MY_ISSUES_TAB, "").value = uuidv4();
 };
 
 const handleWantHelp = () => {

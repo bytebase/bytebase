@@ -98,6 +98,7 @@ import {
   getValueFromSearchParams,
   getValuesFromSearchParams,
   minmax,
+  storageKeySearch,
   upsertScope,
   useDynamicLocalStorage,
 } from "@/utils";
@@ -150,9 +151,8 @@ const router = useRouter();
 const me = useCurrentUserV1();
 
 const cachedQuery = useDynamicLocalStorage<string>(
-  computed(
-    () =>
-      `bb.advanced-search.${me.value.name}.${router.currentRoute.value.path}`
+  computed(() =>
+    storageKeySearch(router.currentRoute.value.path, me.value.email)
   ),
   ""
 );

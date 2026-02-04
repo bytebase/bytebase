@@ -159,6 +159,10 @@ import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { CopyButton, DrawerContent } from "@/components/v2";
 import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT,
+  STORAGE_KEY_SQL_EDITOR_DETAIL_LINE_WRAP,
+} from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import BinaryFormatButton from "../DataTable/common/BinaryFormatButton.vue";
 import {
@@ -176,11 +180,11 @@ const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 
 const format = useLocalStorage<boolean>(
-  "bb.sql-editor.detail-panel.format",
+  STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT,
   false
 );
 const wrap = useLocalStorage<boolean>(
-  "bb.sql-editor.detail-panel.line-wrap",
+  STORAGE_KEY_SQL_EDITOR_DETAIL_LINE_WRAP,
   true
 );
 

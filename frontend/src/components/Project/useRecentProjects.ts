@@ -2,7 +2,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { isValidProjectName } from "@/types";
-import { useDynamicLocalStorage } from "@/utils";
+import { storageKeyRecentProjects, useDynamicLocalStorage } from "@/utils";
 
 const MAX_RECENT_PROJECT = 5;
 
@@ -11,7 +11,7 @@ export const useRecentProjects = () => {
   const currentUser = useCurrentUserV1();
 
   const recentViewProjectNames = useDynamicLocalStorage<string[]>(
-    computed(() => `bb.project.recent-view.${currentUser.value.name}`),
+    computed(() => storageKeyRecentProjects(currentUser.value.email)),
     []
   );
 

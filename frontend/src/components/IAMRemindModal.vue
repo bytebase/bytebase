@@ -52,6 +52,7 @@ import {
   autoProjectRoute,
   displayRoleTitle,
   filterBindingsByUserName,
+  storageKeyIamRemind,
   useDynamicLocalStorage,
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -74,7 +75,7 @@ const me = useCurrentUserV1();
 const iamRemindState = useDynamicLocalStorage<
   Map<string /* {project}.{pending expired roles} */, boolean /* show remind */>
 >(
-  computed(() => `bb.remind.iam.${me.value.name}`),
+  computed(() => storageKeyIamRemind(me.value.email)),
   new Map()
 );
 const projectStore = useProjectV1Store();

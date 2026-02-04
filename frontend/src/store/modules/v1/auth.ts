@@ -27,6 +27,7 @@ import {
   UserSchema,
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
+import { storageKeyResetPassword } from "@/utils";
 import { extractUserEmail } from "./common";
 
 export const useAuthStore = defineStore("auth_v1", () => {
@@ -53,7 +54,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return false;
     }
     return useLocalStorage<boolean>(
-      `${currentUserEmail.value}.require_reset_password`,
+      storageKeyResetPassword(currentUserEmail.value),
       false
     ).value;
   });
@@ -63,7 +64,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return false;
     }
     const needResetPasswordCache = useLocalStorage<boolean>(
-      `${currentUserEmail.value}.require_reset_password`,
+      storageKeyResetPassword(currentUserEmail.value),
       false
     );
     needResetPasswordCache.value = requireResetPassword;
@@ -169,12 +170,25 @@ export const useAuthStore = defineStore("auth_v1", () => {
     });
   };
 
+  const cleanupUserStorage = (email: string) => {
+    if (!email) return;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.endsWith(`.${email}`)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  };
+
   const logout = async () => {
     try {
       await authServiceClientConnect.logout({});
     } catch {
       // nothing
     } finally {
+      cleanupUserStorage(currentUserEmail.value);
       unauthenticatedOccurred.value = false;
       const pathname = location.pathname;
       // Replace and reload the page to clear frontend state directly.
