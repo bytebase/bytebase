@@ -27,7 +27,7 @@ import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { issueServiceClientConnect } from "@/connect";
 import {
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
@@ -58,7 +58,7 @@ const allowChange = computed(() => {
   }
 
   // Allowed if current user is the creator.
-  if (extractUserId(issue.value.creator) === currentUser.value.email) {
+  if (extractUserEmail(issue.value.creator) === currentUser.value.email) {
     return true;
   }
 

@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from "vue";
 import { computed, reactive } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import {
-  extractUserId,
+  extractUserEmail,
   getIssueCommentType,
   IssueCommentType,
   useCurrentUserV1,
@@ -46,7 +46,7 @@ export function useCommentEdit(project: Ref<Project> | ComputedRef<Project>) {
     if (!isEditable) {
       return false;
     }
-    if (currentUser.value.email === extractUserId(comment.creator)) {
+    if (currentUser.value.email === extractUserEmail(comment.creator)) {
       return true;
     }
     return hasProjectPermissionV2(project.value, "bb.issueComments.update");

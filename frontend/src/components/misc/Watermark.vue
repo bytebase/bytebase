@@ -36,7 +36,7 @@
 import { NWatermark } from "naive-ui";
 import { computed } from "vue";
 import {
-  extractUserId,
+  extractUserEmail,
   featureToRef,
   useActuatorV1Store,
   useCurrentUserV1,
@@ -59,7 +59,7 @@ const hasWatermarkFeature = featureToRef(PlanFeature.FEATURE_WATERMARK);
 
 const lines = computed(() => {
   const user = currentUserV1.value;
-  const uid = extractUserId(user.name);
+  const uid = extractUserEmail(user.name);
   if (user.name === UNKNOWN_USER_NAME) return [];
   if (!hasWatermarkFeature.value) return [];
   if (!settingV1Store.workspaceProfile.watermark) return [];

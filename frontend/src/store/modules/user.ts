@@ -29,7 +29,7 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
-import { extractUserId, userNamePrefix } from "./v1/common";
+import { extractUserEmail, userNamePrefix } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
 export interface UserFilter {
@@ -278,7 +278,7 @@ export const useUserStore = defineStore("user", () => {
     if (!identifier) {
       return;
     }
-    const id = extractUserId(identifier);
+    const id = extractUserEmail(identifier);
     if (Number.isNaN(Number(id))) {
       return [...userMapByName.value.values()].find(
         (user) => user.email === id

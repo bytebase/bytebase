@@ -10,7 +10,7 @@ import {
   workloadIdentityToUser,
 } from "@/store";
 import {
-  extractUserId,
+  extractUserEmail,
   groupNamePrefix,
   serviceAccountNamePrefix,
   workloadIdentityNamePrefix,
@@ -79,7 +79,7 @@ const getMemberBinding = (
     } else {
       user = userStore.getUserByIdentifier(member);
       if (!user) {
-        const email = extractUserId(member);
+        const email = extractUserEmail(member);
         user = create(UserSchema, {
           title: email,
           name: fullname,
@@ -155,7 +155,7 @@ export const getMemberBindings = ({
       (binding) => (binding.group ? 0 : 1),
       (binding) => {
         if (binding.user) {
-          return extractUserId(binding.user.name);
+          return extractUserEmail(binding.user.name);
         }
         if (binding.group) {
           return extractGroupEmail(binding.group.name);

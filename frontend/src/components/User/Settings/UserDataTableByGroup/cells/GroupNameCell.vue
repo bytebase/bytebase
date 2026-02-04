@@ -66,7 +66,7 @@ import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCe
 import type { MemberRole } from "@/components/Member/types";
 import { HighlightLabelText } from "@/components/v2";
 import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
-import { extractUserId, useCurrentUserV1 } from "@/store";
+import { extractUserEmail, useCurrentUserV1 } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -96,7 +96,7 @@ const currentUser = useCurrentUserV1();
 const allowGetGroup = computed(() => {
   if (
     props.group.members.find(
-      (member) => extractUserId(member.member) === currentUser.value.name
+      (member) => extractUserEmail(member.member) === currentUser.value.name
     )
   ) {
     return true;

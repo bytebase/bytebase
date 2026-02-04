@@ -27,7 +27,7 @@ import { MiniActionButton } from "@/components/v2";
 import { UserLink } from "@/components/v2/Model/cells";
 import {
   composePolicyBindings,
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useGroupStore,
   usePolicyByParentAndType,
@@ -242,7 +242,7 @@ const accessTableColumns = computed(
               return <GroupNameCell group={group} />;
             }
           } else {
-            const email = extractUserId(item.member);
+            const email = extractUserEmail(item.member);
             return <UserLink title={email} email={email} />;
           }
           return <span>{item.member}</span>;

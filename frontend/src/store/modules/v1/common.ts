@@ -182,7 +182,7 @@ export const extractGroupEmail = (emailResource: string) => {
   return matches?.[1] ?? emailResource;
 };
 
-export const extractUserId = (identifier: string) => {
+export const extractUserEmail = (identifier: string) => {
   const matches = identifier.match(/^(?:user:|users\/)(.+)$/);
   return matches?.[1] ?? identifier;
 };

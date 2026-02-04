@@ -16,9 +16,11 @@ export const useUIStateStore = defineStore("uistate", () => {
   const currentUser = useCurrentUserV1();
 
   const COLLAPSE_MODULE_KEY = computed(
-    () => `ui.list.collapse.${currentUser.value.name}`
+    () => `ui.list.collapse.${currentUser.value.email}`
   );
-  const INTRO_MODULE_KEY = computed(() => `ui.intro.${currentUser.value.name}`);
+  const INTRO_MODULE_KEY = computed(
+    () => `ui.intro.${currentUser.value.email}`
+  );
 
   const getIntroStateByKey = (key: string): boolean => {
     return stateByKey(state.introStateByKey, INTRO_MODULE_KEY.value, key);

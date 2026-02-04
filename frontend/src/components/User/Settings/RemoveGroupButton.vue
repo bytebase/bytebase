@@ -28,7 +28,7 @@ import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
 import ResourceOccupiedModal from "@/components/v2/ResourceOccupiedModal/ResourceOccupiedModal.vue";
 import { pushNotification, useCurrentUserV1, useGroupStore } from "@/store";
-import { extractUserId } from "@/store/modules/v1/common";
+import { extractUserEmail } from "@/store/modules/v1/common";
 import {
   type Group,
   GroupMember_Role,
@@ -51,7 +51,7 @@ const resourceOccupiedModalRef =
 
 const selfMemberInGroup = computed(() => {
   return props.group?.members.find(
-    (member) => extractUserId(member.member) === currentUserV1.value.email
+    (member) => extractUserEmail(member.member) === currentUserV1.value.email
   );
 });
 
