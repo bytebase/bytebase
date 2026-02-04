@@ -103,8 +103,16 @@ func SQLReviewCheck(
 	builtinOnly := len(ruleList) == 0
 
 	if !checkContext.NoAppendBuiltin {
-		// Append builtin rules to the rule list.
-		ruleList = append(ruleList, GetBuiltinRules(checkContext.DBType)...)
+		// Append builtin rules only if the user hasn't overridden them in their config.
+		userRuleTypes := make(map[storepb.SQLReviewRule_Type]bool, len(ruleList))
+		for _, r := range ruleList {
+			userRuleTypes[r.Type] = true
+		}
+		for _, r := range GetBuiltinRules(checkContext.DBType) {
+			if !userRuleTypes[r.Type] {
+				ruleList = append(ruleList, r)
+			}
+		}
 	}
 
 	if asts == nil || len(ruleList) == 0 {

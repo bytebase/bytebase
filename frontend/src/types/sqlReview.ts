@@ -119,6 +119,33 @@ export const ruleTypeToString = (type: SQLReviewRule_Type): string => {
   return SQLReviewRule_Type[type] as string;
 };
 
+const BUILTIN_CATEGORY = "BUILTIN";
+
+export const isBuiltinRule = (rule: RuleTemplateV2): boolean => {
+  return rule.category === BUILTIN_CATEGORY;
+};
+
+// Returns a new rule map with builtin rules injected for engines already present.
+// Builtin rules are always active and cannot be removed by users.
+export const withBuiltinRules = (
+  ruleMap: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>
+): Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>> => {
+  const result = new Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>();
+  for (const [engine, engineMap] of ruleMap) {
+    const copy = new Map(engineMap);
+    const engineTemplates = ruleTemplateMapV2.get(engine);
+    if (engineTemplates) {
+      for (const [type, template] of engineTemplates) {
+        if (template.category === BUILTIN_CATEGORY && !copy.has(type)) {
+          copy.set(type, { ...template });
+        }
+      }
+    }
+    result.set(engine, copy);
+  }
+  return result;
+};
+
 export const getRuleMapByEngine = (
   ruleList: RuleTemplateV2[]
 ): Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>> => {

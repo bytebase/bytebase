@@ -176,8 +176,10 @@ import type { RuleTemplateV2 } from "@/types";
 import {
   convertRuleMapToPolicyRuleList,
   getRuleMapByEngine,
+  isBuiltinRule,
   UNKNOWN_ID,
   unknown,
+  withBuiltinRules,
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
@@ -259,7 +261,7 @@ const ruleListOfPolicy = computed((): RuleTemplateV2[] => {
 watch(
   ruleListOfPolicy,
   (ruleList) => {
-    state.ruleMapByEngine = getRuleMapByEngine(ruleList);
+    state.ruleMapByEngine = withBuiltinRules(getRuleMapByEngine(ruleList));
   },
   { immediate: true }
 );
@@ -302,6 +304,9 @@ const markChange = (
 };
 
 const removeRule = (rule: RuleTemplateV2) => {
+  if (isBuiltinRule(rule)) {
+    return;
+  }
   state.ruleMapByEngine.get(rule.engine)?.delete(rule.type);
   if (state.ruleMapByEngine.get(rule.engine)?.size === 0) {
     state.ruleMapByEngine.delete(rule.engine);
@@ -310,7 +315,9 @@ const removeRule = (rule: RuleTemplateV2) => {
 };
 
 const onCancelChanges = () => {
-  state.ruleMapByEngine = getRuleMapByEngine(ruleListOfPolicy.value);
+  state.ruleMapByEngine = withBuiltinRules(
+    getRuleMapByEngine(ruleListOfPolicy.value)
+  );
   state.rulesUpdated = false;
 };
 

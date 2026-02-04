@@ -2012,3 +2012,18 @@
 - type: STATEMENT_OBJECT_OWNER_CHECK
   category: STATEMENT
   engine: POSTGRES
+- type: BUILTIN_PRIOR_BACKUP_CHECK
+  category: BUILTIN
+  engine: MYSQL
+- type: BUILTIN_PRIOR_BACKUP_CHECK
+  category: BUILTIN
+  engine: POSTGRES
+- type: BUILTIN_PRIOR_BACKUP_CHECK
+  category: BUILTIN
+  engine: TIDB
+- type: BUILTIN_PRIOR_BACKUP_CHECK
+  category: BUILTIN
+  engine: MSSQL
+- type: BUILTIN_PRIOR_BACKUP_CHECK
+  category: BUILTIN
+  engine: ORACLE
