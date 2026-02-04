@@ -31,7 +31,7 @@ import {
   type QueryOption,
   QueryOptionSchema,
   QueryRequestSchema,
-  QueryResult_PermissionDenied_CommandType,
+  QueryResult_CommandError_Type,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -361,11 +361,11 @@ const useExecuteSQL = () => {
 const isOnlySelectError = (resultSet: SQLResultSetV1) => {
   return resultSet.results.some((result) => {
     return (
-      result.detailedError.case === "permissionDenied" &&
+      result.detailedError.case === "commandError" &&
       [
-        QueryResult_PermissionDenied_CommandType.DDL,
-        QueryResult_PermissionDenied_CommandType.DML,
-        QueryResult_PermissionDenied_CommandType.NON_READ_ONLY,
+        QueryResult_CommandError_Type.DDL,
+        QueryResult_CommandError_Type.DML,
+        QueryResult_CommandError_Type.NON_READ_ONLY,
       ].includes(result.detailedError.value.commandType)
     );
   });

@@ -129,55 +129,55 @@ func (QueryOption_MSSQLExplainFormat) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{4, 1}
 }
 
-type QueryResult_PermissionDenied_CommandType int32
+type QueryResult_CommandError_Type int32
 
 const (
-	QueryResult_PermissionDenied_COMMAND_TYPE_UNSPECIFIED QueryResult_PermissionDenied_CommandType = 0
-	QueryResult_PermissionDenied_DDL                      QueryResult_PermissionDenied_CommandType = 1
-	QueryResult_PermissionDenied_DML                      QueryResult_PermissionDenied_CommandType = 2
-	QueryResult_PermissionDenied_NON_READ_ONLY            QueryResult_PermissionDenied_CommandType = 3
+	QueryResult_CommandError_TYPE_UNSPECIFIED QueryResult_CommandError_Type = 0
+	QueryResult_CommandError_DDL              QueryResult_CommandError_Type = 1
+	QueryResult_CommandError_DML              QueryResult_CommandError_Type = 2
+	QueryResult_CommandError_NON_READ_ONLY    QueryResult_CommandError_Type = 3
 )
 
-// Enum value maps for QueryResult_PermissionDenied_CommandType.
+// Enum value maps for QueryResult_CommandError_Type.
 var (
-	QueryResult_PermissionDenied_CommandType_name = map[int32]string{
-		0: "COMMAND_TYPE_UNSPECIFIED",
+	QueryResult_CommandError_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
 		1: "DDL",
 		2: "DML",
 		3: "NON_READ_ONLY",
 	}
-	QueryResult_PermissionDenied_CommandType_value = map[string]int32{
-		"COMMAND_TYPE_UNSPECIFIED": 0,
-		"DDL":                      1,
-		"DML":                      2,
-		"NON_READ_ONLY":            3,
+	QueryResult_CommandError_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"DDL":              1,
+		"DML":              2,
+		"NON_READ_ONLY":    3,
 	}
 )
 
-func (x QueryResult_PermissionDenied_CommandType) Enum() *QueryResult_PermissionDenied_CommandType {
-	p := new(QueryResult_PermissionDenied_CommandType)
+func (x QueryResult_CommandError_Type) Enum() *QueryResult_CommandError_Type {
+	p := new(QueryResult_CommandError_Type)
 	*p = x
 	return p
 }
 
-func (x QueryResult_PermissionDenied_CommandType) String() string {
+func (x QueryResult_CommandError_Type) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (QueryResult_PermissionDenied_CommandType) Descriptor() protoreflect.EnumDescriptor {
+func (QueryResult_CommandError_Type) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_sql_service_proto_enumTypes[2].Descriptor()
 }
 
-func (QueryResult_PermissionDenied_CommandType) Type() protoreflect.EnumType {
+func (QueryResult_CommandError_Type) Type() protoreflect.EnumType {
 	return &file_v1_sql_service_proto_enumTypes[2]
 }
 
-func (x QueryResult_PermissionDenied_CommandType) Number() protoreflect.EnumNumber {
+func (x QueryResult_CommandError_Type) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use QueryResult_PermissionDenied_CommandType.Descriptor instead.
-func (QueryResult_PermissionDenied_CommandType) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use QueryResult_CommandError_Type.Descriptor instead.
+func (QueryResult_CommandError_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{5, 2, 0}
 }
 
@@ -772,7 +772,8 @@ type QueryResult struct {
 	//
 	//	*QueryResult_PostgresError_
 	//	*QueryResult_SyntaxError_
-	//	*QueryResult_PermissionDenied_
+	//	*QueryResult_PermissionDenied
+	//	*QueryResult_CommandError_
 	DetailedError isQueryResult_DetailedError `protobuf_oneof:"detailed_error"`
 	// Informational or debug messages returned by the database engine during query execution.
 	// Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
@@ -887,10 +888,19 @@ func (x *QueryResult) GetSyntaxError() *QueryResult_SyntaxError {
 	return nil
 }
 
-func (x *QueryResult) GetPermissionDenied() *QueryResult_PermissionDenied {
+func (x *QueryResult) GetPermissionDenied() *PermissionDeniedDetail {
 	if x != nil {
-		if x, ok := x.DetailedError.(*QueryResult_PermissionDenied_); ok {
+		if x, ok := x.DetailedError.(*QueryResult_PermissionDenied); ok {
 			return x.PermissionDenied
+		}
+	}
+	return nil
+}
+
+func (x *QueryResult) GetCommandError() *QueryResult_CommandError {
+	if x != nil {
+		if x, ok := x.DetailedError.(*QueryResult_CommandError_); ok {
+			return x.CommandError
 		}
 	}
 	return nil
@@ -922,15 +932,21 @@ type QueryResult_SyntaxError_ struct {
 	SyntaxError *QueryResult_SyntaxError `protobuf:"bytes,9,opt,name=syntax_error,json=syntaxError,proto3,oneof"`
 }
 
-type QueryResult_PermissionDenied_ struct {
-	PermissionDenied *QueryResult_PermissionDenied `protobuf:"bytes,10,opt,name=permission_denied,json=permissionDenied,proto3,oneof"`
+type QueryResult_PermissionDenied struct {
+	PermissionDenied *PermissionDeniedDetail `protobuf:"bytes,10,opt,name=permission_denied,json=permissionDenied,proto3,oneof"`
+}
+
+type QueryResult_CommandError_ struct {
+	CommandError *QueryResult_CommandError `protobuf:"bytes,13,opt,name=command_error,json=commandError,proto3,oneof"`
 }
 
 func (*QueryResult_PostgresError_) isQueryResult_DetailedError() {}
 
 func (*QueryResult_SyntaxError_) isQueryResult_DetailedError() {}
 
-func (*QueryResult_PermissionDenied_) isQueryResult_DetailedError() {}
+func (*QueryResult_PermissionDenied) isQueryResult_DetailedError() {}
+
+func (*QueryResult_CommandError_) isQueryResult_DetailedError() {}
 
 type MaskingReason struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2266,35 +2282,28 @@ func (x *QueryResult_SyntaxError) GetStartPosition() *Position {
 
 // Permission denied with resource information or disallowed command_type.
 // Either resources or command_type is available.
-type QueryResult_PermissionDenied struct {
+type QueryResult_CommandError struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Denied to access the resources.
-	// Format:
-	// instances/{instance}/databases/{database}
-	// instances/{instance}/databases/{database}/schemas/{schema}
-	// instances/{instance}/databases/{database}/tables/{table}
-	// instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
-	Resources []string `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
 	// Disallowed command_type.
-	CommandType   QueryResult_PermissionDenied_CommandType `protobuf:"varint,2,opt,name=command_type,json=commandType,proto3,enum=bytebase.v1.QueryResult_PermissionDenied_CommandType" json:"command_type,omitempty"`
+	CommandType   QueryResult_CommandError_Type `protobuf:"varint,1,opt,name=command_type,json=commandType,proto3,enum=bytebase.v1.QueryResult_CommandError_Type" json:"command_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *QueryResult_PermissionDenied) Reset() {
-	*x = QueryResult_PermissionDenied{}
+func (x *QueryResult_CommandError) Reset() {
+	*x = QueryResult_CommandError{}
 	mi := &file_v1_sql_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *QueryResult_PermissionDenied) String() string {
+func (x *QueryResult_CommandError) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryResult_PermissionDenied) ProtoMessage() {}
+func (*QueryResult_CommandError) ProtoMessage() {}
 
-func (x *QueryResult_PermissionDenied) ProtoReflect() protoreflect.Message {
+func (x *QueryResult_CommandError) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_sql_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2306,23 +2315,16 @@ func (x *QueryResult_PermissionDenied) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use QueryResult_PermissionDenied.ProtoReflect.Descriptor instead.
-func (*QueryResult_PermissionDenied) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryResult_CommandError.ProtoReflect.Descriptor instead.
+func (*QueryResult_CommandError) Descriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{5, 2}
 }
 
-func (x *QueryResult_PermissionDenied) GetResources() []string {
-	if x != nil {
-		return x.Resources
-	}
-	return nil
-}
-
-func (x *QueryResult_PermissionDenied) GetCommandType() QueryResult_PermissionDenied_CommandType {
+func (x *QueryResult_CommandError) GetCommandType() QueryResult_CommandError_Type {
 	if x != nil {
 		return x.CommandType
 	}
-	return QueryResult_PermissionDenied_COMMAND_TYPE_UNSPECIFIED
+	return QueryResult_CommandError_TYPE_UNSPECIFIED
 }
 
 type QueryResult_Message struct {
@@ -2732,7 +2734,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12MSSQLExplainFormat\x12$\n" +
 	" MSSQL_EXPLAIN_FORMAT_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18MSSQL_EXPLAIN_FORMAT_ALL\x10\x01\x12\x1c\n" +
-	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\xff\f\n" +
+	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\x8b\r\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12)\n" +
@@ -2743,9 +2745,10 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\alatency\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\alatency\x12\x1c\n" +
 	"\tstatement\x18\a \x01(\tR\tstatement\x12O\n" +
 	"\x0epostgres_error\x18\b \x01(\v2&.bytebase.v1.QueryResult.PostgresErrorH\x00R\rpostgresError\x12I\n" +
-	"\fsyntax_error\x18\t \x01(\v2$.bytebase.v1.QueryResult.SyntaxErrorH\x00R\vsyntaxError\x12X\n" +
+	"\fsyntax_error\x18\t \x01(\v2$.bytebase.v1.QueryResult.SyntaxErrorH\x00R\vsyntaxError\x12R\n" +
 	"\x11permission_denied\x18\n" +
-	" \x01(\v2).bytebase.v1.QueryResult.PermissionDeniedH\x00R\x10permissionDenied\x12<\n" +
+	" \x01(\v2#.bytebase.v1.PermissionDeniedDetailH\x00R\x10permissionDenied\x12L\n" +
+	"\rcommand_error\x18\r \x01(\v2%.bytebase.v1.QueryResult.CommandErrorH\x00R\fcommandError\x12<\n" +
 	"\bmessages\x18\v \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x122\n" +
 	"\x06masked\x18\f \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x06masked\x1a\xfd\x03\n" +
 	"\rPostgresError\x12\x1a\n" +
@@ -2771,12 +2774,11 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04line\x18\x10 \x01(\x05R\x04line\x12\x18\n" +
 	"\aroutine\x18\x11 \x01(\tR\aroutine\x1aK\n" +
 	"\vSyntaxError\x12<\n" +
-	"\x0estart_position\x18\x01 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x1a\xdc\x01\n" +
-	"\x10PermissionDenied\x12\x1c\n" +
-	"\tresources\x18\x01 \x03(\tR\tresources\x12X\n" +
-	"\fcommand_type\x18\x02 \x01(\x0e25.bytebase.v1.QueryResult.PermissionDenied.CommandTypeR\vcommandType\"P\n" +
-	"\vCommandType\x12\x1c\n" +
-	"\x18COMMAND_TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
+	"\x0estart_position\x18\x01 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x1a\xa0\x01\n" +
+	"\fCommandError\x12M\n" +
+	"\fcommand_type\x18\x01 \x01(\x0e2*.bytebase.v1.QueryResult.CommandError.TypeR\vcommandType\"A\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03DDL\x10\x01\x12\a\n" +
 	"\x03DML\x10\x02\x12\x11\n" +
 	"\rNON_READ_ONLY\x10\x03\x1a\xc7\x01\n" +
@@ -2937,7 +2939,7 @@ var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_v1_sql_service_proto_goTypes = []any{
 	(QueryOption_RedisRunCommandsOn)(0),                 // 0: bytebase.v1.QueryOption.RedisRunCommandsOn
 	(QueryOption_MSSQLExplainFormat)(0),                 // 1: bytebase.v1.QueryOption.MSSQLExplainFormat
-	(QueryResult_PermissionDenied_CommandType)(0),       // 2: bytebase.v1.QueryResult.PermissionDenied.CommandType
+	(QueryResult_CommandError_Type)(0),                  // 2: bytebase.v1.QueryResult.CommandError.Type
 	(QueryResult_Message_Level)(0),                      // 3: bytebase.v1.QueryResult.Message.Level
 	(Advice_Level)(0),                                   // 4: bytebase.v1.Advice.Level
 	(Advice_RuleType)(0),                                // 5: bytebase.v1.Advice.RuleType
@@ -2963,7 +2965,7 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(*AICompletionResponse)(nil),                        // 25: bytebase.v1.AICompletionResponse
 	(*QueryResult_PostgresError)(nil),                   // 26: bytebase.v1.QueryResult.PostgresError
 	(*QueryResult_SyntaxError)(nil),                     // 27: bytebase.v1.QueryResult.SyntaxError
-	(*QueryResult_PermissionDenied)(nil),                // 28: bytebase.v1.QueryResult.PermissionDenied
+	(*QueryResult_CommandError)(nil),                    // 28: bytebase.v1.QueryResult.CommandError
 	(*QueryResult_Message)(nil),                         // 29: bytebase.v1.QueryResult.Message
 	(*RowValue_Timestamp)(nil),                          // 30: bytebase.v1.RowValue.Timestamp
 	(*RowValue_TimestampTZ)(nil),                        // 31: bytebase.v1.RowValue.TimestampTZ
@@ -2972,13 +2974,14 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(*AICompletionResponse_Candidate_Content)(nil),      // 34: bytebase.v1.AICompletionResponse.Candidate.Content
 	(*AICompletionResponse_Candidate_Content_Part)(nil), // 35: bytebase.v1.AICompletionResponse.Candidate.Content.Part
 	(*durationpb.Duration)(nil),                         // 36: google.protobuf.Duration
-	(structpb.NullValue)(0),                             // 37: google.protobuf.NullValue
-	(*structpb.Value)(nil),                              // 38: google.protobuf.Value
-	(*Position)(nil),                                    // 39: bytebase.v1.Position
-	(ExportFormat)(0),                                   // 40: bytebase.v1.ExportFormat
-	(*DatabaseMetadata)(nil),                            // 41: bytebase.v1.DatabaseMetadata
-	(Engine)(0),                                         // 42: bytebase.v1.Engine
-	(*timestamppb.Timestamp)(nil),                       // 43: google.protobuf.Timestamp
+	(*PermissionDeniedDetail)(nil),                      // 37: bytebase.v1.PermissionDeniedDetail
+	(structpb.NullValue)(0),                             // 38: google.protobuf.NullValue
+	(*structpb.Value)(nil),                              // 39: google.protobuf.Value
+	(*Position)(nil),                                    // 40: bytebase.v1.Position
+	(ExportFormat)(0),                                   // 41: bytebase.v1.ExportFormat
+	(*DatabaseMetadata)(nil),                            // 42: bytebase.v1.DatabaseMetadata
+	(Engine)(0),                                         // 43: bytebase.v1.Engine
+	(*timestamppb.Timestamp)(nil),                       // 44: google.protobuf.Timestamp
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
 	12, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
@@ -2990,52 +2993,53 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	36, // 6: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
 	26, // 7: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError
 	27, // 8: bytebase.v1.QueryResult.syntax_error:type_name -> bytebase.v1.QueryResult.SyntaxError
-	28, // 9: bytebase.v1.QueryResult.permission_denied:type_name -> bytebase.v1.QueryResult.PermissionDenied
-	29, // 10: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
-	13, // 11: bytebase.v1.QueryResult.masked:type_name -> bytebase.v1.MaskingReason
-	15, // 12: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
-	37, // 13: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
-	38, // 14: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
-	30, // 15: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
-	31, // 16: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
-	4,  // 17: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Level
-	39, // 18: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
-	39, // 19: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
-	5,  // 20: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
-	40, // 21: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
-	41, // 22: bytebase.v1.DiffMetadataRequest.source_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	41, // 23: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	42, // 24: bytebase.v1.DiffMetadataRequest.engine:type_name -> bytebase.v1.Engine
-	23, // 25: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
-	43, // 26: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
-	36, // 27: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
-	6,  // 28: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
-	32, // 29: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
-	33, // 30: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
-	39, // 31: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
-	2,  // 32: bytebase.v1.QueryResult.PermissionDenied.command_type:type_name -> bytebase.v1.QueryResult.PermissionDenied.CommandType
-	3,  // 33: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
-	43, // 34: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
-	43, // 35: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
-	34, // 36: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
-	35, // 37: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
-	9,  // 38: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	7,  // 39: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	21, // 40: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	17, // 41: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	19, // 42: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
-	24, // 43: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
-	10, // 44: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	8,  // 45: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	22, // 46: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	18, // 47: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	20, // 48: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
-	25, // 49: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
-	44, // [44:50] is the sub-list for method output_type
-	38, // [38:44] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	37, // 9: bytebase.v1.QueryResult.permission_denied:type_name -> bytebase.v1.PermissionDeniedDetail
+	28, // 10: bytebase.v1.QueryResult.command_error:type_name -> bytebase.v1.QueryResult.CommandError
+	29, // 11: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
+	13, // 12: bytebase.v1.QueryResult.masked:type_name -> bytebase.v1.MaskingReason
+	15, // 13: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
+	38, // 14: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
+	39, // 15: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
+	30, // 16: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
+	31, // 17: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
+	4,  // 18: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Level
+	40, // 19: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
+	40, // 20: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
+	5,  // 21: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
+	41, // 22: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
+	42, // 23: bytebase.v1.DiffMetadataRequest.source_metadata:type_name -> bytebase.v1.DatabaseMetadata
+	42, // 24: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
+	43, // 25: bytebase.v1.DiffMetadataRequest.engine:type_name -> bytebase.v1.Engine
+	23, // 26: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
+	44, // 27: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
+	36, // 28: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
+	6,  // 29: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
+	32, // 30: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
+	33, // 31: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
+	40, // 32: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
+	2,  // 33: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
+	3,  // 34: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
+	44, // 35: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
+	44, // 36: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
+	34, // 37: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
+	35, // 38: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
+	9,  // 39: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	7,  // 40: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	21, // 41: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	17, // 42: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	19, // 43: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
+	24, // 44: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
+	10, // 45: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	8,  // 46: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	22, // 47: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	18, // 48: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	20, // 49: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
+	25, // 50: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
+	45, // [45:51] is the sub-list for method output_type
+	39, // [39:45] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }
@@ -3051,7 +3055,8 @@ func file_v1_sql_service_proto_init() {
 	file_v1_sql_service_proto_msgTypes[5].OneofWrappers = []any{
 		(*QueryResult_PostgresError_)(nil),
 		(*QueryResult_SyntaxError_)(nil),
-		(*QueryResult_PermissionDenied_)(nil),
+		(*QueryResult_PermissionDenied)(nil),
+		(*QueryResult_CommandError_)(nil),
 	}
 	file_v1_sql_service_proto_msgTypes[8].OneofWrappers = []any{
 		(*RowValue_NullValue)(nil),

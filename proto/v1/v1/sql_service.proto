@@ -206,6 +206,7 @@ message QueryResult {
     PostgresError postgres_error = 8;
     SyntaxError syntax_error = 9;
     PermissionDeniedDetail permission_denied = 10;
+    CommandError command_error = 13;
   }
 
   // refer https://www.postgresql.org/docs/11/protocol-error-fields.html
@@ -247,7 +248,7 @@ message QueryResult {
     }
 
     // Disallowed command_type.
-    CommandType command_type = 1;
+    Type command_type = 1;
   }
 
   message Message {

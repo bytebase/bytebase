@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
-import type { Engine, ExportFormat, Position } from "./common_pb";
+import type { Engine, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
 import type { DatabaseMetadata } from "./database_service_pb";
 
 /**
@@ -321,10 +321,16 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
     case: "syntaxError";
   } | {
     /**
-     * @generated from field: bytebase.v1.QueryResult.PermissionDenied permission_denied = 10;
+     * @generated from field: bytebase.v1.PermissionDeniedDetail permission_denied = 10;
      */
-    value: QueryResult_PermissionDenied;
+    value: PermissionDeniedDetail;
     case: "permissionDenied";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.QueryResult.CommandError command_error = 13;
+     */
+    value: QueryResult_CommandError;
+    case: "commandError";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -472,43 +478,31 @@ export declare const QueryResult_SyntaxErrorSchema: GenMessage<QueryResult_Synta
  * Permission denied with resource information or disallowed command_type.
  * Either resources or command_type is available.
  *
- * @generated from message bytebase.v1.QueryResult.PermissionDenied
+ * @generated from message bytebase.v1.QueryResult.CommandError
  */
-export declare type QueryResult_PermissionDenied = Message<"bytebase.v1.QueryResult.PermissionDenied"> & {
-  /**
-   * Denied to access the resources.
-   * Format:
-   * instances/{instance}/databases/{database}
-   * instances/{instance}/databases/{database}/schemas/{schema}
-   * instances/{instance}/databases/{database}/tables/{table}
-   * instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
-   *
-   * @generated from field: repeated string resources = 1;
-   */
-  resources: string[];
-
+export declare type QueryResult_CommandError = Message<"bytebase.v1.QueryResult.CommandError"> & {
   /**
    * Disallowed command_type.
    *
-   * @generated from field: bytebase.v1.QueryResult.PermissionDenied.CommandType command_type = 2;
+   * @generated from field: bytebase.v1.QueryResult.CommandError.Type command_type = 1;
    */
-  commandType: QueryResult_PermissionDenied_CommandType;
+  commandType: QueryResult_CommandError_Type;
 };
 
 /**
- * Describes the message bytebase.v1.QueryResult.PermissionDenied.
- * Use `create(QueryResult_PermissionDeniedSchema)` to create a new message.
+ * Describes the message bytebase.v1.QueryResult.CommandError.
+ * Use `create(QueryResult_CommandErrorSchema)` to create a new message.
  */
-export declare const QueryResult_PermissionDeniedSchema: GenMessage<QueryResult_PermissionDenied>;
+export declare const QueryResult_CommandErrorSchema: GenMessage<QueryResult_CommandError>;
 
 /**
- * @generated from enum bytebase.v1.QueryResult.PermissionDenied.CommandType
+ * @generated from enum bytebase.v1.QueryResult.CommandError.Type
  */
-export enum QueryResult_PermissionDenied_CommandType {
+export enum QueryResult_CommandError_Type {
   /**
-   * @generated from enum value: COMMAND_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
-  COMMAND_TYPE_UNSPECIFIED = 0,
+  TYPE_UNSPECIFIED = 0,
 
   /**
    * @generated from enum value: DDL = 1;
@@ -527,9 +521,9 @@ export enum QueryResult_PermissionDenied_CommandType {
 }
 
 /**
- * Describes the enum bytebase.v1.QueryResult.PermissionDenied.CommandType.
+ * Describes the enum bytebase.v1.QueryResult.CommandError.Type.
  */
-export declare const QueryResult_PermissionDenied_CommandTypeSchema: GenEnum<QueryResult_PermissionDenied_CommandType>;
+export declare const QueryResult_CommandError_TypeSchema: GenEnum<QueryResult_CommandError_Type>;
 
 /**
  * @generated from message bytebase.v1.QueryResult.Message

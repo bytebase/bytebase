@@ -9,7 +9,7 @@ type queryError struct {
 	err         error
 	resources   []string
 	permission  permission.Permission
-	commandType v1pb.QueryResult_PermissionDenied_CommandType
+	commandType v1pb.QueryResult_CommandError_Type
 }
 
 func (qe *queryError) Error() string {
