@@ -123,18 +123,40 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		user, err := in.getUserConnect(ctx, accessTokenStr)
+		user, claims, err := in.authenticate(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationSkipped(conn.Spec().Procedure, authContext) {
 				return next(ctx, conn)
 			}
-			return err
+			return connect.NewError(connect.CodeUnauthenticated, err)
 		}
 
+		in.profile.LastActiveTS.Store(time.Now().Unix())
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 
-		return next(ctx, conn)
+		var tokenExpiry time.Time
+		if claims.ExpiresAt != nil {
+			tokenExpiry = claims.ExpiresAt.Time
+		}
+
+		return next(ctx, &authStreamingConn{
+			StreamingHandlerConn: conn,
+			tokenExpiry:          tokenExpiry,
+		})
 	}
+}
+
+// authStreamingConn wraps a streaming connection to check token expiry on every received message.
+type authStreamingConn struct {
+	connect.StreamingHandlerConn
+	tokenExpiry time.Time
+}
+
+func (c *authStreamingConn) Receive(msg any) error {
+	if !c.tokenExpiry.IsZero() && time.Now().After(c.tokenExpiry) {
+		return connect.NewError(connect.CodeUnauthenticated, errs.New("access token expired"))
+	}
+	return c.StreamingHandlerConn.Receive(msg)
 }
 
 // authenticate is the shared authentication logic that validates JWT tokens.
