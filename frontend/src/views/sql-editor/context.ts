@@ -26,6 +26,7 @@ import {
   isSimilarDefaultSQLEditorTabTitle,
   isWorksheetWritableV1,
   NEW_WORKSHEET_TITLE,
+  STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
@@ -118,7 +119,7 @@ export const provideSQLEditorContext = () => {
   const showConnectionPanel = ref(false);
 
   const aiPanelSize = useLocalStorage(
-    "bb.plugin.editor.ai-panel-size",
+    STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
     0.3 /* panel size should in [0.1, 1-minimumEditorPanelSize]*/
   );
   const showAIPanel = ref(false);

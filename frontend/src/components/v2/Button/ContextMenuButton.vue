@@ -37,9 +37,8 @@ import type { ButtonGroupProps, SelectOption } from "naive-ui";
 import { NButton, NButtonGroup, NPopselect } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
+import { storageKeyContextMenu } from "@/utils";
 import type { ContextMenuButtonAction } from "./types";
-
-const STORE_PREFIX = "bb.context-menu-button";
 
 const props = withDefaults(
   defineProps<{
@@ -60,11 +59,13 @@ defineEmits<{
 const getStorage = () => {
   const { preferenceKey } = props;
   if (!preferenceKey) return undefined;
-  // e.g key = "bb.button-with-context-menu.task-status-transition"
-  const key = `${STORE_PREFIX}.${preferenceKey}`;
-  return useLocalStorage(key, props.defaultActionKey, {
-    listenToStorageChanges: false,
-  });
+  return useLocalStorage(
+    storageKeyContextMenu(preferenceKey),
+    props.defaultActionKey,
+    {
+      listenToStorageChanges: false,
+    }
+  );
 };
 
 // Load user stored default action from localStorage if possible.

@@ -10,7 +10,7 @@ import {
   AICompletionRequest_MessageSchema,
   AICompletionRequestSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { WebStorageHelper } from "@/utils";
+import { storageKeyAiSuggestions } from "@/utils";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
 
@@ -27,6 +27,23 @@ export type SuggestionContext = {
   next: () => Promise<string | undefined>; // returns next suggestion or empty (ended)
 };
 
+function saveSuggestionCache(key: string, value: string[]) {
+  try {
+    localStorage.setItem(storageKeyAiSuggestions(key), JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function loadSuggestionCache(key: string): string[] {
+  try {
+    const raw = localStorage.getItem(storageKeyAiSuggestions(key));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 const cache = ref(new Map<string, SuggestionContext>());
 const MAX_STORED_SUGGESTIONS = 10;
 
@@ -34,8 +51,6 @@ const keyOf = (metadata: string) => String(hashCode(metadata));
 
 export const useDynamicSuggestions = () => {
   const context = useAIContext();
-  const storage = new WebStorageHelper("bb.plugin.open-ai.suggestions");
-
   const metadata = computed(() => {
     const meta = context.databaseMetadata.value;
     const engine = context.engine.value;
@@ -129,7 +144,7 @@ export const useDynamicSuggestions = () => {
           MAX_STORED_SUGGESTIONS
         );
         if (combined.length > 0) {
-          storage.save(key, combined);
+          saveSuggestionCache(key, combined);
         }
 
         return more;
@@ -148,7 +163,7 @@ export const useDynamicSuggestions = () => {
         return suggestion.current();
       },
     });
-    const stored = storage.load<string[]>(suggestion.key, []);
+    const stored = loadSuggestionCache(suggestion.key);
     if (stored && stored.length > 0) {
       suggestion.suggestions = stored;
     }

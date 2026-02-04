@@ -35,7 +35,6 @@ import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   useIssueV1Store,
@@ -51,6 +50,7 @@ import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
+  STORAGE_KEY_MY_ISSUES_TAB,
 } from "@/utils";
 
 interface LocalState {
@@ -63,10 +63,7 @@ const me = useCurrentUserV1();
 const issueStore = useIssueV1Store();
 const issuePagedTable = ref<ComponentExposed<typeof PagedTable<Issue>>>();
 
-const viewId = useLocalStorage<string>(
-  `bb.components.${WORKSPACE_ROUTE_MY_ISSUES}.id`,
-  ""
-);
+const viewId = useLocalStorage<string>(STORAGE_KEY_MY_ISSUES_TAB, "");
 
 const defaultSearchParams = (): SearchParams => {
   const myEmail = me.value.email;

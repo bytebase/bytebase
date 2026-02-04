@@ -56,7 +56,10 @@ import { NButton } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useCurrentUserV1 } from "@/store";
-import { useDynamicLocalStorage } from "@/utils";
+import {
+  storageKeySqlEditorAiSuggestion,
+  useDynamicLocalStorage,
+} from "@/utils";
 import { useDynamicSuggestions } from "../logic";
 
 const emit = defineEmits<{
@@ -79,7 +82,7 @@ const suggestions = computed(() => dynamicSuggestions.value?.suggestions ?? []);
 const current = computed(() => dynamicSuggestions.value?.current());
 
 const showSuggestion = useDynamicLocalStorage<boolean>(
-  computed(() => `bb.sql-editor.ai-suggestion.${currentUser.value.name}`),
+  computed(() => storageKeySqlEditorAiSuggestion(currentUser.value.email)),
   true
 );
 

@@ -14,6 +14,7 @@ import {
 import { useCurrentUserV1 } from "@/store";
 import {
   type DashboardSidebarItem,
+  storageKeyQuickAccess,
   useDashboardSidebar,
   useDynamicLocalStorage,
 } from "@/utils";
@@ -80,7 +81,7 @@ export function useQuickLink() {
   });
 
   const quickAccessConfig = useDynamicLocalStorage<string[]>(
-    computed(() => `bb.quick-access.${currentUser.value.name}`),
+    computed(() => storageKeyQuickAccess(currentUser.value.email)),
     [
       "visit-issues",
       "visit-projects",

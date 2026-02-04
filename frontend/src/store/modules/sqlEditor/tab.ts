@@ -18,6 +18,8 @@ import {
   getInstanceResource,
   getSheetStatement,
   isConnectedSQLEditorTab,
+  storageKeySqlEditorCurrentTab,
+  storageKeySqlEditorTabs,
   suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
@@ -46,8 +48,6 @@ const PERSISTENT_TAB_FIELDS = [
 ] as const;
 type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
-const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
-
 export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
   const { project } = storeToRefs(useSQLEditorStore());
@@ -55,12 +55,12 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const worksheetStore = useWorkSheetStore();
 
   const me = useCurrentUserV1();
-  const keyNamespace = computed(
-    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${me.value.email}`
+  const keyNamespace = computed(() =>
+    storageKeySqlEditorTabs(project.value, me.value.email)
   );
 
   const openTmpTabList = useDynamicLocalStorage<PersistentTab[]>(
-    computed(() => `${keyNamespace.value}.opening-tab-list`),
+    computed(() => keyNamespace.value),
     [],
     localStorage,
     {
@@ -69,7 +69,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   );
 
   const currentTabId = useDynamicLocalStorage<string>(
-    computed(() => `${keyNamespace.value}.current-tab-id`),
+    computed(() =>
+      storageKeySqlEditorCurrentTab(project.value, me.value.email)
+    ),
     "",
     localStorage,
     {

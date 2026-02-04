@@ -16,7 +16,11 @@ import type {
 } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
-import { semverCompare } from "@/utils";
+import {
+  STORAGE_KEY_ONBOARDING,
+  STORAGE_KEY_RELEASE,
+  semverCompare,
+} from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://docs.bytebase.com/get-started/self-host/external-url";
@@ -29,7 +33,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const serverInfo = ref<ActuatorInfo | undefined>(undefined);
   const serverInfoTs = ref(0);
   const resourcePackage = ref<ResourcePackage | undefined>(undefined);
-  const releaseInfo = useLocalStorage<ReleaseInfo>("bytebase_release", {
+  const releaseInfo = useLocalStorage<ReleaseInfo>(STORAGE_KEY_RELEASE, {
     ignoreRemindModalTillNextRelease: false,
     nextCheckTs: 0,
   });
@@ -37,7 +41,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const onboardingState = useLocalStorage<{
     isOnboarding: boolean;
     consumed: string[];
-  }>("bb.onboarding-state", {
+  }>(STORAGE_KEY_ONBOARDING, {
     isOnboarding: false,
     consumed: [],
   });

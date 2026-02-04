@@ -68,6 +68,7 @@ import {
   getSheetStatement,
   isDatabaseV1Queryable,
   isWorksheetReadableV1,
+  STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import {
@@ -376,7 +377,7 @@ const syncURLWithConnection = () => {
 
 const restoreLastVisitedSidebarTab = () => {
   const storedLastVisitedSidebarTab = useLocalStorage<AsidePanelTab>(
-    "bb.sql-editor.sidebar.last-visited-tab",
+    STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
     "WORKSHEET"
   );
   asidePanelTab.value = storedLastVisitedSidebarTab.value;

@@ -89,6 +89,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   getInstanceResource,
   nextAnimationFrame,
+  STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT,
   type VueClass,
 } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
@@ -109,7 +110,7 @@ const { showAIPanel, editorPanelSize, handleEditorPanelResize } =
   useSQLEditorContext();
 const AIContext = useAIContext();
 const format = useLocalStorage<boolean>(
-  "bb.sql-editor.editor-panel.code-viewer.format",
+  STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT,
   false
 );
 const instanceEngine = computed(() => getInstanceResource(props.db).engine);

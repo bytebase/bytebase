@@ -43,7 +43,11 @@ import { sortBy, uniq } from "lodash-es";
 import { type DataTableSortState, NButton, NSelect } from "naive-ui";
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { useAuthStore, useCurrentUserV1 } from "@/store";
-import { getDefaultPagination, useDynamicLocalStorage } from "@/utils";
+import {
+  getDefaultPagination,
+  storageKeyPagedTable,
+  useDynamicLocalStorage,
+} from "@/utils";
 
 // ============================================================================
 // Props & Emits
@@ -161,7 +165,9 @@ const pageSizeOptions = computed(() => {
 });
 
 const sessionState = useDynamicLocalStorage<{ pageSize: number }>(
-  computed(() => `${props.sessionKey}.${currentUser.value.name}`),
+  computed(() =>
+    storageKeyPagedTable(props.sessionKey, currentUser.value.email)
+  ),
   { pageSize: pageSizeOptions.value[0].value }
 );
 
