@@ -25,7 +25,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import {
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
@@ -106,7 +106,7 @@ const allowEdit = computed(() => {
   // If issue exists, check issue permissions
   if (issue.value) {
     // Allowed if current user is the creator.
-    if (extractUserId(issue.value.creator) === currentUser.value.email) {
+    if (extractUserEmail(issue.value.creator) === currentUser.value.email) {
       return true;
     }
     // Allowed if current user has related permission.

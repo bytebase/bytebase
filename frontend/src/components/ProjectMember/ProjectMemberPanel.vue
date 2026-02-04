@@ -132,7 +132,7 @@ import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import {
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useCurrentUserV1,
   usePermissionStore,
@@ -293,7 +293,7 @@ const revokeMember = async (binding: MemberBinding) => {
 const selectedUserEmails = computed(() => {
   return state.selectedMembers
     .filter((member) => !member.startsWith(groupBindingPrefix))
-    .map(extractUserId);
+    .map(extractUserEmail);
 });
 
 const handleRevokeSelectedMembers = () => {

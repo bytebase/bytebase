@@ -27,6 +27,7 @@ import {
   UserSchema,
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
+import { extractUserEmail } from "./common";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
@@ -43,12 +44,16 @@ export const useAuthStore = defineStore("auth_v1", () => {
     );
   });
 
+  const currentUserEmail = computed(() =>
+    extractUserEmail(currentUserName.value || "")
+  );
+
   const requireResetPassword = computed(() => {
     if (!isLoggedIn.value) {
       return false;
     }
     return useLocalStorage<boolean>(
-      `${currentUserName.value}.require_reset_password`,
+      `${currentUserEmail.value}.require_reset_password`,
       false
     ).value;
   });
@@ -58,7 +63,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return false;
     }
     const needResetPasswordCache = useLocalStorage<boolean>(
-      `${currentUserName.value}.require_reset_password`,
+      `${currentUserEmail.value}.require_reset_password`,
       false
     );
     needResetPasswordCache.value = requireResetPassword;

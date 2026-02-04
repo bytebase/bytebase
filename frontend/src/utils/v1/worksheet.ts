@@ -4,7 +4,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { extractUserId } from "@/store/modules/v1/common";
+import { extractUserEmail } from "@/store/modules/v1/common";
 import { type SQLEditorConnection, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
@@ -32,7 +32,7 @@ export const extractWorksheetUID = (name: string) => {
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
   const currentUser = useCurrentUserV1();
 
-  if (extractUserId(sheet.creator) === currentUser.value.email) {
+  if (extractUserEmail(sheet.creator) === currentUser.value.email) {
     // Always readable to the creator
     return true;
   }
@@ -63,7 +63,7 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
 export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   const currentUser = useCurrentUserV1();
 
-  if (extractUserId(sheet.creator) === currentUser.value.email) {
+  if (extractUserEmail(sheet.creator) === currentUser.value.email) {
     // Always writable to the creator
     return true;
   }

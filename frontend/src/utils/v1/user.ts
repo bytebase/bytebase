@@ -1,8 +1,8 @@
-import { extractUserId, userNamePrefix } from "@/store/modules/v1/common";
+import { extractUserEmail, userNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 
 export const ensureUserFullName = (identifier: string) => {
-  const id = extractUserId(identifier);
+  const id = extractUserEmail(identifier);
   return `${userNamePrefix}${id}`;
 };
 

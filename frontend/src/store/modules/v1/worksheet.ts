@@ -30,7 +30,7 @@ import {
 import { useSQLEditorTabStore } from "../sqlEditor";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
-import { extractUserId } from "./common";
+import { extractUserEmail } from "./common";
 import { useDatabaseV1Store } from "./database";
 import { useProjectV1Store } from "./project";
 
@@ -317,7 +317,7 @@ export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
   const isCreator = computed(() => {
     const worksheet = currentWorksheet.value;
     if (!worksheet) return false;
-    return extractUserId(worksheet.creator) === me.value.email;
+    return extractUserEmail(worksheet.creator) === me.value.email;
   });
 
   const isReadOnly = computed(() => {

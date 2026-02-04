@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
-import { extractUserId } from "@/store/modules/v1/common";
+import { extractUserEmail } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { User } from "../proto-es/v1/user_service_pb";
@@ -17,7 +17,7 @@ export const unknownUser = (name: string = ""): User => {
   });
   if (name) {
     user.name = name;
-    const email = extractUserId(name);
+    const email = extractUserEmail(name);
     user.email = email;
     user.title = email.split("@")[0];
   }

@@ -1,5 +1,5 @@
 import { first, orderBy } from "lodash-es";
-import { candidatesOfApprovalStepV1, extractUserId } from "@/store";
+import { candidatesOfApprovalStepV1, extractUserEmail } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_ApprovalStatus,
@@ -83,7 +83,7 @@ function computeIsApprovalCandidate(
   // Block self-approval even when matched via ALL_USERS
   if (
     !project.allowSelfApproval &&
-    currentUser.email === extractUserId(issue.creator)
+    currentUser.email === extractUserEmail(issue.creator)
   ) {
     return false;
   }
@@ -99,7 +99,7 @@ function computeExportArchiveReady(
   if (!issue) return false;
   if (![IssueStatus.OPEN, IssueStatus.DONE].includes(issue.status))
     return false;
-  if (currentUserEmail !== extractUserId(issue.creator)) return false;
+  if (currentUserEmail !== extractUserEmail(issue.creator)) return false;
 
   const exportTasks =
     rollout?.stages
@@ -190,8 +190,8 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
       spec.config?.case === "createDatabaseConfig"
   );
   const isCreator =
-    currentUserEmail === extractUserId(plan.creator || "") ||
-    (issue ? currentUserEmail === extractUserId(issue.creator) : false);
+    currentUserEmail === extractUserEmail(plan.creator || "") ||
+    (issue ? currentUserEmail === extractUserEmail(issue.creator) : false);
 
   // Compute permissions
   const isApprovalCandidate = computeIsApprovalCandidate(
@@ -201,7 +201,7 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
   );
   const permissions: ActionPermissions = {
     updatePlan:
-      currentUserEmail === extractUserId(plan.creator || "") ||
+      currentUserEmail === extractUserEmail(plan.creator || "") ||
       hasProjectPermissionV2(project, "bb.plans.update"),
     createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
@@ -209,7 +209,7 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
     runTasks:
       issue?.type === Issue_Type.DATABASE_EXPORT
-        ? currentUserEmail === extractUserId(issue.creator)
+        ? currentUserEmail === extractUserEmail(issue.creator)
         : hasProjectPermissionV2(project, "bb.taskRuns.create"),
     isApprovalCandidate,
   };

@@ -22,7 +22,6 @@ import {
   useDynamicLocalStorage,
 } from "@/utils";
 import {
-  extractUserId,
   hasFeature,
   useDatabaseV1ByName,
   useDatabaseV1Store,
@@ -56,9 +55,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const worksheetStore = useWorkSheetStore();
 
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserId(me.value.name));
   const keyNamespace = computed(
-    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${userUID.value}`
+    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${me.value.email}`
   );
 
   const openTmpTabList = useDynamicLocalStorage<PersistentTab[]>(

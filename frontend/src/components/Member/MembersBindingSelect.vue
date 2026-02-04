@@ -48,7 +48,7 @@ import { AccountSelect } from "@/components/v2";
 import {
   extractGroupEmail,
   extractServiceAccountId,
-  extractUserId,
+  extractUserEmail,
   extractWorkloadIdentityId,
   groupNamePrefix,
   serviceAccountNamePrefix,
@@ -104,7 +104,7 @@ const convertFullnameToMember = (fullname: string) => {
     const email = extractWorkloadIdentityId(fullname);
     return getWorkloadIdentityNameInBinding(email);
   } else {
-    const email = extractUserId(fullname);
+    const email = extractUserEmail(fullname);
     return getUserEmailInBinding(email);
   }
 };

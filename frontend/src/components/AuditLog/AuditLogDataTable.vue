@@ -28,7 +28,7 @@ import { ProjectV1Name } from "@/components/v2";
 import { UserLink } from "@/components/v2/Model/cells";
 import { mapSorterStatus } from "@/components/v2/Model/utils";
 import {
-  extractUserId,
+  extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
   planNamePrefix,
   projectNamePrefix,
@@ -136,7 +136,7 @@ const columnList = computed((): AuditDataTableColumn[] => {
           if (!auditLog.user) {
             return <span>-</span>;
           }
-          const email = extractUserId(auditLog.user);
+          const email = extractUserEmail(auditLog.user);
           return <UserLink title={email} email={email} />;
         },
       },

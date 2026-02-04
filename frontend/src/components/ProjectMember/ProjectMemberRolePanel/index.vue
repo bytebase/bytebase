@@ -140,7 +140,7 @@ import {
 } from "@/components/v2";
 import {
   extractGroupEmail,
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useDatabaseV1Store,
   useProjectIamPolicy,
@@ -212,7 +212,7 @@ const editingBinding = ref<Binding | null>(null);
 const panelTitle = computed(() => {
   let email = props.binding.binding;
   if (props.binding.type === "users") {
-    email = extractUserId(email);
+    email = extractUserEmail(email);
   } else {
     email = extractGroupEmail(email);
   }

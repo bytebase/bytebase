@@ -43,7 +43,7 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { planServiceClientConnect } from "@/connect";
 import {
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
@@ -67,7 +67,7 @@ const selectedResultStatus = ref<Advice_Level | undefined>(undefined);
 
 const allowRunChecks = computed(() => {
   const me = currentUser.value;
-  if (extractUserId(plan.value.creator) === me.email) {
+  if (extractUserEmail(plan.value.creator) === me.email) {
     return true;
   }
   return hasProjectPermissionV2(project.value, "bb.planCheckRuns.run");

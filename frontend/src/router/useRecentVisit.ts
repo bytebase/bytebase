@@ -10,7 +10,7 @@ export function useRecentVisit() {
   const currentUser = useCurrentUserV1();
 
   const recentVisit = useDynamicLocalStorage<string[]>(
-    computed(() => `${STORAGE_KEY}.${currentUser.value.name}`),
+    computed(() => `${STORAGE_KEY}.${currentUser.value.email}`),
     []
   );
 

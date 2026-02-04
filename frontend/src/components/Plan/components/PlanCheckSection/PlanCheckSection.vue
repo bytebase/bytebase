@@ -74,7 +74,7 @@ import { computed, ref, watch } from "vue";
 import { STATEMENT_SKIP_CHECK_THRESHOLD } from "@/components/SQLCheck/common";
 import { planServiceClientConnect } from "@/connect";
 import {
-  extractUserId,
+  extractUserEmail,
   pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
@@ -112,7 +112,7 @@ const shouldShow = computed(() => {
 
 const allowRunChecks = computed(() => {
   const me = currentUser.value;
-  if (extractUserId(plan.value.creator) === me.email) {
+  if (extractUserEmail(plan.value.creator) === me.email) {
     return true;
   }
   return hasProjectPermissionV2(project.value, "bb.planCheckRuns.run");

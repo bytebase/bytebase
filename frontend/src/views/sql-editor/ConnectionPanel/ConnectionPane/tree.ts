@@ -68,7 +68,7 @@ export const useSQLEditorTreeByEnvironment = (
   }>(
     computed(
       () =>
-        `bb.sql-editor.connection-pane.expanded_${environment}.${currentUser.value.name}`
+        `bb.sql-editor.connection-pane.expanded_${environment}.${currentUser.value.email}`
     ),
     {
       initialized: false,

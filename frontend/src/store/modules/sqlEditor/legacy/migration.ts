@@ -13,7 +13,7 @@ import {
   useDynamicLocalStorage,
   WebStorageHelper,
 } from "@/utils";
-import { extractUserId, useWorkSheetStore } from "../../v1";
+import { extractUserEmail, useWorkSheetStore } from "../../v1";
 import { useCurrentUserV1 } from "../../v1/auth";
 import { EXTENDED_TAB_FIELDS, useExtendedTabStore } from "./extendedTab";
 
@@ -28,7 +28,7 @@ type LegacyStoredTab = PersistentTab & { statement?: string };
 
 export const migrateLegacyCache = async () => {
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserId(me.value.name));
+  const userUID = computed(() => extractUserEmail(me.value.name));
 
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${userUID.value}`
@@ -113,7 +113,7 @@ export const migrateLegacyCache = async () => {
 
 export const migrateDraftsFromCache = async (project: string) => {
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserId(me.value.name));
+  const userUID = computed(() => extractUserEmail(me.value.name));
   const worksheetStore = useWorkSheetStore();
 
   const viewStateByTab = useDynamicLocalStorage<
@@ -169,7 +169,7 @@ export const migrateDraftsFromCache = async (project: string) => {
 
 export const migrateTabViewState = (project: string) => {
   const me = useCurrentUserV1();
-  const userUID = computed(() => extractUserId(me.value.name));
+  const userUID = computed(() => extractUserEmail(me.value.name));
 
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}`
