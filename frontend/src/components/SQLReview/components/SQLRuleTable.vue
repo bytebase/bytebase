@@ -61,7 +61,7 @@
                 @click="setActiveRule(rule)"
               />
               <NButton
-                v-if="editable"
+                v-if="editable && !isBuiltinRule(rule)"
                 secondary
                 type="error"
                 size="small"
@@ -102,7 +102,7 @@ import { NButton, NCheckbox, NDataTable, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";
-import { getRuleLocalization, ruleTypeToString } from "@/types";
+import { getRuleLocalization, isBuiltinRule, ruleTypeToString } from "@/types";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
@@ -248,7 +248,7 @@ const columns = computed(() => {
             <NButton onClick={() => setActiveRule(rule)}>
               {props.editable ? t("common.edit") : t("common.view")}
             </NButton>
-            {props.editable && (
+            {props.editable && !isBuiltinRule(rule) && (
               <NButton
                 secondary
                 type="error"
