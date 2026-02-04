@@ -48,7 +48,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
 import type { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import { ruleTemplateMapV2 } from "@/types/sqlReview";
+import { isBuiltinRule, ruleTemplateMapV2 } from "@/types/sqlReview";
 import SQLReviewTabsByEngine from "./SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "./SQLRuleTableWithFilter.vue";
 import { getRuleKey } from "./utils";
@@ -99,6 +99,10 @@ const onSelectedRuleKeysUpdateForEngine = (engine: Engine, keys: string[]) => {
     const [engineStr, ruleKey] = oldKey.split(":");
     const engineNum = parseInt(engineStr) as Engine;
     const ruleType = parseInt(ruleKey) as SQLReviewRule_Type;
+    const template = ruleTemplateMapV2.get(engineNum)?.get(ruleType);
+    if (template && isBuiltinRule(template)) {
+      continue;
+    }
     const rule = props.selectedRuleMap.get(engineNum)?.get(ruleType);
     if (rule) {
       emit("rule-remove", rule);

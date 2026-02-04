@@ -1,34 +1,21 @@
 import { useLocalStorage } from "@vueuse/core";
 import type { WritableComputedRef } from "vue";
 import { type Composer, createI18n } from "vue-i18n";
+import { STORAGE_KEY_LANGUAGE } from "@/utils/storage-keys";
 import { mergedLocalMessage } from "./i18n-messages";
-
-export interface LanguageStorage {
-  appearance: {
-    language: string;
-  };
-}
 
 const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
 const getValidLocale = () => {
-  const storage = useLocalStorage<LanguageStorage>("bytebase_options", {
-    appearance: {
-      language: "",
-    },
-  });
+  const storage = useLocalStorage<string>(STORAGE_KEY_LANGUAGE, "");
 
   const params = new URL(globalThis.location.href).searchParams;
   let locale = params.get("locale") || "";
   if (validLocaleList.includes(locale)) {
-    storage.value = {
-      appearance: {
-        language: locale,
-      },
-    };
+    storage.value = locale;
   }
 
-  locale = storage.value?.appearance?.language || "";
+  locale = storage.value || "";
   if (validLocaleList.includes(locale)) {
     return locale;
   }

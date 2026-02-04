@@ -38,7 +38,11 @@ import {
   updateSpecSheetWithStatement,
 } from "@/components/Plan/logic";
 import { pushNotification } from "@/store";
-import { extractDatabaseResourceName, setSheetStatement } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  getInstanceResource,
+  setSheetStatement,
+} from "@/utils";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 import {
   getDefaultGhostConfig,
@@ -79,6 +83,29 @@ const errors = computed(() => {
       )
     );
   }
+
+  // Check for databases with supported engine/version but missing backup location (bbdataarchive)
+  const missingBackupDatabases = databases.value.filter(
+    (db) => allowGhostForDatabase(db) && !db.backupAvailable
+  );
+  if (missingBackupDatabases.length > 0) {
+    // Ghost only supports MySQL/MariaDB, group by instance to avoid duplicates
+    const instanceMap = new Map<string, string>();
+    for (const db of missingBackupDatabases) {
+      const instanceResource = getInstanceResource(db);
+      if (!instanceMap.has(instanceResource.name)) {
+        instanceMap.set(instanceResource.name, instanceResource.title);
+      }
+    }
+    for (const [, instanceTitle] of instanceMap) {
+      errors.push(
+        t("plan.ghost.missing-backup-database", {
+          instance: instanceTitle,
+        })
+      );
+    }
+  }
+
   return errors;
 });
 

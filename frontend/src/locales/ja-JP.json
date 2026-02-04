@@ -1204,7 +1204,8 @@
       "only-some-databases-checked": "一部のデータベースのみがチェックされます",
       "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません",
       "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
-      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
+      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります",
+      "missing-backup-database": "インスタンス '{instance}' にデータベース 'bbdataarchive' を作成し、インスタンスとデータベースを同期してください"
     },
     "refresh-indicator": {
       "last-refresh": "最終更新: {time}"

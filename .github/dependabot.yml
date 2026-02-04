@@ -19,5 +19,9 @@ updates:
     directory: "/frontend"
     schedule:
       interval: "monthly"
+    groups:
+      codingame:
+        patterns:
+          - "@codingame/*"
 
 version: 2

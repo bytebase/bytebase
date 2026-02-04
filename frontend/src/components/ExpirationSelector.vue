@@ -50,6 +50,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
+import { STORAGE_KEY_ROLES_EXPIRATION } from "@/utils";
 
 interface ExpirationOption {
   value: number;
@@ -76,7 +77,7 @@ const settingV1Store = useSettingV1Store();
 
 // Remember the last selected expiration option
 const lastSelectedExpiration = useLocalStorage<number>(
-  "bb.roles.last-expiration-selection",
+  STORAGE_KEY_ROLES_EXPIRATION,
   7 // Default to 1 week
 );
 

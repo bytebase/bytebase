@@ -62,7 +62,7 @@ import type {
   SchemaMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { GetSchemaStringRequestSchema } from "@/types/proto-es/v1/database_service_pb";
-import { minmax } from "@/utils";
+import { minmax, STORAGE_KEY_SCHEMA_EDITOR_PREVIEW } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { useSchemaEditorContext } from "../context";
 
@@ -75,7 +75,7 @@ const props = defineProps<{
 }>();
 
 const { hidePreview, events } = useSchemaEditorContext();
-const expanded = useLocalStorage("bb.schema-editor.preview.expanded", true);
+const expanded = useLocalStorage(STORAGE_KEY_SCHEMA_EDITOR_PREVIEW, true);
 const parentElement = useParentElement();
 const { height: parentHeight } = useElementSize(parentElement);
 const layoutReady = computed(() => parentHeight.value > 0);

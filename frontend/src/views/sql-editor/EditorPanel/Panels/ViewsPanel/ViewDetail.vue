@@ -87,6 +87,7 @@ import type {
   SchemaMetadata,
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT } from "@/utils";
 import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ColumnsTable from "./ColumnsTable.vue";
@@ -113,7 +114,7 @@ const state = reactive<LocalState>({
   keyword: "",
 });
 const format = useLocalStorage<boolean>(
-  "bb.sql-editor.editor-panel.code-viewer.format",
+  STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT,
   false
 );
 const selectedStatement = ref("");

@@ -124,6 +124,26 @@ const state = {
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
 
+const reconnect = async () => {
+  conn.ws = undefined;
+  conn.state = "initial";
+  conn.retries = 0;
+
+  await refreshTokens();
+
+  if (state.client) {
+    try {
+      state.client.dispose();
+    } catch {
+      // Ignore disposal errors on a dead client.
+    }
+    state.client = undefined;
+  }
+  state.clientInitialized = undefined;
+
+  await initializeLSPClient();
+};
+
 const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
   const ws = await connectWebSocket();
   const socket = toSocket(ws);
@@ -175,25 +195,16 @@ const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
             action: ErrorAction.Continue,
           };
         },
-        closed: async () => {
+        closed: () => {
           console.debug("[MonacoLanguageClient] closed");
-          conn.ws = undefined;
-          try {
-            // The WebSocket relies on the access-token cookie which
-            // may have expired. Refresh first so the reconnection
-            // uses a valid cookie. refreshTokens() deduplicates
-            // concurrent calls via Web Lock API.
-            await refreshTokens();
-            await connectWebSocket();
-            return {
-              action: CloseAction.Restart,
-            };
-          } catch (err) {
-            errorNotification(err);
-            return {
-              action: CloseAction.DoNotRestart,
-            };
-          }
+          // Do NOT use CloseAction.Restart — MonacoLanguageClient's
+          // createMessageTransports() always returns the original
+          // (now dead) reader/writer, so restart reuses dead transports.
+          // Instead, recreate the entire client with a fresh WebSocket.
+          reconnect().catch((err) => errorNotification(err));
+          return {
+            action: CloseAction.DoNotRestart,
+          };
         },
       },
     },

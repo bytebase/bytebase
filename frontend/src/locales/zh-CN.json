@@ -1204,7 +1204,8 @@
       "only-some-databases-checked": "仅检查部分数据库",
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
+      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
+      "missing-backup-database": "请在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库"
     },
     "refresh-indicator": {
       "last-refresh": "上次刷新：{time}"

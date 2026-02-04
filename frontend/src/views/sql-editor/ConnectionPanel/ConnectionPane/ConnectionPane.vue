@@ -260,6 +260,7 @@ import {
   getValuesFromSearchParams,
   isDatabaseV1Queryable,
   isDescendantOf,
+  storageKeySqlEditorConnExpandedKeys,
   useDynamicLocalStorage,
 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
@@ -301,10 +302,7 @@ const expandedState = useDynamicLocalStorage<{
   initialized: boolean;
   expandedKeys: string[];
 }>(
-  computed(
-    () =>
-      `bb.sql-editor.connection-pane.expanded-keys.${currentUser.value.name}`
-  ),
+  computed(() => storageKeySqlEditorConnExpandedKeys(currentUser.value.email)),
   {
     initialized: false,
     expandedKeys: [],
