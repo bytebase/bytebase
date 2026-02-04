@@ -1204,7 +1204,8 @@
       "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
-      "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}"
+      "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}",
+      "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên phiên bản '{instance}', sau đó đồng bộ phiên bản và cơ sở dữ liệu"
     },
     "refresh-indicator": {
       "last-refresh": "Làm mới lần cuối: {time}"
