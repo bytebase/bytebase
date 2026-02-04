@@ -66,6 +66,8 @@ import {
   TEMPLATE_LIST_V2 as builtInTemplateList,
   convertRuleMapToPolicyRuleList,
   getRuleMapByEngine,
+  isBuiltinRule,
+  withBuiltinRules,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
@@ -128,7 +130,9 @@ const state = reactive<LocalState>({
   name: props.name || t("sql-review.create.basic-info.display-name-default"),
   resourceId: props.policy ? getReviewConfigId(props.policy.id) : "",
   attachedResources: props.selectedResources,
-  selectedRuleMapByEngine: getRuleMapByEngine(props.selectedRuleList),
+  selectedRuleMapByEngine: withBuiltinRules(
+    getRuleMapByEngine(props.selectedRuleList)
+  ),
   selectedTemplateId: props.policy
     ? getTemplateId(props.policy)
     : builtInTemplateList[0]?.id,
@@ -145,7 +149,9 @@ const onTemplateApply = (template: SQLReviewPolicyTemplateV2 | undefined) => {
   state.selectedTemplateId = template.id;
   state.pendingApplyTemplate = undefined;
 
-  state.selectedRuleMapByEngine = getRuleMapByEngine(template.ruleList);
+  state.selectedRuleMapByEngine = withBuiltinRules(
+    getRuleMapByEngine(template.ruleList)
+  );
 };
 
 const onCancel = (newPolicy: SQLReviewPolicy | undefined = undefined) => {
@@ -257,6 +263,9 @@ const tryApplyTemplate = (template: SQLReviewPolicyTemplateV2) => {
 };
 
 const removeRole = (rule: RuleTemplateV2) => {
+  if (isBuiltinRule(rule)) {
+    return;
+  }
   state.selectedRuleMapByEngine.get(rule.engine)?.delete(rule.type);
   if (state.selectedRuleMapByEngine.get(rule.engine)?.size === 0) {
     state.selectedRuleMapByEngine.delete(rule.engine);

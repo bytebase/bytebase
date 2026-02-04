@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // TestTemplateAdvisorRegistrations validates that all SQL review rules in frontend templates
@@ -371,6 +369,6 @@ func buildRuleTypeMapping() map[string]string {
 		"SYSTEM_FUNCTION_DISALLOW_CREATE":                     "storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE",
 		"SYSTEM_FUNCTION_DISALLOWED_LIST":                     "storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST",
 		"ADVICE_ONLINE_MIGRATION":                             "storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION",
-		"BUILTIN_PRIOR_BACKUP_CHECK":                          storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(),
+		"BUILTIN_PRIOR_BACKUP_CHECK":                          "storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK",
 	}
 }
