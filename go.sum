@@ -1715,8 +1715,8 @@ github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6Mwd
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/snowflakedb/gosnowflake v1.18.1 h1:Nb4AWSnSBWe1UKpKTwCZxjYhYo1JH7GgKhO3wW1kR10=
-github.com/snowflakedb/gosnowflake v1.18.1/go.mod h1:7D4+cLepOWrerVsH+tevW3zdMJ5/WrEN7ZceAC6xBv0=
+github.com/snowflakedb/gosnowflake v1.19.0 h1:Oy/w5/hXiSJV09kgG9zpFZFjNRNvF5Cet7r6vzd87OQ=
+github.com/snowflakedb/gosnowflake v1.19.0/go.mod h1:7D4+cLepOWrerVsH+tevW3zdMJ5/WrEN7ZceAC6xBv0=
 github.com/sourcegraph/conc v0.3.0 h1:OQTbbt6P72L20UqAkXXuLOj79LfEanQ+YQFNpLA9ySo=
 github.com/sourcegraph/conc v0.3.0/go.mod h1:Sdozi7LEKbFPqYX2/J+iBAM6HpqSLTASQIKqDmF7Mt0=
 github.com/sourcegraph/jsonrpc2 v0.2.1 h1:2GtljixMQYUYCmIg7W9aF2dFmniq/mOr2T9tFRh6zSQ=
