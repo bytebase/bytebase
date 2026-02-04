@@ -7,29 +7,26 @@
       @update:value="onSelect"
     />
 
-    <template v-if="state.selected === -1">
-      <div class="flex flex-col gap-y-2">
-        <NDatePicker
-          size="medium"
-          class="w-full"
-          :value="state.expirationTimestampInMS"
-          :actions="null"
-          :update-value-on-close="true"
-          type="datetime"
-          :is-date-disabled="isDateDisabled"
-          clearable
-          :placeholder="$t('issue.grant-request.custom-date-placeholder')"
-          @update:value="handleCustomDateChange"
-        />
-        <div v-if="maximumRoleExpiration" class="text-xs text-gray-500">
-          {{ $t("settings.general.workspace.maximum-role-expiration.self") }}:
-          {{ $t("common.date.days", { days: maximumRoleExpiration }) }}
-        </div>
+    <div v-if="state.selected === -1" class="flex flex-col gap-y-2">
+      <NDatePicker
+        size="medium"
+        class="w-full"
+        :value="state.expirationTimestampInMS"
+        :actions="null"
+        :update-value-on-close="true"
+        type="datetime"
+        :is-date-disabled="isDateDisabled"
+        clearable
+        :placeholder="$t('issue.grant-request.custom-date-placeholder')"
+        @update:value="handleCustomDateChange"
+      />
+      <div v-if="maximumRoleExpiration" class="text-xs text-gray-500">
+        {{ $t("settings.general.workspace.maximum-role-expiration.self") }}:
+        {{ $t("common.date.days", { days: maximumRoleExpiration }) }}
       </div>
-    </template>
-
+    </div>
     <div
-      v-if="state.selected !== -1"
+      v-else
       class="p-3 bg-gray-50 rounded-md text-sm text-gray-600"
     >
       <div v-if="state.expirationTimestampInMS">
@@ -67,6 +64,7 @@ interface LocalState {
 const props = defineProps<{
   timestampInMs?: number;
   role: string;
+  useCachedSelection?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -87,6 +85,9 @@ const getInitialSelection = () => {
   if (props.timestampInMs !== undefined) {
     // If timestamp is provided, use custom date
     return -1;
+  }
+  if (!props.useCachedSelection) {
+    return 0;
   }
   // Otherwise, use the last selected value if it's still valid
   return lastSelectedExpiration.value;

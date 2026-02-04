@@ -95,7 +95,7 @@
         class="pb-5"
         :class="[
           'w-full',
-          item.mode === 'NORMAL' ? '' : 'ml-[42px]',
+          item.mode === 'NORMAL' ? '' : 'ml-10.5',
           index === state.maskingRuleItemList.length - 1 ? '' : 'border-b',
         ]"
       >

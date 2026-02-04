@@ -63,6 +63,12 @@ export const getNameParentTokens = (
   return tokens;
 };
 
+export const getEnvironmentId = (name: string): string => {
+  const tokens = getNameParentTokens(name, [environmentNamePrefix]);
+  const envId = tokens[0];
+  return envId;
+};
+
 export const getUserId = (name: string): number => {
   const tokens = getNameParentTokens(name, [userNamePrefix]);
   const userId = Number(tokens[0] || UNKNOWN_ID);

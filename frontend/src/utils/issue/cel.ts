@@ -5,6 +5,7 @@ import type { SimpleExpr } from "@/plugins/cel";
 import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
 import {
   databaseNamePrefix,
+  getEnvironmentId,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
@@ -21,6 +22,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
@@ -125,16 +127,19 @@ export const buildConditionExpr = ({
   description,
   expirationTimestampInMS,
   databaseResources,
+  environments,
 }: {
   title?: string;
   role: string;
   description: string;
   expirationTimestampInMS?: number;
   databaseResources?: DatabaseResource[];
+  environments?: string[];
 }): ConditionExpr => {
   const expresson = stringifyConditionExpression({
     expirationTimestampInMS,
     databaseResources,
+    environments,
   });
   return create(ConditionExprSchema, {
     title:
@@ -220,9 +225,11 @@ const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
 export const stringifyConditionExpression = ({
   expirationTimestampInMS,
   databaseResources,
+  environments,
 }: {
   expirationTimestampInMS?: number;
   databaseResources?: DatabaseResource[];
+  environments?: string[];
 }): string => {
   const expression: string[] = [];
   if (databaseResources !== undefined && databaseResources.length > 0) {
@@ -231,6 +238,11 @@ export const stringifyConditionExpression = ({
   if (expirationTimestampInMS) {
     expression.push(
       `${CEL_ATTRIBUTE_REQUEST_TIME} < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
+    );
+  }
+  if (environments && environments.length > 0) {
+    expression.push(
+      `${CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID} in [${environments.map((env) => `"${getEnvironmentId(env)}"`)}]`
     );
   }
   return expression.join(" && ");

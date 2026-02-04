@@ -15,60 +15,20 @@
             <span>{{ $t("project.members.condition-name") }}</span>
           </p>
           <NInput
-            v-model:value="state.title"
+            v-model:value="title"
             type="text"
             :placeholder="displayRoleTitle(binding.role)"
           />
         </div>
 
-        <template v-if="!state.isLoading">
-          <div
-            v-if="
-              binding.role !== PresetRoleType.PROJECT_OWNER &&
-              checkRoleContainsAnyPermission(binding.role, 'bb.sql.select')
-            "
-            class="w-full"
-          >
-            <div class="flex items-center gap-x-1 mb-2">
-              <span>{{ $t("common.databases") }}</span>
-              <RequiredStar />
-            </div>
-            <QuerierDatabaseResourceForm
-              ref="databaseResourceFormRef"
-              :database-resources="databaseResources"
-              :project-name="project.name"
-              :include-cloumn="false"
-              :required-feature="PlanFeature.FEATURE_IAM"
-            />
-          </div>
-        </template>
-
-        <div class="w-full">
-          <p class="mb-2">{{ $t("common.description") }}</p>
-          <NInput
-            v-model:value="state.description"
-            type="textarea"
-            :placeholder="$t('project.members.role-description')"
-          />
-        </div>
-
-        <div class="w-full">
-          <p class="mb-2">{{ $t("common.expiration") }}</p>
-          <ExpirationSelector
-            v-if="!state.isLoading"
-            ref="expirationSelectorRef"
-            :role="binding.role"
-            v-model:timestamp-in-ms="state.expirationTimestamp"
-            class="grid-cols-3 sm:grid-cols-4"
-          />
-        </div>
-
-        <MembersBindingSelect
-          :value="binding.members"
-          :disabled="true"
-          :required="true"
-          :allow-change-type="false"
-          :include-all-users="true"
+        <AddProjectMemberForm
+          ref="formRef"
+          class="w-full"
+          :project-name="projectResourceName"
+          :binding="binding"
+          :is-edit="true"
+          :disable-role-change="true"
+          :disable-member-change="true"
         />
       </div>
       <template #footer>
@@ -89,7 +49,7 @@
               :disabled="!allowConfirm"
               @click="handleUpdateRole"
             >
-              {{ $t("common.ok") }}
+              {{ $t("common.update") }}
             </NButton>
           </div>
         </div>
@@ -101,26 +61,20 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import ExpirationSelector from "@/components/ExpirationSelector.vue";
-import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
-import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
-import RequiredStar from "@/components/RequiredStar.vue";
+import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
 } from "@/store";
-import { PresetRoleType } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { checkRoleContainsAnyPermission, displayRoleTitle } from "@/utils";
-import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
+import { displayRoleTitle } from "@/utils";
 import { getBindingIdentifier } from "../utils";
 
 const props = defineProps<{
@@ -132,23 +86,9 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-interface LocalState {
-  title: string;
-  description: string;
-  expirationTimestamp?: number;
-  isLoading: boolean;
-}
-
 const { t } = useI18n();
-
-const state = reactive<LocalState>({
-  title: "",
-  description: "",
-  isLoading: true,
-});
-const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
-const databaseResourceFormRef =
-  ref<InstanceType<typeof QuerierDatabaseResourceForm>>();
+const title = ref<string>("");
+const formRef = ref<InstanceType<typeof AddProjectMemberForm>>();
 
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
@@ -173,35 +113,13 @@ const allowRemoveRole = () => {
 
 const allowConfirm = computed(() => {
   // only allow update current single user.
-  return (
-    props.binding.members.length === 1 &&
-    expirationSelectorRef.value?.isValid &&
-    databaseResourceFormRef.value?.isValid
-  );
-});
-
-const databaseResources = computed(() => {
-  if (props.binding.parsedExpr) {
-    const conditionExpr = convertFromExpr(props.binding.parsedExpr);
-    return conditionExpr.databaseResources;
-  }
-  return undefined;
+  return props.binding.members.length === 1 && formRef.value?.allowConfirm;
 });
 
 onMounted(() => {
   const binding = props.binding;
   // Set the display title with the role name.
-  state.title = binding.condition?.title || "";
-  state.description = binding.condition?.description || "";
-
-  if (binding.parsedExpr) {
-    const conditionExpr = convertFromExpr(binding.parsedExpr);
-    if (conditionExpr.expiredTime) {
-      state.expirationTimestamp = new Date(conditionExpr.expiredTime).getTime();
-    }
-  }
-
-  state.isLoading = false;
+  title.value = binding.condition?.title || displayRoleTitle(binding.role);
 });
 
 const handleDeleteRole = async () => {
@@ -217,20 +135,11 @@ const handleDeleteRole = async () => {
 };
 
 const handleUpdateRole = async () => {
-  const member = props.binding.members[0];
-
-  const newBinding = cloneDeep(props.binding);
-  newBinding.members = [member];
-
-  const databaseResources =
-    await databaseResourceFormRef.value?.getDatabaseResources();
-  newBinding.condition = buildConditionExpr({
-    title: state.title,
-    role: props.binding.role,
-    description: state.description,
-    expirationTimestampInMS: state.expirationTimestamp,
-    databaseResources,
-  });
+  const binding = await formRef.value?.getBinding(title.value);
+  if (!binding) {
+    return;
+  }
+  const member = binding.members[0];
 
   const policy = cloneDeep(iamPolicy.value);
   const oldBindingIndex = policy.bindings.findIndex(
@@ -247,7 +156,7 @@ const handleUpdateRole = async () => {
     }
   }
 
-  policy.bindings.push(newBinding);
+  policy.bindings.push(binding);
 
   await useProjectIamPolicyStore().updateProjectIamPolicy(
     projectResourceName.value,
