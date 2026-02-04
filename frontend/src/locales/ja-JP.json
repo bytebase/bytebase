@@ -1897,7 +1897,8 @@
       "condition-name": "条件名",
       "workspace-level-roles": "ワークスペースレベルのロール",
       "project-level-roles": "プロジェクトレベルのロール",
-      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
+      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する"
     },
     "select": "アイテムを選択",
     "all": "全てのアイテム",

@@ -24,7 +24,7 @@
           </div>
         </div>
       </div>
-      <template v-if="binding.workspaceLevelRoles.size > 0">
+      <div v-if="binding.workspaceLevelRoles.size > 0" class="mb-6">
         <p class="text-lg px-1 pb-1 w-full border-b mb-3">
           {{ $t("project.members.workspace-level-roles") }}
         </p>
@@ -41,38 +41,49 @@
             {{ displayRoleTitle(role) }}
           </NTag>
         </div>
-      </template>
-      <template v-if="roleList.length > 0">
+      </div>
+      <div v-if="binding.projectRoleBindings.length > 0">
         <p
           v-if="binding.workspaceLevelRoles.size > 0"
           class="text-lg px-1 pb-1 w-full border-b mt-4 mb-3"
         >
           {{ $t("project.members.project-level-roles") }}
         </p>
-        <div v-for="role in roleList" :key="role.role" class="mb-4">
-          <template v-if="role.singleBindingList.length > 0">
+        <div v-for="(b, index) in binding.projectRoleBindings" :key="index" class="mb-4">
+          <div class="py-2">
             <div
-              class="w-full px-2 py-2 flex flex-row justify-start items-center gap-x-1"
+              class="w-full flex flex-row justify-start items-center gap-x-1"
             >
-              <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
+              <span class="textlabel">{{ displayRoleTitle(b.role) }}</span>
+              <MiniActionButton
+                @click="() => {
+                  editingBinding = cloneDeep(b)
+                }"
+              >
+                <PencilIcon class="w-4 h-4" />
+              </MiniActionButton>
               <MiniActionButton
                 type="error"
-                :disabled="!allowRemoveRole(role.role)"
-                @click.prevent="handleDeleteRole(role.role)"
+                :disabled="!allowRemoveRole"
+                @click.prevent="handleDeleteRole(b)"
               >
                 <TrashIcon class="w-4 h-4" />
               </MiniActionButton>
             </div>
-            <NDataTable
-              size="small"
-              :columns="getDataTableColumns(role.role)"
-              :data="role.singleBindingList"
-              :striped="true"
-              :bordered="true"
-            />
-          </template>
+            <span v-if="b.condition?.description" class="textinfolabel">
+              {{ b.condition?.description }}
+            </span>
+          </div>
+          <NDataTable
+            size="small"
+            :columns="getDataTableColumns(b.role)"
+            :data="getSingleBindingList(b)"
+            :striped="true"
+            :bordered="true"
+          />
+          <NDivider />
         </div>
-      </template>
+      </div>
       <template #footer>
         <div class="w-full flex flex-row justify-between items-center">
           <div>
@@ -125,56 +136,44 @@ import { computedAsync } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import { Building2Icon, PencilIcon, TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import { NButton, NDataTable, NTag, NTooltip, useDialog } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import {
+  NButton,
+  NDataTable,
+  NDivider,
+  NTag,
+  NTooltip,
+  useDialog,
+} from "naive-ui";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import type { MemberBinding } from "@/components/Member/types";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import {
-  Drawer,
-  DrawerContent,
-  InstanceV1Name,
-  MiniActionButton,
-} from "@/components/v2";
+import { Drawer, DrawerContent, MiniActionButton } from "@/components/v2";
 import {
   extractGroupEmail,
   extractUserEmail,
   pushNotification,
-  useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
-import {
-  type DatabaseResource,
-  PRESET_ROLES,
-  PresetRoleType,
-  unknownUser,
-} from "@/types";
+import { type DatabaseResource, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import {
-  displayRoleTitle,
-  extractDatabaseResourceName,
-  getInstanceResource,
-  hasProjectPermissionV2,
-} from "@/utils";
-import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
+import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
+import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
 import { roleHasDatabaseLimitation } from "../utils";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
-import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
 
 interface SingleBinding {
   databaseResource?: DatabaseResource;
   expiration?: Date;
-  description: string;
-  rawBinding: Binding;
 }
 
 interface LocalState {
@@ -194,19 +193,12 @@ defineEmits<{
 const { t } = useI18n();
 const dialog = useDialog();
 const userStore = useUserStore();
-const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 const state = reactive<LocalState>({
   showAddMemberPanel: false,
 });
-const roleList = ref<
-  {
-    role: string;
-    singleBindingList: SingleBinding[];
-  }[]
->([]);
 const editingBinding = ref<Binding | null>(null);
 
 const panelTitle = computed(() => {
@@ -232,17 +224,7 @@ const allowRevokeMember = computed(() => {
 const getDataTableColumns = (
   role: string
 ): DataTableColumn<SingleBinding>[] => {
-  const columns: DataTableColumn<SingleBinding>[] = [
-    {
-      title: t("project.members.condition-name"),
-      key: "conditionName",
-      render: (singleBinding) => {
-        const conditionTitle = singleBinding.rawBinding.condition?.title;
-        const roleTitle = displayRoleTitle(singleBinding.rawBinding.role);
-        return conditionTitle || roleTitle;
-      },
-    },
-  ];
+  const columns: DataTableColumn<SingleBinding>[] = [];
 
   if (roleHasDatabaseLimitation(role)) {
     columns.push(
@@ -250,23 +232,7 @@ const getDataTableColumns = (
         title: t("common.database"),
         key: "database",
         render: (singleBinding) => {
-          const databaseName = extractDatabaseName(
-            singleBinding.databaseResource
-          );
-          if (singleBinding.databaseResource) {
-            const database = extractDatabase(singleBinding.databaseResource);
-            return (
-              <div class="flex items-center gap-x-1">
-                <InstanceV1Name
-                  instance={getInstanceResource(database)}
-                  link={false}
-                />
-                <span>/</span>
-                <span>{databaseName}</span>
-              </div>
-            );
-          }
-          return databaseName;
+          return singleBinding.databaseResource?.databaseFullName ?? "*";
         },
       },
       {
@@ -284,70 +250,22 @@ const getDataTableColumns = (
     );
   }
 
-  columns.push(
-    {
-      title: t("common.expiration"),
-      key: "expiration",
-      render: (singleBinding) => {
-        const content = extractExpiration(singleBinding.expiration);
-        if (checkRoleExpired(singleBinding)) {
-          return <RoleExpiredTip content={content} />;
-        }
-        return content;
-      },
+  columns.push({
+    title: t("common.expiration"),
+    key: "expiration",
+    render: (singleBinding) => {
+      const content = extractExpiration(singleBinding.expiration);
+      if (checkRoleExpired(singleBinding)) {
+        return <RoleExpiredTip content={content} />;
+      }
+      return content;
     },
-    {
-      title: t("common.description"),
-      key: "description",
-      render: (singleBinding) => (
-        <RoleDescription description={singleBinding.description || ""} />
-      ),
-    },
-    {
-      title: "",
-      key: "operations",
-      width: 32,
-      render: (singleBinding) => (
-        <div class="flex justify-end pr-2 gap-x-1">
-          <MiniActionButton
-            onClick={() => {
-              editingBinding.value = create(BindingSchema, {
-                role: role,
-                members: [props.binding.binding],
-                condition: singleBinding.rawBinding.condition,
-                parsedExpr: singleBinding.rawBinding.parsedExpr,
-              });
-            }}
-          >
-            <PencilIcon class="w-4 h-4" />
-          </MiniActionButton>
-          {(roleList.value.find((r) => r.role === role)?.singleBindingList
-            ?.length ?? 0) > 1 && (
-            <MiniActionButton
-              type="error"
-              disabled={!allowDeleteCondition(singleBinding)}
-              onClick={() => {
-                const item = roleList.value.find((r) => r.role === role);
-                if (item) {
-                  const index = item.singleBindingList.indexOf(singleBinding);
-                  if (index >= 0) {
-                    handleDeleteCondition(item, index);
-                  }
-                }
-              }}
-            >
-              <TrashIcon class="w-4 h-4" />
-            </MiniActionButton>
-          )}
-        </div>
-      ),
-    }
-  );
+  });
 
   return columns;
 };
 
-const allowRemoveRole = (_role: string) => {
+const allowRemoveRole = computed(() => {
   if (props.project.state === State.DELETED) {
     return false;
   }
@@ -356,12 +274,12 @@ const allowRemoveRole = (_role: string) => {
   }
 
   return true;
-};
+});
 
-const handleDeleteRole = (role: string) => {
+const handleDeleteRole = (binding: Binding) => {
   const title = t("project.members.revoke-role-from-user", {
-    role: displayRoleTitle(role),
-    user: props.binding.title,
+    role: displayRoleTitle(binding.role),
+    user: props.binding.binding,
   });
   dialog.create({
     type: "error",
@@ -371,96 +289,13 @@ const handleDeleteRole = (role: string) => {
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
       const policy = cloneDeep(iamPolicy.value);
-      for (const binding of policy.bindings) {
-        if (binding.role !== role) {
-          continue;
-        }
-        binding.members = binding.members.filter((member) => {
-          return member !== props.binding.binding;
-        });
-      }
-      await projectIamPolicyStore.updateProjectIamPolicy(
-        projectResourceName.value,
-        policy
-      );
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.deleted"),
-      });
-    },
-  });
-};
-
-const allowDeleteCondition = (singleBinding: SingleBinding) => {
-  if (singleBinding.rawBinding.role === PresetRoleType.PROJECT_OWNER) {
-    return allowRemoveRole(PresetRoleType.PROJECT_OWNER);
-  }
-  return true;
-};
-
-const handleDeleteCondition = async (
-  item: {
-    role: string;
-    singleBindingList: SingleBinding[];
-  },
-  index: number
-) => {
-  const singleBinding = item.singleBindingList[index];
-  const conditionName =
-    singleBinding.rawBinding.condition?.title ||
-    displayRoleTitle(singleBinding.rawBinding.role);
-
-  const title = t("project.members.revoke-role-from-user", {
-    role: conditionName,
-    user: props.binding.title,
-  });
-
-  dialog.create({
-    title: title,
-    type: "error",
-    content: t("common.cannot-undo-this-action"),
-    positiveText: t("common.revoke"),
-    negativeText: t("common.cancel"),
-    onPositiveClick: async () => {
-      const policy = cloneDeep(iamPolicy.value);
-      const rawBinding = policy.bindings.find((binding) =>
-        isEqual(binding, singleBinding.rawBinding)
-      );
+      const rawBinding = policy.bindings.find((b) => isEqual(binding, b));
       if (!rawBinding) {
         return;
       }
-      // Simply remove the member from original binding.
-      rawBinding.members = rawBinding.members.filter((member) => {
+      rawBinding.members = binding.members.filter((member) => {
         return member !== props.binding.binding;
       });
-
-      // Build new bindings with the remaining conditions
-      const bindingList = item.singleBindingList.filter((b, i) => {
-        if (i === index) {
-          return false;
-        }
-        return isEqual(b.rawBinding, singleBinding.rawBinding);
-      });
-      if (bindingList.length > 0) {
-        const databaseResources = bindingList
-          .filter((b) => b.databaseResource)
-          .map((b) => b.databaseResource) as DatabaseResource[];
-
-        policy.bindings.push(
-          create(BindingSchema, {
-            role: item.role,
-            members: [props.binding.binding],
-            condition: buildConditionExpr({
-              role: item.role,
-              description: bindingList[0].description,
-              expirationTimestampInMS: bindingList[0].expiration?.getTime(),
-              databaseResources: databaseResources,
-            }),
-          })
-        );
-      }
-
       await projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy
@@ -472,22 +307,6 @@ const handleDeleteCondition = async (
       });
     },
   });
-};
-
-const extractDatabase = (databaseResource: DatabaseResource) => {
-  const database = databaseStore.getDatabaseByName(
-    databaseResource.databaseFullName
-  );
-  return database;
-};
-
-const extractDatabaseName = (databaseResource?: DatabaseResource) => {
-  if (!databaseResource) {
-    return "*";
-  }
-  const database = extractDatabase(databaseResource);
-  const { databaseName } = extractDatabaseResourceName(database.name);
-  return databaseName;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {
@@ -532,71 +351,33 @@ const checkRoleExpired = (role: SingleBinding) => {
   return role.expiration < new Date();
 };
 
-watch(
-  () => props.binding,
-  async () => {
-    const tempRoleList: {
-      role: string;
-      singleBindingList: SingleBinding[];
-    }[] = [];
-    for (const rawBinding of props.binding.projectRoleBindings) {
-      const singleBindingList = [];
-      const singleBinding: SingleBinding = {
-        description: rawBinding.condition?.description || "",
-        rawBinding: rawBinding,
-      };
+const getSingleBindingList = (rawBinding: Binding): SingleBinding[] => {
+  const singleBindingList = [];
+  const singleBinding: SingleBinding = {};
 
-      if (rawBinding.parsedExpr) {
-        const conditionExpr = convertFromExpr(rawBinding.parsedExpr);
-        if (conditionExpr.expiredTime) {
-          singleBinding.expiration = new Date(conditionExpr.expiredTime);
-        }
-        if (
-          Array.isArray(conditionExpr.databaseResources) &&
-          conditionExpr.databaseResources.length > 0
-        ) {
-          await databaseStore.batchGetOrFetchDatabases(
-            conditionExpr.databaseResources.map(
-              (resource) => resource.databaseFullName
-            )
-          );
-          for (const resource of conditionExpr.databaseResources) {
-            singleBindingList.push({
-              ...singleBinding,
-              databaseResource: resource,
-            });
-          }
-        } else {
-          singleBindingList.push(singleBinding);
-        }
-      } else {
-        singleBindingList.push(singleBinding);
-      }
-
-      const tempRole = tempRoleList.find(
-        (role) => role.role === rawBinding.role
-      );
-      if (tempRole) {
-        tempRole.singleBindingList.push(...singleBindingList);
-      } else {
-        tempRoleList.push({
-          role: rawBinding.role,
-          singleBindingList: singleBindingList,
+  if (rawBinding.parsedExpr) {
+    const conditionExpr = convertFromExpr(rawBinding.parsedExpr);
+    if (conditionExpr.expiredTime) {
+      singleBinding.expiration = new Date(conditionExpr.expiredTime);
+    }
+    if (
+      Array.isArray(conditionExpr.databaseResources) &&
+      conditionExpr.databaseResources.length > 0
+    ) {
+      for (const resource of conditionExpr.databaseResources) {
+        singleBindingList.push({
+          ...singleBinding,
+          databaseResource: resource,
         });
       }
+    } else {
+      singleBindingList.push(singleBinding);
     }
-
-    // Sort by role type.
-    tempRoleList.sort((a, b) => {
-      if (!PRESET_ROLES.includes(a.role)) return -1;
-      if (!PRESET_ROLES.includes(b.role)) return 1;
-      return PRESET_ROLES.indexOf(a.role) - PRESET_ROLES.indexOf(b.role);
-    });
-
-    roleList.value = tempRoleList;
-  },
-  { immediate: true, deep: true }
-);
+  } else {
+    singleBindingList.push(singleBinding);
+  }
+  return singleBindingList;
+};
 
 const groupMembers = computedAsync(async () => {
   if (props.binding.type !== "groups") {

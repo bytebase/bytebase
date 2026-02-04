@@ -26,6 +26,7 @@
       :database-resources="databaseResources"
       :placement="'right'"
       :role="PresetRoleType.SQL_EDITOR_USER"
+      :required-permissions="permissions"
       @close="showPanel = false"
     />
   </div>
@@ -41,15 +42,18 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { Permission } from "@/types";
 
 withDefaults(
   defineProps<{
     databaseResources: DatabaseResource[];
     size?: "tiny" | "medium";
     text: boolean;
+    permissions?: Permission[];
   }>(),
   {
     size: "medium",
+    permissions: () => ["bb.sql.select"]
   }
 );
 

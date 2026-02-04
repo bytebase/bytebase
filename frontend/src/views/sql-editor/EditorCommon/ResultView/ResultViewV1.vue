@@ -15,7 +15,7 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="isPermissionDenied"
+              v-if="!!permissionDeniedError"
               :text="false"
               :database-resources="missingResources"
             />
@@ -68,7 +68,7 @@
             >
               <template #suffix>
                 <RequestQueryButton
-                  v-if="isPermissionDenied"
+                  v-if="!!permissionDeniedError"
                   :text="false"
                   :database-resources="missingResources"
                 />
@@ -129,7 +129,7 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="isPermissionDenied"
+              v-if="!!permissionDeniedError"
               :text="false"
               :database-resources="missingResources"
             />
@@ -201,7 +201,7 @@ import type {
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { ExportRequestSchema, type QueryResult_PermissionDenied } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
@@ -245,28 +245,21 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 
 provideBinaryFormatContext(computed(() => props.contextId));
 
-const isPermissionDenied = computed(() => {
+const permissionDeniedError = computed((): QueryResult_PermissionDenied | undefined => {
   for (const result of props.resultSet?.results ?? []) {
     if (result.detailedError.case === "permissionDenied") {
-      return true;
+      return result.detailedError.value;
     }
   }
-  return false;
-});
+  return undefined
+})
 
 const missingResources = computed((): DatabaseResource[] => {
   const resources: DatabaseResource[] = [];
-  for (const result of props.resultSet?.results ?? []) {
-    if (
-      result.detailedError.case === "permissionDenied" &&
-      result.detailedError.value?.resources.length > 0
-    ) {
-      for (const resourceString of result.detailedError.value.resources) {
-        const resource = parseStringToResource(resourceString);
-        if (resource) {
-          resources.push(resource);
-        }
-      }
+  for (const resourceString of (permissionDeniedError.value?.resources ?? [])) {
+    const resource = parseStringToResource(resourceString);
+    if (resource) {
+      resources.push(resource);
     }
   }
   return resources;

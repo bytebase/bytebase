@@ -1897,7 +1897,8 @@
       "condition-name": "Condition name",
       "workspace-level-roles": "Workspace level roles",
       "project-level-roles": "Project level roles",
-      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
+      "allow-ddl": "Allow running DDL/DML statement in the selected environments"
     },
     "select": "Select Project",
     "all": "All projects",

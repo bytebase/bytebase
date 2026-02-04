@@ -1450,14 +1450,23 @@ func (s *SQLService) accessCheck(
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
+		attributes := map[string]any{
+			common.CELAttributeRequestTime:      time.Now(),
+			common.CELAttributeResourceDatabase: databaseFullName,
+		}
+		if perm == permission.SQLDdl || perm == permission.SQLDml {
+			env := ""
+			if database.EffectiveEnvironmentID != nil {
+				env = *database.EffectiveEnvironmentID
+			}
+			attributes[common.CELAttributeResourceEnvironmentID] = env
+		}
+		fmt.Println(attributes)
 		ok, err := s.hasDatabaseAccessRights(
 			ctx,
 			user,
 			perm,
-			map[string]any{
-				common.CELAttributeRequestTime:      time.Now(),
-				common.CELAttributeResourceDatabase: databaseFullName,
-			},
+			attributes,
 			workspacePolicy.Policy,
 			projectPolicy.Policy,
 		)
@@ -1470,7 +1479,8 @@ func (s *SQLService) accessCheck(
 					connect.CodePermissionDenied,
 					errors.Errorf("permission denied to access resources: %v", databaseFullName),
 				),
-				resources: []string{databaseFullName},
+				resources:  []string{databaseFullName},
+				permission: perm,
 			}
 		}
 		return nil
@@ -1562,7 +1572,8 @@ func (s *SQLService) accessCheck(
 					connect.CodePermissionDenied,
 					errors.Errorf("permission denied to access resources: %v", deniedResources),
 				),
-				resources: deniedResources,
+				resources:  deniedResources,
+				permission: perm,
 			}
 		}
 	}

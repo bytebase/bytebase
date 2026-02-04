@@ -23,3 +23,10 @@ export const roleHasDatabaseLimitation = (role: string) => {
     )
   );
 };
+
+export const roleHasEnvironmentLimitation = (role: string) => {
+  return (
+    role !== PresetRoleType.PROJECT_OWNER &&
+    checkRoleContainsAnyPermission(role, "bb.sql.ddl", "bb.sql.dml")
+  );
+};
