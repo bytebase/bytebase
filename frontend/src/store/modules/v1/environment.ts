@@ -20,7 +20,7 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { environmentNamePrefix } from "./common";
+import { environmentNamePrefix, getEnvironmentId } from "./common";
 import { useSettingV1Store } from "./setting";
 
 interface EnvironmentState {
@@ -181,7 +181,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       return newEnvironment;
     },
     async deleteEnvironment(name: string): Promise<void> {
-      const id = name.replace(environmentNamePrefix, "");
+      const id = getEnvironmentId(name);
       const newEnvironments = await updateEnvironmentSetting(
         create(EnvironmentSettingSchema, {
           environments: convertEnvironments(
@@ -206,7 +206,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
       if (name === NULL_ENVIRONMENT_NAME) {
         return nullEnvironment();
       }
-      const id = name.replace(environmentNamePrefix, "");
+      const id = getEnvironmentId(name);
       if (!id) {
         return unknownEnvironment();
       }

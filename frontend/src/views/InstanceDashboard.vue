@@ -63,7 +63,7 @@
     >
       <DrawerContent
         :title="$t('quick-action.add-instance')"
-        class="w-[850px] max-w-[100vw]"
+        class="w-212.5 max-w-[100vw]"
       >
         <InstanceFormBody />
         <template #footer>

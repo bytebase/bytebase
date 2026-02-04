@@ -5,15 +5,7 @@
       :required="true"
       :include-all-users="true"
       :disabled="disableMemberChange"
-    >
-      <template #suffix>
-        <NButton v-if="allowRemove" text @click="$emit('remove')">
-          <template #icon>
-            <heroicons:trash class="w-4 h-4" />
-          </template>
-        </NButton>
-      </template>
-    </MembersBindingSelect>
+    />
 
     <div class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
@@ -39,6 +31,7 @@
         :include-workspace-roles="false"
         :suffix="''"
         :filter="filterRole"
+        :disabled="disableRoleChange"
       />
     </div>
     <div v-if="selectedRole" class="w-full flex flex-col gap-y-2">
@@ -84,7 +77,7 @@
       </div>
       <QuerierDatabaseResourceForm
         ref="databaseResourceFormRef"
-        :database-resources="databaseResources"
+        :database-resources="databaseResourceList"
         :project-name="projectName"
         :required-feature="PlanFeature.FEATURE_IAM"
         :include-cloumn="false"
@@ -99,6 +92,7 @@
       <ExpirationSelector
         ref="expirationSelectorRef"
         :role="state.role"
+        :use-cached-selection="!isEdit"
         v-model:timestamp-in-ms="state.expirationTimestampInMS"
         class="grid-cols-3 sm:grid-cols-4"
       />
@@ -108,7 +102,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { NButton, NInput } from "naive-ui";
+import { NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { BBAttention } from "@/bbkit";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -121,28 +115,18 @@ import { type DatabaseResource } from "@/types";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { buildConditionExpr } from "@/utils/issue/cel";
+import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
 import { roleHasDatabaseLimitation } from "../utils";
 
-const props = withDefaults(
-  defineProps<{
-    projectName: string;
-    binding: Binding;
-    allowRemove: boolean;
-    requireReason?: boolean;
-    disableMemberChange?: boolean;
-    requiredPermissions?: string[];
-    databaseResources?: DatabaseResource[];
-  }>(),
-  {
-    disableMemberChange: false,
-    requireReason: false,
-    databaseResources: () => [],
-  }
-);
-
-defineEmits<{
-  (event: "remove"): void;
+const props = defineProps<{
+  projectName: string;
+  binding: Binding;
+  isEdit?: boolean;
+  requireReason?: boolean;
+  disableRoleChange?: boolean;
+  disableMemberChange?: boolean;
+  requiredPermissions?: string[];
+  databaseResources?: DatabaseResource[];
 }>();
 
 interface LocalState {
@@ -150,7 +134,7 @@ interface LocalState {
   role: string;
   reason: string;
   expirationTimestampInMS?: number;
-  databaseId?: string;
+  environments?: string[];
 }
 
 const filterRole = (role: Role) => {
@@ -164,13 +148,34 @@ const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     role: props.binding.role,
     memberList: props.binding.members,
-    reason: "",
+    reason: props.binding.condition?.description ?? "",
   };
+
+  if (props.binding.parsedExpr) {
+    const conditionExpr = convertFromExpr(props.binding.parsedExpr);
+    if (conditionExpr.expiredTime) {
+      defaultState.expirationTimestampInMS = new Date(
+        conditionExpr.expiredTime
+      ).getTime();
+    }
+  }
 
   return defaultState;
 };
 
 const state = reactive<LocalState>(getInitialState());
+
+const databaseResourceList = computed(() => {
+  if (props.databaseResources !== undefined) {
+    return props.databaseResources;
+  }
+  if (props.binding.parsedExpr) {
+    const conditionExpr = convertFromExpr(props.binding.parsedExpr);
+    return conditionExpr.databaseResources;
+  }
+  return [];
+});
+
 const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 const databaseResourceFormRef =
   ref<InstanceType<typeof QuerierDatabaseResourceForm>>();
@@ -185,10 +190,11 @@ defineExpose({
       await databaseResourceFormRef.value?.getDatabaseResources();
     return resources;
   },
-  getBinding: async (): Promise<Binding> => {
+  getBinding: async (title: string = ""): Promise<Binding> => {
     const databaseResources =
       await databaseResourceFormRef.value?.getDatabaseResources();
     const condition = buildConditionExpr({
+      title,
       role: state.role,
       description: state.reason,
       expirationTimestampInMS: state.expirationTimestampInMS,

@@ -12,17 +12,27 @@
       <div
         v-for="(binding, index) in state.bindings"
         :key="index"
-        class="w-full"
+        class="w-full border-b mb-4 pb-4 flex flex-col gap-y-2 items-start"
       >
         <AddProjectMemberForm
           v-if="binding"
           ref="formRefs"
-          class="w-full border-b mb-4 pb-4"
+          class="w-full"
           :project-name="project.name"
           :binding="binding"
-          :allow-remove="state.bindings.length > 1"
-          @remove="handleRemove(index)"
         />
+        <NButton
+          v-if="state.bindings.length > 1"
+          tertiary
+          type="error"
+          size="small"
+          @click="handleRemove(index)"
+        >
+          <template #icon>
+            <heroicons:trash class="w-4 h-4" />
+          </template>
+          {{ $t("common.remove") }}
+        </NButton>
       </div>
       <div>
         <NButton @click="handleAddMore">

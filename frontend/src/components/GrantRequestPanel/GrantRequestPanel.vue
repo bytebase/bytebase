@@ -16,7 +16,6 @@
           class="w-full"
           :project-name="projectName"
           :binding="binding"
-          :allow-remove="false"
           :disable-member-change="true"
           :require-reason="project.enforceIssueTitle"
           :database-resources="databaseResources"
