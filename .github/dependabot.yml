@@ -23,5 +23,7 @@ updates:
       codingame:
         patterns:
           - "@codingame/*"
+          - "monaco-editor"
+          - "vscode"
 
 version: 2
