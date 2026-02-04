@@ -12,6 +12,10 @@
         "fileFilters": ["frontend/pnpm-lock.yaml"],
         "executionMode": "update"
       }
+    },
+    {
+      "groupName": "codingame",
+      "matchPackagePatterns": ["^@codingame/", "^monaco-editor$", "^vscode$"]
     }
   ],
   "ignoreDeps": [
