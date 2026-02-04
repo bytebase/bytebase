@@ -6,6 +6,7 @@ on:
 
 jobs:
   deploy:
+    if: github.repository == 'bytebase/bytebase'
     runs-on: ubuntu-latest
     steps:
       - name: Authenticate to Google Cloud
