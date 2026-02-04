@@ -8100,6 +8100,7 @@ paths:
         - name: updateMask
           in: query
           description: The list of fields to update.
+          required: true
           schema:
             type: string
             description: |-
@@ -8501,6 +8502,7 @@ paths:
         - name: updateMask
           in: query
           description: The list of fields to update.
+          required: true
           schema:
             type: string
             description: |-
@@ -9106,6 +9108,7 @@ paths:
         - name: updateMask
           in: query
           description: The list of fields to update.
+          required: true
           schema:
             type: string
             description: |-

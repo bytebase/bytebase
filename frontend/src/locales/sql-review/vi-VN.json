@@ -46,6 +46,10 @@
       "title": "Kiểm tra tính khả thi của sao lưu trước",
       "description": "Quy tắc này kiểm tra xem có thể tạo bản sao lưu trước khi thay đổi dữ liệu hay không. Nó xác minh sự tồn tại của cơ sở dữ liệu đích sao lưu và không cho phép các kịch bản không được hỗ trợ. Nó được tích hợp sẵn và không thể bỏ qua."
     },
+    "BUILTIN_WALK_THROUGH_CHECK": {
+      "title": "Kiểm tra mô phỏng schema",
+      "description": "Xác thực các câu lệnh SQL với schema cơ sở dữ liệu hiện tại bằng cách mô phỏng việc thực thi. Phát hiện các vấn đề như tham chiếu đến bảng, cột hoặc chỉ mục không tồn tại."
+    },
     "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
       "title": "Hạn chế giá trị ban đầu của cột tự tăng",
       "description": "dựa trên các yêu cầu quản lý để giới hạn giá trị ban đầu của cột tự tăng. Mức độ lỗi gợi ý: Cảnh báo",
