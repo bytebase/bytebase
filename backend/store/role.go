@@ -65,12 +65,18 @@ func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*Rol
 	var response []*RoleUsedByResource
 	for rows.Next() {
 		var usedByResource RoleUsedByResource
+		var resourceTypeString string
 		if err := rows.Scan(
 			&usedByResource.Resource,
-			&usedByResource.ResourceType,
+			&resourceTypeString,
 		); err != nil {
 			return nil, err
 		}
+		resourceTypeValue, ok := storepb.Policy_Resource_value[resourceTypeString]
+		if !ok {
+			return nil, errors.Errorf("invalid policy resource type string: %s", resourceTypeString)
+		}
+		usedByResource.ResourceType = storepb.Policy_Resource(resourceTypeValue)
 		response = append(response, &usedByResource)
 	}
 	if err := rows.Err(); err != nil {
