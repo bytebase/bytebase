@@ -133,9 +133,6 @@ func SQLReviewCheck(
 
 	var errorAdvices, warningAdvices []*storepb.Advice
 	for _, rule := range ruleList {
-		if rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
-			continue
-		}
 		if rule.Engine != storepb.Engine_ENGINE_UNSPECIFIED && rule.Engine != checkContext.DBType {
 			continue
 		}
