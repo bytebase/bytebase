@@ -7,6 +7,7 @@ import type { Subscription } from "rxjs";
 import { fromEventPattern, map, Observable } from "rxjs";
 import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
+import { refreshTokens } from "@/connect/refreshToken";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import type {
   SQLEditorQueryParams,
@@ -99,11 +100,14 @@ const createStreamingQueryController = () => {
     },
   };
 
-  events.on("query", (params) => {
+  events.on("query", async (params) => {
     const request = mapRequest(params);
     console.debug("query", request);
 
     if (status.value === "DISCONNECTED") {
+      // Refresh the access-token cookie before opening a new WebSocket.
+      // The cookie may have expired since the last connection closed.
+      await refreshTokens().catch(() => {});
       $ws.value = connect(request);
     }
   });
