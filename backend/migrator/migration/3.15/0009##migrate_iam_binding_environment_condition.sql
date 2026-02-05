@@ -8,7 +8,8 @@ WITH
 -- Get all environment IDs from the setting table
 all_envs AS (
     SELECT env->>'id' AS env_id
-    FROM setting, jsonb_array_elements(value->'environments') AS env
+    FROM setting
+    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(value->'environments', '[]'::jsonb)) AS env
     WHERE name = 'ENVIRONMENT'
 ),
 -- Get environment QUERY_DATA policies with DDL/DML flags
