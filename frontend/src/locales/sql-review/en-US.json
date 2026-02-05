@@ -46,6 +46,10 @@
       "title": "Prior backup feasibility check",
       "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip."
     },
+    "BUILTIN_WALK_THROUGH_CHECK": {
+      "title": "Schema walk-through validation",
+      "description": "Validates SQL statements against the current database schema by simulating their execution. Detects issues like referencing non-existent tables, columns, or indexes."
+    },
     "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
       "title": "Restrict the initial value of auto-increment columns",
       "description": "based on management requirements to limit the initial value of the auto-increment column. Suggested error level: Warning",

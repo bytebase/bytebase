@@ -46,6 +46,10 @@
       "title": "Comprobación previa de viabilidad de la copia de seguridad",
       "description": "Esta regla verifica si se puede crear una copia de seguridad antes de que se modifiquen los datos. Verifica la existencia de la base de datos de destino de la copia de seguridad y rechaza los escenarios no admitidos. Está incorporada y no se puede omitir."
     },
+    "BUILTIN_WALK_THROUGH_CHECK": {
+      "title": "Validación de recorrido del esquema",
+      "description": "Valida las sentencias SQL contra el esquema de base de datos actual simulando su ejecución. Detecta problemas como hacer referencia a tablas, columnas o índices inexistentes."
+    },
     "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
       "title": "Restringir el valor inicial de las columnas de autoincremento",
       "description": "Basándose en los requisitos de gestión, se debe limitar el valor inicial de la columna de autoincremento. Nivel de error sugerido: Advertencia",

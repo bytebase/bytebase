@@ -33,6 +33,23 @@ var (
 			Title:  "OK",
 		},
 	}
+	// builtinOnlyPolicyWithConflict is the expected result when:
+	// 1. There's no user-configured SQL review policy
+	// 2. But builtin rules still run (BUILTIN_WALK_THROUGH_CHECK)
+	// 3. And the statement conflicts with existing schema (e.g., table already exists)
+	builtinOnlyPolicyWithConflict = []*v1pb.PlanCheckRun_Result{
+		{
+			Status:  v1pb.Advice_WARNING,
+			Title:   "Table `user` already exists",
+			Content: "Table `user` already exists",
+			Code:    607, // code.TableExists
+			Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+				SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+					StartPosition: &v1pb.Position{Line: 1},
+				},
+			},
+		},
+	}
 )
 
 type test struct {
@@ -382,8 +399,11 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	// Even with no user-configured policy, builtin rules still run.
+	// BUILTIN_WALK_THROUGH_CHECK will find that the 'user' table already exists
+	// (created by a previous test case with run=true).
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
+	equalReviewResultProtos(a, builtinOnlyPolicyWithConflict, result, database.Msg.Name, "")
 }
 
 func readTestData(path string) ([]test, error) {

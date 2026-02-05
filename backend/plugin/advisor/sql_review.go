@@ -100,8 +100,6 @@ func SQLReviewCheck(
 	stmts, parseResult := sm.GetStatementsForChecks(checkContext.DBType, statements)
 	asts := base.ExtractASTs(stmts)
 
-	builtinOnly := len(ruleList) == 0
-
 	if !checkContext.NoAppendBuiltin {
 		// Append builtin rules only if the user hasn't overridden them in their config.
 		userRuleTypes := make(map[storepb.SQLReviewRule_Type]bool, len(ruleList))
@@ -119,14 +117,16 @@ func SQLReviewCheck(
 		return parseResult, nil
 	}
 
-	if !builtinOnly && checkContext.FinalMetadata != nil {
-		switch checkContext.DBType {
-		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-			if advice := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); advice != nil {
-				return []*storepb.Advice{advice}, nil
+	if checkContext.FinalMetadata != nil {
+		if advice := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); advice != nil {
+			for _, rule := range ruleList {
+				if rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
+					if status, err := NewStatusBySQLReviewRuleLevel(rule.Level); err == nil {
+						advice.Status = status
+					}
+					return []*storepb.Advice{advice}, nil
+				}
 			}
-		default:
-			// Other database types don't need walkthrough
 		}
 	}
 
