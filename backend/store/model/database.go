@@ -323,6 +323,20 @@ func (s *SchemaMetadata) GetIndex(name string) *IndexMetadata {
 			return index
 		}
 	}
+	// Also search in materialized views
+	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
+	for _, mv := range s.internalMaterializedView {
+		for _, idx := range mv.Indexes {
+			idxID := normalizeNameByCaseSensitivity(idx.Name, s.isObjectCaseSensitive)
+			if idxID == nameID {
+				// Return a wrapper IndexMetadata for the materialized view index
+				return &IndexMetadata{
+					proto:      idx,
+					tableProto: &storepb.TableMetadata{Name: mv.Name},
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -649,6 +663,92 @@ func (s *SchemaMetadata) RenameView(oldName string, newName string) error {
 	newViewID := normalizeNameByCaseSensitivity(newName, s.isObjectCaseSensitive)
 	s.internalViews[newViewID] = oldView
 
+	return nil
+}
+
+// CreateMaterializedView creates a new materialized view in the schema.
+// Returns an error if the materialized view already exists.
+func (s *SchemaMetadata) CreateMaterializedView(viewName string, definition string) (*storepb.MaterializedViewMetadata, error) {
+	// Check if materialized view already exists
+	if s.GetMaterializedView(viewName) != nil {
+		return nil, errors.Errorf("materialized view %q already exists in schema %q", viewName, s.proto.Name)
+	}
+
+	// Create new materialized view proto
+	newViewProto := &storepb.MaterializedViewMetadata{
+		Name:       viewName,
+		Definition: definition,
+	}
+
+	// Add to proto's materialized view list
+	s.proto.MaterializedViews = append(s.proto.MaterializedViews, newViewProto)
+
+	// Add to internal map
+	viewID := normalizeNameByCaseSensitivity(viewName, s.isObjectCaseSensitive)
+	s.internalMaterializedView[viewID] = newViewProto
+
+	return newViewProto, nil
+}
+
+// DropMaterializedView drops a materialized view from the schema.
+// Returns an error if the materialized view does not exist.
+func (s *SchemaMetadata) DropMaterializedView(viewName string) error {
+	// Check if materialized view exists
+	if s.GetMaterializedView(viewName) == nil {
+		return errors.Errorf("materialized view %q does not exist in schema %q", viewName, s.proto.Name)
+	}
+
+	// Remove from internal map
+	viewID := normalizeNameByCaseSensitivity(viewName, s.isObjectCaseSensitive)
+	delete(s.internalMaterializedView, viewID)
+
+	// Remove from proto's materialized view list
+	newViews := make([]*storepb.MaterializedViewMetadata, 0, len(s.proto.MaterializedViews)-1)
+	for _, view := range s.proto.MaterializedViews {
+		if s.isObjectCaseSensitive {
+			if view.Name != viewName {
+				newViews = append(newViews, view)
+			}
+		} else {
+			if !strings.EqualFold(view.Name, viewName) {
+				newViews = append(newViews, view)
+			}
+		}
+	}
+	s.proto.MaterializedViews = newViews
+
+	return nil
+}
+
+// DropMaterializedViewIndex drops an index from a materialized view.
+func (s *SchemaMetadata) DropMaterializedViewIndex(viewName, indexName string) error {
+	mv := s.GetMaterializedView(viewName)
+	if mv == nil {
+		return errors.Errorf("materialized view %q does not exist in schema %q", viewName, s.proto.Name)
+	}
+
+	// Remove from indexes
+	newIndexes := make([]*storepb.IndexMetadata, 0, len(mv.Indexes))
+	found := false
+	for _, idx := range mv.Indexes {
+		if s.isObjectCaseSensitive {
+			if idx.Name != indexName {
+				newIndexes = append(newIndexes, idx)
+			} else {
+				found = true
+			}
+		} else {
+			if !strings.EqualFold(idx.Name, indexName) {
+				newIndexes = append(newIndexes, idx)
+			} else {
+				found = true
+			}
+		}
+	}
+	if !found {
+		return errors.Errorf("index %q does not exist on materialized view %q", indexName, viewName)
+	}
+	mv.Indexes = newIndexes
 	return nil
 }
 
