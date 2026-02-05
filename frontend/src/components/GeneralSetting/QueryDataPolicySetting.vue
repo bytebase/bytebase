@@ -168,7 +168,7 @@ const getInitialState = (): LocalState => {
 };
 
 const getInitTimeInseconds = () => {
-  return Number(settingV1Store.workspaceProfile.sqlTimeout?.seconds ?? 0)
+  return Number(settingV1Store.workspaceProfile.queryTimeout?.seconds ?? 0)
 }
 
 const state = reactive<LocalState>(getInitialState());
@@ -210,12 +210,12 @@ const updateChange = async () => {
   if (getInitTimeInseconds() !== maxQueryTimeInseconds.value) {
     await settingV1Store.updateWorkspaceProfile({
       payload: {
-        sqlTimeout: create(DurationSchema, {
+        queryTimeout: create(DurationSchema, {
             seconds: BigInt(maxQueryTimeInseconds.value),
           })
       },
       updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile.sql_timeout"],
+        paths: ["value.workspace_profile.query_timeout"],
       }),
     });
   }

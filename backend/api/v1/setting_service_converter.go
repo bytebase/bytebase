@@ -255,7 +255,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		PasswordRestriction:    convertPasswordRestrictionSetting(v1Setting.PasswordRestriction),
 		EnableDebug:            v1Setting.EnableDebug,
 		SqlResultSize:          v1Setting.SqlResultSize,
-		SqlTimeout:             v1Setting.SqlTimeout,
+		QueryTimeout:           v1Setting.QueryTimeout,
 	}
 
 	// Convert announcement if present
@@ -329,7 +329,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		Announcement:           convertToV1Announcement(storeSetting.Announcement),
 		EnableDebug:            storeSetting.EnableDebug,
 		SqlResultSize:          storeSetting.SqlResultSize,
-		SqlTimeout:             storeSetting.SqlTimeout,
+		QueryTimeout:           storeSetting.QueryTimeout,
 	}
 }
 

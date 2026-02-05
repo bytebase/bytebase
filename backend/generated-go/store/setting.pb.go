@@ -464,7 +464,7 @@ type WorkspaceProfileSetting struct {
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
 	SqlResultSize int64 `protobuf:"varint,20,opt,name=sql_result_size,json=sqlResultSize,proto3" json:"sql_result_size,omitempty"`
 	// The query timeout duration for query and export, works for the SQL Editor and Export Center.
-	SqlTimeout    *durationpb.Duration `protobuf:"bytes,21,opt,name=sql_timeout,json=sqlTimeout,proto3" json:"sql_timeout,omitempty"`
+	QueryTimeout  *durationpb.Duration `protobuf:"bytes,21,opt,name=query_timeout,json=queryTimeout,proto3" json:"query_timeout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -639,9 +639,9 @@ func (x *WorkspaceProfileSetting) GetSqlResultSize() int64 {
 	return 0
 }
 
-func (x *WorkspaceProfileSetting) GetSqlTimeout() *durationpb.Duration {
+func (x *WorkspaceProfileSetting) GetQueryTimeout() *durationpb.Duration {
 	if x != nil {
-		return x.SqlTimeout
+		return x.QueryTimeout
 	}
 	return nil
 }
@@ -2414,7 +2414,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicense\"\xcb\x0f\n" +
+	"\alicense\x18\x03 \x01(\tR\alicense\"\xcf\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2437,9 +2437,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x14password_restriction\x18\x11 \x01(\v2;.bytebase.store.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
 	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
-	"\x0fsql_result_size\x18\x14 \x01(\x03R\rsqlResultSize\x12:\n" +
-	"\vsql_timeout\x18\x15 \x01(\v2\x19.google.protobuf.DurationR\n" +
-	"sqlTimeout\x1a\xdd\x01\n" +
+	"\x0fsql_result_size\x18\x14 \x01(\x03R\rsqlResultSize\x12>\n" +
+	"\rquery_timeout\x18\x15 \x01(\v2\x19.google.protobuf.DurationR\fqueryTimeout\x1a\xdd\x01\n" +
 	"\fAnnouncement\x12U\n" +
 	"\x05level\x18\x01 \x01(\x0e2?.bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
@@ -2671,7 +2670,7 @@ var file_store_setting_proto_depIdxs = []int32{
 	37, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
 	16, // 5: bytebase.store.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.store.WorkspaceProfileSetting.PasswordRestriction
 	37, // 6: bytebase.store.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
-	37, // 7: bytebase.store.WorkspaceProfileSetting.sql_timeout:type_name -> google.protobuf.Duration
+	37, // 7: bytebase.store.WorkspaceProfileSetting.query_timeout:type_name -> google.protobuf.Duration
 	17, // 8: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
 	18, // 9: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
 	22, // 10: bytebase.store.Algorithm.full_mask:type_name -> bytebase.store.Algorithm.FullMask

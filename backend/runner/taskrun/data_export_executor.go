@@ -169,7 +169,7 @@ func (exec *DataExportExecutor) executeExport(
 
 	// 2. Get query restrictions from workspace policy
 	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx)
-	timoutInSeconds := exec.getSQLTimeoutInSeconds(ctx)
+	timoutInSeconds := exec.getQueryTimeoutInSeconds(ctx)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
@@ -218,11 +218,11 @@ func (exec *DataExportExecutor) getSQLResultSizeLimit(
 	return maximumResultSize
 }
 
-// getSQLTimeoutInSeconds gets the sql timeout limit.
-func (exec *DataExportExecutor) getSQLTimeoutInSeconds(
+// getQueryTimeoutInSeconds gets the query timeout limit.
+func (exec *DataExportExecutor) getQueryTimeoutInSeconds(
 	ctx context.Context,
 ) int64 {
-	timeout, err := exec.store.GetSQLTimeoutInSeconds(ctx)
+	timeout, err := exec.store.GetQueryTimeoutInSeconds(ctx)
 	if err != nil {
 		slog.Error("failed to get the sql timeout limit", log.BBError(err))
 		return math.MaxInt64

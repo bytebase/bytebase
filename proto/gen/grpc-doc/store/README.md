@@ -4405,7 +4405,7 @@ The severity level for SQL review rules.
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 | sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
-| sql_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
+| query_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
 
 
 

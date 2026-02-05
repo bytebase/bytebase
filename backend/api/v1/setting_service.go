@@ -343,8 +343,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldSetting.PasswordRestriction = payload.PasswordRestriction
 			case "value.workspace_profile.sql_result_size":
 				oldSetting.SqlResultSize = payload.SqlResultSize
-			case "value.workspace_profile.sql_timeout":
-				oldSetting.SqlTimeout = payload.SqlTimeout
+			case "value.workspace_profile.query_timeout":
+				oldSetting.QueryTimeout = payload.QueryTimeout
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}

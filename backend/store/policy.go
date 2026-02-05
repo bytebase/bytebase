@@ -242,7 +242,7 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, projectFullName
 		return nil, err
 	}
 
-	sqlTimeout, err := s.GetSQLTimeoutInSeconds(ctx)
+	queryTimeout, err := s.GetQueryTimeoutInSeconds(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, projectFullName
 		DisableExport:            formatWorkspacePolicy.DisableExport,
 		MaximumResultRows:        min(formatWorkspacePolicy.MaximumResultRows, formatProjectPolicy.MaximumResultRows),
 		MaximumResultSize:        maximumResultSize,
-		MaxQueryTimeoutInSeconds: sqlTimeout,
+		MaxQueryTimeoutInSeconds: queryTimeout,
 		AllowAdminDataSource:     formatWorkspacePolicy.AllowAdminDataSource,
 	}, nil
 }

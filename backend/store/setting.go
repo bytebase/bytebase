@@ -56,13 +56,13 @@ func (s *Store) GetSQLResultSize(ctx context.Context) (int64, error) {
 	return maximumResultSize, nil
 }
 
-// GetSQLTimeoutInSeconds gets the valid sql_timeout from the workspace profile setting.
-func (s *Store) GetSQLTimeoutInSeconds(ctx context.Context) (int64, error) {
+// GetQueryTimeoutInSeconds gets the valid query_timeout from the workspace profile setting.
+func (s *Store) GetQueryTimeoutInSeconds(ctx context.Context) (int64, error) {
 	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return 0, err
 	}
-	timeout := workspaceProfile.GetSqlTimeout()
+	timeout := workspaceProfile.GetQueryTimeout()
 	if timeout.GetSeconds() <= 0 {
 		return math.MaxInt64, nil
 	}
