@@ -502,7 +502,8 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		storepb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE,
 		storepb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE,
 		storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE,
-		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK:
+		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+		storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK:
 		// These rules should not have any payload
 		if rule.Payload != nil {
 			return errors.Errorf("rule %s should not have a payload", ruleType)

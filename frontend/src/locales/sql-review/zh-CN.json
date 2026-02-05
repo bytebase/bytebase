@@ -46,6 +46,10 @@
       "title": "事先备份可行性检查",
       "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。"
     },
+    "BUILTIN_WALK_THROUGH_CHECK": {
+      "title": "Schema 模拟执行检查",
+      "description": "通过模拟执行来验证 SQL 语句与当前数据库 Schema 的一致性。检测引用不存在的表、列或索引等问题。"
+    },
     "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
       "title": "限制自增列初始值",
       "description": "结合管理要求限制自增列的初始值。建议错误等级：警告",

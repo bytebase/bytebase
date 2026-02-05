@@ -187,6 +187,7 @@ const (
 	SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST                     SQLReviewRule_Type = 107
 	SQLReviewRule_ADVICE_ONLINE_MIGRATION                             SQLReviewRule_Type = 108
 	SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK                          SQLReviewRule_Type = 109
+	SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK                          SQLReviewRule_Type = 110
 )
 
 // Enum value maps for SQLReviewRule_Type.
@@ -302,6 +303,7 @@ var (
 		107: "SYSTEM_FUNCTION_DISALLOWED_LIST",
 		108: "ADVICE_ONLINE_MIGRATION",
 		109: "BUILTIN_PRIOR_BACKUP_CHECK",
+		110: "BUILTIN_WALK_THROUGH_CHECK",
 	}
 	SQLReviewRule_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":                                    0,
@@ -414,6 +416,7 @@ var (
 		"SYSTEM_FUNCTION_DISALLOWED_LIST":                     107,
 		"ADVICE_ONLINE_MIGRATION":                             108,
 		"BUILTIN_PRIOR_BACKUP_CHECK":                          109,
+		"BUILTIN_WALK_THROUGH_CHECK":                          110,
 	}
 )
 
@@ -945,7 +948,7 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
 	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"^\n" +
 	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xdf%\n" +
+	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xff%\n" +
 	"\rSQLReviewRule\x126\n" +
 	"\x04type\x18\x01 \x01(\x0e2\".bytebase.store.SQLReviewRule.TypeR\x04type\x129\n" +
 	"\x05level\x18\x02 \x01(\x0e2#.bytebase.store.SQLReviewRule.LevelR\x05level\x12X\n" +
@@ -975,7 +978,7 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02\"\xb0\x1c\n" +
+	"\aWARNING\x10\x02\"\xd0\x1c\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ENGINE_MYSQL_USE_INNODB\x10\x01\x12\x1a\n" +
@@ -1087,7 +1090,8 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\x1fSYSTEM_FUNCTION_DISALLOW_CREATE\x10j\x12#\n" +
 	"\x1fSYSTEM_FUNCTION_DISALLOWED_LIST\x10k\x12\x1b\n" +
 	"\x17ADVICE_ONLINE_MIGRATION\x10l\x12\x1e\n" +
-	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10mB\t\n" +
+	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10m\x12\x1e\n" +
+	"\x1aBUILTIN_WALK_THROUGH_CHECK\x10nB\t\n" +
 	"\apayloadB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11ReviewConfigProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 

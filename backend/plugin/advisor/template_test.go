@@ -370,5 +370,6 @@ func buildRuleTypeMapping() map[string]string {
 		"SYSTEM_FUNCTION_DISALLOWED_LIST":                     "storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST",
 		"ADVICE_ONLINE_MIGRATION":                             "storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION",
 		"BUILTIN_PRIOR_BACKUP_CHECK":                          "storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK",
+		"BUILTIN_WALK_THROUGH_CHECK":                          "storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK",
 	}
 }

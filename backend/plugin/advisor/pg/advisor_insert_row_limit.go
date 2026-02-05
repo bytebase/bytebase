@@ -47,6 +47,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	}
 
 	var adviceList []*storepb.Advice
+	var setRoles []string
 	for _, stmtInfo := range checkCtx.ParsedStatements {
 		if stmtInfo.AST == nil {
 			continue
@@ -64,6 +65,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 			driver:     checkCtx.Driver,
 			ctx:        ctx,
 			tokens:     antlrAST.Tokens,
+			setRoles:   setRoles,
 			TenantMode: checkCtx.TenantMode,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
@@ -71,6 +73,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
+		setRoles = rule.setRoles
 	}
 
 	return adviceList, nil

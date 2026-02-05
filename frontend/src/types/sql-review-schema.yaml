@@ -2027,3 +2027,18 @@
 - type: BUILTIN_PRIOR_BACKUP_CHECK
   category: BUILTIN
   engine: ORACLE
+- type: BUILTIN_WALK_THROUGH_CHECK
+  category: BUILTIN
+  engine: MYSQL
+- type: BUILTIN_WALK_THROUGH_CHECK
+  category: BUILTIN
+  engine: MARIADB
+- type: BUILTIN_WALK_THROUGH_CHECK
+  category: BUILTIN
+  engine: TIDB
+- type: BUILTIN_WALK_THROUGH_CHECK
+  category: BUILTIN
+  engine: POSTGRES
+- type: BUILTIN_WALK_THROUGH_CHECK
+  category: BUILTIN
+  engine: OCEANBASE

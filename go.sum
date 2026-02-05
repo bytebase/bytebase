@@ -1443,8 +1443,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/labstack/echo-contrib v0.50.0 h1:MLTQdqME3BEBczV2thYz9yPT5sBhzkoUEpwAOY9llds=
 github.com/labstack/echo-contrib v0.50.0/go.mod h1:oftqJL4enNg9ao1VLpVZmisVE5/8uwHtIYE4zTpqyWU=
-github.com/labstack/echo/v5 v5.0.0 h1:JHKGrI0cbNsNMyKvranuY0C94O4hSM7yc/HtwcV3Na4=
-github.com/labstack/echo/v5 v5.0.0/go.mod h1:SyvlSdObGjRXeQfCCXW/sybkZdOOQZBmpKF0bvALaeo=
+github.com/labstack/echo/v5 v5.0.2 h1:DwPe1Rla27Zf3QxbW+DxhPKRIbKHHTgHQyaLJC2gE3s=
+github.com/labstack/echo/v5 v5.0.2/go.mod h1:SyvlSdObGjRXeQfCCXW/sybkZdOOQZBmpKF0bvALaeo=
 github.com/lestrrat-go/blackmagic v1.0.4 h1:IwQibdnf8l2KoO+qC3uT4OaTWsW7tuRQXy9TRN9QanA=
 github.com/lestrrat-go/blackmagic v1.0.4/go.mod h1:6AWFyKNNj0zEXQYfTMPfZrAXUWUfTIZ5ECEUEJaijtw=
 github.com/lestrrat-go/dsig v1.0.0 h1:OE09s2r9Z81kxzJYRn07TFM9XA4akrUdoMwr0L8xj38=

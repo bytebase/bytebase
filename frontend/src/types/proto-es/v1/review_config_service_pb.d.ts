@@ -952,6 +952,11 @@ export enum SQLReviewRule_Type {
    * @generated from enum value: BUILTIN_PRIOR_BACKUP_CHECK = 109;
    */
   BUILTIN_PRIOR_BACKUP_CHECK = 109,
+
+  /**
+   * @generated from enum value: BUILTIN_WALK_THROUGH_CHECK = 110;
+   */
+  BUILTIN_WALK_THROUGH_CHECK = 110,
 }
 
 /**
