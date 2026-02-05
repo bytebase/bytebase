@@ -236,14 +236,12 @@ export const useQueryDataPolicy = (project: MaybeRef<string>) => {
   watchEffect(() => {
     Promise.all([
       // Fetch workspace-level DATA_QUERY policies
-      store
-        .getOrFetchPolicyByParentAndType({
+      store.getOrFetchPolicyByParentAndType({
         parentPath: "",
         policyType: PolicyType.DATA_QUERY,
       }),
       // Fetch project-level DATA_QUERY policies
-      store
-        .getOrFetchPolicyByParentAndType({
+      store.getOrFetchPolicyByParentAndType({
         parentPath: unref(project),
         policyType: PolicyType.DATA_QUERY,
       }),
@@ -251,13 +249,20 @@ export const useQueryDataPolicy = (project: MaybeRef<string>) => {
   });
 
   const policy = computed(() => {
-    const workspacePolicy = formatQueryDataPolicy(store.getQueryDataPolicyByParent(""))
-    const projectPolicy = formatQueryDataPolicy(store.getQueryDataPolicyByParent(unref(project)))
+    const workspacePolicy = formatQueryDataPolicy(
+      store.getQueryDataPolicyByParent("")
+    );
+    const projectPolicy = formatQueryDataPolicy(
+      store.getQueryDataPolicyByParent(unref(project))
+    );
 
     return {
       ...workspacePolicy,
-      maximumResultRows: Math.min(workspacePolicy.maximumResultRows, projectPolicy.maximumResultRows)
-    }
+      maximumResultRows: Math.min(
+        workspacePolicy.maximumResultRows,
+        projectPolicy.maximumResultRows
+      ),
+    };
   });
 
   return {

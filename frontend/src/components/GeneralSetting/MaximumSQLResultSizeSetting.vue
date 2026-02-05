@@ -101,8 +101,8 @@ import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   featureToRef,
   usePolicyV1Store,
-  useSettingV1Store,
   useProjectV1Store,
+  useSettingV1Store,
 } from "@/store";
 import {
   PolicyResourceType,
@@ -111,8 +111,8 @@ import {
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
-import { hasWorkspacePermissionV2 } from "@/utils"
 
 const props = defineProps<{
   resource: string;
@@ -123,19 +123,23 @@ const policyV1Store = usePolicyV1Store();
 const settingV1Store = useSettingV1Store();
 const projectStore = useProjectV1Store();
 
-const isWorkspace = computed(() => props.resource === '')
-const project = computed(() => isWorkspace.value ? undefined : projectStore.getProjectByName(props.resource))
+const isWorkspace = computed(() => props.resource === "");
+const project = computed(() =>
+  isWorkspace.value ? undefined : projectStore.getProjectByName(props.resource)
+);
 
-const canGetWorkspaceProfile = computed(() => hasWorkspacePermissionV2("bb.settings.getWorkspaceProfile"))
+const canGetWorkspaceProfile = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.getWorkspaceProfile")
+);
 
 const initialState = () => {
   let size = settingV1Store.workspaceProfile.sqlResultSize;
   if (size <= 0) {
     size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
   }
-  let rows = Number(props.policy.maximumResultRows)
+  let rows = Number(props.policy.maximumResultRows);
   if (rows < 0) {
-    rows = 0
+    rows = 0;
   }
   return {
     maximumResultSize: Math.round(Number(size) / 1024 / 1024),

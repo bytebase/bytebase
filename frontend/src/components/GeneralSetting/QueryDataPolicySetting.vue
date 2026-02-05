@@ -107,7 +107,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import { NInputNumber } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -128,7 +128,6 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 
 interface LocalState {
   disableExport: boolean;
@@ -168,20 +167,18 @@ const getInitialState = (): LocalState => {
 };
 
 const getInitTimeInseconds = () => {
-  return Number(settingV1Store.workspaceProfile.queryTimeout?.seconds ?? 0)
-}
+  return Number(settingV1Store.workspaceProfile.queryTimeout?.seconds ?? 0);
+};
 
 const state = reactive<LocalState>(getInitialState());
-const maxQueryTimeInseconds = ref<number>(
-  getInitTimeInseconds()
-)
+const maxQueryTimeInseconds = ref<number>(getInitTimeInseconds());
 
 const maximumSQLResultSizeSettingRef =
   ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
 
 const revert = () => {
   Object.assign(state, getInitialState());
-  maxQueryTimeInseconds.value = getInitTimeInseconds()
+  maxQueryTimeInseconds.value = getInitTimeInseconds();
   maximumSQLResultSizeSettingRef.value?.revert();
 };
 
@@ -211,8 +208,8 @@ const updateChange = async () => {
     await settingV1Store.updateWorkspaceProfile({
       payload: {
         queryTimeout: create(DurationSchema, {
-            seconds: BigInt(maxQueryTimeInseconds.value),
-          })
+          seconds: BigInt(maxQueryTimeInseconds.value),
+        }),
       },
       updateMask: create(FieldMaskSchema, {
         paths: ["value.workspace_profile.query_timeout"],

@@ -59,10 +59,7 @@ const rowCountOptions = computed(() => {
   const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
     (num) => num <= props.maximum
   );
-  if (
-    props.maximum !== Number.MAX_VALUE &&
-    !list.includes(props.maximum)
-  ) {
+  if (props.maximum !== Number.MAX_VALUE && !list.includes(props.maximum)) {
     list.push(props.maximum);
   }
   return list;

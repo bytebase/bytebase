@@ -15,16 +15,11 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { SQLReviewForResource } from "@/components/SQLReview";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import MaximumSQLResultSizeSetting from "@/components/GeneralSetting/MaximumSQLResultSizeSetting.vue";
-import {
-  usePolicyByParentAndType,
-  usePolicyV1Store,
-} from "@/store";
-import {
-  PolicyType,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewForResource } from "@/components/SQLReview";
+import { usePolicyByParentAndType, usePolicyV1Store } from "@/store";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const props = defineProps<{
   project: Project;
@@ -56,8 +51,10 @@ const policyPayload = computed(() => {
   return policyV1Store.getQueryDataPolicyByParent(props.project.name);
 });
 
-const isDirty = computed(() =>
-  sqlReviewForResourceRef.value?.isDirty || maximumSQLResultSizeSettingRef.value?.isDirty
+const isDirty = computed(
+  () =>
+    sqlReviewForResourceRef.value?.isDirty ||
+    maximumSQLResultSizeSettingRef.value?.isDirty
 );
 
 const onUpdate = async () => {
