@@ -11,7 +11,6 @@ import (
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/durationpb"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	reflect "reflect"
@@ -1131,7 +1130,7 @@ var File_v1_org_policy_service_proto protoreflect.FileDescriptor
 
 const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xa9\x01\n" +
+	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xa9\x01\n" +
 	"\x13CreatePolicyRequest\x123\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x120\n" +
 	"\x06policy\x18\x02 \x01(\v2\x13.bytebase.v1.PolicyB\x03\xe0A\x02R\x06policy\x12+\n" +

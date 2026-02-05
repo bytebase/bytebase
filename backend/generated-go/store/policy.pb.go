@@ -10,7 +10,6 @@ import (
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/durationpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -707,7 +706,7 @@ var File_store_policy_proto protoreflect.FileDescriptor
 
 const file_store_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\"\xd1\x01\n" +
+	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x16google/type/expr.proto\"\xd1\x01\n" +
 	"\x06Policy\"t\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
