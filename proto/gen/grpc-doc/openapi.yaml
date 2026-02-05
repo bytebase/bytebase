@@ -23223,17 +23223,6 @@ components:
              If false,
              1. when read-only data source is configured, users're force to use the read-only data source
              2. otherwise fallback to use the admin data source.
-        disallowDdl:
-          type: boolean
-          title: disallow_ddl
-          description: |-
-            ================
-             Deprecate following fields.
-             Disallow running DDL statements in the SQL editor.
-        disallowDml:
-          type: boolean
-          title: disallow_dml
-          description: Disallow running DML statements in the SQL editor.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
