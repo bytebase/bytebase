@@ -118,15 +118,14 @@ func SQLReviewCheck(
 	}
 
 	if checkContext.FinalMetadata != nil {
-		for _, rule := range ruleList {
-			if rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
-				if advice := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); advice != nil {
+		if advice := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); advice != nil {
+			for _, rule := range ruleList {
+				if rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
 					if status, err := NewStatusBySQLReviewRuleLevel(rule.Level); err == nil {
 						advice.Status = status
 					}
 					return []*storepb.Advice{advice}, nil
 				}
-				break
 			}
 		}
 	}

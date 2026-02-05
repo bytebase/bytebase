@@ -15,15 +15,3 @@ type BuiltinWalkThroughCheckAdvisor struct{}
 func (*BuiltinWalkThroughCheckAdvisor) Check(_ context.Context, _ Context) ([]*storepb.Advice, error) {
 	return nil, nil
 }
-
-func init() {
-	for _, engine := range []storepb.Engine{
-		storepb.Engine_MYSQL,
-		storepb.Engine_MARIADB,
-		storepb.Engine_TIDB,
-		storepb.Engine_POSTGRES,
-		storepb.Engine_OCEANBASE,
-	} {
-		Register(engine, storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK, &BuiltinWalkThroughCheckAdvisor{})
-	}
-}
