@@ -23193,20 +23193,14 @@ components:
     bytebase.v1.QueryDataPolicy:
       type: object
       properties:
-        timeout:
-          title: timeout
-          description: |-
-            workspace-level policy
-             The query timeout duration in the SQL editor.
-          $ref: '#/components/schemas/google.protobuf.Duration'
         maximumResultRows:
           type: integer
           title: maximum_result_rows
           format: int32
           description: |-
-            workspace-level policy
+            Support both project-level and workspace-level.
              The maximum number of rows to return in the SQL editor.
-             The default value is -1, means no limit.
+             The default value <= 0, means no limit.
         disableExport:
           type: boolean
           title: disable_export
@@ -27905,6 +27899,10 @@ components:
           description: |-
             The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.
              The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+        queryTimeout:
+          title: query_timeout
+          description: The query timeout duration for query and export, works for the SQL Editor and Export Center.
+          $ref: '#/components/schemas/google.protobuf.Duration'
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

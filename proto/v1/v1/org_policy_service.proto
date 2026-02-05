@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
@@ -283,22 +282,18 @@ message RolloutPolicy {
 
 // QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 message QueryDataPolicy {
-  // workspace-level policy
-  // The query timeout duration in the SQL editor.
-  google.protobuf.Duration timeout = 1;
-
-  // workspace-level policy
+  // Support both project-level and workspace-level.
   // The maximum number of rows to return in the SQL editor.
-  // The default value is -1, means no limit.
-  int32 maximum_result_rows = 2;
+  // The default value <= 0, means no limit.
+  int32 maximum_result_rows = 1;
 
   // workspace-level policy
   // Disable data export in the SQL editor.
-  bool disable_export = 3;
+  bool disable_export = 2;
 
   // workspace-level policy
   // Disable copying query results in the SQL editor.
-  bool disable_copy_data = 4;
+  bool disable_copy_data = 3;
 
   // workspace-level policy
   // Allow using the admin data source to query in the SQL editor.
@@ -306,7 +301,7 @@ message QueryDataPolicy {
   // If false,
   // 1. when read-only data source is configured, users're force to use the read-only data source
   // 2. otherwise fallback to use the admin data source.
-  bool allow_admin_data_source = 5;
+  bool allow_admin_data_source = 4;
 
   // ================
   // Deprecate following fields.

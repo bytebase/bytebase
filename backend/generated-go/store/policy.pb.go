@@ -10,7 +10,6 @@ import (
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -477,14 +476,11 @@ func (x *IamPolicy) GetBindings() []*Binding {
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// workspace-level policy
-	// The query timeout duration.
-	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	// workspace-level policy
 	// Disable exporting data in the SQL editor.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
-	// workspace-level policy
-	// The return rows limit.
-	// The default value is -1, means no limit.
+	// Support both project-level and workspace-level.
+	// The maximum number of rows to return in the SQL editor.
+	// The default value <= 0, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,4,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
 	// workspace-level policy
 	// Disable copying data.
@@ -530,13 +526,6 @@ func (x *QueryDataPolicy) ProtoReflect() protoreflect.Message {
 // Deprecated: Use QueryDataPolicy.ProtoReflect.Descriptor instead.
 func (*QueryDataPolicy) Descriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *QueryDataPolicy) GetTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.Timeout
-	}
-	return nil
 }
 
 func (x *QueryDataPolicy) GetDisableExport() bool {
@@ -717,7 +706,7 @@ var File_store_policy_proto protoreflect.FileDescriptor
 
 const file_store_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\"\xd1\x01\n" +
+	"\x12store/policy.proto\x12\x0ebytebase.store\x1a\x16google/type/expr.proto\"\xd1\x01\n" +
 	"\x06Policy\"t\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
@@ -759,15 +748,14 @@ const file_store_policy_proto_rawDesc = "" +
 	"\amembers\x18\x02 \x03(\tR\amembers\x12/\n" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\"@\n" +
 	"\tIamPolicy\x123\n" +
-	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\xcc\x02\n" +
-	"\x0fQueryDataPolicy\x123\n" +
-	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12%\n" +
+	"\bbindings\x18\x01 \x03(\v2\x17.bytebase.store.BindingR\bbindings\"\x9d\x02\n" +
+	"\x0fQueryDataPolicy\x12%\n" +
 	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12.\n" +
 	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
 	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\x125\n" +
 	"\x17allow_admin_data_source\x18\t \x01(\bR\x14allowAdminDataSource\x12!\n" +
 	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
-	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDmlJ\x04\b\x03\x10\x04B\x8e\x01\n" +
+	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDmlJ\x04\b\x01\x10\x02J\x04\b\x03\x10\x04B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vPolicyProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -799,7 +787,6 @@ var file_store_policy_proto_goTypes = []any{
 	(*MaskingRulePolicy_MaskingRule)(nil),    // 11: bytebase.store.MaskingRulePolicy.MaskingRule
 	nil,                                      // 12: bytebase.store.TagPolicy.TagsEntry
 	(*expr.Expr)(nil),                        // 13: google.type.Expr
-	(*durationpb.Duration)(nil),              // 14: google.protobuf.Duration
 }
 var file_store_policy_proto_depIdxs = []int32{
 	10, // 0: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
@@ -807,14 +794,13 @@ var file_store_policy_proto_depIdxs = []int32{
 	12, // 2: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
 	13, // 3: bytebase.store.Binding.condition:type_name -> google.type.Expr
 	7,  // 4: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
-	14, // 5: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	13, // 6: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
-	13, // 7: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	13, // 5: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
+	13, // 6: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_store_policy_proto_init() }
