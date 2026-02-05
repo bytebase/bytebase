@@ -13,14 +13,18 @@
 
   <Suspense>
     <RoutePermissionGuard
+      v-if="editorStore.projectContextReady"
       class="m-6"
       :project="project"
       :routes="sqlEditorRoutes"
     >
-    <ProvideAIContext>
-      <router-view />
-    </ProvideAIContext>
+      <ProvideAIContext>
+        <router-view />
+      </ProvideAIContext>
     </RoutePermissionGuard>
+    <div v-else class="flex items-center justify-center h-screen">
+      <BBSpin />
+    </div>
   </Suspense>
 </template>
 
@@ -30,6 +34,7 @@ import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
