@@ -1,9 +1,7 @@
 import { useDebounceFn } from "@vueuse/core";
-import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import type { ComputedRef, Ref } from "vue";
-import { computed, h, ref, watch } from "vue";
-import { t } from "@/plugins/i18n";
+import { computed, ref, watch } from "vue";
 import {
   buildTreeImpl,
   type DatabaseFilter,
@@ -37,14 +35,13 @@ export type TreeByEnvironment = {
     initialized: boolean;
     expandedKeys: string[];
   }>;
-  buildTree: () => void;
+  buildTree: (showMissingQueryDatabases: boolean) => void;
   prepareDatabases: (filter?: DatabaseFilter) => Promise<void>;
   fetchDatabases: (filter?: DatabaseFilter) => Promise<void>;
   fetchDataState: ComputedRef<{
     loading: boolean;
     nextPageToken?: string;
   }>;
-  showMissingQueryDatabases: ComputedRef<boolean>;
 };
 
 export const useSQLEditorTreeByEnvironment = (
@@ -56,7 +53,6 @@ export const useSQLEditorTreeByEnvironment = (
   const environmentStore = useEnvironmentV1Store();
 
   const tree = ref<TreeNode[]>([]);
-  const showMissingQueryDatabases = ref<boolean>(false);
   const databaseList = ref<Database[]>([]);
   const fetchDataState = ref<{
     loading: boolean;
@@ -116,21 +112,12 @@ export const useSQLEditorTreeByEnvironment = (
     await fetchDatabases(filter);
   };
 
-  const hasMissingQueryDatabases = computed(() => {
-    return databaseList.value.some((db) => !isDatabaseV1Queryable(db));
-  });
-
-  const filteredDatabaseList = computed(() => {
-    if (!showMissingQueryDatabases.value) {
-      return databaseList.value.filter((db) => isDatabaseV1Queryable(db));
+  const buildTree = (showMissingQueryDatabases: boolean) => {
+    let list = [...databaseList.value];
+    if (!showMissingQueryDatabases) {
+      list = list.filter((db) => isDatabaseV1Queryable(db));
     }
-    return databaseList.value;
-  });
-
-  const buildTree = () => {
-    tree.value = buildTreeImpl(filteredDatabaseList.value, [
-      defaultEnvironmentFactor.factor,
-    ]);
+    tree.value = buildTreeImpl(list, [defaultEnvironmentFactor.factor]);
 
     if (tree.value.length === 0) {
       const env = environmentStore.getEnvironmentByName(environment);
@@ -138,38 +125,7 @@ export const useSQLEditorTreeByEnvironment = (
       rootNode.children = [];
       tree.value = [rootNode];
     }
-
-    if (hasMissingQueryDatabases.value) {
-      for (const node of tree.value) {
-        node.suffix = () => {
-          return h(
-            NCheckbox,
-            {
-              checked: showMissingQueryDatabases.value,
-              onUpdateChecked: (checked) =>
-                (showMissingQueryDatabases.value = checked),
-              onClick: (e: MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
-              },
-            },
-            h(
-              "span",
-              { class: "textinfolabel text-sm" },
-              t("sql-editor.show-databases-without-query-permission")
-            )
-          );
-        };
-      }
-    }
   };
-
-  watch(
-    () => showMissingQueryDatabases.value,
-    () => {
-      buildTree();
-    }
-  );
 
   return {
     tree: computed(() => tree.value),
@@ -177,7 +133,6 @@ export const useSQLEditorTreeByEnvironment = (
     buildTree,
     prepareDatabases,
     fetchDatabases,
-    showMissingQueryDatabases: computed(() => showMissingQueryDatabases.value),
     fetchDataState: computed(() => fetchDataState.value),
   };
 };

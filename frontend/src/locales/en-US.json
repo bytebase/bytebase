@@ -1998,6 +1998,7 @@
     "invalid-database": "Invalid database {database}",
     "request-aborted": "User aborted the request",
     "no-data-source": "No queriable data source. Please check the data source query policy on environment or project.",
+    "database-not-queriable": "Database is not queriable",
     "rows": "row | rows",
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
@@ -2033,7 +2034,6 @@
     "rows-upper-limit": "reached the limit of query results",
     "close-sheet": "Close sheet",
     "connect": "Connect",
-    "connected": "Connected",
     "connect-in-admin-mode": "Connect in admin mode",
     "admin-mode": {
       "self": "Admin mode",
@@ -2089,7 +2089,6 @@
     "click-to-sync-now": "Click to sync now",
     "sync-in-progress": "Sync in progress",
     "select-a-database-to-start": "Select a database to start",
-    "show-empty-environments": "Show empty environments",
     "select-encoding": "Select encoding",
     "current-connection": "Current connection",
     "matched-in-group": "Matched in the database group: {title}",

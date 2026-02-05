@@ -1998,6 +1998,7 @@
     "invalid-database": "Base de datos no válida {database}",
     "request-aborted": "El usuario abortó la solicitud",
     "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
+    "database-not-queriable": "La base de datos no se puede consultar",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
@@ -2033,7 +2034,6 @@
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "close-sheet": "Cerrar hoja",
     "connect": "Conectar",
-    "connected": "Conectado",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "admin-mode": {
       "self": "Modo administrador",
@@ -2089,7 +2089,6 @@
     "click-to-sync-now": "Haga clic para sincronizar ahora",
     "sync-in-progress": "Sincronización en progreso",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
-    "show-empty-environments": "Mostrar entornos vacíos",
     "select-encoding": "Seleccionar codificación",
     "current-connection": "Conexión actual",
     "matched-in-group": "Coincidido en el grupo de base de datos: {title}",

@@ -53,8 +53,8 @@ export const storageKeySqlEditorCurrentTab = (project: string, email: string) =>
   `bb.sql-editor.current-tab.${project}.${email}`;
 export const storageKeySqlEditorConnExpanded = (env: string, email: string) =>
   `bb.sql-editor.conn-expanded.${env}.${email}`;
-export const storageKeySqlEditorConnExpandedKeys = (email: string) =>
-  `bb.sql-editor.conn-expanded-keys.${email}`;
+export const storageKeySqlEditorShowMissingQueryDb = (email: string) =>
+  `bb.sql-editor.show-missing-query-db.${email}`;
 export const storageKeySqlEditorWorksheetFilter = (
   project: string,
   email: string

@@ -1,7 +1,7 @@
 <template>
   <NPopover :disabled="!tooltip">
     <template #trigger>
-      <div class="flex flex-row justify-start items-center gap-x-1">
+      <div v-bind="$attrs" class="flex flex-row justify-start items-center gap-x-1">
         <ProjectV1Name
           v-if="showProject"
           :project="getDatabaseProject(database)"
