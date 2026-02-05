@@ -296,3 +296,26 @@
     : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
     \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   advice: null
+- statement: 'CREATE MATERIALIZED VIEW mv AS SELECT id, name FROM test;
+
+    CREATE INDEX ON mv(id);'
+  ignore_case_sensitive: false
+  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
+    public\",\n      \"tables\": [\n        {\n          \"name\": \"test\",\n   \
+    \       \"columns\": [\n            {\n              \"name\": \"id\",\n     \
+    \         \"position\": 1,\n              \"type\": \"int\"\n            },\n\
+    \            {\n              \"name\": \"name\",\n              \"position\"\
+    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
+    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
+    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
+    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
+    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
+    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
+    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
+    name\"\n            }\n          ]\n        }\n      ],\n      \"materializedViews\"\
+    : [\n        {\n          \"name\": \"mv\",\n          \"definition\": \"SELECT\
+    \ id, name FROM test\",\n          \"indexes\": [\n            {\n            \
+    \  \"name\": \"mv_id_idx\",\n              \"expressions\": [\n              \
+    \  \"id\"\n              ],\n              \"type\": \"btree\"\n            }\n\
+    \          ]\n        }\n      ]\n    }\n  ]\n}"
+  advice: null
