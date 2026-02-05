@@ -185,3 +185,30 @@ export function migrateStorageKeys() {
 
   localStorage.setItem(MIGRATION_MARKER, "1");
 }
+
+/**
+ * Migrate user-scoped localStorage keys when email changes.
+ * Renames all keys ending with `.{oldEmail}` to end with `.{newEmail}`.
+ */
+export function migrateUserStorage(oldEmail: string, newEmail: string) {
+  if (!oldEmail || !newEmail || oldEmail === newEmail) return;
+
+  const suffix = `.${oldEmail}`;
+  const keysToMigrate: string[] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.endsWith(suffix)) {
+      keysToMigrate.push(key);
+    }
+  }
+
+  for (const key of keysToMigrate) {
+    const newKey = key.slice(0, -suffix.length) + `.${newEmail}`;
+    const value = localStorage.getItem(key);
+    if (value !== null) {
+      localStorage.setItem(newKey, value);
+      localStorage.removeItem(key);
+    }
+  }
+}

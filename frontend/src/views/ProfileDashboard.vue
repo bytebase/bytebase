@@ -265,6 +265,7 @@ import {
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
+import { migrateUserStorage } from "@/utils/storage-migrate";
 
 interface LocalState {
   editing: boolean;
@@ -429,7 +430,9 @@ const saveEdit = async () => {
   try {
     // Update email using dedicated UpdateEmail API if changed
     if (emailChanged) {
-      await userStore.updateEmail(user.value.email, userPatch.email);
+      const oldEmail = user.value.email;
+      await userStore.updateEmail(oldEmail, userPatch.email);
+      migrateUserStorage(oldEmail, userPatch.email);
     }
 
     // Update other fields using UpdateUser API if any changed
