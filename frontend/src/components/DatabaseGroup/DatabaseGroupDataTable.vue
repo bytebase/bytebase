@@ -38,12 +38,12 @@ const props = withDefaults(
     databaseGroupList: DatabaseGroup[];
     bordered?: boolean;
     loading?: boolean;
-    customClick?: boolean;
     showSelection?: boolean;
     showExternalLink?: boolean;
     showActions?: boolean;
     singleSelection?: boolean;
     pageSize?: number;
+    onRowClick?: (e: MouseEvent, databaseGroup: DatabaseGroup) => void;
     selectedDatabaseGroupNames?: string[];
   }>(),
   {
@@ -54,7 +54,6 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "row-click", e: MouseEvent, databaseGroup: DatabaseGroup): void;
   (event: "update:selected-database-group-names", val: string[]): void;
   (event: "delete", databaseGroup: DatabaseGroup): void;
 }>();
@@ -188,8 +187,8 @@ const rowProps = (databaseGroup: DatabaseGroup) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      if (props.customClick) {
-        emit("row-click", e, databaseGroup);
+      if (props.onRowClick) {
+        props.onRowClick(e, databaseGroup);
         return;
       }
 

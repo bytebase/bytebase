@@ -3,6 +3,7 @@
     <NTooltip v-if="tabStore.supportBatchMode" :disabled="!checkTooltip" :placement="'bottom-start'">
       <template #trigger>
         <NCheckbox
+          class="mr-2"
           :checked="checked"
           :disabled="checkDisabled || !canQuery"
           @click.stop.prevent=""
@@ -13,19 +14,19 @@
     </NTooltip>
 
     <RichDatabaseName
+      class="cursor-pointer tree-node-database"
       :database="database"
       :show-instance="true"
       :show-engine-icon="true"
       :show-environment="false"
       :show-arrow="true"
       :keyword="keyword"
+      @click.stop.prevent="$emit('click')"
     />
 
-    <span v-if="connected" class="truncate textinfolabel">
-      ({{ $t("sql-editor.connected") }})
-    </span>
     <RequestQueryButton
       v-if="showRequestQueryButton"
+      class="ml-auto"
       :text="true"
       :permission-denied-detail="create(PermissionDeniedDetailSchema, {
         resources: [database.name],
@@ -50,13 +51,13 @@ import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryBut
 const props = defineProps<{
   node: TreeNode;
   keyword: string;
-  connected?: boolean;
   checked?: boolean;
   checkDisabled?: boolean;
   checkTooltip?: string;
 }>();
 
 defineEmits<{
+  (event: "click"): void;
   (event: "update:checked", checked: boolean): void;
 }>();
 

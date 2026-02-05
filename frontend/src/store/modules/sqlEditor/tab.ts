@@ -26,7 +26,6 @@ import {
 import {
   hasFeature,
   useDatabaseV1ByName,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useWorkSheetStore,
 } from "../v1";
@@ -474,19 +473,4 @@ export const useConnectionOfCurrentSQLEditorTab = () => {
     useSQLEditorConnectionDetail(connection);
 
   return { connection, instance, database, environment };
-};
-
-export const resolveOpeningDatabaseListFromSQLEditorTabList = () => {
-  const { openTabList } = useSQLEditorTabStore();
-  const databaseStore = useDatabaseV1Store();
-  const databaseSet = new Set<string>();
-
-  for (const tab of openTabList) {
-    const { database } = tab.connection;
-    if (database) {
-      const db = databaseStore.getDatabaseByName(database);
-      databaseSet.add(db.name);
-    }
-  }
-  return databaseSet;
 };

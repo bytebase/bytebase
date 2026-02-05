@@ -87,21 +87,15 @@
           >
             <template v-if="treeStore.state === 'READY'">
               <NCheckbox
-                v-if="existEmptyEnvironment"
-                v-model:checked="state.showEmptyEnvironment"
+                v-model:checked="showMissingQueryDatabases"
               >
-                {{ $t("sql-editor.show-empty-environments") }}
+                {{ $t("sql-editor.show-databases-without-query-permission") }}
               </NCheckbox>
               <div
                 v-for="[environment, treeState] of treeByEnvironment.entries()"
                 :key="environment"
               >
                 <div
-                  v-if="
-                    !treeIsEmpty(treeState) ||
-                    (state.showEmptyEnvironment &&
-                      environment !== UNKNOWN_ENVIRONMENT_NAME)
-                  "
                   class="flex flex-col gap-y-2 pt-2 pb-2"
                 >
                   <NTree
@@ -122,7 +116,7 @@
                         environment
                       ) &&
                       (!treeIsEmpty(treeState) ||
-                        treeState.showMissingQueryDatabases.value)
+                        showMissingQueryDatabases)
                     "
                     class="w-full flex items-center justify-start pl-4"
                   >
@@ -134,7 +128,7 @@
                         () =>
                           treeState
                             .fetchDatabases(filter)
-                            .then(() => treeState.buildTree())
+                            .then(() => treeState.buildTree(showMissingQueryDatabases))
                       "
                     >
                       {{ $t("common.load-more") }}
@@ -157,6 +151,7 @@
         </template>
         <DatabaseGroupTable
           :database-group-names="selectedDatabaseGroupNames"
+          @select="handleSelectDatabaseGroup"
           @update:database-group-names="onDatabaseGroupSelectionUpdate"
         />
       </NTabPane>
@@ -221,7 +216,7 @@ import {
   type DatabaseFilter,
   featureToRef,
   idForSQLEditorTreeNodeTarget,
-  resolveOpeningDatabaseListFromSQLEditorTabList,
+  pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
@@ -243,7 +238,6 @@ import {
   isValidDatabaseGroupName,
   isValidDatabaseName,
   isValidProjectName,
-  UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -259,8 +253,7 @@ import {
   getValueFromSearchParams,
   getValuesFromSearchParams,
   isDatabaseV1Queryable,
-  isDescendantOf,
-  storageKeySqlEditorConnExpandedKeys,
+  storageKeySqlEditorShowMissingQueryDb,
   useDynamicLocalStorage,
 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
@@ -277,7 +270,6 @@ import { type TreeByEnvironment, useSQLEditorTreeByEnvironment } from "./tree";
 interface LocalState {
   params: SearchParams;
   missingFeature?: PlanFeature;
-  showEmptyEnvironment: boolean;
   batchQueryDataSourceType?: QueryDataSourceType;
   selectionMode: "DATABASE" | "DATABASE-GROUP";
   switchingConnection: boolean;
@@ -298,23 +290,20 @@ const { t } = useI18n();
 
 const environmentList = computed(() => useEnvironmentV1Store().environmentList);
 
-const expandedState = useDynamicLocalStorage<{
-  initialized: boolean;
-  expandedKeys: string[];
-}>(
-  computed(() => storageKeySqlEditorConnExpandedKeys(currentUser.value.email)),
-  {
-    initialized: false,
-    expandedKeys: [],
-  }
+const showMissingQueryDatabases = useDynamicLocalStorage<boolean>(
+  computed(() =>
+    storageKeySqlEditorShowMissingQueryDb(currentUser.value.email)
+  ),
+  true
 );
 
 watch(
-  () => expandedState.value.expandedKeys,
-  () => {
-    expandedState.value.initialized = true;
-  },
-  { deep: true }
+  () => showMissingQueryDatabases.value,
+  (showMissingQueryDatabases) => {
+    for (const treeState of treeByEnvironment.value.values()) {
+      treeState.buildTree(showMissingQueryDatabases);
+    }
+  }
 );
 
 const hasBatchQueryFeature = featureToRef(PlanFeature.FEATURE_BATCH_QUERY);
@@ -327,7 +316,6 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
-  showEmptyEnvironment: false,
   batchQueryDataSourceType: DataSourceType.READ_ONLY,
   selectionMode: "DATABASE",
   switchingConnection: false,
@@ -364,9 +352,11 @@ watch(
   { immediate: true }
 );
 
+// onBatchQueryContextChange changes the batchQueryContext and connect to the 1st queryable database.
+// return boolean true if exists any queryable database in the batchQueryContext.
 const onBatchQueryContextChange = async (
   batchQueryContext: BatchQueryContext
-) => {
+): Promise<boolean> => {
   state.switchingConnection = true;
 
   try {
@@ -392,6 +382,7 @@ const onBatchQueryContextChange = async (
     } else {
       tabStore.updateBatchQueryContext(batchQueryContext);
     }
+    return !!queryableDatabase;
   } finally {
     state.switchingConnection = false;
   }
@@ -443,7 +434,32 @@ const onDatabaseGroupSelectionUpdate = async (databaseGroups: string[]) => {
     ...(tabStore.currentTab?.batchQueryContext ?? { databases: [] }),
     databaseGroups,
   });
-  await onBatchQueryContextChange(batchQueryContext);
+  const success = await onBatchQueryContextChange(batchQueryContext);
+
+  if (databaseGroups.length > 0 && !success) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("sql-editor.no-queriable-database"),
+    });
+  }
+};
+
+const handleSelectDatabaseGroup = async (name: string) => {
+  const batchQueryContext: BatchQueryContext = cloneDeep({
+    ...(tabStore.currentTab?.batchQueryContext ?? { databases: [] }),
+    databaseGroups: [name],
+  });
+  const success = await onBatchQueryContextChange(batchQueryContext);
+  if (success) {
+    showConnectionPanel.value = false;
+  } else {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("sql-editor.no-queriable-database"),
+    });
+  }
 };
 
 const flattenSelectedDatabasesFromGroup = computed(() => {
@@ -467,15 +483,6 @@ const flattenSelectedDatabasesFromGroup = computed(() => {
 const treeByEnvironment = shallowRef<
   Map<string /* environment full name */, TreeByEnvironment>
 >(new Map());
-
-const existEmptyEnvironment = computed(() => {
-  for (const [_, value] of treeByEnvironment.value.entries()) {
-    if (treeIsEmpty(value)) {
-      return true;
-    }
-  }
-  return false;
-});
 
 const treeIsEmpty = (value: TreeByEnvironment) => {
   if (value.tree.value.length === 0) {
@@ -590,10 +597,6 @@ const getSelectedKeys = async () => {
   return [];
 };
 
-const connectedDatabases = computed(() =>
-  resolveOpeningDatabaseListFromSQLEditorTabList()
-);
-
 // The connection panel should:
 // - change the connection for the current tab
 // - connect to a new tab, this will create a new worksheet
@@ -637,6 +640,11 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     checkTooltip = t("sql-editor.matched-in-group", { title: checkedByGroup });
   } else if (tabStore.currentTab?.connection.database === databaseName) {
     checkTooltip = t("sql-editor.current-connection");
+  } else if (databaseName) {
+    const database = (node as SQLEditorTreeNode<"database">).meta.target;
+    if (!isDatabaseV1Queryable(database)) {
+      checkTooltip = t("sql-editor.database-not-queriable");
+    }
   }
 
   return h(Label, {
@@ -646,7 +654,14 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     checkDisabled: !!checkedByGroup || state.switchingConnection,
     checkTooltip,
     keyword: state.params.query,
-    connected: connectedDatabases.value.has(databaseName),
+    onClick: () => {
+      if (node.disabled) {
+        return;
+      }
+      if (node.meta.type === "database") {
+        connect(node);
+      }
+    },
     "onUpdate:checked": (checked: boolean) => {
       if (node.meta.type !== "database") {
         return;
@@ -663,18 +678,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as SQLEditorTreeNode;
   return {
-    onClick(e: MouseEvent) {
-      if (node.disabled) return;
-
-      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        const { type } = node.meta;
-        // Check if clicked on the content part.
-        // And ignore the fold/unfold arrow.
-        if (type === "database") {
-          connect(node);
-        }
-      }
-    },
     onContextmenu(e: MouseEvent) {
       e.preventDefault();
       showDropdown.value = false;
@@ -786,7 +789,9 @@ const prepareDatabases = async () => {
         await treeByEnvironment.value
           .get(environment.name)
           ?.prepareDatabases(filter.value);
-        treeByEnvironment.value.get(environment.name)?.buildTree();
+        treeByEnvironment.value
+          .get(environment.name)
+          ?.buildTree(showMissingQueryDatabases.value);
       }
     )
   );
@@ -822,6 +827,7 @@ watch(
   padding-left: 0 !important;
   font-size: 0.875rem;
   line-height: 1.25rem;
+  cursor: default !important;
 }
 .sql-editor-tree :deep(.n-tree-node-wrapper) {
   padding: 0;

@@ -17,7 +17,8 @@
       :checked="checked"
       :check-disabled="checkDisabled"
       :check-tooltip="checkTooltip"
-      :connected="connected"
+      @click="$emit('click')"
+      @update:checked="event => $emit('update:checked', event)"
     />
   </template>
   <template v-if="type === 'label'">
@@ -39,7 +40,11 @@ const props = defineProps<{
   checked: boolean;
   checkDisabled?: boolean;
   checkTooltip?: string;
-  connected: boolean;
+}>();
+
+defineEmits<{
+  (event: "click"): void;
+  (event: "update:checked", checked: boolean): void;
 }>();
 
 const type = computed(() => props.node.meta.type);

@@ -1,10 +1,9 @@
 <template>
   <DatabaseGroupDataTable
     :database-group-list="filteredDbGroupList"
-    :custom-click="true"
     :loading="!ready"
     :show-actions="allowDelete"
-    @row-click="handleDatabaseGroupClick"
+    :on-row-click="handleDatabaseGroupClick"
     @delete="handleDelete"
   />
 </template>
