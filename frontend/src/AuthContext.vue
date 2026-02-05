@@ -72,27 +72,29 @@ onUnmounted(() => {
   }
 });
 
-// When current user changed, we need to redirect to the workspace root page.
+// When current user changed (e.g., another user logged in from different tab),
+// redirect to workspace root with notification.
+// Skip if this is a self email update (name changes from users/old@email to users/new@email).
 watch(
   () => authStore.currentUserName,
-  (currentUserName, prevCurrentUserName) => {
-    if (
-      currentUserName &&
-      prevCurrentUserName &&
-      currentUserName !== prevCurrentUserName
-    ) {
-      router.push({
-        name: WORKSPACE_ROOT_MODULE,
-        // to force route reload
-        query: { _r: Date.now() },
-      });
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("auth.login-as-another.title"),
-        description: t("auth.login-as-another.content"),
-      });
+  (curr, prev) => {
+    if (!curr || !prev || curr === prev) return;
+
+    if (authStore.isSelfEmailUpdate) {
+      authStore.isSelfEmailUpdate = false;
+      return;
     }
+
+    router.push({
+      name: WORKSPACE_ROOT_MODULE,
+      query: { _r: Date.now() },
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("auth.login-as-another.title"),
+      description: t("auth.login-as-another.content"),
+    });
   }
 );
 

@@ -21,12 +21,13 @@
               <div class="mt-6 flex flex-row justify-stretch gap-x-2">
                 <template v-if="allowEdit">
                   <template v-if="state.editing">
-                    <NButton @click.prevent="cancelEdit">
+                    <NButton quaternary :disabled="state.saving" @click.prevent="cancelEdit">
                       {{ $t("common.cancel") }}
                     </NButton>
                     <NButton
                       type="primary"
                       :disabled="!allowSaveEdit"
+                      :loading="state.saving"
                       @click.prevent="saveEdit"
                     >
                       {{ $t("common.save") }}
@@ -251,6 +252,7 @@ import {
   featureToRef,
   hasFeature,
   pushNotification,
+  useAuthStore,
   useCurrentUserV1,
   useSettingV1Store,
   useUserStore,
@@ -271,6 +273,7 @@ interface LocalState {
   editing: boolean;
   editingUser?: User;
   passwordConfirm: string;
+  saving: boolean;
   showFeatureModal: boolean;
   showDisable2FAConfirmModal: boolean;
   showRegenerateRecoveryCodesView: boolean;
@@ -282,6 +285,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const authStore = useAuthStore();
 const settingV1Store = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
@@ -290,6 +294,7 @@ const workspaceStore = useWorkspaceV1Store();
 const state = reactive<LocalState>({
   editing: false,
   passwordConfirm: "",
+  saving: false,
   showFeatureModal: false,
   showDisable2FAConfirmModal: false,
   showRegenerateRecoveryCodesView: false,
@@ -427,12 +432,19 @@ const saveEdit = async () => {
     updateMaskPaths.push("password");
   }
 
+  state.saving = true;
   try {
     // Update email using dedicated UpdateEmail API if changed
     if (emailChanged) {
       const oldEmail = user.value.email;
-      await userStore.updateEmail(oldEmail, userPatch.email);
+      const updatedUser = await userStore.updateEmail(
+        oldEmail,
+        userPatch.email
+      );
       migrateUserStorage(oldEmail, userPatch.email);
+      if (isSelf.value) {
+        authStore.updateCurrentUserNameForEmailChange(updatedUser.name);
+      }
     }
 
     // Update other fields using UpdateUser API if any changed
@@ -447,6 +459,9 @@ const saveEdit = async () => {
           regenerateTempMfaSecret: false,
         })
       );
+    }
+
+    if (emailChanged || updateMaskPaths.length > 0) {
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -460,6 +475,8 @@ const saveEdit = async () => {
       title: (error as ConnectError).message || "Failed to update user",
     });
     return;
+  } finally {
+    state.saving = false;
   }
 
   state.editingUser = undefined;

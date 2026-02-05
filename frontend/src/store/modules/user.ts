@@ -164,10 +164,16 @@ export const useUserStore = defineStore("user", () => {
     if (!originData) {
       throw new Error(`user with email ${oldEmail} not found`);
     }
+    const oldName = originData.name;
     const response = await userServiceClientConnect.updateEmail({
       name: `users/${oldEmail}`,
       email: newEmail,
     });
+    // Remove old cache entry since the user's name changes with email
+    if (oldName !== response.name) {
+      userMapByName.value.delete(oldName);
+      userRequestCache.delete(oldName);
+    }
     return setUser(response);
   };
 
