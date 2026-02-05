@@ -85,6 +85,7 @@ import { PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed, ref } from "vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
+import { RUNNABLE_TASK_STATUSES } from "@/components/RolloutV1/constants/task";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import StageContentSidebar from "./StageContentSidebar.vue";
@@ -114,13 +115,8 @@ const canRunStage = computed(() => {
   if (!props.selectedStage || !props.isStageCreated(props.selectedStage)) {
     return false;
   }
-  // Can run if there are NOT_STARTED, FAILED, or CANCELED tasks
-  // PENDING tasks cannot be run (only canceled)
-  return props.selectedStage.tasks.some(
-    (task) =>
-      task.status === Task_Status.NOT_STARTED ||
-      task.status === Task_Status.FAILED ||
-      task.status === Task_Status.CANCELED
+  return props.selectedStage.tasks.some((task) =>
+    RUNNABLE_TASK_STATUSES.includes(task.status)
   );
 });
 
