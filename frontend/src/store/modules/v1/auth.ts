@@ -35,8 +35,10 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const authSessionKey = ref<string>(uniqueId());
   const actuatorStore = useActuatorV1Store();
   const unauthenticatedOccurred = ref<boolean>(false);
-  // Format: users/{user}. {user} is a system-generated unique ID.
+  // Format: users/{email}. Changes when user email is updated.
   const currentUserName = ref<string | undefined>(undefined);
+  // Flag to suppress "logged in as another user" notification during self email update
+  const isSelfEmailUpdate = ref(false);
 
   const isLoggedIn = computed(() => {
     return (
@@ -213,17 +215,26 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
   };
 
+  // Update currentUserName after self email change.
+  // Sets flag to suppress "logged in as another user" notification.
+  const updateCurrentUserNameForEmailChange = (newName: string) => {
+    isSelfEmailUpdate.value = true;
+    currentUserName.value = newName;
+  };
+
   return {
     currentUserName,
     isLoggedIn,
     unauthenticatedOccurred,
     requireResetPassword,
     authSessionKey,
+    isSelfEmailUpdate,
     login,
     signup,
     logout,
     fetchCurrentUser,
     setRequireResetPassword,
+    updateCurrentUserNameForEmailChange,
   };
 });
 
