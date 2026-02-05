@@ -12,7 +12,7 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.15.8"), *files[len(files)-1].version)
+	require.Equal(t, semver.MustParse("3.15.9"), *files[len(files)-1].version)
 	require.Equal(t, "migration/3.15/0009##migrate_iam_binding_environment_condition.sql", files[len(files)-1].path)
 }
 

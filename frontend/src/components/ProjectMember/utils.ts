@@ -1,4 +1,3 @@
-import { PresetRoleType } from "@/types";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { checkRoleContainsAnyPermission, displayRoleTitle } from "@/utils";
 
@@ -11,22 +10,16 @@ export const getBindingIdentifier = (binding: Binding): string => {
 };
 
 export const roleHasDatabaseLimitation = (role: string) => {
-  return (
-    role !== PresetRoleType.PROJECT_OWNER &&
-    checkRoleContainsAnyPermission(
-      role,
-      "bb.sql.select",
-      "bb.sql.ddl",
-      "bb.sql.dml",
-      "bb.sql.explain",
-      "bb.sql.info"
-    )
+  return checkRoleContainsAnyPermission(
+    role,
+    "bb.sql.select",
+    "bb.sql.ddl",
+    "bb.sql.dml",
+    "bb.sql.explain",
+    "bb.sql.info"
   );
 };
 
 export const roleHasEnvironmentLimitation = (role: string) => {
-  return (
-    role !== PresetRoleType.PROJECT_OWNER &&
-    checkRoleContainsAnyPermission(role, "bb.sql.ddl", "bb.sql.dml")
-  );
+  return checkRoleContainsAnyPermission(role, "bb.sql.ddl", "bb.sql.dml");
 };

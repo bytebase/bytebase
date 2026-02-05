@@ -12,10 +12,9 @@ import {
   useCurrentUserV1,
   useGroupStore,
   useProjectIamPolicyStore,
-  useRoleStore,
   useUserStore,
 } from "@/store";
-import { groupBindingPrefix, PresetRoleType } from "@/types";
+import { groupBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   Issue,
@@ -27,6 +26,7 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
+  displayRoleTitle,
   ensureUserFullName,
   isBindingPolicyExpired,
   memberMapToRolesInProjectIAM,
@@ -48,7 +48,6 @@ export function useApprovalStep(
   const planContext = tryUsePlanContext();
   const currentUser = useCurrentUserV1();
   const userStore = useUserStore();
-  const roleStore = useRoleStore();
   const groupStore = useGroupStore();
   const projectIamPolicyStore = useProjectIamPolicyStore();
 
@@ -123,18 +122,7 @@ export function useApprovalStep(
 
   const roleName = computed((): string => {
     if (step.value) {
-      const role = step.value;
-      if (role === PresetRoleType.PROJECT_OWNER) {
-        return t("role.project-owner.self");
-      } else if (role === PresetRoleType.WORKSPACE_DBA) {
-        return t("role.workspace-dba.self");
-      } else if (role === PresetRoleType.WORKSPACE_ADMIN) {
-        return t("role.workspace-admin.self");
-      }
-      const customRole = roleStore.getRoleByName(role);
-      if (customRole) {
-        return customRole.title;
-      }
+      return displayRoleTitle(step.value);
     }
     return t("custom-approval.approval-flow.node.approver");
   });
