@@ -51,6 +51,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
+	var setRoles []string
 	for _, stmtInfo := range stmtInfos {
 		rule := &statementAffectedRowLimitRule{
 			BaseRule: BaseRule{
@@ -60,6 +61,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			maxRow:                   int(numberPayload.Number),
 			ctx:                      ctx,
 			driver:                   checkCtx.Driver,
+			setRoles:                 setRoles,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 			tokens:                   stmtInfo.Tokens,
 		}
@@ -68,6 +70,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
+		setRoles = rule.setRoles
 	}
 
 	return adviceList, nil

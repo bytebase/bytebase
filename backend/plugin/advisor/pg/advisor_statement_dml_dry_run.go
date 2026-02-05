@@ -44,6 +44,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	var adviceList []*storepb.Advice
+	var setRoles []string
 	for _, stmtInfo := range stmtInfos {
 		rule := &statementDMLDryRunRule{
 			BaseRule: BaseRule{
@@ -52,6 +53,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			},
 			ctx:                      ctx,
 			driver:                   checkCtx.Driver,
+			setRoles:                 setRoles,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 			tokens:                   stmtInfo.Tokens,
 		}
@@ -60,6 +62,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
+		setRoles = rule.setRoles
 	}
 
 	return adviceList, nil
