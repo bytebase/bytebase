@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
@@ -56,9 +55,6 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
       ? policy.policy.value
       : create(QueryDataPolicySchema, {
           maximumResultRows: -1,
-          timeout: create(DurationSchema, {
-            seconds: BigInt(0),
-          }),
         });
   };
 
@@ -168,13 +164,8 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
 
 const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
   let maximumResultRows = policy.maximumResultRows;
-  let queryTimeoutInSeconds = Number(policy.timeout?.seconds ?? 0);
-
   if (maximumResultRows <= 0) {
     maximumResultRows = Number.MAX_VALUE;
-  }
-  if (queryTimeoutInSeconds <= 0) {
-    queryTimeoutInSeconds = Number.MAX_VALUE;
   }
 
   return {
@@ -182,7 +173,6 @@ const formatQueryDataPolicy = (policy: QueryDataPolicy) => {
     disableExport: policy.disableExport,
     allowAdminDataSource: policy.allowAdminDataSource,
     maximumResultRows,
-    queryTimeoutInSeconds,
   };
 };
 
@@ -239,23 +229,41 @@ export const usePolicyByParentAndType = (
   };
 };
 
-export const useQueryDataPolicy = () => {
+export const useQueryDataPolicy = (project: MaybeRef<string>) => {
   const store = usePolicyV1Store();
   const ready = ref(false);
 
   watchEffect(() => {
-    // Fetch workspace-level DATA_QUERY policies
-    store
-      .getOrFetchPolicyByParentAndType({
+    Promise.all([
+      // Fetch workspace-level DATA_QUERY policies
+      store.getOrFetchPolicyByParentAndType({
         parentPath: "",
         policyType: PolicyType.DATA_QUERY,
-      })
-      .finally(() => (ready.value = true));
+      }),
+      // Fetch project-level DATA_QUERY policies
+      store.getOrFetchPolicyByParentAndType({
+        parentPath: unref(project),
+        policyType: PolicyType.DATA_QUERY,
+      }),
+    ]).finally(() => (ready.value = true));
   });
 
-  const policy = computed(() =>
-    formatQueryDataPolicy(store.getQueryDataPolicyByParent(""))
-  );
+  const policy = computed(() => {
+    const workspacePolicy = formatQueryDataPolicy(
+      store.getQueryDataPolicyByParent("")
+    );
+    const projectPolicy = formatQueryDataPolicy(
+      store.getQueryDataPolicyByParent(unref(project))
+    );
+
+    return {
+      ...workspacePolicy,
+      maximumResultRows: Math.min(
+        workspacePolicy.maximumResultRows,
+        projectPolicy.maximumResultRows
+      ),
+    };
+  });
 
   return {
     policy,

@@ -239,7 +239,9 @@ const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const tabStore = useSQLEditorTabStore();
 
-const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(
+  computed(() => props.database.project)
+);
 
 const detail: SQLResultViewContext["detail"] = ref(undefined);
 

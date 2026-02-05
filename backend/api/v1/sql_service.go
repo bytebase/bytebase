@@ -122,6 +122,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			s.store,
 			s.licenseService,
 			request.Limit,
+			database.ProjectID,
 		)
 		queryContext := db.QueryContext{
 			OperatorEmail:        user.Email,
@@ -214,6 +215,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		s.store,
 		s.licenseService,
 		request.Limit,
+		database.ProjectID,
 	)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
@@ -305,13 +307,14 @@ func getEffectiveQueryDataPolicy(
 	stores *store.Store,
 	licenseService *enterprise.LicenseService,
 	limit int32,
+	projectID string,
 ) *store.EffectiveQueryDataPolicy {
 	value := &store.EffectiveQueryDataPolicy{
 		MaximumResultSize: common.DefaultMaximumSQLResultSize,
 		MaximumResultRows: math.MaxInt32,
 	}
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		policy, err := stores.GetEffectiveQueryDataPolicy(ctx)
+		policy, err := stores.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(projectID))
 		if err != nil {
 			slog.Error("failed to get the query data policy", log.BBError(err))
 			return value
@@ -1025,6 +1028,7 @@ func doExport(
 		stores,
 		licenseService,
 		request.Limit,
+		database.ProjectID,
 	)
 	queryContext := db.QueryContext{
 		Limit:                int(queryRestriction.MaximumResultRows),
@@ -1768,7 +1772,7 @@ func checkAndGetDataSourceQueriable(
 		return dataSource, nil
 	}
 
-	queryDataPolicy, err := storeInstance.GetEffectiveQueryDataPolicy(ctx)
+	queryDataPolicy, err := storeInstance.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(database.ProjectID))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get query data policy with error: %v", err.Error()))
 	}

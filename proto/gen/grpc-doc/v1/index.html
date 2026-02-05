@@ -6626,6 +6626,13 @@ Requires ENTERPRISE license. </p></td>
 The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
                 </tr>
               
+                <tr>
+                  <td>query_timeout</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The query timeout duration for query and export, works for the SQL Editor and Export Center. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -18808,20 +18815,12 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
             <tbody>
               
                 <tr>
-                  <td>timeout</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>workspace-level policy
-The query timeout duration in the SQL editor. </p></td>
-                </tr>
-              
-                <tr>
                   <td>maximum_result_rows</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>workspace-level policy
+                  <td><p>Support both project-level and workspace-level.
 The maximum number of rows to return in the SQL editor.
-The default value is -1, means no limit. </p></td>
+The default value &lt;= 0, means no limit. </p></td>
                 </tr>
               
                 <tr>

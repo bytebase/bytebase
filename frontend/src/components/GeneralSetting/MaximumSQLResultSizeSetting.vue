@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-6">
-    <div>
+    <div v-if="isWorkspace && canGetWorkspaceProfile">
       <p class="font-medium flex flex-row justify-start items-center">
         <span class="mr-2">
           {{ $t("settings.general.workspace.maximum-sql-result.size.self") }}
@@ -62,6 +62,7 @@
       <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <PermissionGuardWrapper
           v-slot="slotProps"
+          :project="project"
           :permissions="[
             'bb.policies.update'
           ]"
@@ -70,7 +71,7 @@
             :value="queryRestriction.maximumResultRows"
             :disabled="!hasQueryPolicyFeature || slotProps.disabled"
             class="w-60"
-            :min="-1"
+            :min="0"
             :precision="0"
             @update:value="
               handleInput(
@@ -100,6 +101,7 @@ import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   featureToRef,
   usePolicyV1Store,
+  useProjectV1Store,
   useSettingV1Store,
 } from "@/store";
 import {
@@ -109,6 +111,7 @@ import {
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 
 const props = defineProps<{
@@ -118,15 +121,29 @@ const props = defineProps<{
 
 const policyV1Store = usePolicyV1Store();
 const settingV1Store = useSettingV1Store();
+const projectStore = useProjectV1Store();
+
+const isWorkspace = computed(() => props.resource === "");
+const project = computed(() =>
+  isWorkspace.value ? undefined : projectStore.getProjectByName(props.resource)
+);
+
+const canGetWorkspaceProfile = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.getWorkspaceProfile")
+);
 
 const initialState = () => {
   let size = settingV1Store.workspaceProfile.sqlResultSize;
   if (size <= 0) {
     size = BigInt(DEFAULT_MAX_RESULT_SIZE_IN_MB * 1024 * 1024);
   }
+  let rows = Number(props.policy.maximumResultRows);
+  if (rows < 0) {
+    rows = 0;
+  }
   return {
     maximumResultSize: Math.round(Number(size) / 1024 / 1024),
-    maximumResultRows: Number(props.policy.maximumResultRows),
+    maximumResultRows: rows,
   };
 };
 

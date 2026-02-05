@@ -11,7 +11,6 @@ import (
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	reflect "reflect"
@@ -731,26 +730,23 @@ func (x *RolloutPolicy) GetRoles() []string {
 // QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// workspace-level policy
-	// The query timeout duration in the SQL editor.
-	Timeout *durationpb.Duration `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	// workspace-level policy
+	// Support both project-level and workspace-level.
 	// The maximum number of rows to return in the SQL editor.
-	// The default value is -1, means no limit.
-	MaximumResultRows int32 `protobuf:"varint,2,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
+	// The default value <= 0, means no limit.
+	MaximumResultRows int32 `protobuf:"varint,1,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
 	// workspace-level policy
 	// Disable data export in the SQL editor.
-	DisableExport bool `protobuf:"varint,3,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
+	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// workspace-level policy
 	// Disable copying query results in the SQL editor.
-	DisableCopyData bool `protobuf:"varint,4,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
+	DisableCopyData bool `protobuf:"varint,3,opt,name=disable_copy_data,json=disableCopyData,proto3" json:"disable_copy_data,omitempty"`
 	// workspace-level policy
 	// Allow using the admin data source to query in the SQL editor.
 	// If true, users can select the admin data source or read-only data source
 	// If false,
 	// 1. when read-only data source is configured, users're force to use the read-only data source
 	// 2. otherwise fallback to use the admin data source.
-	AllowAdminDataSource bool `protobuf:"varint,5,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
+	AllowAdminDataSource bool `protobuf:"varint,4,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
 	// ================
 	// Deprecate following fields.
 	// Disallow running DDL statements in the SQL editor.
@@ -789,13 +785,6 @@ func (x *QueryDataPolicy) ProtoReflect() protoreflect.Message {
 // Deprecated: Use QueryDataPolicy.ProtoReflect.Descriptor instead.
 func (*QueryDataPolicy) Descriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *QueryDataPolicy) GetTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.Timeout
-	}
-	return nil
 }
 
 func (x *QueryDataPolicy) GetMaximumResultRows() int32 {
@@ -1141,7 +1130,7 @@ var File_v1_org_policy_service_proto protoreflect.FileDescriptor
 
 const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xa9\x01\n" +
+	"\x1bv1/org_policy_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\"\xa9\x01\n" +
 	"\x13CreatePolicyRequest\x123\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1b\xe0A\x02\xfaA\x15\x12\x13bytebase.com/PolicyR\x06parent\x120\n" +
 	"\x06policy\x18\x02 \x01(\v2\x13.bytebase.v1.PolicyB\x03\xe0A\x02R\x06policy\x12+\n" +
@@ -1182,13 +1171,12 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x06policy\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xc6\x02\n" +
-	"\x0fQueryDataPolicy\x123\n" +
-	"\atimeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12.\n" +
-	"\x13maximum_result_rows\x18\x02 \x01(\x05R\x11maximumResultRows\x12%\n" +
-	"\x0edisable_export\x18\x03 \x01(\bR\rdisableExport\x12*\n" +
-	"\x11disable_copy_data\x18\x04 \x01(\bR\x0fdisableCopyData\x125\n" +
-	"\x17allow_admin_data_source\x18\x05 \x01(\bR\x14allowAdminDataSource\x12!\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\x91\x02\n" +
+	"\x0fQueryDataPolicy\x12.\n" +
+	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12%\n" +
+	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12*\n" +
+	"\x11disable_copy_data\x18\x03 \x01(\bR\x0fdisableCopyData\x125\n" +
+	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\x12!\n" +
 	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
 	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDml\"\xbf\x01\n" +
 	"\x16MaskingExemptionPolicy\x12M\n" +
@@ -1264,9 +1252,8 @@ var file_v1_org_policy_service_proto_goTypes = []any{
 	(*MaskingRulePolicy_MaskingRule)(nil),    // 15: bytebase.v1.MaskingRulePolicy.MaskingRule
 	nil,                                      // 16: bytebase.v1.TagPolicy.TagsEntry
 	(*fieldmaskpb.FieldMask)(nil),            // 17: google.protobuf.FieldMask
-	(*durationpb.Duration)(nil),              // 18: google.protobuf.Duration
-	(*expr.Expr)(nil),                        // 19: google.type.Expr
-	(*emptypb.Empty)(nil),                    // 20: google.protobuf.Empty
+	(*expr.Expr)(nil),                        // 18: google.type.Expr
+	(*emptypb.Empty)(nil),                    // 19: google.protobuf.Empty
 }
 var file_v1_org_policy_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.CreatePolicyRequest.policy:type_name -> bytebase.v1.Policy
@@ -1282,27 +1269,26 @@ var file_v1_org_policy_service_proto_depIdxs = []int32{
 	13, // 10: bytebase.v1.Policy.tag_policy:type_name -> bytebase.v1.TagPolicy
 	10, // 11: bytebase.v1.Policy.query_data_policy:type_name -> bytebase.v1.QueryDataPolicy
 	1,  // 12: bytebase.v1.Policy.resource_type:type_name -> bytebase.v1.PolicyResourceType
-	18, // 13: bytebase.v1.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	14, // 14: bytebase.v1.MaskingExemptionPolicy.exemptions:type_name -> bytebase.v1.MaskingExemptionPolicy.Exemption
-	15, // 15: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
-	16, // 16: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
-	19, // 17: bytebase.v1.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
-	19, // 18: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	5,  // 19: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
-	6,  // 20: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
-	2,  // 21: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
-	3,  // 22: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
-	4,  // 23: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
-	8,  // 24: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
-	7,  // 25: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
-	8,  // 26: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
-	8,  // 27: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
-	20, // 28: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
-	24, // [24:29] is the sub-list for method output_type
-	19, // [19:24] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	14, // 13: bytebase.v1.MaskingExemptionPolicy.exemptions:type_name -> bytebase.v1.MaskingExemptionPolicy.Exemption
+	15, // 14: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
+	16, // 15: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
+	18, // 16: bytebase.v1.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
+	18, // 17: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	5,  // 18: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
+	6,  // 19: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
+	2,  // 20: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
+	3,  // 21: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
+	4,  // 22: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
+	8,  // 23: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
+	7,  // 24: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
+	8,  // 25: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
+	8,  // 26: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
+	19, // 27: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
+	23, // [23:28] is the sub-list for method output_type
+	18, // [18:23] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_v1_org_policy_service_proto_init() }

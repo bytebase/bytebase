@@ -126,6 +126,7 @@ import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
@@ -164,8 +165,9 @@ const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
 const contextMenu = provideResultTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
+const { project } = storeToRefs(useSQLEditorStore());
 
-const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(project);
 
 const selectedDatabaseNameList = ref<string[]>([]);
 

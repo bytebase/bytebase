@@ -26,7 +26,7 @@ var (
 	allowedResourceTypes = map[storepb.Policy_Type][]storepb.Policy_Resource{
 		storepb.Policy_ROLLOUT:           {storepb.Policy_ENVIRONMENT},
 		storepb.Policy_TAG:               {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
-		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE},
+		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE, storepb.Policy_PROJECT},
 		storepb.Policy_MASKING_RULE:      {storepb.Policy_WORKSPACE},
 		storepb.Policy_MASKING_EXEMPTION: {storepb.Policy_PROJECT},
 	}
@@ -74,6 +74,10 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v
 	}
 	if policy == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the policy %v", req.Msg.Name))
+	}
+
+	if err := validatePolicyType(policy.Type, policy.ResourceType); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	var perm permission.Permission
@@ -125,6 +129,9 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, req *connect.Reques
 
 	response := &v1pb.ListPoliciesResponse{}
 	for _, policy := range policies {
+		if validatePolicyType(policy.Type, policy.ResourceType) != nil {
+			continue
+		}
 		p, err := convertToPolicy(policy)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)

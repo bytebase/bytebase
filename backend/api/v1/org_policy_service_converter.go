@@ -168,7 +168,6 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 	}
 	return &v1pb.Policy_QueryDataPolicy{
 		QueryDataPolicy: &v1pb.QueryDataPolicy{
-			Timeout:              payload.Timeout,
 			DisableExport:        payload.DisableExport,
 			MaximumResultRows:    payload.MaximumResultRows,
 			DisableCopyData:      payload.DisableCopyData,
@@ -181,7 +180,6 @@ func convertToV1PBQueryDataPolicy(payloadStr string) (*v1pb.Policy_QueryDataPoli
 
 func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.QueryDataPolicy {
 	return &storepb.QueryDataPolicy{
-		Timeout:              policy.Timeout,
 		DisableExport:        policy.DisableExport,
 		MaximumResultRows:    policy.MaximumResultRows,
 		DisableCopyData:      policy.DisableCopyData,

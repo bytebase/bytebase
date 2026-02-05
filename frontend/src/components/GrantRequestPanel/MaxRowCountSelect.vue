@@ -46,7 +46,7 @@ import { minmax } from "@/utils";
 const props = defineProps<{
   value: number;
   quaternary?: boolean;
-  maximumExportCount: number;
+  maximum: number;
 }>();
 
 const emit = defineEmits<{
@@ -57,13 +57,10 @@ const { t } = useI18n();
 
 const rowCountOptions = computed(() => {
   const list = [1, 100, 500, 1000, 5000, 10000, 100000].filter(
-    (num) => num <= props.maximumExportCount
+    (num) => num <= props.maximum
   );
-  if (
-    props.maximumExportCount !== Number.MAX_VALUE &&
-    !list.includes(props.maximumExportCount)
-  ) {
-    list.push(props.maximumExportCount);
+  if (props.maximum !== Number.MAX_VALUE && !list.includes(props.maximum)) {
+    list.push(props.maximum);
   }
   return list;
 });

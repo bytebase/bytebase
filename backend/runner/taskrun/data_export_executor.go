@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
@@ -167,11 +169,13 @@ func (exec *DataExportExecutor) executeExport(
 
 	// 2. Get query restrictions from workspace policy
 	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx)
+	timoutInSeconds := exec.getQueryTimeoutInSeconds(ctx)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
 		OperatorEmail:        user.Email,
 		MaximumSQLResultSize: maximumSQLResultSize,
+		Timeout:              &durationpb.Duration{Seconds: timoutInSeconds},
 	}
 
 	// 4. Execute query with timeout
@@ -208,10 +212,22 @@ func (exec *DataExportExecutor) getSQLResultSizeLimit(
 ) int64 {
 	maximumResultSize, err := exec.store.GetSQLResultSize(ctx)
 	if err != nil {
-		slog.Error("failed to get the query data policy", log.BBError(err))
+		slog.Error("failed to get the sql result size limit", log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	return maximumResultSize
+}
+
+// getQueryTimeoutInSeconds gets the query timeout limit.
+func (exec *DataExportExecutor) getQueryTimeoutInSeconds(
+	ctx context.Context,
+) int64 {
+	timeout, err := exec.store.GetQueryTimeoutInSeconds(ctx)
+	if err != nil {
+		slog.Error("failed to get the sql timeout limit", log.BBError(err))
+		return math.MaxInt64
+	}
+	return timeout
 }
 
 // formatAndZipResults formats query results and packages them into a ZIP archive.
