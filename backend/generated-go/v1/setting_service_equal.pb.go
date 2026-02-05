@@ -390,6 +390,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.SqlResultSize != y.SqlResultSize {
 		return false
 	}
+	if p, q := x.SqlTimeout, y.SqlTimeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 

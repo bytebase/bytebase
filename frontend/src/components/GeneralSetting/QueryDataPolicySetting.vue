@@ -84,11 +84,11 @@
         <PermissionGuardWrapper
           v-slot="slotProps"
           :permissions="[
-            'bb.policies.update'
+            'bb.settings.setWorkspaceProfile'
           ]"
         >
           <NInputNumber
-            :value="state.maxQueryTimeInseconds"
+            :value="maxQueryTimeInseconds"
             :disabled="!hasQueryPolicyFeature || slotProps.disabled"
             class="w-60"
             :min="0"
@@ -118,6 +118,7 @@ import {
   featureToRef,
   usePolicyByParentAndType,
   usePolicyV1Store,
+  useSettingV1Store,
 } from "@/store";
 import {
   PolicyResourceType,
@@ -127,9 +128,9 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 
 interface LocalState {
-  maxQueryTimeInseconds: number;
   disableExport: boolean;
   disableCopyData: boolean;
   allowAdminDataSource: boolean;
@@ -140,6 +141,7 @@ const props = defineProps<{
 }>();
 
 const policyV1Store = usePolicyV1Store();
+const settingV1Store = useSettingV1Store();
 
 const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
 const hasRestrictCopyingDataFeature = featureToRef(
@@ -159,20 +161,27 @@ const policyPayload = computed(() => {
 
 const getInitialState = (): LocalState => {
   return {
-    maxQueryTimeInseconds: Number(policyPayload.value.timeout?.seconds ?? 0),
     disableExport: policyPayload.value.disableExport,
     disableCopyData: policyPayload.value.disableCopyData,
     allowAdminDataSource: policyPayload.value.allowAdminDataSource,
   };
 };
 
+const getInitTimeInseconds = () => {
+  return Number(settingV1Store.workspaceProfile.sqlTimeout?.seconds ?? 0)
+}
+
 const state = reactive<LocalState>(getInitialState());
+const maxQueryTimeInseconds = ref<number>(
+  getInitTimeInseconds()
+)
 
 const maximumSQLResultSizeSettingRef =
   ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
 
 const revert = () => {
   Object.assign(state, getInitialState());
+  maxQueryTimeInseconds.value = getInitTimeInseconds()
   maximumSQLResultSizeSettingRef.value?.revert();
 };
 
@@ -188,6 +197,7 @@ watch(
 const isDirty = computed(() => {
   return (
     !isEqual(state, getInitialState()) ||
+    getInitTimeInseconds() !== maxQueryTimeInseconds.value ||
     maximumSQLResultSizeSettingRef.value?.isDirty
   );
 });
@@ -195,6 +205,19 @@ const isDirty = computed(() => {
 const updateChange = async () => {
   if (maximumSQLResultSizeSettingRef.value?.isDirty) {
     await maximumSQLResultSizeSettingRef.value.update();
+  }
+
+  if (getInitTimeInseconds() !== maxQueryTimeInseconds.value) {
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        sqlTimeout: create(DurationSchema, {
+            seconds: BigInt(maxQueryTimeInseconds.value),
+          })
+      },
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile.sql_timeout"],
+      }),
+    });
   }
   await policyV1Store.upsertPolicy({
     parentPath: props.resource,
@@ -208,9 +231,6 @@ const updateChange = async () => {
           disableExport: state.disableExport,
           disableCopyData: state.disableCopyData,
           allowAdminDataSource: state.allowAdminDataSource,
-          timeout: create(DurationSchema, {
-            seconds: BigInt(state.maxQueryTimeInseconds),
-          }),
         }),
       },
     },
@@ -220,7 +240,7 @@ const updateChange = async () => {
 const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
-  state.maxQueryTimeInseconds = value;
+  maxQueryTimeInseconds.value = value;
 };
 
 defineExpose({

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"math"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -53,6 +54,19 @@ func (s *Store) GetSQLResultSize(ctx context.Context) (int64, error) {
 		maximumResultSize = common.DefaultMaximumSQLResultSize
 	}
 	return maximumResultSize, nil
+}
+
+// GetSQLTimeoutInSeconds gets the valid sql_timeout from the workspace profile setting.
+func (s *Store) GetSQLTimeoutInSeconds(ctx context.Context) (int64, error) {
+	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return 0, err
+	}
+	timeout := workspaceProfile.GetSqlTimeout()
+	if timeout.GetSeconds() <= 0 {
+		return math.MaxInt64, nil
+	}
+	return timeout.GetSeconds(), nil
 }
 
 // GetWorkspaceProfileSetting gets the workspace profile setting payload.

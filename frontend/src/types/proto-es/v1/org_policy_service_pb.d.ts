@@ -4,7 +4,7 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Duration, EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -303,19 +303,11 @@ export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
  */
 export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
   /**
-   * workspace-level policy
-   * The query timeout duration in the SQL editor.
-   *
-   * @generated from field: google.protobuf.Duration timeout = 1;
-   */
-  timeout?: Duration;
-
-  /**
-   * workspace-level policy
+   * Support both project-level and workspace-level.
    * The maximum number of rows to return in the SQL editor.
-   * The default value is -1, means no limit.
+   * The default value <= 0, means no limit.
    *
-   * @generated from field: int32 maximum_result_rows = 2;
+   * @generated from field: int32 maximum_result_rows = 1;
    */
   maximumResultRows: number;
 
@@ -323,7 +315,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * workspace-level policy
    * Disable data export in the SQL editor.
    *
-   * @generated from field: bool disable_export = 3;
+   * @generated from field: bool disable_export = 2;
    */
   disableExport: boolean;
 
@@ -331,7 +323,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * workspace-level policy
    * Disable copying query results in the SQL editor.
    *
-   * @generated from field: bool disable_copy_data = 4;
+   * @generated from field: bool disable_copy_data = 3;
    */
   disableCopyData: boolean;
 
@@ -343,7 +335,7 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
    * 1. when read-only data source is configured, users're force to use the read-only data source
    * 2. otherwise fallback to use the admin data source.
    *
-   * @generated from field: bool allow_admin_data_source = 5;
+   * @generated from field: bool allow_admin_data_source = 4;
    */
   allowAdminDataSource: boolean;
 

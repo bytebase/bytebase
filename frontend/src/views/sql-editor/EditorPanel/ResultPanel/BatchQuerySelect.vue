@@ -128,6 +128,7 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useSQLStore,
+  useSQLEditorStore,
 } from "@/store";
 import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { SQLEditorDatabaseQueryContext } from "@/types";
@@ -164,8 +165,11 @@ const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
 const contextMenu = provideResultTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
+const { project } = storeToRefs(
+  useSQLEditorStore()
+);
 
-const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy();
+const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(project);
 
 const selectedDatabaseNameList = ref<string[]>([]);
 

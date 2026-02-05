@@ -249,6 +249,9 @@ message WorkspaceProfileSetting {
   // The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center.
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
   int64 sql_result_size = 20;
+
+  // The query timeout duration for query and export, works for the SQL Editor and Export Center.
+  google.protobuf.Duration sql_timeout = 21;
 }
 
 message Announcement {

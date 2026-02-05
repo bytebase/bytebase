@@ -3204,9 +3204,8 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | workspace-level policy The query timeout duration. |
 | disable_export | [bool](#bool) |  | workspace-level policy Disable exporting data in the SQL editor. |
-| maximum_result_rows | [int32](#int32) |  | workspace-level policy The return rows limit. The default value is -1, means no limit. |
+| maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
 | disallow_ddl | [bool](#bool) |  | ================ Deprecate following fields. Disallow running DDL statements in the SQL editor. |
@@ -4406,6 +4405,7 @@ The severity level for SQL review rules.
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 | sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
+| sql_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
 
 
 

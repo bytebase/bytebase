@@ -143,7 +143,7 @@ export const getValidDataSourceByPolicy = async (
     (ds) => ds.type === DataSourceType.READ_ONLY
   );
 
-  const { ready, policy } = useQueryDataPolicy();
+  const { ready, policy } = useQueryDataPolicy(database.project);
   await wrapRefAsPromise(ready, /* expected */ true);
 
   if (policy.value.allowAdminDataSource) {

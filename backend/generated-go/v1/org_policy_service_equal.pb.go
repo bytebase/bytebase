@@ -182,9 +182,6 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if p, q := x.Timeout, y.Timeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
 	if x.MaximumResultRows != y.MaximumResultRows {
 		return false
 	}

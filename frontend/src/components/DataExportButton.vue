@@ -44,7 +44,7 @@
           <NFormItem path="limit" :label="$t('export-data.export-rows')">
             <MaxRowCountSelect
               ref="maxRowCountSelectRef"
-              :maximum-export-count="maximumExportCount"
+              :maximum="maximumExportCount"
               v-model:value="formData.limit"
             />
           </NFormItem>

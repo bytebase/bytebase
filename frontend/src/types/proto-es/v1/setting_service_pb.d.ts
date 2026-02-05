@@ -620,6 +620,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: int64 sql_result_size = 20;
    */
   sqlResultSize: bigint;
+
+  /**
+   * The query timeout duration for query and export, works for the SQL Editor and Export Center.
+   *
+   * @generated from field: google.protobuf.Duration sql_timeout = 21;
+   */
+  sqlTimeout?: Duration;
 };
 
 /**

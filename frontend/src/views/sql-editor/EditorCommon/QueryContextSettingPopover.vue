@@ -88,7 +88,7 @@
           <MaxRowCountSelect
             v-model:value="resultRowsLimit"
             :quaternary="true"
-            :maximum-export-count="policy.maximumResultRows"
+            :maximum="policy.maximumResultRows"
           />
         </div>
       </div>
@@ -132,11 +132,11 @@ const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 
-const { redisCommandOption, resultRowsLimit } = storeToRefs(
+const { redisCommandOption, resultRowsLimit, project } = storeToRefs(
   useSQLEditorStore()
 );
 
-const { policy } = useQueryDataPolicy();
+const { policy } = useQueryDataPolicy(project);
 
 const show = computed(() => {
   return tabStore.currentTab?.mode !== "ADMIN";
