@@ -151,6 +151,7 @@
         </template>
         <DatabaseGroupTable
           :database-group-names="selectedDatabaseGroupNames"
+          @select="handleSelectDatabaseGroup"
           @update:database-group-names="onDatabaseGroupSelectionUpdate"
         />
       </NTabPane>
@@ -215,6 +216,7 @@ import {
   type DatabaseFilter,
   featureToRef,
   idForSQLEditorTreeNodeTarget,
+  pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
@@ -350,9 +352,11 @@ watch(
   { immediate: true }
 );
 
+// onBatchQueryContextChange changes the batchQueryContext and connect to the 1st queryable database.
+// return boolean true if exists any queryable database in the batchQueryContext.
 const onBatchQueryContextChange = async (
   batchQueryContext: BatchQueryContext
-) => {
+): Promise<boolean> => {
   state.switchingConnection = true;
 
   try {
@@ -378,6 +382,7 @@ const onBatchQueryContextChange = async (
     } else {
       tabStore.updateBatchQueryContext(batchQueryContext);
     }
+    return !!queryableDatabase;
   } finally {
     state.switchingConnection = false;
   }
@@ -429,7 +434,32 @@ const onDatabaseGroupSelectionUpdate = async (databaseGroups: string[]) => {
     ...(tabStore.currentTab?.batchQueryContext ?? { databases: [] }),
     databaseGroups,
   });
-  await onBatchQueryContextChange(batchQueryContext);
+  const success = await onBatchQueryContextChange(batchQueryContext);
+
+  if (databaseGroups.length > 0 && !success) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("sql-editor.no-queriable-database"),
+    });
+  }
+};
+
+const handleSelectDatabaseGroup = async (name: string) => {
+  const batchQueryContext: BatchQueryContext = cloneDeep({
+    ...(tabStore.currentTab?.batchQueryContext ?? { databases: [] }),
+    databaseGroups: [name],
+  });
+  const success = await onBatchQueryContextChange(batchQueryContext);
+  if (success) {
+    showConnectionPanel.value = false;
+  } else {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("sql-editor.no-queriable-database"),
+    });
+  }
 };
 
 const flattenSelectedDatabasesFromGroup = computed(() => {

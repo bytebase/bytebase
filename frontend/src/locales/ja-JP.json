@@ -1999,6 +1999,7 @@
     "request-aborted": "ユーザーがリクエストを中止しました",
     "no-data-source": "クエリ可能なデータソースがありません。環境またはプロジェクトのデータソースクエリポリシーを確認してください。",
     "database-not-queriable": "データベースはクエリできません",
+    "no-queriable-database": "クエリ可能なデータベースがありません",
     "rows": "記録",
     "vertical-display": "縦型表示",
     "no-history-found": "まだ履歴がありません",

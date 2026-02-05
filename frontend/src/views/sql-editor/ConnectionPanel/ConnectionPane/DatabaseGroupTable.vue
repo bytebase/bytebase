@@ -18,6 +18,7 @@
       :show-external-link="true"
       :page-size="100"
       :loading="!ready"
+      :on-row-click="handleDatabaseGroupClick"
       :selected-database-group-names="databaseGroupNames"
       @update:selected-database-group-names="(groups) => $emit('update:databaseGroupNames', groups)"
     />
@@ -29,13 +30,15 @@ import { computed, ref } from "vue";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { SearchBox } from "@/components/v2";
 import { useDBGroupListByProject, useSQLEditorStore } from "@/store/modules";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 
 defineProps<{
   databaseGroupNames: string[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
+  (event: "select", databaseGroupName: string): Promise<void>;
   (
     event: "update:databaseGroupNames",
     databaseGroupNames: string[]
@@ -63,4 +66,11 @@ const filteredDbGroupList = computed(() => {
     );
   });
 });
+
+const handleDatabaseGroupClick = (
+  _: MouseEvent,
+  databaseGroup: DatabaseGroup
+) => {
+  emit("select", databaseGroup.name);
+};
 </script>

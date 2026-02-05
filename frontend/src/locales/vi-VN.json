@@ -1999,6 +1999,7 @@
     "request-aborted": "Người dùng đã hủy yêu cầu",
     "no-data-source": "Không có nguồn dữ liệu có thể truy vấn. Vui lòng kiểm tra chính sách truy vấn nguồn dữ liệu trên môi trường hoặc dự án.",
     "database-not-queriable": "Cơ sở dữ liệu không thể truy vấn",
+    "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
     "no-history-found": "Không tìm thấy lịch sử",

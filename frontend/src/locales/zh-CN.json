@@ -1999,6 +1999,7 @@
     "request-aborted": "用户中止了请求",
     "no-data-source": "没有可查询的数据源。请检查环境或项目的数据源查询策略。",
     "database-not-queriable": "数据库不可查询",
+    "no-queriable-database": "没有可查询的数据库",
     "rows": "条记录",
     "vertical-display": "竖向展示",
     "no-history-found": "暂无历史记录",

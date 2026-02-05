@@ -1999,6 +1999,7 @@
     "request-aborted": "User aborted the request",
     "no-data-source": "No queriable data source. Please check the data source query policy on environment or project.",
     "database-not-queriable": "Database is not queriable",
+    "no-queriable-database": "No queriable database",
     "rows": "row | rows",
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",

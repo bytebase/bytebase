@@ -1999,6 +1999,7 @@
     "request-aborted": "El usuario abortó la solicitud",
     "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
     "database-not-queriable": "La base de datos no se puede consultar",
+    "no-queriable-database": "No hay base de datos consultable",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
