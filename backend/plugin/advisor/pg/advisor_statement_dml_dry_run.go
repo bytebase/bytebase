@@ -40,6 +40,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	var adviceList []*storepb.Advice
+	var setRoles []string
 	for _, stmtInfo := range checkCtx.ParsedStatements {
 		if stmtInfo.AST == nil {
 			continue
@@ -56,6 +57,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			ctx:        ctx,
 			driver:     checkCtx.Driver,
 			tenantMode: checkCtx.TenantMode,
+			setRoles:   setRoles,
 			tokens:     antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
@@ -63,6 +65,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
+		setRoles = rule.setRoles
 	}
 
 	return adviceList, nil
