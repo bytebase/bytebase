@@ -403,7 +403,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	// BUILTIN_WALK_THROUGH_CHECK will find that the 'user' table already exists
 	// (created by a previous test case with run=true).
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
-	equalReviewResultProtos(a, builtinOnlyPolicyWithConflict, result, database.Msg.Name, "")
+	equalReviewResultProtos(a, builtinOnlyPolicyWithConflict, result, database.Msg.Name)
 }
 
 func readTestData(path string) ([]test, error) {
