@@ -268,14 +268,17 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		var pe *parserbase.SyntaxError
 		if errors.As(queryErr, &qe) {
 			if len(qe.resources) > 0 {
-				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
-					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
+				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied{
+					PermissionDenied: &v1pb.PermissionDeniedDetail{
 						Resources: qe.resources,
+						RequiredPermissions: []string{
+							qe.permission,
+						},
 					},
 				}
-			} else if qe.commandType != v1pb.QueryResult_PermissionDenied_COMMAND_TYPE_UNSPECIFIED {
-				results[len(results)-1].DetailedError = &v1pb.QueryResult_PermissionDenied_{
-					PermissionDenied: &v1pb.QueryResult_PermissionDenied{
+			} else if qe.commandType != v1pb.QueryResult_CommandError_TYPE_UNSPECIFIED {
+				results[len(results)-1].DetailedError = &v1pb.QueryResult_CommandError_{
+					CommandError: &v1pb.QueryResult_CommandError{
 						CommandType: qe.commandType,
 					},
 				}
@@ -1454,14 +1457,21 @@ func (s *SQLService) accessCheck(
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
+		attributes := map[string]any{
+			common.CELAttributeRequestTime:      time.Now(),
+			common.CELAttributeResourceDatabase: databaseFullName,
+		}
+		env := ""
+		if database.EffectiveEnvironmentID != nil {
+			env = *database.EffectiveEnvironmentID
+		}
+		attributes[common.CELAttributeResourceEnvironmentID] = env
+
 		ok, err := s.hasDatabaseAccessRights(
 			ctx,
 			user,
 			perm,
-			map[string]any{
-				common.CELAttributeRequestTime:      time.Now(),
-				common.CELAttributeResourceDatabase: databaseFullName,
-			},
+			attributes,
 			workspacePolicy.Policy,
 			projectPolicy.Policy,
 		)
@@ -1474,7 +1484,8 @@ func (s *SQLService) accessCheck(
 					connect.CodePermissionDenied,
 					errors.Errorf("permission denied to access resources: %v", databaseFullName),
 				),
-				resources: []string{databaseFullName},
+				resources:  []string{databaseFullName},
+				permission: perm,
 			}
 		}
 		return nil
@@ -1566,7 +1577,8 @@ func (s *SQLService) accessCheck(
 					connect.CodePermissionDenied,
 					errors.Errorf("permission denied to access resources: %v", deniedResources),
 				),
-				resources: deniedResources,
+				resources:  deniedResources,
+				permission: perm,
 			}
 		}
 	}
@@ -1648,7 +1660,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	if !ok {
 		return &queryError{
 			err:         connect.NewError(connect.CodeInvalidArgument, errors.New("Support read-only command statements only")),
-			commandType: v1pb.QueryResult_PermissionDenied_NON_READ_ONLY,
+			commandType: v1pb.QueryResult_CommandError_NON_READ_ONLY,
 		}
 	}
 	return nil
@@ -1671,9 +1683,17 @@ func (s *SQLService) hasDatabaseAccessRights(
 			continue
 		}
 
-		ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
+		expression := binding.Condition.GetExpression()
+		// resource.environment_id only applies to DDL/DML permissions.
+		// For other permissions (e.g., SELECT), strip the environment condition
+		// to prevent it from incorrectly denying access.
+		if perm != permission.SQLDdl && perm != permission.SQLDml {
+			expression = stripEnvironmentCondition(expression)
+		}
+
+		ok, err := evaluateQueryExportPolicyCondition(expression, attributes)
 		if err != nil {
-			slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
+			slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", expression))
 			continue
 		}
 		if ok {
@@ -1681,6 +1701,18 @@ func (s *SQLService) hasDatabaseAccessRights(
 		}
 	}
 	return false, nil
+}
+
+var envConditionRe = regexp.MustCompile(`resource\.environment_id\s+in\s+\[[^\]]*\]`)
+
+// stripEnvironmentCondition removes the "resource.environment_id in [...]" clause
+// from a CEL expression string.
+func stripEnvironmentCondition(expression string) string {
+	result := envConditionRe.ReplaceAllString(expression, "")
+	result = strings.TrimSpace(result)
+	result = strings.TrimPrefix(result, "&&")
+	result = strings.TrimSuffix(result, "&&")
+	return strings.TrimSpace(result)
 }
 
 func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {

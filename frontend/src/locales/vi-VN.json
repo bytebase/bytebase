@@ -1898,7 +1898,8 @@
       "condition-name": "Tên điều kiện",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
       "project-level-roles": "Vai trò cấp độ dự án",
-      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions"
+      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
+      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn"
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",

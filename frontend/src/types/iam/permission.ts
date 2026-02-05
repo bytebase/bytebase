@@ -12,7 +12,6 @@ export type QueryPermission = Extract<
   | "bb.sql.admin"
 >;
 
-export const QueryPermissionQueryOnly: QueryPermission[] = ["bb.sql.select"];
 export const QueryPermissionQueryAny: QueryPermission[] = [
   "bb.sql.select",
   "bb.sql.info",

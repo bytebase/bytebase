@@ -23,9 +23,10 @@
     <GrantRequestPanel
       v-if="showPanel"
       :project-name="project.name"
-      :database-resources="databaseResources"
+      :database-resources="missingResources"
       :placement="'right'"
       :role="PresetRoleType.SQL_EDITOR_USER"
+      :required-permissions="permissionDeniedDetail.requiredPermissions"
       @close="showPanel = false"
     />
   </div>
@@ -37,16 +38,18 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
+import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
 import { type DatabaseResource, PresetRoleType } from "@/types";
+import { type PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
-    databaseResources: DatabaseResource[];
     size?: "tiny" | "medium";
     text: boolean;
+    permissionDeniedDetail: PermissionDeniedDetail;
   }>(),
   {
     size: "medium",
@@ -59,6 +62,17 @@ const projectStore = useProjectV1Store();
 const hasRequestRoleFeature = computed(() =>
   hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
 );
+
+const missingResources = computed((): DatabaseResource[] => {
+  const resources: DatabaseResource[] = [];
+  for (const resourceString of props.permissionDeniedDetail.resources) {
+    const resource = parseStringToResource(resourceString);
+    if (resource) {
+      resources.push(resource);
+    }
+  }
+  return resources;
+});
 
 const project = computed(() =>
   projectStore.getProjectByName(editorStore.project)

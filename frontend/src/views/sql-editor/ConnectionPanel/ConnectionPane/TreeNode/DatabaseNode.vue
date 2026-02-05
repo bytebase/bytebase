@@ -27,22 +27,23 @@
     <RequestQueryButton
       v-if="showRequestQueryButton"
       :text="true"
-      :database-resources="[
-        {
-          databaseFullName: database.name,
-        },
-      ]"
+      :permission-denied-detail="create(PermissionDeniedDetailSchema, {
+        resources: [database.name],
+        requiredPermissions: ['bb.sql.select']
+      })"
       :size="'tiny'"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { NCheckbox, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTreeNode as TreeNode } from "@/types";
+import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import { isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 

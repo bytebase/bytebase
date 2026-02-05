@@ -1898,7 +1898,8 @@
       "condition-name": "条件名称",
       "workspace-level-roles": "工作空间级别角色",
       "project-level-roles": "项目级别角色",
-      "roles-are-filtered-by-permissions": "角色已按权限筛选"
+      "roles-are-filtered-by-permissions": "角色已按权限筛选",
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句"
     },
     "select": "选择项目",
     "all": "所有项目",

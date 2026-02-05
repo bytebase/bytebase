@@ -15,9 +15,9 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="isPermissionDenied"
+              v-if="!!permissionDeniedError"
               :text="false"
-              :database-resources="missingResources"
+              :permission-denied-detail="permissionDeniedError"
             />
           </template>
         </ErrorView>
@@ -68,9 +68,9 @@
             >
               <template #suffix>
                 <RequestQueryButton
-                  v-if="isPermissionDenied"
+                  v-if="!!permissionDeniedError"
                   :text="false"
-                  :database-resources="missingResources"
+                  :permission-denied-detail="permissionDeniedError"
                 />
               </template>
             </ErrorView>
@@ -129,9 +129,9 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="isPermissionDenied"
+              v-if="!!permissionDeniedError"
               :text="false"
-              :database-resources="missingResources"
+              :permission-denied-detail="permissionDeniedError"
             />
             <SyncDatabaseButton
               v-else-if="resultSet.error.includes('resource not found')"
@@ -187,19 +187,17 @@ import type {
   ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
-import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
 import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
   usePolicyV1Store,
   useQueryDataPolicy,
 } from "@/store/modules/v1/policy";
-import type {
-  DatabaseResource,
-  SQLEditorQueryParams,
-  SQLResultSetV1,
-} from "@/types";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
+import {
+  ExportFormat,
+  type PermissionDeniedDetail,
+} from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
@@ -247,32 +245,16 @@ const detail: SQLResultViewContext["detail"] = ref(undefined);
 
 provideBinaryFormatContext(computed(() => props.contextId));
 
-const isPermissionDenied = computed(() => {
-  for (const result of props.resultSet?.results ?? []) {
-    if (result.detailedError.case === "permissionDenied") {
-      return true;
-    }
-  }
-  return false;
-});
-
-const missingResources = computed((): DatabaseResource[] => {
-  const resources: DatabaseResource[] = [];
-  for (const result of props.resultSet?.results ?? []) {
-    if (
-      result.detailedError.case === "permissionDenied" &&
-      result.detailedError.value?.resources.length > 0
-    ) {
-      for (const resourceString of result.detailedError.value.resources) {
-        const resource = parseStringToResource(resourceString);
-        if (resource) {
-          resources.push(resource);
-        }
+const permissionDeniedError = computed(
+  (): PermissionDeniedDetail | undefined => {
+    for (const result of props.resultSet?.results ?? []) {
+      if (result.detailedError.case === "permissionDenied") {
+        return result.detailedError.value;
       }
     }
+    return undefined;
   }
-  return resources;
-});
+);
 
 const viewMode = computed((): ViewMode => {
   const { resultSet } = props;

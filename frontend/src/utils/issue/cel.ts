@@ -5,6 +5,7 @@ import type { SimpleExpr } from "@/plugins/cel";
 import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
 import {
   databaseNamePrefix,
+  environmentNamePrefix,
   getEnvironmentId,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
@@ -59,7 +60,8 @@ type DatabaseResourceCondition =
 export interface ConditionExpression {
   databaseResources?: DatabaseResource[];
   expiredTime?: string;
-  exportFormat?: string;
+  // environment full name list in environments/{name} format.
+  environments?: string[];
 }
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
@@ -240,7 +242,7 @@ export const stringifyConditionExpression = ({
       `${CEL_ATTRIBUTE_REQUEST_TIME} < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
     );
   }
-  if (environments && environments.length > 0) {
+  if (environments !== undefined) {
     expression.push(
       `${CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID} in [${environments.map((env) => `"${getEnvironmentId(env)}"`)}]`
     );
@@ -399,6 +401,17 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
       const [property, values] = expr.args;
       if (typeof property === "string" && Array.isArray(values)) {
         switch (property) {
+          case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID: {
+            if (conditionExpression.environments === undefined) {
+              conditionExpression.environments = [];
+            }
+            for (const value of values) {
+              conditionExpression.environments?.push(
+                `${environmentNamePrefix}${value as string}`
+              );
+            }
+            break;
+          }
           case CEL_ATTRIBUTE_RESOURCE_DATABASE: {
             for (const value of values) {
               const databaseResource: DatabaseResource = {

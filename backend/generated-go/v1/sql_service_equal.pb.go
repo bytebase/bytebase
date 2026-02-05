@@ -194,20 +194,12 @@ func (x *QueryResult_SyntaxError) Equal(y *QueryResult_SyntaxError) bool {
 	return true
 }
 
-func (x *QueryResult_PermissionDenied) Equal(y *QueryResult_PermissionDenied) bool {
+func (x *QueryResult_CommandError) Equal(y *QueryResult_CommandError) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if len(x.Resources) != len(y.Resources) {
-		return false
-	}
-	for i := 0; i < len(x.Resources); i++ {
-		if x.Resources[i] != y.Resources[i] {
-			return false
-		}
 	}
 	if x.CommandType != y.CommandType {
 		return false
@@ -281,6 +273,9 @@ func (x *QueryResult) Equal(y *QueryResult) bool {
 		return false
 	}
 	if !x.GetPermissionDenied().Equal(y.GetPermissionDenied()) {
+		return false
+	}
+	if !x.GetCommandError().Equal(y.GetCommandError()) {
 		return false
 	}
 	if len(x.Messages) != len(y.Messages) {

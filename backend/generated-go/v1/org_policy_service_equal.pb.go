@@ -194,12 +194,6 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	if x.AllowAdminDataSource != y.AllowAdminDataSource {
 		return false
 	}
-	if x.DisallowDdl != y.DisallowDdl {
-		return false
-	}
-	if x.DisallowDml != y.DisallowDml {
-		return false
-	}
 	return true
 }
 

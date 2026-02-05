@@ -747,14 +747,8 @@ type QueryDataPolicy struct {
 	// 1. when read-only data source is configured, users're force to use the read-only data source
 	// 2. otherwise fallback to use the admin data source.
 	AllowAdminDataSource bool `protobuf:"varint,4,opt,name=allow_admin_data_source,json=allowAdminDataSource,proto3" json:"allow_admin_data_source,omitempty"`
-	// ================
-	// Deprecate following fields.
-	// Disallow running DDL statements in the SQL editor.
-	DisallowDdl bool `protobuf:"varint,7,opt,name=disallow_ddl,json=disallowDdl,proto3" json:"disallow_ddl,omitempty"`
-	// Disallow running DML statements in the SQL editor.
-	DisallowDml   bool `protobuf:"varint,8,opt,name=disallow_dml,json=disallowDml,proto3" json:"disallow_dml,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *QueryDataPolicy) Reset() {
@@ -811,20 +805,6 @@ func (x *QueryDataPolicy) GetDisableCopyData() bool {
 func (x *QueryDataPolicy) GetAllowAdminDataSource() bool {
 	if x != nil {
 		return x.AllowAdminDataSource
-	}
-	return false
-}
-
-func (x *QueryDataPolicy) GetDisallowDdl() bool {
-	if x != nil {
-		return x.DisallowDdl
-	}
-	return false
-}
-
-func (x *QueryDataPolicy) GetDisallowDml() bool {
-	if x != nil {
-		return x.DisallowDml
 	}
 	return false
 }
@@ -1171,14 +1151,12 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x06policy\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\x91\x02\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcb\x01\n" +
 	"\x0fQueryDataPolicy\x12.\n" +
 	"\x13maximum_result_rows\x18\x01 \x01(\x05R\x11maximumResultRows\x12%\n" +
 	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12*\n" +
 	"\x11disable_copy_data\x18\x03 \x01(\bR\x0fdisableCopyData\x125\n" +
-	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\x12!\n" +
-	"\fdisallow_ddl\x18\a \x01(\bR\vdisallowDdl\x12!\n" +
-	"\fdisallow_dml\x18\b \x01(\bR\vdisallowDml\"\xbf\x01\n" +
+	"\x17allow_admin_data_source\x18\x04 \x01(\bR\x14allowAdminDataSource\"\xbf\x01\n" +
 	"\x16MaskingExemptionPolicy\x12M\n" +
 	"\n" +
 	"exemptions\x18\x01 \x03(\v2-.bytebase.v1.MaskingExemptionPolicy.ExemptionR\n" +

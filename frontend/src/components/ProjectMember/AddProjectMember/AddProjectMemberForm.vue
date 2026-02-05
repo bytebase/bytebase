@@ -84,6 +84,24 @@
       />
     </div>
 
+    <div
+      v-if="roleHasEnvironmentLimitation(state.role)"
+      class="w-full flex flex-col gap-y-2"
+    >
+      <div>
+        <div class="flex items-center gap-x-1">
+          <span>{{ $t("common.environments") }}</span>
+        </div>
+        <span class="textinfolabel">
+          {{ $t("project.members.allow-ddl") }}
+        </span>
+      </div>
+      <EnvironmentSelect
+        :multiple="true"
+        v-model:value="state.environments"
+      />
+    </div>
+
     <div class="w-full flex flex-col gap-y-2">
       <div class="flex items-center gap-x-1">
         <span>{{ $t("common.expiration") }}</span>
@@ -109,14 +127,17 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { RoleSelect } from "@/components/v2/Select";
+import { EnvironmentSelect, RoleSelect } from "@/components/v2/Select";
 import { useRoleStore } from "@/store";
 import { type DatabaseResource } from "@/types";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
-import { roleHasDatabaseLimitation } from "../utils";
+import {
+  roleHasDatabaseLimitation,
+  roleHasEnvironmentLimitation,
+} from "../utils";
 
 const props = defineProps<{
   projectName: string;
@@ -134,7 +155,7 @@ interface LocalState {
   role: string;
   reason: string;
   expirationTimestampInMS?: number;
-  environments?: string[];
+  environments: string[];
 }
 
 const filterRole = (role: Role) => {
@@ -149,6 +170,7 @@ const getInitialState = (): LocalState => {
     role: props.binding.role,
     memberList: props.binding.members,
     reason: props.binding.condition?.description ?? "",
+    environments: [],
   };
 
   if (props.binding.parsedExpr) {
@@ -158,6 +180,7 @@ const getInitialState = (): LocalState => {
         conditionExpr.expiredTime
       ).getTime();
     }
+    defaultState.environments = conditionExpr.environments ?? [];
   }
 
   return defaultState;
@@ -199,6 +222,9 @@ defineExpose({
       description: state.reason,
       expirationTimestampInMS: state.expirationTimestampInMS,
       databaseResources,
+      environments: roleHasEnvironmentLimitation(state.role)
+        ? state.environments
+        : undefined,
     });
 
     return create(BindingSchema, {

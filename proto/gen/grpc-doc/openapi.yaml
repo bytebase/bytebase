@@ -23223,17 +23223,6 @@ components:
              If false,
              1. when read-only data source is configured, users're force to use the read-only data source
              2. otherwise fallback to use the admin data source.
-        disallowDdl:
-          type: boolean
-          title: disallow_ddl
-          description: |-
-            ================
-             Deprecate following fields.
-             Disallow running DDL statements in the SQL editor.
-        disallowDml:
-          type: boolean
-          title: disallow_dml
-          description: Disallow running DML statements in the SQL editor.
       title: QueryDataPolicy
       additionalProperties: false
       description: QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
@@ -23436,9 +23425,16 @@ components:
               description: Masking reasons for each column (empty for non-masked columns).
         - oneOf:
             - properties:
+                commandError:
+                  title: command_error
+                  $ref: '#/components/schemas/bytebase.v1.QueryResult.CommandError'
+              title: command_error
+              required:
+                - commandError
+            - properties:
                 permissionDenied:
                   title: permission_denied
-                  $ref: '#/components/schemas/bytebase.v1.QueryResult.PermissionDenied'
+                  $ref: '#/components/schemas/bytebase.v1.PermissionDeniedDetail'
               title: permission_denied
               required:
                 - permissionDenied
@@ -23458,6 +23454,26 @@ components:
                 - syntaxError
       title: QueryResult
       additionalProperties: false
+    bytebase.v1.QueryResult.CommandError:
+      type: object
+      properties:
+        commandType:
+          title: command_type
+          description: Disallowed command_type.
+          $ref: '#/components/schemas/bytebase.v1.QueryResult.CommandError.Type'
+      title: CommandError
+      additionalProperties: false
+      description: |-
+        Permission denied with resource information or disallowed command_type.
+         Either resources or command_type is available.
+    bytebase.v1.QueryResult.CommandError.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - DDL
+        - DML
+        - NON_READ_ONLY
     bytebase.v1.QueryResult.Message:
       type: object
       properties:
@@ -23480,38 +23496,6 @@ components:
         - LOG
         - NOTICE
         - EXCEPTION
-    bytebase.v1.QueryResult.PermissionDenied:
-      type: object
-      properties:
-        resources:
-          type: array
-          items:
-            type: string
-          title: resources
-          description: |-
-            Denied to access the resources.
-             Format:
-             instances/{instance}/databases/{database}
-             instances/{instance}/databases/{database}/schemas/{schema}
-             instances/{instance}/databases/{database}/tables/{table}
-             instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}
-        commandType:
-          title: command_type
-          description: Disallowed command_type.
-          $ref: '#/components/schemas/bytebase.v1.QueryResult.PermissionDenied.CommandType'
-      title: PermissionDenied
-      additionalProperties: false
-      description: |-
-        Permission denied with resource information or disallowed command_type.
-         Either resources or command_type is available.
-    bytebase.v1.QueryResult.PermissionDenied.CommandType:
-      type: string
-      title: CommandType
-      enum:
-        - COMMAND_TYPE_UNSPECIFIED
-        - DDL
-        - DML
-        - NON_READ_ONLY
     bytebase.v1.QueryResult.PostgresError:
       type: object
       properties:
