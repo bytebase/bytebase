@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type QueryContext struct {
@@ -134,6 +135,29 @@ func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine st
 	}
 
 	return []any{columnNames, columnTypeNames, data}, nil
+}
+
+// ContainsDDL checks if any of the parsed statements is a DDL statement.
+// When DDLs and DMLs are mixed, DML statements often reference objects created
+// by DDL statements, causing false positives in dry run checks.
+// BYT-8855
+func ContainsDDL(engine storepb.Engine, parsedStatements []base.ParsedStatement) bool {
+	asts := base.ExtractASTs(parsedStatements)
+	types, err := base.GetStatementTypes(engine, asts)
+	if err != nil {
+		return false
+	}
+	for _, t := range types {
+		switch t {
+		case storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+			storepb.StatementType_INSERT,
+			storepb.StatementType_UPDATE,
+			storepb.StatementType_DELETE:
+		default:
+			return true
+		}
+	}
+	return false
 }
 
 func DatabaseExists(ctx context.Context, checkCtx Context, database string) bool {
