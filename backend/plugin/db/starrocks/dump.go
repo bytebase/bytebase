@@ -8,11 +8,17 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+)
+
+const (
+	// MySQL error code for "Unknown table".
+	errUnknownTable = 1051
 )
 
 // Dump and restore.
@@ -300,9 +306,18 @@ func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema
 		}
 	}
 
+	var result []*TableSchema
 	for _, tbl := range tables {
 		stmt, err := getTableStmt(db, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
+			// Skip tables that were dropped between listing and fetching CREATE statement.
+			var mysqlErr *mysql.MySQLError
+			if errors.As(err, &mysqlErr) && mysqlErr.Number == errUnknownTable {
+				slog.Debug("table was dropped during dump, skipping",
+					slog.String("database", dbName),
+					slog.String("table", tbl.Name))
+				continue
+			}
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
 		tbl.Statement = stmt
@@ -314,8 +329,9 @@ func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema
 				tbl.ViewColumns = viewColumns
 			}
 		}
+		result = append(result, tbl)
 	}
-	return tables, nil
+	return result, nil
 }
 
 // getTableStmt gets the create statement of a table.
