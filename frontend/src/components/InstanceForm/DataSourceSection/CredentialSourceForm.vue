@@ -345,7 +345,9 @@ watch(
     () => props.dataSource.iamExtension?.case === "gcpCredential",
   ],
   (credentials) => {
-    const newVal = credentials.some((c) => c === true) ? "specific-credential" : "default";
+    const newVal = credentials.some((c) => c === true)
+      ? "specific-credential"
+      : "default";
     credentialSource.value = newVal;
   },
   { immediate: true, deep: true }
