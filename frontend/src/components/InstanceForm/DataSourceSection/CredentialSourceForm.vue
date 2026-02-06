@@ -345,18 +345,15 @@ watch(
     () => props.dataSource.iamExtension?.case === "gcpCredential",
   ],
   (credentials) => {
-    if (credentials.some((c) => c === true)) {
-      credentialSource.value = "specific-credential";
-    } else {
-      credentialSource.value = "default";
-    }
+    const newVal = credentials.some((c) => c === true) ? "specific-credential" : "default";
+    credentialSource.value = newVal;
   },
   { immediate: true, deep: true }
 );
 
 watch(
   () => props.dataSource.authenticationType,
-  () => {
+  (newType) => {
     credentialSource.value = "default";
   }
 );
@@ -422,7 +419,8 @@ watch(
         }
         break;
     }
-  }
+  },
+  { immediate: true }
 );
 </script>
 
