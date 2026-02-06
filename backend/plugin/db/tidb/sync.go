@@ -722,7 +722,7 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 			ON fks.CONSTRAINT_SCHEMA = kcu.TABLE_SCHEMA
 				AND fks.TABLE_NAME = kcu.TABLE_NAME
 				AND fks.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-		WHERE kcu.POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND LOWER(fks.CONSTRAINT_SCHEMA) = ?
+		WHERE kcu.POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND fks.CONSTRAINT_SCHEMA = ?
 		ORDER BY fks.TABLE_NAME, fks.CONSTRAINT_NAME, kcu.ORDINAL_POSITION;
 	`
 
@@ -791,9 +791,9 @@ func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string
 			JOIN information_schema.TABLE_CONSTRAINTS tc
 				ON cc.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
 				AND cc.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
-		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ?
+		WHERE tc.CONSTRAINT_TYPE = 'CHECK' AND tc.TABLE_SCHEMA = ? AND cc.CONSTRAINT_SCHEMA = ?
 	`
-	checkRows, err := d.db.QueryContext(ctx, checkQuery, databaseName)
+	checkRows, err := d.db.QueryContext(ctx, checkQuery, databaseName, databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, checkQuery)
 	}
