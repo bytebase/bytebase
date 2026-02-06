@@ -1,0 +1,80 @@
+- description: empty statement
+  statement: ""
+  expectedCount: 0
+
+- description: whitespace only
+  statement: "   \n\t  "
+  expectedCount: 0
+
+- description: single GET request
+  statement: "GET _search"
+  expectedCount: 1
+  statements:
+    - text: "GET _search"
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 12
+      range:
+        start: 0
+        end: 11
+
+- description: single POST request with body
+  statement: "POST /my_index/_search\n{\n  \"query\": {\n    \"match_all\": {}\n  }\n}"
+  expectedCount: 1
+  statements:
+    - text: "POST /my_index/_search\n{\n  \"query\": {\n    \"match_all\": {}\n  }\n}"
+      start:
+        line: 1
+        column: 1
+
+- description: multiple requests
+  statement: "GET _search\nPOST _test_index"
+  expectedCount: 2
+  statements:
+    - text: "GET _search"
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 12
+      range:
+        start: 0
+        end: 11
+    - text: "POST _test_index"
+      start:
+        line: 2
+        column: 1
+      end:
+        line: 2
+        column: 17
+      range:
+        start: 12
+        end: 28
+
+- description: multiple requests with bodies
+  statement: |
+    GET _search
+    {
+      "query": {
+        "match_all": {}
+      }
+    }
+
+    GET _search
+    {
+      "query": {
+        "match_all": {}
+      }
+    }
+  expectedCount: 2
+  statements:
+    - start:
+        line: 1
+        column: 1
+    - start:
+        line: 8
+        column: 1
