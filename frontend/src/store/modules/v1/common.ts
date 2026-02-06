@@ -201,6 +201,20 @@ export const extractWorkloadIdentityId = (identifier: string) => {
   return matches?.[1] ?? identifier;
 };
 
+// getUserTypeByFullname determines the user type by the fullname prefix.
+// This is more reliable than checking email suffix, as it works for
+// legacy service accounts/workload identities with non-standard email formats.
+// Supported formats: serviceAccounts/{email}, workloadIdentities/{email}, users/{email}
+export const getUserTypeByFullname = (fullname: string): UserType => {
+  if (fullname.startsWith(serviceAccountNamePrefix)) {
+    return UserType.SERVICE_ACCOUNT;
+  }
+  if (fullname.startsWith(workloadIdentityNamePrefix)) {
+    return UserType.WORKLOAD_IDENTITY;
+  }
+  return UserType.USER;
+};
+
 export const getIdentityProviderResourceId = (name: string): ResourceId => {
   const tokens = getNameParentTokens(name, [idpNamePrefix]);
   return tokens[0];

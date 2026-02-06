@@ -136,7 +136,9 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 		return user, nil
 	}
 
-	// Default to end user
+	// Default to end user lookup, which loads and caches all principals
+	// (regardless of type) so legacy service accounts/workload identities
+	// with non-standard email formats are also found.
 	return s.GetUserByEmail(ctx, email)
 }
 

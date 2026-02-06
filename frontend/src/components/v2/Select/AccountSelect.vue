@@ -36,6 +36,7 @@ import {
   extractServiceAccountId,
   extractWorkloadIdentityId,
   getUserFullNameByType,
+  getUserTypeByFullname,
   groupNamePrefix,
   serviceAccountToUser,
   useGroupStore,
@@ -159,7 +160,7 @@ const additionalOptions = computedAsync(async () => {
       groupNames.push(fullname);
       continue;
     }
-    const userType = getUserTypeByEmail(fullname);
+    const userType = getUserTypeByFullname(fullname);
     switch (userType) {
       case UserType.SERVICE_ACCOUNT:
         if (!hasGetServiceAccountPermission.value) {
@@ -244,7 +245,13 @@ const fetchAccounts = async (params: {
   nextPageToken: string;
   options: ResourceSelectOption<AccountResource>[];
 }> => {
-  const userType = getUserTypeByEmail(params.search);
+  // Try fullname prefix first (e.g., serviceAccounts/foo@bar.com),
+  // then fall back to email suffix check (e.g., foo@service.bytebase.com).
+  // This supports both standard SA emails and legacy non-standard SA fullnames.
+  const userType =
+    getUserTypeByFullname(params.search) !== UserType.USER
+      ? getUserTypeByFullname(params.search)
+      : getUserTypeByEmail(params.search);
   switch (userType) {
     case UserType.SERVICE_ACCOUNT:
       if (!hasGetServiceAccountPermission.value) {
@@ -316,7 +323,11 @@ const fetchAccounts = async (params: {
         search: params.search,
         pageToken: "",
         pageSize: params.pageSize,
-      })
+      }),
+      // Also search service accounts and workload identities to support
+      // legacy accounts with non-standard email formats.
+      handleSearchServiceAccount(params.search),
+      handleSearchWorkloadIdentity(params.search)
     );
   } else {
     if (combinedPageToken.value.user) {
@@ -394,6 +405,42 @@ const handleSearchGroup = async (params: {
   });
   combinedPageToken.value.group = nextPageToken;
   return groups.map(getGroupOption);
+};
+
+const handleSearchServiceAccount = async (
+  search: string
+): Promise<ResourceSelectOption<AccountResource>[]> => {
+  if (!hasGetServiceAccountPermission.value || !search) {
+    return [];
+  }
+  const resp = await serviceAccountStore.listServiceAccounts({
+    parent: props.projectName ?? "workspaces/-",
+    pageSize: 10,
+    pageToken: undefined,
+    showDeleted: false,
+    filter: { query: search },
+  });
+  return resp.serviceAccounts.map((sa) =>
+    getUserOption(serviceAccountToUser(sa))
+  );
+};
+
+const handleSearchWorkloadIdentity = async (
+  search: string
+): Promise<ResourceSelectOption<AccountResource>[]> => {
+  if (!hasGetWorkloadIdentityPermission.value || !search) {
+    return [];
+  }
+  const resp = await workloadIdentityStore.listWorkloadIdentities({
+    parent: props.projectName ?? "workspaces/-",
+    pageSize: 10,
+    pageToken: undefined,
+    showDeleted: false,
+    filter: { query: search },
+  });
+  return resp.workloadIdentities.map((wi) =>
+    getUserOption(workloadIdentityToUser(wi))
+  );
 };
 
 const customLabel = (
