@@ -353,7 +353,7 @@ watch(
 
 watch(
   () => props.dataSource.authenticationType,
-  (newType) => {
+  () => {
     credentialSource.value = "default";
   }
 );
