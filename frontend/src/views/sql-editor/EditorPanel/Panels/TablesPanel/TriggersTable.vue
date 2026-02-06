@@ -2,7 +2,7 @@
   <NSplit
     :disabled="!detail"
     :size="detail ? 0.6 : 1"
-    :resize-trigger-size="1"
+    :resize-trigger-size="3"
   >
     <template #1>
       <div class="h-full flex-1 overflow-y-hidden">
