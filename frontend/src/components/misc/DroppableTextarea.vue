@@ -123,7 +123,7 @@ const onDrop = async (files: File[] | FileList | null) => {
       const { arrayBuffer } = await readFileAsArrayBuffer(file);
       const decoder = new TextDecoder("utf-8");
       const statement = decoder.decode(arrayBuffer);
-      emit("update:value", statement);
+      state.value = statement;
     } catch (error) {
       pushNotification({
         module: "bytebase",

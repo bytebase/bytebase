@@ -78,24 +78,22 @@
   <Drawer v-model:show="state.reorder" :close-on-esc="true">
     <DrawerContent :title="t('environment.reorder')" class="w-120 max-w-[90vw]">
       <div>
-        <Draggable
+        <VueDraggable
           v-model="state.reorderedEnvironmentList"
-          item-key="id"
-          animation="300"
+          :animation="300"
         >
-          <template #item="{ element, index }">
-            <div
-              :key="(element as Environment).id"
-              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
-            >
-              <div class="flex items-center gap-x-2">
-                <span class="textinfo"> {{ index + 1 }}.</span>
-                <EnvironmentV1Name :environment="(element as Environment)" :link="false" />
-              </div>
-              <GripVerticalIcon class="w-5 h-5 text-gray-500" />
+          <div
+            v-for="(element, index) in state.reorderedEnvironmentList"
+            :key="(element as Environment).id"
+            class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
+          >
+            <div class="flex items-center gap-x-2">
+              <span class="textinfo"> {{ index + 1 }}.</span>
+              <EnvironmentV1Name :environment="(element as Environment)" :link="false" />
             </div>
-          </template>
-        </Draggable>
+            <GripVerticalIcon class="w-5 h-5 text-gray-500" />
+          </div>
+        </VueDraggable>
       </div>
       <template #footer>
         <div class="flex items-center justify-end gap-x-2">
@@ -115,9 +113,9 @@ import { isEqual } from "lodash-es";
 import { GripVerticalIcon, ListOrderedIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, h, onMounted, reactive, ref, watch } from "vue";
+import { VueDraggable } from "vue-draggable-plus";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import Draggable from "vuedraggable";
 import {
   EnvironmentForm,
   Form as EnvironmentFormBody,
