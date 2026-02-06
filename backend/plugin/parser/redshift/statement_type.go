@@ -311,10 +311,11 @@ func getDropStatementType(ctx *parser.DropstmtContext) storepb.StatementType {
 			return storepb.StatementType_DROP_TABLE
 		}
 		if objType.VIEW() != nil {
-			// Legacy compatibility: Redshift (like PostgreSQL) treats both regular views
-			// and materialized views as DROP_TABLE instead of DROP_VIEW to maintain
-			// consistency with the legacy parser behavior.
-			return storepb.StatementType_DROP_TABLE
+			if objType.MATERIALIZED() != nil {
+				// DROP MATERIALIZED VIEW holds data — treat as DROP_TABLE for risk assessment.
+				return storepb.StatementType_DROP_TABLE
+			}
+			return storepb.StatementType_DROP_VIEW
 		}
 		if objType.INDEX() != nil {
 			return storepb.StatementType_DROP_INDEX

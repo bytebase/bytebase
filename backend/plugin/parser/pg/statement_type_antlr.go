@@ -272,11 +272,11 @@ func getDropStatementType(ctx *parser.DropstmtContext) storepb.StatementType {
 			return storepb.StatementType_DROP_TABLE
 		}
 		if objType.VIEW() != nil {
-			// Legacy compatibility: PostgreSQL treats both regular views and materialized views
-			// as DROP_TABLE instead of DROP_VIEW. This matches the behavior of the legacy
-			// pg_query_go parser to maintain consistency in statement type reporting.
-			// Note: Redshift follows the same pattern.
-			return storepb.StatementType_DROP_TABLE
+			if objType.MATERIALIZED() != nil {
+				// DROP MATERIALIZED VIEW holds data — treat as DROP_TABLE for risk assessment.
+				return storepb.StatementType_DROP_TABLE
+			}
+			return storepb.StatementType_DROP_VIEW
 		}
 		if objType.INDEX() != nil {
 			return storepb.StatementType_DROP_INDEX
