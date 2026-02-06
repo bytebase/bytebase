@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useSQLResultViewContext } from "./context";
-
-const { dark } = useSQLResultViewContext();
+defineProps<{
+  dark: boolean;
+}>();
 </script>

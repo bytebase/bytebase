@@ -14,11 +14,11 @@ import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, isDescendantOf } from "@/utils";
-import { useSQLResultViewContext } from "../../context";
+import { type SQLResultViewContext } from "../../context";
 import {
+  type BinaryFormatContext,
   detectBinaryFormat,
   formatBinaryValue,
-  useBinaryFormatContext,
 } from "./binary-format-store";
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
@@ -46,12 +46,16 @@ export const KEY = Symbol(
 export const provideSelectionContext = ({
   rows,
   columns,
+  binaryFormatContext,
+  resultViewContext,
 }: {
   rows: ComputedRef<ResultTableRow[]>;
   columns: ComputedRef<ResultTableColumn[]>;
+  binaryFormatContext: BinaryFormatContext;
+  resultViewContext: SQLResultViewContext;
 }) => {
   const { t } = useI18n();
-  const { getBinaryFormat } = useBinaryFormatContext();
+  const { getBinaryFormat } = binaryFormatContext;
 
   const { copy: copyTextToClipboard, isSupported } = useClipboard({
     legacy: true,
@@ -62,7 +66,6 @@ export const provideSelectionContext = ({
     rows: [],
     columns: [],
   });
-  const resultViewContext = useSQLResultViewContext();
   const disabled = computed(() => {
     return resultViewContext.disallowCopyingData.value;
   });
@@ -141,14 +144,10 @@ export const provideSelectionContext = ({
   }) => {
     // Special handling for binary data (proto-es oneof pattern)
     if (value && value.kind?.case === "bytesValue") {
-      // Get the result set index if available
-      const setIndex = resultViewContext.detail?.value?.set ?? 0;
-
       // First check if there's a column format override
       const binaryFormat = getBinaryFormat({
         colIndex,
         rowIndex,
-        setIndex,
       });
       if (binaryFormat) {
         // Column format overrides take precedence

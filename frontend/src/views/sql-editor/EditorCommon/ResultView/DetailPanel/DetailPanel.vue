@@ -85,7 +85,6 @@
                 setBinaryFormat({
                   colIndex: detail!.col,
                   rowIndex: detail!.row,
-                  setIndex: detail!.set,
                   format,
                 })
             "
@@ -158,7 +157,6 @@ import {
 import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { CopyButton, DrawerContent } from "@/components/v2";
-import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
 import {
   STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT,
   STORAGE_KEY_SQL_EDITOR_DETAIL_LINE_WRAP,
@@ -169,11 +167,16 @@ import {
   type BinaryFormat,
   useBinaryFormatContext,
 } from "../DataTable/common/binary-format-store";
+import type {
+  ResultTableColumn,
+  ResultTableRow,
+} from "../DataTable/common/types";
 import { getPlainValue } from "../DataTable/common/utils";
 import PrettyJSON from "./PrettyJSON.vue";
 
 const props = defineProps<{
-  result: QueryResult;
+  rows: ResultTableRow[];
+  columns: ResultTableColumn[];
 }>();
 
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
@@ -195,14 +198,14 @@ const rawValue = computed(() => {
   }
 
   const { row, col } = detail.value;
-  return props.result.rows[row].values[col];
+  return props.rows[row].item.values[col];
 });
 
 const columnType = computed(() => {
   if (!detail.value) {
     return "";
   }
-  return props.result.columnTypeNames[detail.value.col];
+  return props.columns[detail.value.col].columnType;
 });
 
 const binaryFormat = computed(() => {
@@ -212,7 +215,6 @@ const binaryFormat = computed(() => {
   return getBinaryFormat({
     rowIndex: detail.value.row,
     colIndex: detail.value.col,
-    setIndex: detail.value.set,
   });
 });
 
@@ -236,7 +238,7 @@ const guessedIsJSON = computed(() => {
 });
 
 const totalCount = computed(() => {
-  return props.result.rows.length;
+  return props.rows.length;
 });
 
 const contentClass = computed(() => {

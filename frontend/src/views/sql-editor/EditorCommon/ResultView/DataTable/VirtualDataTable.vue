@@ -15,7 +15,7 @@
         <tr>
           <!-- header for the index -->
           <th
-            :key="`${setIndex}-0-index`"
+            :key="`0-index`"
             class="group relative py-2 shrink-0 tracking-wider border-x border-block-border dark:border-zinc-500 w-px whitespace-nowrap"
             v-bind="tableResize.getColumnProps(0)"
           >
@@ -37,7 +37,7 @@
           <!-- header for columns -->
           <th
             v-for="(header, columnIndex) of columns"
-            :key="`${setIndex}-${columnIndex + 1}-${header.id}`"
+            :key="`${columnIndex + 1}-${header.id}`"
             class="group relative px-3 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-block-border dark:border-zinc-500"
             :class="{
               'border-r': columnIndex < (columns.length - 1),
@@ -81,14 +81,12 @@
                 :format="
                   getBinaryFormat({
                     colIndex: columnIndex,
-                    setIndex,
                   })
                 "
                 @update:format="
                   (format: BinaryFormat) =>
                     setBinaryFormat({
                       colIndex: columnIndex,
-                      setIndex,
                       format,
                     })
                 "
@@ -117,7 +115,7 @@
     >
       <template #default="{ item: row, index: rowIndex }: { item: { key: number; item: QueryRow; }; index: number; }">
         <div
-          :key="`${setIndex}-${rowIndex}`"
+          :key="rowIndex"
           class="flex group"
           :data-row-index="rowIndex"
           :style="{
@@ -127,7 +125,7 @@
         >
           <!-- the index cell  -->
           <div
-            :key="`${setIndex}-${rowIndex}-0`"
+            :key="`${rowIndex}-0`"
             class="relative flex items-center shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :class="{
               'border-r': true,
@@ -169,7 +167,7 @@
           <!-- other cells -->
           <div
             v-for="(cell, columnIndex) of row.item.values"
-            :key="`${setIndex}-${rowIndex}-${columnIndex + 1}`"
+            :key="`${rowIndex}-${columnIndex + 1}`"
             class="relative shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :class="{
               'border-r': columnIndex < (row.item.values.length - 1),
@@ -188,15 +186,13 @@
                 :value="cell"
                 :keyword="search.query"
                 :scope="search.scopes.find(scope => scope.id === columns[columnIndex]?.id)"
-                :set-index="setIndex"
                 :row-index="rowIndex"
-                :original-row-index="row.key"
                 :col-index="columnIndex"
                 :allow-select="true"
                 :column-type="getColumnTypeByIndex(columnIndex)"
-                class="h-full w-full truncate"
                 :database="database"
                 :class="{
+                  'h-full w-full truncate': true,
                   'bg-accent/10! dark:bg-accent/40!': activeRowIndex === rowIndex
                 }"
               />
@@ -241,7 +237,6 @@ import useTableColumnWidthLogic from "./useTableResize";
 const props = defineProps<{
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
-  setIndex: number;
   activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;

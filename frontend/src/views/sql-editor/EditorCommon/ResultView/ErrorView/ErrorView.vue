@@ -35,17 +35,16 @@ import { positionWithOffset } from "@/components/MonacoEditor/utils";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import { activeSQLEditorRef } from "@/views/sql-editor/EditorPanel/StandardPanel/state";
-import { useSQLResultViewContext } from "../context";
 import PostgresError from "./PostgresError.vue";
 
 const props = defineProps<{
+  dark: boolean;
   error: string | undefined;
   executeParams?: SQLEditorQueryParams;
   resultSet?: SQLResultSetV1;
 }>();
 
 const { t } = useI18n();
-const { dark } = useSQLResultViewContext();
 const { events: editorEvents } = useSQLEditorContext();
 
 // Get the failing statement from the result

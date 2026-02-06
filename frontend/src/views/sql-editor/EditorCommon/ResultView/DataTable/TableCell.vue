@@ -24,7 +24,6 @@
             setBinaryFormat({
               colIndex,
               rowIndex,
-              setIndex,
               format,
             })
         "
@@ -77,9 +76,7 @@ import { getPlainValue } from "./common/utils";
 
 const props = defineProps<{
   value: RowValue;
-  setIndex: number;
   rowIndex: number;
-  originalRowIndex: number;
   colIndex: number;
   allowSelect?: boolean;
   columnType: string; // Column type from QueryResult
@@ -114,7 +111,6 @@ const binaryFormat = computed(() => {
   return getBinaryFormat({
     rowIndex: props.rowIndex,
     colIndex: props.colIndex,
-    setIndex: props.setIndex,
   });
 });
 
@@ -238,8 +234,7 @@ const handleClick = (e: MouseEvent) => {
 
 const showDetail = () => {
   detail.value = {
-    set: props.setIndex,
-    row: props.originalRowIndex,
+    row: props.rowIndex,
     col: props.colIndex,
   };
 };
