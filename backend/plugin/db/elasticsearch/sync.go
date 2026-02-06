@@ -44,11 +44,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema implements db.Driver.
-func (d *Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	var dbMetadataProto storepb.DatabaseSchemaMetadata
 
 	// indices.
-	indices, err := d.getIndices()
+	indices, err := d.getIndices(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,17 +113,115 @@ type IndicesResult struct {
 	Index     string `json:"index"`
 }
 
-func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
-	var indicesMetadata []*storepb.TableMetadata
+// IndexSettingsResult represents the settings for an index.
+type IndexSettingsResult struct {
+	Settings struct {
+		Index struct {
+			Hidden string `json:"hidden"`
+		} `json:"index"`
+	} `json:"settings"`
+}
+
+// getHiddenIndices returns a set of index names that are marked as hidden.
+func (d *Driver) getHiddenIndices(ctx context.Context) (map[string]bool, error) {
+	hiddenIndices := make(map[string]bool)
 
 	if d.isOpenSearch && d.opensearchAPI != nil {
-		ctx := context.Background()
+		resp, err := d.opensearchAPI.Indices.Settings.Get(ctx, &opensearchapi.SettingsGetReq{
+			Indices:  []string{"*"},
+			Settings: []string{"index.hidden"},
+			Params: opensearchapi.SettingsGetParams{
+				ExpandWildcards: "open,hidden",
+			},
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get index settings")
+		}
+		for indexName, indexData := range resp.Indices {
+			var settings IndexSettingsResult
+			if err := json.Unmarshal(indexData.Settings, &settings.Settings); err != nil {
+				continue
+			}
+			if settings.Settings.Index.Hidden == "true" {
+				hiddenIndices[indexName] = true
+			}
+		}
+		return hiddenIndices, nil
+	} else if d.typedClient != nil {
+		expandWildcards := "open,hidden"
+		res, err := esapi.IndicesGetSettingsRequest{
+			Index:           []string{"*"},
+			Name:            []string{"index.hidden"},
+			ExpandWildcards: expandWildcards,
+			FilterPath:      []string{"**.hidden"},
+		}.Do(ctx, d.typedClient)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get index settings")
+		}
+		bytes, err := readBytesAndClose(res)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read index settings response")
+		}
+		var results map[string]IndexSettingsResult
+		if err := json.Unmarshal(bytes, &results); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse index settings response")
+		}
+		for indexName, indexData := range results {
+			if indexData.Settings.Index.Hidden == "true" {
+				hiddenIndices[indexName] = true
+			}
+		}
+		return hiddenIndices, nil
+	}
+
+	// Fallback to basic auth client
+	resp, err := d.basicAuthClient.Do("GET", []byte("/*/_settings?filter_path=**.hidden&expand_wildcards=open,hidden"), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get index settings")
+	}
+	defer resp.Body.Close()
+
+	bytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read index settings response body")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("failed to get index settings: unexpected status code %d: %s", resp.StatusCode, string(bytes))
+	}
+
+	var results map[string]IndexSettingsResult
+	if err := json.Unmarshal(bytes, &results); err != nil {
+		return nil, errors.Wrapf(err, "failed to parse index settings response")
+	}
+	for indexName, indexData := range results {
+		if indexData.Settings.Index.Hidden == "true" {
+			hiddenIndices[indexName] = true
+		}
+	}
+	return hiddenIndices, nil
+}
+
+func (d *Driver) getIndices(ctx context.Context) ([]*storepb.TableMetadata, error) {
+	var indicesMetadata []*storepb.TableMetadata
+
+	// Get hidden indices to filter them out.
+	hiddenIndices, err := d.getHiddenIndices(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get hidden indices")
+	}
+
+	if d.isOpenSearch && d.opensearchAPI != nil {
 		resp, err := d.opensearchAPI.Cat.Indices(ctx, &opensearchapi.CatIndicesReq{})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list indices")
 		}
 
 		for _, idx := range resp.Indices {
+			if hiddenIndices[idx.Index] {
+				continue
+			}
+
 			var datasize int64
 			if idx.StoreSize != nil {
 				datasize, err = unitConversion(*idx.StoreSize)
@@ -146,7 +244,7 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 
 		return indicesMetadata, nil
 	} else if d.typedClient != nil {
-		res, err := esapi.CatIndicesRequest{Format: "json", Pretty: true}.Do(context.Background(), d.typedClient)
+		res, err := esapi.CatIndicesRequest{Format: "json", Pretty: true}.Do(ctx, d.typedClient)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list indices")
 		}
@@ -167,6 +265,10 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 		}
 
 		for _, m := range results {
+			if hiddenIndices[m.Index] {
+				continue
+			}
+
 			datasize, err := unitConversion(m.IndexSize)
 			if err != nil {
 				return nil, err
@@ -213,6 +315,10 @@ func (d *Driver) getIndices() ([]*storepb.TableMetadata, error) {
 	}
 
 	for _, m := range results {
+		if hiddenIndices[m.Index] {
+			continue
+		}
+
 		datasize, err := unitConversion(m.IndexSize)
 		if err != nil {
 			return nil, err
