@@ -74,7 +74,7 @@
     "vscode-languageclient": "9.0.1",
     "vscode-ws-jsonrpc": "3.5.0",
     "vue": "3.5.27",
-    "vuedraggable": "^4.1.0",
+    "vue-draggable-plus": "^0.6.0",
     "vueuc": "0.4.65"
   },
   "devDependencies": {

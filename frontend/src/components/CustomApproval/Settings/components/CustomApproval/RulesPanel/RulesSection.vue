@@ -30,58 +30,57 @@
       </div>
 
       <!-- Draggable Body -->
-      <Draggable
+      <VueDraggable
         v-model="localRules"
-        item-key="uid"
         handle=".drag-handle"
-        animation="150"
+        :animation="150"
         ghost-class="rules-row-ghost"
         @end="handleDragEnd"
       >
-        <template #item="{ element: rule, index }">
-          <div
-            class="rules-table-row grid border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-            :class="{ 'bg-gray-50/50': index % 2 === 1 }"
-          >
-            <div class="px-2 py-2 w-10 flex items-center justify-center">
-              <GripVerticalIcon
-                class="drag-handle w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing"
-              />
-            </div>
-            <div class="px-3 py-2 truncate" :title="rule.title">
-              {{ rule.title || "-" }}
-            </div>
-            <div class="px-3 py-2 truncate">
-              <EllipsisText>
-                <code class="text-xs">{{ rule.condition || "true" }}</code>
-              </EllipsisText>
-            </div>
-            <div class="px-3 py-2 truncate">
-              <EllipsisText>
-                {{ formatApprovalFlow(rule.flow) }}
-              </EllipsisText>
-            </div>
-            <div class="px-3 py-2 w-24 flex items-center gap-x-1">
-              <MiniActionButton @click="handleEditRule(rule)">
-                <PencilIcon class="w-3" />
-              </MiniActionButton>
-              <NPopconfirm
-                v-if="allowAdmin"
-                :positive-text="$t('common.confirm')"
-                :negative-text="$t('common.cancel')"
-                @positive-click="handleDeleteRule(rule)"
-              >
-                <template #trigger>
-                  <MiniActionButton>
-                    <TrashIcon class="w-3" />
-                  </MiniActionButton>
-                </template>
-                {{ $t("common.confirm") }}?
-              </NPopconfirm>
-            </div>
+        <div
+          v-for="(rule, index) in localRules"
+          :key="rule.uid"
+          class="rules-table-row grid border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+          :class="{ 'bg-gray-50/50': index % 2 === 1 }"
+        >
+          <div class="px-2 py-2 w-10 flex items-center justify-center">
+            <GripVerticalIcon
+              class="drag-handle w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing"
+            />
           </div>
-        </template>
-      </Draggable>
+          <div class="px-3 py-2 truncate" :title="rule.title">
+            {{ rule.title || "-" }}
+          </div>
+          <div class="px-3 py-2 truncate">
+            <EllipsisText>
+              <code class="text-xs">{{ rule.condition || "true" }}</code>
+            </EllipsisText>
+          </div>
+          <div class="px-3 py-2 truncate">
+            <EllipsisText>
+              {{ formatApprovalFlow(rule.flow) }}
+            </EllipsisText>
+          </div>
+          <div class="px-3 py-2 w-24 flex items-center gap-x-1">
+            <MiniActionButton @click="handleEditRule(rule)">
+              <PencilIcon class="w-3" />
+            </MiniActionButton>
+            <NPopconfirm
+              v-if="allowAdmin"
+              :positive-text="$t('common.confirm')"
+              :negative-text="$t('common.cancel')"
+              @positive-click="handleDeleteRule(rule)"
+            >
+              <template #trigger>
+                <MiniActionButton>
+                  <TrashIcon class="w-3" />
+                </MiniActionButton>
+              </template>
+              {{ $t("common.confirm") }}?
+            </NPopconfirm>
+          </div>
+        </div>
+      </VueDraggable>
 
       <!-- Empty State -->
       <div
@@ -112,8 +111,8 @@ import {
 } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed, ref, watch } from "vue";
+import { VueDraggable } from "vue-draggable-plus";
 import { useI18n } from "vue-i18n";
-import Draggable from "vuedraggable";
 import EllipsisText from "@/components/EllipsisText.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { MiniActionButton } from "@/components/v2";
@@ -157,9 +156,12 @@ watch(
 
 const sourceDisplayText = computed(() => approvalSourceText(props.source));
 
-const handleDragEnd = async (event: { oldIndex: number; newIndex: number }) => {
+const handleDragEnd = async (event: {
+  oldIndex?: number;
+  newIndex?: number;
+}) => {
   const { oldIndex, newIndex } = event;
-  if (oldIndex === newIndex) return;
+  if (oldIndex == null || newIndex == null || oldIndex === newIndex) return;
 
   if (!context.hasFeature.value) {
     context.showFeatureModal.value = true;
