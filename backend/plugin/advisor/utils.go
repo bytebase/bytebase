@@ -159,10 +159,7 @@ func ContainsDDL(engine storepb.Engine, parsedStatements []base.ParsedStatement)
 	}
 	for _, t := range types {
 		switch t {
-		case storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
-			storepb.StatementType_INSERT,
-			storepb.StatementType_UPDATE,
-			storepb.StatementType_DELETE:
+		case "", "UNKNOWN", "INSERT", "UPDATE", "DELETE":
 		default:
 			return true
 		}
