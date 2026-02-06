@@ -75,6 +75,7 @@ const props = defineProps<{
   value: RowValue;
   setIndex: number;
   rowIndex: number;
+  originalRowIndex: number;
   colIndex: number;
   allowSelect?: boolean;
   columnType: string; // Column type from QueryResult
@@ -234,7 +235,7 @@ const handleClick = (e: MouseEvent) => {
 const showDetail = () => {
   detail.value = {
     set: props.setIndex,
-    row: props.rowIndex,
+    row: props.originalRowIndex,
     col: props.colIndex,
   };
 };

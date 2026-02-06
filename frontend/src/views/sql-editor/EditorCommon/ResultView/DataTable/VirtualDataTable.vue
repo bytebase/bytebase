@@ -115,7 +115,7 @@
         minWidth: `${tableResize.effectiveWidth.value}px`,
       }"
     >
-      <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
+      <template #default="{ item: row, index: rowIndex }: { item: { key: number; item: QueryRow; }; index: number; }">
         <div
           :key="`${setIndex}-${rowIndex}`"
           class="flex group"
@@ -192,6 +192,7 @@
                 :scope="search.scopes.find(scope => scope.id === columns[columnIndex]?.id)"
                 :set-index="setIndex"
                 :row-index="rowIndex"
+                :original-row-index="row.key"
                 :col-index="columnIndex"
                 :allow-select="true"
                 :column-type="getColumnTypeByIndex(columnIndex)"
