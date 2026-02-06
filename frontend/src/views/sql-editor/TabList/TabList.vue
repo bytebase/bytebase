@@ -10,12 +10,11 @@
       content-class="flex gap-x-1"
       @scroll="recalculateScrollState"
     >
-      <Draggable
+      <VueDraggable
         id="tab-list"
         ref="tabListRef"
         v-model="tabStore.openTabList"
-        item-key="id"
-        animation="300"
+        :animation="300"
         class="relative flex flex-nowrap overflow-hidden h-9 pt-0.5 hide-scrollbar"
         :class="{
           'more-left': scrollState.moreLeft,
@@ -23,21 +22,19 @@
         }"
         ghost-class="ghost"
       >
-        <template
-          #item="{ element: tab, index }: { element: SQLEditorTab; index: number }"
-        >
-          <TabItem
-            :tab="tab"
-            :index="index"
-            :data-tab-id="tab.id"
-            @select="(tab) => tabStore.setCurrentTabId(tab.id)"
-            @close="(tab) => handleRemoveTab(tab)"
-            @contextmenu.stop.prevent="
-              contextMenuRef?.show(tab, index, $event)
-            "
-          />
-        </template>
-      </Draggable>
+        <TabItem
+          v-for="(tab, index) in tabStore.openTabList"
+          :key="tab.id"
+          :tab="tab"
+          :index="index"
+          :data-tab-id="tab.id"
+          @select="(tab) => tabStore.setCurrentTabId(tab.id)"
+          @close="(tab) => handleRemoveTab(tab)"
+          @contextmenu.stop.prevent="
+            contextMenuRef?.show(tab, index, $event)
+          "
+        />
+      </VueDraggable>
 
       <div
         class="shrink-0 sticky right-0 bg-white flex items-stretch justify-end"
@@ -68,8 +65,8 @@ import { PlusIcon } from "lucide-vue-next";
 import { NScrollbar, useDialog } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { VueDraggable } from "vue-draggable-plus";
 import { useI18n } from "vue-i18n";
-import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSQLEditorTabStore } from "@/store";
@@ -98,7 +95,7 @@ const state = reactive<LocalState>({
   loading: false,
 });
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
-const tabListRef = ref<InstanceType<typeof Draggable>>();
+const tabListRef = ref<InstanceType<typeof VueDraggable>>();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
 const scrollState = reactive({

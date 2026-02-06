@@ -89,24 +89,24 @@
       style="max-width: calc(100vw - 8rem)"
     >
       <div>
-        <Draggable v-model="quickLinkList" item-key="id" animation="300">
-          <template #item="{ element }: { element: QuickLink }">
-            <div
-              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
-            >
-              <div :key="element.id" class="flex items-center gap-x-2">
-                <NCheckbox
-                  :disabled="quickLinkList.length <= 1"
-                  :checked="true"
-                  @update:checked="() => uncheckAccessItem(element)"
-                />
-                <component :is="element.icon" class="w-5 h-5 text-gray-500" />
-                {{ element.title }}
-              </div>
-              <GripVerticalIcon class="w-5 h-5 text-gray-500" />
+        <VueDraggable v-model="quickLinkList" :animation="300">
+          <div
+            v-for="element in quickLinkList"
+            :key="element.id"
+            class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
+          >
+            <div class="flex items-center gap-x-2">
+              <NCheckbox
+                :disabled="quickLinkList.length <= 1"
+                :checked="true"
+                @update:checked="() => uncheckAccessItem(element)"
+              />
+              <component :is="element.icon" class="w-5 h-5 text-gray-500" />
+              {{ element.title }}
             </div>
-          </template>
-        </Draggable>
+            <GripVerticalIcon class="w-5 h-5 text-gray-500" />
+          </div>
+        </VueDraggable>
         <NDivider />
 
         <div
@@ -132,8 +132,8 @@ import { computedAsync } from "@vueuse/core";
 import { GripVerticalIcon, SettingsIcon, Volume2Icon } from "lucide-vue-next";
 import { NButton, NCheckbox, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
+import { VueDraggable } from "vue-draggable-plus";
 import { useRouter } from "vue-router";
-import Draggable from "vuedraggable";
 import ProjectSwitchModal from "@/components/Project/ProjectSwitch/ProjectSwitchModal.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
