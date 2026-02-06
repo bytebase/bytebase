@@ -5,7 +5,7 @@
     :items="rows"
     :item-size="estimateRowHeight"
   >
-    <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
+    <template #default="{ item: row, index: rowIndex }: { item: { key: number; item: QueryRow; }; index: number; }">
       <div
         :key="`row-${rowIndex}`"
         class="font-mono mb-2 mx-2"
@@ -56,6 +56,7 @@
                 :scope="search.scopes.find(scope => scope.id === columns[columnIndex]?.id)"
                 :set-index="setIndex"
                 :row-index="rowIndex"
+                :original-row-index="row.key"
                 :col-index="columnIndex"
                 :column-type="column.columnType"
                 :allow-select="true"
