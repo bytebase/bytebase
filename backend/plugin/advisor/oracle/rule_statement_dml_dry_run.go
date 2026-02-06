@@ -39,6 +39,12 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
+	// BYT-8855: Skip DML dry run if there are DDL statements mixed in, because DML
+	// statements often reference objects created by DDL statements, causing false positives.
+	if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
+		return nil, nil
+	}
+
 	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 	checker := NewGenericChecker([]Rule{rule})
 
