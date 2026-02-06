@@ -1,0 +1,196 @@
+# GET requests - Select
+- description: GET search
+  statement: "GET _search"
+  queryType: 1  # Select
+
+- description: GET document
+  statement: "GET /my_index/_doc/1"
+  queryType: 1  # Select
+
+- description: GET mapping
+  statement: "GET /my_index/_mapping"
+  queryType: 1  # Select
+
+# GET requests - SelectInfoSchema
+- description: GET cat indices
+  statement: "GET /_cat/indices"
+  queryType: 3  # SelectInfoSchema
+
+- description: GET cluster health
+  statement: "GET /_cluster/health"
+  queryType: 3  # SelectInfoSchema
+
+- description: GET nodes info
+  statement: "GET /_nodes/stats"
+  queryType: 3  # SelectInfoSchema
+
+# HEAD requests - Select
+- description: HEAD index exists
+  statement: "HEAD /my_index"
+  queryType: 1  # Select
+
+- description: HEAD document exists
+  statement: "HEAD /my_index/_doc/1"
+  queryType: 1  # Select
+
+# POST requests - Select (read-only endpoints)
+- description: POST search
+  statement: "POST /my_index/_search"
+  queryType: 1  # Select
+
+- description: POST msearch
+  statement: "POST /_msearch"
+  queryType: 1  # Select
+
+- description: POST count
+  statement: "POST /my_index/_count"
+  queryType: 1  # Select
+
+- description: POST field_caps
+  statement: "POST /_field_caps"
+  queryType: 1  # Select
+
+- description: POST validate query
+  statement: "POST /my_index/_validate/query"
+  queryType: 1  # Select
+
+- description: POST SQL query
+  statement: "POST /_sql"
+  queryType: 1  # Select
+
+- description: POST ESQL query
+  statement: "POST /_esql/query"
+  queryType: 1  # Select
+
+- description: POST EQL search
+  statement: "POST /my_index/_eql/search"
+  queryType: 1  # Select
+
+- description: POST graph explore
+  statement: "POST /my_index/_graph/explore"
+  queryType: 1  # Select
+
+- description: POST knn search
+  statement: "POST /my_index/_knn_search"
+  queryType: 1  # Select
+
+- description: POST async search submit
+  statement: "POST /my_index/_async_search"
+  queryType: 1  # Select
+
+# POST requests - Explain
+- description: POST explain
+  statement: "POST /my_index/_explain/1"
+  queryType: 2  # Explain
+
+# POST requests - DML (document writes)
+- description: POST document with auto ID
+  statement: "POST /my_index/_doc"
+  queryType: 5  # DML
+
+- description: POST document with ID
+  statement: "POST /my_index/_doc/1"
+  queryType: 5  # DML
+
+- description: POST create document
+  statement: "POST /my_index/_create/1"
+  queryType: 5  # DML
+
+- description: POST update document
+  statement: "POST /my_index/_update/1"
+  queryType: 5  # DML
+
+- description: POST bulk
+  statement: "POST /_bulk"
+  queryType: 5  # DML
+
+- description: POST delete by query
+  statement: "POST /my_index/_delete_by_query"
+  queryType: 5  # DML
+
+- description: POST update by query
+  statement: "POST /my_index/_update_by_query"
+  queryType: 5  # DML
+
+- description: POST reindex
+  statement: "POST /_reindex"
+  queryType: 5  # DML
+
+# POST requests - DDL (index/admin operations)
+- description: POST open index
+  statement: "POST /my_index/_open"
+  queryType: 4  # DDL
+
+- description: POST close index
+  statement: "POST /my_index/_close"
+  queryType: 4  # DDL
+
+- description: POST aliases
+  statement: "POST /_aliases"
+  queryType: 4  # DDL
+
+- description: POST rollover
+  statement: "POST /my_index/_rollover"
+  queryType: 4  # DDL
+
+- description: POST mapping
+  statement: "POST /my_index/_mapping"
+  queryType: 4  # DDL
+
+# PUT requests - DML (document writes)
+- description: PUT document
+  statement: "PUT /my_index/_doc/1"
+  queryType: 5  # DML
+
+- description: PUT create document
+  statement: "PUT /my_index/_create/1"
+  queryType: 5  # DML
+
+- description: PUT bulk
+  statement: "PUT /_bulk"
+  queryType: 5  # DML
+
+# PUT requests - DDL (index/schema operations)
+- description: PUT create index
+  statement: "PUT /my_index"
+  queryType: 4  # DDL
+
+- description: PUT mapping
+  statement: "PUT /my_index/_mapping"
+  queryType: 4  # DDL
+
+- description: PUT settings
+  statement: "PUT /my_index/_settings"
+  queryType: 4  # DDL
+
+- description: PUT index template
+  statement: "PUT /_index_template/my_template"
+  queryType: 4  # DDL
+
+- description: PUT ingest pipeline
+  statement: "PUT /_ingest/pipeline/my_pipeline"
+  queryType: 4  # DDL
+
+# DELETE requests - DML (document deletion)
+- description: DELETE document
+  statement: "DELETE /my_index/_doc/1"
+  queryType: 5  # DML
+
+# DELETE requests - DDL (index deletion)
+- description: DELETE index
+  statement: "DELETE /my_index"
+  queryType: 4  # DDL
+
+- description: DELETE index template
+  statement: "DELETE /_index_template/my_template"
+  queryType: 4  # DDL
+
+# PATCH requests - DML
+- description: PATCH document
+  statement: "PATCH /my_index/_doc/1"
+  queryType: 5  # DML
+
+# Unknown method
+- description: Unknown method
+  statement: "UNKNOWN /my_index"
+  queryType: 0  # QueryTypeUnknown

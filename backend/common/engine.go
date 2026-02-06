@@ -58,7 +58,8 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
-		storepb.Engine_MONGODB:
+		storepb.Engine_MONGODB,
+		storepb.Engine_ELASTICSEARCH:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -74,7 +75,6 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 		storepb.Engine_COCKROACHDB,
 		storepb.Engine_DORIS,
 		storepb.Engine_DYNAMODB,
-		storepb.Engine_ELASTICSEARCH,
 		storepb.Engine_DATABRICKS,
 		storepb.Engine_COSMOSDB,
 		storepb.Engine_TRINO:

@@ -1039,9 +1039,6 @@ func (p *parser) method() (string, error) {
 		if err := p.nextOneOf([]rune{'E', 'e'}); err != nil {
 			return "", err
 		}
-		if err := p.nextOneOf([]rune{'S', 's'}); err != nil {
-			return "", err
-		}
 		return "DELETE", nil
 	case "P":
 		if err := p.nextOneOf([]rune{'P', 'p'}); err != nil {
