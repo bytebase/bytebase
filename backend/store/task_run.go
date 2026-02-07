@@ -315,6 +315,18 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		creatorPtr = creator
 	}
 
+	// Serialize payload from the first create (all creates in a batch share the same payload).
+	payloadStr := "{}"
+	if len(creates) > 0 && creates[0].PayloadProto != nil {
+		payloadBytes, err := protojson.Marshal(creates[0].PayloadProto)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal task run payload")
+		}
+		if s := string(payloadBytes); s != "" {
+			payloadStr = s
+		}
+	}
+
 	// Single query that:
 	// 1. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
 	// 2. Calculates next attempt for each remaining task
@@ -326,13 +338,15 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			task_id,
 			run_at,
 			attempt,
-			status
+			status,
+			payload
 		)
 		SELECT
 			?,
 			tasks.task_id,
 			tasks.run_at,
 			COALESCE((SELECT MAX(attempt) + 1 FROM task_run WHERE task_run.task_id = tasks.task_id), 0) as attempt,
+			?,
 			?
 		FROM (
 			SELECT
@@ -345,7 +359,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			AND task_run.status IN (?, ?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
-	`, creatorPtr, storepb.TaskRun_PENDING.String(), taskUIDs, runAts,
+	`, creatorPtr, storepb.TaskRun_PENDING.String(), payloadStr, taskUIDs, runAts,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()

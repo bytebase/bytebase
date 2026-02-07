@@ -71,5 +71,8 @@ func (x *TaskRunPayload) Equal(y *TaskRunPayload) bool {
 	if !x.SchedulerInfo.Equal(y.SchedulerInfo) {
 		return false
 	}
+	if x.SkipPriorBackup != y.SkipPriorBackup {
+		return false
+	}
 	return true
 }

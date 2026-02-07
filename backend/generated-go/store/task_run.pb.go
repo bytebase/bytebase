@@ -263,8 +263,10 @@ type TaskRunPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Scheduler information about why a task is waiting.
 	SchedulerInfo *SchedulerInfo `protobuf:"bytes,1,opt,name=scheduler_info,json=schedulerInfo,proto3" json:"scheduler_info,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// If true, prior backup is skipped for this task run.
+	SkipPriorBackup bool `protobuf:"varint,2,opt,name=skip_prior_backup,json=skipPriorBackup,proto3" json:"skip_prior_backup,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *TaskRunPayload) Reset() {
@@ -302,6 +304,13 @@ func (x *TaskRunPayload) GetSchedulerInfo() *SchedulerInfo {
 		return x.SchedulerInfo
 	}
 	return nil
+}
+
+func (x *TaskRunPayload) GetSkipPriorBackup() bool {
+	if x != nil {
+		return x.SkipPriorBackup
+	}
+	return false
 }
 
 // WaitingCause indicates why a task run is waiting to execute.
@@ -399,9 +408,10 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\rwaiting_cause\x18\x02 \x01(\v2*.bytebase.store.SchedulerInfo.WaitingCauseR\fwaitingCause\x1aK\n" +
 	"\fWaitingCause\x122\n" +
 	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimitB\a\n" +
-	"\x05cause\"V\n" +
+	"\x05cause\"\x82\x01\n" +
 	"\x0eTaskRunPayload\x12D\n" +
-	"\x0escheduler_info\x18\x01 \x01(\v2\x1d.bytebase.store.SchedulerInfoR\rschedulerInfoB\x8f\x01\n" +
+	"\x0escheduler_info\x18\x01 \x01(\v2\x1d.bytebase.store.SchedulerInfoR\rschedulerInfo\x12*\n" +
+	"\x11skip_prior_backup\x18\x02 \x01(\bR\x0fskipPriorBackupB\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fTaskRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

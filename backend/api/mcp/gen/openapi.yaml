@@ -7703,6 +7703,10 @@ components:
             - type: "null"
           title: run_time
           description: The task run should run after run_time.
+        skipPriorBackup:
+          type: boolean
+          title: skip_prior_backup
+          description: If true, skip prior backup for this run even if the task has prior backup enabled.
       title: BatchRunTasksRequest
       additionalProperties: false
     bytebase.v1.BatchRunTasksResponse:

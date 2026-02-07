@@ -306,6 +306,8 @@
     },
     "task-checks": "任务检查项",
     "prior-backup": "预备份受影响数据",
+    "skip-prior-backup": "跳过预备份",
+    "skip-prior-backup-description": "跳过变更前的自动数据备份",
     "execution-time": "执行时间",
     "run-checks": "运行检查",
     "cancel-task": "取消任务",

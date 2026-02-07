@@ -24,6 +24,9 @@ func (x *BatchRunTasksRequest) Equal(y *BatchRunTasksRequest) bool {
 	if p, q := x.RunTime, y.RunTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if x.SkipPriorBackup != y.SkipPriorBackup {
+		return false
+	}
 	return true
 }
 

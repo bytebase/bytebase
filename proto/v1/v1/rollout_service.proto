@@ -143,6 +143,9 @@ message BatchRunTasksRequest {
 
   // The task run should run after run_time.
   optional google.protobuf.Timestamp run_time = 3;
+
+  // If true, skip prior backup for this run even if the task has prior backup enabled.
+  bool skip_prior_backup = 4;
 }
 
 message BatchRunTasksResponse {}

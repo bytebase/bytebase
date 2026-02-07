@@ -306,6 +306,8 @@
     },
     "task-checks": "Comprobaciones de tarea",
     "prior-backup": "Respaldo previo",
+    "skip-prior-backup": "Omitir respaldo previo",
+    "skip-prior-backup-description": "Omitir la copia de seguridad automática de datos antes de aplicar cambios",
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
     "cancel-task": "Cancelar tarea | Cancelar tareas",

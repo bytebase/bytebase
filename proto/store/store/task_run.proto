@@ -66,4 +66,7 @@ message SchedulerInfo {
 message TaskRunPayload {
   // Scheduler information about why a task is waiting.
   SchedulerInfo scheduler_info = 1;
+
+  // If true, prior backup is skipped for this task run.
+  bool skip_prior_backup = 2;
 }

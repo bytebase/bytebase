@@ -422,9 +422,11 @@ type BatchRunTasksRequest struct {
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
 	Tasks []string `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	// The task run should run after run_time.
-	RunTime       *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	RunTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
+	// If true, skip prior backup for this run even if the task has prior backup enabled.
+	SkipPriorBackup bool `protobuf:"varint,4,opt,name=skip_prior_backup,json=skipPriorBackup,proto3" json:"skip_prior_backup,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *BatchRunTasksRequest) Reset() {
@@ -476,6 +478,13 @@ func (x *BatchRunTasksRequest) GetRunTime() *timestamppb.Timestamp {
 		return x.RunTime
 	}
 	return nil
+}
+
+func (x *BatchRunTasksRequest) GetSkipPriorBackup() bool {
+	if x != nil {
+		return x.SkipPriorBackup
+	}
+	return false
 }
 
 type BatchRunTasksResponse struct {
@@ -3317,12 +3326,13 @@ var File_v1_rollout_service_proto protoreflect.FileDescriptor
 
 const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xa9\x01\n" +
+	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xd5\x01\n" +
 	"\x14BatchRunTasksRequest\x122\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/StageR\x06parent\x12\x14\n" +
 	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12:\n" +
-	"\brun_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01B\v\n" +
+	"\brun_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01\x12*\n" +
+	"\x11skip_prior_backup\x18\x04 \x01(\bR\x0fskipPriorBackupB\v\n" +
 	"\t_run_time\"\x17\n" +
 	"\x15BatchRunTasksResponse\"\x83\x01\n" +
 	"\x15BatchSkipTasksRequest\x122\n" +
