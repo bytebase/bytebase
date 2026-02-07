@@ -42,7 +42,7 @@
     - DROP_TRIGGER
 - statement: DROP VIEW v1;
   want:
-    - DROP_TABLE
+    - DROP_VIEW
 - statement: DROP FUNCTION func1();
   want:
     - DROP_FUNCTION
@@ -123,3 +123,6 @@
 - statement: ALTER VIEW v_old RENAME TO v_new;
   want:
     - ALTER_VIEW
+- statement: DROP MATERIALIZED VIEW mv1;
+  want:
+    - DROP_TABLE
