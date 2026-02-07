@@ -186,18 +186,15 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 					},
 				})
 
-				// Check if we should skip backup error and continue to run migration.
-				if project != nil && project.Setting != nil && !project.Setting.SkipBackupErrors {
-					return nil, backupErr
-				}
-			} else {
-				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
-					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
-					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
-						PriorBackupDetail: priorBackupDetail,
-					},
-				})
+				return nil, backupErr
 			}
+
+			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+				Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
+				PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
+					PriorBackupDetail: priorBackupDetail,
+				},
+			})
 		}
 	}
 

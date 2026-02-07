@@ -1844,10 +1844,6 @@
           "self": "Allow self approval",
           "description": "Allow the issue creator to approve the issue."
         },
-        "skip-backup-errors": {
-          "self": "Skip backup errors",
-          "description": "Skip backup errors and changing data tasks will continue to run."
-        },
         "postgres-database-tenant-mode": {
           "self": "Postgres database tenant mode",
           "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database OWNER. Otherwise, the issue will be run by the instance connection user."

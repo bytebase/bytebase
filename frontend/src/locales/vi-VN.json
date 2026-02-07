@@ -1842,10 +1842,6 @@
           "self": "Cho phép tự phê duyệt",
           "description": "Cho phép người tạo vấn đề phê duyệt vấn đề."
         },
-        "skip-backup-errors": {
-          "self": "Bỏ qua lỗi sao lưu",
-          "description": "Bỏ qua lỗi sao lưu và các tác vụ thay đổi dữ liệu sẽ tiếp tục chạy."
-        },
         "postgres-database-tenant-mode": {
           "self": "Chế độ đối tượng thuê cơ sở dữ liệu Postgres",
           "description": "Chế độ đối tượng thuê cho cơ sở dữ liệu Postgres. Nếu bật, vấn đề sẽ được chạy bởi CHỦ SỞ HỮU cơ sở dữ liệu. Nếu không, vấn đề sẽ được chạy bởi người dùng kết nối phiên bản."

@@ -504,13 +504,6 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
   enforceIssueTitle: boolean;
 
   /**
-   * Whether to skip backup errors and continue with data migration.
-   *
-   * @generated from field: bool skip_backup_errors = 12;
-   */
-  skipBackupErrors: boolean;
-
-  /**
    * Whether to enable database tenant mode for PostgreSQL.
    * If enabled, issues will include "set role <db_owner>" statement.
    *

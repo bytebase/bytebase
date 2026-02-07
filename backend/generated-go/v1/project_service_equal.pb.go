@@ -311,9 +311,6 @@ func (x *Project) Equal(y *Project) bool {
 	if x.EnforceIssueTitle != y.EnforceIssueTitle {
 		return false
 	}
-	if x.SkipBackupErrors != y.SkipBackupErrors {
-		return false
-	}
 	if x.PostgresDatabaseTenantMode != y.PostgresDatabaseTenantMode {
 		return false
 	}

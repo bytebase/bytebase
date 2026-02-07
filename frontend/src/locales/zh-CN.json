@@ -1842,10 +1842,6 @@
           "self": "允许创建者审批",
           "description": "允许创建者审批自己创建的工单。"
         },
-        "skip-backup-errors": {
-          "self": "跳过备份失败的错误",
-          "description": "当备份失败时，跳过错误并且变更数据任务将继续执行。"
-        },
         "postgres-database-tenant-mode": {
           "self": "Postgres 数据库租户模式",
           "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。"
