@@ -186,7 +186,6 @@ import {
 import { computed, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
-import { projectOfPlan } from "@/components/Plan/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import {
   CANCELABLE_TASK_STATUSES,
@@ -237,7 +236,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue, rollout, plan } = usePlanContextWithRollout();
+const { issue, rollout } = usePlanContextWithRollout();
 const currentUser = useCurrentUserV1();
 const environmentStore = useEnvironmentV1Store();
 
