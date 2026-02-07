@@ -1609,7 +1609,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xfb\b\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xe1\b\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1635,7 +1635,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:-\xeaA*\n" +
-	"\x14bytebase.com/Project\x12\x12projects/{project}J\x04\b\f\x10\rR\x12skip_backup_errors\"\x80\x01\n" +
+	"\x14bytebase.com/Project\x12\x12projects/{project}\"\x80\x01\n" +
 	"\x11AddWebhookRequest\x126\n" +
 	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
