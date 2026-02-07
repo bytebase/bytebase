@@ -181,23 +181,6 @@
     <div>
       <div class="flex items-center gap-x-2">
         <Switch
-          v-model:value="state.skipBackupErrors"
-          :text="true"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-        />
-        <span class="textlabel">
-          {{ $t("project.settings.issue-related.skip-backup-errors.self") }}
-        </span>
-      </div>
-      <div class="mt-1 text-sm text-gray-400">
-        {{
-          $t("project.settings.issue-related.skip-backup-errors.description")
-        }}
-      </div>
-    </div>
-    <div>
-      <div class="flex items-center gap-x-2">
-        <Switch
           v-model:value="state.postgresDatabaseTenantMode"
           :text="true"
           :disabled="!allowUpdateIssueProjectSetting || loading"
@@ -326,7 +309,6 @@ interface LocalState {
   forceIssueLabels: boolean;
   enforceIssueTitle: boolean;
   allowSelfApproval: boolean;
-  skipBackupErrors: boolean;
   postgresDatabaseTenantMode: boolean;
   executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
   ciSamplingSize: number;
@@ -343,7 +325,6 @@ const getInitialLocalState = (): LocalState => {
       forceIssueLabels: false,
       enforceIssueTitle: false,
       enforceSqlReview: false,
-      skipBackupErrors: false,
       postgresDatabaseTenantMode: false,
       allowSelfApproval: false,
       executionRetryPolicy: createProto(Project_ExecutionRetryPolicySchema, {
@@ -361,7 +342,6 @@ const getInitialLocalState = (): LocalState => {
     forceIssueLabels: props.project.forceIssueLabels,
     enforceIssueTitle: props.project.enforceIssueTitle,
     enforceSqlReview: props.project.enforceSqlReview,
-    skipBackupErrors: props.project.skipBackupErrors,
     postgresDatabaseTenantMode: props.project.postgresDatabaseTenantMode,
     allowSelfApproval: props.project.allowSelfApproval,
     executionRetryPolicy: props.project.executionRetryPolicy
@@ -489,9 +469,6 @@ const updateMask = computed(() => {
   }
   if (state.allowSelfApproval !== props.project.allowSelfApproval) {
     mask.push("allow_self_approval");
-  }
-  if (!isEqual(state.skipBackupErrors, props.project.skipBackupErrors)) {
-    mask.push("skip_backup_errors");
   }
   if (!isEqual(state.allowRequestRole, props.project.allowRequestRole)) {
     mask.push("allow_request_role");

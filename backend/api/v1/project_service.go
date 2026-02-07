@@ -318,9 +318,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		case "enforce_sql_review":
 			projectSettings.EnforceSqlReview = req.Msg.Project.EnforceSqlReview
 			patch.Setting = projectSettings
-		case "skip_backup_errors":
-			projectSettings.SkipBackupErrors = req.Msg.Project.SkipBackupErrors
-			patch.Setting = projectSettings
 		case "postgres_database_tenant_mode":
 			projectSettings.PostgresDatabaseTenantMode = req.Msg.Project.PostgresDatabaseTenantMode
 			patch.Setting = projectSettings

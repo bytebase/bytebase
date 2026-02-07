@@ -1842,10 +1842,6 @@
           "self": "Permitir la autoaprobación",
           "description": "Permitir que el creador del problema apruebe el problema."
         },
-        "skip-backup-errors": {
-          "self": "Omitir errores de copia de seguridad",
-          "description": "Se omitirán los errores de copia de seguridad y las tareas de cambio de datos continuarán ejecutándose."
-        },
         "postgres-database-tenant-mode": {
           "self": "Modo inquilino de base de datos Postgres",
           "description": "Modo de base de datos de inquilino de Postgres. Si se habilita, el problema será ejecutado por el OWNER de la base de datos. De lo contrario, la tarea será ejecutada por el usuario de conexión de la instancia."
