@@ -1842,10 +1842,6 @@
           "self": "Cho phép tự phê duyệt",
           "description": "Cho phép người tạo vấn đề phê duyệt vấn đề."
         },
-        "auto-enable-backup": {
-          "self": "Tự động bật sao lưu",
-          "description": "Tự động bật sao lưu cho tất cả các vấn đề thay đổi dữ liệu."
-        },
         "skip-backup-errors": {
           "self": "Bỏ qua lỗi sao lưu",
           "description": "Bỏ qua lỗi sao lưu và các tác vụ thay đổi dữ liệu sẽ tiếp tục chạy."

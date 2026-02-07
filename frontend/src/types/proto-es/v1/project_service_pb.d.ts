@@ -504,13 +504,6 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
   enforceIssueTitle: boolean;
 
   /**
-   * Whether to automatically enable backup for database changes.
-   *
-   * @generated from field: bool auto_enable_backup = 11;
-   */
-  autoEnableBackup: boolean;
-
-  /**
    * Whether to skip backup errors and continue with data migration.
    *
    * @generated from field: bool skip_backup_errors = 12;

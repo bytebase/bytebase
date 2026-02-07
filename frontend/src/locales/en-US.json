@@ -1844,10 +1844,6 @@
           "self": "Allow self approval",
           "description": "Allow the issue creator to approve the issue."
         },
-        "auto-enable-backup": {
-          "self": "Auto enable backup",
-          "description": "Automatically enable backup for all data changing issues."
-        },
         "skip-backup-errors": {
           "self": "Skip backup errors",
           "description": "Skip backup errors and changing data tasks will continue to run."

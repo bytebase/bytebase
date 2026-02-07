@@ -110,7 +110,7 @@ const buildSpecForTargetsV1 = async (
         value: createProto(Plan_ChangeDatabaseConfigSchema, {
           targets,
           sheet,
-          enablePriorBackup: project.autoEnableBackup,
+          enablePriorBackup: false,
         }),
       };
       break;

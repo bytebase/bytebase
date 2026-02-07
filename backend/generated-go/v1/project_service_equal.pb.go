@@ -311,9 +311,6 @@ func (x *Project) Equal(y *Project) bool {
 	if x.EnforceIssueTitle != y.EnforceIssueTitle {
 		return false
 	}
-	if x.AutoEnableBackup != y.AutoEnableBackup {
-		return false
-	}
 	if x.SkipBackupErrors != y.SkipBackupErrors {
 		return false
 	}

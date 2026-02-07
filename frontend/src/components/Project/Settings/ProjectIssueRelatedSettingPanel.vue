@@ -181,23 +181,6 @@
     <div>
       <div class="flex items-center gap-x-2">
         <Switch
-          v-model:value="state.autoEnableBackup"
-          :text="true"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-        />
-        <span class="textlabel">
-          {{ $t("project.settings.issue-related.auto-enable-backup.self") }}
-        </span>
-      </div>
-      <div class="mt-1 text-sm text-gray-400">
-        {{
-          $t("project.settings.issue-related.auto-enable-backup.description")
-        }}
-      </div>
-    </div>
-    <div>
-      <div class="flex items-center gap-x-2">
-        <Switch
           v-model:value="state.skipBackupErrors"
           :text="true"
           :disabled="!allowUpdateIssueProjectSetting || loading"
@@ -343,7 +326,6 @@ interface LocalState {
   forceIssueLabels: boolean;
   enforceIssueTitle: boolean;
   allowSelfApproval: boolean;
-  autoEnableBackup: boolean;
   skipBackupErrors: boolean;
   postgresDatabaseTenantMode: boolean;
   executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
@@ -361,7 +343,6 @@ const getInitialLocalState = (): LocalState => {
       forceIssueLabels: false,
       enforceIssueTitle: false,
       enforceSqlReview: false,
-      autoEnableBackup: false,
       skipBackupErrors: false,
       postgresDatabaseTenantMode: false,
       allowSelfApproval: false,
@@ -380,7 +361,6 @@ const getInitialLocalState = (): LocalState => {
     forceIssueLabels: props.project.forceIssueLabels,
     enforceIssueTitle: props.project.enforceIssueTitle,
     enforceSqlReview: props.project.enforceSqlReview,
-    autoEnableBackup: props.project.autoEnableBackup,
     skipBackupErrors: props.project.skipBackupErrors,
     postgresDatabaseTenantMode: props.project.postgresDatabaseTenantMode,
     allowSelfApproval: props.project.allowSelfApproval,
@@ -509,9 +489,6 @@ const updateMask = computed(() => {
   }
   if (state.allowSelfApproval !== props.project.allowSelfApproval) {
     mask.push("allow_self_approval");
-  }
-  if (!isEqual(state.autoEnableBackup, props.project.autoEnableBackup)) {
-    mask.push("auto_enable_backup");
   }
   if (!isEqual(state.skipBackupErrors, props.project.skipBackupErrors)) {
     mask.push("skip_backup_errors");

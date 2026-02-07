@@ -18,7 +18,6 @@ interface PriorBackupTelemetryPayload {
   engine: string;
   isExplicitlySet: boolean;
   projectSetting: {
-    autoEnableBackup: boolean;
     skipBackupErrors: boolean;
   };
 }
@@ -100,9 +99,8 @@ export async function trackPriorBackupOnTaskRun(
         : Engine.ENGINE_UNSPECIFIED;
 
       // Determine if user explicitly set this or used project default
-      // If enablePriorBackup differs from project's autoEnableBackup, user explicitly changed it
-      const isExplicitlySet =
-        config.enablePriorBackup !== project.autoEnableBackup;
+      // If enablePriorBackup is true, user explicitly changed it as the default is false
+      const isExplicitlySet = config.enablePriorBackup;
 
       const payload: PriorBackupTelemetryPayload = {
         enabled: true,
@@ -110,7 +108,6 @@ export async function trackPriorBackupOnTaskRun(
         engine: Engine[engine],
         isExplicitlySet,
         projectSetting: {
-          autoEnableBackup: project.autoEnableBackup,
           skipBackupErrors: project.skipBackupErrors,
         },
       };
