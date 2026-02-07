@@ -193,7 +193,6 @@ import {
   RUNNABLE_TASK_STATUSES,
 } from "@/components/RolloutV1/constants/task";
 import { EnvironmentV1Name } from "@/components/v2";
-import { trackPriorBackupOnTaskRun } from "@/composables/usePriorBackupTelemetry";
 import { rolloutServiceClientConnect } from "@/connect";
 import {
   pushNotification,
@@ -431,13 +430,6 @@ const runTasks = async () => {
     addRunTimeToRequest(request);
     await rolloutServiceClientConnect.batchRunTasks(request);
   }
-
-  trackPriorBackupOnTaskRun(
-    eligibleTasks.value,
-    plan.value,
-    projectOfPlan(plan.value),
-    props.target.stage?.environment ?? ""
-  );
 };
 
 const skipTasks = async () => {
