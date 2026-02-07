@@ -140,7 +140,7 @@ func (r *compatibilityRule) handleDropdbstmt(ctx antlr.ParserRuleContext) {
 	})
 }
 
-// handleDropstmt handles DROP TABLE/VIEW
+// handleDropstmt handles DROP TABLE/MATERIALIZED VIEW
 func (r *compatibilityRule) handleDropstmt(ctx antlr.ParserRuleContext) {
 	dropstmtCtx, ok := ctx.(*parser.DropstmtContext)
 	if !ok {
@@ -151,21 +151,25 @@ func (r *compatibilityRule) handleDropstmt(ctx antlr.ParserRuleContext) {
 		return
 	}
 
-	// Check if this is DROP TABLE or DROP VIEW
-	if dropstmtCtx.Object_type_any_name() != nil {
-		objType := dropstmtCtx.Object_type_any_name()
-		if objType.TABLE() != nil || objType.VIEW() != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
-				Code:    advisorcode.CompatibilityDropTable.Int32(),
-				Title:   r.title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, dropstmtCtx)),
-				StartPosition: &storepb.Position{
-					Line:   int32(dropstmtCtx.GetStart().GetLine()),
-					Column: 0,
-				},
-			})
-		}
+	if dropstmtCtx.Object_type_any_name() == nil {
+		return
+	}
+	objType := dropstmtCtx.Object_type_any_name()
+
+	// Flag DROP TABLE and DROP MATERIALIZED VIEW (data loss risk).
+	// Skip non-materialized DROP VIEW — views hold no data.
+	isMaterializedView := objType.VIEW() != nil && objType.MATERIALIZED() != nil
+	if objType.TABLE() != nil || isMaterializedView {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.level,
+			Code:    advisorcode.CompatibilityDropTable.Int32(),
+			Title:   r.title,
+			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, dropstmtCtx)),
+			StartPosition: &storepb.Position{
+				Line:   int32(dropstmtCtx.GetStart().GetLine()),
+				Column: 0,
+			},
+		})
 	}
 }
 

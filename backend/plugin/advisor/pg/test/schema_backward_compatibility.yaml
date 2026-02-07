@@ -9,3 +9,31 @@
         line: 1
         column: 0
       endposition: null
+- statement: DROP VIEW my_view
+  want:
+- statement: DROP VIEW IF EXISTS my_view
+  want:
+- statement: DROP VIEW public.my_view
+  want:
+- statement: DROP VIEW my_view; CREATE OR REPLACE VIEW my_view AS SELECT 1
+  want:
+- statement: DROP TABLE tech_book
+  want:
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"DROP TABLE tech_book" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP MATERIALIZED VIEW my_mat_view
+  want:
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"DROP MATERIALIZED VIEW my_mat_view" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
