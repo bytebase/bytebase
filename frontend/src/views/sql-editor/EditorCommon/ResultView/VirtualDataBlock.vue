@@ -54,9 +54,7 @@
                 :value="row.item.values[columnIndex]"
                 :keyword="search.query"
                 :scope="search.scopes.find(scope => scope.id === columns[columnIndex]?.id)"
-                :set-index="setIndex"
                 :row-index="rowIndex"
-                :original-row-index="row.key"
                 :col-index="columnIndex"
                 :column-type="column.columnType"
                 :allow-select="true"
@@ -93,7 +91,6 @@ import TableCell from "./DataTable/TableCell.vue";
 const props = defineProps<{
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
-  setIndex: number;
   activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
@@ -121,7 +118,6 @@ const getContent = (rowIndex: number): string => {
       const binaryFormat = getBinaryFormat({
         rowIndex: rowIndex,
         colIndex: columnIndex,
-        setIndex: props.setIndex,
       });
       obj[`${column.name}`] = getPlainValue(
         props.rows[rowIndex].item.values[columnIndex],

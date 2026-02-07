@@ -10,7 +10,7 @@
   </template>
   <template v-if="viewMode === 'RESULT'">
     <BBAttention v-if="result.error" class="w-full mb-2" :type="'error'">
-      <ErrorView :error="result.error" />
+      <ErrorView :dark="dark" :error="result.error" />
     </BBAttention>
     <div
       class="result-toolbar relative w-full shrink-0 flex flex-row gap-x-4 justify-between items-center mb-2 hide-scrollbar"
@@ -101,7 +101,6 @@
         ref="dataTableRef"
         :rows="rows"
         :columns="columns"
-        :set-index="setIndex"
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
         :database="database"
@@ -113,7 +112,6 @@
         ref="dataTableRef"
         :rows="rows"
         :columns="columns"
-        :set-index="setIndex"
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
         :database="database"
@@ -231,8 +229,19 @@
     </div>
   </template>
   <template v-else-if="viewMode === 'EMPTY'">
-    <EmptyView />
+    <EmptyView :dark="dark" />
   </template>
+
+  <Drawer
+    v-if="detail"
+    :show="!!detail"
+    @close="detail = undefined"
+  >
+    <DetailPanel
+      :columns="columns"
+      :rows="rows"
+    />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -241,7 +250,7 @@ import { isEmpty } from "lodash-es";
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
 import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -253,7 +262,7 @@ import type {
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
-import { CopyButton, RichDatabaseName } from "@/components/v2";
+import { CopyButton, Drawer, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
@@ -277,7 +286,11 @@ import {
   isNullOrUndefined,
   type SearchParams,
 } from "@/utils";
-import { useSQLResultViewContext } from "./context";
+import {
+  provideSQLResultViewContext,
+  type SQLResultViewContext,
+} from "./context";
+import { provideBinaryFormatContext } from "./DataTable/common/binary-format-store";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
 import type {
   ResultTableColumn,
@@ -285,6 +298,7 @@ import type {
   SortState,
 } from "./DataTable/common/types";
 import VirtualDataTable from "./DataTable/VirtualDataTable.vue";
+import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
@@ -301,10 +315,11 @@ type LocalState = {
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
 const props = defineProps<{
+  dark: boolean;
+  disallowCopyingData: boolean;
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
-  setIndex: number;
   showExport: boolean;
   maximumExportCount?: number;
 }>();
@@ -335,8 +350,16 @@ const state = reactive<LocalState>({
 const dataTableRef =
   ref<InstanceType<typeof VirtualDataTable | typeof VirtualDataBlock>>();
 
+const binaryFormatContext = provideBinaryFormatContext();
+
+const detail: SQLResultViewContext["detail"] = ref(undefined);
+const resultViewContext = provideSQLResultViewContext({
+  dark: toRef(props, "dark"),
+  disallowCopyingData: toRef(props, "disallowCopyingData"),
+  detail,
+});
+
 const { t } = useI18n();
-const { dark } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentTab = computed(() => tabStore.currentTab);
@@ -604,8 +627,10 @@ const getMaskingReason = (columnIndex: number) => {
 };
 
 provideSelectionContext({
-  columns: columns,
-  rows: rows,
+  columns,
+  rows,
+  binaryFormatContext,
+  resultViewContext,
 });
 
 const engine = computed(() => getInstanceResource(props.database).engine);

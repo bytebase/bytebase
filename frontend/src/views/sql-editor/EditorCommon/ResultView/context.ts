@@ -5,7 +5,6 @@ export type SQLResultViewContext = {
   disallowCopyingData: Ref<boolean>;
   detail: Ref<
     | {
-        set: number; // The index of selected result set.
         row: number; // The row index of selected record.
         col: number; // The column index of selected cell.
       }
@@ -19,6 +18,7 @@ export const KEY = Symbol(
 
 export const provideSQLResultViewContext = (context: SQLResultViewContext) => {
   provide(KEY, context);
+  return context;
 };
 
 export const useSQLResultViewContext = () => {

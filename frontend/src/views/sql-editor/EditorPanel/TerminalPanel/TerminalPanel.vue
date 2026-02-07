@@ -45,7 +45,6 @@
             :database="
               databaseStore.getDatabaseByName(query.params.connection.database)
             "
-            :context-id="query.id"
             :loading="query.status === 'RUNNING'"
             :dark="true"
           />

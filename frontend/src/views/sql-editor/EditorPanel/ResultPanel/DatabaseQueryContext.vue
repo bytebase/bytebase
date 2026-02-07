@@ -31,7 +31,6 @@
     class="w-full h-auto grow"
     :execute-params="context.params"
     :database="database"
-    :context-id="context.id"
     :result-set="context.resultSet"
     @execute="execQuery"
   />

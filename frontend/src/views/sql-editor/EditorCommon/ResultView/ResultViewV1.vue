@@ -8,6 +8,7 @@
       <template v-if="viewMode === 'SINGLE-RESULT'">
         <ErrorView
           v-if="resultSet.results[0]?.error"
+          :dark="dark"
           :error="resultSet.results[0]?.error"
           :execute-params="executeParams"
           :result-set="resultSet"
@@ -23,10 +24,11 @@
         </ErrorView>
         <SingleResultViewV1
           v-else
+          :dark="dark"
+          :disallow-copying-data="disallowCopyingData"
           :params="executeParams"
           :database="database"
           :result="resultSet.results[0]"
-          :set-index="0"
           :show-export="!effectiveQueryDataPolicy.disableExport"
           :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
           @export="handleExportBtnClick"
@@ -61,6 +63,7 @@
             </template>
             <ErrorView
               v-if="result.error"
+              :dark="dark"
               :error="result.error"
               :execute-params="executeParams"
               :result-set="resultSet"
@@ -76,10 +79,11 @@
             </ErrorView>
             <SingleResultViewV1
               v-else
+              :dark="dark"
+              :disallow-copying-data="disallowCopyingData"
               :params="executeParams"
               :database="database"
               :result="result"
-              :set-index="i"
               :show-export="false"
               :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
               @export="handleExportBtnClick"
@@ -118,10 +122,11 @@
         </NTabs>
       </template>
       <template v-else-if="viewMode === 'EMPTY'">
-        <EmptyView />
+        <EmptyView :dark="dark" />
       </template>
       <template v-else-if="viewMode === 'ERROR'">
         <ErrorView
+          :dark="dark"
           :error="resultSet.error"
           :execute-params="executeParams"
           :result-set="resultSet"
@@ -157,10 +162,6 @@
         {{ $t("sql-editor.table-empty-placeholder") }}
       </template>
     </div>
-
-    <Drawer v-if="detail && resultSet" :show="!!detail" @close="detail = undefined">
-      <DetailPanel :result="viewMode === 'SINGLE-RESULT' ? resultSet.results[0] : filteredResults[detail.set]" />
-    </Drawer>
   </NConfigProvider>
 </template>
 
@@ -176,7 +177,7 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
-import { computed, ref, toRef } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
@@ -187,7 +188,6 @@ import type {
   ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
-import { Drawer } from "@/components/v2";
 import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
   usePolicyV1Store,
@@ -201,10 +201,6 @@ import {
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
-import type { SQLResultViewContext } from "./context";
-import { provideSQLResultViewContext } from "./context";
-import { provideBinaryFormatContext } from "./DataTable/common/binary-format-store";
-import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import RequestQueryButton from "./RequestQueryButton.vue";
@@ -219,7 +215,6 @@ const props = withDefaults(
     resultSet?: SQLResultSetV1;
     loading?: boolean;
     dark?: boolean;
-    contextId: string;
   }>(),
   {
     executeParams: undefined,
@@ -240,10 +235,6 @@ const tabStore = useSQLEditorTabStore();
 const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(
   computed(() => props.database.project)
 );
-
-const detail: SQLResultViewContext["detail"] = ref(undefined);
-
-provideBinaryFormatContext(computed(() => props.contextId));
 
 const permissionDeniedError = computed(
   (): PermissionDeniedDetail | undefined => {
@@ -317,12 +308,6 @@ const filteredResults = computed(() => {
   return props.resultSet.results.filter((result) => {
     return !result.statement.trim().toUpperCase().startsWith("SET");
   });
-});
-
-provideSQLResultViewContext({
-  dark: toRef(props, "dark"),
-  disallowCopyingData,
-  detail,
 });
 
 const handleExportBtnClick = async ({

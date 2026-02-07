@@ -1,12 +1,10 @@
-import type { InjectionKey, Ref } from "vue";
+import type { InjectionKey } from "vue";
 import { inject, provide, ref } from "vue";
 
 export type BinaryFormat = "DEFAULT" | "BINARY" | "HEX" | "TEXT" | "BOOLEAN";
 
 interface ColumnKeyParams {
   colIndex: number;
-  setIndex?: number;
-  contextId: string;
 }
 
 interface CellKeyParams extends ColumnKeyParams {
@@ -15,20 +13,19 @@ interface CellKeyParams extends ColumnKeyParams {
 
 // Get a unique key for a cell's row/column position
 const getCellKey = (params: CellKeyParams): string => {
-  const { rowIndex, colIndex, setIndex = 0, contextId } = params;
-  return `${contextId}:${setIndex}:${rowIndex}:${colIndex}`;
+  const { rowIndex } = params;
+  return `row_${rowIndex}:${getColumnKey(params)}`;
 };
 
 // Get a key for a column
 const getColumnKey = (params: ColumnKeyParams): string => {
-  const { colIndex, setIndex = 0, contextId } = params;
-  return `${contextId}:${setIndex}:col:${colIndex}`;
+  const { colIndex } = params;
+  return `col_${colIndex}`;
 };
 
 interface GetBinaryFormatParams {
   rowIndex?: number;
   colIndex: number;
-  setIndex: number;
 }
 
 // Parameter interfaces for the public API functions
@@ -36,7 +33,7 @@ interface BinaryFormatParams extends GetBinaryFormatParams {
   format: BinaryFormat;
 }
 
-type BinaryFormatContext = {
+export type BinaryFormatContext = {
   getBinaryFormat: (params: GetBinaryFormatParams) => BinaryFormat | undefined;
   setBinaryFormat: (params: BinaryFormatParams) => void;
 };
@@ -45,20 +42,18 @@ const KEY = Symbol(
   "bb.sql-editor.result-view.binary-format"
 ) as InjectionKey<BinaryFormatContext>;
 
-export const provideBinaryFormatContext = (contextId: Ref<string>) => {
+export const provideBinaryFormatContext = () => {
   const formattedBinaryValues = ref<Map<string, BinaryFormat>>(new Map());
 
   const getBinaryFormat = (
     params: GetBinaryFormatParams
   ): BinaryFormat | undefined => {
-    const { rowIndex, colIndex, setIndex } = params;
+    const { rowIndex, colIndex } = params;
     if (rowIndex !== undefined) {
       // find format for a specific cell.
       const key = getCellKey({
         rowIndex,
         colIndex,
-        setIndex,
-        contextId: contextId.value,
       });
       if (formattedBinaryValues.value.has(key)) {
         return formattedBinaryValues.value.get(key);
@@ -67,26 +62,20 @@ export const provideBinaryFormatContext = (contextId: Ref<string>) => {
     // fallback to column format.
     const key = getColumnKey({
       colIndex,
-      setIndex,
-      contextId: contextId.value,
     });
     return formattedBinaryValues.value.get(key);
   };
 
   const setBinaryFormat = (params: BinaryFormatParams): void => {
-    const { rowIndex, colIndex, format, setIndex } = params;
+    const { rowIndex, colIndex, format } = params;
     const key =
       rowIndex !== undefined
         ? getCellKey({
             rowIndex,
             colIndex,
-            setIndex,
-            contextId: contextId.value,
           })
         : getColumnKey({
             colIndex,
-            setIndex,
-            contextId: contextId.value,
           });
 
     // If setting to DEFAULT, delete the key so it falls through to column/auto-detect
