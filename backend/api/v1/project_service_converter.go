@@ -279,7 +279,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
 		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
 		EnforceSqlReview:           projectMessage.Setting.EnforceSqlReview,
-		AutoEnableBackup:           projectMessage.Setting.AutoEnableBackup,
 		SkipBackupErrors:           projectMessage.Setting.SkipBackupErrors,
 		PostgresDatabaseTenantMode: projectMessage.Setting.PostgresDatabaseTenantMode,
 		AllowSelfApproval:          projectMessage.Setting.AllowSelfApproval,
@@ -318,7 +317,6 @@ func convertToStoreExecutionRetryPolicy(policy *v1pb.Project_ExecutionRetryPolic
 func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.ProjectMessage {
 	setting := &storepb.Project{
 		EnforceIssueTitle:          project.EnforceIssueTitle,
-		AutoEnableBackup:           project.AutoEnableBackup,
 		SkipBackupErrors:           project.SkipBackupErrors,
 		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
 		AllowSelfApproval:          project.AllowSelfApproval,

@@ -186,14 +186,12 @@ import {
 import { computed, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
-import { projectOfPlan } from "@/components/Plan/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import {
   CANCELABLE_TASK_STATUSES,
   RUNNABLE_TASK_STATUSES,
 } from "@/components/RolloutV1/constants/task";
 import { EnvironmentV1Name } from "@/components/v2";
-import { trackPriorBackupOnTaskRun } from "@/composables/usePriorBackupTelemetry";
 import { rolloutServiceClientConnect } from "@/connect";
 import {
   pushNotification,
@@ -238,7 +236,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue, rollout, plan } = usePlanContextWithRollout();
+const { issue, rollout } = usePlanContextWithRollout();
 const currentUser = useCurrentUserV1();
 const environmentStore = useEnvironmentV1Store();
 
@@ -431,13 +429,6 @@ const runTasks = async () => {
     addRunTimeToRequest(request);
     await rolloutServiceClientConnect.batchRunTasks(request);
   }
-
-  trackPriorBackupOnTaskRun(
-    eligibleTasks.value,
-    plan.value,
-    projectOfPlan(plan.value),
-    props.target.stage?.environment ?? ""
-  );
 };
 
 const skipTasks = async () => {

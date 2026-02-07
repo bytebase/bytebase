@@ -1842,10 +1842,6 @@
           "self": "Permitir la autoaprobación",
           "description": "Permitir que el creador del problema apruebe el problema."
         },
-        "auto-enable-backup": {
-          "self": "Habilitar automáticamente la copia de seguridad",
-          "description": "Habilitar automáticamente la copia de seguridad para todos los problemas de modificación de datos."
-        },
         "skip-backup-errors": {
           "self": "Omitir errores de copia de seguridad",
           "description": "Se omitirán los errores de copia de seguridad y las tareas de cambio de datos continuarán ejecutándose."
