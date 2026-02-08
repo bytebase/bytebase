@@ -80,7 +80,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       await Promise.all([
         projectStore.getOrFetchProjectByName(worksheet.project),
         databaseStore.getOrFetchDatabaseByName(worksheet.database),
-        userStore.getOrFetchUserByIdentifier(worksheet.creator),
+        userStore.getOrFetchUserByIdentifier({ identifier: worksheet.creator }),
       ]);
     } catch {
       // ignore error

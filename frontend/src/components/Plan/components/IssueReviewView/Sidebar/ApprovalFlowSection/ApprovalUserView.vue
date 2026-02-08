@@ -25,7 +25,9 @@ const props = defineProps<{
 const userStore = useUserStore();
 
 const candidateUser = computedAsync(async () => {
-  const user = await userStore.getOrFetchUserByIdentifier(props.candidate);
+  const user = await userStore.getOrFetchUserByIdentifier({
+    identifier: props.candidate,
+  });
   if (!user) {
     return;
   }

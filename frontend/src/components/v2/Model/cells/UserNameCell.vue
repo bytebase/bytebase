@@ -18,7 +18,7 @@
               :keyword="keyword"
               :title="user.title"
               :email="user.email"
-              :link="link"
+              :link="link && user.userType === UserType.USER"
             />
           </div>
           <slot name="suffix">
