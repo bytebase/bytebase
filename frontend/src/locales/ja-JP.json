@@ -306,6 +306,8 @@
     },
     "task-checks": "タスクのチェック項目",
     "prior-backup": "影響を受けるデータの事前バックアップ",
+    "skip-prior-backup": "事前バックアップをスキップ",
+    "skip-prior-backup-description": "変更適用前の自動データバックアップをスキップする",
     "execution-time": "実行時間",
     "run-checks": "実行チェック",
     "cancel-task": "タスクをキャンセルする",

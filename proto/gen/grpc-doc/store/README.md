@@ -4701,6 +4701,7 @@ without database schema changes.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | scheduler_info | [SchedulerInfo](#bytebase-store-SchedulerInfo) |  | Scheduler information about why a task is waiting. |
+| skip_prior_backup | [bool](#bool) |  | If true, prior backup is skipped for this task run. |
 
 
 

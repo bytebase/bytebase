@@ -169,32 +169,41 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	// so this works correctly for mixed DDL+DML statements.
 	var priorBackupDetail *storepb.PriorBackupDetail
 	if task.Payload.GetEnablePriorBackup() {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
-			Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
-			PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
-		})
+		// Check if this specific task run wants to skip backup.
+		taskRun, err := exec.store.GetTaskRunByUID(ctx, taskRunUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get task run")
+		}
+		skipBackup := taskRun.PayloadProto.GetSkipPriorBackup()
 
-		// Check if we should skip backup or not.
-		if common.EngineSupportPriorBackup(database.Engine) {
-			var backupErr error
-			priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, sheet.Statement, task.Payload, task, instance, database)
-			if backupErr != nil {
+		if !skipBackup {
+			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+				Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
+				PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
+			})
+
+			// Check if we should skip backup or not.
+			if common.EngineSupportPriorBackup(database.Engine) {
+				var backupErr error
+				priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, sheet.Statement, task.Payload, task, instance, database)
+				if backupErr != nil {
+					exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+						Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
+						PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
+							Error: backupErr.Error(),
+						},
+					})
+
+					return nil, backupErr
+				}
+
 				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
 					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
-						Error: backupErr.Error(),
+						PriorBackupDetail: priorBackupDetail,
 					},
 				})
-
-				return nil, backupErr
 			}
-
-			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
-				Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
-				PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
-					PriorBackupDetail: priorBackupDetail,
-				},
-			})
 		}
 	}
 

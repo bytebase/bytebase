@@ -306,6 +306,8 @@
     },
     "task-checks": "Kiểm tra tác vụ",
     "prior-backup": "Sao lưu trước",
+    "skip-prior-backup": "Bỏ qua sao lưu trước",
+    "skip-prior-backup-description": "Bỏ qua sao lưu dữ liệu tự động trước khi áp dụng thay đổi",
     "execution-time": "Thời gian thực thi",
     "run-checks": "Chạy kiểm tra",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",

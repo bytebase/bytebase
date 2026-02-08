@@ -125,6 +125,19 @@
           />
         </div>
 
+        <!-- Skip prior backup checkbox (RUN only, when tasks have backup enabled) -->
+        <div
+          v-if="action === 'RUN' && hasPriorBackupTasks"
+          class="flex flex-col"
+        >
+          <NCheckbox v-model:checked="skipPriorBackup">
+            {{ $t("task.skip-prior-backup") }}
+          </NCheckbox>
+          <div class="ml-6 text-sm text-control-light">
+            {{ $t("task.skip-prior-backup-description") }}
+          </div>
+        </div>
+
         <!-- Comment field (SKIP only) -->
         <div
           v-if="action === 'SKIP' && issue"
@@ -175,6 +188,7 @@ import dayjs from "dayjs";
 import {
   NAlert,
   NButton,
+  NCheckbox,
   NDatePicker,
   NInput,
   NRadio,
@@ -236,7 +250,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue, rollout } = usePlanContextWithRollout();
+const { issue, plan, rollout } = usePlanContextWithRollout();
 const currentUser = useCurrentUserV1();
 const environmentStore = useEnvironmentV1Store();
 
@@ -244,6 +258,7 @@ const environmentStore = useEnvironmentV1Store();
 const loading = ref(false);
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
+const skipPriorBackup = ref(false);
 const canRolloutPermission = ref(true);
 
 // Task status filters
@@ -311,6 +326,15 @@ const taskCountSuffix = computed(() => {
   const total = props.target.stage.tasks.length;
   const eligible = eligibleTasks.value.length;
   return eligible === total ? String(eligible) : `${eligible} / ${total}`;
+});
+
+// Check if any eligible task has prior backup enabled in its plan spec
+const hasPriorBackupTasks = computed(() => {
+  return eligibleTasks.value.some((task) => {
+    const spec = plan.value.specs.find((s) => s.id === task.specId);
+    if (spec?.config?.case !== "changeDatabaseConfig") return false;
+    return spec.config.value.enablePriorBackup === true;
+  });
 });
 
 const title = computed(() => {
@@ -394,6 +418,7 @@ const handleExecutionModeChange = (value: string) => {
 const resetState = () => {
   comment.value = "";
   runTimeInMS.value = undefined;
+  skipPriorBackup.value = false;
 };
 
 const groupTasksByStage = (tasks: Task[]) => {
@@ -427,6 +452,7 @@ const runTasks = async () => {
       tasks: tasks.map((task) => task.name),
     });
     addRunTimeToRequest(request);
+    request.skipPriorBackup = skipPriorBackup.value;
     await rolloutServiceClientConnect.batchRunTasks(request);
   }
 };

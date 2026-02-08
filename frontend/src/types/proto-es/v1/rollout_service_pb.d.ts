@@ -38,6 +38,13 @@ export declare type BatchRunTasksRequest = Message<"bytebase.v1.BatchRunTasksReq
    * @generated from field: optional google.protobuf.Timestamp run_time = 3;
    */
   runTime?: Timestamp;
+
+  /**
+   * If true, skip prior backup for this run even if the task has prior backup enabled.
+   *
+   * @generated from field: bool skip_prior_backup = 4;
+   */
+  skipPriorBackup: boolean;
 };
 
 /**

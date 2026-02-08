@@ -764,6 +764,11 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 			t := request.GetRunTime().AsTime()
 			create.RunAt = &t
 		}
+		if request.GetSkipPriorBackup() {
+			create.PayloadProto = &storepb.TaskRunPayload{
+				SkipPriorBackup: true,
+			}
+		}
 		taskRunCreates = append(taskRunCreates, create)
 	}
 	slices.SortFunc(taskRunCreates, func(a, b *store.TaskRunMessage) int {

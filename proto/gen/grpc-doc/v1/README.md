@@ -9357,6 +9357,7 @@ RoleService manages workspace roles and permissions.
 | parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
+| skip_prior_backup | [bool](#bool) |  | If true, skip prior backup for this run even if the task has prior backup enabled. |
 
 
 

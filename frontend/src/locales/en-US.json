@@ -306,6 +306,8 @@
     },
     "task-checks": "Task checks",
     "prior-backup": "Prior backup",
+    "skip-prior-backup": "Skip prior backup",
+    "skip-prior-backup-description": "Skip the automatic data backup before applying changes",
     "execution-time": "Execution time",
     "run-checks": "Run checks",
     "cancel-task": "Cancel task | Cancel tasks",
