@@ -5,6 +5,8 @@
       :required="true"
       :include-all-users="true"
       :disabled="disableMemberChange"
+      :include-service-account="true"
+      :include-workload-identity="true"
     />
 
     <div class="w-full flex flex-col gap-y-2">

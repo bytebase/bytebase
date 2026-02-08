@@ -63,7 +63,6 @@ const getListUserFilter = (params: UserFilter) => {
 export const useUserStore = defineStore("user", () => {
   const actuatorStore = useActuatorV1Store();
   const allUser = computed(() => allUsersUser());
-  const userRequestCache = new Map<string, Promise<User>>();
 
   const userMapByName = ref<Map<string, User>>(
     new Map([[allUser.value.name, allUser.value]])
@@ -142,8 +141,11 @@ export const useUserStore = defineStore("user", () => {
 
   const updateUser = async (updateUserRequest: UpdateUserRequest) => {
     const name = updateUserRequest.user?.name || "";
-    const originData = await getOrFetchUserByIdentifier(name);
-    if (!originData) {
+    const originData = await getOrFetchUserByIdentifier({
+      identifier: name,
+      fallback: false,
+    });
+    if (!isValidUserName(originData.name)) {
       throw new Error(`user with name ${name} not found`);
     }
 
@@ -160,8 +162,11 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const updateEmail = async (oldEmail: string, newEmail: string) => {
-    const originData = await getOrFetchUserByIdentifier(oldEmail);
-    if (!originData) {
+    const originData = await getOrFetchUserByIdentifier({
+      identifier: oldEmail,
+      fallback: false,
+    });
+    if (!isValidUserName(originData.name)) {
       throw new Error(`user with email ${oldEmail} not found`);
     }
     const oldName = originData.name;
@@ -172,7 +177,6 @@ export const useUserStore = defineStore("user", () => {
     // Remove old cache entry since the user's name changes with email
     if (oldName !== response.name) {
       userMapByName.value.delete(oldName);
-      userRequestCache.delete(oldName);
     }
     return setUser(response);
   };
@@ -258,10 +262,15 @@ export const useUserStore = defineStore("user", () => {
     }
   };
 
-  const getOrFetchUserByIdentifier = async (
-    identifier: string,
-    silent = true
-  ) => {
+  const getOrFetchUserByIdentifier = async ({
+    identifier,
+    silent = true,
+    fallback = true,
+  }: {
+    identifier: string;
+    silent?: boolean;
+    fallback?: boolean;
+  }) => {
     const user = getUserByIdentifier(identifier);
     if (user) {
       return user;
@@ -271,12 +280,9 @@ export const useUserStore = defineStore("user", () => {
     if (!isValidUserName(fullname)) {
       return unknownUser();
     }
-    const cached = userRequestCache.get(fullname);
-    if (cached) return cached;
     const request = fetchUser(fullname, silent)
       .then((user) => setUser(user))
-      .catch(() => unknownUser(fullname));
-    userRequestCache.set(fullname, request);
+      .catch(() => unknownUser(fallback ? fullname : ""));
     return request;
   };
 

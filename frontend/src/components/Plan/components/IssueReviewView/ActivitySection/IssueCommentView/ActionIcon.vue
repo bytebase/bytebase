@@ -151,7 +151,9 @@ const props = defineProps<{
 const userStore = useUserStore();
 
 const user = computedAsync(() => {
-  return userStore.getOrFetchUserByIdentifier(props.issueComment.creator);
+  return userStore.getOrFetchUserByIdentifier({
+    identifier: props.issueComment.creator,
+  });
 });
 
 const iconType = computed((): ActionIconType => {

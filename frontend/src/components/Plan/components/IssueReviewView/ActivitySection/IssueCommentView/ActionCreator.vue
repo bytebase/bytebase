@@ -17,6 +17,8 @@ const props = defineProps<{
 const userStore = useUserStore();
 
 const user = computedAsync(() => {
-  return userStore.getOrFetchUserByIdentifier(props.creator);
+  return userStore.getOrFetchUserByIdentifier({
+    identifier: props.creator,
+  });
 });
 </script>

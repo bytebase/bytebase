@@ -32,6 +32,8 @@
         :disabled="disabled"
         :project-name="projectName"
         :include-all-users="includeAllUsers"
+        :include-service-account="includeServiceAccount"
+        :include-workload-identity="includeWorkloadIdentity"
         @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
@@ -69,19 +71,16 @@ const props = withDefaults(
     // - group:{email}
     // - serviceAccount:{email}
     // - workloadIdentity:{email}
-    // We don't support mix group with other data.
     value: string[];
     required: boolean;
     projectName?: string;
     disabled?: boolean;
-    allowChangeType?: boolean;
-    includeAllUsers?: boolean;
+    includeAllUsers: boolean;
+    includeServiceAccount: boolean;
+    includeWorkloadIdentity: boolean;
   }>(),
   {
-    disabled: false,
     projectName: undefined,
-    allowChangeType: true,
-    includeAllUsers: false,
   }
 );
 

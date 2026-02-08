@@ -12,6 +12,8 @@
             v-model:value="state.memberList"
             :required="true"
             :include-all-users="true"
+            :include-service-account="true"
+            :include-workload-identity="true"
           />
           <div v-else class="w-full flex flex-col gap-y-2">
             <div class="flex items-center gap-x-1">
