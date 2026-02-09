@@ -105,6 +105,23 @@ useRouteChangeGuard(
 );
 
 const fallbackToFirstProject = async () => {
+  // First, try to find a project that actually has databases.
+  // This avoids the confusing UX of landing on a project with "0 databases".
+  try {
+    const { databases } = await databaseStore.fetchDatabases({
+      parent: "workspaces/-",
+      pageSize: 1,
+    });
+    if (databases.length > 0) {
+      const projectName = databases[0].project;
+      if (isValidProjectName(projectName)) {
+        return projectName;
+      }
+    }
+  } catch {
+    // Ignore errors and fall back to project list
+  }
+
   const { projects } = await projectStore.fetchProjectList({
     pageSize: getDefaultPagination(),
     filter: {
