@@ -80,9 +80,14 @@ message AccessGrant {
   string creator = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The state of the access grant.
+  // An ACTIVE grant with `expire_time` in the past is effectively expired
+  // and no longer authorizes access. Use `expire_time` to determine
+  // whether an ACTIVE grant has expired.
   State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The expiration time of the access grant.
+  // When the current time exceeds this value, an ACTIVE grant is
+  // considered expired and no longer authorizes access.
   google.protobuf.Timestamp expire_time = 4;
 
   // The issue associated with the access grant.
@@ -109,7 +114,8 @@ message AccessGrant {
     STATE_UNSPECIFIED = 0;
     // The access grant is pending approval.
     PENDING = 1;
-    // The access grant is active.
+    // The access grant is active. Check `expire_time` to determine
+    // whether the grant is still valid or has expired.
     ACTIVE = 2;
     // The access grant has been revoked.
     REVOKED = 3;
@@ -146,7 +152,7 @@ message ListAccessGrantsRequest {
   //   - 'state = "ACTIVE"'
   //   - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
   //   - 'issue = "projects/x/issues/123"'
-  //   - 'expire_time < "2024-02-01T00:00:00Z"'
+  //   - 'state = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
   string filter = 4;
 }
 
