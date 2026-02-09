@@ -44,7 +44,7 @@
 
       <NTabPane name="GROUPS">
         <template #tab>
-          <div>
+          <div class="flex-1 flex gap-x-2">
             <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("settings.members.groups.self") }}</span>
             </p>
