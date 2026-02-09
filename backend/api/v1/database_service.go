@@ -948,7 +948,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		effEnv := common.FormatEnvironment(*database.EffectiveEnvironmentID)
 		effectiveEnvironment = &effEnv
 	}
-	instanceResource := convertInstanceMessageToInstanceResource(instance)
+	instanceResource := convertToV1InstanceResource(instance)
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		State:                convertDeletedToState(database.Deleted),
