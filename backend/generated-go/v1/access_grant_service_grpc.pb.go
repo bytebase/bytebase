@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,11 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AccessGrantService_GetAccessGrant_FullMethodName    = "/bytebase.v1.AccessGrantService/GetAccessGrant"
-	AccessGrantService_ListAccessGrants_FullMethodName  = "/bytebase.v1.AccessGrantService/ListAccessGrants"
-	AccessGrantService_CreateAccessGrant_FullMethodName = "/bytebase.v1.AccessGrantService/CreateAccessGrant"
-	AccessGrantService_UpdateAccessGrant_FullMethodName = "/bytebase.v1.AccessGrantService/UpdateAccessGrant"
-	AccessGrantService_DeleteAccessGrant_FullMethodName = "/bytebase.v1.AccessGrantService/DeleteAccessGrant"
+	AccessGrantService_GetAccessGrant_FullMethodName      = "/bytebase.v1.AccessGrantService/GetAccessGrant"
+	AccessGrantService_ListAccessGrants_FullMethodName    = "/bytebase.v1.AccessGrantService/ListAccessGrants"
+	AccessGrantService_CreateAccessGrant_FullMethodName   = "/bytebase.v1.AccessGrantService/CreateAccessGrant"
+	AccessGrantService_ActivateAccessGrant_FullMethodName = "/bytebase.v1.AccessGrantService/ActivateAccessGrant"
+	AccessGrantService_RevokeAccessGrant_FullMethodName   = "/bytebase.v1.AccessGrantService/RevokeAccessGrant"
 )
 
 // AccessGrantServiceClient is the client API for AccessGrantService service.
@@ -39,10 +38,10 @@ type AccessGrantServiceClient interface {
 	ListAccessGrants(ctx context.Context, in *ListAccessGrantsRequest, opts ...grpc.CallOption) (*ListAccessGrantsResponse, error)
 	// Creates an access grant.
 	CreateAccessGrant(ctx context.Context, in *CreateAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error)
-	// Updates an access grant.
-	UpdateAccessGrant(ctx context.Context, in *UpdateAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error)
-	// Deletes an access grant.
-	DeleteAccessGrant(ctx context.Context, in *DeleteAccessGrantRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Activates a pending access grant.
+	ActivateAccessGrant(ctx context.Context, in *ActivateAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error)
+	// Revokes an active access grant.
+	RevokeAccessGrant(ctx context.Context, in *RevokeAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error)
 }
 
 type accessGrantServiceClient struct {
@@ -83,20 +82,20 @@ func (c *accessGrantServiceClient) CreateAccessGrant(ctx context.Context, in *Cr
 	return out, nil
 }
 
-func (c *accessGrantServiceClient) UpdateAccessGrant(ctx context.Context, in *UpdateAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error) {
+func (c *accessGrantServiceClient) ActivateAccessGrant(ctx context.Context, in *ActivateAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AccessGrant)
-	err := c.cc.Invoke(ctx, AccessGrantService_UpdateAccessGrant_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AccessGrantService_ActivateAccessGrant_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *accessGrantServiceClient) DeleteAccessGrant(ctx context.Context, in *DeleteAccessGrantRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *accessGrantServiceClient) RevokeAccessGrant(ctx context.Context, in *RevokeAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, AccessGrantService_DeleteAccessGrant_FullMethodName, in, out, cOpts...)
+	out := new(AccessGrant)
+	err := c.cc.Invoke(ctx, AccessGrantService_RevokeAccessGrant_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +114,10 @@ type AccessGrantServiceServer interface {
 	ListAccessGrants(context.Context, *ListAccessGrantsRequest) (*ListAccessGrantsResponse, error)
 	// Creates an access grant.
 	CreateAccessGrant(context.Context, *CreateAccessGrantRequest) (*AccessGrant, error)
-	// Updates an access grant.
-	UpdateAccessGrant(context.Context, *UpdateAccessGrantRequest) (*AccessGrant, error)
-	// Deletes an access grant.
-	DeleteAccessGrant(context.Context, *DeleteAccessGrantRequest) (*emptypb.Empty, error)
+	// Activates a pending access grant.
+	ActivateAccessGrant(context.Context, *ActivateAccessGrantRequest) (*AccessGrant, error)
+	// Revokes an active access grant.
+	RevokeAccessGrant(context.Context, *RevokeAccessGrantRequest) (*AccessGrant, error)
 	mustEmbedUnimplementedAccessGrantServiceServer()
 }
 
@@ -138,11 +137,11 @@ func (UnimplementedAccessGrantServiceServer) ListAccessGrants(context.Context, *
 func (UnimplementedAccessGrantServiceServer) CreateAccessGrant(context.Context, *CreateAccessGrantRequest) (*AccessGrant, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateAccessGrant not implemented")
 }
-func (UnimplementedAccessGrantServiceServer) UpdateAccessGrant(context.Context, *UpdateAccessGrantRequest) (*AccessGrant, error) {
-	return nil, status.Error(codes.Unimplemented, "method UpdateAccessGrant not implemented")
+func (UnimplementedAccessGrantServiceServer) ActivateAccessGrant(context.Context, *ActivateAccessGrantRequest) (*AccessGrant, error) {
+	return nil, status.Error(codes.Unimplemented, "method ActivateAccessGrant not implemented")
 }
-func (UnimplementedAccessGrantServiceServer) DeleteAccessGrant(context.Context, *DeleteAccessGrantRequest) (*emptypb.Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeleteAccessGrant not implemented")
+func (UnimplementedAccessGrantServiceServer) RevokeAccessGrant(context.Context, *RevokeAccessGrantRequest) (*AccessGrant, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeAccessGrant not implemented")
 }
 func (UnimplementedAccessGrantServiceServer) mustEmbedUnimplementedAccessGrantServiceServer() {}
 func (UnimplementedAccessGrantServiceServer) testEmbeddedByValue()                            {}
@@ -219,38 +218,38 @@ func _AccessGrantService_CreateAccessGrant_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccessGrantService_UpdateAccessGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateAccessGrantRequest)
+func _AccessGrantService_ActivateAccessGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateAccessGrantRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AccessGrantServiceServer).UpdateAccessGrant(ctx, in)
+		return srv.(AccessGrantServiceServer).ActivateAccessGrant(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AccessGrantService_UpdateAccessGrant_FullMethodName,
+		FullMethod: AccessGrantService_ActivateAccessGrant_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccessGrantServiceServer).UpdateAccessGrant(ctx, req.(*UpdateAccessGrantRequest))
+		return srv.(AccessGrantServiceServer).ActivateAccessGrant(ctx, req.(*ActivateAccessGrantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccessGrantService_DeleteAccessGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteAccessGrantRequest)
+func _AccessGrantService_RevokeAccessGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAccessGrantRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AccessGrantServiceServer).DeleteAccessGrant(ctx, in)
+		return srv.(AccessGrantServiceServer).RevokeAccessGrant(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AccessGrantService_DeleteAccessGrant_FullMethodName,
+		FullMethod: AccessGrantService_RevokeAccessGrant_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccessGrantServiceServer).DeleteAccessGrant(ctx, req.(*DeleteAccessGrantRequest))
+		return srv.(AccessGrantServiceServer).RevokeAccessGrant(ctx, req.(*RevokeAccessGrantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -275,12 +274,12 @@ var AccessGrantService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AccessGrantService_CreateAccessGrant_Handler,
 		},
 		{
-			MethodName: "UpdateAccessGrant",
-			Handler:    _AccessGrantService_UpdateAccessGrant_Handler,
+			MethodName: "ActivateAccessGrant",
+			Handler:    _AccessGrantService_ActivateAccessGrant_Handler,
 		},
 		{
-			MethodName: "DeleteAccessGrant",
-			Handler:    _AccessGrantService_DeleteAccessGrant_Handler,
+			MethodName: "RevokeAccessGrant",
+			Handler:    _AccessGrantService_RevokeAccessGrant_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

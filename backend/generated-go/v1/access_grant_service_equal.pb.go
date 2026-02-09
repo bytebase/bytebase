@@ -3,12 +3,6 @@
 
 package v1
 
-import (
-	expr "google.golang.org/genproto/googleapis/type/expr"
-	proto "google.golang.org/protobuf/proto"
-	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
-)
-
 func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x == y {
 		return true
@@ -19,7 +13,7 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.User != y.User {
+	if x.Creator != y.Creator {
 		return false
 	}
 	if x.State != y.State {
@@ -31,15 +25,18 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x.Issue != y.Issue {
 		return false
 	}
-	if equal, ok := interface{}(x.DatabaseTarget).(interface{ Equal(*expr.Expr) bool }); !ok || !equal.Equal(y.DatabaseTarget) {
+	if len(x.Databases) != len(y.Databases) {
 		return false
-	} else if !proto.Equal(x.DatabaseTarget, y.DatabaseTarget) {
-		return false
+	}
+	for i := 0; i < len(x.Databases); i++ {
+		if x.Databases[i] != y.Databases[i] {
+			return false
+		}
 	}
 	if x.Query != y.Query {
 		return false
 	}
-	if x.Unmasking != y.Unmasking {
+	if x.MaskingExemption != y.MaskingExemption {
 		return false
 	}
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
@@ -123,27 +120,20 @@ func (x *CreateAccessGrantRequest) Equal(y *CreateAccessGrantRequest) bool {
 	return true
 }
 
-func (x *UpdateAccessGrantRequest) Equal(y *UpdateAccessGrantRequest) bool {
+func (x *ActivateAccessGrantRequest) Equal(y *ActivateAccessGrantRequest) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if !x.AccessGrant.Equal(y.AccessGrant) {
-		return false
-	}
-	if equal, ok := interface{}(x.UpdateMask).(interface {
-		Equal(*fieldmaskpb.FieldMask) bool
-	}); !ok || !equal.Equal(y.UpdateMask) {
-		return false
-	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
+	if x.Name != y.Name {
 		return false
 	}
 	return true
 }
 
-func (x *DeleteAccessGrantRequest) Equal(y *DeleteAccessGrantRequest) bool {
+func (x *RevokeAccessGrantRequest) Equal(y *RevokeAccessGrantRequest) bool {
 	if x == y {
 		return true
 	}

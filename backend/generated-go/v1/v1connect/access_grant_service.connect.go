@@ -9,7 +9,6 @@ import (
 	context "context"
 	errors "errors"
 	v1 "github.com/bytebase/bytebase/backend/generated-go/v1"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
 	strings "strings"
 )
@@ -43,12 +42,12 @@ const (
 	// AccessGrantServiceCreateAccessGrantProcedure is the fully-qualified name of the
 	// AccessGrantService's CreateAccessGrant RPC.
 	AccessGrantServiceCreateAccessGrantProcedure = "/bytebase.v1.AccessGrantService/CreateAccessGrant"
-	// AccessGrantServiceUpdateAccessGrantProcedure is the fully-qualified name of the
-	// AccessGrantService's UpdateAccessGrant RPC.
-	AccessGrantServiceUpdateAccessGrantProcedure = "/bytebase.v1.AccessGrantService/UpdateAccessGrant"
-	// AccessGrantServiceDeleteAccessGrantProcedure is the fully-qualified name of the
-	// AccessGrantService's DeleteAccessGrant RPC.
-	AccessGrantServiceDeleteAccessGrantProcedure = "/bytebase.v1.AccessGrantService/DeleteAccessGrant"
+	// AccessGrantServiceActivateAccessGrantProcedure is the fully-qualified name of the
+	// AccessGrantService's ActivateAccessGrant RPC.
+	AccessGrantServiceActivateAccessGrantProcedure = "/bytebase.v1.AccessGrantService/ActivateAccessGrant"
+	// AccessGrantServiceRevokeAccessGrantProcedure is the fully-qualified name of the
+	// AccessGrantService's RevokeAccessGrant RPC.
+	AccessGrantServiceRevokeAccessGrantProcedure = "/bytebase.v1.AccessGrantService/RevokeAccessGrant"
 )
 
 // AccessGrantServiceClient is a client for the bytebase.v1.AccessGrantService service.
@@ -59,10 +58,10 @@ type AccessGrantServiceClient interface {
 	ListAccessGrants(context.Context, *connect.Request[v1.ListAccessGrantsRequest]) (*connect.Response[v1.ListAccessGrantsResponse], error)
 	// Creates an access grant.
 	CreateAccessGrant(context.Context, *connect.Request[v1.CreateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
-	// Updates an access grant.
-	UpdateAccessGrant(context.Context, *connect.Request[v1.UpdateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
-	// Deletes an access grant.
-	DeleteAccessGrant(context.Context, *connect.Request[v1.DeleteAccessGrantRequest]) (*connect.Response[emptypb.Empty], error)
+	// Activates a pending access grant.
+	ActivateAccessGrant(context.Context, *connect.Request[v1.ActivateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
+	// Revokes an active access grant.
+	RevokeAccessGrant(context.Context, *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
 }
 
 // NewAccessGrantServiceClient constructs a client for the bytebase.v1.AccessGrantService service.
@@ -94,16 +93,16 @@ func NewAccessGrantServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(accessGrantServiceMethods.ByName("CreateAccessGrant")),
 			connect.WithClientOptions(opts...),
 		),
-		updateAccessGrant: connect.NewClient[v1.UpdateAccessGrantRequest, v1.AccessGrant](
+		activateAccessGrant: connect.NewClient[v1.ActivateAccessGrantRequest, v1.AccessGrant](
 			httpClient,
-			baseURL+AccessGrantServiceUpdateAccessGrantProcedure,
-			connect.WithSchema(accessGrantServiceMethods.ByName("UpdateAccessGrant")),
+			baseURL+AccessGrantServiceActivateAccessGrantProcedure,
+			connect.WithSchema(accessGrantServiceMethods.ByName("ActivateAccessGrant")),
 			connect.WithClientOptions(opts...),
 		),
-		deleteAccessGrant: connect.NewClient[v1.DeleteAccessGrantRequest, emptypb.Empty](
+		revokeAccessGrant: connect.NewClient[v1.RevokeAccessGrantRequest, v1.AccessGrant](
 			httpClient,
-			baseURL+AccessGrantServiceDeleteAccessGrantProcedure,
-			connect.WithSchema(accessGrantServiceMethods.ByName("DeleteAccessGrant")),
+			baseURL+AccessGrantServiceRevokeAccessGrantProcedure,
+			connect.WithSchema(accessGrantServiceMethods.ByName("RevokeAccessGrant")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -111,11 +110,11 @@ func NewAccessGrantServiceClient(httpClient connect.HTTPClient, baseURL string, 
 
 // accessGrantServiceClient implements AccessGrantServiceClient.
 type accessGrantServiceClient struct {
-	getAccessGrant    *connect.Client[v1.GetAccessGrantRequest, v1.AccessGrant]
-	listAccessGrants  *connect.Client[v1.ListAccessGrantsRequest, v1.ListAccessGrantsResponse]
-	createAccessGrant *connect.Client[v1.CreateAccessGrantRequest, v1.AccessGrant]
-	updateAccessGrant *connect.Client[v1.UpdateAccessGrantRequest, v1.AccessGrant]
-	deleteAccessGrant *connect.Client[v1.DeleteAccessGrantRequest, emptypb.Empty]
+	getAccessGrant      *connect.Client[v1.GetAccessGrantRequest, v1.AccessGrant]
+	listAccessGrants    *connect.Client[v1.ListAccessGrantsRequest, v1.ListAccessGrantsResponse]
+	createAccessGrant   *connect.Client[v1.CreateAccessGrantRequest, v1.AccessGrant]
+	activateAccessGrant *connect.Client[v1.ActivateAccessGrantRequest, v1.AccessGrant]
+	revokeAccessGrant   *connect.Client[v1.RevokeAccessGrantRequest, v1.AccessGrant]
 }
 
 // GetAccessGrant calls bytebase.v1.AccessGrantService.GetAccessGrant.
@@ -133,14 +132,14 @@ func (c *accessGrantServiceClient) CreateAccessGrant(ctx context.Context, req *c
 	return c.createAccessGrant.CallUnary(ctx, req)
 }
 
-// UpdateAccessGrant calls bytebase.v1.AccessGrantService.UpdateAccessGrant.
-func (c *accessGrantServiceClient) UpdateAccessGrant(ctx context.Context, req *connect.Request[v1.UpdateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
-	return c.updateAccessGrant.CallUnary(ctx, req)
+// ActivateAccessGrant calls bytebase.v1.AccessGrantService.ActivateAccessGrant.
+func (c *accessGrantServiceClient) ActivateAccessGrant(ctx context.Context, req *connect.Request[v1.ActivateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
+	return c.activateAccessGrant.CallUnary(ctx, req)
 }
 
-// DeleteAccessGrant calls bytebase.v1.AccessGrantService.DeleteAccessGrant.
-func (c *accessGrantServiceClient) DeleteAccessGrant(ctx context.Context, req *connect.Request[v1.DeleteAccessGrantRequest]) (*connect.Response[emptypb.Empty], error) {
-	return c.deleteAccessGrant.CallUnary(ctx, req)
+// RevokeAccessGrant calls bytebase.v1.AccessGrantService.RevokeAccessGrant.
+func (c *accessGrantServiceClient) RevokeAccessGrant(ctx context.Context, req *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
+	return c.revokeAccessGrant.CallUnary(ctx, req)
 }
 
 // AccessGrantServiceHandler is an implementation of the bytebase.v1.AccessGrantService service.
@@ -151,10 +150,10 @@ type AccessGrantServiceHandler interface {
 	ListAccessGrants(context.Context, *connect.Request[v1.ListAccessGrantsRequest]) (*connect.Response[v1.ListAccessGrantsResponse], error)
 	// Creates an access grant.
 	CreateAccessGrant(context.Context, *connect.Request[v1.CreateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
-	// Updates an access grant.
-	UpdateAccessGrant(context.Context, *connect.Request[v1.UpdateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
-	// Deletes an access grant.
-	DeleteAccessGrant(context.Context, *connect.Request[v1.DeleteAccessGrantRequest]) (*connect.Response[emptypb.Empty], error)
+	// Activates a pending access grant.
+	ActivateAccessGrant(context.Context, *connect.Request[v1.ActivateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
+	// Revokes an active access grant.
+	RevokeAccessGrant(context.Context, *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
 }
 
 // NewAccessGrantServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -182,16 +181,16 @@ func NewAccessGrantServiceHandler(svc AccessGrantServiceHandler, opts ...connect
 		connect.WithSchema(accessGrantServiceMethods.ByName("CreateAccessGrant")),
 		connect.WithHandlerOptions(opts...),
 	)
-	accessGrantServiceUpdateAccessGrantHandler := connect.NewUnaryHandler(
-		AccessGrantServiceUpdateAccessGrantProcedure,
-		svc.UpdateAccessGrant,
-		connect.WithSchema(accessGrantServiceMethods.ByName("UpdateAccessGrant")),
+	accessGrantServiceActivateAccessGrantHandler := connect.NewUnaryHandler(
+		AccessGrantServiceActivateAccessGrantProcedure,
+		svc.ActivateAccessGrant,
+		connect.WithSchema(accessGrantServiceMethods.ByName("ActivateAccessGrant")),
 		connect.WithHandlerOptions(opts...),
 	)
-	accessGrantServiceDeleteAccessGrantHandler := connect.NewUnaryHandler(
-		AccessGrantServiceDeleteAccessGrantProcedure,
-		svc.DeleteAccessGrant,
-		connect.WithSchema(accessGrantServiceMethods.ByName("DeleteAccessGrant")),
+	accessGrantServiceRevokeAccessGrantHandler := connect.NewUnaryHandler(
+		AccessGrantServiceRevokeAccessGrantProcedure,
+		svc.RevokeAccessGrant,
+		connect.WithSchema(accessGrantServiceMethods.ByName("RevokeAccessGrant")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/bytebase.v1.AccessGrantService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -202,10 +201,10 @@ func NewAccessGrantServiceHandler(svc AccessGrantServiceHandler, opts ...connect
 			accessGrantServiceListAccessGrantsHandler.ServeHTTP(w, r)
 		case AccessGrantServiceCreateAccessGrantProcedure:
 			accessGrantServiceCreateAccessGrantHandler.ServeHTTP(w, r)
-		case AccessGrantServiceUpdateAccessGrantProcedure:
-			accessGrantServiceUpdateAccessGrantHandler.ServeHTTP(w, r)
-		case AccessGrantServiceDeleteAccessGrantProcedure:
-			accessGrantServiceDeleteAccessGrantHandler.ServeHTTP(w, r)
+		case AccessGrantServiceActivateAccessGrantProcedure:
+			accessGrantServiceActivateAccessGrantHandler.ServeHTTP(w, r)
+		case AccessGrantServiceRevokeAccessGrantProcedure:
+			accessGrantServiceRevokeAccessGrantHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -227,10 +226,10 @@ func (UnimplementedAccessGrantServiceHandler) CreateAccessGrant(context.Context,
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.CreateAccessGrant is not implemented"))
 }
 
-func (UnimplementedAccessGrantServiceHandler) UpdateAccessGrant(context.Context, *connect.Request[v1.UpdateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.UpdateAccessGrant is not implemented"))
+func (UnimplementedAccessGrantServiceHandler) ActivateAccessGrant(context.Context, *connect.Request[v1.ActivateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.ActivateAccessGrant is not implemented"))
 }
 
-func (UnimplementedAccessGrantServiceHandler) DeleteAccessGrant(context.Context, *connect.Request[v1.DeleteAccessGrantRequest]) (*connect.Response[emptypb.Empty], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.DeleteAccessGrant is not implemented"))
+func (UnimplementedAccessGrantServiceHandler) RevokeAccessGrant(context.Context, *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.RevokeAccessGrant is not implemented"))
 }
