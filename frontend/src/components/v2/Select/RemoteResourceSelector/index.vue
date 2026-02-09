@@ -166,7 +166,7 @@ const onSelectorOpen = async () => {
 
 const handleSearch = useDebounceFn(
   async (search: string, openOptions: boolean = true) => {
-    searchText.value = search.trim().toLowerCase();
+    searchText.value = search.trim();
     pageToken.value = "";
     await onNextPage(openOptions);
   },
