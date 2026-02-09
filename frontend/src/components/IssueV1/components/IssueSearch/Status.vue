@@ -90,10 +90,15 @@ const updateStatus = (value: IssueStatus) => {
     allowMultiple = true;
   }
 
+  // Clear status-incompatible filters (e.g. approval, current-approver)
+  // when switching tabs, to avoid "No Data" from conflicting filters.
+  const incompatibleScopeIds = new Set(["status", "approval", "current-approver"]);
   const updated = upsertScope({
     params: {
       ...props.params,
-      scopes: props.params.scopes.filter((scope) => scope.id !== "status"),
+      scopes: props.params.scopes.filter(
+        (scope) => !incompatibleScopeIds.has(scope.id)
+      ),
     },
     scopes,
     allowMultiple,
