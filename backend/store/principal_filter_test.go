@@ -4,20 +4,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestGetListUserFilter(t *testing.T) {
 	tests := []struct {
-		name          string
-		filter        string
-		wantSQL       string
-		wantArgs      []any
-		wantProject   *string
-		wantUserTypes []storepb.PrincipalType
-		wantErr       bool
-		errContains   string
+		name        string
+		filter      string
+		wantSQL     string
+		wantArgs    []any
+		wantProject *string
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name:     "empty filter",
@@ -25,9 +22,6 @@ func TestGetListUserFilter(t *testing.T) {
 			wantSQL:  "",
 			wantArgs: nil,
 			wantErr:  false,
-			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_END_USER,
-			},
 		},
 		{
 			name:     "name filter",
@@ -56,54 +50,6 @@ func TestGetListUserFilter(t *testing.T) {
 			wantSQL:  "(LOWER(principal.email) LIKE $1)",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
-		},
-		{
-			name:     "user_type filter - SERVICE_ACCOUNT",
-			filter:   `user_type == "SERVICE_ACCOUNT"`,
-			wantSQL:  "(TRUE)",
-			wantArgs: []any{},
-			wantErr:  false,
-			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_SERVICE_ACCOUNT,
-			},
-		},
-		{
-			name:     "user_type filter - USER",
-			filter:   `user_type == "USER"`,
-			wantSQL:  "(TRUE)",
-			wantArgs: []any{},
-			wantErr:  false,
-			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_END_USER,
-			},
-		},
-		{
-			name:     "user_type filter - USER and WORKLOAD_IDENTITY",
-			filter:   `user_type in ["WORKLOAD_IDENTITY", "USER"]`,
-			wantSQL:  "(TRUE)",
-			wantArgs: []any{},
-			wantErr:  false,
-			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_WORKLOAD_IDENTITY,
-				storepb.PrincipalType_END_USER,
-			},
-		},
-		{
-			name:     "user_type in list",
-			filter:   `user_type in ["SERVICE_ACCOUNT", "USER"]`,
-			wantSQL:  "(TRUE)",
-			wantArgs: []any{},
-			wantErr:  false,
-			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_SERVICE_ACCOUNT,
-				storepb.PrincipalType_END_USER,
-			},
-		},
-		{
-			name:        "user_type not in list",
-			filter:      `!(user_type in ["SERVICE_ACCOUNT"])`,
-			wantErr:     true,
-			errContains: "unexpected function",
 		},
 		{
 			name:     "state filter - STATE_ACTIVE",
@@ -143,13 +89,10 @@ func TestGetListUserFilter(t *testing.T) {
 		},
 		{
 			name:     "complex nested condition",
-			filter:   `(name == "ed" || name == "alice") && user_type == "USER"`,
-			wantSQL:  "(((principal.name = $1 OR principal.name = $2) AND TRUE))",
+			filter:   `(name == "ed" || name == "alice")`,
+			wantSQL:  "((principal.name = $1 OR principal.name = $2))",
 			wantArgs: []any{"ed", "alice"},
 			wantErr:  false,
-			wantUserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_END_USER,
-			},
 		},
 		{
 			name:        "unsupported variable",
@@ -162,12 +105,6 @@ func TestGetListUserFilter(t *testing.T) {
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
 			errContains: "failed to parse filter",
-		},
-		{
-			name:        "invalid user type",
-			filter:      `user_type == "INVALID_TYPE"`,
-			wantErr:     true,
-			errContains: "invalid user type filter",
 		},
 		{
 			name:        "invalid state",
@@ -197,10 +134,6 @@ func TestGetListUserFilter(t *testing.T) {
 				require.Equal(t, *tt.wantProject, *result.ProjectID)
 			} else {
 				require.Nil(t, result.ProjectID)
-			}
-
-			if len(tt.wantUserTypes) > 0 {
-				require.Equal(t, tt.wantUserTypes, result.UserTypes)
 			}
 
 			if query := result.Query; query != nil {

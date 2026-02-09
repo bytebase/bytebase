@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -19,7 +18,6 @@ import (
 type GetListUserFilterResult struct {
 	Query     *qb.Query
 	ProjectID *string
-	UserTypes []storepb.PrincipalType
 }
 
 // GetAccountListFilterResult contains the filter query for service accounts and workload identities.
@@ -30,11 +28,7 @@ type GetAccountListFilterResult struct {
 // GetListUserFilter parses a CEL filter string and returns a query for filtering users.
 func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 	if filter == "" {
-		return &GetListUserFilterResult{
-			UserTypes: []storepb.PrincipalType{
-				storepb.PrincipalType_END_USER,
-			},
-		}, nil
+		return &GetListUserFilterResult{}, nil
 	}
 
 	e, err := cel.NewEnv()
@@ -48,20 +42,6 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 	var projectID *string
-	userTypes := []storepb.PrincipalType{}
-
-	convertToPrincipalType := func(v1UserType v1pb.UserType) (storepb.PrincipalType, error) {
-		switch v1UserType {
-		case v1pb.UserType_USER:
-			return storepb.PrincipalType_END_USER, nil
-		case v1pb.UserType_SERVICE_ACCOUNT:
-			return storepb.PrincipalType_SERVICE_ACCOUNT, nil
-		case v1pb.UserType_WORKLOAD_IDENTITY:
-			return storepb.PrincipalType_WORKLOAD_IDENTITY, nil
-		default:
-			return storepb.PrincipalType_END_USER, errors.Errorf("invalid user type %s", v1UserType)
-		}
-	}
 
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
 		switch variable {
@@ -69,17 +49,6 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 			return qb.Q().Space("principal.email = ?", value.(string)), nil
 		case "name":
 			return qb.Q().Space("principal.name = ?", value.(string)), nil
-		case "user_type":
-			v1UserType, ok := v1pb.UserType_value[value.(string)]
-			if !ok {
-				return nil, errors.Errorf("invalid user type filter %q", value)
-			}
-			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
-			if err != nil {
-				return nil, errors.Errorf("failed to parse the user type %q with error: %v", v1UserType, err)
-			}
-			userTypes = append(userTypes, principalType)
-			return qb.Q().Space("TRUE"), nil
 		case "state":
 			stateStr, ok := value.(string)
 			if !ok {
@@ -108,35 +77,6 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
-	}
-
-	parseToUserTypeSQL := func(expr celast.Expr) (*qb.Query, error) {
-		variable, value := getVariableAndValueFromExpr(expr)
-		if variable != "user_type" {
-			return nil, errors.Errorf(`only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`)
-		}
-
-		rawTypeList, ok := value.([]any)
-		if !ok {
-			return nil, errors.Errorf("invalid user_type value %q", value)
-		}
-		if len(rawTypeList) == 0 {
-			return nil, errors.Errorf("empty user_type filter")
-		}
-
-		for _, rawType := range rawTypeList {
-			v1UserType, ok := v1pb.UserType_value[rawType.(string)]
-			if !ok {
-				return nil, errors.Errorf("invalid user type filter %q", rawType)
-			}
-			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
-			if err != nil {
-				return nil, errors.Errorf("failed to parse the user type %q with error: %v", v1UserType, err)
-			}
-			userTypes = append(userTypes, principalType)
-		}
-
-		return qb.Q().Space("TRUE"), nil
 	}
 
 	getFilter = func(expr celast.Expr) (*qb.Query, error) {
@@ -181,8 +121,6 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
 				}
 				return qb.Q().Space("LOWER(principal."+variable+") LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
-			case celoperators.In:
-				return parseToUserTypeSQL(expr)
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
@@ -196,18 +134,9 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 		return nil, err
 	}
 
-	if len(userTypes) == 0 {
-		// Force to query end users only.
-		userTypes = append(
-			userTypes,
-			storepb.PrincipalType_END_USER,
-		)
-	}
-
 	return &GetListUserFilterResult{
 		Query:     qb.Q().Space("(?)", q),
 		ProjectID: projectID,
-		UserTypes: userTypes,
 	}, nil
 }
 

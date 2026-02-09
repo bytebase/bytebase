@@ -34,7 +34,6 @@ import { usePermissionStore } from "./v1/permission";
 
 export interface UserFilter {
   query?: string;
-  types?: UserType[];
   project?: string;
   state?: State;
 }
@@ -44,11 +43,6 @@ const getListUserFilter = (params: UserFilter) => {
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
     filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
-  }
-  if (params.types) {
-    filter.push(
-      `user_type in [${params.types.map((t) => `"${UserType[t]}"`).join(", ")}]`
-    );
   }
   if (isValidProjectName(params.project)) {
     filter.push(`project == "${params.project}"`);

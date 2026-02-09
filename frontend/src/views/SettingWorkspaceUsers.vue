@@ -396,7 +396,6 @@ const fetchUserList = async ({
     pageSize,
     filter: {
       query: state.activeUserFilterText,
-      types: [UserType.USER],
     },
   });
   return { list: users, nextPageToken };
@@ -415,7 +414,6 @@ const fetchInactiveUserList = async ({
     filter: {
       query: state.inactiveUserFilterText,
       state: State.DELETED,
-      types: [UserType.USER],
     },
   });
   return { list: users, nextPageToken };

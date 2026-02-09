@@ -22,7 +22,7 @@ import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { getUserFullNameByType, useUserStore } from "@/store";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
@@ -91,7 +91,6 @@ const handleSearch = async (params: {
     filter: {
       query: params.search,
       project: props.projectName,
-      types: [UserType.USER],
     },
     pageToken: params.pageToken,
     pageSize: params.pageSize,

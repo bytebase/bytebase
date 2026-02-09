@@ -290,7 +290,6 @@ type ListUsersRequest struct {
 	// Supported filter:
 	// - name: the user name, support "==" and ".matches()" operator.
 	// - email: the user email, support "==" and ".matches()" operator.
-	// - user_type: the type, check UserType enum for values, support "USER", "SERVICE_ACCOUNT", or "WORKLOAD_IDENTITY" value, support "==" and "in [xx]" operator.
 	// - state: check State enum for values, support "==" operator.
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	//
@@ -299,8 +298,6 @@ type ListUsersRequest struct {
 	// name.matches("ed")
 	// email == "ed@bytebase.com"
 	// email.matches("ed")
-	// user_type == "USER"
-	// user_type in ["SERVICE_ACCOUNT", "USER"]
 	// state == "DELETED"
 	// project == "projects/sample-project"
 	// You can combine filter conditions like:

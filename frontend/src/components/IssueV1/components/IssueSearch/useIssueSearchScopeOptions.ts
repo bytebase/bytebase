@@ -16,7 +16,6 @@ import {
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { type Label } from "@/types/proto-es/v1/project_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import { getDefaultPagination } from "@/utils";
 
@@ -63,7 +62,7 @@ export const useIssueSearchScopeOptions = (
 
   const commonScopeOptions = useCommonSearchScopeOptions(supportOptionIdList);
 
-  const searchPrincipalSearchValueOptions = (userTypes: UserType[]) => {
+  const searchPrincipalSearchValueOptions = () => {
     return ({
       keyword,
       nextPageToken,
@@ -76,7 +75,6 @@ export const useIssueSearchScopeOptions = (
           pageToken: nextPageToken,
           pageSize: getDefaultPagination(),
           filter: {
-            types: userTypes,
             query: keyword,
           },
         })
@@ -160,11 +158,7 @@ export const useIssueSearchScopeOptions = (
         id: "creator",
         title: t("issue.advanced-search.scope.creator.title"),
         description: t("issue.advanced-search.scope.creator.description"),
-        search: searchPrincipalSearchValueOptions([
-          UserType.USER,
-          UserType.SERVICE_ACCOUNT,
-          UserType.WORKLOAD_IDENTITY,
-        ]),
+        search: searchPrincipalSearchValueOptions(),
       },
       {
         id: "current-approver",
@@ -172,10 +166,7 @@ export const useIssueSearchScopeOptions = (
         description: t(
           "issue.advanced-search.scope.current-approver.description"
         ),
-        search: searchPrincipalSearchValueOptions([
-          UserType.USER,
-          UserType.SERVICE_ACCOUNT,
-        ]),
+        search: searchPrincipalSearchValueOptions(),
       },
       {
         id: "issue-label",
