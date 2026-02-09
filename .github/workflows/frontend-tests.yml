@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with:
-          version: '10.28.1'
+          version: '10.29.2'
       - uses: actions/setup-node@v6
         with:
           node-version: '24.13.0'
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with:
-          version: '10.28.1'
+          version: '10.29.2'
       - uses: actions/setup-node@v6
         with:
           node-version: '24.13.0'
