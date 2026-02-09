@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func convertInstanceMessage(instance *store.InstanceMessage) *v1pb.Instance {
+func convertToV1Instance(instance *store.InstanceMessage) *v1pb.Instance {
 	engine := convertToEngine(instance.Metadata.GetEngine())
 	dataSources := convertDataSources(instance.Metadata.GetDataSources())
 
@@ -62,7 +62,7 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 	return v1Roles
 }
 
-func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
+func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
 	datasources, err := convertV1DataSources(instance.DataSources)
 	if err != nil {
 		return nil, err
@@ -93,8 +93,8 @@ func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance
 	}, nil
 }
 
-func convertInstanceMessageToInstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
-	instance := convertInstanceMessage(instanceMessage)
+func convertToV1InstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
+	instance := convertToV1Instance(instanceMessage)
 	return &v1pb.InstanceResource{
 		Name:          instance.Name,
 		Title:         instance.Title,
@@ -532,7 +532,28 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 	default:
 	}
 
+	clearDataSourceAuthentication(storeDataSource)
+
 	return storeDataSource, nil
+}
+
+func clearDataSourceAuthentication(ds *storepb.DataSource) {
+	switch ds.AuthenticationType {
+	case storepb.DataSource_AZURE_IAM, storepb.DataSource_GOOGLE_CLOUD_SQL_IAM, storepb.DataSource_AWS_RDS_IAM:
+		ds.Password = ""
+		ds.ExternalSecret = nil
+	default:
+		if ds.ExternalSecret != nil {
+			ds.IamExtension = nil
+			if ds.ExternalSecret.SecretType != storepb.DataSourceExternalSecret_SECRET_TYPE_UNSPECIFIED {
+				ds.Password = ""
+			}
+		}
+		if ds.Password != "" {
+			ds.ExternalSecret = nil
+			ds.IamExtension = nil
+		}
+	}
 }
 
 func convertV1DataSourceType(tp v1pb.DataSourceType) (storepb.DataSourceType, error) {

@@ -54,7 +54,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, err
 	}
-	result := convertInstanceMessage(instance)
+	result := convertToV1Instance(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -104,7 +104,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 		NextPageToken: nextPageToken,
 	}
 	for _, instance := range instances {
-		ins := convertInstanceMessage(instance)
+		ins := convertToV1Instance(instance)
 		response.Instances = append(response.Instances, ins)
 	}
 	return connect.NewResponse(response), nil
@@ -120,7 +120,7 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 
-		if instanceMessage, err = convertInstanceToInstanceMessage(instanceID, req.Msg.Instance); err != nil {
+		if instanceMessage, err = convertToStoreInstance(instanceID, req.Msg.Instance); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 	} else {
@@ -160,7 +160,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	instanceMessage, err := convertInstanceToInstanceMessage(req.Msg.InstanceId, req.Msg.Instance)
+	instanceMessage, err := convertToStoreInstance(req.Msg.InstanceId, req.Msg.Instance)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -189,7 +189,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 			}
 		}
 
-		result := convertInstanceMessage(instanceMessage)
+		result := convertToV1Instance(instanceMessage)
 		return connect.NewResponse(result), nil
 	}
 
@@ -228,7 +228,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		s.schemaSyncer.SyncAllDatabases(ctx, instance)
 	}
 
-	result := convertInstanceMessage(instance)
+	result := convertToV1Instance(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -417,7 +417,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result := convertInstanceMessage(ins)
+	result := convertToV1Instance(ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -498,7 +498,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 	// Idempotent: if already active, return the instance
 	if !instance.Deleted {
-		result := convertInstanceMessage(instance)
+		result := convertToV1Instance(instance)
 		return connect.NewResponse(result), nil
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
@@ -518,7 +518,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
 	}
 
-	result := convertInstanceMessage(ins)
+	result := convertToV1Instance(ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -641,7 +641,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, err
 		}
-		result := convertInstanceMessage(instance)
+		result := convertToV1Instance(instance)
 		return connect.NewResponse(result), nil
 	}
 
@@ -662,7 +662,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result := convertInstanceMessage(instance)
+	result := convertToV1Instance(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -791,6 +791,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 							ClientSecret: azureCredential.ClientSecret,
 						},
 					}
+					dataSource.AuthenticationType = storepb.DataSource_AZURE_IAM
 				} else {
 					dataSource.IamExtension = nil
 				}
@@ -805,6 +806,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 							ExternalId:      awsCredential.ExternalId,
 						},
 					}
+					dataSource.AuthenticationType = storepb.DataSource_AWS_RDS_IAM
 				} else {
 					dataSource.IamExtension = nil
 				}
@@ -815,6 +817,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 							Content: gcpCredential.Content,
 						},
 					}
+					dataSource.AuthenticationType = storepb.DataSource_GOOGLE_CLOUD_SQL_IAM
 				} else {
 					dataSource.IamExtension = nil
 				}
@@ -824,6 +827,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
 	}
+
+	clearDataSourceAuthentication(dataSource)
 
 	if err := s.checkDataSource(instance, dataSource); err != nil {
 		return nil, err
@@ -848,7 +853,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		if err != nil {
 			return nil, err
 		}
-		result := convertInstanceMessage(instance)
+		result := convertToV1Instance(instance)
 		return connect.NewResponse(result), nil
 	}
 
@@ -859,7 +864,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result := convertInstanceMessage(instance)
+	result := convertToV1Instance(instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -905,7 +910,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result := convertInstanceMessage(instance)
+	result := convertToV1Instance(instance)
 	return connect.NewResponse(result), nil
 }
 
