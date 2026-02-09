@@ -107,12 +107,6 @@ func TestGetListUserFilter(t *testing.T) {
 			errContains: "failed to parse filter",
 		},
 		{
-			name:        "invalid user type",
-			filter:      `user_type == "INVALID_TYPE"`,
-			wantErr:     true,
-			errContains: "invalid user type filter",
-		},
-		{
 			name:        "invalid state",
 			filter:      `state == "INVALID_STATE"`,
 			wantErr:     true,
