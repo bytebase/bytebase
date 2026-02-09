@@ -78,7 +78,7 @@
     "vueuc": "0.4.65"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.13",
+    "@biomejs/biome": "2.3.14",
     "@codingame/esbuild-import-meta-url-plugin": "^1.0.3",
     "@iconify/json": "2.2.431",
     "@intlify/eslint-plugin-vue-i18n": "^4.0.0",
