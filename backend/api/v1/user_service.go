@@ -143,7 +143,6 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	}
 	find.FilterQ = filterResult.Query
 	find.ProjectID = filterResult.ProjectID
-	find.UserTypes = &filterResult.UserTypes
 
 	if v := find.ProjectID; v != nil {
 		user, ok := GetUserFromContext(ctx)
@@ -159,7 +158,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		}
 	}
 
-	users, err := s.store.ListUsers(ctx, find)
+	users, err := s.store.ListEndUsers(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list user"))
 	}

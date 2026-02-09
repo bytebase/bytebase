@@ -17,7 +17,11 @@
 import { NTab, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { useCurrentUserV1 } from "@/store";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import { getValuesFromSearchParams, upsertScope } from "@/utils";
 
@@ -30,6 +34,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const me = useCurrentUserV1();
 
 const tabItemList = computed(() => {
   return [
@@ -72,10 +77,21 @@ const updateStatus = (value: IssueStatus) => {
   const scopes: SearchScope[] = [];
   let allowMultiple = false;
   if (value === IssueStatus.OPEN) {
-    scopes.push({
-      id: "status",
-      value: IssueStatus[IssueStatus.OPEN],
-    });
+    scopes.push(
+      {
+        id: "status",
+        value: IssueStatus[IssueStatus.OPEN],
+      },
+      // inject approver/approval filter
+      {
+        id: "current-approver",
+        value: me.value.email,
+      },
+      {
+        id: "approval",
+        value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+      }
+    );
   } else {
     scopes.push(
       {
@@ -85,6 +101,15 @@ const updateStatus = (value: IssueStatus) => {
       {
         id: "status",
         value: IssueStatus[IssueStatus.CANCELED],
+      },
+      // clear approver/approval filter
+      {
+        id: "current-approver",
+        value: "",
+      },
+      {
+        id: "approval",
+        value: "",
       }
     );
     allowMultiple = true;

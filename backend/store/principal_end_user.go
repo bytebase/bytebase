@@ -11,18 +11,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// FindEndUserMessage is the message for finding end users.
-type FindEndUserMessage struct {
-	ID          *int
-	Email       *string
-	ShowDeleted bool
-	Limit       *int
-	Offset      *int
-	FilterQ     *qb.Query
-	// ProjectID is used for IAM policy JOIN filtering (finds users "referenced in" a project's IAM).
-	ProjectID *string
-}
-
 // GetEndUserByEmail gets an end user by email.
 func (s *Store) GetEndUserByEmail(ctx context.Context, email string) (*UserMessage, error) {
 	if v, ok := s.userEmailCache.Get(email); ok && s.enableCache {
@@ -32,7 +20,7 @@ func (s *Store) GetEndUserByEmail(ctx context.Context, email string) (*UserMessa
 		return nil, nil
 	}
 
-	users, err := s.listEndUsers(ctx, &FindEndUserMessage{Email: &email, ShowDeleted: true})
+	users, err := s.ListEndUsers(ctx, &FindUserMessage{Email: &email, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -43,21 +31,12 @@ func (s *Store) GetEndUserByEmail(ctx context.Context, email string) (*UserMessa
 }
 
 // listEndUsers lists end users.
-func (s *Store) listEndUsers(ctx context.Context, find *FindEndUserMessage) ([]*UserMessage, error) {
+func (s *Store) ListEndUsers(ctx context.Context, find *FindUserMessage) ([]*UserMessage, error) {
 	userTypes := []storepb.PrincipalType{
 		storepb.PrincipalType_END_USER,
 	}
-	findUser := &FindUserMessage{
-		ID:          find.ID,
-		Email:       find.Email,
-		ShowDeleted: find.ShowDeleted,
-		Limit:       find.Limit,
-		Offset:      find.Offset,
-		FilterQ:     find.FilterQ,
-		ProjectID:   find.ProjectID,
-		UserTypes:   &userTypes,
-	}
-	return s.ListUsers(ctx, findUser)
+	find.UserTypes = &userTypes
+	return s.ListUsers(ctx, find)
 }
 
 // CreateEndUser creates an end user.

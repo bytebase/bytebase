@@ -383,7 +383,6 @@ const handleSearchUser = async (params: {
     filter: {
       query: params.search,
       project: props.projectName,
-      types: [UserType.USER],
     },
     pageToken: params.pageToken,
     pageSize: params.pageSize,

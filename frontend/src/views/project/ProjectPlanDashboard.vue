@@ -93,7 +93,6 @@ import {
 } from "@/store/modules/v1/plan";
 import { isValidDatabaseGroupName } from "@/types";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   extractDatabaseGroupName,
   extractDatabaseResourceName,
@@ -168,7 +167,7 @@ const scopeOptions = computed((): ScopeOption[] => {
 
   const renderSpan = (text: string) => h("span", text);
 
-  const searchPrincipalSearchValueOptions = (userTypes: UserType[]) => {
+  const searchPrincipalSearchValueOptions = () => {
     return ({
       keyword,
       nextPageToken,
@@ -181,7 +180,6 @@ const scopeOptions = computed((): ScopeOption[] => {
           pageToken: nextPageToken,
           pageSize: getDefaultPagination(),
           filter: {
-            types: userTypes,
             query: keyword,
           },
         })
@@ -214,11 +212,7 @@ const scopeOptions = computed((): ScopeOption[] => {
     id: "creator",
     title: t("issue.advanced-search.scope.creator.title"),
     description: t("issue.advanced-search.scope.creator.description"),
-    search: searchPrincipalSearchValueOptions([
-      UserType.USER,
-      UserType.SERVICE_ACCOUNT,
-      UserType.WORKLOAD_IDENTITY,
-    ]),
+    search: searchPrincipalSearchValueOptions(),
   };
 
   const stateOption: ScopeOption = {

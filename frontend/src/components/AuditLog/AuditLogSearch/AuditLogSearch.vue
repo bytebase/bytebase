@@ -28,7 +28,6 @@ import { UserNameCell } from "@/components/v2/Model/cells";
 import { ALL_METHODS_WITH_AUDIT } from "@/connect/methods";
 import { useProjectV1Store, useUserStore } from "@/store";
 import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   extractProjectResourceName,
   getDefaultPagination,
@@ -110,7 +109,6 @@ const scopeOptions = computed((): ScopeOption[] => {
             pageSize: getDefaultPagination(),
             showDeleted: true,
             filter: {
-              types: [UserType.USER],
               query: keyword,
             },
           })
