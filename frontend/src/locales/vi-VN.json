@@ -2840,5 +2840,8 @@
       "permissions": "Ứng dụng này sẽ có thể:",
       "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn"
     }
+  },
+  "help-drawer": {
+    "dont-show-again": "Không hiển thị các mẹo này nữa"
   }
 }

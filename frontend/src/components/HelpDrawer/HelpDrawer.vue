@@ -13,7 +13,14 @@
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-if="state.html" class="overflow-auto" v-html="state.html"></div>
       <template #footer>
-        <div class="flex flex-row justify-center pb-10">
+        <div class="flex flex-col items-center gap-y-4 pb-10">
+          <button
+            v-if="isGuide"
+            class="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
+            @click="onDismissAll"
+          >
+            {{ $t("help-drawer.dont-show-again") }}
+          </button>
           <div
             v-if="locale === 'zh-CN'"
             class="w-full flex flex-col items-center pt-2"
@@ -125,7 +132,11 @@ watch(
       (pair) => pair.routeName === routeName
     )?.helpName;
 
-    if (helpId && !uiStateStore.getIntroStateByKey(`${helpId}`)) {
+    if (
+      helpId &&
+      !uiStateStore.allHelpDrawersDismissed &&
+      !uiStateStore.getIntroStateByKey(`${helpId}`)
+    ) {
       state.helpTimer = window.setTimeout(() => {
         helpStore.showHelp(helpId, true);
         uiStateStore.saveIntroStateByKey({
@@ -162,6 +173,11 @@ watch(helpId, async (id) => {
     deactivate();
   }
 });
+
+const onDismissAll = () => {
+  uiStateStore.allHelpDrawersDismissed = true;
+  helpStore.exitHelp();
+};
 
 const onClose = () => {
   if (isGuide.value) {

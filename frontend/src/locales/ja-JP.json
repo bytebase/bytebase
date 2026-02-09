@@ -2840,5 +2840,8 @@
       "permissions": "このアプリケーションは以下のことができます:",
       "permission-access": "あなたの権限で Bytebase アカウントにアクセス"
     }
+  },
+  "help-drawer": {
+    "dont-show-again": "これらのヒントを再度表示しない"
   }
 }
