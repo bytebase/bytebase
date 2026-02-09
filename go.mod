@@ -55,7 +55,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/gosimple/slug v1.15.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.5
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/hashicorp/vault/api/auth/approle v0.11.0
@@ -97,9 +97,9 @@ require (
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/text v0.33.0
 	google.golang.org/api v0.264.0
-	google.golang.org/genproto v0.0.0-20260120221211-b8f7ae30c516
-	google.golang.org/genproto/googleapis/api v0.0.0-20260120221211-b8f7ae30c516
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260122232226-8e98ce8d340d
+	google.golang.org/genproto v0.0.0-20260203192932-546029d2fa20
+	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/inf.v0 v0.9.1
@@ -330,7 +330,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
-	github.com/labstack/echo/v5 v5.0.2
+	github.com/labstack/echo/v5 v5.0.3
 	github.com/lestrrat-go/blackmagic v1.0.4 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
