@@ -323,11 +323,7 @@ const fetchAccounts = async (params: {
         search: params.search,
         pageToken: "",
         pageSize: params.pageSize,
-      }),
-      // Also search service accounts and workload identities to support
-      // legacy accounts with non-standard email formats.
-      handleSearchServiceAccount(params.search),
-      handleSearchWorkloadIdentity(params.search)
+      })
     );
   } else {
     if (combinedPageToken.value.user) {
@@ -405,42 +401,6 @@ const handleSearchGroup = async (params: {
   });
   combinedPageToken.value.group = nextPageToken;
   return groups.map(getGroupOption);
-};
-
-const handleSearchServiceAccount = async (
-  search: string
-): Promise<ResourceSelectOption<AccountResource>[]> => {
-  if (!hasGetServiceAccountPermission.value || !search) {
-    return [];
-  }
-  const resp = await serviceAccountStore.listServiceAccounts({
-    parent: props.projectName ?? "workspaces/-",
-    pageSize: 10,
-    pageToken: undefined,
-    showDeleted: false,
-    filter: { query: search },
-  });
-  return resp.serviceAccounts.map((sa) =>
-    getUserOption(serviceAccountToUser(sa))
-  );
-};
-
-const handleSearchWorkloadIdentity = async (
-  search: string
-): Promise<ResourceSelectOption<AccountResource>[]> => {
-  if (!hasGetWorkloadIdentityPermission.value || !search) {
-    return [];
-  }
-  const resp = await workloadIdentityStore.listWorkloadIdentities({
-    parent: props.projectName ?? "workspaces/-",
-    pageSize: 10,
-    pageToken: undefined,
-    showDeleted: false,
-    filter: { query: search },
-  });
-  return resp.workloadIdentities.map((wi) =>
-    getUserOption(workloadIdentityToUser(wi))
-  );
 };
 
 const customLabel = (
