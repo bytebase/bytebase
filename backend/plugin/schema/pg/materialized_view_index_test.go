@@ -58,8 +58,9 @@ func TestMaterializedViewIndexInSDLOutput(t *testing.T) {
 	require.Contains(t, sdl, "CREATE INDEX \"idx_product_name\"")
 	require.Contains(t, sdl, "CREATE UNIQUE INDEX \"idx_product_id_unique\"")
 
-	// Verify index is on materialized view (using ON ONLY for SDL)
-	require.Contains(t, sdl, "ON ONLY \"public\".\"product_summary_mv\"")
+	// Verify index is on materialized view (no ON ONLY for non-partitioned)
+	require.Contains(t, sdl, "ON \"public\".\"product_summary_mv\"")
+	require.NotContains(t, sdl, "ON ONLY")
 
 	// Verify comments
 	require.Contains(t, sdl, "COMMENT ON MATERIALIZED VIEW")
@@ -113,7 +114,8 @@ func TestMaterializedViewIndexInMultiFileSDL(t *testing.T) {
 	require.Contains(t, mvFile.Content, "CREATE MATERIALIZED VIEW")
 	require.Contains(t, mvFile.Content, "user_stats_mv")
 	require.Contains(t, mvFile.Content, "CREATE INDEX \"idx_user_stats_user_id\"")
-	require.Contains(t, mvFile.Content, "ON ONLY \"public\".\"user_stats_mv\"")
+	require.Contains(t, mvFile.Content, "ON \"public\".\"user_stats_mv\"")
+	require.NotContains(t, mvFile.Content, "ON ONLY")
 }
 
 // TestMaterializedViewIndexDependencyOrdering tests that materialized view indexes have correct dependency ordering in migrations

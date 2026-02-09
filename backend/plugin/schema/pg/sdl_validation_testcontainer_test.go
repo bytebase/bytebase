@@ -79,11 +79,11 @@ ALTER SEQUENCE "public"."audit_id_seq" OWNED BY "public"."audit"."id";
 
 ALTER TABLE ONLY "public"."audit" ADD CONSTRAINT "audit_pkey" PRIMARY KEY (id);
 
-CREATE INDEX "idx_audit_changed_at" ON ONLY "public"."audit" (changed_at);
+CREATE INDEX "idx_audit_changed_at" ON "public"."audit" (changed_at);
 
-CREATE INDEX "idx_audit_operation" ON ONLY "public"."audit" (operation);
+CREATE INDEX "idx_audit_operation" ON "public"."audit" (operation);
 
-CREATE INDEX "idx_audit_username" ON ONLY "public"."audit" (user_name);
+CREATE INDEX "idx_audit_username" ON "public"."audit" (user_name);
 
 CREATE TABLE "public"."department" (
     "dept_no" text NOT NULL,
@@ -134,7 +134,7 @@ ALTER SEQUENCE "public"."employee_emp_no_seq" OWNED BY "public"."employee"."emp_
 
 ALTER TABLE ONLY "public"."employee" ADD CONSTRAINT "employee_pkey" PRIMARY KEY (emp_no);
 
-CREATE INDEX "idx_employee_hire_date" ON ONLY "public"."employee" (hire_date);
+CREATE INDEX "idx_employee_hire_date" ON "public"."employee" (hire_date);
 
 CREATE OR REPLACE FUNCTION public.log_dml_operations()
  RETURNS trigger
@@ -168,7 +168,7 @@ CREATE TABLE "public"."salary" (
 
 ALTER TABLE ONLY "public"."salary" ADD CONSTRAINT "salary_pkey" PRIMARY KEY (emp_no, from_date);
 
-CREATE INDEX "idx_salary_amount" ON ONLY "public"."salary" (amount);
+CREATE INDEX "idx_salary_amount" ON "public"."salary" (amount);
 
 CREATE TABLE "public"."title" (
     "emp_no" integer NOT NULL,

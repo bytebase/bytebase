@@ -337,11 +337,11 @@ CREATE TABLE "public"."products" (
     CONSTRAINT "products_pkey" PRIMARY KEY (id)
 );
 
-CREATE INDEX "idx_products_name" ON ONLY "public"."products" (name);
+CREATE INDEX "idx_products_name" ON "public"."products" (name);
 
-CREATE INDEX "idx_products_category_price" ON ONLY "public"."products" (category_id, price DESC);
+CREATE INDEX "idx_products_category_price" ON "public"."products" (category_id, price DESC);
 
-CREATE UNIQUE INDEX "idx_products_name_unique" ON ONLY "public"."products" (name);
+CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
 
 `,
 		},
@@ -911,11 +911,11 @@ CREATE TABLE "public"."products" (
     CONSTRAINT "documents_pkey" PRIMARY KEY (id)
 );
 
-CREATE INDEX "idx_documents_title_pattern" ON ONLY "public"."documents" (title text_pattern_ops);
+CREATE INDEX "idx_documents_title_pattern" ON "public"."documents" (title text_pattern_ops);
 
-CREATE INDEX "idx_documents_title_content" ON ONLY "public"."documents" (title text_pattern_ops, content text_pattern_ops);
+CREATE INDEX "idx_documents_title_content" ON "public"."documents" (title text_pattern_ops, content text_pattern_ops);
 
-CREATE INDEX "idx_documents_default_opclass" ON ONLY "public"."documents" (title);
+CREATE INDEX "idx_documents_default_opclass" ON "public"."documents" (title);
 
 `,
 		},
