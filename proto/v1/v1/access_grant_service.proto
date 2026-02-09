@@ -7,7 +7,6 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
-import "google/type/expr.proto";
 import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -76,9 +75,9 @@ message AccessGrant {
   // The {access_grant} segment is a server-generated unique ID.
   string name = 1;
 
-  // The beneficiary of the access grant.
+  // The creator of the access grant.
   // Format: users/{email}
-  string user = 2 [(google.api.field_behavior) = REQUIRED];
+  string creator = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The state of the access grant.
   State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -91,18 +90,15 @@ message AccessGrant {
   // Format: projects/{project}/issues/{issue}
   string issue = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The CEL expression defining the target databases for this access grant.
-  // Uses the same variables as IAM policy binding conditions:
-  //   resource.database, resource.schema_name, resource.table_name.
-  // For example:
-  //   resource.database in ["instances/local-pg/databases/db1", "instances/local-pg/databases/db2"]
-  google.type.Expr database_target = 6;
+  // The target databases for this access grant.
+  // Format: instances/{instance}/databases/{database}
+  repeated string databases = 6 [(google.api.field_behavior) = REQUIRED];
 
   // The query permission granted.
   string query = 7;
 
   // Whether the grant exempts data masking.
-  bool unmasking = 8;
+  bool masking_exemption = 8;
 
   google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -144,11 +140,11 @@ message ListAccessGrantsRequest {
   string page_token = 3;
 
   // Filter expression using AIP-160 syntax.
-  // Supported fields: user, state, issue, expire_time, create_time
+  // Supported fields: creator, state, issue, expire_time, create_time
   // Examples:
-  //   - 'user = "users/dev@example.com"'
+  //   - 'creator = "users/dev@example.com"'
   //   - 'state = "ACTIVE"'
-  //   - 'user = "users/dev@example.com" AND state = "ACTIVE"'
+  //   - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
   //   - 'issue = "projects/x/issues/123"'
   //   - 'expire_time < "2024-02-01T00:00:00Z"'
   string filter = 4;
