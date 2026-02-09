@@ -206,6 +206,53 @@
         
           
           <li>
+            <a href="#v1%2faccess_grant_service.proto">v1/access_grant_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AccessGrant"><span class="badge">M</span>AccessGrant</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateAccessGrantRequest"><span class="badge">M</span>CreateAccessGrantRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteAccessGrantRequest"><span class="badge">M</span>DeleteAccessGrantRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetAccessGrantRequest"><span class="badge">M</span>GetAccessGrantRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListAccessGrantsRequest"><span class="badge">M</span>ListAccessGrantsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListAccessGrantsResponse"><span class="badge">M</span>ListAccessGrantsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateAccessGrantRequest"><span class="badge">M</span>UpdateAccessGrantRequest</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AccessGrant.State"><span class="badge">E</span>AccessGrant.State</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AccessGrantService"><span class="badge">S</span>AccessGrantService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fcommon.proto">v1/common.proto</a>
             <ul>
               
@@ -2893,6 +2940,470 @@
     
       
       <div class="file-heading">
+        <h2 id="v1/access_grant_service.proto">v1/access_grant_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.AccessGrant">AccessGrant</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the access grant.
+Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The beneficiary of the access grant.
+Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.AccessGrant.State">AccessGrant.State</a></td>
+                  <td></td>
+                  <td><p>The state of the access grant. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expire_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The expiration time of the access grant. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The issue associated with the access grant.
+Can be empty.
+Format: projects/{project}/issues/{issue} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_target</td>
+                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
+                  <td></td>
+                  <td><p>The CEL expression defining the target databases for this access grant.
+Uses the same variables as IAM policy binding conditions:
+  resource.database, resource.schema_name, resource.table_name.
+For example:
+  resource.database in [&#34;instances/local-pg/databases/db1&#34;, &#34;instances/local-pg/databases/db2&#34;] </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The query permission granted. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unmasking</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the grant exempts data masking. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.CreateAccessGrantRequest">CreateAccessGrantRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project for the access grant.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_grant</td>
+                  <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                  <td></td>
+                  <td><p>The access grant to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteAccessGrantRequest">DeleteAccessGrantRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the access grant to delete.
+Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetAccessGrantRequest">GetAccessGrantRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the access grant to retrieve.
+Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListAccessGrantsRequest">ListAccessGrantsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project of the access grants.
+Format: projects/{project}
+Use &#34;projects/-&#34; to list across all projects. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of access grants to return. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token from a previous ListAccessGrants call. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter expression using AIP-160 syntax.
+Supported fields: user, state, issue, expire_time, create_time
+Examples:
+  - &#39;user = &#34;users/dev@example.com&#34;&#39;
+  - &#39;state = &#34;ACTIVE&#34;&#39;
+  - &#39;user = &#34;users/dev@example.com&#34; AND state = &#34;ACTIVE&#34;&#39;
+  - &#39;issue = &#34;projects/x/issues/123&#34;&#39;
+  - &#39;expire_time &lt; &#34;2024-02-01T00:00:00Z&#34;&#39; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListAccessGrantsResponse">ListAccessGrantsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_grants</td>
+                  <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                  <td>repeated</td>
+                  <td><p>The access grants from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateAccessGrantRequest">UpdateAccessGrantRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_grant</td>
+                  <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                  <td></td>
+                  <td><p>The access grant to update.
+
+The access grant&#39;s `name` field is used to identify the access grant to update.
+Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update.
+Supported fields:
+- &#34;state&#34; (PENDING -&gt; ACTIVE, ACTIVE -&gt; REVOKED)
+- &#34;expire_time&#34; (extend or shorten) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.AccessGrant.State">AccessGrant.State</h3>
+        <p>The state of the access grant.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>1</td>
+                <td><p>The access grant is pending approval.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ACTIVE</td>
+                <td>2</td>
+                <td><p>The access grant is active.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REVOKED</td>
+                <td>3</td>
+                <td><p>The access grant has been revoked.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.AccessGrantService">AccessGrantService</h3>
+        <p>AccessGrantService manages temporary access grants within projects.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetAccessGrant</td>
+                <td><a href="#bytebase.v1.GetAccessGrantRequest">GetAccessGrantRequest</a></td>
+                <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                <td><p>Gets an access grant by name.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListAccessGrants</td>
+                <td><a href="#bytebase.v1.ListAccessGrantsRequest">ListAccessGrantsRequest</a></td>
+                <td><a href="#bytebase.v1.ListAccessGrantsResponse">ListAccessGrantsResponse</a></td>
+                <td><p>Lists access grants in a project.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CreateAccessGrant</td>
+                <td><a href="#bytebase.v1.CreateAccessGrantRequest">CreateAccessGrantRequest</a></td>
+                <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                <td><p>Creates an access grant.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateAccessGrant</td>
+                <td><a href="#bytebase.v1.UpdateAccessGrantRequest">UpdateAccessGrantRequest</a></td>
+                <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                <td><p>Updates an access grant.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteAccessGrant</td>
+                <td><a href="#bytebase.v1.DeleteAccessGrantRequest">DeleteAccessGrantRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Deletes an access grant.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetAccessGrant</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/accessGrants/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListAccessGrants</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/accessGrants</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateAccessGrant</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/accessGrants</td>
+                <td>access_grant</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateAccessGrant</td>
+                <td>PATCH</td>
+                <td>/v1/{access_grant.name=projects/*/accessGrants/*}</td>
+                <td>access_grant</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteAccessGrant</td>
+                <td>DELETE</td>
+                <td>/v1/{name=projects/*/accessGrants/*}</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
         <h2 id="v1/common.proto">v1/common.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -4062,6 +4573,14 @@ Format: projects/{project}/plans/{plan} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>access_grant</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The access grant associated with this issue.
+Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4864,6 +5383,12 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DATABASE_EXPORT</td>
                 <td>3</td>
                 <td><p>Database data export request.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ACCESS_GRANT</td>
+                <td>4</td>
+                <td><p>Temporary access grant request.</p></td>
               </tr>
             
           </tbody>

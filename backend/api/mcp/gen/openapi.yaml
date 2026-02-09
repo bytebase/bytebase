@@ -1,6 +1,186 @@
 openapi: 3.1.0
 info: {}
 paths:
+  /bytebase.v1.AccessGrantService/CreateAccessGrant:
+    post:
+      tags:
+        - bytebase.v1.AccessGrantService
+      summary: CreateAccessGrant
+      description: Creates an access grant.
+      operationId: bytebase.v1.AccessGrantService.CreateAccessGrant
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CreateAccessGrantRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+  /bytebase.v1.AccessGrantService/DeleteAccessGrant:
+    post:
+      tags:
+        - bytebase.v1.AccessGrantService
+      summary: DeleteAccessGrant
+      description: Deletes an access grant.
+      operationId: bytebase.v1.AccessGrantService.DeleteAccessGrant
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DeleteAccessGrantRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.AccessGrantService/GetAccessGrant:
+    post:
+      tags:
+        - bytebase.v1.AccessGrantService
+      summary: GetAccessGrant
+      description: Gets an access grant by name.
+      operationId: bytebase.v1.AccessGrantService.GetAccessGrant
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetAccessGrantRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+  /bytebase.v1.AccessGrantService/ListAccessGrants:
+    post:
+      tags:
+        - bytebase.v1.AccessGrantService
+      summary: ListAccessGrants
+      description: Lists access grants in a project.
+      operationId: bytebase.v1.AccessGrantService.ListAccessGrants
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListAccessGrantsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListAccessGrantsResponse'
+  /bytebase.v1.AccessGrantService/UpdateAccessGrant:
+    post:
+      tags:
+        - bytebase.v1.AccessGrantService
+      summary: UpdateAccessGrant
+      description: Updates an access grant.
+      operationId: bytebase.v1.AccessGrantService.UpdateAccessGrant
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateAccessGrantRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
   /bytebase.v1.ActuatorService/DeleteCache:
     post:
       tags:
@@ -6743,6 +6923,70 @@ components:
         - CLAUDE
         - GEMINI
         - AZURE_OPENAI
+    bytebase.v1.AccessGrant:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant.
+             Format: projects/{project}/accessGrants/{access_grant}
+        user:
+          type: string
+          title: user
+          description: |-
+            The beneficiary of the access grant.
+             Format: users/{email}
+        state:
+          title: state
+          description: The state of the access grant.
+          $ref: '#/components/schemas/bytebase.v1.AccessGrant.State'
+        expireTime:
+          title: expire_time
+          description: The expiration time of the access grant.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        issue:
+          type: string
+          title: issue
+          description: |-
+            The issue associated with the access grant.
+             Can be empty.
+             Format: projects/{project}/issues/{issue}
+        databaseTarget:
+          title: database_target
+          description: |-
+            The CEL expression defining the target databases for this access grant.
+             Uses the same variables as IAM policy binding conditions:
+               resource.database, resource.schema_name, resource.table_name.
+             For example:
+               resource.database in ["instances/local-pg/databases/db1", "instances/local-pg/databases/db2"]
+          $ref: '#/components/schemas/google.type.Expr'
+        query:
+          type: string
+          title: query
+          description: The query permission granted.
+        unmasking:
+          type: boolean
+          title: unmasking
+          description: Whether the grant exempts data masking.
+        createTime:
+          title: create_time
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        updateTime:
+          title: update_time
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: AccessGrant
+      additionalProperties: false
+    bytebase.v1.AccessGrant.State:
+      type: string
+      title: State
+      enum:
+        - STATE_UNSPECIFIED
+        - PENDING
+        - ACTIVE
+        - REVOKED
+      description: The state of the access grant.
     bytebase.v1.Activity:
       type: object
       title: Activity
@@ -8308,6 +8552,21 @@ components:
         - IDENTITY_GENERATION_UNSPECIFIED
         - ALWAYS
         - BY_DEFAULT
+    bytebase.v1.CreateAccessGrantRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project for the access grant.
+             Format: projects/{project}
+        accessGrant:
+          title: access_grant
+          description: The access grant to create.
+          $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+      title: CreateAccessGrantRequest
+      additionalProperties: false
     bytebase.v1.CreateDatabaseGroupRequest:
       type: object
       properties:
@@ -9376,6 +9635,17 @@ components:
       title: DatabaseSchema
       additionalProperties: false
       description: DatabaseSchema is the metadata for databases.
+    bytebase.v1.DeleteAccessGrantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant to delete.
+             Format: projects/{project}/accessGrants/{access_grant}
+      title: DeleteAccessGrantRequest
+      additionalProperties: false
     bytebase.v1.DeleteCacheRequest:
       type: object
       title: DeleteCacheRequest
@@ -10199,6 +10469,17 @@ components:
         - TYPE_UNSPECIFIED
         - VIRTUAL
         - STORED
+    bytebase.v1.GetAccessGrantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant to retrieve.
+             Format: projects/{project}/accessGrants/{access_grant}
+      title: GetAccessGrantRequest
+      additionalProperties: false
     bytebase.v1.GetActuatorInfoRequest:
       type: object
       title: GetActuatorInfoRequest
@@ -11208,6 +11489,12 @@ components:
         approvalStatus:
           title: approval_status
           $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
+        accessGrant:
+          type: string
+          title: access_grant
+          description: |-
+            The access grant associated with this issue.
+             Format: projects/{project}/accessGrants/{access_grant}
       title: Issue
       additionalProperties: false
     bytebase.v1.Issue.ApprovalStatus:
@@ -11252,6 +11539,7 @@ components:
         - DATABASE_CHANGE
         - GRANT_REQUEST
         - DATABASE_EXPORT
+        - ACCESS_GRANT
       description: The type of issue.
     bytebase.v1.IssueComment:
       type: object
@@ -11523,6 +11811,56 @@ components:
       title: Label
       additionalProperties: false
       description: A label for categorizing and organizing issues.
+    bytebase.v1.ListAccessGrantsRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project of the access grants.
+             Format: projects/{project}
+             Use "projects/-" to list across all projects.
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: The maximum number of access grants to return.
+        pageToken:
+          type: string
+          title: page_token
+          description: A page token from a previous ListAccessGrants call.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter expression using AIP-160 syntax.
+             Supported fields: user, state, issue, expire_time, create_time
+             Examples:
+               - 'user = "users/dev@example.com"'
+               - 'state = "ACTIVE"'
+               - 'user = "users/dev@example.com" AND state = "ACTIVE"'
+               - 'issue = "projects/x/issues/123"'
+               - 'expire_time < "2024-02-01T00:00:00Z"'
+      title: ListAccessGrantsRequest
+      additionalProperties: false
+    bytebase.v1.ListAccessGrantsResponse:
+      type: object
+      properties:
+        accessGrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+          title: access_grants
+          description: The access grants from the specified request.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
+      title: ListAccessGrantsResponse
+      additionalProperties: false
     bytebase.v1.ListChangelogsRequest:
       type: object
       properties:
@@ -17418,6 +17756,27 @@ components:
       title: UndeleteWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for restoring a deleted workload identity.
+    bytebase.v1.UpdateAccessGrantRequest:
+      type: object
+      properties:
+        accessGrant:
+          title: access_grant
+          description: |-
+            The access grant to update.
+
+             The access grant's `name` field is used to identify the access grant to update.
+             Format: projects/{project}/accessGrants/{access_grant}
+          $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+        updateMask:
+          title: update_mask
+          description: |-
+            The list of fields to update.
+             Supported fields:
+             - "state" (PENDING -> ACTIVE, ACTIVE -> REVOKED)
+             - "expire_time" (extend or shorten)
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateAccessGrantRequest
+      additionalProperties: false
     bytebase.v1.UpdateDataSourceRequest:
       type: object
       properties:
@@ -19624,6 +19983,8 @@ components:
          documentation for additional information.
 security: []
 tags:
+  - name: bytebase.v1.AccessGrantService
+    description: AccessGrantService manages temporary access grants within projects.
   - name: bytebase.v1.IssueService
     description: IssueService manages issues for tracking database changes and tasks.
   - name: bytebase.v1.SettingService

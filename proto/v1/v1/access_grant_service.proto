@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/expr.proto";
+import "v1/annotation.proto";
+
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
+
+// AccessGrantService manages temporary access grants within projects.
+service AccessGrantService {
+  // Gets an access grant by name.
+  rpc GetAccessGrant(GetAccessGrantRequest) returns (AccessGrant) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/accessGrants/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.accessGrants.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // Lists access grants in a project.
+  rpc ListAccessGrants(ListAccessGrantsRequest) returns (ListAccessGrantsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/accessGrants"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.accessGrants.list";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // Creates an access grant.
+  rpc CreateAccessGrant(CreateAccessGrantRequest) returns (AccessGrant) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/accessGrants"
+      body: "access_grant"
+    };
+    option (google.api.method_signature) = "parent,access_grant";
+    option (bytebase.v1.permission) = "bb.accessGrants.create";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Updates an access grant.
+  rpc UpdateAccessGrant(UpdateAccessGrantRequest) returns (AccessGrant) {
+    option (google.api.http) = {
+      patch: "/v1/{access_grant.name=projects/*/accessGrants/*}"
+      body: "access_grant"
+    };
+    option (google.api.method_signature) = "access_grant,update_mask";
+    option (bytebase.v1.permission) = "bb.accessGrants.update";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Deletes an access grant.
+  rpc DeleteAccessGrant(DeleteAccessGrantRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*/accessGrants/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.accessGrants.delete";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+}
+
+message AccessGrant {
+  option (google.api.resource) = {
+    type: "bytebase.com/AccessGrant"
+    pattern: "projects/{project}/accessGrants/{access_grant}"
+  };
+
+  // The name of the access grant.
+  // Format: projects/{project}/accessGrants/{access_grant}
+  string name = 1;
+
+  // The beneficiary of the access grant.
+  // Format: users/{email}
+  string user = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The state of the access grant.
+  State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The expiration time of the access grant.
+  google.protobuf.Timestamp expire_time = 4;
+
+  // The issue associated with the access grant.
+  // Can be empty.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The CEL expression defining the target databases for this access grant.
+  // Uses the same variables as IAM policy binding conditions:
+  //   resource.database, resource.schema_name, resource.table_name.
+  // For example:
+  //   resource.database in ["instances/local-pg/databases/db1", "instances/local-pg/databases/db2"]
+  google.type.Expr database_target = 6;
+
+  // The query permission granted.
+  string query = 7;
+
+  // Whether the grant exempts data masking.
+  bool unmasking = 8;
+
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The state of the access grant.
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    // The access grant is pending approval.
+    PENDING = 1;
+    // The access grant is active.
+    ACTIVE = 2;
+    // The access grant has been revoked.
+    REVOKED = 3;
+  }
+}
+
+message GetAccessGrantRequest {
+  // The name of the access grant to retrieve.
+  // Format: projects/{project}/accessGrants/{access_grant}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/AccessGrant"}
+  ];
+}
+
+message ListAccessGrantsRequest {
+  // The parent project of the access grants.
+  // Format: projects/{project}
+  // Use "projects/-" to list across all projects.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The maximum number of access grants to return.
+  int32 page_size = 2;
+
+  // A page token from a previous ListAccessGrants call.
+  string page_token = 3;
+
+  // Filter expression using AIP-160 syntax.
+  // Supported fields: user, state, issue, expire_time, create_time
+  // Examples:
+  //   - 'user = "users/dev@example.com"'
+  //   - 'state = "ACTIVE"'
+  //   - 'user = "users/dev@example.com" AND state = "ACTIVE"'
+  //   - 'issue = "projects/x/issues/123"'
+  //   - 'expire_time < "2024-02-01T00:00:00Z"'
+  string filter = 4;
+}
+
+message ListAccessGrantsResponse {
+  // The access grants from the specified request.
+  repeated AccessGrant access_grants = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message CreateAccessGrantRequest {
+  // The parent project for the access grant.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The access grant to create.
+  AccessGrant access_grant = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateAccessGrantRequest {
+  // The access grant to update.
+  //
+  // The access grant's `name` field is used to identify the access grant to update.
+  // Format: projects/{project}/accessGrants/{access_grant}
+  AccessGrant access_grant = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  // Supported fields:
+  // - "state" (PENDING -> ACTIVE, ACTIVE -> REVOKED)
+  // - "expire_time" (extend or shorten)
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteAccessGrantRequest {
+  // The name of the access grant to delete.
+  // Format: projects/{project}/accessGrants/{access_grant}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/AccessGrant"}
+  ];
+}

@@ -513,6 +513,14 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 18;
    */
   approvalStatus: Issue_ApprovalStatus;
+
+  /**
+   * The access grant associated with this issue.
+   * Format: projects/{project}/accessGrants/{access_grant}
+   *
+   * @generated from field: string access_grant = 19;
+   */
+  accessGrant: string;
 };
 
 /**
@@ -621,6 +629,13 @@ export enum Issue_Type {
    * @generated from enum value: DATABASE_EXPORT = 3;
    */
   DATABASE_EXPORT = 3,
+
+  /**
+   * Temporary access grant request.
+   *
+   * @generated from enum value: ACCESS_GRANT = 4;
+   */
+  ACCESS_GRANT = 4,
 }
 
 /**

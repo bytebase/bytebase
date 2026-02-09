@@ -11,6 +11,19 @@
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
   
+- [v1/access_grant_service.proto](#v1_access_grant_service-proto)
+    - [AccessGrant](#bytebase-v1-AccessGrant)
+    - [CreateAccessGrantRequest](#bytebase-v1-CreateAccessGrantRequest)
+    - [DeleteAccessGrantRequest](#bytebase-v1-DeleteAccessGrantRequest)
+    - [GetAccessGrantRequest](#bytebase-v1-GetAccessGrantRequest)
+    - [ListAccessGrantsRequest](#bytebase-v1-ListAccessGrantsRequest)
+    - [ListAccessGrantsResponse](#bytebase-v1-ListAccessGrantsResponse)
+    - [UpdateAccessGrantRequest](#bytebase-v1-UpdateAccessGrantRequest)
+  
+    - [AccessGrant.State](#bytebase-v1-AccessGrant-State)
+  
+    - [AccessGrantService](#bytebase-v1-AccessGrantService)
+  
 - [v1/common.proto](#v1_common-proto)
     - [PermissionDeniedDetail](#bytebase-v1-PermissionDeniedDetail)
     - [Position](#bytebase-v1-Position)
@@ -732,6 +745,172 @@ Authorization method for RPC calls.
 
 
 
+<a name="v1_access_grant_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/access_grant_service.proto
+
+
+
+<a name="bytebase-v1-AccessGrant"></a>
+
+### AccessGrant
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the access grant. Format: projects/{project}/accessGrants/{access_grant} |
+| user | [string](#string) |  | The beneficiary of the access grant. Format: users/{email} |
+| state | [AccessGrant.State](#bytebase-v1-AccessGrant-State) |  | The state of the access grant. |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The expiration time of the access grant. |
+| issue | [string](#string) |  | The issue associated with the access grant. Can be empty. Format: projects/{project}/issues/{issue} |
+| database_target | [google.type.Expr](#google-type-Expr) |  | The CEL expression defining the target databases for this access grant. Uses the same variables as IAM policy binding conditions: resource.database, resource.schema_name, resource.table_name. For example: resource.database in [&#34;instances/local-pg/databases/db1&#34;, &#34;instances/local-pg/databases/db2&#34;] |
+| query | [string](#string) |  | The query permission granted. |
+| unmasking | [bool](#bool) |  | Whether the grant exempts data masking. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateAccessGrantRequest"></a>
+
+### CreateAccessGrantRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project for the access grant. Format: projects/{project} |
+| access_grant | [AccessGrant](#bytebase-v1-AccessGrant) |  | The access grant to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteAccessGrantRequest"></a>
+
+### DeleteAccessGrantRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the access grant to delete. Format: projects/{project}/accessGrants/{access_grant} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetAccessGrantRequest"></a>
+
+### GetAccessGrantRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the access grant to retrieve. Format: projects/{project}/accessGrants/{access_grant} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListAccessGrantsRequest"></a>
+
+### ListAccessGrantsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project of the access grants. Format: projects/{project} Use &#34;projects/-&#34; to list across all projects. |
+| page_size | [int32](#int32) |  | The maximum number of access grants to return. |
+| page_token | [string](#string) |  | A page token from a previous ListAccessGrants call. |
+| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: user, state, issue, expire_time, create_time Examples: - &#39;user = &#34;users/dev@example.com&#34;&#39; - &#39;state = &#34;ACTIVE&#34;&#39; - &#39;user = &#34;users/dev@example.com&#34; AND state = &#34;ACTIVE&#34;&#39; - &#39;issue = &#34;projects/x/issues/123&#34;&#39; - &#39;expire_time &lt; &#34;2024-02-01T00:00:00Z&#34;&#39; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListAccessGrantsResponse"></a>
+
+### ListAccessGrantsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_grants | [AccessGrant](#bytebase-v1-AccessGrant) | repeated | The access grants from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateAccessGrantRequest"></a>
+
+### UpdateAccessGrantRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_grant | [AccessGrant](#bytebase-v1-AccessGrant) |  | The access grant to update.
+
+The access grant&#39;s `name` field is used to identify the access grant to update. Format: projects/{project}/accessGrants/{access_grant} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. Supported fields: - &#34;state&#34; (PENDING -&gt; ACTIVE, ACTIVE -&gt; REVOKED) - &#34;expire_time&#34; (extend or shorten) |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AccessGrant-State"></a>
+
+### AccessGrant.State
+The state of the access grant.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| PENDING | 1 | The access grant is pending approval. |
+| ACTIVE | 2 | The access grant is active. |
+| REVOKED | 3 | The access grant has been revoked. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AccessGrantService"></a>
+
+### AccessGrantService
+AccessGrantService manages temporary access grants within projects.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetAccessGrant | [GetAccessGrantRequest](#bytebase-v1-GetAccessGrantRequest) | [AccessGrant](#bytebase-v1-AccessGrant) | Gets an access grant by name. |
+| ListAccessGrants | [ListAccessGrantsRequest](#bytebase-v1-ListAccessGrantsRequest) | [ListAccessGrantsResponse](#bytebase-v1-ListAccessGrantsResponse) | Lists access grants in a project. |
+| CreateAccessGrant | [CreateAccessGrantRequest](#bytebase-v1-CreateAccessGrantRequest) | [AccessGrant](#bytebase-v1-AccessGrant) | Creates an access grant. |
+| UpdateAccessGrant | [UpdateAccessGrantRequest](#bytebase-v1-UpdateAccessGrantRequest) | [AccessGrant](#bytebase-v1-AccessGrant) | Updates an access grant. |
+| DeleteAccessGrant | [DeleteAccessGrantRequest](#bytebase-v1-DeleteAccessGrantRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an access grant. |
+
+ 
+
+
+
 <a name="v1_common-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1148,6 +1327,7 @@ Webhook integration type.
 | risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
 | labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
 | approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
+| access_grant | [string](#string) |  | The access grant associated with this issue. Format: projects/{project}/accessGrants/{access_grant} |
 
 
 
@@ -1472,6 +1652,7 @@ The type of issue.
 | DATABASE_CHANGE | 1 | Database schema or data change. |
 | GRANT_REQUEST | 2 | Database access grant request. |
 | DATABASE_EXPORT | 3 | Database data export request. |
+| ACCESS_GRANT | 4 | Temporary access grant request. |
 
 
 

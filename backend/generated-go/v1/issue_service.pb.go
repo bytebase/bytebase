@@ -96,6 +96,8 @@ const (
 	Issue_GRANT_REQUEST Issue_Type = 2
 	// Database data export request.
 	Issue_DATABASE_EXPORT Issue_Type = 3
+	// Temporary access grant request.
+	Issue_ACCESS_GRANT Issue_Type = 4
 )
 
 // Enum value maps for Issue_Type.
@@ -105,12 +107,14 @@ var (
 		1: "DATABASE_CHANGE",
 		2: "GRANT_REQUEST",
 		3: "DATABASE_EXPORT",
+		4: "ACCESS_GRANT",
 	}
 	Issue_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"DATABASE_CHANGE":  1,
 		"GRANT_REQUEST":    2,
 		"DATABASE_EXPORT":  3,
+		"ACCESS_GRANT":     4,
 	}
 )
 
@@ -1110,8 +1114,11 @@ type Issue struct {
 	// Labels attached to the issue for categorization and filtering.
 	Labels         []string             `protobuf:"bytes,17,rep,name=labels,proto3" json:"labels,omitempty"`
 	ApprovalStatus Issue_ApprovalStatus `protobuf:"varint,18,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// The access grant associated with this issue.
+	// Format: projects/{project}/accessGrants/{access_grant}
+	AccessGrant   string `protobuf:"bytes,19,opt,name=access_grant,json=accessGrant,proto3" json:"access_grant,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Issue) Reset() {
@@ -1247,6 +1254,13 @@ func (x *Issue) GetApprovalStatus() Issue_ApprovalStatus {
 		return x.ApprovalStatus
 	}
 	return Issue_APPROVAL_STATUS_UNSPECIFIED
+}
+
+func (x *Issue) GetAccessGrant() string {
+	if x != nil {
+		return x.AccessGrant
+	}
+	return ""
 }
 
 type GrantRequest struct {
@@ -2168,7 +2182,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\xa4\t\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\xfb\t\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2188,7 +2202,9 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
 	"risk_level\x18\x0f \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x12\x16\n" +
 	"\x06labels\x18\x11 \x03(\tR\x06labels\x12O\n" +
-	"\x0fapproval_status\x18\x12 \x01(\x0e2!.bytebase.v1.Issue.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x1a\xaf\x01\n" +
+	"\x0fapproval_status\x18\x12 \x01(\x0e2!.bytebase.v1.Issue.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12C\n" +
+	"\faccess_grant\x18\x13 \x01(\tB \xe0A\x03\xfaA\x1a\n" +
+	"\x18bytebase.com/AccessGrantR\vaccessGrant\x1a\xaf\x01\n" +
 	"\bApprover\x12:\n" +
 	"\x06status\x18\x01 \x01(\x0e2\".bytebase.v1.Issue.Approver.StatusR\x06status\x12\x1c\n" +
 	"\tprincipal\x18\x02 \x01(\tR\tprincipal\"I\n" +
@@ -2196,12 +2212,13 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"Y\n" +
+	"\bREJECTED\x10\x03\"k\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CHANGE\x10\x01\x12\x11\n" +
 	"\rGRANT_REQUEST\x10\x02\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x03\"u\n" +
+	"\x0fDATABASE_EXPORT\x10\x03\x12\x10\n" +
+	"\fACCESS_GRANT\x10\x04\"u\n" +
 	"\x0eApprovalStatus\x12\x1f\n" +
 	"\x1bAPPROVAL_STATUS_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bCHECKING\x10\x01\x12\v\n" +
