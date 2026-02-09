@@ -16,6 +16,10 @@
     {
       "groupName": "codingame",
       "matchPackagePatterns": ["^@codingame/", "^monaco-editor$", "^vscode$"]
+    },
+    {
+      "groupName": "google.golang.org/genproto",
+      "matchPackagePatterns": ["^google.golang.org/genproto"]
     }
   ],
   "ignoreDeps": [
