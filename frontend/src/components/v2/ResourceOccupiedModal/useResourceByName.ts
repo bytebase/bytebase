@@ -93,7 +93,9 @@ export const useResourceByName = ({
         }
         return;
       case "user":
-        await userStore.getOrFetchUserByIdentifier(resource.value, true);
+        await userStore.getOrFetchUserByIdentifier({
+          identifier: resource.value,
+        });
         return;
     }
   });

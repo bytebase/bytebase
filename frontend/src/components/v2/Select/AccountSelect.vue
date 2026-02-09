@@ -47,6 +47,7 @@ import {
 import {
   allUsersUser,
   getUserTypeByEmail,
+  getUserTypeByFullname,
   unknownGroup,
   unknownUser,
 } from "@/types";
@@ -79,7 +80,9 @@ const props = defineProps<{
   value?: string | string[] | undefined; // fullname
   projectName?: string;
   // allUsers is a special user that represents all users in the project.
-  includeAllUsers?: boolean;
+  includeAllUsers: boolean;
+  includeServiceAccount: boolean;
+  includeWorkloadIdentity: boolean;
 }>();
 
 defineEmits<{
@@ -159,7 +162,7 @@ const additionalOptions = computedAsync(async () => {
       groupNames.push(fullname);
       continue;
     }
-    const userType = getUserTypeByEmail(fullname);
+    const userType = getUserTypeByFullname(fullname);
     switch (userType) {
       case UserType.SERVICE_ACCOUNT:
         if (!hasGetServiceAccountPermission.value) {
@@ -244,9 +247,20 @@ const fetchAccounts = async (params: {
   nextPageToken: string;
   options: ResourceSelectOption<AccountResource>[];
 }> => {
-  const userType = getUserTypeByEmail(params.search);
+  let userType = getUserTypeByFullname(params.search);
+  if (userType === UserType.USER) {
+    // If the params.search doesn't have the prefix,
+    // we will try to guess the type by email suffix.
+    userType = getUserTypeByEmail(params.search);
+  }
   switch (userType) {
     case UserType.SERVICE_ACCOUNT:
+      if (!props.includeServiceAccount) {
+        return {
+          nextPageToken: "",
+          options: [],
+        };
+      }
       if (!hasGetServiceAccountPermission.value) {
         const email = extractServiceAccountId(params.search);
         return {
@@ -274,6 +288,12 @@ const fetchAccounts = async (params: {
         options: [getUserOption(serviceAccountToUser(sa))],
       };
     case UserType.WORKLOAD_IDENTITY:
+      if (!props.includeWorkloadIdentity) {
+        return {
+          nextPageToken: "",
+          options: [],
+        };
+      }
       if (!hasGetWorkloadIdentityPermission.value) {
         const email = extractWorkloadIdentityId(params.search);
         return {

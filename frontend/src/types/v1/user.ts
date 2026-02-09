@@ -1,6 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
-import { extractUserEmail } from "@/store/modules/v1/common";
+import {
+  extractUserEmail,
+  serviceAccountNamePrefix,
+  workloadIdentityNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { User } from "../proto-es/v1/user_service_pb";
@@ -93,6 +97,20 @@ export const getUserTypeByEmail = (email: string): UserType => {
     return UserType.SERVICE_ACCOUNT;
   }
   if (email.endsWith(workloadIdentitySuffix)) {
+    return UserType.WORKLOAD_IDENTITY;
+  }
+  return UserType.USER;
+};
+
+// getUserTypeByFullname determines the user type by the fullname prefix.
+// This is more reliable than checking email suffix, as it works for
+// legacy service accounts/workload identities with non-standard email formats.
+// Supported formats: serviceAccounts/{email}, workloadIdentities/{email}, users/{email}
+export const getUserTypeByFullname = (fullname: string): UserType => {
+  if (fullname.startsWith(serviceAccountNamePrefix)) {
+    return UserType.SERVICE_ACCOUNT;
+  }
+  if (fullname.startsWith(workloadIdentityNamePrefix)) {
     return UserType.WORKLOAD_IDENTITY;
   }
   return UserType.USER;

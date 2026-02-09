@@ -213,7 +213,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
-import { computedAsync, useTitle } from "@vueuse/core";
+import { useTitle } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import { EllipsisIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
@@ -258,7 +258,12 @@ import {
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
-import { ALL_USERS_USER_EMAIL, getUserTypeByEmail, unknownUser } from "@/types";
+import {
+  ALL_USERS_USER_EMAIL,
+  getUserTypeByEmail,
+  isValidUserName,
+  unknownUser,
+} from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -332,6 +337,17 @@ const keyboardHandler = (e: KeyboardEvent) => {
 
 onMounted(async () => {
   document.addEventListener("keydown", keyboardHandler);
+  if (props.principalEmail) {
+    const user = await userStore.getOrFetchUserByIdentifier({
+      identifier: props.principalEmail,
+      fallback: false,
+    });
+    if (!isValidUserName(user.name)) {
+      router.replace({
+        name: WORKSPACE_ROUTE_404,
+      });
+    }
+  }
 });
 
 onUnmounted(() => {
@@ -349,12 +365,12 @@ const showRegenerateRecoveryCodes = computed(() => {
   return user.value.mfaEnabled && user.value.name === currentUser.value.name;
 });
 
-const user = computedAsync(() => {
+const user = computed(() => {
   if (props.principalEmail) {
-    return userStore.getOrFetchUserByIdentifier(props.principalEmail);
+    return userStore.getUserByIdentifier(props.principalEmail) ?? unknownUser();
   }
   return currentUser.value;
-}, unknownUser());
+});
 
 const userRoles = computed(() => {
   return [...workspaceStore.getWorkspaceRolesByName(user.value.name)];

@@ -92,7 +92,9 @@ const rejectedApprover = computedAsync(() => {
     (ap) => ap.status === Issue_Approver_Status.REJECTED
   );
   if (!rejectedApproval?.principal) return undefined;
-  return userStore.getOrFetchUserByIdentifier(rejectedApproval.principal);
+  return userStore.getOrFetchUserByIdentifier({
+    identifier: rejectedApproval.principal,
+  });
 });
 
 const currentApprover = computedAsync(() => {
@@ -116,6 +118,8 @@ const currentApprover = computedAsync(() => {
 
   // Show the first approver candidate otherwise.
   if (candidates.length === 0) return undefined;
-  return userStore.getOrFetchUserByIdentifier(candidates[0]);
+  return userStore.getOrFetchUserByIdentifier({
+    identifier: candidates[0],
+  });
 });
 </script>
