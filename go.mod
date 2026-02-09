@@ -76,7 +76,7 @@ require (
 	github.com/pingcap/tidb v1.1.0-beta.0.20241125141335-ec8b81b98edc
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20241125141335-ec8b81b98edc
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/v9 v9.17.2
+	github.com/redis/go-redis/v9 v9.17.3
 	github.com/shopspring/decimal v1.4.0
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/snowflakedb/gosnowflake v1.19.0
