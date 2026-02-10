@@ -1003,7 +1003,7 @@ func writeMaterializedView(out io.Writer, schema string, view *storepb.Materiali
 	}
 
 	for _, index := range view.Indexes {
-		if err := writeIndex(out, schema, view.Name, index); err != nil {
+		if err := writeIndex(out, schema, view.Name, index, false); err != nil {
 			return err
 		}
 	}
@@ -1662,7 +1662,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 	// Construct Index.
 	for _, index := range table.Indexes {
 		if !index.Primary && !index.IsConstraint {
-			if err := writeIndex(out, schema, table.Name, index); err != nil {
+			if err := writeIndex(out, schema, table.Name, index, len(table.Partitions) > 0); err != nil {
 				return err
 			}
 		}
@@ -1833,7 +1833,7 @@ func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata
 func writePartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
 		if !index.IsConstraint && !index.Primary {
-			if err := writeIndex(out, schema, partition.Name, index); err != nil {
+			if err := writeIndex(out, schema, partition.Name, index, len(partition.Subpartitions) > 0); err != nil {
 				return err
 			}
 		}
@@ -1847,8 +1847,8 @@ func writePartitionIndex(out io.Writer, schema string, partition *storepb.TableP
 	return nil
 }
 
-func writeIndex(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
-	return writeIndexInternal(out, schema, table, index, true, true)
+func writeIndex(out io.Writer, schema string, table string, index *storepb.IndexMetadata, useOnlyClause bool) error {
+	return writeIndexInternal(out, schema, table, index, useOnlyClause, true)
 }
 
 func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
@@ -2696,7 +2696,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 					continue
 				}
 
-				if err := writeIndexSDL(&buf, schema.Name, materializedView.Name, index); err != nil {
+				if err := writeIndexSDL(&buf, schema.Name, materializedView.Name, index, false); err != nil {
 					return "", err
 				}
 				if _, err := buf.WriteString(";\n\n"); err != nil {
@@ -3153,7 +3153,7 @@ func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetad
 			continue
 		}
 
-		if err := writeIndexSDL(out, schemaName, table.Name, index); err != nil {
+		if err := writeIndexSDL(out, schemaName, table.Name, index, len(table.Partitions) > 0); err != nil {
 			return err
 		}
 
@@ -3164,8 +3164,8 @@ func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetad
 	return nil
 }
 
-func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *storepb.IndexMetadata) error {
-	return writeIndexInternal(out, schemaName, tableName, index, true, false)
+func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *storepb.IndexMetadata, useOnlyClause bool) error {
+	return writeIndexInternal(out, schemaName, tableName, index, useOnlyClause, false)
 }
 
 // writeIndexInternal is the core index writing function with options for different modes
@@ -3183,6 +3183,9 @@ func writeIndexInternal(out io.Writer, schema string, table string, index *store
 		return err
 	}
 
+	// TODO: useOnlyClause assumes partition-structured metadata. If legacy
+	// PostgreSQL table inheritance support is ever needed, revisit with
+	// definition-driven ONLY extraction.
 	if useOnlyClause {
 		if _, err := io.WriteString(out, `" ON ONLY "`); err != nil {
 			return err
@@ -3218,6 +3221,18 @@ func writeIndexInternal(out io.Writer, schema string, table string, index *store
 	}
 	if err := writeIndexKeyList(out, index); err != nil {
 		return err
+	}
+
+	// Write WHERE clause for partial indexes.
+	// The WHERE clause is stored in the full index definition (from pg_get_indexdef).
+	if index.Definition != "" {
+		comparer := &PostgreSQLIndexComparer{}
+		whereClause := comparer.ExtractWhereClauseFromIndexDef(index.Definition)
+		if whereClause != "" {
+			if _, err := fmt.Fprintf(out, " WHERE %s", whereClause); err != nil {
+				return err
+			}
+		}
 	}
 
 	if includeTerminatorAndComment {
@@ -3718,7 +3733,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 				}
 
 				buf.WriteString("\n")
-				if err := writeIndexSDL(&buf, schemaName, materializedView.Name, index); err != nil {
+				if err := writeIndexSDL(&buf, schemaName, materializedView.Name, index, false); err != nil {
 					return nil, errors.Wrapf(err, "failed to generate index SDL for %s.%s", schemaName, index.Name)
 				}
 				buf.WriteString(";\n")

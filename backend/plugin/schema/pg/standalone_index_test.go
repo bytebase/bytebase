@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -512,4 +513,122 @@ CREATE INDEX "idx_employees_name" ON "company"."employees" (name);
 			}
 		})
 	}
+}
+
+// TestPartialIndexWhereClauseInSDLOutput tests that partial index WHERE clauses
+// are preserved in SDL output (regression test for WHERE clause being dropped).
+func TestPartialIndexWhereClauseInSDLOutput(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "channels",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "slug", Type: "character varying(255)", Position: 2},
+							{Name: "social_region", Type: "character varying(50)", Position: 3},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "udx_slug_social_region_on_channels",
+								Expressions: []string{"slug", "social_region"},
+								Type:        "btree",
+								Unique:      true,
+								Definition:  "CREATE UNIQUE INDEX udx_slug_social_region_on_channels ON public.channels USING btree (slug, social_region) WHERE ((slug)::text <> ''::text);",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	sdl, err := getSDLFormat(metadata)
+	require.NoError(t, err)
+
+	// WHERE clause must be present
+	require.Contains(t, sdl, "WHERE")
+	require.Contains(t, sdl, "(slug)::text")
+
+	// Non-partitioned table: must NOT have ON ONLY
+	require.NotContains(t, sdl, "ON ONLY")
+	require.Contains(t, sdl, "ON \"public\".\"channels\"")
+}
+
+// TestRegularIndexNoOnOnly tests that regular (non-partitioned) table indexes
+// do not include ON ONLY in SDL output.
+func TestRegularIndexNoOnOnly(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "email", Type: "character varying(255)", Position: 2},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_users_email",
+								Expressions: []string{"email"},
+								Type:        "btree",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	sdl, err := getSDLFormat(metadata)
+	require.NoError(t, err)
+
+	require.Contains(t, sdl, `CREATE INDEX "idx_users_email"`)
+	require.Contains(t, sdl, `ON "public"."users"`)
+	require.NotContains(t, sdl, "ON ONLY")
+}
+
+// TestPartitionedTableIndexUsesOnOnly tests that partitioned parent table indexes
+// use ON ONLY in SDL output to prevent recursive child index creation.
+func TestPartitionedTableIndexUsesOnOnly(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "order_date", Type: "date", Position: 2},
+							{Name: "customer_id", Type: "integer", Position: 3},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_orders_customer_id",
+								Expressions: []string{"customer_id"},
+								Type:        "btree",
+							},
+						},
+						Partitions: []*storepb.TablePartitionMetadata{
+							{
+								Name: "orders_2024",
+								Type: storepb.TablePartitionMetadata_RANGE,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	sdl, err := getSDLFormat(metadata)
+	require.NoError(t, err)
+
+	require.Contains(t, sdl, `CREATE INDEX "idx_orders_customer_id"`)
+	require.Contains(t, sdl, `ON ONLY "public"."orders"`)
 }
