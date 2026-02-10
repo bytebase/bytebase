@@ -23,59 +23,60 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The state of the access grant.
-type AccessGrant_State int32
+// The status of the access grant.
+type AccessGrant_Status int32
 
 const (
-	AccessGrant_STATE_UNSPECIFIED AccessGrant_State = 0
+	AccessGrant_STATUS_UNSPECIFIED AccessGrant_Status = 0
 	// The access grant is pending approval.
-	AccessGrant_PENDING AccessGrant_State = 1
-	// The access grant is active.
-	AccessGrant_ACTIVE AccessGrant_State = 2
+	AccessGrant_PENDING AccessGrant_Status = 1
+	// The access grant is active. Check `expire_time` to determine
+	// whether the grant is still valid or has expired.
+	AccessGrant_ACTIVE AccessGrant_Status = 2
 	// The access grant has been revoked.
-	AccessGrant_REVOKED AccessGrant_State = 3
+	AccessGrant_REVOKED AccessGrant_Status = 3
 )
 
-// Enum value maps for AccessGrant_State.
+// Enum value maps for AccessGrant_Status.
 var (
-	AccessGrant_State_name = map[int32]string{
-		0: "STATE_UNSPECIFIED",
+	AccessGrant_Status_name = map[int32]string{
+		0: "STATUS_UNSPECIFIED",
 		1: "PENDING",
 		2: "ACTIVE",
 		3: "REVOKED",
 	}
-	AccessGrant_State_value = map[string]int32{
-		"STATE_UNSPECIFIED": 0,
-		"PENDING":           1,
-		"ACTIVE":            2,
-		"REVOKED":           3,
+	AccessGrant_Status_value = map[string]int32{
+		"STATUS_UNSPECIFIED": 0,
+		"PENDING":            1,
+		"ACTIVE":             2,
+		"REVOKED":            3,
 	}
 )
 
-func (x AccessGrant_State) Enum() *AccessGrant_State {
-	p := new(AccessGrant_State)
+func (x AccessGrant_Status) Enum() *AccessGrant_Status {
+	p := new(AccessGrant_Status)
 	*p = x
 	return p
 }
 
-func (x AccessGrant_State) String() string {
+func (x AccessGrant_Status) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (AccessGrant_State) Descriptor() protoreflect.EnumDescriptor {
+func (AccessGrant_Status) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_access_grant_service_proto_enumTypes[0].Descriptor()
 }
 
-func (AccessGrant_State) Type() protoreflect.EnumType {
+func (AccessGrant_Status) Type() protoreflect.EnumType {
 	return &file_v1_access_grant_service_proto_enumTypes[0]
 }
 
-func (x AccessGrant_State) Number() protoreflect.EnumNumber {
+func (x AccessGrant_Status) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use AccessGrant_State.Descriptor instead.
-func (AccessGrant_State) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use AccessGrant_Status.Descriptor instead.
+func (AccessGrant_Status) EnumDescriptor() ([]byte, []int) {
 	return file_v1_access_grant_service_proto_rawDescGZIP(), []int{0, 0}
 }
 
@@ -88,9 +89,14 @@ type AccessGrant struct {
 	// The creator of the access grant.
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,2,opt,name=creator,proto3" json:"creator,omitempty"`
-	// The state of the access grant.
-	State AccessGrant_State `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.AccessGrant_State" json:"state,omitempty"`
+	// The status of the access grant.
+	// An ACTIVE grant with `expire_time` in the past is effectively expired
+	// and no longer authorizes access. Use `expire_time` to determine
+	// whether an ACTIVE grant has expired.
+	Status AccessGrant_Status `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.AccessGrant_Status" json:"status,omitempty"`
 	// The expiration time of the access grant.
+	// When the current time exceeds this value, an ACTIVE grant is
+	// considered expired and no longer authorizes access.
 	ExpireTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
 	// The issue associated with the access grant.
 	// Can be empty.
@@ -98,15 +104,15 @@ type AccessGrant struct {
 	Issue string `protobuf:"bytes,5,opt,name=issue,proto3" json:"issue,omitempty"`
 	// The target databases for this access grant.
 	// Format: instances/{instance}/databases/{database}
-	Databases []string `protobuf:"bytes,6,rep,name=databases,proto3" json:"databases,omitempty"`
+	Targets []string `protobuf:"bytes,6,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The query permission granted.
 	Query string `protobuf:"bytes,7,opt,name=query,proto3" json:"query,omitempty"`
-	// Whether the grant exempts data masking.
-	MaskingExemption bool                   `protobuf:"varint,8,opt,name=masking_exemption,json=maskingExemption,proto3" json:"masking_exemption,omitempty"`
-	CreateTime       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	UpdateTime       *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Whether the grant allows unmasking sensitive data.
+	Unmask        bool                   `protobuf:"varint,8,opt,name=unmask,proto3" json:"unmask,omitempty"`
+	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	UpdateTime    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AccessGrant) Reset() {
@@ -153,11 +159,11 @@ func (x *AccessGrant) GetCreator() string {
 	return ""
 }
 
-func (x *AccessGrant) GetState() AccessGrant_State {
+func (x *AccessGrant) GetStatus() AccessGrant_Status {
 	if x != nil {
-		return x.State
+		return x.Status
 	}
-	return AccessGrant_STATE_UNSPECIFIED
+	return AccessGrant_STATUS_UNSPECIFIED
 }
 
 func (x *AccessGrant) GetExpireTime() *timestamppb.Timestamp {
@@ -174,9 +180,9 @@ func (x *AccessGrant) GetIssue() string {
 	return ""
 }
 
-func (x *AccessGrant) GetDatabases() []string {
+func (x *AccessGrant) GetTargets() []string {
 	if x != nil {
-		return x.Databases
+		return x.Targets
 	}
 	return nil
 }
@@ -188,9 +194,9 @@ func (x *AccessGrant) GetQuery() string {
 	return ""
 }
 
-func (x *AccessGrant) GetMaskingExemption() bool {
+func (x *AccessGrant) GetUnmask() bool {
 	if x != nil {
-		return x.MaskingExemption
+		return x.Unmask
 	}
 	return false
 }
@@ -265,13 +271,13 @@ type ListAccessGrantsRequest struct {
 	// A page token from a previous ListAccessGrants call.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter expression using AIP-160 syntax.
-	// Supported fields: creator, state, issue, expire_time, create_time
+	// Supported fields: creator, status, issue, expire_time, create_time
 	// Examples:
 	//   - 'creator = "users/dev@example.com"'
-	//   - 'state = "ACTIVE"'
-	//   - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
+	//   - 'status = "ACTIVE"'
+	//   - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
 	//   - 'issue = "projects/x/issues/123"'
-	//   - 'expire_time < "2024-02-01T00:00:00Z"'
+	//   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -541,24 +547,24 @@ var File_v1_access_grant_service_proto protoreflect.FileDescriptor
 
 const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xd2\x04\n" +
+	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xbe\x04\n" +
 	"\vAccessGrant\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
-	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x129\n" +
-	"\x05state\x18\x03 \x01(\x0e2\x1e.bytebase.v1.AccessGrant.StateB\x03\xe0A\x03R\x05state\x12;\n" +
+	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x12<\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1f.bytebase.v1.AccessGrant.StatusB\x03\xe0A\x03R\x06status\x12;\n" +
 	"\vexpire_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"expireTime\x12\x19\n" +
-	"\x05issue\x18\x05 \x01(\tB\x03\xe0A\x03R\x05issue\x12!\n" +
-	"\tdatabases\x18\x06 \x03(\tB\x03\xe0A\x02R\tdatabases\x12\x14\n" +
-	"\x05query\x18\a \x01(\tR\x05query\x12+\n" +
-	"\x11masking_exemption\x18\b \x01(\bR\x10maskingExemption\x12@\n" +
+	"\x05issue\x18\x05 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1d\n" +
+	"\atargets\x18\x06 \x03(\tB\x03\xe0A\x02R\atargets\x12\x14\n" +
+	"\x05query\x18\a \x01(\tR\x05query\x12\x16\n" +
+	"\x06unmask\x18\b \x01(\bR\x06unmask\x12@\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"updateTime\"D\n" +
-	"\x05State\x12\x15\n" +
-	"\x11STATE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"updateTime\"F\n" +
+	"\x06Status\x12\x16\n" +
+	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x02\x12\v\n" +
@@ -586,13 +592,13 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\x18bytebase.com/AccessGrantR\x04name\"P\n" +
 	"\x18RevokeAccessGrantRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name2\x9f\a\n" +
+	"\x18bytebase.com/AccessGrantR\x04name2\xad\a\n" +
 	"\x12AccessGrantService\x12\x9e\x01\n" +
 	"\x0eGetAccessGrant\x12\".bytebase.v1.GetAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"N\xdaA\x04name\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/accessGrants/*}\x12\xb2\x01\n" +
 	"\x10ListAccessGrants\x12$.bytebase.v1.ListAccessGrantsRequest\x1a%.bytebase.v1.ListAccessGrantsResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.accessGrants.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/accessGrants\x12\xc8\x01\n" +
-	"\x11CreateAccessGrant\x12%.bytebase.v1.CreateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"r\xdaA\x13parent,access_grant\x8a\xea0\x16bb.accessGrants.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x024:\faccess_grant\"$/v1/{parent=projects/*}/accessGrants\x12\xb6\x01\n" +
-	"\x13ActivateAccessGrant\x12'.bytebase.v1.ActivateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"\\\x8a\xea0\x18bb.accessGrants.activate\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{name=projects/*/accessGrants/*}:activate\x12\xae\x01\n" +
-	"\x11RevokeAccessGrant\x12%.bytebase.v1.RevokeAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"X\x8a\xea0\x16bb.accessGrants.revoke\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/accessGrants/*}:revokeB\xad\x01\n" +
+	"\x11CreateAccessGrant\x12%.bytebase.v1.CreateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"r\xdaA\x13parent,access_grant\x8a\xea0\x16bb.accessGrants.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x024:\faccess_grant\"$/v1/{parent=projects/*}/accessGrants\x12\xbd\x01\n" +
+	"\x13ActivateAccessGrant\x12'.bytebase.v1.ActivateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"c\xdaA\x04name\x8a\xea0\x18bb.accessGrants.activate\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{name=projects/*/accessGrants/*}:activate\x12\xb5\x01\n" +
+	"\x11RevokeAccessGrant\x12%.bytebase.v1.RevokeAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"_\xdaA\x04name\x8a\xea0\x16bb.accessGrants.revoke\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/accessGrants/*}:revokeB\xad\x01\n" +
 	"\x0fcom.bytebase.v1B\x17AccessGrantServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -610,7 +616,7 @@ func file_v1_access_grant_service_proto_rawDescGZIP() []byte {
 var file_v1_access_grant_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_access_grant_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_v1_access_grant_service_proto_goTypes = []any{
-	(AccessGrant_State)(0),             // 0: bytebase.v1.AccessGrant.State
+	(AccessGrant_Status)(0),            // 0: bytebase.v1.AccessGrant.Status
 	(*AccessGrant)(nil),                // 1: bytebase.v1.AccessGrant
 	(*GetAccessGrantRequest)(nil),      // 2: bytebase.v1.GetAccessGrantRequest
 	(*ListAccessGrantsRequest)(nil),    // 3: bytebase.v1.ListAccessGrantsRequest
@@ -621,7 +627,7 @@ var file_v1_access_grant_service_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),      // 8: google.protobuf.Timestamp
 }
 var file_v1_access_grant_service_proto_depIdxs = []int32{
-	0,  // 0: bytebase.v1.AccessGrant.state:type_name -> bytebase.v1.AccessGrant.State
+	0,  // 0: bytebase.v1.AccessGrant.status:type_name -> bytebase.v1.AccessGrant.Status
 	8,  // 1: bytebase.v1.AccessGrant.expire_time:type_name -> google.protobuf.Timestamp
 	8,  // 2: bytebase.v1.AccessGrant.create_time:type_name -> google.protobuf.Timestamp
 	8,  // 3: bytebase.v1.AccessGrant.update_time:type_name -> google.protobuf.Timestamp

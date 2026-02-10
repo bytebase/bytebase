@@ -7204,25 +7204,25 @@ paths:
           in: query
           description: |-
             Filter expression using AIP-160 syntax.
-             Supported fields: creator, state, issue, expire_time, create_time
+             Supported fields: creator, status, issue, expire_time, create_time
              Examples:
                - 'creator = "users/dev@example.com"'
-               - 'state = "ACTIVE"'
-               - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
+               - 'status = "ACTIVE"'
+               - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
                - 'issue = "projects/x/issues/123"'
-               - 'expire_time < "2024-02-01T00:00:00Z"'
+               - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
           schema:
             type: string
             title: filter
             description: |-
               Filter expression using AIP-160 syntax.
-               Supported fields: creator, state, issue, expire_time, create_time
+               Supported fields: creator, status, issue, expire_time, create_time
                Examples:
                  - 'creator = "users/dev@example.com"'
-                 - 'state = "ACTIVE"'
-                 - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
+                 - 'status = "ACTIVE"'
+                 - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
                  - 'issue = "projects/x/issues/123"'
-                 - 'expire_time < "2024-02-01T00:00:00Z"'
+                 - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
       responses:
         "200":
           description: Success
@@ -15827,14 +15827,21 @@ components:
           description: |-
             The creator of the access grant.
              Format: users/{email}
-        state:
-          title: state
-          description: The state of the access grant.
+        status:
+          title: status
+          description: |-
+            The status of the access grant.
+             An ACTIVE grant with `expire_time` in the past is effectively expired
+             and no longer authorizes access. Use `expire_time` to determine
+             whether an ACTIVE grant has expired.
           readOnly: true
-          $ref: '#/components/schemas/bytebase.v1.AccessGrant.State'
+          $ref: '#/components/schemas/bytebase.v1.AccessGrant.Status'
         expireTime:
           title: expire_time
-          description: The expiration time of the access grant.
+          description: |-
+            The expiration time of the access grant.
+             When the current time exceeds this value, an ACTIVE grant is
+             considered expired and no longer authorizes access.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
         issue:
           type: string
@@ -15844,11 +15851,11 @@ components:
              Can be empty.
              Format: projects/{project}/issues/{issue}
           readOnly: true
-        databases:
+        targets:
           type: array
           items:
             type: string
-          title: databases
+          title: targets
           description: |-
             The target databases for this access grant.
              Format: instances/{instance}/databases/{database}
@@ -15856,10 +15863,10 @@ components:
           type: string
           title: query
           description: The query permission granted.
-        maskingExemption:
+        unmask:
           type: boolean
-          title: masking_exemption
-          description: Whether the grant exempts data masking.
+          title: unmask
+          description: Whether the grant allows unmasking sensitive data.
         createTime:
           title: create_time
           readOnly: true
@@ -15871,17 +15878,17 @@ components:
       title: AccessGrant
       required:
         - creator
-        - databases
+        - targets
       additionalProperties: false
-    bytebase.v1.AccessGrant.State:
+    bytebase.v1.AccessGrant.Status:
       type: string
-      title: State
+      title: Status
       enum:
-        - STATE_UNSPECIFIED
+        - STATUS_UNSPECIFIED
         - PENDING
         - ACTIVE
         - REVOKED
-      description: The state of the access grant.
+      description: The status of the access grant.
     bytebase.v1.ActivateAccessGrantRequest:
       type: object
       properties:
@@ -21021,13 +21028,13 @@ components:
           title: filter
           description: |-
             Filter expression using AIP-160 syntax.
-             Supported fields: creator, state, issue, expire_time, create_time
+             Supported fields: creator, status, issue, expire_time, create_time
              Examples:
                - 'creator = "users/dev@example.com"'
-               - 'state = "ACTIVE"'
-               - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
+               - 'status = "ACTIVE"'
+               - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
                - 'issue = "projects/x/issues/123"'
-               - 'expire_time < "2024-02-01T00:00:00Z"'
+               - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
       title: ListAccessGrantsRequest
       required:
         - parent

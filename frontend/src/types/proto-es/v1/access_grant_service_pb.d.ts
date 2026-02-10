@@ -33,14 +33,19 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   creator: string;
 
   /**
-   * The state of the access grant.
+   * The status of the access grant.
+   * An ACTIVE grant with `expire_time` in the past is effectively expired
+   * and no longer authorizes access. Use `expire_time` to determine
+   * whether an ACTIVE grant has expired.
    *
-   * @generated from field: bytebase.v1.AccessGrant.State state = 3;
+   * @generated from field: bytebase.v1.AccessGrant.Status status = 3;
    */
-  state: AccessGrant_State;
+  status: AccessGrant_Status;
 
   /**
    * The expiration time of the access grant.
+   * When the current time exceeds this value, an ACTIVE grant is
+   * considered expired and no longer authorizes access.
    *
    * @generated from field: google.protobuf.Timestamp expire_time = 4;
    */
@@ -59,9 +64,9 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
    * The target databases for this access grant.
    * Format: instances/{instance}/databases/{database}
    *
-   * @generated from field: repeated string databases = 6;
+   * @generated from field: repeated string targets = 6;
    */
-  databases: string[];
+  targets: string[];
 
   /**
    * The query permission granted.
@@ -71,11 +76,11 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   query: string;
 
   /**
-   * Whether the grant exempts data masking.
+   * Whether the grant allows unmasking sensitive data.
    *
-   * @generated from field: bool masking_exemption = 8;
+   * @generated from field: bool unmask = 8;
    */
-  maskingExemption: boolean;
+  unmask: boolean;
 
   /**
    * @generated from field: google.protobuf.Timestamp create_time = 9;
@@ -95,15 +100,15 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
 export declare const AccessGrantSchema: GenMessage<AccessGrant>;
 
 /**
- * The state of the access grant.
+ * The status of the access grant.
  *
- * @generated from enum bytebase.v1.AccessGrant.State
+ * @generated from enum bytebase.v1.AccessGrant.Status
  */
-export enum AccessGrant_State {
+export enum AccessGrant_Status {
   /**
-   * @generated from enum value: STATE_UNSPECIFIED = 0;
+   * @generated from enum value: STATUS_UNSPECIFIED = 0;
    */
-  STATE_UNSPECIFIED = 0,
+  STATUS_UNSPECIFIED = 0,
 
   /**
    * The access grant is pending approval.
@@ -113,7 +118,8 @@ export enum AccessGrant_State {
   PENDING = 1,
 
   /**
-   * The access grant is active.
+   * The access grant is active. Check `expire_time` to determine
+   * whether the grant is still valid or has expired.
    *
    * @generated from enum value: ACTIVE = 2;
    */
@@ -128,9 +134,9 @@ export enum AccessGrant_State {
 }
 
 /**
- * Describes the enum bytebase.v1.AccessGrant.State.
+ * Describes the enum bytebase.v1.AccessGrant.Status.
  */
-export declare const AccessGrant_StateSchema: GenEnum<AccessGrant_State>;
+export declare const AccessGrant_StatusSchema: GenEnum<AccessGrant_Status>;
 
 /**
  * @generated from message bytebase.v1.GetAccessGrantRequest
@@ -179,13 +185,13 @@ export declare type ListAccessGrantsRequest = Message<"bytebase.v1.ListAccessGra
 
   /**
    * Filter expression using AIP-160 syntax.
-   * Supported fields: creator, state, issue, expire_time, create_time
+   * Supported fields: creator, status, issue, expire_time, create_time
    * Examples:
    *   - 'creator = "users/dev@example.com"'
-   *   - 'state = "ACTIVE"'
-   *   - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
+   *   - 'status = "ACTIVE"'
+   *   - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
    *   - 'issue = "projects/x/issues/123"'
-   *   - 'expire_time < "2024-02-01T00:00:00Z"'
+   *   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
    *
    * @generated from field: string filter = 4;
    */

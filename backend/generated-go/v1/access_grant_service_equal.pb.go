@@ -16,7 +16,7 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x.Creator != y.Creator {
 		return false
 	}
-	if x.State != y.State {
+	if x.Status != y.Status {
 		return false
 	}
 	if p, q := x.ExpireTime, y.ExpireTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
@@ -25,18 +25,18 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x.Issue != y.Issue {
 		return false
 	}
-	if len(x.Databases) != len(y.Databases) {
+	if len(x.Targets) != len(y.Targets) {
 		return false
 	}
-	for i := 0; i < len(x.Databases); i++ {
-		if x.Databases[i] != y.Databases[i] {
+	for i := 0; i < len(x.Targets); i++ {
+		if x.Targets[i] != y.Targets[i] {
 			return false
 		}
 	}
 	if x.Query != y.Query {
 		return false
 	}
-	if x.MaskingExemption != y.MaskingExemption {
+	if x.Unmask != y.Unmask {
 		return false
 	}
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {

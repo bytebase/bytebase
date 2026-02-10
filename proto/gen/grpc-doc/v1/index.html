@@ -239,7 +239,7 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.AccessGrant.State"><span class="badge">E</span>AccessGrant.State</a>
+                  <a href="#bytebase.v1.AccessGrant.Status"><span class="badge">E</span>AccessGrant.Status</a>
                 </li>
               
               
@@ -2973,17 +2973,22 @@ Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
-                  <td>state</td>
-                  <td><a href="#bytebase.v1.AccessGrant.State">AccessGrant.State</a></td>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.AccessGrant.Status">AccessGrant.Status</a></td>
                   <td></td>
-                  <td><p>The state of the access grant. </p></td>
+                  <td><p>The status of the access grant.
+An ACTIVE grant with `expire_time` in the past is effectively expired
+and no longer authorizes access. Use `expire_time` to determine
+whether an ACTIVE grant has expired. </p></td>
                 </tr>
               
                 <tr>
                   <td>expire_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>The expiration time of the access grant. </p></td>
+                  <td><p>The expiration time of the access grant.
+When the current time exceeds this value, an ACTIVE grant is
+considered expired and no longer authorizes access. </p></td>
                 </tr>
               
                 <tr>
@@ -2996,7 +3001,7 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>databases</td>
+                  <td>targets</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The target databases for this access grant.
@@ -3011,10 +3016,10 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>masking_exemption</td>
+                  <td>unmask</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>Whether the grant exempts data masking. </p></td>
+                  <td><p>Whether the grant allows unmasking sensitive data. </p></td>
                 </tr>
               
                 <tr>
@@ -3157,13 +3162,13 @@ Format: projects/{project} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Filter expression using AIP-160 syntax.
-Supported fields: creator, state, issue, expire_time, create_time
+Supported fields: creator, status, issue, expire_time, create_time
 Examples:
   - &#39;creator = &#34;users/dev@example.com&#34;&#39;
-  - &#39;state = &#34;ACTIVE&#34;&#39;
-  - &#39;creator = &#34;users/dev@example.com&#34; AND state = &#34;ACTIVE&#34;&#39;
+  - &#39;status = &#34;ACTIVE&#34;&#39;
+  - &#39;creator = &#34;users/dev@example.com&#34; AND status = &#34;ACTIVE&#34;&#39;
   - &#39;issue = &#34;projects/x/issues/123&#34;&#39;
-  - &#39;expire_time &lt; &#34;2024-02-01T00:00:00Z&#34;&#39; </p></td>
+  - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; </p></td>
                 </tr>
               
             </tbody>
@@ -3232,8 +3237,8 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
       
 
       
-        <h3 id="bytebase.v1.AccessGrant.State">AccessGrant.State</h3>
-        <p>The state of the access grant.</p>
+        <h3 id="bytebase.v1.AccessGrant.Status">AccessGrant.Status</h3>
+        <p>The status of the access grant.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3241,7 +3246,7 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
           <tbody>
             
               <tr>
-                <td>STATE_UNSPECIFIED</td>
+                <td>STATUS_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -3255,7 +3260,8 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
               <tr>
                 <td>ACTIVE</td>
                 <td>2</td>
-                <td><p>The access grant is active.</p></td>
+                <td><p>The access grant is active. Check `expire_time` to determine
+whether the grant is still valid or has expired.</p></td>
               </tr>
             
               <tr>
