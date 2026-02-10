@@ -3223,12 +3223,16 @@ func writeIndexInternal(out io.Writer, schema string, table string, index *store
 		return err
 	}
 
-	// Write WHERE clause for partial indexes.
-	// The WHERE clause is stored in the full index definition (from pg_get_indexdef).
+	// Write INCLUDE and WHERE clauses from the full index definition (from pg_get_indexdef).
+	// SQL syntax order: (keys) INCLUDE (cols) WHERE (predicate)
 	if index.Definition != "" {
 		comparer := &PostgreSQLIndexComparer{}
-		whereClause := comparer.ExtractWhereClauseFromIndexDef(index.Definition)
-		if whereClause != "" {
+		if includeClause := comparer.ExtractIncludeClauseFromIndexDef(index.Definition); includeClause != "" {
+			if _, err := fmt.Fprintf(out, " %s", includeClause); err != nil {
+				return err
+			}
+		}
+		if whereClause := comparer.ExtractWhereClauseFromIndexDef(index.Definition); whereClause != "" {
 			if _, err := fmt.Fprintf(out, " WHERE %s", whereClause); err != nil {
 				return err
 			}

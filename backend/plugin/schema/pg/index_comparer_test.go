@@ -100,6 +100,51 @@ func TestPostgreSQLIndexComparer_CompareIndexWhereConditions(t *testing.T) {
 	}
 }
 
+func TestPostgreSQLIndexComparer_ExtractIncludeClauseFromIndexDef(t *testing.T) {
+	comparer := &PostgreSQLIndexComparer{}
+
+	tests := []struct {
+		name            string
+		indexDef        string
+		expectedInclude string
+	}{
+		{
+			name:            "Index with INCLUDE clause",
+			indexDef:        "CREATE INDEX idx_covering ON products (price) INCLUDE (name, description)",
+			expectedInclude: "INCLUDE (name, description)",
+		},
+		{
+			name:            "Index with INCLUDE and WHERE clause",
+			indexDef:        "CREATE INDEX idx_covering ON orders (status) INCLUDE (total, customer_name) WHERE (status = 'active'::text)",
+			expectedInclude: "INCLUDE (total, customer_name)",
+		},
+		{
+			name:            "Index without INCLUDE clause",
+			indexDef:        "CREATE INDEX idx_simple ON users (email)",
+			expectedInclude: "",
+		},
+		{
+			name:            "UNIQUE index with INCLUDE",
+			indexDef:        "CREATE UNIQUE INDEX idx_unique_covering ON products (id) INCLUDE (name)",
+			expectedInclude: "INCLUDE (name)",
+		},
+		{
+			name:            "Empty definition",
+			indexDef:        "",
+			expectedInclude: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := comparer.ExtractIncludeClauseFromIndexDef(tt.indexDef)
+			if result != tt.expectedInclude {
+				t.Errorf("ExtractIncludeClauseFromIndexDef() = %q, want %q", result, tt.expectedInclude)
+			}
+		})
+	}
+}
+
 func TestPostgreSQLIndexComparer_ParseIndexDefinition(t *testing.T) {
 	comparer := &PostgreSQLIndexComparer{}
 
