@@ -10,6 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -94,10 +95,15 @@ type AccessGrant struct {
 	// and no longer authorizes access. Use `expire_time` to determine
 	// whether an ACTIVE grant has expired.
 	Status AccessGrant_Status `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.AccessGrant_Status" json:"status,omitempty"`
-	// The expiration time of the access grant.
-	// When the current time exceeds this value, an ACTIVE grant is
+	// The expiration of the access grant.
+	// When the current time exceeds `expire_time`, an ACTIVE grant is
 	// considered expired and no longer authorizes access.
-	ExpireTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	//
+	// Types that are valid to be assigned to Expiration:
+	//
+	//	*AccessGrant_ExpireTime
+	//	*AccessGrant_Ttl
+	Expiration isAccessGrant_Expiration `protobuf_oneof:"expiration"`
 	// The issue associated with the access grant.
 	// Can be empty.
 	// Format: projects/{project}/issues/{issue}
@@ -166,9 +172,27 @@ func (x *AccessGrant) GetStatus() AccessGrant_Status {
 	return AccessGrant_STATUS_UNSPECIFIED
 }
 
+func (x *AccessGrant) GetExpiration() isAccessGrant_Expiration {
+	if x != nil {
+		return x.Expiration
+	}
+	return nil
+}
+
 func (x *AccessGrant) GetExpireTime() *timestamppb.Timestamp {
 	if x != nil {
-		return x.ExpireTime
+		if x, ok := x.Expiration.(*AccessGrant_ExpireTime); ok {
+			return x.ExpireTime
+		}
+	}
+	return nil
+}
+
+func (x *AccessGrant) GetTtl() *durationpb.Duration {
+	if x != nil {
+		if x, ok := x.Expiration.(*AccessGrant_Ttl); ok {
+			return x.Ttl
+		}
 	}
 	return nil
 }
@@ -214,6 +238,25 @@ func (x *AccessGrant) GetUpdateTime() *timestamppb.Timestamp {
 	}
 	return nil
 }
+
+type isAccessGrant_Expiration interface {
+	isAccessGrant_Expiration()
+}
+
+type AccessGrant_ExpireTime struct {
+	// The expiration time of the access grant.
+	ExpireTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expire_time,json=expireTime,proto3,oneof"`
+}
+
+type AccessGrant_Ttl struct {
+	// Input only. The time-to-live duration for the access grant.
+	// The server computes `expire_time` from this value at creation time.
+	Ttl *durationpb.Duration `protobuf:"bytes,11,opt,name=ttl,proto3,oneof"`
+}
+
+func (*AccessGrant_ExpireTime) isAccessGrant_Expiration() {}
+
+func (*AccessGrant_Ttl) isAccessGrant_Expiration() {}
 
 type GetAccessGrantRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -543,17 +586,150 @@ func (x *RevokeAccessGrantRequest) GetName() string {
 	return ""
 }
 
+type SearchMyAccessGrantsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent project to search in.
+	// Format: projects/{project}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The maximum number of access grants to return.
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// A page token from a previous SearchMyAccessGrants call.
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Filter expression using AIP-160 syntax.
+	// Supported fields: status, expire_time, create_time
+	// Examples:
+	//   - 'status = "ACTIVE"'
+	//   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchMyAccessGrantsRequest) Reset() {
+	*x = SearchMyAccessGrantsRequest{}
+	mi := &file_v1_access_grant_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchMyAccessGrantsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchMyAccessGrantsRequest) ProtoMessage() {}
+
+func (x *SearchMyAccessGrantsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_access_grant_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchMyAccessGrantsRequest.ProtoReflect.Descriptor instead.
+func (*SearchMyAccessGrantsRequest) Descriptor() ([]byte, []int) {
+	return file_v1_access_grant_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SearchMyAccessGrantsRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
+func (x *SearchMyAccessGrantsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *SearchMyAccessGrantsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+func (x *SearchMyAccessGrantsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
+}
+
+type SearchMyAccessGrantsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The access grants from the specified request.
+	AccessGrants []*AccessGrant `protobuf:"bytes,1,rep,name=access_grants,json=accessGrants,proto3" json:"access_grants,omitempty"`
+	// A token, which can be sent as `page_token` to retrieve the next page.
+	// If this field is omitted, there are no subsequent pages.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchMyAccessGrantsResponse) Reset() {
+	*x = SearchMyAccessGrantsResponse{}
+	mi := &file_v1_access_grant_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchMyAccessGrantsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchMyAccessGrantsResponse) ProtoMessage() {}
+
+func (x *SearchMyAccessGrantsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_access_grant_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchMyAccessGrantsResponse.ProtoReflect.Descriptor instead.
+func (*SearchMyAccessGrantsResponse) Descriptor() ([]byte, []int) {
+	return file_v1_access_grant_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SearchMyAccessGrantsResponse) GetAccessGrants() []*AccessGrant {
+	if x != nil {
+		return x.AccessGrants
+	}
+	return nil
+}
+
+func (x *SearchMyAccessGrantsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 var File_v1_access_grant_service_proto protoreflect.FileDescriptor
 
 const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xbe\x04\n" +
+	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x82\x05\n" +
 	"\vAccessGrant\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x12<\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1f.bytebase.v1.AccessGrant.StatusB\x03\xe0A\x03R\x06status\x12;\n" +
-	"\vexpire_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"expireTime\x12\x19\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1f.bytebase.v1.AccessGrant.StatusB\x03\xe0A\x03R\x06status\x12=\n" +
+	"\vexpire_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\n" +
+	"expireTime\x122\n" +
+	"\x03ttl\x18\v \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x04H\x00R\x03ttl\x12\x19\n" +
 	"\x05issue\x18\x05 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1d\n" +
 	"\atargets\x18\x06 \x03(\tB\x03\xe0A\x02R\atargets\x12\x14\n" +
 	"\x05query\x18\a \x01(\tR\x05query\x12\x16\n" +
@@ -569,7 +745,9 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06ACTIVE\x10\x02\x12\v\n" +
 	"\aREVOKED\x10\x03:M\xeaAJ\n" +
-	"\x18bytebase.com/AccessGrant\x12.projects/{project}/accessGrants/{access_grant}\"M\n" +
+	"\x18bytebase.com/AccessGrant\x12.projects/{project}/accessGrants/{access_grant}B\f\n" +
+	"\n" +
+	"expiration\"M\n" +
 	"\x15GetAccessGrantRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
 	"\x18bytebase.com/AccessGrantR\x04name\"\xa3\x01\n" +
@@ -592,13 +770,24 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\x18bytebase.com/AccessGrantR\x04name\"P\n" +
 	"\x18RevokeAccessGrantRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name2\xad\a\n" +
+	"\x18bytebase.com/AccessGrantR\x04name\"\xa7\x01\n" +
+	"\x1bSearchMyAccessGrantsRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x85\x01\n" +
+	"\x1cSearchMyAccessGrantsResponse\x12=\n" +
+	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xf0\b\n" +
 	"\x12AccessGrantService\x12\x9e\x01\n" +
 	"\x0eGetAccessGrant\x12\".bytebase.v1.GetAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"N\xdaA\x04name\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/accessGrants/*}\x12\xb2\x01\n" +
 	"\x10ListAccessGrants\x12$.bytebase.v1.ListAccessGrantsRequest\x1a%.bytebase.v1.ListAccessGrantsResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.accessGrants.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/accessGrants\x12\xc8\x01\n" +
 	"\x11CreateAccessGrant\x12%.bytebase.v1.CreateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"r\xdaA\x13parent,access_grant\x8a\xea0\x16bb.accessGrants.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x024:\faccess_grant\"$/v1/{parent=projects/*}/accessGrants\x12\xbd\x01\n" +
 	"\x13ActivateAccessGrant\x12'.bytebase.v1.ActivateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"c\xdaA\x04name\x8a\xea0\x18bb.accessGrants.activate\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{name=projects/*/accessGrants/*}:activate\x12\xb5\x01\n" +
-	"\x11RevokeAccessGrant\x12%.bytebase.v1.RevokeAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"_\xdaA\x04name\x8a\xea0\x16bb.accessGrants.revoke\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/accessGrants/*}:revokeB\xad\x01\n" +
+	"\x11RevokeAccessGrant\x12%.bytebase.v1.RevokeAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"_\xdaA\x04name\x8a\xea0\x16bb.accessGrants.revoke\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/accessGrants/*}:revoke\x12\xc0\x01\n" +
+	"\x14SearchMyAccessGrants\x12(.bytebase.v1.SearchMyAccessGrantsRequest\x1a).bytebase.v1.SearchMyAccessGrantsResponse\"S\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x02\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=projects/*}/accessGrants:searchMyB\xad\x01\n" +
 	"\x0fcom.bytebase.v1B\x17AccessGrantServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -614,40 +803,47 @@ func file_v1_access_grant_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_access_grant_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_access_grant_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_access_grant_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_v1_access_grant_service_proto_goTypes = []any{
-	(AccessGrant_Status)(0),            // 0: bytebase.v1.AccessGrant.Status
-	(*AccessGrant)(nil),                // 1: bytebase.v1.AccessGrant
-	(*GetAccessGrantRequest)(nil),      // 2: bytebase.v1.GetAccessGrantRequest
-	(*ListAccessGrantsRequest)(nil),    // 3: bytebase.v1.ListAccessGrantsRequest
-	(*ListAccessGrantsResponse)(nil),   // 4: bytebase.v1.ListAccessGrantsResponse
-	(*CreateAccessGrantRequest)(nil),   // 5: bytebase.v1.CreateAccessGrantRequest
-	(*ActivateAccessGrantRequest)(nil), // 6: bytebase.v1.ActivateAccessGrantRequest
-	(*RevokeAccessGrantRequest)(nil),   // 7: bytebase.v1.RevokeAccessGrantRequest
-	(*timestamppb.Timestamp)(nil),      // 8: google.protobuf.Timestamp
+	(AccessGrant_Status)(0),              // 0: bytebase.v1.AccessGrant.Status
+	(*AccessGrant)(nil),                  // 1: bytebase.v1.AccessGrant
+	(*GetAccessGrantRequest)(nil),        // 2: bytebase.v1.GetAccessGrantRequest
+	(*ListAccessGrantsRequest)(nil),      // 3: bytebase.v1.ListAccessGrantsRequest
+	(*ListAccessGrantsResponse)(nil),     // 4: bytebase.v1.ListAccessGrantsResponse
+	(*CreateAccessGrantRequest)(nil),     // 5: bytebase.v1.CreateAccessGrantRequest
+	(*ActivateAccessGrantRequest)(nil),   // 6: bytebase.v1.ActivateAccessGrantRequest
+	(*RevokeAccessGrantRequest)(nil),     // 7: bytebase.v1.RevokeAccessGrantRequest
+	(*SearchMyAccessGrantsRequest)(nil),  // 8: bytebase.v1.SearchMyAccessGrantsRequest
+	(*SearchMyAccessGrantsResponse)(nil), // 9: bytebase.v1.SearchMyAccessGrantsResponse
+	(*timestamppb.Timestamp)(nil),        // 10: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),          // 11: google.protobuf.Duration
 }
 var file_v1_access_grant_service_proto_depIdxs = []int32{
 	0,  // 0: bytebase.v1.AccessGrant.status:type_name -> bytebase.v1.AccessGrant.Status
-	8,  // 1: bytebase.v1.AccessGrant.expire_time:type_name -> google.protobuf.Timestamp
-	8,  // 2: bytebase.v1.AccessGrant.create_time:type_name -> google.protobuf.Timestamp
-	8,  // 3: bytebase.v1.AccessGrant.update_time:type_name -> google.protobuf.Timestamp
-	1,  // 4: bytebase.v1.ListAccessGrantsResponse.access_grants:type_name -> bytebase.v1.AccessGrant
-	1,  // 5: bytebase.v1.CreateAccessGrantRequest.access_grant:type_name -> bytebase.v1.AccessGrant
-	2,  // 6: bytebase.v1.AccessGrantService.GetAccessGrant:input_type -> bytebase.v1.GetAccessGrantRequest
-	3,  // 7: bytebase.v1.AccessGrantService.ListAccessGrants:input_type -> bytebase.v1.ListAccessGrantsRequest
-	5,  // 8: bytebase.v1.AccessGrantService.CreateAccessGrant:input_type -> bytebase.v1.CreateAccessGrantRequest
-	6,  // 9: bytebase.v1.AccessGrantService.ActivateAccessGrant:input_type -> bytebase.v1.ActivateAccessGrantRequest
-	7,  // 10: bytebase.v1.AccessGrantService.RevokeAccessGrant:input_type -> bytebase.v1.RevokeAccessGrantRequest
-	1,  // 11: bytebase.v1.AccessGrantService.GetAccessGrant:output_type -> bytebase.v1.AccessGrant
-	4,  // 12: bytebase.v1.AccessGrantService.ListAccessGrants:output_type -> bytebase.v1.ListAccessGrantsResponse
-	1,  // 13: bytebase.v1.AccessGrantService.CreateAccessGrant:output_type -> bytebase.v1.AccessGrant
-	1,  // 14: bytebase.v1.AccessGrantService.ActivateAccessGrant:output_type -> bytebase.v1.AccessGrant
-	1,  // 15: bytebase.v1.AccessGrantService.RevokeAccessGrant:output_type -> bytebase.v1.AccessGrant
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	10, // 1: bytebase.v1.AccessGrant.expire_time:type_name -> google.protobuf.Timestamp
+	11, // 2: bytebase.v1.AccessGrant.ttl:type_name -> google.protobuf.Duration
+	10, // 3: bytebase.v1.AccessGrant.create_time:type_name -> google.protobuf.Timestamp
+	10, // 4: bytebase.v1.AccessGrant.update_time:type_name -> google.protobuf.Timestamp
+	1,  // 5: bytebase.v1.ListAccessGrantsResponse.access_grants:type_name -> bytebase.v1.AccessGrant
+	1,  // 6: bytebase.v1.CreateAccessGrantRequest.access_grant:type_name -> bytebase.v1.AccessGrant
+	1,  // 7: bytebase.v1.SearchMyAccessGrantsResponse.access_grants:type_name -> bytebase.v1.AccessGrant
+	2,  // 8: bytebase.v1.AccessGrantService.GetAccessGrant:input_type -> bytebase.v1.GetAccessGrantRequest
+	3,  // 9: bytebase.v1.AccessGrantService.ListAccessGrants:input_type -> bytebase.v1.ListAccessGrantsRequest
+	5,  // 10: bytebase.v1.AccessGrantService.CreateAccessGrant:input_type -> bytebase.v1.CreateAccessGrantRequest
+	6,  // 11: bytebase.v1.AccessGrantService.ActivateAccessGrant:input_type -> bytebase.v1.ActivateAccessGrantRequest
+	7,  // 12: bytebase.v1.AccessGrantService.RevokeAccessGrant:input_type -> bytebase.v1.RevokeAccessGrantRequest
+	8,  // 13: bytebase.v1.AccessGrantService.SearchMyAccessGrants:input_type -> bytebase.v1.SearchMyAccessGrantsRequest
+	1,  // 14: bytebase.v1.AccessGrantService.GetAccessGrant:output_type -> bytebase.v1.AccessGrant
+	4,  // 15: bytebase.v1.AccessGrantService.ListAccessGrants:output_type -> bytebase.v1.ListAccessGrantsResponse
+	1,  // 16: bytebase.v1.AccessGrantService.CreateAccessGrant:output_type -> bytebase.v1.AccessGrant
+	1,  // 17: bytebase.v1.AccessGrantService.ActivateAccessGrant:output_type -> bytebase.v1.AccessGrant
+	1,  // 18: bytebase.v1.AccessGrantService.RevokeAccessGrant:output_type -> bytebase.v1.AccessGrant
+	9,  // 19: bytebase.v1.AccessGrantService.SearchMyAccessGrants:output_type -> bytebase.v1.SearchMyAccessGrantsResponse
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_access_grant_service_proto_init() }
@@ -656,13 +852,17 @@ func file_v1_access_grant_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_access_grant_service_proto_msgTypes[0].OneofWrappers = []any{
+		(*AccessGrant_ExpireTime)(nil),
+		(*AccessGrant_Ttl)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_access_grant_service_proto_rawDesc), len(file_v1_access_grant_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
@@ -64,6 +65,16 @@ service AccessGrantService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Searches access grants created by the caller.
+  rpc SearchMyAccessGrants(SearchMyAccessGrantsRequest) returns (SearchMyAccessGrantsResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/accessGrants:searchMy"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.accessGrants.get";
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
 }
 
 message AccessGrant {
@@ -87,10 +98,17 @@ message AccessGrant {
   // whether an ACTIVE grant has expired.
   Status status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The expiration time of the access grant.
-  // When the current time exceeds this value, an ACTIVE grant is
+  // The expiration of the access grant.
+  // When the current time exceeds `expire_time`, an ACTIVE grant is
   // considered expired and no longer authorizes access.
-  google.protobuf.Timestamp expire_time = 4;
+  oneof expiration {
+    // The expiration time of the access grant.
+    google.protobuf.Timestamp expire_time = 4;
+
+    // Input only. The time-to-live duration for the access grant.
+    // The server computes `expire_time` from this value at creation time.
+    google.protobuf.Duration ttl = 11 [(google.api.field_behavior) = INPUT_ONLY];
+  }
 
   // The issue associated with the access grant.
   // Can be empty.
@@ -195,4 +213,35 @@ message RevokeAccessGrantRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/AccessGrant"}
   ];
+}
+
+message SearchMyAccessGrantsRequest {
+  // The parent project to search in.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The maximum number of access grants to return.
+  int32 page_size = 2;
+
+  // A page token from a previous SearchMyAccessGrants call.
+  string page_token = 3;
+
+  // Filter expression using AIP-160 syntax.
+  // Supported fields: status, expire_time, create_time
+  // Examples:
+  //   - 'status = "ACTIVE"'
+  //   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+  string filter = 4;
+}
+
+message SearchMyAccessGrantsResponse {
+  // The access grants from the specified request.
+  repeated AccessGrant access_grants = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }

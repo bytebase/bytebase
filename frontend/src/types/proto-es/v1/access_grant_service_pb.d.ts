@@ -4,7 +4,7 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Duration, Timestamp } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file v1/access_grant_service.proto.
@@ -43,13 +43,30 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   status: AccessGrant_Status;
 
   /**
-   * The expiration time of the access grant.
-   * When the current time exceeds this value, an ACTIVE grant is
+   * The expiration of the access grant.
+   * When the current time exceeds `expire_time`, an ACTIVE grant is
    * considered expired and no longer authorizes access.
    *
-   * @generated from field: google.protobuf.Timestamp expire_time = 4;
+   * @generated from oneof bytebase.v1.AccessGrant.expiration
    */
-  expireTime?: Timestamp;
+  expiration: {
+    /**
+     * The expiration time of the access grant.
+     *
+     * @generated from field: google.protobuf.Timestamp expire_time = 4;
+     */
+    value: Timestamp;
+    case: "expireTime";
+  } | {
+    /**
+     * Input only. The time-to-live duration for the access grant.
+     * The server computes `expire_time` from this value at creation time.
+     *
+     * @generated from field: google.protobuf.Duration ttl = 11;
+     */
+    value: Duration;
+    case: "ttl";
+  } | { case: undefined; value?: undefined };
 
   /**
    * The issue associated with the access grant.
@@ -295,6 +312,76 @@ export declare type RevokeAccessGrantRequest = Message<"bytebase.v1.RevokeAccess
 export declare const RevokeAccessGrantRequestSchema: GenMessage<RevokeAccessGrantRequest>;
 
 /**
+ * @generated from message bytebase.v1.SearchMyAccessGrantsRequest
+ */
+export declare type SearchMyAccessGrantsRequest = Message<"bytebase.v1.SearchMyAccessGrantsRequest"> & {
+  /**
+   * The parent project to search in.
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * The maximum number of access grants to return.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * A page token from a previous SearchMyAccessGrants call.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
+
+  /**
+   * Filter expression using AIP-160 syntax.
+   * Supported fields: status, expire_time, create_time
+   * Examples:
+   *   - 'status = "ACTIVE"'
+   *   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchMyAccessGrantsRequest.
+ * Use `create(SearchMyAccessGrantsRequestSchema)` to create a new message.
+ */
+export declare const SearchMyAccessGrantsRequestSchema: GenMessage<SearchMyAccessGrantsRequest>;
+
+/**
+ * @generated from message bytebase.v1.SearchMyAccessGrantsResponse
+ */
+export declare type SearchMyAccessGrantsResponse = Message<"bytebase.v1.SearchMyAccessGrantsResponse"> & {
+  /**
+   * The access grants from the specified request.
+   *
+   * @generated from field: repeated bytebase.v1.AccessGrant access_grants = 1;
+   */
+  accessGrants: AccessGrant[];
+
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SearchMyAccessGrantsResponse.
+ * Use `create(SearchMyAccessGrantsResponseSchema)` to create a new message.
+ */
+export declare const SearchMyAccessGrantsResponseSchema: GenMessage<SearchMyAccessGrantsResponse>;
+
+/**
  * AccessGrantService manages temporary access grants within projects.
  *
  * @generated from service bytebase.v1.AccessGrantService
@@ -349,6 +436,16 @@ export declare const AccessGrantService: GenService<{
     methodKind: "unary";
     input: typeof RevokeAccessGrantRequestSchema;
     output: typeof AccessGrantSchema;
+  },
+  /**
+   * Searches access grants created by the caller.
+   *
+   * @generated from rpc bytebase.v1.AccessGrantService.SearchMyAccessGrants
+   */
+  searchMyAccessGrants: {
+    methodKind: "unary";
+    input: typeof SearchMyAccessGrantsRequestSchema;
+    output: typeof SearchMyAccessGrantsResponseSchema;
   },
 }>;
 

@@ -19,11 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AccessGrantService_GetAccessGrant_FullMethodName      = "/bytebase.v1.AccessGrantService/GetAccessGrant"
-	AccessGrantService_ListAccessGrants_FullMethodName    = "/bytebase.v1.AccessGrantService/ListAccessGrants"
-	AccessGrantService_CreateAccessGrant_FullMethodName   = "/bytebase.v1.AccessGrantService/CreateAccessGrant"
-	AccessGrantService_ActivateAccessGrant_FullMethodName = "/bytebase.v1.AccessGrantService/ActivateAccessGrant"
-	AccessGrantService_RevokeAccessGrant_FullMethodName   = "/bytebase.v1.AccessGrantService/RevokeAccessGrant"
+	AccessGrantService_GetAccessGrant_FullMethodName       = "/bytebase.v1.AccessGrantService/GetAccessGrant"
+	AccessGrantService_ListAccessGrants_FullMethodName     = "/bytebase.v1.AccessGrantService/ListAccessGrants"
+	AccessGrantService_CreateAccessGrant_FullMethodName    = "/bytebase.v1.AccessGrantService/CreateAccessGrant"
+	AccessGrantService_ActivateAccessGrant_FullMethodName  = "/bytebase.v1.AccessGrantService/ActivateAccessGrant"
+	AccessGrantService_RevokeAccessGrant_FullMethodName    = "/bytebase.v1.AccessGrantService/RevokeAccessGrant"
+	AccessGrantService_SearchMyAccessGrants_FullMethodName = "/bytebase.v1.AccessGrantService/SearchMyAccessGrants"
 )
 
 // AccessGrantServiceClient is the client API for AccessGrantService service.
@@ -42,6 +43,8 @@ type AccessGrantServiceClient interface {
 	ActivateAccessGrant(ctx context.Context, in *ActivateAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error)
 	// Revokes an active access grant.
 	RevokeAccessGrant(ctx context.Context, in *RevokeAccessGrantRequest, opts ...grpc.CallOption) (*AccessGrant, error)
+	// Searches access grants created by the caller.
+	SearchMyAccessGrants(ctx context.Context, in *SearchMyAccessGrantsRequest, opts ...grpc.CallOption) (*SearchMyAccessGrantsResponse, error)
 }
 
 type accessGrantServiceClient struct {
@@ -102,6 +105,16 @@ func (c *accessGrantServiceClient) RevokeAccessGrant(ctx context.Context, in *Re
 	return out, nil
 }
 
+func (c *accessGrantServiceClient) SearchMyAccessGrants(ctx context.Context, in *SearchMyAccessGrantsRequest, opts ...grpc.CallOption) (*SearchMyAccessGrantsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchMyAccessGrantsResponse)
+	err := c.cc.Invoke(ctx, AccessGrantService_SearchMyAccessGrants_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccessGrantServiceServer is the server API for AccessGrantService service.
 // All implementations must embed UnimplementedAccessGrantServiceServer
 // for forward compatibility.
@@ -118,6 +131,8 @@ type AccessGrantServiceServer interface {
 	ActivateAccessGrant(context.Context, *ActivateAccessGrantRequest) (*AccessGrant, error)
 	// Revokes an active access grant.
 	RevokeAccessGrant(context.Context, *RevokeAccessGrantRequest) (*AccessGrant, error)
+	// Searches access grants created by the caller.
+	SearchMyAccessGrants(context.Context, *SearchMyAccessGrantsRequest) (*SearchMyAccessGrantsResponse, error)
 	mustEmbedUnimplementedAccessGrantServiceServer()
 }
 
@@ -142,6 +157,9 @@ func (UnimplementedAccessGrantServiceServer) ActivateAccessGrant(context.Context
 }
 func (UnimplementedAccessGrantServiceServer) RevokeAccessGrant(context.Context, *RevokeAccessGrantRequest) (*AccessGrant, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeAccessGrant not implemented")
+}
+func (UnimplementedAccessGrantServiceServer) SearchMyAccessGrants(context.Context, *SearchMyAccessGrantsRequest) (*SearchMyAccessGrantsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchMyAccessGrants not implemented")
 }
 func (UnimplementedAccessGrantServiceServer) mustEmbedUnimplementedAccessGrantServiceServer() {}
 func (UnimplementedAccessGrantServiceServer) testEmbeddedByValue()                            {}
@@ -254,6 +272,24 @@ func _AccessGrantService_RevokeAccessGrant_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccessGrantService_SearchMyAccessGrants_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchMyAccessGrantsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccessGrantServiceServer).SearchMyAccessGrants(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccessGrantService_SearchMyAccessGrants_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccessGrantServiceServer).SearchMyAccessGrants(ctx, req.(*SearchMyAccessGrantsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccessGrantService_ServiceDesc is the grpc.ServiceDesc for AccessGrantService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +316,10 @@ var AccessGrantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeAccessGrant",
 			Handler:    _AccessGrantService_RevokeAccessGrant_Handler,
+		},
+		{
+			MethodName: "SearchMyAccessGrants",
+			Handler:    _AccessGrantService_SearchMyAccessGrants_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

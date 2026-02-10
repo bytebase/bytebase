@@ -237,6 +237,14 @@
                   <a href="#bytebase.v1.RevokeAccessGrantRequest"><span class="badge">M</span>RevokeAccessGrantRequest</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.SearchMyAccessGrantsRequest"><span class="badge">M</span>SearchMyAccessGrantsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SearchMyAccessGrantsResponse"><span class="badge">M</span>SearchMyAccessGrantsResponse</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.AccessGrant.Status"><span class="badge">E</span>AccessGrant.Status</a>
@@ -2986,9 +2994,15 @@ whether an ACTIVE grant has expired. </p></td>
                   <td>expire_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>The expiration time of the access grant.
-When the current time exceeds this value, an ACTIVE grant is
-considered expired and no longer authorizes access. </p></td>
+                  <td><p>The expiration time of the access grant. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ttl</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>Input only. The time-to-live duration for the access grant.
+The server computes `expire_time` from this value at creation time. </p></td>
                 </tr>
               
                 <tr>
@@ -3235,6 +3249,88 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
 
         
       
+        <h3 id="bytebase.v1.SearchMyAccessGrantsRequest">SearchMyAccessGrantsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent project to search in.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of access grants to return. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token from a previous SearchMyAccessGrants call. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter expression using AIP-160 syntax.
+Supported fields: status, expire_time, create_time
+Examples:
+  - &#39;status = &#34;ACTIVE&#34;&#39;
+  - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SearchMyAccessGrantsResponse">SearchMyAccessGrantsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_grants</td>
+                  <td><a href="#bytebase.v1.AccessGrant">AccessGrant</a></td>
+                  <td>repeated</td>
+                  <td><p>The access grants from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="bytebase.v1.AccessGrant.Status">AccessGrant.Status</h3>
@@ -3320,6 +3416,13 @@ whether the grant is still valid or has expired.</p></td>
                 <td><p>Revokes an active access grant.</p></td>
               </tr>
             
+              <tr>
+                <td>SearchMyAccessGrants</td>
+                <td><a href="#bytebase.v1.SearchMyAccessGrantsRequest">SearchMyAccessGrantsRequest</a></td>
+                <td><a href="#bytebase.v1.SearchMyAccessGrantsResponse">SearchMyAccessGrantsResponse</a></td>
+                <td><p>Searches access grants created by the caller.</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -3384,6 +3487,16 @@ whether the grant is still valid or has expired.</p></td>
                 <td>RevokeAccessGrant</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/accessGrants/*}:revoke</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SearchMyAccessGrants</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/accessGrants:searchMy</td>
                 <td>*</td>
               </tr>
               
