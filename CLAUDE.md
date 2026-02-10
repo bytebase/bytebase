@@ -155,6 +155,7 @@ psql -U bbdev bbdev
   - Configuration breaking changes (removed flags, changed behavior)
 - **Description** — Clearly describe what the PR changes and why
 - **Testing** — Include information about how the changes were tested
+- **SonarCloud** — When creating or updating a PR, update `.sonarcloud.properties` to reflect the latest file structure. Use `sonar.exclusions` for generated code, build artifacts, and dependencies (directory paths only). Use `sonar.test.inclusions` for test file patterns (wildcards like `**/*_test.go`). Use `sonar.cpd.exclusions` to skip copy-paste detection on test files
 
 ## Common Go Lint Rules
 
