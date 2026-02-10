@@ -682,7 +682,7 @@
           "enable": "开启水印"
         },
         "data-export": "启用数据导出",
-        "disable-copy-data": "限制复制数据",
+        "data-copy": "启用复制数据",
         "allow-admin-data-source": {
           "self": "允许查询主数据源",
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。"

@@ -27,13 +27,14 @@
         ]"
       >
         <Switch
-          v-model:value="state.disableCopyData"
+          :value="!state.disableCopyData"
           :text="true"
           :disabled="slotProps.disabled || !hasRestrictCopyingDataFeature"
+          @update:value="(val: boolean) => state.disableCopyData = !val"
         />
       </PermissionGuardWrapper>
-      <span class="textlabel">
-        {{ $t("settings.general.workspace.disable-copy-data") }}
+      <span class="font-medium">
+        {{ $t("settings.general.workspace.data-copy") }}
       </span>
       <FeatureBadge :feature="PlanFeature.FEATURE_RESTRICT_COPYING_DATA" />
     </div>
@@ -51,7 +52,7 @@
             :disabled="slotProps.disabled || !hasQueryPolicyFeature"
           />
         </PermissionGuardWrapper>
-        <span class="textlabel">
+        <span class="font-medium">
           {{ t("settings.general.workspace.allow-admin-data-source.self") }}
         </span>
         <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />

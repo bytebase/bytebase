@@ -682,7 +682,7 @@
           "enable": "Activar marca de agua"
         },
         "data-export": "Habilitar la exportación de datos",
-        "disable-copy-data": "Restringir la copia de datos",
+        "data-copy": "Habilitar la copia de datos",
         "allow-admin-data-source": {
           "self": "Permitir consultar la fuente de datos de administración",
           "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración."

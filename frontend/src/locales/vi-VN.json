@@ -682,7 +682,7 @@
           "enable": "Bật hình mờ"
         },
         "data-export": "Bật xuất dữ liệu",
-        "disable-copy-data": "Hạn chế sao chép dữ liệu",
+        "data-copy": "Bật sao chép dữ liệu",
         "allow-admin-data-source": {
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị",
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị."
