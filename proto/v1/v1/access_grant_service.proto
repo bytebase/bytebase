@@ -47,6 +47,7 @@ service AccessGrantService {
       post: "/v1/{name=projects/*/accessGrants/*}:activate"
       body: "*"
     };
+    option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.activate";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
@@ -58,6 +59,7 @@ service AccessGrantService {
       post: "/v1/{name=projects/*/accessGrants/*}:revoke"
       body: "*"
     };
+    option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.revoke";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
@@ -79,11 +81,11 @@ message AccessGrant {
   // Format: users/{email}
   string creator = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // The state of the access grant.
+  // The status of the access grant.
   // An ACTIVE grant with `expire_time` in the past is effectively expired
   // and no longer authorizes access. Use `expire_time` to determine
   // whether an ACTIVE grant has expired.
-  State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  Status status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The expiration time of the access grant.
   // When the current time exceeds this value, an ACTIVE grant is
@@ -97,21 +99,21 @@ message AccessGrant {
 
   // The target databases for this access grant.
   // Format: instances/{instance}/databases/{database}
-  repeated string databases = 6 [(google.api.field_behavior) = REQUIRED];
+  repeated string targets = 6 [(google.api.field_behavior) = REQUIRED];
 
   // The query permission granted.
   string query = 7;
 
-  // Whether the grant exempts data masking.
-  bool masking_exemption = 8;
+  // Whether the grant allows unmasking sensitive data.
+  bool unmask = 8;
 
   google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The state of the access grant.
-  enum State {
-    STATE_UNSPECIFIED = 0;
+  // The status of the access grant.
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
     // The access grant is pending approval.
     PENDING = 1;
     // The access grant is active. Check `expire_time` to determine
@@ -146,13 +148,13 @@ message ListAccessGrantsRequest {
   string page_token = 3;
 
   // Filter expression using AIP-160 syntax.
-  // Supported fields: creator, state, issue, expire_time, create_time
+  // Supported fields: creator, status, issue, expire_time, create_time
   // Examples:
   //   - 'creator = "users/dev@example.com"'
-  //   - 'state = "ACTIVE"'
-  //   - 'creator = "users/dev@example.com" AND state = "ACTIVE"'
+  //   - 'status = "ACTIVE"'
+  //   - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
   //   - 'issue = "projects/x/issues/123"'
-  //   - 'state = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+  //   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
   string filter = 4;
 }
 
