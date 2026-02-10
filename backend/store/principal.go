@@ -49,6 +49,7 @@ type UserMessage struct {
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
 	Profile       *storepb.UserProfile
+	Project       *string
 	// Phone conforms E.164 format.
 	Phone string
 	// output only
@@ -101,6 +102,7 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 			MemberDeleted: sa.MemberDeleted,
 			MFAConfig:     &storepb.MFAConfig{},
 			Profile:       &storepb.UserProfile{},
+			Project:       sa.Project,
 		}
 		s.userEmailCache.Add(user.Email, user)
 		return user, nil
@@ -123,6 +125,7 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 			MemberDeleted: wi.MemberDeleted,
 			MFAConfig:     &storepb.MFAConfig{},
 			Profile:       &storepb.UserProfile{},
+			Project:       wi.Project,
 		}
 		s.userEmailCache.Add(user.Email, user)
 		return user, nil

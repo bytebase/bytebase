@@ -26,6 +26,7 @@ import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
+import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
@@ -37,6 +38,7 @@ import {
   extractWorkloadIdentityId,
   getUserFullNameByType,
   groupNamePrefix,
+  projectNamePrefix,
   serviceAccountToUser,
   useGroupStore,
   useServiceAccountStore,
@@ -78,7 +80,8 @@ const props = defineProps<{
   disabled?: boolean;
   size?: SelectSize;
   value?: string | string[] | undefined; // fullname
-  projectName?: string;
+  // The parent can be workspace/- or projects/{id}
+  parent?: string;
   // allUsers is a special user that represents all users in the project.
   includeAllUsers: boolean;
   includeServiceAccount: boolean;
@@ -91,6 +94,7 @@ defineEmits<{
   (event: "update:value", value: string[] | string | undefined): void;
 }>();
 
+const { t } = useI18n();
 const combinedPageToken = ref<{
   user: string;
   group: string;
@@ -119,6 +123,40 @@ const hasGetWorkloadIdentityPermission = computed(() =>
 const hasGetServiceAccountPermission = computed(() =>
   hasWorkspacePermissionV2("bb.serviceAccounts.get")
 );
+
+const projectFullName = computed(() => {
+  if (!props.parent) {
+    return undefined;
+  }
+  if (props.parent.startsWith(projectNamePrefix)) {
+    return props.parent;
+  }
+  return undefined;
+});
+
+const invalidAccountProjectMessage = ({
+  project,
+  email,
+}: {
+  email: string;
+  project?: string;
+}): string | undefined => {
+  if (!project) {
+    // workspace-level account can be added to both workspace or project level IAM policy.
+    return;
+  }
+  if (projectFullName.value === project) {
+    // Otherwise the account project must match
+    return;
+  }
+  const message = [t("settings.members.invalid-account", { email })];
+  if (!projectFullName.value) {
+    message.push(t("settings.members.not-support-project-level-account"));
+  } else {
+    message.push(t("settings.members.project-not-match"));
+  }
+  return message.join(" ");
+};
 
 const getUserOption = (user: User): ResourceSelectOption<AccountResource> => ({
   resource: {
@@ -283,6 +321,13 @@ const fetchAccounts = async (params: {
         params.search,
         true
       );
+      errorMessage.value = invalidAccountProjectMessage(sa);
+      if (errorMessage.value) {
+        return {
+          nextPageToken: "",
+          options: [],
+        };
+      }
       return {
         nextPageToken: "",
         options: [getUserOption(serviceAccountToUser(sa))],
@@ -316,6 +361,13 @@ const fetchAccounts = async (params: {
         params.search,
         true
       );
+      errorMessage.value = invalidAccountProjectMessage(wi);
+      if (errorMessage.value) {
+        return {
+          nextPageToken: "",
+          options: [],
+        };
+      }
       return {
         nextPageToken: "",
         options: [getUserOption(workloadIdentityToUser(wi))],
@@ -382,7 +434,7 @@ const handleSearchUser = async (params: {
   const { nextPageToken, users } = await userStore.fetchUserList({
     filter: {
       query: params.search,
-      project: props.projectName,
+      project: projectFullName.value,
     },
     pageToken: params.pageToken,
     pageSize: params.pageSize,
@@ -406,7 +458,7 @@ const handleSearchGroup = async (params: {
   const { nextPageToken, groups } = await groupStore.fetchGroupList({
     filter: {
       query: params.search,
-      project: props.projectName,
+      project: projectFullName.value,
     },
     pageToken: params.pageToken,
     pageSize: params.pageSize,

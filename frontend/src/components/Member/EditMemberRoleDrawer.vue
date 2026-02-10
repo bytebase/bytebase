@@ -11,6 +11,7 @@
             v-if="isCreating"
             v-model:value="state.memberList"
             :required="true"
+            :parent="parent"
             :include-all-users="true"
             :include-service-account="true"
             :include-workload-identity="true"
@@ -76,8 +77,12 @@ import { BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
-import { pushNotification, useWorkspaceV1Store } from "@/store";
-import { ALL_USERS_USER_EMAIL } from "@/types";
+import {
+  pushNotification,
+  useCurrentProjectV1,
+  useWorkspaceV1Store,
+} from "@/store";
+import { ALL_USERS_USER_EMAIL, isValidProjectName } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
 
@@ -114,6 +119,13 @@ const confirmRevokeAccessRef = ref<InstanceType<typeof BBButtonConfirm>>();
 const dialog = useDialog();
 
 const isCreating = computed(() => !props.member);
+const { project: currentProject } = useCurrentProjectV1();
+const parent = computed(() => {
+  if (isValidProjectName(currentProject.value.name)) {
+    return currentProject.value.name;
+  }
+  return undefined;
+});
 
 const allowConfirm = computed(() => {
   if (state.memberList.length === 0) {

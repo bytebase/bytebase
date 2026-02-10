@@ -314,10 +314,15 @@ func (s *ServiceAccountService) UndeleteServiceAccount(ctx context.Context, requ
 // convertToServiceAccount converts a store.ServiceAccountMessage to a v1pb.ServiceAccount.
 // Note: service_key is NOT populated by this function; it should only be returned on create/rotate.
 func convertToServiceAccount(sa *store.ServiceAccountMessage) *v1pb.ServiceAccount {
-	return &v1pb.ServiceAccount{
+	v1Sa := &v1pb.ServiceAccount{
 		Name:  common.FormatServiceAccountEmail(sa.Email),
 		State: convertDeletedToState(sa.MemberDeleted),
 		Email: sa.Email,
 		Title: sa.Name,
 	}
+	if sa.Project != nil {
+		project := common.FormatProject(*sa.Project)
+		v1Sa.Project = &project
+	}
+	return v1Sa
 }

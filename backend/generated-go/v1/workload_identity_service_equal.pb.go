@@ -33,6 +33,9 @@ func (x *WorkloadIdentity) Equal(y *WorkloadIdentity) bool {
 	if !x.WorkloadIdentityConfig.Equal(y.WorkloadIdentityConfig) {
 		return false
 	}
+	if p, q := x.Project, y.Project; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 

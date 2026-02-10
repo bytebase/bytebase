@@ -63,6 +63,13 @@ export declare type WorkloadIdentity = Message<"bytebase.v1.WorkloadIdentity"> &
    * @generated from field: bytebase.v1.WorkloadIdentityConfig workload_identity_config = 6;
    */
   workloadIdentityConfig?: WorkloadIdentityConfig;
+
+  /**
+   * The project fullname in projects/{id} format.
+   *
+   * @generated from field: optional string project = 7;
+   */
+  project?: string;
 };
 
 /**

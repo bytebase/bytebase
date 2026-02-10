@@ -2755,9 +2755,9 @@ Binding associates members with a role and optional conditions.
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
+Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 
-For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema_name in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema_name == &#34;public&#34; &amp;&amp; resource.table_name in [&#34;audit_log&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) |
+For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema_name in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema_name == &#34;public&#34; &amp;&amp; resource.table_name in [&#34;audit_log&#34;] resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.environment_id in [&#34;test&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) |
 | parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
 
 
@@ -10281,6 +10281,7 @@ ServiceAccount represents an API integration account.
 | title | [string](#string) |  | The display title of the service account. |
 | service_key | [string](#string) |  | The service key for authentication. Only returned on creation or key rotation. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the service account was created. |
+| project | [string](#string) | optional | The project fullname in projects/{id} format. |
 
 
 
@@ -10798,6 +10799,7 @@ WorkloadIdentity represents an external CI/CD workload identity.
 | title | [string](#string) |  | The display title of the workload identity. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the workload identity was created. |
 | workload_identity_config | [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig) |  | The workload identity configuration for OIDC token validation. |
+| project | [string](#string) | optional | The project fullname in projects/{id} format. |
 
 
 

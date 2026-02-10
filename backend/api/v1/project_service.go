@@ -575,7 +575,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
-	if err := validateIAMPolicy(ctx, s.store, req.Msg.Policy, oldIamPolicyMsg); err != nil {
+	if err := validateIAMPolicy(
+		ctx,
+		s.store,
+		req.Msg.Resource,
+		req.Msg.Policy,
+		oldIamPolicyMsg,
+	); err != nil {
 		return nil, err
 	}
 
@@ -1035,6 +1041,7 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
+	parent string,
 	policy *v1pb.IamPolicy,
 	oldPolicyMessage *store.IamPolicyMessage,
 ) error {
@@ -1077,10 +1084,17 @@ func validateIAMPolicy(
 		}
 	}
 
-	return validateBindings(bindings, roleMessages, maximumRoleExpiration)
+	return validateBindings(ctx, stores, parent, bindings, roleMessages, maximumRoleExpiration)
 }
 
-func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maximumRoleExpiration *durationpb.Duration) error {
+func validateBindings(
+	ctx context.Context,
+	stores *store.Store,
+	parent string,
+	bindings []*v1pb.Binding,
+	roles []*store.RoleMessage,
+	maximumRoleExpiration *durationpb.Duration,
+) error {
 	existingRoles := make(map[string]bool)
 	for _, role := range roles {
 		existingRoles[common.FormatRole(role.ResourceID)] = true
@@ -1104,8 +1118,49 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate expiration for binding %v", binding.Role))
 			}
 		}
+
+		for _, member := range binding.Members {
+			// Check if the SA/WI has the correct parent.
+			// - If the member doesn't have a project, it's a workspace-level resource
+			//   and can be added to either workspace-level or project-level IAM policies.
+			// - If the member belongs to a project, it can only be added to that
+			//   specific project's IAM policy.
+			project, err := getProjectFromMember(ctx, stores, member)
+			if err != nil {
+				return err
+			}
+			if project != nil {
+				if parent != common.FormatProject(*project) {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid project member %v", member))
+				}
+			}
+		}
 	}
 	return nil
+}
+
+func getProjectFromMember(
+	ctx context.Context,
+	stores *store.Store,
+	member string,
+) (*string, error) {
+	var email string
+	if strings.HasPrefix(member, common.ServiceAccountBindingPrefix) {
+		email = strings.TrimPrefix(member, common.ServiceAccountBindingPrefix)
+	} else if strings.HasPrefix(member, common.WorkloadIdentityBindingPrefix) {
+		email = strings.TrimPrefix(member, common.WorkloadIdentityBindingPrefix)
+	}
+
+	if email == "" {
+		return nil, nil
+	}
+
+	user, err := stores.GetPrincipalByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get account %v", email))
+	}
+
+	return user.Project, nil
 }
 
 // validateExpirationInExpression validates the IAM policy expression.

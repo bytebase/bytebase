@@ -121,6 +121,9 @@ message WorkloadIdentity {
 
   // The workload identity configuration for OIDC token validation.
   WorkloadIdentityConfig workload_identity_config = 6;
+
+  // The project fullname in projects/{id} format.
+  optional string project = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // Request message for creating a workload identity.

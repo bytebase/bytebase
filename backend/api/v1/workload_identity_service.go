@@ -299,6 +299,11 @@ func convertToWorkloadIdentity(wi *store.WorkloadIdentityMessage) *v1pb.Workload
 		result.WorkloadIdentityConfig = convertToAPIWorkloadIdentityConfig(wi.Config)
 	}
 
+	if wi.Project != nil {
+		project := common.FormatProject(*wi.Project)
+		result.Project = &project
+	}
+
 	return result
 }
 

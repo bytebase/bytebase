@@ -549,7 +549,9 @@
       "grant-access": "Cấp Quyền truy cập",
       "select-account": "Chọn tài khoản | Chọn tài khoản",
       "select-account-hint": "Bạn có thể tìm kiếm người dùng và nhóm, hoặc nhập toàn bộ email để chọn tài khoản dịch vụ hoặc danh tính khối lượng công việc.",
-      "select-in-project": "Chọn người dùng hoặc nhóm trong {project}",
+      "invalid-account": "Tài khoản không hợp lệ \"{email}\".",
+      "project-not-match": "Dự án không khớp.",
+      "not-support-project-level-account": "Không thể thêm tài khoản cấp dự án vào không gian làm việc.",
       "select-role": "Chọn vai trò | Chọn vai trò",
       "assign-role": "Gán vai trò | Gán vai trò"
     },

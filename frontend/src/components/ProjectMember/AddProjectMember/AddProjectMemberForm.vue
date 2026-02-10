@@ -3,6 +3,7 @@
     <MembersBindingSelect
       v-model:value="state.memberList"
       :required="true"
+      :parent="project.name"
       :include-all-users="true"
       :disabled="disableMemberChange"
       :include-service-account="true"
@@ -130,7 +131,7 @@ import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/Database
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { EnvironmentSelect, RoleSelect } from "@/components/v2/Select";
-import { useRoleStore } from "@/store";
+import { useProjectV1Store, useRoleStore } from "@/store";
 import { type DatabaseResource } from "@/types";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
@@ -205,8 +206,13 @@ const expirationSelectorRef = ref<InstanceType<typeof ExpirationSelector>>();
 const databaseResourceFormRef =
   ref<InstanceType<typeof QuerierDatabaseResourceForm>>();
 const roleStore = useRoleStore();
+const projectStore = useProjectV1Store();
 
 const selectedRole = computed(() => roleStore.getRoleByName(state.role));
+
+const project = computed(() =>
+  projectStore.getProjectByName(props.projectName)
+);
 
 defineExpose({
   reason: computed(() => state.reason),

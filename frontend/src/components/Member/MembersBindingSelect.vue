@@ -1,42 +1,30 @@
 <template>
-  <div class="w-full flex flex-col gap-y-2">
-    <i18n-t
-      v-if="projectName"
-      keypath="settings.members.select-in-project"
-      tag="span"
-      class="textinfolabel"
-    >
-      <template #project>
-        <span class="font-semibold">{{ projectName }}</span>
-      </template>
-    </i18n-t>
-    <div
-      class="w-full flex flex-col gap-y-2"
-    >
-      <div class="flex text-main items-center gap-x-1">
-        {{ $t("settings.members.select-account", 2 /* multiply*/) }}
-        <RequiredStar v-if="required" />
-        <NTooltip>
-          <template #trigger>
-            <CircleHelpIcon class="w-4 textinfolabel" />
-          </template>
-          <span>
-            {{ $t("settings.members.select-account-hint") }}
-          </span>
-        </NTooltip>
-      </div>
-      <AccountSelect
-        key="account-select"
-        :value="memberList"
-        :multiple="true"
-        :disabled="disabled"
-        :project-name="projectName"
-        :include-all-users="includeAllUsers"
-        :include-service-account="includeServiceAccount"
-        :include-workload-identity="includeWorkloadIdentity"
-        @update:value="onMemberListUpdate($event as string[])"
-      />
+  <div
+    class="w-full flex flex-col gap-y-2"
+  >
+    <div class="flex text-main items-center gap-x-1">
+      {{ $t("settings.members.select-account", 2 /* multiply*/) }}
+      <RequiredStar v-if="required" />
+      <NTooltip>
+        <template #trigger>
+          <CircleHelpIcon class="w-4 textinfolabel" />
+        </template>
+        <span>
+          {{ $t("settings.members.select-account-hint") }}
+        </span>
+      </NTooltip>
     </div>
+    <AccountSelect
+      key="account-select"
+      :value="memberList"
+      :multiple="true"
+      :disabled="disabled"
+      :parent="parent"
+      :include-all-users="includeAllUsers"
+      :include-service-account="includeServiceAccount"
+      :include-workload-identity="includeWorkloadIdentity"
+      @update:value="onMemberListUpdate($event as string[])"
+    />
   </div>
 </template>
 
@@ -64,25 +52,20 @@ import {
 } from "@/types";
 import { convertMemberToFullname } from "@/utils";
 
-const props = withDefaults(
-  defineProps<{
-    // member binding list, could be
-    // - user:{email}
-    // - group:{email}
-    // - serviceAccount:{email}
-    // - workloadIdentity:{email}
-    value: string[];
-    required: boolean;
-    projectName?: string;
-    disabled?: boolean;
-    includeAllUsers: boolean;
-    includeServiceAccount: boolean;
-    includeWorkloadIdentity: boolean;
-  }>(),
-  {
-    projectName: undefined,
-  }
-);
+const props = defineProps<{
+  // member binding list, could be
+  // - user:{email}
+  // - group:{email}
+  // - serviceAccount:{email}
+  // - workloadIdentity:{email}
+  value: string[];
+  required: boolean;
+  parent?: string;
+  disabled?: boolean;
+  includeAllUsers: boolean;
+  includeServiceAccount: boolean;
+  includeWorkloadIdentity: boolean;
+}>();
 
 const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;

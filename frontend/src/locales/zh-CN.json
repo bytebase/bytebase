@@ -549,7 +549,9 @@
       "grant-access": "授予访问权限",
       "select-account": "选择账户 | 选择账户",
       "select-account-hint": "您可以搜索用户和组，或输入完整的电子邮件地址来选择服务账号或工作负载身份。",
-      "select-in-project": "选择 {project} 内的用户或群组",
+      "invalid-account": "无效的账号 \"{email}\"。",
+      "project-not-match": "项目不匹配。",
+      "not-support-project-level-account": "无法将项目级账号添加到工作空间。",
       "select-role": "选择角色 | 选择角色",
       "assign-role": "分配角色 | 分配角色"
     },

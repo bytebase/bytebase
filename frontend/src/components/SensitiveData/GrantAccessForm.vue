@@ -49,6 +49,7 @@
         <MembersBindingSelect
           v-model:value="state.memberList"
           :required="true"
+          :parent="project.name"
           :include-all-users="false"
           :include-service-account="true"
           :include-workload-identity="true"
@@ -83,7 +84,7 @@ import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourc
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
-import { pushNotification, usePolicyV1Store } from "@/store";
+import { pushNotification, usePolicyV1Store, useProjectV1Store } from "@/store";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   MaskingExemptionPolicy_Exemption,
@@ -130,7 +131,12 @@ const databaseResources = computed(() => {
 });
 
 const policyStore = usePolicyV1Store();
+const projectStore = useProjectV1Store();
 const { t } = useI18n();
+
+const project = computed(() =>
+  projectStore.getProjectByName(props.projectName)
+);
 
 const resetState = () => {
   state.expirationTimestamp = undefined;

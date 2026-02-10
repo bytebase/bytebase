@@ -549,7 +549,9 @@
       "grant-access": "Grant Access",
       "select-account": "Select account | Select accounts",
       "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
-      "select-in-project": "Select users or groups in {project}",
+      "invalid-account": "Invalid account \"{email}\".",
+      "project-not-match": "The project not match.",
+      "not-support-project-level-account": "Cannot add project-level account to the workspace.",
       "select-role": "Select role | Select roles",
       "assign-role": "Assign role | Assign roles"
     },

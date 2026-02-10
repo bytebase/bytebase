@@ -549,7 +549,9 @@
       "grant-access": "アクセスを許可する",
       "select-account": "アカウントを選択 | アカウントを選択",
       "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
-      "select-in-project": "{project} 内のユーザーまたはグループを選択してください",
+      "invalid-account": "無効なアカウント「{email}」。",
+      "project-not-match": "プロジェクトが一致しません。",
+      "not-support-project-level-account": "プロジェクトレベルのアカウントをワークスペースに追加できません。",
       "select-role": "ロールを選択 | ロールを選択",
       "assign-role": "ロールの割り当て | ロールの割り当て"
     },

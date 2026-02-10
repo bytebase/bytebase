@@ -44,8 +44,10 @@ type WorkloadIdentity struct {
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	// The workload identity configuration for OIDC token validation.
 	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,6,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// The project fullname in projects/{id} format.
+	Project       *string `protobuf:"bytes,7,opt,name=project,proto3,oneof" json:"project,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkloadIdentity) Reset() {
@@ -118,6 +120,13 @@ func (x *WorkloadIdentity) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
 		return x.WorkloadIdentityConfig
 	}
 	return nil
+}
+
+func (x *WorkloadIdentity) GetProject() string {
+	if x != nil && x.Project != nil {
+		return *x.Project
+	}
+	return ""
 }
 
 // Request message for creating a workload identity.
@@ -550,7 +559,7 @@ var File_v1_workload_identity_service_proto protoreflect.FileDescriptor
 
 const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\n" +
-	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/user_service.proto\"\xf1\x02\n" +
+	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/user_service.proto\"\xa1\x03\n" +
 	"\x10WorkloadIdentity\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -558,8 +567,11 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12@\n" +
 	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12]\n" +
-	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig:>\xeaA;\n" +
-	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xda\x01\n" +
+	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig\x12\"\n" +
+	"\aproject\x18\a \x01(\tB\x03\xe0A\x03H\x00R\aproject\x88\x01\x01:>\xeaA;\n" +
+	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}B\n" +
+	"\n" +
+	"\b_project\"\xda\x01\n" +
 	"\x1dCreateWorkloadIdentityRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x125\n" +
@@ -661,6 +673,7 @@ func file_v1_workload_identity_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
 	file_v1_user_service_proto_init()
+	file_v1_workload_identity_service_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

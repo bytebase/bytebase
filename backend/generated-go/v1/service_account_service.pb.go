@@ -43,7 +43,9 @@ type ServiceAccount struct {
 	// The service key for authentication. Only returned on creation or key rotation.
 	ServiceKey string `protobuf:"bytes,5,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
 	// The timestamp when the service account was created.
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// The project fullname in projects/{id} format.
+	Project       *string `protobuf:"bytes,7,opt,name=project,proto3,oneof" json:"project,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -118,6 +120,13 @@ func (x *ServiceAccount) GetCreateTime() *timestamppb.Timestamp {
 		return x.CreateTime
 	}
 	return nil
+}
+
+func (x *ServiceAccount) GetProject() string {
+	if x != nil && x.Project != nil {
+		return *x.Project
+	}
+	return ""
 }
 
 // Request message for creating a service account.
@@ -550,7 +559,7 @@ var File_v1_service_account_service_proto protoreflect.FileDescriptor
 
 const file_v1_service_account_service_proto_rawDesc = "" +
 	"\n" +
-	" v1/service_account_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xb1\x02\n" +
+	" v1/service_account_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xe1\x02\n" +
 	"\x0eServiceAccount\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -559,8 +568,11 @@ const file_v1_service_account_service_proto_rawDesc = "" +
 	"\vservice_key\x18\x05 \x01(\tB\x03\xe0A\x03R\n" +
 	"serviceKey\x12@\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime:9\xeaA6\n" +
-	"\x1bbytebase.com/ServiceAccount\x12\x17serviceAccounts/{email}\"\xce\x01\n" +
+	"createTime\x12\"\n" +
+	"\aproject\x18\a \x01(\tB\x03\xe0A\x03H\x00R\aproject\x88\x01\x01:9\xeaA6\n" +
+	"\x1bbytebase.com/ServiceAccount\x12\x17serviceAccounts/{email}B\n" +
+	"\n" +
+	"\b_project\"\xce\x01\n" +
 	"\x1bCreateServiceAccountRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x121\n" +
@@ -660,6 +672,7 @@ func file_v1_service_account_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
+	file_v1_service_account_service_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

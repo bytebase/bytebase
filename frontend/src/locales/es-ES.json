@@ -549,7 +549,9 @@
       "grant-access": "Conceder acceso",
       "select-account": "Seleccionar cuenta | Seleccionar cuentas",
       "select-account-hint": "Puede buscar usuarios y grupos, o introducir el correo electrónico completo para seleccionar la cuenta de servicio o identidad de carga de trabajo.",
-      "select-in-project": "Seleccione usuarios o grupos en {project}",
+      "invalid-account": "Cuenta no válida \"{email}\".",
+      "project-not-match": "El proyecto no coincide.",
+      "not-support-project-level-account": "No se puede agregar una cuenta a nivel de proyecto al espacio de trabajo.",
       "select-role": "Seleccionar rol | Seleccionar roles",
       "assign-role": "Asignar rol | Asignar roles"
     },

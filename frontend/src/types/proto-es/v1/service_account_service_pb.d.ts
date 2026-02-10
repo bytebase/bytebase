@@ -62,6 +62,13 @@ export declare type ServiceAccount = Message<"bytebase.v1.ServiceAccount"> & {
    * @generated from field: google.protobuf.Timestamp create_time = 6;
    */
   createTime?: Timestamp;
+
+  /**
+   * The project fullname in projects/{id} format.
+   *
+   * @generated from field: optional string project = 7;
+   */
+  project?: string;
 };
 
 /**
