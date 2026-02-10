@@ -682,7 +682,7 @@
           "enable": "Enable watermark"
         },
         "data-export": "Enable data export",
-        "disable-copy-data": "Restrict data copying",
+        "data-copy": "Enable data copying",
         "allow-admin-data-source": {
           "self": "Allow querying the admin data source",
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources."

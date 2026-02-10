@@ -96,6 +96,7 @@
                 :key="environment"
               >
                 <div
+                  v-if="environment !== UNKNOWN_ENVIRONMENT_NAME || !treeIsEmpty(treeState)"
                   class="flex flex-col gap-y-2 pt-2 pb-2"
                 >
                   <NTree
@@ -238,6 +239,7 @@ import {
   isValidDatabaseGroupName,
   isValidDatabaseName,
   isValidProjectName,
+  UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
