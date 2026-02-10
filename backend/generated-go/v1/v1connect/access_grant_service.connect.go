@@ -48,6 +48,9 @@ const (
 	// AccessGrantServiceRevokeAccessGrantProcedure is the fully-qualified name of the
 	// AccessGrantService's RevokeAccessGrant RPC.
 	AccessGrantServiceRevokeAccessGrantProcedure = "/bytebase.v1.AccessGrantService/RevokeAccessGrant"
+	// AccessGrantServiceSearchMyAccessGrantsProcedure is the fully-qualified name of the
+	// AccessGrantService's SearchMyAccessGrants RPC.
+	AccessGrantServiceSearchMyAccessGrantsProcedure = "/bytebase.v1.AccessGrantService/SearchMyAccessGrants"
 )
 
 // AccessGrantServiceClient is a client for the bytebase.v1.AccessGrantService service.
@@ -62,6 +65,8 @@ type AccessGrantServiceClient interface {
 	ActivateAccessGrant(context.Context, *connect.Request[v1.ActivateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
 	// Revokes an active access grant.
 	RevokeAccessGrant(context.Context, *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
+	// Searches access grants created by the caller.
+	SearchMyAccessGrants(context.Context, *connect.Request[v1.SearchMyAccessGrantsRequest]) (*connect.Response[v1.SearchMyAccessGrantsResponse], error)
 }
 
 // NewAccessGrantServiceClient constructs a client for the bytebase.v1.AccessGrantService service.
@@ -105,16 +110,23 @@ func NewAccessGrantServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(accessGrantServiceMethods.ByName("RevokeAccessGrant")),
 			connect.WithClientOptions(opts...),
 		),
+		searchMyAccessGrants: connect.NewClient[v1.SearchMyAccessGrantsRequest, v1.SearchMyAccessGrantsResponse](
+			httpClient,
+			baseURL+AccessGrantServiceSearchMyAccessGrantsProcedure,
+			connect.WithSchema(accessGrantServiceMethods.ByName("SearchMyAccessGrants")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // accessGrantServiceClient implements AccessGrantServiceClient.
 type accessGrantServiceClient struct {
-	getAccessGrant      *connect.Client[v1.GetAccessGrantRequest, v1.AccessGrant]
-	listAccessGrants    *connect.Client[v1.ListAccessGrantsRequest, v1.ListAccessGrantsResponse]
-	createAccessGrant   *connect.Client[v1.CreateAccessGrantRequest, v1.AccessGrant]
-	activateAccessGrant *connect.Client[v1.ActivateAccessGrantRequest, v1.AccessGrant]
-	revokeAccessGrant   *connect.Client[v1.RevokeAccessGrantRequest, v1.AccessGrant]
+	getAccessGrant       *connect.Client[v1.GetAccessGrantRequest, v1.AccessGrant]
+	listAccessGrants     *connect.Client[v1.ListAccessGrantsRequest, v1.ListAccessGrantsResponse]
+	createAccessGrant    *connect.Client[v1.CreateAccessGrantRequest, v1.AccessGrant]
+	activateAccessGrant  *connect.Client[v1.ActivateAccessGrantRequest, v1.AccessGrant]
+	revokeAccessGrant    *connect.Client[v1.RevokeAccessGrantRequest, v1.AccessGrant]
+	searchMyAccessGrants *connect.Client[v1.SearchMyAccessGrantsRequest, v1.SearchMyAccessGrantsResponse]
 }
 
 // GetAccessGrant calls bytebase.v1.AccessGrantService.GetAccessGrant.
@@ -142,6 +154,11 @@ func (c *accessGrantServiceClient) RevokeAccessGrant(ctx context.Context, req *c
 	return c.revokeAccessGrant.CallUnary(ctx, req)
 }
 
+// SearchMyAccessGrants calls bytebase.v1.AccessGrantService.SearchMyAccessGrants.
+func (c *accessGrantServiceClient) SearchMyAccessGrants(ctx context.Context, req *connect.Request[v1.SearchMyAccessGrantsRequest]) (*connect.Response[v1.SearchMyAccessGrantsResponse], error) {
+	return c.searchMyAccessGrants.CallUnary(ctx, req)
+}
+
 // AccessGrantServiceHandler is an implementation of the bytebase.v1.AccessGrantService service.
 type AccessGrantServiceHandler interface {
 	// Gets an access grant by name.
@@ -154,6 +171,8 @@ type AccessGrantServiceHandler interface {
 	ActivateAccessGrant(context.Context, *connect.Request[v1.ActivateAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
 	// Revokes an active access grant.
 	RevokeAccessGrant(context.Context, *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error)
+	// Searches access grants created by the caller.
+	SearchMyAccessGrants(context.Context, *connect.Request[v1.SearchMyAccessGrantsRequest]) (*connect.Response[v1.SearchMyAccessGrantsResponse], error)
 }
 
 // NewAccessGrantServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -193,6 +212,12 @@ func NewAccessGrantServiceHandler(svc AccessGrantServiceHandler, opts ...connect
 		connect.WithSchema(accessGrantServiceMethods.ByName("RevokeAccessGrant")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accessGrantServiceSearchMyAccessGrantsHandler := connect.NewUnaryHandler(
+		AccessGrantServiceSearchMyAccessGrantsProcedure,
+		svc.SearchMyAccessGrants,
+		connect.WithSchema(accessGrantServiceMethods.ByName("SearchMyAccessGrants")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.AccessGrantService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AccessGrantServiceGetAccessGrantProcedure:
@@ -205,6 +230,8 @@ func NewAccessGrantServiceHandler(svc AccessGrantServiceHandler, opts ...connect
 			accessGrantServiceActivateAccessGrantHandler.ServeHTTP(w, r)
 		case AccessGrantServiceRevokeAccessGrantProcedure:
 			accessGrantServiceRevokeAccessGrantHandler.ServeHTTP(w, r)
+		case AccessGrantServiceSearchMyAccessGrantsProcedure:
+			accessGrantServiceSearchMyAccessGrantsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -232,4 +259,8 @@ func (UnimplementedAccessGrantServiceHandler) ActivateAccessGrant(context.Contex
 
 func (UnimplementedAccessGrantServiceHandler) RevokeAccessGrant(context.Context, *connect.Request[v1.RevokeAccessGrantRequest]) (*connect.Response[v1.AccessGrant], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.RevokeAccessGrant is not implemented"))
+}
+
+func (UnimplementedAccessGrantServiceHandler) SearchMyAccessGrants(context.Context, *connect.Request[v1.SearchMyAccessGrantsRequest]) (*connect.Response[v1.SearchMyAccessGrantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AccessGrantService.SearchMyAccessGrants is not implemented"))
 }
