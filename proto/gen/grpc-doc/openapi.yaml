@@ -7171,6 +7171,174 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Project'
+  /v1/projects/{project}/accessGrants:
+    get:
+      tags:
+        - AccessGrantService
+      summary: ListAccessGrants
+      description: Lists access grants in a project.
+      operationId: AccessGrantService_ListAccessGrants
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          description: The maximum number of access grants to return.
+          schema:
+            type: integer
+            title: page_size
+            format: int32
+            description: The maximum number of access grants to return.
+        - name: pageToken
+          in: query
+          description: A page token from a previous ListAccessGrants call.
+          schema:
+            type: string
+            title: page_token
+            description: A page token from a previous ListAccessGrants call.
+        - name: filter
+          in: query
+          description: |-
+            Filter expression using AIP-160 syntax.
+             Supported fields: creator, status, issue, expire_time, create_time
+             Examples:
+               - 'creator = "users/dev@example.com"'
+               - 'status = "ACTIVE"'
+               - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
+               - 'issue = "projects/x/issues/123"'
+               - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+          schema:
+            type: string
+            title: filter
+            description: |-
+              Filter expression using AIP-160 syntax.
+               Supported fields: creator, status, issue, expire_time, create_time
+               Examples:
+                 - 'creator = "users/dev@example.com"'
+                 - 'status = "ACTIVE"'
+                 - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
+                 - 'issue = "projects/x/issues/123"'
+                 - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListAccessGrantsResponse'
+    post:
+      tags:
+        - AccessGrantService
+      summary: CreateAccessGrant
+      description: Creates an access grant.
+      operationId: AccessGrantService_CreateAccessGrant
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The access grant to create.
+        content:
+          application/json:
+            schema:
+              title: access_grant
+              description: The access grant to create.
+              $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+  /v1/projects/{project}/accessGrants/{accessGrant}:
+    get:
+      tags:
+        - AccessGrantService
+      summary: GetAccessGrant
+      description: Gets an access grant by name.
+      operationId: AccessGrantService_GetAccessGrant
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: accessGrant
+          in: path
+          description: The accessGrant id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+  /v1/projects/{project}/accessGrants/{accessGrant}:activate:
+    post:
+      tags:
+        - AccessGrantService
+      summary: ActivateAccessGrant
+      description: Activates a pending access grant.
+      operationId: AccessGrantService_ActivateAccessGrant
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: accessGrant
+          in: path
+          description: The accessGrant id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+  /v1/projects/{project}/accessGrants/{accessGrant}:revoke:
+    post:
+      tags:
+        - AccessGrantService
+      summary: RevokeAccessGrant
+      description: Revokes an active access grant.
+      operationId: AccessGrantService_RevokeAccessGrant
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: accessGrant
+          in: path
+          description: The accessGrant id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AccessGrant'
   /v1/projects/{project}/auditLogs:export:
     post:
       tags:
@@ -15637,6 +15805,97 @@ components:
         - CLAUDE
         - GEMINI
         - AZURE_OPENAI
+    bytebase.v1.AccessGrant:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant, generated by the server.
+             Format: projects/{project}/accessGrants/{access_grant}
+             The {access_grant} segment is a server-generated unique ID.
+        creator:
+          type: string
+          title: creator
+          description: |-
+            The creator of the access grant.
+             Format: users/{email}
+        status:
+          title: status
+          description: |-
+            The status of the access grant.
+             An ACTIVE grant with `expire_time` in the past is effectively expired
+             and no longer authorizes access. Use `expire_time` to determine
+             whether an ACTIVE grant has expired.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.AccessGrant.Status'
+        expireTime:
+          title: expire_time
+          description: |-
+            The expiration time of the access grant.
+             When the current time exceeds this value, an ACTIVE grant is
+             considered expired and no longer authorizes access.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        issue:
+          type: string
+          title: issue
+          description: |-
+            The issue associated with the access grant.
+             Can be empty.
+             Format: projects/{project}/issues/{issue}
+          readOnly: true
+        targets:
+          type: array
+          items:
+            type: string
+          title: targets
+          description: |-
+            The target databases for this access grant.
+             Format: instances/{instance}/databases/{database}
+        query:
+          type: string
+          title: query
+          description: The query permission granted.
+        unmask:
+          type: boolean
+          title: unmask
+          description: Whether the grant allows unmasking sensitive data.
+        createTime:
+          title: create_time
+          readOnly: true
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        updateTime:
+          title: update_time
+          readOnly: true
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: AccessGrant
+      required:
+        - creator
+        - targets
+      additionalProperties: false
+    bytebase.v1.AccessGrant.Status:
+      type: string
+      title: Status
+      enum:
+        - STATUS_UNSPECIFIED
+        - PENDING
+        - ACTIVE
+        - REVOKED
+      description: The status of the access grant.
+    bytebase.v1.ActivateAccessGrantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant to activate.
+             Format: projects/{project}/accessGrants/{access_grant}
+      title: ActivateAccessGrantRequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.Activity:
       type: object
       title: Activity
@@ -17293,6 +17552,24 @@ components:
         - IDENTITY_GENERATION_UNSPECIFIED
         - ALWAYS
         - BY_DEFAULT
+    bytebase.v1.CreateAccessGrantRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project for the access grant.
+             Format: projects/{project}
+        accessGrant:
+          title: access_grant
+          description: The access grant to create.
+          $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+      title: CreateAccessGrantRequest
+      required:
+        - parent
+        - accessGrant
+      additionalProperties: false
     bytebase.v1.CreateDatabaseGroupRequest:
       type: object
       properties:
@@ -19304,6 +19581,19 @@ components:
         - TYPE_UNSPECIFIED
         - VIRTUAL
         - STORED
+    bytebase.v1.GetAccessGrantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant to retrieve.
+             Format: projects/{project}/accessGrants/{access_grant}
+      title: GetAccessGrantRequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.GetActuatorInfoRequest:
       type: object
       title: GetActuatorInfoRequest
@@ -20385,6 +20675,13 @@ components:
           title: approval_status
           readOnly: true
           $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
+        accessGrant:
+          type: string
+          title: access_grant
+          description: |-
+            The access grant associated with this issue.
+             Format: projects/{project}/accessGrants/{access_grant}
+          readOnly: true
       title: Issue
       additionalProperties: false
     bytebase.v1.Issue.ApprovalStatus:
@@ -20429,6 +20726,7 @@ components:
         - DATABASE_CHANGE
         - GRANT_REQUEST
         - DATABASE_EXPORT
+        - ACCESS_GRANT
       description: The type of issue.
     bytebase.v1.IssueComment:
       type: object
@@ -20703,6 +21001,57 @@ components:
       title: Label
       additionalProperties: false
       description: A label for categorizing and organizing issues.
+    bytebase.v1.ListAccessGrantsRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent project of the access grants.
+             Format: projects/{project}
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: The maximum number of access grants to return.
+        pageToken:
+          type: string
+          title: page_token
+          description: A page token from a previous ListAccessGrants call.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter expression using AIP-160 syntax.
+             Supported fields: creator, status, issue, expire_time, create_time
+             Examples:
+               - 'creator = "users/dev@example.com"'
+               - 'status = "ACTIVE"'
+               - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
+               - 'issue = "projects/x/issues/123"'
+               - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+      title: ListAccessGrantsRequest
+      required:
+        - parent
+      additionalProperties: false
+    bytebase.v1.ListAccessGrantsResponse:
+      type: object
+      properties:
+        accessGrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+          title: access_grants
+          description: The access grants from the specified request.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
+      title: ListAccessGrantsResponse
+      additionalProperties: false
     bytebase.v1.ListChangelogsRequest:
       type: object
       properties:
@@ -23919,6 +24268,19 @@ components:
         - VERSIONED
         - DECLARATIVE
       description: The type of schema revision.
+    bytebase.v1.RevokeAccessGrantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the access grant to revoke.
+             Format: projects/{project}/accessGrants/{access_grant}
+      title: RevokeAccessGrantRequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.RiskLevel:
       type: string
       title: RiskLevel
@@ -28945,6 +29307,8 @@ components:
          documentation for additional information.
 security: []
 tags:
+  - name: AccessGrantService
+    description: AccessGrantService manages temporary access grants within projects.
   - name: IssueService
     description: IssueService manages issues for tracking database changes and tasks.
   - name: SettingService
