@@ -4,12 +4,7 @@
       <NSwitch
         size="small"
         :value="enabled"
-        :disabled="
-          !allowChange ||
-          isSheetOversize ||
-          (!enabled &&
-            (databasesNotMeetingRequirements.length > 0 || errors.length > 0))
-        "
+        :disabled="!allowChange || isSheetOversize"
         @update:value="toggleChecked"
       />
     </template>
