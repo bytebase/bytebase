@@ -836,7 +836,7 @@ Authorization method for RPC calls.
 | parent | [string](#string) |  | The parent project of the access grants. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of access grants to return. |
 | page_token | [string](#string) |  | A page token from a previous ListAccessGrants call. |
-| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: creator, status, issue, expire_time, create_time Examples: - &#39;creator = &#34;users/dev@example.com&#34;&#39; - &#39;status = &#34;ACTIVE&#34;&#39; - &#39;creator = &#34;users/dev@example.com&#34; AND status = &#34;ACTIVE&#34;&#39; - &#39;issue = &#34;projects/x/issues/123&#34;&#39; - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; |
+| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: name, creator, status, issue, expire_time, create_time Examples: - &#39;creator = &#34;users/dev@example.com&#34;&#39; - &#39;status = &#34;ACTIVE&#34;&#39; - &#39;creator = &#34;users/dev@example.com&#34; AND status = &#34;ACTIVE&#34;&#39; - &#39;issue = &#34;projects/x/issues/123&#34;&#39; - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; |
 
 
 
@@ -885,7 +885,7 @@ Authorization method for RPC calls.
 | parent | [string](#string) |  | The parent project to search in. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of access grants to return. |
 | page_token | [string](#string) |  | A page token from a previous SearchMyAccessGrants call. |
-| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: status, expire_time, create_time Examples: - &#39;status = &#34;ACTIVE&#34;&#39; - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; |
+| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: name, status, expire_time, create_time Examples: - &#39;name = &#34;projects/x/accessGrants/uuid&#34;&#39; - &#39;status = &#34;ACTIVE&#34;&#39; - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; |
 
 
 

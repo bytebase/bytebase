@@ -12,6 +12,11 @@ var permissionYAML []byte
 type Permission = string
 
 const (
+	AccessGrantsActivate                 Permission = "bb.accessGrants.activate"
+	AccessGrantsCreate                   Permission = "bb.accessGrants.create"
+	AccessGrantsGet                      Permission = "bb.accessGrants.get"
+	AccessGrantsList                     Permission = "bb.accessGrants.list"
+	AccessGrantsRevoke                   Permission = "bb.accessGrants.revoke"
 	AuditLogsExport                      Permission = "bb.auditLogs.export"
 	AuditLogsSearch                      Permission = "bb.auditLogs.search"
 	ChangelogsGet                        Permission = "bb.changelogs.get"

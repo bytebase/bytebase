@@ -3,6 +3,12 @@
 
 ## Table of Contents
 
+- [store/access_grant.proto](#store_access_grant-proto)
+    - [AccessGrant](#bytebase-store-AccessGrant)
+    - [AccessGrantPayload](#bytebase-store-AccessGrantPayload)
+  
+    - [AccessGrant.Status](#bytebase-store-AccessGrant-Status)
+  
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
     - [Position](#bytebase-store-Position)
@@ -323,6 +329,64 @@
     - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="store_access_grant-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/access_grant.proto
+
+
+
+<a name="bytebase-store-AccessGrant"></a>
+
+### AccessGrant
+
+
+
+
+
+
+
+<a name="bytebase-store-AccessGrantPayload"></a>
+
+### AccessGrantPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issue_id | [int64](#int64) |  | The issue associated with the access grant. |
+| targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} |
+| query | [string](#string) |  | The query permission granted. |
+| unmask | [bool](#bool) |  | Whether the grant allows unmasking sensitive data. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-AccessGrant-Status"></a>
+
+### AccessGrant.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| ACTIVE | 2 |  |
+| REVOKED | 3 |  |
+
+
+ 
+
+ 
+
+ 
 
 
 

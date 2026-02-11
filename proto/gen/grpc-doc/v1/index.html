@@ -3176,7 +3176,7 @@ Format: projects/{project} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Filter expression using AIP-160 syntax.
-Supported fields: creator, status, issue, expire_time, create_time
+Supported fields: name, creator, status, issue, expire_time, create_time
 Examples:
   - &#39;creator = &#34;users/dev@example.com&#34;&#39;
   - &#39;status = &#34;ACTIVE&#34;&#39;
@@ -3286,8 +3286,9 @@ Format: projects/{project} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Filter expression using AIP-160 syntax.
-Supported fields: status, expire_time, create_time
+Supported fields: name, status, expire_time, create_time
 Examples:
+  - &#39;name = &#34;projects/x/accessGrants/uuid&#34;&#39;
   - &#39;status = &#34;ACTIVE&#34;&#39;
   - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; </p></td>
                 </tr>

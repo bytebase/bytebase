@@ -1,0 +1,322 @@
+package v1
+
+import (
+	"context"
+	"time"
+
+	"connectrpc.com/connect"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
+)
+
+// AccessGrantService implements the access grant service.
+type AccessGrantService struct {
+	v1connect.UnimplementedAccessGrantServiceHandler
+	store *store.Store
+}
+
+// NewAccessGrantService returns a new access grant service instance.
+func NewAccessGrantService(store *store.Store) *AccessGrantService {
+	return &AccessGrantService{
+		store: store,
+	}
+}
+
+// GetAccessGrant gets an access grant by name.
+func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connect.Request[v1pb.GetAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	req := request.Msg
+	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		ID:        &accessGrantID,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant"))
+	}
+	if grant == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
+	}
+
+	return connect.NewResponse(convertToAccessGrant(grant)), nil
+}
+
+// ListAccessGrants lists access grants in a project.
+func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *connect.Request[v1pb.ListAccessGrantsRequest]) (*connect.Response[v1pb.ListAccessGrantsResponse], error) {
+	req := request.Msg
+	projectID, err := common.GetProjectID(req.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   req.PageToken,
+		limit:   int(req.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	find := &store.FindAccessGrantMessage{
+		ProjectID: &projectID,
+		Limit:     &limitPlusOne,
+		Offset:    &offset.offset,
+	}
+
+	if req.Filter != "" {
+		filterQ, err := store.GetListAccessGrantFilter(req.Filter)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
+		}
+		find.FilterQ = filterQ
+	}
+
+	grants, err := s.store.ListAccessGrants(ctx, find)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list access grants"))
+	}
+
+	resp := &v1pb.ListAccessGrantsResponse{}
+	if len(grants) == limitPlusOne {
+		nextPageToken, err := offset.getNextPageToken()
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
+		}
+		resp.NextPageToken = nextPageToken
+		grants = grants[:offset.limit]
+	}
+	for _, grant := range grants {
+		resp.AccessGrants = append(resp.AccessGrants, convertToAccessGrant(grant))
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
+// CreateAccessGrant creates an access grant.
+func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *connect.Request[v1pb.CreateAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	req := request.Msg
+	projectID, err := common.GetProjectID(req.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	ag := req.AccessGrant
+	if ag == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("access_grant is required"))
+	}
+	if ag.Creator == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("creator is required"))
+	}
+	if len(ag.Targets) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets is required"))
+	}
+
+	creatorEmail, err := common.GetUserEmail(ag.Creator)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid creator"))
+	}
+
+	var expireTime time.Time
+	switch exp := ag.Expiration.(type) {
+	case *v1pb.AccessGrant_ExpireTime:
+		if exp.ExpireTime == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expire_time is required"))
+		}
+		expireTime = exp.ExpireTime.AsTime()
+	case *v1pb.AccessGrant_Ttl:
+		if exp.Ttl == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("ttl is required"))
+		}
+		expireTime = time.Now().Add(exp.Ttl.AsDuration())
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expiration (expire_time or ttl) is required"))
+	}
+
+	create := &store.AccessGrantMessage{
+		ProjectID:  projectID,
+		Creator:    creatorEmail,
+		Status:     storepb.AccessGrant_PENDING,
+		ExpireTime: expireTime,
+		Payload: &storepb.AccessGrantPayload{
+			Targets: ag.Targets,
+			Query:   ag.Query,
+			Unmask:  ag.Unmask,
+		},
+	}
+
+	grant, err := s.store.CreateAccessGrant(ctx, create)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
+	}
+
+	return connect.NewResponse(convertToAccessGrant(grant)), nil
+}
+
+// ActivateAccessGrant activates a pending access grant.
+func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *connect.Request[v1pb.ActivateAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	req := request.Msg
+	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		ID:        &accessGrantID,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant"))
+	}
+	if grant == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
+	}
+	if grant.Status != storepb.AccessGrant_PENDING {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("access grant %q is not in PENDING status", req.Name))
+	}
+
+	status := storepb.AccessGrant_ACTIVE
+	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, &store.UpdateAccessGrantMessage{
+		Status: &status,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to activate access grant"))
+	}
+
+	return connect.NewResponse(convertToAccessGrant(updated)), nil
+}
+
+// RevokeAccessGrant revokes an active access grant.
+func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *connect.Request[v1pb.RevokeAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	req := request.Msg
+	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		ID:        &accessGrantID,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant"))
+	}
+	if grant == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
+	}
+	if grant.Status != storepb.AccessGrant_ACTIVE {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("access grant %q is not in ACTIVE status", req.Name))
+	}
+
+	status := storepb.AccessGrant_REVOKED
+	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, &store.UpdateAccessGrantMessage{
+		Status: &status,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to revoke access grant"))
+	}
+
+	return connect.NewResponse(convertToAccessGrant(updated)), nil
+}
+
+// SearchMyAccessGrants searches access grants created by the caller.
+func (s *AccessGrantService) SearchMyAccessGrants(ctx context.Context, request *connect.Request[v1pb.SearchMyAccessGrantsRequest]) (*connect.Response[v1pb.SearchMyAccessGrantsResponse], error) {
+	req := request.Msg
+	projectID, err := common.GetProjectID(req.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   req.PageToken,
+		limit:   int(req.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	find := &store.FindAccessGrantMessage{
+		ProjectID: &projectID,
+		Creator:   &user.Email,
+		Limit:     &limitPlusOne,
+		Offset:    &offset.offset,
+	}
+
+	if req.Filter != "" {
+		filterQ, err := store.GetListAccessGrantFilter(req.Filter)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
+		}
+		find.FilterQ = filterQ
+	}
+
+	grants, err := s.store.ListAccessGrants(ctx, find)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to search access grants"))
+	}
+
+	resp := &v1pb.SearchMyAccessGrantsResponse{}
+	if len(grants) == limitPlusOne {
+		nextPageToken, err := offset.getNextPageToken()
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
+		}
+		resp.NextPageToken = nextPageToken
+		grants = grants[:offset.limit]
+	}
+	for _, grant := range grants {
+		resp.AccessGrants = append(resp.AccessGrants, convertToAccessGrant(grant))
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
+func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
+	ag := &v1pb.AccessGrant{
+		Name:       common.FormatAccessGrant(msg.ProjectID, msg.ID),
+		Creator:    common.FormatUserEmail(msg.Creator),
+		Status:     convertToAccessGrantStatus(msg.Status),
+		Expiration: &v1pb.AccessGrant_ExpireTime{ExpireTime: timestamppb.New(msg.ExpireTime)},
+		CreateTime: timestamppb.New(msg.CreatedAt),
+		UpdateTime: timestamppb.New(msg.UpdatedAt),
+	}
+	if p := msg.Payload; p != nil {
+		ag.Targets = p.Targets
+		ag.Query = p.Query
+		ag.Unmask = p.Unmask
+		if p.IssueId != 0 {
+			ag.Issue = common.FormatIssue(msg.ProjectID, int(p.IssueId))
+		}
+	}
+	return ag
+}
+
+func convertToAccessGrantStatus(status storepb.AccessGrant_Status) v1pb.AccessGrant_Status {
+	switch status {
+	case storepb.AccessGrant_PENDING:
+		return v1pb.AccessGrant_PENDING
+	case storepb.AccessGrant_ACTIVE:
+		return v1pb.AccessGrant_ACTIVE
+	case storepb.AccessGrant_REVOKED:
+		return v1pb.AccessGrant_REVOKED
+	default:
+		return v1pb.AccessGrant_STATUS_UNSPECIFIED
+	}
+}

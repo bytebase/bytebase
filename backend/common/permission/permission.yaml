@@ -1,4 +1,9 @@
 permissions:
+  - bb.accessGrants.activate
+  - bb.accessGrants.create
+  - bb.accessGrants.get
+  - bb.accessGrants.list
+  - bb.accessGrants.revoke
   - bb.auditLogs.export
   - bb.auditLogs.search
   - bb.changelogs.get

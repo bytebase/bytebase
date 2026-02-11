@@ -202,7 +202,7 @@ export declare type ListAccessGrantsRequest = Message<"bytebase.v1.ListAccessGra
 
   /**
    * Filter expression using AIP-160 syntax.
-   * Supported fields: creator, status, issue, expire_time, create_time
+   * Supported fields: name, creator, status, issue, expire_time, create_time
    * Examples:
    *   - 'creator = "users/dev@example.com"'
    *   - 'status = "ACTIVE"'
@@ -339,8 +339,9 @@ export declare type SearchMyAccessGrantsRequest = Message<"bytebase.v1.SearchMyA
 
   /**
    * Filter expression using AIP-160 syntax.
-   * Supported fields: status, expire_time, create_time
+   * Supported fields: name, status, expire_time, create_time
    * Examples:
+   *   - 'name = "projects/x/accessGrants/uuid"'
    *   - 'status = "ACTIVE"'
    *   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
    *
