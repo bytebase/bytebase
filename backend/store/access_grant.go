@@ -25,8 +25,11 @@ type AccessGrantMessage struct {
 	Status     storepb.AccessGrant_Status
 	ExpireTime time.Time
 	Payload    *storepb.AccessGrantPayload
+	// Reason is used as the issue description during creation.
+	Reason string
 	// Output only.
 	ID        string
+	IssueUID  int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -44,7 +47,8 @@ type FindAccessGrantMessage struct {
 
 // UpdateAccessGrantMessage is the message for updating an access grant.
 type UpdateAccessGrantMessage struct {
-	Status *storepb.AccessGrant_Status
+	Status  *storepb.AccessGrant_Status
+	Payload *storepb.AccessGrantPayload
 }
 
 // CreateAccessGrant creates a new access grant.
@@ -55,7 +59,6 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 	}
 
 	create.ID = uuid.NewString()
-
 	q := qb.Q().Space(`
 		INSERT INTO access_grant (
 			id,
@@ -73,7 +76,6 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert access grant")
 	}
@@ -186,6 +188,13 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 
 	if v := update.Status; v != nil {
 		set.Comma("status = ?", v.String())
+	}
+	if v := update.Payload; v != nil {
+		p, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
+		}
+		set.Comma("payload = ?", p)
 	}
 	if set.Len() == 0 {
 		return nil, errors.New("no update field provided")

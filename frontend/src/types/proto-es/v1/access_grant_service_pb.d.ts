@@ -108,6 +108,11 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
    * @generated from field: google.protobuf.Timestamp update_time = 10;
    */
   updateTime?: Timestamp;
+
+  /**
+   * @generated from field: string reason = 12;
+   */
+  reason: string;
 };
 
 /**

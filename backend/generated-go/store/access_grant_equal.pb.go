@@ -37,5 +37,8 @@ func (x *AccessGrantPayload) Equal(y *AccessGrantPayload) bool {
 	if x.Unmask != y.Unmask {
 		return false
 	}
+	if x.Reason != y.Reason {
+		return false
+	}
 	return true
 }

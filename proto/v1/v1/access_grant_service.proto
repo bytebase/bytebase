@@ -140,6 +140,8 @@ message AccessGrant {
     // The access grant has been revoked.
     REVOKED = 3;
   }
+
+  string reason = 12;
 }
 
 message GetAccessGrantRequest {

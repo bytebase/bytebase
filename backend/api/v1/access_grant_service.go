@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
@@ -9,6 +10,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/webhook"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -18,13 +22,19 @@ import (
 // AccessGrantService implements the access grant service.
 type AccessGrantService struct {
 	v1connect.UnimplementedAccessGrantServiceHandler
-	store *store.Store
+	store          *store.Store
+	licenseService *enterprise.LicenseService
+	webhookManager *webhook.Manager
+	bus            *bus.Bus
 }
 
 // NewAccessGrantService returns a new access grant service instance.
-func NewAccessGrantService(store *store.Store) *AccessGrantService {
+func NewAccessGrantService(store *store.Store, licenseService *enterprise.LicenseService, webhookManager *webhook.Manager, bus *bus.Bus) *AccessGrantService {
 	return &AccessGrantService{
-		store: store,
+		store:          store,
+		licenseService: licenseService,
+		webhookManager: webhookManager,
+		bus:            bus,
 	}
 }
 
@@ -105,6 +115,9 @@ func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *conn
 
 // CreateAccessGrant creates an access grant.
 func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *connect.Request[v1pb.CreateAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
 	req := request.Msg
 	projectID, err := common.GetProjectID(req.Parent)
 	if err != nil {
@@ -143,7 +156,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expiration (expire_time or ttl) is required"))
 	}
 
-	create := &store.AccessGrantMessage{
+	// Step 1: Create the access grant.
+	grant, err := s.store.CreateAccessGrant(ctx, &store.AccessGrantMessage{
 		ProjectID:  projectID,
 		Creator:    creatorEmail,
 		Status:     storepb.AccessGrant_PENDING,
@@ -152,12 +166,48 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			Targets: ag.Targets,
 			Query:   ag.Query,
 			Unmask:  ag.Unmask,
+			Reason:  ag.Reason,
 		},
-	}
-
-	grant, err := s.store.CreateAccessGrant(ctx, create)
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
+	}
+
+	// Step 2: Create the associated issue.
+	issue, err := s.store.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    projectID,
+		CreatorEmail: creatorEmail,
+		Title:        fmt.Sprintf("JIT access request by %s", creatorEmail),
+		Type:         storepb.Issue_ACCESS_GRANT,
+		Description:  ag.Reason,
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			},
+		},
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+	}
+
+	// Step 3: Update access grant payload with the issue ID.
+	grant.Payload.IssueId = int64(issue.UID)
+	grant, err = s.store.UpdateAccessGrant(ctx, grant.ID, &store.UpdateAccessGrantMessage{
+		Payload: grant.Payload,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update access grant payload"))
+	}
+
+	// Step 4: Post-create: webhook, approval finding, auto-approve.
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	if project != nil {
+		if _, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
@@ -165,6 +215,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 
 // ActivateAccessGrant activates a pending access grant.
 func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *connect.Request[v1pb.ActivateAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
 	req := request.Msg
 	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
 	if err != nil {
@@ -198,6 +251,9 @@ func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *c
 
 // RevokeAccessGrant revokes an active access grant.
 func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *connect.Request[v1pb.RevokeAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
 	req := request.Msg
 	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
 	if err != nil {

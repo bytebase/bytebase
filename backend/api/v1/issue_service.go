@@ -363,6 +363,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
+	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -377,65 +381,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
-	}
-
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	// Trigger approval finding based on issue type
-	switch issue.Type {
-	case storepb.Issue_GRANT_REQUEST, storepb.Issue_DATABASE_EXPORT:
-		// GRANT_REQUEST and DATABASE_EXPORT can determine approval immediately:
-		// - GRANT_REQUEST only looks at issue message
-		// - DATABASE_EXPORT only looks at the plan (already available)
-		// Call synchronously to get approval status in the create response
-		if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
-			slog.Error("failed to find approval template",
-				slog.Int("issue_uid", issue.UID),
-				slog.String("issue_title", issue.Title),
-				log.BBError(err))
-			// Continue anyway - non-fatal error
-		}
-
-		// Refresh issue to get updated approval payload
-		uid := issue.UID
-		issue, err = s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to refresh issue"))
-		}
-
-		// For GRANT_REQUEST that is auto-approved (no approval template), complete it
-		if issue.Type == storepb.Issue_GRANT_REQUEST {
-			approved, err := utils.CheckApprovalApproved(issue.Payload.Approval)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if approval is approved"))
-			}
-			if approved {
-				issue, err = s.completeGrantRequestIssue(ctx, user.Email, issue, issue.Payload.GrantRequest)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal,
-						errors.Wrapf(err, "failed to complete grant request"))
-				}
-			}
-		}
-	case storepb.Issue_DATABASE_CHANGE:
-		// DATABASE_CHANGE needs to wait for plan check to complete
-		// Trigger async approval finding via event channel
-		s.bus.ApprovalCheckChan <- int64(issue.UID)
-	default:
-		// For other issue types, no approval finding needed
+	issue, err = postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	converted, err := s.convertToIssue(issue)
@@ -652,8 +600,8 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 
 	// If the issue is a grant request and approved, complete it
-	if issue.Type == storepb.Issue_GRANT_REQUEST && approved {
-		issue, err = s.completeGrantRequestIssue(ctx, user.Email, issue, payload.GrantRequest)
+	if approved {
+		issue, err = completeAccessRequestIssue(ctx, s.store, user.Email, issue)
 		if err != nil {
 			slog.Debug("failed to complete grant request issue", log.BBError(err))
 		}
@@ -1242,44 +1190,6 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
 	}
 	return issue, nil
-}
-
-// completeGrantRequestIssue grants privilege and closes a grant request issue.
-// Called when:
-// 1. Issue created without approval template (auto-approved)
-// 2. Issue approval flow completes
-//
-// Returns the updated issue with DONE status.
-func (s *IssueService) completeGrantRequestIssue(ctx context.Context, userEmail string, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) (*store.IssueMessage, error) {
-	// Grant the privilege
-	if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, grantRequest); err != nil {
-		return nil, err
-	}
-
-	// Update issue status to DONE
-	newStatus := storepb.Issue_DONE
-	updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
-	}
-
-	// Create issue comment documenting the status change
-	if _, err := s.store.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
-		Payload: &storepb.IssueCommentPayload{
-			Event: &storepb.IssueCommentPayload_IssueUpdate_{
-				IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-					FromStatus: &issue.Status,
-					ToStatus:   &updatedIssue.Status,
-				},
-			},
-		},
-	}); err != nil {
-		// Non-fatal: log warning but continue
-		slog.Warn("failed to create issue comment after changing the issue status", log.BBError(err))
-	}
-
-	return updatedIssue, nil
 }
 
 func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) bool {

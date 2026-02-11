@@ -15930,6 +15930,9 @@ components:
               title: update_time
               readOnly: true
               $ref: '#/components/schemas/google.protobuf.Timestamp'
+            reason:
+              type: string
+              title: reason
         - oneOf:
             - properties:
                 expireTime:
@@ -23258,6 +23261,7 @@ components:
         - FEATURE_DISALLOW_PASSWORD_SIGNIN
         - FEATURE_CUSTOM_ROLES
         - FEATURE_REQUEST_ROLE_WORKFLOW
+        - FEATURE_JIT
         - FEATURE_DATA_MASKING
         - FEATURE_DATA_CLASSIFICATION
         - FEATURE_SCIM

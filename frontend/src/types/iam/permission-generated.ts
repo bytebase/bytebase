@@ -2,6 +2,11 @@
 // Run 'pnpm run generate:permissions' or 'sh scripts/copy_config_files.sh' to regenerate.
 
 export type Permission =
+  | "bb.accessGrants.activate"
+  | "bb.accessGrants.create"
+  | "bb.accessGrants.get"
+  | "bb.accessGrants.list"
+  | "bb.accessGrants.revoke"
   | "bb.auditLogs.export"
   | "bb.auditLogs.search"
   | "bb.changelogs.get"

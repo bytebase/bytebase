@@ -117,6 +117,7 @@ type AccessGrant struct {
 	Unmask        bool                   `protobuf:"varint,8,opt,name=unmask,proto3" json:"unmask,omitempty"`
 	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	Reason        string                 `protobuf:"bytes,12,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -237,6 +238,13 @@ func (x *AccessGrant) GetUpdateTime() *timestamppb.Timestamp {
 		return x.UpdateTime
 	}
 	return nil
+}
+
+func (x *AccessGrant) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
 }
 
 type isAccessGrant_Expiration interface {
@@ -732,7 +740,7 @@ var File_v1_access_grant_service_proto protoreflect.FileDescriptor
 
 const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x82\x05\n" +
+	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x9a\x05\n" +
 	"\vAccessGrant\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x12<\n" +
@@ -748,7 +756,8 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"updateTime\"F\n" +
+	"updateTime\x12\x16\n" +
+	"\x06reason\x18\f \x01(\tR\x06reason\"F\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\n" +
