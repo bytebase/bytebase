@@ -240,7 +240,7 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	}
 
 	if len(tasks) == 0 {
-		return nil, errors.Errorf("no target databases have an effective environment for spec %s", spec.Id)
+		return nil, errors.Errorf("cannot create tasks for spec %s: all target databases are missing an environment", spec.Id)
 	}
 
 	return tasks, nil
