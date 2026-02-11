@@ -165,6 +165,9 @@ function groupTasksIntoStages(
   for (const task of tasks) {
     const db = databaseStore.getDatabaseByName(task.databaseName);
     const env = db.effectiveEnvironment ?? "";
+    if (env === "") {
+      continue;
+    }
 
     let envTasks = tasksByEnv.get(env);
     if (!envTasks) {

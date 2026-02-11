@@ -1177,7 +1177,8 @@
     "targets": {
       "title": "目标库",
       "no-targets-found": "未找到目标库",
-      "view-all": "查看全部 ({count})"
+      "view-all": "查看全部 ({count})",
+      "non-env-warning": "{count} 个数据库因没有环境将被排除在发布任务之外:"
     },
     "select-isolation-level": "选择隔离级别",
     "isolation-level": {
