@@ -135,6 +135,14 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 		return nil, errors.Wrap(err, "failed to write to buffer")
 	}
 
+	// In PostgreSQL, WITH clause must appear once before the first SELECT.
+	cteClause := extractCTE(statementInfoList[0].tree)
+	if cteClause != "" {
+		if _, err := fmt.Fprintf(&buf, "%s\n", cteClause); err != nil {
+			return nil, errors.Wrap(err, "failed to write to buffer")
+		}
+	}
+
 	for i, item := range statementInfoList {
 		if i != 0 {
 			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
@@ -175,6 +183,24 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 			statementInfoList[len(statementInfoList)-1].tree.GetStop().GetText(),
 		),
 	}, nil
+}
+
+func extractCTE(ctx antlr.ParserRuleContext) string {
+	switch node := ctx.(type) {
+	case *parser.UpdatestmtContext:
+		if optWith := node.Opt_with_clause(); optWith != nil {
+			if withClause := optWith.With_clause(); withClause != nil {
+				return node.GetParser().GetTokenStream().GetTextFromRuleContext(withClause)
+			}
+		}
+	case *parser.DeletestmtContext:
+		if optWith := node.Opt_with_clause(); optWith != nil {
+			if withClause := optWith.With_clause(); withClause != nil {
+				return node.GetParser().GetTokenStream().GetTextFromRuleContext(withClause)
+			}
+		}
+	}
+	return ""
 }
 
 func writeSuffixSelectClause(buf *strings.Builder, tree antlr.Tree) error {
