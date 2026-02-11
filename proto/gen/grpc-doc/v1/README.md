@@ -804,6 +804,7 @@ Authorization method for RPC calls.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project for the access grant. Format: projects/{project} |
 | access_grant | [AccessGrant](#bytebase-v1-AccessGrant) |  | The access grant to create. |
+| reason | [string](#string) |  |  |
 
 
 

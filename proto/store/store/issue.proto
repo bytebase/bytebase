@@ -20,6 +20,8 @@ message Issue {
     GRANT_REQUEST = 2;
     // Issue for exporting data from databases.
     DATABASE_EXPORT = 3;
+    // Temporary access grant request.
+    ACCESS_GRANT = 4;
   }
 
   // Status represents the current state of the issue.

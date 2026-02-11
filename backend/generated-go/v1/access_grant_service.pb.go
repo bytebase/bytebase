@@ -455,6 +455,7 @@ type CreateAccessGrantRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The access grant to create.
 	AccessGrant   *AccessGrant `protobuf:"bytes,2,opt,name=access_grant,json=accessGrant,proto3" json:"access_grant,omitempty"`
+	Reason        string       `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -501,6 +502,13 @@ func (x *CreateAccessGrantRequest) GetAccessGrant() *AccessGrant {
 		return x.AccessGrant
 	}
 	return nil
+}
+
+func (x *CreateAccessGrantRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
 }
 
 type ActivateAccessGrantRequest struct {
@@ -770,11 +778,12 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x81\x01\n" +
 	"\x18ListAccessGrantsResponse\x12=\n" +
 	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x92\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xaa\x01\n" +
 	"\x18CreateAccessGrantRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12@\n" +
-	"\faccess_grant\x18\x02 \x01(\v2\x18.bytebase.v1.AccessGrantB\x03\xe0A\x02R\vaccessGrant\"R\n" +
+	"\faccess_grant\x18\x02 \x01(\v2\x18.bytebase.v1.AccessGrantB\x03\xe0A\x02R\vaccessGrant\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"R\n" +
 	"\x1aActivateAccessGrantRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
 	"\x18bytebase.com/AccessGrantR\x04name\"P\n" +

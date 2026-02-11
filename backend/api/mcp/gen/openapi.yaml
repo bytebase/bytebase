@@ -8634,6 +8634,9 @@ components:
           title: access_grant
           description: The access grant to create.
           $ref: '#/components/schemas/bytebase.v1.AccessGrant'
+        reason:
+          type: string
+          title: reason
       title: CreateAccessGrantRequest
       additionalProperties: false
     bytebase.v1.CreateDatabaseGroupRequest:

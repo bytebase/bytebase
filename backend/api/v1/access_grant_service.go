@@ -9,6 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -21,13 +23,17 @@ type AccessGrantService struct {
 	v1connect.UnimplementedAccessGrantServiceHandler
 	store          *store.Store
 	licenseService *enterprise.LicenseService
+	webhookManager *webhook.Manager
+	bus            *bus.Bus
 }
 
 // NewAccessGrantService returns a new access grant service instance.
-func NewAccessGrantService(store *store.Store, licenseService *enterprise.LicenseService) *AccessGrantService {
+func NewAccessGrantService(store *store.Store, licenseService *enterprise.LicenseService, webhookManager *webhook.Manager, bus *bus.Bus) *AccessGrantService {
 	return &AccessGrantService{
 		store:          store,
 		licenseService: licenseService,
+		webhookManager: webhookManager,
+		bus:            bus,
 	}
 }
 
@@ -159,11 +165,27 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			Query:   ag.Query,
 			Unmask:  ag.Unmask,
 		},
+		Reason: req.Reason,
 	}
 
 	grant, err := s.store.CreateAccessGrant(ctx, create)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
+	}
+
+	// Post-create: webhook, approval finding, auto-approve.
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &grant.IssueUID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get issue"))
+	}
+	if issue != nil && project != nil {
+		if _, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	return connect.NewResponse(convertToAccessGrant(grant)), nil

@@ -120,6 +120,9 @@ func (x *CreateAccessGrantRequest) Equal(y *CreateAccessGrantRequest) bool {
 	if !x.AccessGrant.Equal(y.AccessGrant) {
 		return false
 	}
+	if x.Reason != y.Reason {
+		return false
+	}
 	return true
 }
 

@@ -204,6 +204,8 @@ message CreateAccessGrantRequest {
 
   // The access grant to create.
   AccessGrant access_grant = 2 [(google.api.field_behavior) = REQUIRED];
+
+  string reason = 3;
 }
 
 message ActivateAccessGrantRequest {

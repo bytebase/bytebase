@@ -369,6 +369,7 @@ func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
 // Returns a list of CEL variable maps (one per task/component), done flag, and error.
 // done=false means the caller should retry later (e.g., waiting for plan check runs).
 func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+	// TODO: do we need different approval flow for the ACCESS_GRANT issue?
 	switch issue.Type {
 	case storepb.Issue_GRANT_REQUEST:
 		return buildCELVariablesForGrantRequest(ctx, stores, issue)

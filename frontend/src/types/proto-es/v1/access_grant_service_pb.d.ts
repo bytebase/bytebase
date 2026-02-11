@@ -274,6 +274,11 @@ export declare type CreateAccessGrantRequest = Message<"bytebase.v1.CreateAccess
    * @generated from field: bytebase.v1.AccessGrant access_grant = 2;
    */
   accessGrant?: AccessGrant;
+
+  /**
+   * @generated from field: string reason = 3;
+   */
+  reason: string;
 };
 
 /**

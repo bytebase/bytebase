@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -24,8 +25,11 @@ type AccessGrantMessage struct {
 	Status     storepb.AccessGrant_Status
 	ExpireTime time.Time
 	Payload    *storepb.AccessGrantPayload
+	// Reason is used as the issue description during creation.
+	Reason string
 	// Output only.
 	ID        string
+	IssueUID  int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -35,6 +39,7 @@ type FindAccessGrantMessage struct {
 	ID        *string
 	ProjectID *string
 	Creator   *string
+	IssueUID  *int
 	Limit     *int
 	Offset    *int
 
@@ -46,14 +51,21 @@ type UpdateAccessGrantMessage struct {
 	Status *storepb.AccessGrant_Status
 }
 
-// CreateAccessGrant creates a new access grant.
+// CreateAccessGrant creates a new access grant and its associated issue in a transaction.
 func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessage) (*AccessGrantMessage, error) {
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	q := qb.Q().Space(`
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Step 1: Insert access grant.
+	insertGrantQ := qb.Q().Space(`
 		INSERT INTO access_grant (
 			project,
 			creator,
@@ -65,13 +77,66 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 		) RETURNING id, created_at, updated_at
 	`, create.ProjectID, create.Creator, create.Status.String(), create.ExpireTime, payload)
 
-	query, args, err := q.ToSQL()
+	query, args, err := insertGrantQ.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.ID, &create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert access grant")
+	}
+
+	// Step 2: Create the associated issue.
+	issuePayload, err := protojson.Marshal(&storepb.Issue{
+		Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: false,
+			ApprovalTemplate:    nil,
+			Approvers:           nil,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal issue payload")
+	}
+	title := fmt.Sprintf("JIT access request by %s", create.Creator)
+	tsVector := getTSVector(fmt.Sprintf("%s %s", title, create.Reason))
+	insertIssueQ := qb.Q().Space(`
+		INSERT INTO issue (
+			creator,
+			project,
+			name,
+			status,
+			type,
+			description,
+			payload,
+			ts_vector
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING id
+	`, create.Creator, create.ProjectID, title, storepb.Issue_OPEN.String(), storepb.Issue_ACCESS_GRANT.String(), create.Reason, issuePayload, tsVector)
+
+	query, args, err = insertIssueQ.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build issue sql")
+	}
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.IssueUID); err != nil {
+		return nil, errors.Wrapf(err, "failed to insert issue")
+	}
+
+	// Step 3: Update access grant payload with the issue ID.
+	create.Payload.IssueId = int64(create.IssueUID)
+	updatedPayload, err := protojson.Marshal(create.Payload)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal updated payload")
+	}
+	updateQ := qb.Q().Space(`UPDATE access_grant SET payload = ? WHERE id = ?`, updatedPayload, create.ID)
+	query, args, err = updateQ.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build update sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update access grant payload")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return create, nil
@@ -119,6 +184,9 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 	}
 	if v := find.Creator; v != nil {
 		q.And("creator = ?", *v)
+	}
+	if v := find.IssueUID; v != nil {
+		q.And("(payload->>'issueId')::bigint = ?", *v)
 	}
 
 	q.Space("ORDER BY created_at DESC")

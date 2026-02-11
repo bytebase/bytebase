@@ -2721,6 +2721,7 @@ Type represents the category of issue.
 | DATABASE_CHANGE | 1 | Issue for database schema or data changes. |
 | GRANT_REQUEST | 2 | Issue requesting database access permissions. |
 | DATABASE_EXPORT | 3 | Issue for exporting data from databases. |
+| ACCESS_GRANT | 4 | Temporary access grant request. |
 
 
  
