@@ -95,6 +95,7 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		UpdateTime:   timestamppb.New(issue.UpdatedAt),
 		GrantRequest: convertedGrantRequest,
 		Labels:       issuePayload.Labels,
+		AccessGrant:  issuePayload.AccessGrantId,
 	}
 
 	if issue.PlanUID != nil {
@@ -177,6 +178,8 @@ func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
 		return v1pb.Issue_GRANT_REQUEST
 	case storepb.Issue_DATABASE_EXPORT:
 		return v1pb.Issue_DATABASE_EXPORT
+	case storepb.Issue_ACCESS_GRANT:
+		return v1pb.Issue_ACCESS_GRANT
 	default:
 		return v1pb.Issue_TYPE_UNSPECIFIED
 	}
@@ -190,6 +193,8 @@ func convertToAPIIssueType(t v1pb.Issue_Type) (storepb.Issue_Type, error) {
 		return storepb.Issue_GRANT_REQUEST, nil
 	case v1pb.Issue_DATABASE_EXPORT:
 		return storepb.Issue_DATABASE_EXPORT, nil
+	case v1pb.Issue_ACCESS_GRANT:
+		return storepb.Issue_ACCESS_GRANT, nil
 	default:
 		return storepb.Issue_ISSUE_TYPE_UNSPECIFIED, errors.Errorf("invalid issue type %v", t)
 	}
