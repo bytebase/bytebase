@@ -184,6 +184,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: false,
 			},
+			AccessGrantId: grant.ID,
 		},
 	})
 	if err != nil {

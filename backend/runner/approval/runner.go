@@ -369,7 +369,6 @@ func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
 // Returns a list of CEL variable maps (one per task/component), done flag, and error.
 // done=false means the caller should retry later (e.g., waiting for plan check runs).
 func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
-	// TODO: do we need different approval flow for the ACCESS_GRANT issue?
 	switch issue.Type {
 	case storepb.Issue_GRANT_REQUEST:
 		return buildCELVariablesForGrantRequest(ctx, stores, issue)
@@ -377,6 +376,9 @@ func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *
 		return buildCELVariablesForDatabaseChange(ctx, stores, issue)
 	case storepb.Issue_DATABASE_EXPORT:
 		return buildCELVariablesForDataExport(ctx, stores, issue)
+	case storepb.Issue_ACCESS_GRANT:
+		// TODO: approval flow for the ACCESS_GRANT issue
+		return nil, true, nil
 	default:
 		return nil, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
@@ -803,6 +805,9 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 		return getApprovalSourceFromPlan(plan.Config), nil
 	case storepb.Issue_DATABASE_EXPORT:
 		return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA, nil
+	case storepb.Issue_ACCESS_GRANT:
+		// TODO: the approval source type for access request
+		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, nil
 	default:
 		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("unknown issue type %v", issue.Type)
 	}

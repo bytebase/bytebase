@@ -48,14 +48,11 @@ func postCreateIssue(
 		storepb.Issue_GRANT_REQUEST,
 		storepb.Issue_DATABASE_EXPORT:
 
-		if issue.Type != storepb.Issue_ACCESS_GRANT {
-			// TODO: approval flow for the ACCESS_GRANT issue
-			if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
-				slog.Error("failed to find approval template",
-					slog.Int("issue_uid", issue.UID),
-					slog.String("issue_title", issue.Title),
-					log.BBError(err))
-			}
+		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
+			slog.Error("failed to find approval template",
+				slog.Int("issue_uid", issue.UID),
+				slog.String("issue_title", issue.Title),
+				log.BBError(err))
 		}
 
 		// Refresh issue to get updated approval payload.
