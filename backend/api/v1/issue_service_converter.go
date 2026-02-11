@@ -95,7 +95,10 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		UpdateTime:   timestamppb.New(issue.UpdatedAt),
 		GrantRequest: convertedGrantRequest,
 		Labels:       issuePayload.Labels,
-		AccessGrant:  common.FormatAccessGrant(issue.ProjectID, issuePayload.AccessGrantId),
+	}
+
+	if issuePayload.AccessGrantId != "" {
+		issueV1.AccessGrant = common.FormatAccessGrant(issue.ProjectID, issuePayload.AccessGrantId)
 	}
 
 	if issue.PlanUID != nil {
