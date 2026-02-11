@@ -408,9 +408,12 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 		if err := func() error {
 			startTime := time.Now()
 			// send HTTP request.
+			// For NDJSON endpoints (_msearch, _bulk, etc.), each JSON object must
+			// be on a single line. Remove embedded newlines from each data item
+			// before joining with newline separators.
 			var data []byte
 			for _, item := range request.Data {
-				data = append(data, []byte(item)...)
+				data = append(data, []byte(strings.ReplaceAll(item, "\n", ""))...)
 				data = append(data, '\n')
 			}
 			var resp *http.Response
