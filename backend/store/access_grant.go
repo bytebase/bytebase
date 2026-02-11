@@ -21,7 +21,7 @@ import (
 type AccessGrantMessage struct {
 	ProjectID  string
 	Creator    string
-	Status     string
+	Status     storepb.AccessGrant_Status
 	ExpireTime time.Time
 	Payload    *storepb.AccessGrantPayload
 	// Output only.
@@ -43,7 +43,7 @@ type FindAccessGrantMessage struct {
 
 // UpdateAccessGrantMessage is the message for updating an access grant.
 type UpdateAccessGrantMessage struct {
-	Status *string
+	Status *storepb.AccessGrant_Status
 }
 
 // CreateAccessGrant creates a new access grant.
@@ -66,7 +66,7 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 		) VALUES (
 			?, ?, ?, ?, ?, ?
 		) RETURNING created_at, updated_at
-	`, create.ID, create.ProjectID, create.Creator, create.Status, create.ExpireTime, payload)
+	`, create.ID, create.ProjectID, create.Creator, create.Status.String(), create.ExpireTime, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -149,11 +149,12 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 			Payload: &storepb.AccessGrantPayload{},
 		}
 		var payload []byte
+		var statusString string
 		if err := rows.Scan(
 			&grant.ID,
 			&grant.ProjectID,
 			&grant.Creator,
-			&grant.Status,
+			&statusString,
 			&grant.ExpireTime,
 			&payload,
 			&grant.CreatedAt,
@@ -161,6 +162,11 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan access grant")
 		}
+		statusValue, ok := storepb.AccessGrant_Status_value[statusString]
+		if !ok {
+			return nil, errors.Errorf("invalid access grant status %q", statusString)
+		}
+		grant.Status = storepb.AccessGrant_Status(statusValue)
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, grant.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
@@ -178,7 +184,7 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 	set := qb.Q()
 
 	if v := update.Status; v != nil {
-		set.Comma("status = ?", *v)
+		set.Comma("status = ?", v.String())
 	}
 	if set.Len() == 0 {
 		return nil, errors.New("no update field provided")
@@ -197,11 +203,12 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 		Payload: &storepb.AccessGrantPayload{},
 	}
 	var payload []byte
+	var statusString string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&grant.ID,
 		&grant.ProjectID,
 		&grant.Creator,
-		&grant.Status,
+		&statusString,
 		&grant.ExpireTime,
 		&payload,
 		&grant.CreatedAt,
@@ -209,6 +216,11 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 	); err != nil {
 		return nil, errors.Wrapf(err, "failed to update access grant")
 	}
+	statusValue, ok := storepb.AccessGrant_Status_value[statusString]
+	if !ok {
+		return nil, errors.Errorf("invalid access grant status %q", statusString)
+	}
+	grant.Status = storepb.AccessGrant_Status(statusValue)
 	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, grant.Payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal payload")
 	}

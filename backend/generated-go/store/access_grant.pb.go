@@ -21,6 +21,94 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type AccessGrant_Status int32
+
+const (
+	AccessGrant_STATUS_UNSPECIFIED AccessGrant_Status = 0
+	AccessGrant_PENDING            AccessGrant_Status = 1
+	AccessGrant_ACTIVE             AccessGrant_Status = 2
+	AccessGrant_REVOKED            AccessGrant_Status = 3
+)
+
+// Enum value maps for AccessGrant_Status.
+var (
+	AccessGrant_Status_name = map[int32]string{
+		0: "STATUS_UNSPECIFIED",
+		1: "PENDING",
+		2: "ACTIVE",
+		3: "REVOKED",
+	}
+	AccessGrant_Status_value = map[string]int32{
+		"STATUS_UNSPECIFIED": 0,
+		"PENDING":            1,
+		"ACTIVE":             2,
+		"REVOKED":            3,
+	}
+)
+
+func (x AccessGrant_Status) Enum() *AccessGrant_Status {
+	p := new(AccessGrant_Status)
+	*p = x
+	return p
+}
+
+func (x AccessGrant_Status) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AccessGrant_Status) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_access_grant_proto_enumTypes[0].Descriptor()
+}
+
+func (AccessGrant_Status) Type() protoreflect.EnumType {
+	return &file_store_access_grant_proto_enumTypes[0]
+}
+
+func (x AccessGrant_Status) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AccessGrant_Status.Descriptor instead.
+func (AccessGrant_Status) EnumDescriptor() ([]byte, []int) {
+	return file_store_access_grant_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type AccessGrant struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccessGrant) Reset() {
+	*x = AccessGrant{}
+	mi := &file_store_access_grant_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccessGrant) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccessGrant) ProtoMessage() {}
+
+func (x *AccessGrant) ProtoReflect() protoreflect.Message {
+	mi := &file_store_access_grant_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccessGrant.ProtoReflect.Descriptor instead.
+func (*AccessGrant) Descriptor() ([]byte, []int) {
+	return file_store_access_grant_proto_rawDescGZIP(), []int{0}
+}
+
 type AccessGrantPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The issue associated with the access grant.
@@ -38,7 +126,7 @@ type AccessGrantPayload struct {
 
 func (x *AccessGrantPayload) Reset() {
 	*x = AccessGrantPayload{}
-	mi := &file_store_access_grant_proto_msgTypes[0]
+	mi := &file_store_access_grant_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -50,7 +138,7 @@ func (x *AccessGrantPayload) String() string {
 func (*AccessGrantPayload) ProtoMessage() {}
 
 func (x *AccessGrantPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_access_grant_proto_msgTypes[0]
+	mi := &file_store_access_grant_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -63,7 +151,7 @@ func (x *AccessGrantPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccessGrantPayload.ProtoReflect.Descriptor instead.
 func (*AccessGrantPayload) Descriptor() ([]byte, []int) {
-	return file_store_access_grant_proto_rawDescGZIP(), []int{0}
+	return file_store_access_grant_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *AccessGrantPayload) GetIssueId() int64 {
@@ -98,7 +186,14 @@ var File_store_access_grant_proto protoreflect.FileDescriptor
 
 const file_store_access_grant_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/access_grant.proto\x12\x0ebytebase.store\"w\n" +
+	"\x18store/access_grant.proto\x12\x0ebytebase.store\"U\n" +
+	"\vAccessGrant\"F\n" +
+	"\x06Status\x12\x16\n" +
+	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aPENDING\x10\x01\x12\n" +
+	"\n" +
+	"\x06ACTIVE\x10\x02\x12\v\n" +
+	"\aREVOKED\x10\x03\"w\n" +
 	"\x12AccessGrantPayload\x12\x19\n" +
 	"\bissue_id\x18\x01 \x01(\x03R\aissueId\x12\x18\n" +
 	"\atargets\x18\x02 \x03(\tR\atargets\x12\x14\n" +
@@ -118,9 +213,12 @@ func file_store_access_grant_proto_rawDescGZIP() []byte {
 	return file_store_access_grant_proto_rawDescData
 }
 
-var file_store_access_grant_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_store_access_grant_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_access_grant_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_access_grant_proto_goTypes = []any{
-	(*AccessGrantPayload)(nil), // 0: bytebase.store.AccessGrantPayload
+	(AccessGrant_Status)(0),    // 0: bytebase.store.AccessGrant.Status
+	(*AccessGrant)(nil),        // 1: bytebase.store.AccessGrant
+	(*AccessGrantPayload)(nil), // 2: bytebase.store.AccessGrantPayload
 }
 var file_store_access_grant_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -140,13 +238,14 @@ func file_store_access_grant_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_access_grant_proto_rawDesc), len(file_store_access_grant_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_access_grant_proto_goTypes,
 		DependencyIndexes: file_store_access_grant_proto_depIdxs,
+		EnumInfos:         file_store_access_grant_proto_enumTypes,
 		MessageInfos:      file_store_access_grant_proto_msgTypes,
 	}.Build()
 	File_store_access_grant_proto = out.File

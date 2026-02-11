@@ -4,7 +4,10 @@
 ## Table of Contents
 
 - [store/access_grant.proto](#store_access_grant-proto)
+    - [AccessGrant](#bytebase-store-AccessGrant)
     - [AccessGrantPayload](#bytebase-store-AccessGrantPayload)
+  
+    - [AccessGrant.Status](#bytebase-store-AccessGrant-Status)
   
 - [store/common.proto](#store_common-proto)
     - [PageToken](#bytebase-store-PageToken)
@@ -336,6 +339,16 @@
 
 
 
+<a name="bytebase-store-AccessGrant"></a>
+
+### AccessGrant
+
+
+
+
+
+
+
 <a name="bytebase-store-AccessGrantPayload"></a>
 
 ### AccessGrantPayload
@@ -354,6 +367,20 @@
 
 
  
+
+
+<a name="bytebase-store-AccessGrant-Status"></a>
+
+### AccessGrant.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| ACTIVE | 2 |  |
+| REVOKED | 3 |  |
+
 
  
 

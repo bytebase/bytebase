@@ -4,6 +4,15 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+message AccessGrant {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    ACTIVE = 2;
+    REVOKED = 3;
+  }
+}
+
 message AccessGrantPayload {
   // The issue associated with the access grant.
   int64 issue_id = 1;

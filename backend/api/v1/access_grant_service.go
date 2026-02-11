@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -19,15 +18,13 @@ import (
 // AccessGrantService implements the access grant service.
 type AccessGrantService struct {
 	v1connect.UnimplementedAccessGrantServiceHandler
-	store      *store.Store
-	iamManager *iam.Manager
+	store *store.Store
 }
 
 // NewAccessGrantService returns a new access grant service instance.
-func NewAccessGrantService(store *store.Store, iamManager *iam.Manager) *AccessGrantService {
+func NewAccessGrantService(store *store.Store) *AccessGrantService {
 	return &AccessGrantService{
-		store:      store,
-		iamManager: iamManager,
+		store: store,
 	}
 }
 
@@ -149,7 +146,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	create := &store.AccessGrantMessage{
 		ProjectID:  projectID,
 		Creator:    creatorEmail,
-		Status:     "PENDING",
+		Status:     storepb.AccessGrant_PENDING,
 		ExpireTime: expireTime,
 		Payload: &storepb.AccessGrantPayload{
 			Targets: ag.Targets,
@@ -184,11 +181,11 @@ func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *c
 	if grant == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
 	}
-	if grant.Status != "PENDING" {
+	if grant.Status != storepb.AccessGrant_PENDING {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("access grant %q is not in PENDING status", req.Name))
 	}
 
-	status := "ACTIVE"
+	status := storepb.AccessGrant_ACTIVE
 	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, &store.UpdateAccessGrantMessage{
 		Status: &status,
 	})
@@ -217,11 +214,11 @@ func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *con
 	if grant == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
 	}
-	if grant.Status != "ACTIVE" {
+	if grant.Status != storepb.AccessGrant_ACTIVE {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("access grant %q is not in ACTIVE status", req.Name))
 	}
 
-	status := "REVOKED"
+	status := storepb.AccessGrant_REVOKED
 	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, &store.UpdateAccessGrantMessage{
 		Status: &status,
 	})
@@ -311,13 +308,13 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 	return ag
 }
 
-func convertToAccessGrantStatus(status string) v1pb.AccessGrant_Status {
+func convertToAccessGrantStatus(status storepb.AccessGrant_Status) v1pb.AccessGrant_Status {
 	switch status {
-	case "PENDING":
+	case storepb.AccessGrant_PENDING:
 		return v1pb.AccessGrant_PENDING
-	case "ACTIVE":
+	case storepb.AccessGrant_ACTIVE:
 		return v1pb.AccessGrant_ACTIVE
-	case "REVOKED":
+	case storepb.AccessGrant_REVOKED:
 		return v1pb.AccessGrant_REVOKED
 	default:
 		return v1pb.AccessGrant_STATUS_UNSPECIFIED

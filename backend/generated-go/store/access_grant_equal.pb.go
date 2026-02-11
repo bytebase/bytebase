@@ -3,6 +3,16 @@
 
 package store
 
+func (x *AccessGrant) Equal(y *AccessGrant) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
 func (x *AccessGrantPayload) Equal(y *AccessGrantPayload) bool {
 	if x == y {
 		return true
