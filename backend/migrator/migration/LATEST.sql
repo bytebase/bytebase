@@ -576,10 +576,10 @@ CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
 CREATE TABLE access_grant (
-    id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    id text PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
     creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
-    status text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACTIVE', 'REVOKED')),
+    status text NOT NULL DEFAULT 'PENDING',
     expire_time timestamptz NOT NULL,
     -- Stored as AccessGrantPayload (proto/store/store/access_grant.proto)
     payload jsonb NOT NULL DEFAULT '{}',
