@@ -135,29 +135,30 @@ const (
 	PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN               PlanFeature = 46
 	PlanFeature_FEATURE_CUSTOM_ROLES                           PlanFeature = 47
 	PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW                  PlanFeature = 48
-	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 49
-	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 50
-	PlanFeature_FEATURE_SCIM                                   PlanFeature = 51
-	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 52
-	PlanFeature_FEATURE_TOKEN_DURATION_CONTROL                 PlanFeature = 53
-	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 54
-	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 55
+	PlanFeature_FEATURE_JIT                                    PlanFeature = 49
+	PlanFeature_FEATURE_DATA_MASKING                           PlanFeature = 50
+	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 51
+	PlanFeature_FEATURE_SCIM                                   PlanFeature = 52
+	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 53
+	PlanFeature_FEATURE_TOKEN_DURATION_CONTROL                 PlanFeature = 54
+	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 55
+	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 56
 	// Administration & Support
-	PlanFeature_FEATURE_PROJECT_MANAGEMENT         PlanFeature = 56
-	PlanFeature_FEATURE_ENVIRONMENT_MANAGEMENT     PlanFeature = 57
-	PlanFeature_FEATURE_IM_NOTIFICATIONS           PlanFeature = 58
-	PlanFeature_FEATURE_TERRAFORM_PROVIDER         PlanFeature = 59
-	PlanFeature_FEATURE_DATABASE_GROUPS            PlanFeature = 60
-	PlanFeature_FEATURE_ENVIRONMENT_TIERS          PlanFeature = 61
-	PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT     PlanFeature = 62
-	PlanFeature_FEATURE_API_INTEGRATION_GUIDANCE   PlanFeature = 63
-	PlanFeature_FEATURE_CUSTOM_LOGO                PlanFeature = 64
-	PlanFeature_FEATURE_WATERMARK                  PlanFeature = 65
-	PlanFeature_FEATURE_ROADMAP_PRIORITIZATION     PlanFeature = 66
-	PlanFeature_FEATURE_CUSTOM_MSA                 PlanFeature = 67
-	PlanFeature_FEATURE_COMMUNITY_SUPPORT          PlanFeature = 68
-	PlanFeature_FEATURE_EMAIL_SUPPORT              PlanFeature = 69
-	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 70
+	PlanFeature_FEATURE_PROJECT_MANAGEMENT         PlanFeature = 57
+	PlanFeature_FEATURE_ENVIRONMENT_MANAGEMENT     PlanFeature = 58
+	PlanFeature_FEATURE_IM_NOTIFICATIONS           PlanFeature = 59
+	PlanFeature_FEATURE_TERRAFORM_PROVIDER         PlanFeature = 60
+	PlanFeature_FEATURE_DATABASE_GROUPS            PlanFeature = 61
+	PlanFeature_FEATURE_ENVIRONMENT_TIERS          PlanFeature = 62
+	PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT     PlanFeature = 63
+	PlanFeature_FEATURE_API_INTEGRATION_GUIDANCE   PlanFeature = 64
+	PlanFeature_FEATURE_CUSTOM_LOGO                PlanFeature = 65
+	PlanFeature_FEATURE_WATERMARK                  PlanFeature = 66
+	PlanFeature_FEATURE_ROADMAP_PRIORITIZATION     PlanFeature = 67
+	PlanFeature_FEATURE_CUSTOM_MSA                 PlanFeature = 68
+	PlanFeature_FEATURE_COMMUNITY_SUPPORT          PlanFeature = 69
+	PlanFeature_FEATURE_EMAIL_SUPPORT              PlanFeature = 70
+	PlanFeature_FEATURE_DEDICATED_SUPPORT_WITH_SLA PlanFeature = 71
 )
 
 // Enum value maps for PlanFeature.
@@ -212,28 +213,29 @@ var (
 		46: "FEATURE_DISALLOW_PASSWORD_SIGNIN",
 		47: "FEATURE_CUSTOM_ROLES",
 		48: "FEATURE_REQUEST_ROLE_WORKFLOW",
-		49: "FEATURE_DATA_MASKING",
-		50: "FEATURE_DATA_CLASSIFICATION",
-		51: "FEATURE_SCIM",
-		52: "FEATURE_DIRECTORY_SYNC",
-		53: "FEATURE_TOKEN_DURATION_CONTROL",
-		54: "FEATURE_EXTERNAL_SECRET_MANAGER",
-		55: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
-		56: "FEATURE_PROJECT_MANAGEMENT",
-		57: "FEATURE_ENVIRONMENT_MANAGEMENT",
-		58: "FEATURE_IM_NOTIFICATIONS",
-		59: "FEATURE_TERRAFORM_PROVIDER",
-		60: "FEATURE_DATABASE_GROUPS",
-		61: "FEATURE_ENVIRONMENT_TIERS",
-		62: "FEATURE_DASHBOARD_ANNOUNCEMENT",
-		63: "FEATURE_API_INTEGRATION_GUIDANCE",
-		64: "FEATURE_CUSTOM_LOGO",
-		65: "FEATURE_WATERMARK",
-		66: "FEATURE_ROADMAP_PRIORITIZATION",
-		67: "FEATURE_CUSTOM_MSA",
-		68: "FEATURE_COMMUNITY_SUPPORT",
-		69: "FEATURE_EMAIL_SUPPORT",
-		70: "FEATURE_DEDICATED_SUPPORT_WITH_SLA",
+		49: "FEATURE_JIT",
+		50: "FEATURE_DATA_MASKING",
+		51: "FEATURE_DATA_CLASSIFICATION",
+		52: "FEATURE_SCIM",
+		53: "FEATURE_DIRECTORY_SYNC",
+		54: "FEATURE_TOKEN_DURATION_CONTROL",
+		55: "FEATURE_EXTERNAL_SECRET_MANAGER",
+		56: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+		57: "FEATURE_PROJECT_MANAGEMENT",
+		58: "FEATURE_ENVIRONMENT_MANAGEMENT",
+		59: "FEATURE_IM_NOTIFICATIONS",
+		60: "FEATURE_TERRAFORM_PROVIDER",
+		61: "FEATURE_DATABASE_GROUPS",
+		62: "FEATURE_ENVIRONMENT_TIERS",
+		63: "FEATURE_DASHBOARD_ANNOUNCEMENT",
+		64: "FEATURE_API_INTEGRATION_GUIDANCE",
+		65: "FEATURE_CUSTOM_LOGO",
+		66: "FEATURE_WATERMARK",
+		67: "FEATURE_ROADMAP_PRIORITIZATION",
+		68: "FEATURE_CUSTOM_MSA",
+		69: "FEATURE_COMMUNITY_SUPPORT",
+		70: "FEATURE_EMAIL_SUPPORT",
+		71: "FEATURE_DEDICATED_SUPPORT_WITH_SLA",
 	}
 	PlanFeature_value = map[string]int32{
 		"FEATURE_UNSPECIFIED":                            0,
@@ -285,28 +287,29 @@ var (
 		"FEATURE_DISALLOW_PASSWORD_SIGNIN":               46,
 		"FEATURE_CUSTOM_ROLES":                           47,
 		"FEATURE_REQUEST_ROLE_WORKFLOW":                  48,
-		"FEATURE_DATA_MASKING":                           49,
-		"FEATURE_DATA_CLASSIFICATION":                    50,
-		"FEATURE_SCIM":                                   51,
-		"FEATURE_DIRECTORY_SYNC":                         52,
-		"FEATURE_TOKEN_DURATION_CONTROL":                 53,
-		"FEATURE_EXTERNAL_SECRET_MANAGER":                54,
-		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          55,
-		"FEATURE_PROJECT_MANAGEMENT":                     56,
-		"FEATURE_ENVIRONMENT_MANAGEMENT":                 57,
-		"FEATURE_IM_NOTIFICATIONS":                       58,
-		"FEATURE_TERRAFORM_PROVIDER":                     59,
-		"FEATURE_DATABASE_GROUPS":                        60,
-		"FEATURE_ENVIRONMENT_TIERS":                      61,
-		"FEATURE_DASHBOARD_ANNOUNCEMENT":                 62,
-		"FEATURE_API_INTEGRATION_GUIDANCE":               63,
-		"FEATURE_CUSTOM_LOGO":                            64,
-		"FEATURE_WATERMARK":                              65,
-		"FEATURE_ROADMAP_PRIORITIZATION":                 66,
-		"FEATURE_CUSTOM_MSA":                             67,
-		"FEATURE_COMMUNITY_SUPPORT":                      68,
-		"FEATURE_EMAIL_SUPPORT":                          69,
-		"FEATURE_DEDICATED_SUPPORT_WITH_SLA":             70,
+		"FEATURE_JIT":                                    49,
+		"FEATURE_DATA_MASKING":                           50,
+		"FEATURE_DATA_CLASSIFICATION":                    51,
+		"FEATURE_SCIM":                                   52,
+		"FEATURE_DIRECTORY_SYNC":                         53,
+		"FEATURE_TOKEN_DURATION_CONTROL":                 54,
+		"FEATURE_EXTERNAL_SECRET_MANAGER":                55,
+		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          56,
+		"FEATURE_PROJECT_MANAGEMENT":                     57,
+		"FEATURE_ENVIRONMENT_MANAGEMENT":                 58,
+		"FEATURE_IM_NOTIFICATIONS":                       59,
+		"FEATURE_TERRAFORM_PROVIDER":                     60,
+		"FEATURE_DATABASE_GROUPS":                        61,
+		"FEATURE_ENVIRONMENT_TIERS":                      62,
+		"FEATURE_DASHBOARD_ANNOUNCEMENT":                 63,
+		"FEATURE_API_INTEGRATION_GUIDANCE":               64,
+		"FEATURE_CUSTOM_LOGO":                            65,
+		"FEATURE_WATERMARK":                              66,
+		"FEATURE_ROADMAP_PRIORITIZATION":                 67,
+		"FEATURE_CUSTOM_MSA":                             68,
+		"FEATURE_COMMUNITY_SUPPORT":                      69,
+		"FEATURE_EMAIL_SUPPORT":                          70,
+		"FEATURE_DEDICATED_SUPPORT_WITH_SLA":             71,
 	}
 )
 
@@ -682,7 +685,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\xd0\x12\n" +
+	"ENTERPRISE\x10\x03*\xe1\x12\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -733,29 +736,30 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x1dFEATURE_PASSWORD_RESTRICTIONS\x10-\x12$\n" +
 	" FEATURE_DISALLOW_PASSWORD_SIGNIN\x10.\x12\x18\n" +
 	"\x14FEATURE_CUSTOM_ROLES\x10/\x12!\n" +
-	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x100\x12\x18\n" +
-	"\x14FEATURE_DATA_MASKING\x101\x12\x1f\n" +
-	"\x1bFEATURE_DATA_CLASSIFICATION\x102\x12\x10\n" +
-	"\fFEATURE_SCIM\x103\x12\x1a\n" +
-	"\x16FEATURE_DIRECTORY_SYNC\x104\x12\"\n" +
-	"\x1eFEATURE_TOKEN_DURATION_CONTROL\x105\x12#\n" +
-	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x106\x12)\n" +
-	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x107\x12\x1e\n" +
-	"\x1aFEATURE_PROJECT_MANAGEMENT\x108\x12\"\n" +
-	"\x1eFEATURE_ENVIRONMENT_MANAGEMENT\x109\x12\x1c\n" +
-	"\x18FEATURE_IM_NOTIFICATIONS\x10:\x12\x1e\n" +
-	"\x1aFEATURE_TERRAFORM_PROVIDER\x10;\x12\x1b\n" +
-	"\x17FEATURE_DATABASE_GROUPS\x10<\x12\x1d\n" +
-	"\x19FEATURE_ENVIRONMENT_TIERS\x10=\x12\"\n" +
-	"\x1eFEATURE_DASHBOARD_ANNOUNCEMENT\x10>\x12$\n" +
-	" FEATURE_API_INTEGRATION_GUIDANCE\x10?\x12\x17\n" +
-	"\x13FEATURE_CUSTOM_LOGO\x10@\x12\x15\n" +
-	"\x11FEATURE_WATERMARK\x10A\x12\"\n" +
-	"\x1eFEATURE_ROADMAP_PRIORITIZATION\x10B\x12\x16\n" +
-	"\x12FEATURE_CUSTOM_MSA\x10C\x12\x1d\n" +
-	"\x19FEATURE_COMMUNITY_SUPPORT\x10D\x12\x19\n" +
-	"\x15FEATURE_EMAIL_SUPPORT\x10E\x12&\n" +
-	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10F2\xa5\x02\n" +
+	"\x1dFEATURE_REQUEST_ROLE_WORKFLOW\x100\x12\x0f\n" +
+	"\vFEATURE_JIT\x101\x12\x18\n" +
+	"\x14FEATURE_DATA_MASKING\x102\x12\x1f\n" +
+	"\x1bFEATURE_DATA_CLASSIFICATION\x103\x12\x10\n" +
+	"\fFEATURE_SCIM\x104\x12\x1a\n" +
+	"\x16FEATURE_DIRECTORY_SYNC\x105\x12\"\n" +
+	"\x1eFEATURE_TOKEN_DURATION_CONTROL\x106\x12#\n" +
+	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x107\x12)\n" +
+	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x108\x12\x1e\n" +
+	"\x1aFEATURE_PROJECT_MANAGEMENT\x109\x12\"\n" +
+	"\x1eFEATURE_ENVIRONMENT_MANAGEMENT\x10:\x12\x1c\n" +
+	"\x18FEATURE_IM_NOTIFICATIONS\x10;\x12\x1e\n" +
+	"\x1aFEATURE_TERRAFORM_PROVIDER\x10<\x12\x1b\n" +
+	"\x17FEATURE_DATABASE_GROUPS\x10=\x12\x1d\n" +
+	"\x19FEATURE_ENVIRONMENT_TIERS\x10>\x12\"\n" +
+	"\x1eFEATURE_DASHBOARD_ANNOUNCEMENT\x10?\x12$\n" +
+	" FEATURE_API_INTEGRATION_GUIDANCE\x10@\x12\x17\n" +
+	"\x13FEATURE_CUSTOM_LOGO\x10A\x12\x15\n" +
+	"\x11FEATURE_WATERMARK\x10B\x12\"\n" +
+	"\x1eFEATURE_ROADMAP_PRIORITIZATION\x10C\x12\x16\n" +
+	"\x12FEATURE_CUSTOM_MSA\x10D\x12\x1d\n" +
+	"\x19FEATURE_COMMUNITY_SUPPORT\x10E\x12\x19\n" +
+	"\x15FEATURE_EMAIL_SUPPORT\x10F\x12&\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xa5\x02\n" +
 	"\x13SubscriptionService\x12r\n" +
 	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1f\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x99\x01\n" +
 	"\x12UpdateSubscription\x12&.bytebase.v1.UpdateSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"@\xdaA\x05patch\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\alicense2\x10/v1/subscriptionB\xae\x01\n" +

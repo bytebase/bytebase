@@ -87,7 +87,7 @@ func configureGrpcRouters(
 			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
 		}),
 	)
-	accessGrantService := apiv1.NewAccessGrantService(stores)
+	accessGrantService := apiv1.NewAccessGrantService(stores, licenseService)
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
