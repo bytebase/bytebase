@@ -43,6 +43,9 @@ message Issue {
   repeated string labels = 3;
   // Risk level for the issue, calculated from statement types.
   RiskLevel risk_level = 4;
+
+  // The access grant id for ACCESS_GRANT type issue.
+  string access_grant_id = 5;
 }
 
 // GrantRequest contains details for requesting database access permissions.

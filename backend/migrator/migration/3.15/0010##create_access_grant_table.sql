@@ -1,5 +1,5 @@
 CREATE TABLE access_grant (
-    id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    id text PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
     creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     status text NOT NULL DEFAULT 'PENDING',

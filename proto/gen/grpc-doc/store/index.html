@@ -1544,6 +1544,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p>Whether the grant allows unmasking sensitive data. </p></td>
                 </tr>
               
+                <tr>
+                  <td>reason</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8073,6 +8080,13 @@ Format: users/{email}. </p></td>
                   <td><a href="#bytebase.store.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p>Risk level for the issue, calculated from statement types. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_grant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The access grant id for ACCESS_GRANT type issue. </p></td>
                 </tr>
               
             </tbody>

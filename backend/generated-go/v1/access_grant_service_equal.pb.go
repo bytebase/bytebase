@@ -48,6 +48,9 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if p, q := x.UpdateTime, y.UpdateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if x.Reason != y.Reason {
+		return false
+	}
 	return true
 }
 
@@ -118,9 +121,6 @@ func (x *CreateAccessGrantRequest) Equal(y *CreateAccessGrantRequest) bool {
 		return false
 	}
 	if !x.AccessGrant.Equal(y.AccessGrant) {
-		return false
-	}
-	if x.Reason != y.Reason {
 		return false
 	}
 	return true

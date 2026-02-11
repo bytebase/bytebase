@@ -26,4 +26,6 @@ message AccessGrantPayload {
 
   // Whether the grant allows unmasking sensitive data.
   bool unmask = 4;
+
+  string reason = 5;
 }

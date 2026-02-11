@@ -119,7 +119,8 @@ type AccessGrantPayload struct {
 	// The query permission granted.
 	Query string `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
 	// Whether the grant allows unmasking sensitive data.
-	Unmask        bool `protobuf:"varint,4,opt,name=unmask,proto3" json:"unmask,omitempty"`
+	Unmask        bool   `protobuf:"varint,4,opt,name=unmask,proto3" json:"unmask,omitempty"`
+	Reason        string `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -182,6 +183,13 @@ func (x *AccessGrantPayload) GetUnmask() bool {
 	return false
 }
 
+func (x *AccessGrantPayload) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 var File_store_access_grant_proto protoreflect.FileDescriptor
 
 const file_store_access_grant_proto_rawDesc = "" +
@@ -193,12 +201,13 @@ const file_store_access_grant_proto_rawDesc = "" +
 	"\aPENDING\x10\x01\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x02\x12\v\n" +
-	"\aREVOKED\x10\x03\"w\n" +
+	"\aREVOKED\x10\x03\"\x8f\x01\n" +
 	"\x12AccessGrantPayload\x12\x19\n" +
 	"\bissue_id\x18\x01 \x01(\x03R\aissueId\x12\x18\n" +
 	"\atargets\x18\x02 \x03(\tR\atargets\x12\x14\n" +
 	"\x05query\x18\x03 \x01(\tR\x05query\x12\x16\n" +
-	"\x06unmask\x18\x04 \x01(\bR\x06unmaskB\x93\x01\n" +
+	"\x06unmask\x18\x04 \x01(\bR\x06unmask\x12\x16\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reasonB\x93\x01\n" +
 	"\x12com.bytebase.storeB\x10AccessGrantProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

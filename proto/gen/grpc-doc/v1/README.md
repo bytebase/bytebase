@@ -773,6 +773,7 @@ Authorization method for RPC calls.
 | unmask | [bool](#bool) |  | Whether the grant allows unmasking sensitive data. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| reason | [string](#string) |  |  |
 
 
 
@@ -804,7 +805,6 @@ Authorization method for RPC calls.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project for the access grant. Format: projects/{project} |
 | access_grant | [AccessGrant](#bytebase-v1-AccessGrant) |  | The access grant to create. |
-| reason | [string](#string) |  |  |
 
 
 

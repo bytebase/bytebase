@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -39,7 +39,6 @@ type FindAccessGrantMessage struct {
 	ID        *string
 	ProjectID *string
 	Creator   *string
-	IssueUID  *int
 	Limit     *int
 	Offset    *int
 
@@ -48,95 +47,37 @@ type FindAccessGrantMessage struct {
 
 // UpdateAccessGrantMessage is the message for updating an access grant.
 type UpdateAccessGrantMessage struct {
-	Status *storepb.AccessGrant_Status
+	Status  *storepb.AccessGrant_Status
+	Payload *storepb.AccessGrantPayload
 }
 
-// CreateAccessGrant creates a new access grant and its associated issue in a transaction.
+// CreateAccessGrant creates a new access grant.
 func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessage) (*AccessGrantMessage, error) {
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	// Step 1: Insert access grant.
-	insertGrantQ := qb.Q().Space(`
+	create.ID = uuid.NewString()
+	q := qb.Q().Space(`
 		INSERT INTO access_grant (
+			id,
 			project,
 			creator,
 			status,
 			expire_time,
 			payload
 		) VALUES (
-			?, ?, ?, ?, ?
-		) RETURNING id, created_at, updated_at
-	`, create.ProjectID, create.Creator, create.Status.String(), create.ExpireTime, payload)
+			?, ?, ?, ?, ?, ?
+		) RETURNING created_at, updated_at
+	`, create.ID, create.ProjectID, create.Creator, create.Status.String(), create.ExpireTime, payload)
 
-	query, args, err := insertGrantQ.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.ID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert access grant")
-	}
-
-	// Step 2: Create the associated issue.
-	issuePayload, err := protojson.Marshal(&storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-			ApprovalTemplate:    nil,
-			Approvers:           nil,
-		},
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal issue payload")
-	}
-	title := fmt.Sprintf("JIT access request by %s", create.Creator)
-	tsVector := getTSVector(fmt.Sprintf("%s %s", title, create.Reason))
-	insertIssueQ := qb.Q().Space(`
-		INSERT INTO issue (
-			creator,
-			project,
-			name,
-			status,
-			type,
-			description,
-			payload,
-			ts_vector
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id
-	`, create.Creator, create.ProjectID, title, storepb.Issue_OPEN.String(), storepb.Issue_ACCESS_GRANT.String(), create.Reason, issuePayload, tsVector)
-
-	query, args, err = insertIssueQ.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build issue sql")
-	}
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&create.IssueUID); err != nil {
-		return nil, errors.Wrapf(err, "failed to insert issue")
-	}
-
-	// Step 3: Update access grant payload with the issue ID.
-	create.Payload.IssueId = int64(create.IssueUID)
-	updatedPayload, err := protojson.Marshal(create.Payload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal updated payload")
-	}
-	updateQ := qb.Q().Space(`UPDATE access_grant SET payload = ? WHERE id = ?`, updatedPayload, create.ID)
-	query, args, err = updateQ.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build update sql")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to update access grant payload")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
 	return create, nil
@@ -184,9 +125,6 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 	}
 	if v := find.Creator; v != nil {
 		q.And("creator = ?", *v)
-	}
-	if v := find.IssueUID; v != nil {
-		q.And("(payload->>'issueId')::bigint = ?", *v)
 	}
 
 	q.Space("ORDER BY created_at DESC")
@@ -250,6 +188,13 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 
 	if v := update.Status; v != nil {
 		set.Comma("status = ?", v.String())
+	}
+	if v := update.Payload; v != nil {
+		p, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
+		}
+		set.Comma("payload = ?", p)
 	}
 	if set.Len() == 0 {
 		return nil, errors.New("no update field provided")

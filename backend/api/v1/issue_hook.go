@@ -96,17 +96,11 @@ func postCreateIssue(
 func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEmail string, issue *store.IssueMessage) (*store.IssueMessage, error) {
 	switch issue.Type {
 	case storepb.Issue_ACCESS_GRANT:
-		grant, err := stores.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-			IssueUID: &issue.UID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find access grant for issue %d", issue.UID)
-		}
-		if grant == nil {
-			return nil, errors.Errorf("access grant not found for issue %d", issue.UID)
+		if issue.Payload.AccessGrantId == "" {
+			return nil, errors.Errorf("invalid access grant id for issue %d", issue.UID)
 		}
 		status := storepb.AccessGrant_ACTIVE
-		if _, err := stores.UpdateAccessGrant(ctx, grant.ID, &store.UpdateAccessGrantMessage{
+		if _, err := stores.UpdateAccessGrant(ctx, issue.Payload.AccessGrantId, &store.UpdateAccessGrantMessage{
 			Status: &status,
 		}); err != nil {
 			return nil, errors.Wrapf(err, "failed to update access grant status")

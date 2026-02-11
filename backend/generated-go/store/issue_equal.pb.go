@@ -32,6 +32,9 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.RiskLevel != y.RiskLevel {
 		return false
 	}
+	if x.AccessGrantId != y.AccessGrantId {
+		return false
+	}
 	return true
 }
 

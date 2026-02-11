@@ -7261,11 +7261,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: reason
-          in: query
-          schema:
-            type: string
-            title: reason
       requestBody:
         description: The access grant to create.
         content:
@@ -15935,6 +15930,9 @@ components:
               title: update_time
               readOnly: true
               $ref: '#/components/schemas/google.protobuf.Timestamp'
+            reason:
+              type: string
+              title: reason
         - oneOf:
             - properties:
                 expireTime:
@@ -17651,9 +17649,6 @@ components:
           title: access_grant
           description: The access grant to create.
           $ref: '#/components/schemas/bytebase.v1.AccessGrant'
-        reason:
-          type: string
-          title: reason
       title: CreateAccessGrantRequest
       required:
         - parent

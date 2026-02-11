@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
@@ -155,7 +156,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expiration (expire_time or ttl) is required"))
 	}
 
-	create := &store.AccessGrantMessage{
+	// Step 1: Create the access grant.
+	grant, err := s.store.CreateAccessGrant(ctx, &store.AccessGrantMessage{
 		ProjectID:  projectID,
 		Creator:    creatorEmail,
 		Status:     storepb.AccessGrant_PENDING,
@@ -164,25 +166,45 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			Targets: ag.Targets,
 			Query:   ag.Query,
 			Unmask:  ag.Unmask,
+			Reason:  ag.Reason,
 		},
-		Reason: req.Reason,
-	}
-
-	grant, err := s.store.CreateAccessGrant(ctx, create)
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
 	}
 
-	// Post-create: webhook, approval finding, auto-approve.
+	// Step 2: Create the associated issue.
+	issue, err := s.store.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    projectID,
+		CreatorEmail: creatorEmail,
+		Title:        fmt.Sprintf("JIT access request by %s", creatorEmail),
+		Type:         storepb.Issue_ACCESS_GRANT,
+		Description:  ag.Reason,
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+			},
+		},
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
+	}
+
+	// Step 3: Update access grant payload with the issue ID.
+	grant.Payload.IssueId = int64(issue.UID)
+	grant, err = s.store.UpdateAccessGrant(ctx, grant.ID, &store.UpdateAccessGrantMessage{
+		Payload: grant.Payload,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update access grant payload"))
+	}
+
+	// Step 4: Post-create: webhook, approval finding, auto-approve.
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &grant.IssueUID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get issue"))
-	}
-	if issue != nil && project != nil {
+	if project != nil {
 		if _, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
