@@ -4,12 +4,7 @@
       <NSwitch
         size="small"
         :value="enabled"
-        :disabled="
-          !allowChange ||
-          isSheetOversize ||
-          (!enabled &&
-            (databasesNotMeetingRequirements.length > 0 || errors.length > 0))
-        "
+        :disabled="!allowChange || isSheetOversize"
         @update:value="toggleChecked"
       />
     </template>
@@ -173,10 +168,6 @@ const tooltipMessage = computed(() => {
 });
 
 const toggleChecked = async (on: boolean) => {
-  if (errors.value.length > 0) {
-    return;
-  }
-
   // Get current ghost config from sheet (to preserve flags when enabling)
   const currentConfig = on
     ? (getGhostConfig(sheetStatement.value) ?? getDefaultGhostConfig())
