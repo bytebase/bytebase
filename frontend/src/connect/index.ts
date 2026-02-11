@@ -1,6 +1,7 @@
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { createRegistry } from "@bufbuild/protobuf";
+import { AccessGrantService } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import {
   AuditDataSchema,
@@ -61,6 +62,11 @@ const transport = createConnectTransport({
     registry,
   },
 });
+
+export const accessGrantServiceClientConnect = createClient(
+  AccessGrantService,
+  transport
+);
 
 export const actuatorServiceClientConnect = createClient(
   ActuatorService,
