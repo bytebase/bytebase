@@ -30,6 +30,11 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Workspace admin",
 		Predefined: true,
 		Permissions: permissionSet(
+			permission.AccessGrantsActivate,
+			permission.AccessGrantsCreate,
+			permission.AccessGrantsGet,
+			permission.AccessGrantsList,
+			permission.AccessGrantsRevoke,
 			permission.AuditLogsExport,
 			permission.AuditLogsSearch,
 			permission.ChangelogsGet,
@@ -171,6 +176,11 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Workspace DBA",
 		Predefined: true,
 		Permissions: permissionSet(
+			permission.AccessGrantsActivate,
+			permission.AccessGrantsCreate,
+			permission.AccessGrantsGet,
+			permission.AccessGrantsList,
+			permission.AccessGrantsRevoke,
 			permission.AuditLogsExport,
 			permission.AuditLogsSearch,
 			permission.ChangelogsGet,
@@ -317,6 +327,11 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Project owner",
 		Predefined: true,
 		Permissions: permissionSet(
+			permission.AccessGrantsActivate,
+			permission.AccessGrantsCreate,
+			permission.AccessGrantsGet,
+			permission.AccessGrantsList,
+			permission.AccessGrantsRevoke,
 			permission.AuditLogsExport,
 			permission.AuditLogsSearch,
 			permission.ChangelogsGet,
@@ -410,6 +425,8 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Project developer",
 		Predefined: true,
 		Permissions: permissionSet(
+			permission.AccessGrantsCreate,
+			permission.AccessGrantsGet,
 			permission.AuditLogsSearch,
 			permission.ChangelogsGet,
 			permission.ChangelogsList,
@@ -529,6 +546,8 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Project viewer",
 		Predefined: true,
 		Permissions: permissionSet(
+			permission.AccessGrantsCreate,
+			permission.AccessGrantsGet,
 			permission.DatabaseCatalogsGet,
 			permission.DatabaseGroupsGet,
 			permission.DatabaseGroupsList,

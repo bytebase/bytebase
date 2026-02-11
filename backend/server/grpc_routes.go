@@ -87,6 +87,7 @@ func configureGrpcRouters(
 			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
 		}),
 	)
+	accessGrantService := apiv1.NewAccessGrantService(stores, iamManager)
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
@@ -138,6 +139,9 @@ func configureGrpcRouters(
 	)
 
 	connectHandlers := make(map[string]http.Handler)
+
+	accessGrantPath, accessGrantHandler := v1connect.NewAccessGrantServiceHandler(accessGrantService, handlerOpts)
+	connectHandlers[accessGrantPath] = accessGrantHandler
 
 	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService, handlerOpts)
 	connectHandlers[actuatorPath] = actuatorHandler
@@ -228,6 +232,7 @@ func configureGrpcRouters(
 
 	// grpc reflection handlers.
 	reflector := grpcreflect.NewStaticReflector(
+		v1connect.AccessGrantServiceName,
 		v1connect.ActuatorServiceName,
 		v1connect.AuditLogServiceName,
 		v1connect.AuthServiceName,
@@ -277,6 +282,9 @@ func configureGrpcRouters(
 		return err
 	}
 
+	if err := v1pb.RegisterAccessGrantServiceHandler(ctx, mux, grpcConn); err != nil {
+		return err
+	}
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
 		return err
 	}

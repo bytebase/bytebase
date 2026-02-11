@@ -50,6 +50,7 @@ const (
 	ReleaseNamePrefix          = "releases/"
 	FileNamePrefix             = "files/"
 	RevisionNamePrefix         = "revisions/"
+	AccessGrantNamePrefix      = "accessGrants/"
 	ServiceAccountNamePrefix   = "serviceAccounts/"
 	WorkloadIdentityNamePrefix = "workloadIdentities/"
 
@@ -89,6 +90,20 @@ func GetProjectIDWebhookID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
+}
+
+// GetProjectIDAccessGrantID returns the project ID and access grant ID from a resource name.
+func GetProjectIDAccessGrantID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, AccessGrantNamePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
+// FormatAccessGrant returns the resource name for an access grant.
+func FormatAccessGrant(projectID string, id string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), AccessGrantNamePrefix, id)
 }
 
 // TrimSuffixAndGetInstanceDatabaseID trims the suffix from the name and returns the instance ID and database ID.

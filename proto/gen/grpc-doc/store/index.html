@@ -175,6 +175,21 @@
         
           
           <li>
+            <a href="#store%2faccess_grant.proto">store/access_grant.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.AccessGrantPayload"><span class="badge">M</span>AccessGrantPayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fcommon.proto">store/common.proto</a>
             <ul>
               
@@ -1467,6 +1482,66 @@
       </ul>
     </div>
 
+    
+      
+      <div class="file-heading">
+        <h2 id="store/access_grant.proto">store/access_grant.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.AccessGrantPayload">AccessGrantPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>issue_id</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The issue associated with the access grant. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>targets</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The target databases for this access grant.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The query permission granted. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unmask</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the grant allows unmasking sensitive data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
     
       
       <div class="file-heading">
