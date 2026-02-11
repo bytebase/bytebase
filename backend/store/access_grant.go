@@ -9,7 +9,6 @@ import (
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -54,27 +53,24 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	create.ID = uuid.NewString()
-
 	q := qb.Q().Space(`
 		INSERT INTO access_grant (
-			id,
 			project,
 			creator,
 			status,
 			expire_time,
 			payload
 		) VALUES (
-			?, ?, ?, ?, ?, ?
-		) RETURNING created_at, updated_at
-	`, create.ID, create.ProjectID, create.Creator, create.Status.String(), create.ExpireTime, payload)
+			?, ?, ?, ?, ?
+		) RETURNING id, created_at, updated_at
+	`, create.ProjectID, create.Creator, create.Status.String(), create.ExpireTime, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.CreatedAt, &create.UpdatedAt); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ID, &create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert access grant")
 	}
 
