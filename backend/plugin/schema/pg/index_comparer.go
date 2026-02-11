@@ -141,6 +141,90 @@ func (*indexWhereExtractor) getTextFromContext(ctx antlr.ParserRuleContext) stri
 	return input.GetText(startIndex, stopIndex)
 }
 
+// ExtractIncludeClauseFromIndexDef extracts the INCLUDE clause from a CREATE INDEX statement using ANTLR AST parsing.
+// Returns the full "INCLUDE (col1, col2, ...)" string, or empty if no INCLUDE clause exists.
+func (*PostgreSQLIndexComparer) ExtractIncludeClauseFromIndexDef(definition string) string {
+	if definition == "" {
+		return ""
+	}
+
+	inputStream := antlr.NewInputStream(definition)
+	lexer := pgparser.NewPostgreSQLLexer(inputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pgparser.NewPostgreSQLParser(stream)
+	parser.RemoveErrorListeners()
+
+	tree := parser.Root()
+
+	extractor := &indexIncludeExtractor{}
+	extractor.Visit(tree)
+
+	return extractor.includeClause
+}
+
+// indexIncludeExtractor is a visitor that extracts INCLUDE clauses from CREATE INDEX statements.
+type indexIncludeExtractor struct {
+	*pgparser.BasePostgreSQLParserVisitor
+	includeClause string
+}
+
+// Visit implements the visitor pattern to walk the AST.
+func (e *indexIncludeExtractor) Visit(tree antlr.ParseTree) {
+	switch ctx := tree.(type) {
+	case *pgparser.IndexstmtContext:
+		e.visitIndexStmt(ctx)
+	default:
+		if tree != nil {
+			for i := 0; i < tree.GetChildCount(); i++ {
+				child := tree.GetChild(i)
+				if parseTree, ok := child.(antlr.ParseTree); ok {
+					e.Visit(parseTree)
+				}
+			}
+		}
+	}
+}
+
+func (e *indexIncludeExtractor) visitIndexStmt(ctx *pgparser.IndexstmtContext) {
+	if ctx == nil {
+		return
+	}
+
+	optInclude := ctx.Opt_include()
+	if optInclude == nil {
+		return
+	}
+
+	// Get the full text of the INCLUDE clause: "INCLUDE (col1, col2, ...)"
+	e.includeClause = e.getTextFromContext(optInclude)
+}
+
+func (*indexIncludeExtractor) getTextFromContext(ctx antlr.ParserRuleContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	start := ctx.GetStart()
+	stop := ctx.GetStop()
+	if start == nil || stop == nil {
+		return ""
+	}
+
+	input := start.GetInputStream()
+	if input == nil {
+		return ""
+	}
+
+	startIndex := start.GetStart()
+	stopIndex := stop.GetStop()
+
+	if startIndex < 0 || stopIndex < 0 || stopIndex < startIndex {
+		return ""
+	}
+
+	return input.GetText(startIndex, stopIndex)
+}
+
 // IndexDefinition represents the parsed structure of a CREATE INDEX statement.
 type IndexDefinition struct {
 	IndexName   string

@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -631,4 +632,85 @@ func TestPartitionedTableIndexUsesOnOnly(t *testing.T) {
 
 	require.Contains(t, sdl, `CREATE INDEX "idx_orders_customer_id"`)
 	require.Contains(t, sdl, `ON ONLY "public"."orders"`)
+}
+
+// TestCoveringIndexIncludeClauseInSDLOutput tests that covering index INCLUDE clauses
+// are preserved in SDL output (regression test for INCLUDE clause being dropped).
+func TestCoveringIndexIncludeClauseInSDLOutput(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "products",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "name", Type: "text", Position: 2},
+							{Name: "description", Type: "text", Position: 3},
+							{Name: "price", Type: "numeric(10,2)", Position: 4},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_products_price_covering",
+								Expressions: []string{"price"},
+								Type:        "btree",
+								Definition:  "CREATE INDEX idx_products_price_covering ON public.products USING btree (price) INCLUDE (name, description);",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	sdl, err := getSDLFormat(metadata)
+	require.NoError(t, err)
+
+	require.Contains(t, sdl, "INCLUDE (name, description)")
+	require.Contains(t, sdl, `ON "public"."products"`)
+	require.NotContains(t, sdl, "ON ONLY")
+}
+
+// TestCoveringIndexWithWhereClause tests that an index with both INCLUDE and WHERE
+// clauses preserves both in the correct SQL order.
+func TestCoveringIndexWithWhereClause(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "status", Type: "text", Position: 2},
+							{Name: "total", Type: "numeric", Position: 3},
+							{Name: "customer_name", Type: "text", Position: 4},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_orders_active_covering",
+								Expressions: []string{"status"},
+								Type:        "btree",
+								Definition:  "CREATE INDEX idx_orders_active_covering ON public.orders USING btree (status) INCLUDE (total, customer_name) WHERE (status = 'active'::text);",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	sdl, err := getSDLFormat(metadata)
+	require.NoError(t, err)
+
+	require.Contains(t, sdl, "INCLUDE (total, customer_name)")
+	require.Contains(t, sdl, "WHERE")
+	require.Contains(t, sdl, "active")
+
+	// Verify correct order: INCLUDE before WHERE
+	includePos := strings.Index(sdl, "INCLUDE")
+	wherePos := strings.Index(sdl, "WHERE")
+	require.Greater(t, wherePos, includePos, "INCLUDE should come before WHERE in SQL syntax")
 }
