@@ -121,28 +121,21 @@ const allowEdit = computed(() => {
   return (isCreating.value || !plan.value.hasRollout) && selectedSpec.value;
 });
 
+const getDatabaseNamesForTarget = (target: string): string[] => {
+  if (!isValidDatabaseGroupName(target)) return [target];
+  const dbGroup = dbGroupStore.getDBGroupByName(target);
+  return dbGroup?.matchedDatabases?.map((m) => m.name) ?? [];
+};
+
+const hasNoEnvironment = (name: string): boolean => {
+  return !dbStore.getDatabaseByName(name).effectiveEnvironment;
+};
+
 const nonEnvDatabaseNames = computed(() => {
   if (isLoadingTargets.value) return [];
-  const result: string[] = [];
-  for (const target of targets.value) {
-    if (isValidDatabaseGroupName(target)) {
-      const dbGroup = dbGroupStore.getDBGroupByName(target);
-      if (dbGroup) {
-        for (const matched of dbGroup.matchedDatabases ?? []) {
-          const db = dbStore.getDatabaseByName(matched.name);
-          if (!db.effectiveEnvironment) {
-            result.push(matched.name);
-          }
-        }
-      }
-    } else {
-      const db = dbStore.getDatabaseByName(target);
-      if (!db.effectiveEnvironment) {
-        result.push(target);
-      }
-    }
-  }
-  return result;
+  return targets.value
+    .flatMap(getDatabaseNamesForTarget)
+    .filter(hasNoEnvironment);
 });
 
 // Separate targets by type
