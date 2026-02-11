@@ -1177,7 +1177,8 @@
     "targets": {
       "title": "ターゲット",
       "no-targets-found": "ターゲットが見つかりません",
-      "view-all": "すべて表示 ({count})"
+      "view-all": "すべて表示 ({count})",
+      "non-env-warning": "{count} 個のデータベースは有効な環境がないためロールアウトから除外されます: | {count} 個のデータベースは有効な環境がないためロールアウトから除外されます:"
     },
     "select-isolation-level": "分離レベルを選択",
     "isolation-level": {

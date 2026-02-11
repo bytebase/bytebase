@@ -1177,7 +1177,8 @@
     "targets": {
       "title": "Objetivos",
       "no-targets-found": "No se encontraron objetivos",
-      "view-all": "Ver todo ({count})"
+      "view-all": "Ver todo ({count})",
+      "non-env-warning": "{count} base de datos será excluida del despliegue porque no tiene un entorno efectivo: | {count} bases de datos serán excluidas del despliegue porque no tienen un entorno efectivo:"
     },
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "isolation-level": {

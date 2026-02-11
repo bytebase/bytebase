@@ -186,10 +186,10 @@ func getTaskCreatesFromChangeDatabaseConfig(
 
 	var tasks []*store.TaskMessage
 	for _, database := range databases {
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
+		if database.EffectiveEnvironmentID == nil {
+			continue
 		}
+		env := *database.EffectiveEnvironmentID
 
 		// All change database tasks use DATABASE_MIGRATE type
 		taskType := storepb.Task_DATABASE_MIGRATE
@@ -237,6 +237,10 @@ func getTaskCreatesFromChangeDatabaseConfig(
 			Payload:      payload,
 		}
 		tasks = append(tasks, taskCreate)
+	}
+
+	if len(tasks) == 0 {
+		return nil, errors.Errorf("cannot create tasks for spec %s: all target databases are missing an environment", spec.Id)
 	}
 
 	return tasks, nil

@@ -1177,7 +1177,8 @@
     "targets": {
       "title": "Targets",
       "no-targets-found": "No targets found",
-      "view-all": "View all ({count})"
+      "view-all": "View all ({count})",
+      "non-env-warning": "{count} database will be excluded from rollout because it has no effective environment: | {count} databases will be excluded from rollout because they have no effective environment:"
     },
     "select-isolation-level": "Select isolation level",
     "isolation-level": {

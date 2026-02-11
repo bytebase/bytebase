@@ -16,6 +16,13 @@
       </NButton>
     </div>
 
+    <NAlert v-if="!isLoadingTargets && nonEnvDatabaseNames.length > 0" type="warning">
+      {{ $t("plan.targets.non-env-warning", { count: nonEnvDatabaseNames.length }) }}
+      <ul class="list-disc list-inside text-sm mt-1">
+        <li v-for="name in nonEnvDatabaseNames" :key="name">{{ name }}</li>
+      </ul>
+    </NAlert>
+
     <div v-if="isLoadingTargets" class="flex items-center justify-center py-2">
       <BBSpin />
     </div>
@@ -56,7 +63,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { isEqual } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NAlert, NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -112,6 +119,23 @@ const allowEdit = computed(() => {
     return false;
   }
   return (isCreating.value || !plan.value.hasRollout) && selectedSpec.value;
+});
+
+const getDatabaseNamesForTarget = (target: string): string[] => {
+  if (!isValidDatabaseGroupName(target)) return [target];
+  const dbGroup = dbGroupStore.getDBGroupByName(target);
+  return dbGroup?.matchedDatabases?.map((m) => m.name) ?? [];
+};
+
+const hasNoEnvironment = (name: string): boolean => {
+  return !dbStore.getDatabaseByName(name).effectiveEnvironment;
+};
+
+const nonEnvDatabaseNames = computed(() => {
+  if (isLoadingTargets.value) return [];
+  return targets.value
+    .flatMap(getDatabaseNamesForTarget)
+    .filter(hasNoEnvironment);
 });
 
 // Separate targets by type

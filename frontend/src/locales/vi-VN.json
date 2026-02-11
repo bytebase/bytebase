@@ -1177,7 +1177,8 @@
     "targets": {
       "title": "Mục tiêu",
       "no-targets-found": "Không tìm thấy mục tiêu",
-      "view-all": "Xem tất cả ({count})"
+      "view-all": "Xem tất cả ({count})",
+      "non-env-warning": "{count} cơ sở dữ liệu sẽ bị loại khỏi triển khai vì không có môi trường hiệu lực: | {count} cơ sở dữ liệu sẽ bị loại khỏi triển khai vì không có môi trường hiệu lực:"
     },
     "select-isolation-level": "Chọn mức độ cô lập",
     "isolation-level": {
