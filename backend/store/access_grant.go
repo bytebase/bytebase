@@ -8,6 +8,7 @@ import (
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -289,11 +290,65 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 						return nil, errors.Errorf("status value must be a string")
 					}
 					return qb.Q().Space("access_grant.status = ?", statusStr), nil
+				case "query":
+					queryStr, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("query value must be a string")
+					}
+					return qb.Q().Space("access_grant.payload->>'query' = ?", queryStr), nil
 				case "issue":
-					return nil, errors.Errorf("filtering by issue is not supported yet")
+					issueStr, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("issue value must be a string")
+					}
+					_, issueUID, err := common.GetProjectIDIssueUID(issueStr)
+					if err != nil {
+						return nil, errors.Wrapf(err, "invalid issue name %q", issueStr)
+					}
+					return qb.Q().Space("(access_grant.payload->>'issueId')::bigint = ?", issueUID), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
+			case celoverloads.Matches:
+				call := expr.AsCall()
+				target := call.Target()
+				if target.Kind() != celast.IdentKind {
+					return nil, errors.Errorf("contains target must be an identifier")
+				}
+				variable := target.AsIdent()
+				if variable != "query" {
+					return nil, errors.Errorf("contains is not supported on field %q", variable)
+				}
+				args := call.Args()
+				if len(args) != 1 || args[0].Kind() != celast.LiteralKind {
+					return nil, errors.Errorf("contains requires a single string literal argument")
+				}
+				value, ok := args[0].AsLiteral().Value().(string)
+				if !ok {
+					return nil, errors.Errorf("contains argument must be a string")
+				}
+				return qb.Q().Space("access_grant.payload->>'query' ILIKE ?", "%"+value+"%"), nil
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "status" {
+					return nil, errors.Errorf("unsupported variable %q for \"in\" operator", variable)
+				}
+				rawList, ok := value.([]any)
+				if !ok {
+					return nil, errors.Errorf("invalid list value %q for %v", value, variable)
+				}
+				if len(rawList) == 0 {
+					return nil, errors.Errorf("empty list value for filter %v", variable)
+				}
+				var statuses []string
+				for _, raw := range rawList {
+					s, ok := raw.(string)
+					if !ok {
+						return nil, errors.Errorf("status value must be a string")
+					}
+					statuses = append(statuses, s)
+				}
+				return qb.Q().Space("access_grant.status = ANY(?)", statuses), nil
 			case celoperators.GreaterEquals, celoperators.LessEquals, celoperators.Greater, celoperators.Less:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)

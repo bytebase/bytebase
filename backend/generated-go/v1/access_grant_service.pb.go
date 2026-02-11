@@ -314,13 +314,22 @@ type ListAccessGrantsRequest struct {
 	// A page token from a previous ListAccessGrants call.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter expression using AIP-160 syntax.
-	// Supported fields: name, creator, status, issue, expire_time, create_time
+	// Supported fields:
+	// - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.
+	// - creator: the creator name in "users/{email}" format, support "==" operator.
+	// - status: the access status, support "==" and "in" operator.
+	// - issue: the access issue fullname, support "==" operator.
+	// - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
+	// - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
+	// - query: the access query, support "==" and ".contains(xx)" operator
+	//
 	// Examples:
-	//   - 'creator = "users/dev@example.com"'
-	//   - 'status = "ACTIVE"'
-	//   - 'creator = "users/dev@example.com" AND status = "ACTIVE"'
-	//   - 'issue = "projects/x/issues/123"'
-	//   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+	// - creator == "users/dev@example.com"
+	// - status == "ACTIVE"
+	// - status in ["ACTIVE", "PENDING"]
+	// - creator == "users/dev@example.com" && status == "ACTIVE"
+	// - issue == "projects/x/issues/123"
+	// - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
