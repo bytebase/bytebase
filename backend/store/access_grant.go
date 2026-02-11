@@ -251,6 +251,16 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
+				case "name":
+					nameStr, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("name value must be a string")
+					}
+					_, accessGrantID, err := common.GetProjectIDAccessGrantID(nameStr)
+					if err != nil {
+						return nil, errors.Wrapf(err, "invalid access grant name %q", nameStr)
+					}
+					return qb.Q().Space("access_grant.id = ?", accessGrantID), nil
 				case "creator":
 					creatorStr, ok := value.(string)
 					if !ok {

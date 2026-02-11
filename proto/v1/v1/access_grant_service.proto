@@ -166,7 +166,7 @@ message ListAccessGrantsRequest {
   string page_token = 3;
 
   // Filter expression using AIP-160 syntax.
-  // Supported fields: creator, status, issue, expire_time, create_time
+  // Supported fields: name, creator, status, issue, expire_time, create_time
   // Examples:
   //   - 'creator = "users/dev@example.com"'
   //   - 'status = "ACTIVE"'
@@ -230,8 +230,9 @@ message SearchMyAccessGrantsRequest {
   string page_token = 3;
 
   // Filter expression using AIP-160 syntax.
-  // Supported fields: status, expire_time, create_time
+  // Supported fields: name, status, expire_time, create_time
   // Examples:
+  //   - 'name = "projects/x/accessGrants/uuid"'
   //   - 'status = "ACTIVE"'
   //   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
   string filter = 4;

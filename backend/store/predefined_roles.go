@@ -547,7 +547,6 @@ var PredefinedRoles = []*RoleMessage{
 		Predefined: true,
 		Permissions: permissionSet(
 			permission.AccessGrantsCreate,
-			permission.AccessGrantsGet,
 			permission.DatabaseCatalogsGet,
 			permission.DatabaseGroupsGet,
 			permission.DatabaseGroupsList,
