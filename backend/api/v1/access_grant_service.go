@@ -214,7 +214,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		if issue.Status == storepb.Issue_DONE {
-			// Refresh the grant is issue is completed.
+			// Refresh the grant if issue is completed.
 			grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 				ID: &grant.ID,
 			})
