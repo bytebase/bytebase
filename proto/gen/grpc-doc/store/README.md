@@ -362,6 +362,7 @@
 | query | [string](#string) |  | The query permission granted. |
 | unmask | [bool](#bool) |  | Whether the grant allows unmasking sensitive data. |
 | reason | [string](#string) |  |  |
+| requested_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The requested duration for the access grant. Stored when the user provides a TTL instead of an absolute expire_time. The server computes expire_time from this value at activation time. |
 
 
 

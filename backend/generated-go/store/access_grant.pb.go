@@ -9,6 +9,7 @@ package store
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -119,10 +120,14 @@ type AccessGrantPayload struct {
 	// The query permission granted.
 	Query string `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
 	// Whether the grant allows unmasking sensitive data.
-	Unmask        bool   `protobuf:"varint,4,opt,name=unmask,proto3" json:"unmask,omitempty"`
-	Reason        string `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Unmask bool   `protobuf:"varint,4,opt,name=unmask,proto3" json:"unmask,omitempty"`
+	Reason string `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
+	// The requested duration for the access grant.
+	// Stored when the user provides a TTL instead of an absolute expire_time.
+	// The server computes expire_time from this value at activation time.
+	RequestedDuration *durationpb.Duration `protobuf:"bytes,6,opt,name=requested_duration,json=requestedDuration,proto3" json:"requested_duration,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *AccessGrantPayload) Reset() {
@@ -190,24 +195,32 @@ func (x *AccessGrantPayload) GetReason() string {
 	return ""
 }
 
+func (x *AccessGrantPayload) GetRequestedDuration() *durationpb.Duration {
+	if x != nil {
+		return x.RequestedDuration
+	}
+	return nil
+}
+
 var File_store_access_grant_proto protoreflect.FileDescriptor
 
 const file_store_access_grant_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/access_grant.proto\x12\x0ebytebase.store\"U\n" +
+	"\x18store/access_grant.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\"U\n" +
 	"\vAccessGrant\"F\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x02\x12\v\n" +
-	"\aREVOKED\x10\x03\"\x8f\x01\n" +
+	"\aREVOKED\x10\x03\"\xd9\x01\n" +
 	"\x12AccessGrantPayload\x12\x19\n" +
 	"\bissue_id\x18\x01 \x01(\x03R\aissueId\x12\x18\n" +
 	"\atargets\x18\x02 \x03(\tR\atargets\x12\x14\n" +
 	"\x05query\x18\x03 \x01(\tR\x05query\x12\x16\n" +
 	"\x06unmask\x18\x04 \x01(\bR\x06unmask\x12\x16\n" +
-	"\x06reason\x18\x05 \x01(\tR\x06reasonB\x93\x01\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\x12H\n" +
+	"\x12requested_duration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x11requestedDurationB\x93\x01\n" +
 	"\x12com.bytebase.storeB\x10AccessGrantProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -225,16 +238,18 @@ func file_store_access_grant_proto_rawDescGZIP() []byte {
 var file_store_access_grant_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_access_grant_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_access_grant_proto_goTypes = []any{
-	(AccessGrant_Status)(0),    // 0: bytebase.store.AccessGrant.Status
-	(*AccessGrant)(nil),        // 1: bytebase.store.AccessGrant
-	(*AccessGrantPayload)(nil), // 2: bytebase.store.AccessGrantPayload
+	(AccessGrant_Status)(0),     // 0: bytebase.store.AccessGrant.Status
+	(*AccessGrant)(nil),         // 1: bytebase.store.AccessGrant
+	(*AccessGrantPayload)(nil),  // 2: bytebase.store.AccessGrantPayload
+	(*durationpb.Duration)(nil), // 3: google.protobuf.Duration
 }
 var file_store_access_grant_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	3, // 0: bytebase.store.AccessGrantPayload.requested_duration:type_name -> google.protobuf.Duration
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_access_grant_proto_init() }

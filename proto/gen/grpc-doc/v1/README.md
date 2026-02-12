@@ -766,7 +766,7 @@ Authorization method for RPC calls.
 | creator | [string](#string) |  | The creator of the access grant. Format: users/{email} |
 | status | [AccessGrant.Status](#bytebase-v1-AccessGrant-Status) |  | The status of the access grant. An ACTIVE grant with `expire_time` in the past is effectively expired and no longer authorizes access. Use `expire_time` to determine whether an ACTIVE grant has expired. |
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The expiration time of the access grant. |
-| ttl | [google.protobuf.Duration](#google-protobuf-Duration) |  | Input only. The time-to-live duration for the access grant. The server computes `expire_time` from this value at creation time. |
+| ttl | [google.protobuf.Duration](#google-protobuf-Duration) |  | Input only. The time-to-live duration for the access grant. The server computes `expire_time` from this value at activation time. |
 | issue | [string](#string) |  | The issue associated with the access grant. Can be empty. Format: projects/{project}/issues/{issue} |
 | targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} |
 | query | [string](#string) |  | The query permission granted. |
