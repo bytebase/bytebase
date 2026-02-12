@@ -56,3 +56,14 @@ func TestGetQuerySpan(t *testing.T) {
 		a.NoError(err)
 	}
 }
+
+func TestGetQuerySpan_Error(t *testing.T) {
+	// MongoDB style query, definitely not ElasticSearch
+	stmt := "db.users.find({})"
+	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: stmt}, "", "", false)
+
+	// New behavior: returns error
+	require.Error(t, err)
+	require.Nil(t, span)
+	require.Contains(t, err.Error(), "Syntax error")
+}

@@ -3,6 +3,8 @@ package elasticsearch
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -19,9 +21,21 @@ func GetQuerySpan(
 	_, _ string,
 	_ bool,
 ) (*base.QuerySpan, error) {
-	parseResult, _ := ParseElasticsearchREST(stmt.Text)
+	parseResult, err := ParseElasticsearchREST(stmt.Text)
+	if err != nil {
+		return nil, err
+	}
 
-	if parseResult == nil || len(parseResult.Requests) == 0 {
+	if parseResult == nil {
+		return &base.QuerySpan{Type: base.QueryTypeUnknown}, nil
+	}
+
+	if len(parseResult.Errors) > 0 {
+		firstErr := parseResult.Errors[0]
+		return nil, errors.Errorf("syntax error at line %d, column %d: %s", firstErr.Position.Line, firstErr.Position.Column, firstErr.Message)
+	}
+
+	if len(parseResult.Requests) == 0 {
 		return &base.QuerySpan{Type: base.QueryTypeUnknown}, nil
 	}
 
