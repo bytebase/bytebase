@@ -170,13 +170,12 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	}
 
 	accessGrantID := *request.AccessGrant
-	var accessGrant *store.AccessGrantMessage
 	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(accessGrantID)
 	if err != nil {
 		slog.Warn("invalid access grant id", slog.String("access_grant", accessGrantID), log.BBError(err))
 		return nil
 	}
-	accessGrant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+	accessGrant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
 	})
@@ -186,6 +185,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	}
 	if accessGrant == nil {
 		slog.Warn("access grant not found", slog.String("access_grant", accessGrantID))
+		return nil
 	}
 	if accessGrant.Status != storepb.AccessGrant_ACTIVE {
 		slog.Warn("access grant is not active", slog.String("access_grant", accessGrantID), slog.String("status", accessGrant.Status.String()))
