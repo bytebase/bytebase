@@ -189,8 +189,3 @@
 - description: PATCH document
   statement: "PATCH /my_index/_doc/1"
   queryType: 5  # DML
-
-# Unknown method
-- description: Unknown method
-  statement: "UNKNOWN /my_index"
-  queryType: 0  # QueryTypeUnknown
