@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -42,7 +43,8 @@ type FindAccessGrantMessage struct {
 	Limit     *int
 	Offset    *int
 
-	FilterQ *qb.Query
+	FilterQ     *qb.Query
+	OrderByKeys []*OrderByKey
 }
 
 // UpdateAccessGrantMessage is the message for updating an access grant.
@@ -128,7 +130,15 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 		q.And("creator = ?", *v)
 	}
 
-	q.Space("ORDER BY created_at DESC")
+	if len(find.OrderByKeys) > 0 {
+		orderBy := []string{}
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	} else {
+		q.Space("ORDER BY created_at DESC")
+	}
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -242,6 +252,38 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 	return &grant, nil
 }
 
+// GetAccessGrantOrders parses an order_by string into OrderByKey slice for access grants.
+func GetAccessGrantOrders(orderBy string) ([]*OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	orderByKeys := []*OrderByKey{}
+	for _, orderByKey := range keys {
+		switch orderByKey.Key {
+		case "creator":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "access_grant.creator",
+				SortOrder: orderByKey.SortOrder,
+			})
+		case "expire_time":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "access_grant.expire_time",
+				SortOrder: orderByKey.SortOrder,
+			})
+		case "create_time":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "access_grant.created_at",
+				SortOrder: orderByKey.SortOrder,
+			})
+		default:
+			return nil, errors.Errorf(`invalid order key "%v"`, orderByKey.Key)
+		}
+	}
+	return orderByKeys, nil
+}
+
 // GetListAccessGrantFilter parses a CEL filter expression into a query builder query for listing access grants.
 func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
@@ -319,6 +361,12 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 						return nil, errors.Wrapf(err, "invalid issue name %q", issueStr)
 					}
 					return qb.Q().Space("(access_grant.payload->>'issueId')::bigint = ?", issueUID), nil
+				case "target":
+					targetStr, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("target value must be a string")
+					}
+					return qb.Q().Space("access_grant.payload->'targets' @> jsonb_build_array(to_jsonb(?::text))", targetStr), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}

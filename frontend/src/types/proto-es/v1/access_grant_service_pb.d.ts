@@ -215,6 +215,7 @@ export declare type ListAccessGrantsRequest = Message<"bytebase.v1.ListAccessGra
    * - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
    * - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
    * - query: the access query, support "==" and ".contains(xx)" operator
+   * - target: the target database fullname, support "==" operator.
    *
    * Examples:
    * - creator == "users/dev@example.com"
@@ -223,10 +224,23 @@ export declare type ListAccessGrantsRequest = Message<"bytebase.v1.ListAccessGra
    * - creator == "users/dev@example.com" && status == "ACTIVE"
    * - issue == "projects/x/issues/123"
    * - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
+   * - target == "instances/sample/databases/employee"
    *
    * @generated from field: string filter = 4;
    */
   filter: string;
+
+  /**
+   * The order by of access grants.
+   * Support creator, expire_time, create_time. The default sorting order is ascending.
+   * For example:
+   * - order_by = "creator"
+   * - order_by = "expire_time desc"
+   * - order_by = "expire_time asc, create_time desc"
+   *
+   * @generated from field: string order_by = 5;
+   */
+  orderBy: string;
 };
 
 /**
@@ -352,16 +366,18 @@ export declare type SearchMyAccessGrantsRequest = Message<"bytebase.v1.SearchMyA
   pageToken: string;
 
   /**
-   * Filter expression using AIP-160 syntax.
-   * Supported fields: name, status, expire_time, create_time
-   * Examples:
-   *   - 'name = "projects/x/accessGrants/uuid"'
-   *   - 'status = "ACTIVE"'
-   *   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+   * Check the filter field in the ListAccessGrantsRequest message.
    *
    * @generated from field: string filter = 4;
    */
   filter: string;
+
+  /**
+   * Check the order_by field in the ListAccessGrantsRequest message.
+   *
+   * @generated from field: string order_by = 5;
+   */
+  orderBy: string;
 };
 
 /**

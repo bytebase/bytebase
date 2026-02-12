@@ -93,6 +93,12 @@ func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *conn
 		find.FilterQ = filterQ
 	}
 
+	orderByKeys, err := store.GetAccessGrantOrders(req.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	find.OrderByKeys = orderByKeys
+
 	grants, err := s.store.ListAccessGrants(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list access grants"))
@@ -355,6 +361,12 @@ func (s *AccessGrantService) SearchMyAccessGrants(ctx context.Context, request *
 		}
 		find.FilterQ = filterQ
 	}
+
+	orderByKeys, err := store.GetAccessGrantOrders(req.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	find.OrderByKeys = orderByKeys
 
 	grants, err := s.store.ListAccessGrants(ctx, find)
 	if err != nil {

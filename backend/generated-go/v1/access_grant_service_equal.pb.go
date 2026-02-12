@@ -86,6 +86,9 @@ func (x *ListAccessGrantsRequest) Equal(y *ListAccessGrantsRequest) bool {
 	if x.Filter != y.Filter {
 		return false
 	}
+	if x.OrderBy != y.OrderBy {
+		return false
+	}
 	return true
 }
 
@@ -169,6 +172,9 @@ func (x *SearchMyAccessGrantsRequest) Equal(y *SearchMyAccessGrantsRequest) bool
 		return false
 	}
 	if x.Filter != y.Filter {
+		return false
+	}
+	if x.OrderBy != y.OrderBy {
 		return false
 	}
 	return true
