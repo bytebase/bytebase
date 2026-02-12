@@ -134,6 +134,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if len(ag.Targets) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets is required"))
 	}
+	if ag.Query == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("query is required"))
+	}
 
 	creatorEmail, err := common.GetUserEmail(ag.Creator)
 	if err != nil {
@@ -203,11 +206,21 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	// Step 4: Post-create: webhook, approval finding, auto-approve.
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %v", projectID))
 	}
 	if project != nil {
-		if _, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue); err != nil {
+		issue, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
+		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		if issue.Status == storepb.Issue_DONE {
+			// Refresh the grant is issue is completed.
+			grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+				ID: &grant.ID,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant %v", grant.ID))
+			}
 		}
 	}
 

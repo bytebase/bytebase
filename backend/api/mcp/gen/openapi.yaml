@@ -14522,6 +14522,14 @@ components:
           description: |-
             Container is the container name to execute the query against, used for
              CosmosDB only.
+        accessGrant:
+          type:
+            - string
+            - "null"
+          title: access_grant
+          description: |-
+            The access grant to apply the query.
+             Format: projects/{project}/accessGrants/{access_grant}
       title: QueryRequest
       additionalProperties: false
     bytebase.v1.QueryResponse:

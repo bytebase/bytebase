@@ -150,7 +150,7 @@ const useExecuteSQL = () => {
       return;
     }
 
-    const databaseQueryContexts = tab.databaseQueryContexts!;
+    const databaseQueryContexts = tab.databaseQueryContexts ?? new Map();
     const batchQueryDatabaseSet = new Set<string /* database name */>([
       params.connection.database,
     ]);
@@ -303,6 +303,7 @@ const useExecuteSQL = () => {
         schema: context.params.connection.schema,
         container: context.params.connection.table,
         queryOption: queryOption,
+        accessGrant: context.params.accessGrant,
       }),
       abortController.signal
     );

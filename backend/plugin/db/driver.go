@@ -125,6 +125,8 @@ type QueryContext struct {
 	Explain       bool
 	OperatorEmail string
 	Option        *v1pb.QueryOption
+	// SkipMasking skips data masking when the query is authorized by an access grant with unmask=true.
+	SkipMasking bool
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
 	Timeout              *durationpb.Duration

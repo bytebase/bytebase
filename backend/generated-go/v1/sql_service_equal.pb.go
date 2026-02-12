@@ -83,6 +83,9 @@ func (x *QueryRequest) Equal(y *QueryRequest) bool {
 	if p, q := x.Container, y.Container; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if p, q := x.AccessGrant, y.AccessGrant; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 
