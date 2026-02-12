@@ -8261,6 +8261,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | require_issue_approval | [bool](#bool) |  | Whether to require issue approval before rollout. |
 | require_plan_check_no_error | [bool](#bool) |  | Whether to require plan check to have no error before rollout. |
 | allow_request_role | [bool](#bool) |  |  |
+| allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 
 
 

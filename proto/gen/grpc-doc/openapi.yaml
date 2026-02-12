@@ -23610,6 +23610,10 @@ components:
         allowRequestRole:
           type: boolean
           title: allow_request_role
+        allowJustInTimeAccess:
+          type: boolean
+          title: allow_just_in_time_access
+          description: Once enabled, users can request and use the just-in-time access in the SQL Editor.
       title: Project
       additionalProperties: false
     bytebase.v1.Project.ExecutionRetryPolicy:

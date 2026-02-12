@@ -164,7 +164,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 }
 
 // Validate and load access grant if provided.
-func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, databaseFullName string) *store.AccessGrantMessage {
+func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
 	if request.AccessGrant == nil || *request.AccessGrant == "" {
 		return nil
 	}
@@ -175,6 +175,27 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		slog.Warn("invalid access grant id", slog.String("access_grant", accessGrantID), log.BBError(err))
 		return nil
 	}
+	if database.ProjectID != projectID {
+		slog.Warn("project for access and database not match", slog.String("access_grant", accessGrantID), slog.String("access_grant_project", projectID), slog.String("database_project", database.ProjectID))
+		return nil
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		slog.Warn("failed to find project", slog.String("project_id", projectID), log.BBError(err))
+		return nil
+	}
+	if project == nil {
+		slog.Warn("project not found", slog.String("project_id", projectID))
+		return nil
+	}
+	if !project.Setting.AllowJustInTimeAccess {
+		slog.Warn("JIT is not enabled in the project", slog.String("project_id", projectID))
+		return nil
+	}
+
 	accessGrant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
@@ -191,15 +212,20 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		slog.Warn("access grant is not active", slog.String("access_grant", accessGrantID), slog.String("status", accessGrant.Status.String()))
 		return nil
 	}
+	if accessGrant.Payload == nil {
+		slog.Warn("invalid access grant payload", slog.String("access_grant", accessGrantID))
+		return nil
+	}
 	if accessGrant.Payload.Query != request.Statement {
 		slog.Warn("statement does not match access grant", slog.String("access_grant", accessGrantID))
 		return nil
 	}
-	if accessGrant.ExpireTime.Before(time.Now()) {
+	if accessGrant.ExpireTime != nil && accessGrant.ExpireTime.Before(time.Now()) {
 		slog.Warn("access grant has expired", slog.String("access_grant", accessGrantID), slog.String("expire_time", accessGrant.ExpireTime.String()))
 		return nil
 	}
 
+	databaseFullName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	for _, target := range accessGrant.Payload.Targets {
 		if target == databaseFullName {
 			return accessGrant
@@ -218,7 +244,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request, common.FormatDatabase(instance.ResourceID, database.DatabaseName))
+	accessGrant := s.preCheckAccess(ctx, request, database)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.

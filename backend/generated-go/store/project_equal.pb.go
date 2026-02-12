@@ -98,5 +98,8 @@ func (x *Project) Equal(y *Project) bool {
 	if x.DataClassificationConfigId != y.DataClassificationConfigId {
 		return false
 	}
+	if x.AllowJustInTimeAccess != y.AllowJustInTimeAccess {
+		return false
+	}
 	return true
 }

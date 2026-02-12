@@ -3417,6 +3417,7 @@ Project contains settings and configuration for a Bytebase project.
 | require_plan_check_no_error | [bool](#bool) |  | Whether to block rollout when plan check finds errors. |
 | allow_request_role | [bool](#bool) |  |  |
 | data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
+| allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 
 
 
