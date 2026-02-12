@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -96,11 +97,9 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 		if issue.Payload.AccessGrantId == "" {
 			return nil, errors.Errorf("invalid access grant id for issue %d", issue.UID)
 		}
-		status := storepb.AccessGrant_ACTIVE
-		if _, err := stores.UpdateAccessGrant(ctx, issue.Payload.AccessGrantId, &store.UpdateAccessGrantMessage{
-			Status: &status,
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to update access grant status")
+		accessGrantName := common.FormatAccessGrant(issue.ProjectID, issue.Payload.AccessGrantId)
+		if _, err := activateAccessGrant(ctx, stores, accessGrantName, true /* refresh expire time */); err != nil {
+			return nil, errors.Wrapf(err, "failed to activate access grant %v", accessGrantName)
 		}
 	case storepb.Issue_GRANT_REQUEST:
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, stores, issue, issue.Payload.GrantRequest); err != nil {

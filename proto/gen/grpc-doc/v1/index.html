@@ -20702,6 +20702,14 @@ Oracle and search path in Postgres. </p></td>
 CosmosDB only. </p></td>
                 </tr>
               
+                <tr>
+                  <td>access_grant</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The access grant to apply the query.
+Format: projects/{project}/accessGrants/{access_grant} </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23360,6 +23368,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_just_in_time_access</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Once enabled, users can request and use the just-in-time access in the SQL Editor. </p></td>
                 </tr>
               
             </tbody>

@@ -574,6 +574,13 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: bool allow_request_role = 22;
    */
   allowRequestRole: boolean;
+
+  /**
+   * Once enabled, users can request and use the just-in-time access in the SQL Editor.
+   *
+   * @generated from field: bool allow_just_in_time_access = 23;
+   */
+  allowJustInTimeAccess: boolean;
 };
 
 /**

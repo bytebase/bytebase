@@ -564,7 +564,10 @@ type QueryRequest struct {
 	QueryOption *QueryOption `protobuf:"bytes,7,opt,name=query_option,json=queryOption,proto3" json:"query_option,omitempty"`
 	// Container is the container name to execute the query against, used for
 	// CosmosDB only.
-	Container     *string `protobuf:"bytes,8,opt,name=container,proto3,oneof" json:"container,omitempty"`
+	Container *string `protobuf:"bytes,8,opt,name=container,proto3,oneof" json:"container,omitempty"`
+	// The access grant to apply the query.
+	// Format: projects/{project}/accessGrants/{access_grant}
+	AccessGrant   *string `protobuf:"bytes,9,opt,name=access_grant,json=accessGrant,proto3,oneof" json:"access_grant,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -651,6 +654,13 @@ func (x *QueryRequest) GetQueryOption() *QueryOption {
 func (x *QueryRequest) GetContainer() string {
 	if x != nil && x.Container != nil {
 		return *x.Container
+	}
+	return ""
+}
+
+func (x *QueryRequest) GetAccessGrant() string {
+	if x != nil && x.AccessGrant != nil {
+		return *x.AccessGrant
 	}
 	return ""
 }
@@ -2708,7 +2718,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_container\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd0\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\x89\x03\n" +
 	"\fQueryRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
@@ -2718,10 +2728,12 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\aexplain\x18\x05 \x01(\bR\aexplain\x12\x1b\n" +
 	"\x06schema\x18\x06 \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
 	"\fquery_option\x18\a \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +
-	"\tcontainer\x18\b \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
+	"\tcontainer\x18\b \x01(\tH\x01R\tcontainer\x88\x01\x01\x12&\n" +
+	"\faccess_grant\x18\t \x01(\tH\x02R\vaccessGrant\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_container\"C\n" +
+	"_containerB\x0f\n" +
+	"\r_access_grant\"C\n" +
 	"\rQueryResponse\x122\n" +
 	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xa1\x03\n" +
 	"\vQueryOption\x12^\n" +

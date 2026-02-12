@@ -143,6 +143,14 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
    * @generated from field: optional string container = 8;
    */
   container?: string;
+
+  /**
+   * The access grant to apply the query.
+   * Format: projects/{project}/accessGrants/{access_grant}
+   *
+   * @generated from field: optional string access_grant = 9;
+   */
+  accessGrant?: string;
 };
 
 /**

@@ -151,6 +151,10 @@ message QueryRequest {
   // Container is the container name to execute the query against, used for
   // CosmosDB only.
   optional string container = 8;
+
+  // The access grant to apply the query.
+  // Format: projects/{project}/accessGrants/{access_grant}
+  optional string access_grant = 9;
 }
 
 message QueryResponse {

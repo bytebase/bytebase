@@ -350,6 +350,9 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowRequestRole != y.AllowRequestRole {
 		return false
 	}
+	if x.AllowJustInTimeAccess != y.AllowJustInTimeAccess {
+		return false
+	}
 	return true
 }
 

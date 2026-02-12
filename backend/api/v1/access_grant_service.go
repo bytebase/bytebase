@@ -135,6 +135,10 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if len(ag.Targets) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets is required"))
 	}
+	if ag.Query == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("query is required"))
+	}
+
 	creatorEmail, err := common.GetUserEmail(ag.Creator)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid creator"))
@@ -207,11 +211,21 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	// Step 4: Post-create: webhook, approval finding, auto-approve.
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %v", projectID))
 	}
 	if project != nil {
-		if _, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue); err != nil {
+		issue, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
+		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		if issue.Status == storepb.Issue_DONE {
+			// Refresh the grant if issue is completed.
+			grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+				ID: &grant.ID,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant %v", grant.ID))
+			}
 		}
 	}
 
@@ -223,13 +237,22 @@ func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *c
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	req := request.Msg
-	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
+
+	grant, err := activateAccessGrant(ctx, s.store, request.Msg.Name, false /* do not refresh expire time */)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant"))
+	}
+
+	return connect.NewResponse(convertToAccessGrant(grant)), nil
+}
+
+func activateAccessGrant(ctx context.Context, stores *store.Store, accessGrantName string, refreshExpireTime bool) (*store.AccessGrantMessage, error) {
+	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(accessGrantName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+	grant, err := stores.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
 	})
@@ -237,10 +260,7 @@ func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *c
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant"))
 	}
 	if grant == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
-	}
-	if grant.Status != storepb.AccessGrant_PENDING {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("access grant %q is not in PENDING status", req.Name))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", accessGrantName))
 	}
 
 	status := storepb.AccessGrant_ACTIVE
@@ -249,17 +269,17 @@ func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *c
 	}
 
 	// If the grant was created with a TTL, compute expire_time at activation time.
-	if grant.Payload != nil && grant.Payload.RequestedDuration != nil {
+	if refreshExpireTime && grant.Payload != nil && grant.Payload.RequestedDuration != nil {
 		expireTime := time.Now().Add(grant.Payload.RequestedDuration.AsDuration())
 		update.ExpireTime = &expireTime
 	}
 
-	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, update)
+	updated, err := stores.UpdateAccessGrant(ctx, accessGrantID, update)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to activate access grant"))
 	}
 
-	return connect.NewResponse(convertToAccessGrant(updated)), nil
+	return updated, nil
 }
 
 // RevokeAccessGrant revokes an active access grant.

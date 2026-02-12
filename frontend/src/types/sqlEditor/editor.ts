@@ -55,4 +55,7 @@ export type SQLEditorQueryParams = {
   // Use to calculate the advice position.
   selection: monaco.Selection | null;
   queryOption?: QueryOption;
+  // The access grant resource name to authorize the query.
+  // Format: projects/{project}/accessGrants/{id}
+  accessGrant?: string;
 };

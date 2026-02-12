@@ -7284,6 +7284,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 | query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
 | container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
+| access_grant | [string](#string) | optional | The access grant to apply the query. Format: projects/{project}/accessGrants/{access_grant} |
 
 
 
@@ -8260,6 +8261,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | require_issue_approval | [bool](#bool) |  | Whether to require issue approval before rollout. |
 | require_plan_check_no_error | [bool](#bool) |  | Whether to require plan check to have no error before rollout. |
 | allow_request_role | [bool](#bool) |  |  |
+| allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 
 
 

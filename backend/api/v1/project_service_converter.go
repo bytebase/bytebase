@@ -288,6 +288,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		RequireIssueApproval:       projectMessage.Setting.RequireIssueApproval,
 		RequirePlanCheckNoError:    projectMessage.Setting.RequirePlanCheckNoError,
 		AllowRequestRole:           projectMessage.Setting.AllowRequestRole,
+		AllowJustInTimeAccess:      projectMessage.Setting.AllowJustInTimeAccess,
 	}
 }
 
@@ -325,6 +326,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.Pr
 		RequireIssueApproval:       project.RequireIssueApproval,
 		RequirePlanCheckNoError:    project.RequirePlanCheckNoError,
 		AllowRequestRole:           project.AllowRequestRole,
+		AllowJustInTimeAccess:      project.AllowJustInTimeAccess,
 		DataClassificationConfigId: project.DataClassificationConfigId,
 	}
 	return &store.ProjectMessage{

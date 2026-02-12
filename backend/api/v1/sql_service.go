@@ -163,6 +163,79 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 	}
 }
 
+// Validate and load access grant if provided.
+func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
+	if request.AccessGrant == nil || *request.AccessGrant == "" {
+		return nil
+	}
+
+	accessGrantID := *request.AccessGrant
+	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(accessGrantID)
+	if err != nil {
+		slog.Warn("invalid access grant id", slog.String("access_grant", accessGrantID), log.BBError(err))
+		return nil
+	}
+	if database.ProjectID != projectID {
+		slog.Warn("project for access and database not match", slog.String("access_grant", accessGrantID), slog.String("access_grant_project", projectID), slog.String("database_project", database.ProjectID))
+		return nil
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		slog.Warn("failed to find project", slog.String("project_id", projectID), log.BBError(err))
+		return nil
+	}
+	if project == nil {
+		slog.Warn("project not found", slog.String("project_id", projectID))
+		return nil
+	}
+	if !project.Setting.AllowJustInTimeAccess {
+		slog.Warn("JIT is not enabled in the project", slog.String("project_id", projectID))
+		return nil
+	}
+
+	accessGrant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		ID:        &accessGrantID,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		slog.Warn("failed to get access grant", slog.String("access_grant", accessGrantID), log.BBError(err))
+		return nil
+	}
+	if accessGrant == nil {
+		slog.Warn("access grant not found", slog.String("access_grant", accessGrantID))
+		return nil
+	}
+	if accessGrant.Status != storepb.AccessGrant_ACTIVE {
+		slog.Warn("access grant is not active", slog.String("access_grant", accessGrantID), slog.String("status", accessGrant.Status.String()))
+		return nil
+	}
+	if accessGrant.Payload == nil {
+		slog.Warn("invalid access grant payload", slog.String("access_grant", accessGrantID))
+		return nil
+	}
+	if accessGrant.Payload.Query != request.Statement {
+		slog.Warn("statement does not match access grant", slog.String("access_grant", accessGrantID))
+		return nil
+	}
+	if accessGrant.ExpireTime != nil && accessGrant.ExpireTime.Before(time.Now()) {
+		slog.Warn("access grant has expired", slog.String("access_grant", accessGrantID), slog.String("expire_time", accessGrant.ExpireTime.String()))
+		return nil
+	}
+
+	databaseFullName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
+	for _, target := range accessGrant.Payload.Targets {
+		if target == databaseFullName {
+			return accessGrant
+		}
+	}
+
+	slog.Warn("database not found in access grant targets", slog.String("access_grant", accessGrantID), slog.String("database", databaseFullName))
+	return nil
+}
+
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
 	request := req.Msg
 	// Prepare related message.
@@ -170,6 +243,8 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if err != nil {
 		return nil, err
 	}
+
+	accessGrant := s.preCheckAccess(ctx, request, database)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -223,6 +298,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
+		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
 	}
 	if request.Schema != nil {
@@ -232,6 +308,10 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		queryContext.Timeout = &durationpb.Duration{Seconds: queryRestriction.MaxQueryTimeoutInSeconds}
 	}
 
+	var optionalAccessCheck accessCheckFunc
+	if accessGrant == nil {
+		optionalAccessCheck = s.accessCheck
+	}
 	results, _, duration, queryErr := queryRetryStopOnError(
 		ctx,
 		s.store,
@@ -243,7 +323,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		statement,
 		queryContext,
 		s.licenseService,
-		s.accessCheck,
+		optionalAccessCheck,
 		s.schemaSyncer,
 	)
 	slog.Debug("query finished",
@@ -505,7 +585,7 @@ func queryRetry(
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		}
-		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 			if err != nil {
@@ -581,7 +661,7 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 			if err != nil {
@@ -601,7 +681,7 @@ func queryRetry(
 		}
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil && !queryContext.Explain {
+	if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil && !queryContext.Explain {
 		slog.Debug("mask query results", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {

@@ -301,6 +301,7 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Workspace member",
 		Predefined: true,
 		Permissions: permissionSet(
+			permission.AccessGrantsCreate,
 			permission.InstanceRolesGet,
 			permission.InstanceRolesList,
 			permission.PoliciesGet,
@@ -425,8 +426,6 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Project developer",
 		Predefined: true,
 		Permissions: permissionSet(
-			permission.AccessGrantsCreate,
-			permission.AccessGrantsGet,
 			permission.AuditLogsSearch,
 			permission.ChangelogsGet,
 			permission.ChangelogsList,
@@ -546,7 +545,6 @@ var PredefinedRoles = []*RoleMessage{
 		Name:       "Project viewer",
 		Predefined: true,
 		Permissions: permissionSet(
-			permission.AccessGrantsCreate,
 			permission.DatabaseCatalogsGet,
 			permission.DatabaseGroupsGet,
 			permission.DatabaseGroupsList,

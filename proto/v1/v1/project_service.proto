@@ -453,6 +453,9 @@ message Project {
   bool require_plan_check_no_error = 21;
 
   bool allow_request_role = 22;
+
+  // Once enabled, users can request and use the just-in-time access in the SQL Editor.
+  bool allow_just_in_time_access = 23;
 }
 
 message AddWebhookRequest {
