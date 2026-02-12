@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -134,24 +135,26 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if len(ag.Targets) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets is required"))
 	}
-
 	creatorEmail, err := common.GetUserEmail(ag.Creator)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid creator"))
 	}
 
-	var expireTime time.Time
+	var expireTime *time.Time
+	var requestedDuration *durationpb.Duration
 	switch exp := ag.Expiration.(type) {
 	case *v1pb.AccessGrant_ExpireTime:
 		if exp.ExpireTime == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expire_time is required"))
 		}
-		expireTime = exp.ExpireTime.AsTime()
+		t := exp.ExpireTime.AsTime()
+		expireTime = &t
 	case *v1pb.AccessGrant_Ttl:
 		if exp.Ttl == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("ttl is required"))
 		}
-		expireTime = time.Now().Add(exp.Ttl.AsDuration())
+		// Store the requested duration; expire_time will be computed at activation time.
+		requestedDuration = exp.Ttl
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("expiration (expire_time or ttl) is required"))
 	}
@@ -163,10 +166,11 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		Status:     storepb.AccessGrant_PENDING,
 		ExpireTime: expireTime,
 		Payload: &storepb.AccessGrantPayload{
-			Targets: ag.Targets,
-			Query:   ag.Query,
-			Unmask:  ag.Unmask,
-			Reason:  ag.Reason,
+			Targets:           ag.Targets,
+			Query:             ag.Query,
+			Unmask:            ag.Unmask,
+			Reason:            ag.Reason,
+			RequestedDuration: requestedDuration,
 		},
 	})
 	if err != nil {
@@ -240,9 +244,17 @@ func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *c
 	}
 
 	status := storepb.AccessGrant_ACTIVE
-	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, &store.UpdateAccessGrantMessage{
+	update := &store.UpdateAccessGrantMessage{
 		Status: &status,
-	})
+	}
+
+	// If the grant was created with a TTL, compute expire_time at activation time.
+	if grant.Payload != nil && grant.Payload.RequestedDuration != nil {
+		expireTime := time.Now().Add(grant.Payload.RequestedDuration.AsDuration())
+		update.ExpireTime = &expireTime
+	}
+
+	updated, err := s.store.UpdateAccessGrant(ctx, accessGrantID, update)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to activate access grant"))
 	}
@@ -350,9 +362,11 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 		Name:       common.FormatAccessGrant(msg.ProjectID, msg.ID),
 		Creator:    common.FormatUserEmail(msg.Creator),
 		Status:     convertToAccessGrantStatus(msg.Status),
-		Expiration: &v1pb.AccessGrant_ExpireTime{ExpireTime: timestamppb.New(msg.ExpireTime)},
 		CreateTime: timestamppb.New(msg.CreatedAt),
 		UpdateTime: timestamppb.New(msg.UpdatedAt),
+	}
+	if msg.ExpireTime != nil {
+		ag.Expiration = &v1pb.AccessGrant_ExpireTime{ExpireTime: timestamppb.New(*msg.ExpireTime)}
 	}
 	if p := msg.Payload; p != nil {
 		ag.Targets = p.Targets

@@ -3,7 +3,7 @@ CREATE TABLE access_grant (
     project text NOT NULL REFERENCES project(resource_id),
     creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     status text NOT NULL DEFAULT 'PENDING',
-    expire_time timestamptz NOT NULL,
+    expire_time timestamptz,
     -- Stored as AccessGrantPayload (proto/store/store/access_grant.proto)
     payload jsonb NOT NULL DEFAULT '{}',
     created_at timestamptz NOT NULL DEFAULT now(),
