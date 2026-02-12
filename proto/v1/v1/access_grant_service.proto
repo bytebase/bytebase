@@ -106,7 +106,7 @@ message AccessGrant {
     google.protobuf.Timestamp expire_time = 4;
 
     // Input only. The time-to-live duration for the access grant.
-    // The server computes `expire_time` from this value at creation time.
+    // The server computes `expire_time` from this value at activation time.
     google.protobuf.Duration ttl = 11 [(google.api.field_behavior) = INPUT_ONLY];
   }
 

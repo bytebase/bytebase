@@ -60,7 +60,7 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   } | {
     /**
      * Input only. The time-to-live duration for the access grant.
-     * The server computes `expire_time` from this value at creation time.
+     * The server computes `expire_time` from this value at activation time.
      *
      * @generated from field: google.protobuf.Duration ttl = 11;
      */

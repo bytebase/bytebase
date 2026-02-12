@@ -258,7 +258,7 @@ type AccessGrant_ExpireTime struct {
 
 type AccessGrant_Ttl struct {
 	// Input only. The time-to-live duration for the access grant.
-	// The server computes `expire_time` from this value at creation time.
+	// The server computes `expire_time` from this value at activation time.
 	Ttl *durationpb.Duration `protobuf:"bytes,11,opt,name=ttl,proto3,oneof"`
 }
 

@@ -7030,7 +7030,7 @@ components:
                   title: ttl
                   description: |-
                     Input only. The time-to-live duration for the access grant.
-                     The server computes `expire_time` from this value at creation time.
+                     The server computes `expire_time` from this value at activation time.
                   $ref: '#/components/schemas/google.protobuf.Duration'
               title: ttl
               required:

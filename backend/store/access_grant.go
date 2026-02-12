@@ -23,7 +23,7 @@ type AccessGrantMessage struct {
 	ProjectID  string
 	Creator    string
 	Status     storepb.AccessGrant_Status
-	ExpireTime time.Time
+	ExpireTime *time.Time
 	Payload    *storepb.AccessGrantPayload
 	// Reason is used as the issue description during creation.
 	Reason string
@@ -47,8 +47,9 @@ type FindAccessGrantMessage struct {
 
 // UpdateAccessGrantMessage is the message for updating an access grant.
 type UpdateAccessGrantMessage struct {
-	Status  *storepb.AccessGrant_Status
-	Payload *storepb.AccessGrantPayload
+	Status     *storepb.AccessGrant_Status
+	ExpireTime *time.Time
+	Payload    *storepb.AccessGrantPayload
 }
 
 // CreateAccessGrant creates a new access grant.
@@ -188,6 +189,9 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 
 	if v := update.Status; v != nil {
 		set.Comma("status = ?", v.String())
+	}
+	if v := update.ExpireTime; v != nil {
+		set.Comma("expire_time = ?", *v)
 	}
 	if v := update.Payload; v != nil {
 		p, err := protojson.Marshal(v)

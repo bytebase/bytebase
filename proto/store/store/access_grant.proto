@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/duration.proto";
+
 option go_package = "generated-go/store";
 
 message AccessGrant {
@@ -28,4 +30,9 @@ message AccessGrantPayload {
   bool unmask = 4;
 
   string reason = 5;
+
+  // The requested duration for the access grant.
+  // Stored when the user provides a TTL instead of an absolute expire_time.
+  // The server computes expire_time from this value at activation time.
+  google.protobuf.Duration requested_duration = 6;
 }

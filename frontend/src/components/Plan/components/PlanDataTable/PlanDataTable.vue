@@ -34,7 +34,7 @@ import {
   extractProjectResourceName,
   TailwindBreakpoints,
 } from "@/utils";
-import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
+import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 
 withDefaults(
   defineProps<{
@@ -58,9 +58,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
     {
       key: "title",
       title: t("issue.table.name"),
-      minWidth: 200,
       ellipsis: true,
-      resizable: true,
       render: (plan) => {
         const showDraftTag = plan.issue === "" && !plan.hasRollout;
         const isDeleted = plan.state === State.DELETED;
@@ -85,7 +83,6 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             ) : (
               <span class="opacity-60 italic">{t("common.untitled")}</span>
             )}
-            <PlanCheckRunStatusIcon plan={plan} size="small" />
             {isDeleted && (
               <NTag type="warning" round size="small">
                 {t("common.closed")}
@@ -101,19 +98,24 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       },
     },
     {
+      key: "checks",
+      title: t("plan.checks.self"),
+      width: 200,
+      hide: !showExtendedColumns.value,
+      render: (plan) => <PlanCheckStatusCount plan={plan} size="small" />,
+    },
+    {
       key: "updateTime",
       title: t("issue.table.updated"),
-      minWidth: 128,
+      width: 150,
       hide: !showExtendedColumns.value,
       render: (plan) => <Timestamp timestamp={plan.updateTime} />,
     },
     {
       key: "creator",
       title: t("issue.table.creator"),
-      minWidth: 200,
+      width: 150,
       hide: !showExtendedColumns.value,
-      resizable: true,
-      ellipsis: true,
       render: (plan) => {
         const creator =
           userStore.getUserByIdentifier(plan.creator) ||
@@ -135,9 +137,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
 });
 
 const scrollX = computed(() => {
-  return columnList.value.reduce((sum, col) => {
-    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
-  }, 0);
+  return 700;
 });
 
 const rowProps = (plan: Plan) => {

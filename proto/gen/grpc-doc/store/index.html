@@ -1551,6 +1551,15 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>requested_duration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The requested duration for the access grant.
+Stored when the user provides a TTL instead of an absolute expire_time.
+The server computes expire_time from this value at activation time. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
