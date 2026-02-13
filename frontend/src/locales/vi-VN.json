@@ -1878,6 +1878,10 @@
         "allow-request-role": {
           "self": "Cho phép yêu cầu vai trò",
           "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án"
+        },
+        "allow-jit": {
+          "self": "Cho phép truy cập tức thời",
+          "description": "Khi được bật, người dùng có thể yêu cầu và sử dụng quyền truy cập tức thời trong Trình soạn thảo SQL."
         }
       },
       "project-labels": {

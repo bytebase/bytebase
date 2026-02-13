@@ -1878,6 +1878,10 @@
         "allow-request-role": {
           "self": "Permitir solicitar rol",
           "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos"
+        },
+        "allow-jit": {
+          "self": "Permitir acceso justo a tiempo",
+          "description": "Una vez habilitado, los usuarios pueden solicitar y usar el acceso justo a tiempo en el Editor SQL."
         }
       },
       "project-labels": {

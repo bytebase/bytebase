@@ -1878,6 +1878,10 @@
         "allow-request-role": {
           "self": "允许申请角色",
           "description": "非项目所有者可以自行申请项目级角色"
+        },
+        "allow-jit": {
+          "self": "允许即时访问",
+          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。"
         }
       },
       "project-labels": {
