@@ -44,6 +44,9 @@ const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "landing",
     name: WORKSPACE_ROUTE_LANDING,
+    meta: {
+      title: () => t("common.home"),
+    },
     components: {
       content: () => import("@/views/DashboardLanding.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
@@ -112,6 +115,9 @@ const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "403",
     name: WORKSPACE_ROUTE_403,
+    meta: {
+      title: () => t("error-page.forbidden"),
+    },
     components: {
       content: () => import("@/views/Page403.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
@@ -124,6 +130,9 @@ const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "404",
     name: WORKSPACE_ROUTE_404,
+    meta: {
+      title: () => t("error-page.not-found"),
+    },
     components: {
       content: () => import("@/views/Page404.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
@@ -137,6 +146,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "sql-review",
     meta: {
       title: () => t("sql-review.title"),
+      overrideDocumentTitle: true,
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
@@ -190,6 +200,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     meta: {
       title: () => t("settings.sidebar.sso"),
       requiredPermissionList: () => ["bb.identityProviders.get"],
+      overrideDocumentTitle: true,
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
@@ -215,6 +226,9 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: "",
+    meta: {
+      overrideDocumentTitle: true,
+    },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
@@ -342,6 +356,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "integration",
     meta: {
       title: () => t("settings.sidebar.integration"),
+      overrideDocumentTitle: true,
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),

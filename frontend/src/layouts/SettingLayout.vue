@@ -5,10 +5,26 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { hasWorkspacePermissionV2, setDocumentTitle } from "@/utils";
+
+const { t } = useI18n();
+const route = useRoute();
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermissionV2("bb.settings.set");
 });
+
+watch(
+  () => route.meta.title,
+  () => {
+    const pageTitle = route.meta.title ? route.meta.title(route) : undefined;
+    if (pageTitle) {
+      setDocumentTitle(pageTitle, t("common.settings"));
+    }
+  },
+  { immediate: true }
+);
 </script>

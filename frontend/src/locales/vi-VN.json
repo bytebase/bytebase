@@ -272,7 +272,9 @@
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
   },
   "error-page": {
-    "go-back-home": "Về trang chủ"
+    "forbidden": "Bị cấm",
+    "go-back-home": "Về trang chủ",
+    "not-found": "Không tìm thấy"
   },
   "refresh-remind": {
     "title": "Đã phát hiện phiên bản lỗi thời",

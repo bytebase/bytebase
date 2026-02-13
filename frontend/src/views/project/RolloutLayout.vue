@@ -27,9 +27,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
 import { NSpin } from "naive-ui";
-import { computed, ref, toRef, watchEffect } from "vue";
+import { computed, ref, toRef, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   providePlanContext,
@@ -41,8 +40,10 @@ import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import RolloutBreadcrumb from "@/components/RolloutV1/components/Rollout/RolloutBreadcrumb.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
-import { usePolicyV1Store } from "@/store";
+import { usePolicyV1Store, useProjectByName } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import { setDocumentTitle } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -99,12 +100,17 @@ provideSidebarContext(containerRef);
 
 useBodyLayoutContext().overrideMainContainerClass("py-0! px-0!");
 
-useTitle(
-  computed(() => {
-    if (ready.value && plan.value?.title) {
-      return plan.value.title;
+const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
+const { project } = useProjectByName(projectName);
+
+watch(
+  [ready, () => plan.value?.title, () => project.value.title],
+  () => {
+    if (ready.value) {
+      const planTitle = plan.value?.title || t("common.rollout");
+      setDocumentTitle(planTitle, project.value.title);
     }
-    return ready.value ? t("common.rollout") : t("common.loading");
-  })
+  },
+  { immediate: true }
 );
 </script>

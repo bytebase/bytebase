@@ -79,7 +79,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { useTitle } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -125,6 +124,7 @@ import {
   getValuesFromSearchParams,
   instanceV1HasCreateDatabase,
   instanceV1Name,
+  setDocumentTitle,
 } from "@/utils";
 
 const instanceHashList = ["overview", "databases", "users"] as const;
@@ -271,7 +271,13 @@ const createDatabase = () => {
   state.showCreateDatabaseModal = true;
 };
 
-useTitle(computed(() => instance.value.title));
+watch(
+  () => instance.value.title,
+  (title) => {
+    setDocumentTitle(title);
+  },
+  { immediate: true }
+);
 
 const selectedDatabases = computed((): Database[] => {
   return state.selectedDatabaseNameList

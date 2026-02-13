@@ -73,7 +73,7 @@ const authRoutes: RouteRecordRaw[] = [
       {
         path: "idp-init",
         name: AUTH_IDP_INIT_MODULE,
-        meta: { title: () => "Initializing SSO" },
+        meta: { title: () => t("common.loading") },
         component: () => import("@/views/IdPInitiatedSSO.vue"),
       },
     ],

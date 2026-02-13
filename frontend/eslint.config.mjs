@@ -33,7 +33,10 @@ export default [
         {
           src: "./src",
           extensions: [".js", ".vue", ".ts", ".tsx"],
-          ignores: [],
+          ignores: [
+            "error-page.forbidden",
+            "error-page.not-found",
+          ],
           enableFix: true,
         },
       ],

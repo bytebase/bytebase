@@ -217,7 +217,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, watchEffect } from "vue";
@@ -261,6 +260,7 @@ import {
   getInstanceResource,
   instanceV1HasAlterSchema,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
+  setDocumentTitle,
 } from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
 
@@ -365,7 +365,14 @@ const environment = computed(() => {
   return getDatabaseEnvironment(database.value);
 });
 
-useTitle(
-  computed(() => extractDatabaseResourceName(database.value.name).databaseName)
+watch(
+  [() => database.value.name, () => project.value.title],
+  () => {
+    const dbName = extractDatabaseResourceName(
+      database.value.name
+    ).databaseName;
+    setDocumentTitle(dbName, project.value.title);
+  },
+  { immediate: true }
 );
 </script>

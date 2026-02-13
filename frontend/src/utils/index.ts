@@ -28,3 +28,4 @@ export * from "./expr";
 export * from "./accessGrant";
 export * from "./storage-keys";
 export * from "./storage-migrate";
+export * from "./document-title";

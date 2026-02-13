@@ -34,8 +34,8 @@
 <script lang="tsx" setup>
 import { type ConnectError } from "@connectrpc/connect";
 import { NSpin } from "naive-ui";
-import { computed, watchEffect } from "vue";
-import { useRouter } from "vue-router";
+import { computed, watch, watchEffect } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
@@ -55,7 +55,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, setDocumentTitle } from "@/utils";
 import { useBodyLayoutContext } from "./common";
 
 const props = defineProps<{
@@ -121,4 +121,19 @@ const allowEdit = computed(() => {
 const { overrideMainContainerClass } = useBodyLayoutContext();
 
 overrideMainContainerClass("px-4");
+
+const route = useRoute();
+watch(
+  [() => route.meta.title, () => project.value.title, initialized],
+  () => {
+    if (!initialized.value) return;
+    const pageTitle = route.meta.title ? route.meta.title(route) : undefined;
+    if (pageTitle) {
+      setDocumentTitle(pageTitle, project.value.title);
+    } else {
+      setDocumentTitle(project.value.title);
+    }
+  },
+  { immediate: true }
+);
 </script>
