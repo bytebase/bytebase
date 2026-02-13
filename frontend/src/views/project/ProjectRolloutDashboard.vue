@@ -42,7 +42,7 @@ import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import UpdatedTimeRange from "@/components/AdvancedSearch/UpdatedTimeRange.vue";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import RolloutDataTable from "@/components/Rollout/RolloutDataTable.vue";
+import { RolloutDataTable } from "@/components/RolloutV1";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useProjectByName, useRolloutStore } from "@/store";
 import {
