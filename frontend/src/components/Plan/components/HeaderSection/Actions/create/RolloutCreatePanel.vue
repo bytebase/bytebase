@@ -77,7 +77,7 @@ import { useRouter } from "vue-router";
 import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection";
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
-import CommonDrawer from "@/components/RolloutV1/components/CommonDrawer.vue";
+import CommonDrawer from "@/components/RolloutV1/components/Rollout/CommonDrawer.vue";
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,

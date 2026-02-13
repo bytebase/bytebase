@@ -69,7 +69,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { usePlanContext, useRolloutReadyLink } from "@/components/Plan/logic";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
-import TaskRolloutActionPanel from "@/components/RolloutV1/components/TaskRolloutActionPanel.vue";
+import TaskRolloutActionPanel from "@/components/RolloutV1/components/Task/TaskRolloutActionPanel.vue";
 import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,

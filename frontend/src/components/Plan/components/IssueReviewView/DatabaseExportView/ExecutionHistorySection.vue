@@ -40,7 +40,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
+import TaskRunTable from "@/components/RolloutV1/components/TaskRun/TaskRunTable.vue";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskUID } from "@/utils";
 import { usePlanContext } from "../../../logic";

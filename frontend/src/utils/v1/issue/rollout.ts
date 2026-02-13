@@ -1,5 +1,5 @@
 import { useI18n } from "vue-i18n";
-import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
+import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";

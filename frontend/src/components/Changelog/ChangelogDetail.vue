@@ -121,7 +121,7 @@ import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
-import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
+import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRun/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_SYNC_SCHEMA } from "@/router/dashboard/projectV1";
 import {

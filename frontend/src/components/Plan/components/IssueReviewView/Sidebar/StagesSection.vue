@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
