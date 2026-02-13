@@ -125,11 +125,11 @@ jobs:
           echo "Milvus failed to become ready in time"
           docker logs --tail 200 milvus-it-ci || true
           exit 1
-      - name: Run Milvus integration tests
+      - name: Run Milvus phase-0 gate
         env:
           BYTEBASE_TEST_MILVUS_HOST: ${{ env.BYTEBASE_TEST_MILVUS_HOST }}
           BYTEBASE_TEST_MILVUS_PORT: ${{ env.BYTEBASE_TEST_MILVUS_PORT }}
-        run: go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/db/milvus -run '^TestMilvusIntegration_'
+        run: ./scripts/test_milvus_phase0_gate.sh
       - name: Cleanup Milvus container
         if: always()
         run: docker rm -f milvus-it-ci || true
