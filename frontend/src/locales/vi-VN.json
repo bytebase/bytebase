@@ -175,6 +175,9 @@
     "download": "Tải xuống",
     "deleted": "Đã xóa",
     "active": "Hoạt động",
+    "activated": "Đã kích hoạt",
+    "pending": "Đang chờ",
+    "revoked": "Đã thu hồi",
     "reopen": "Mở lại",
     "plan": "Kế hoạch",
     "rollout": "Triển khai",
@@ -1072,6 +1075,9 @@
       "high": "Cao"
     },
     "issue-name": "Tên vấn đề",
+    "access-grant": {
+      "details": "Access Grant Details"
+    },
     "grant-request": {
       "details": "Yêu cầu chi tiết",
       "expired-at": "Hết hạn vào",
@@ -1993,7 +1999,6 @@
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
     "request-aborted": "Người dùng đã hủy yêu cầu",
     "no-data-source": "Không có nguồn dữ liệu có thể truy vấn. Vui lòng kiểm tra chính sách truy vấn nguồn dữ liệu trên môi trường hoặc dự án.",
-    "database-not-queriable": "Cơ sở dữ liệu không thể truy vấn",
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
@@ -2127,7 +2132,28 @@
     "search-scope-row-number-title": "Số dòng",
     "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
     "scroll-to-top": "Cuộn lên đầu",
-    "scroll-to-bottom": "Cuộn xuống cuối"
+    "scroll-to-bottom": "Cuộn xuống cuối",
+    "jit": "Just-In-Time Access",
+    "request-access": "Request Access",
+    "no-access-requests": "No access requests",
+    "request-jit": "Request just-in-time access",
+    "view-issue": "View Issue",
+    "expire-at": "Expire at {time}",
+    "expire-in": "Expire in {time}",
+    "and-n-more-databases": "and {n} more databases",
+    "expired": "Expired",
+    "grant-type-unmask": "Unmask",
+    "request-data-access": "Request Data Access",
+    "access-type-unmask": "See unmasked sensitive data",
+    "duration-hours": "{hours} hour | {hours} hours",
+    "duration-day": "{days} day",
+    "duration-days": "{days} days",
+    "access-grants": "Access Grants",
+    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
+    "revoke-access": "Revoke",
+    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "activate-access": "Activate",
+    "activate-confirm": "Are you sure you want to activate this access grant?"
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",

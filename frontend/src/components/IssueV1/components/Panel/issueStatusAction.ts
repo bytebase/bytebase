@@ -2,7 +2,11 @@ import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { isDatabaseDataExportIssue, isGrantRequestIssue } from "@/utils";
+import {
+  isAccessGrantIssue,
+  isDatabaseDataExportIssue,
+  isGrantRequestIssue,
+} from "@/utils";
 
 export type IssueStatusAction = "CLOSE" | "REOPEN";
 
@@ -29,8 +33,12 @@ export const getApplicableIssueStatusActionList = (
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
-    if (isGrantRequestIssue(issue) || isDatabaseDataExportIssue(issue)) {
-      // Don't show REOPEN for grantRequest/dataExport issues.
+    if (
+      isGrantRequestIssue(issue) ||
+      isAccessGrantIssue(issue) ||
+      isDatabaseDataExportIssue(issue)
+    ) {
+      // Don't show REOPEN for grantRequest/accessGrant/dataExport issues.
       if (action === "REOPEN") {
         return false;
       }

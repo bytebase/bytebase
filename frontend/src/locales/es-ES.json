@@ -175,6 +175,9 @@
     "download": "Descargar",
     "deleted": "Eliminado",
     "active": "Activo",
+    "activated": "Activado",
+    "pending": "Pendiente",
+    "revoked": "Revocado",
     "reopen": "Reabrir",
     "plan": "Plan",
     "rollout": "Implementar",
@@ -1072,6 +1075,9 @@
       "high": "Alto"
     },
     "issue-name": "Nombre de la incidencia",
+    "access-grant": {
+      "details": "Access Grant Details"
+    },
     "grant-request": {
       "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
@@ -1993,7 +1999,6 @@
     "invalid-database": "Base de datos no válida {database}",
     "request-aborted": "El usuario abortó la solicitud",
     "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
-    "database-not-queriable": "La base de datos no se puede consultar",
     "no-queriable-database": "No hay base de datos consultable",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
@@ -2127,7 +2132,28 @@
     "search-scope-row-number-title": "Número de fila",
     "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila.",
     "scroll-to-top": "Desplazarse hacia arriba",
-    "scroll-to-bottom": "Desplazarse hacia abajo"
+    "scroll-to-bottom": "Desplazarse hacia abajo",
+    "jit": "Just-In-Time Access",
+    "request-access": "Request Access",
+    "no-access-requests": "No access requests",
+    "request-jit": "Request just-in-time access",
+    "view-issue": "View Issue",
+    "expire-at": "Expire at {time}",
+    "expire-in": "Expire in {time}",
+    "and-n-more-databases": "and {n} more databases",
+    "expired": "Expired",
+    "grant-type-unmask": "Unmask",
+    "request-data-access": "Request Data Access",
+    "access-type-unmask": "See unmasked sensitive data",
+    "duration-hours": "{hours} hour | {hours} hours",
+    "duration-day": "{days} day",
+    "duration-days": "{days} days",
+    "access-grants": "Access Grants",
+    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
+    "revoke-access": "Revoke",
+    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "activate-access": "Activate",
+    "activate-confirm": "Are you sure you want to activate this access grant?"
   },
   "schema-editor": {
     "self": "Editor de esquema",

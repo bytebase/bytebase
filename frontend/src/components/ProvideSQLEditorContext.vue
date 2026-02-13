@@ -71,12 +71,12 @@ import {
   extractWorksheetUID,
   getDefaultPagination,
   getSheetStatement,
-  isDatabaseV1Queryable,
   isWorksheetReadableV1,
   STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import {
+  ASIDE_PANEL_TABS,
   type AsidePanelTab,
   useSQLEditorContext,
 } from "@/views/sql-editor/context";
@@ -222,15 +222,6 @@ const prepareConnectionParams = async () => {
   const database =
     await useDatabaseV1Store().getOrFetchDatabaseByName(databaseName);
   await maybeSwitchProject(database.project);
-  if (!isDatabaseV1Queryable(database)) {
-    const tabs = tabStore.openTabList.filter(
-      (tab) => tab.connection.database === database.name
-    );
-    for (const tab of tabs) {
-      tabStore.closeTab(tab.id);
-    }
-    return false;
-  }
   // connected to db
   const { instance } = extractDatabaseResourceName(database.name);
   const connection = {
@@ -293,7 +284,8 @@ const syncURLWithConnection = () => {
         "filter",
         "project",
         "schema",
-        "database"
+        "database",
+        "panel"
       );
 
       if (sheetName) {
@@ -319,15 +311,6 @@ const syncURLWithConnection = () => {
       if (isValidDatabaseName(databaseName)) {
         const database =
           await databaseStore.getOrFetchDatabaseByName(databaseName);
-        if (!isDatabaseV1Queryable(database)) {
-          return router.replace({
-            name: SQL_EDITOR_PROJECT_MODULE,
-            params: {
-              project: extractProjectResourceName(database.project),
-            },
-            query,
-          });
-        }
         if (schema) {
           query.schema = schema;
         }
@@ -385,7 +368,19 @@ const restoreLastVisitedSidebarTab = () => {
     STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
     "WORKSHEET"
   );
-  asidePanelTab.value = storedLastVisitedSidebarTab.value;
+
+  // Check for ?panel= query param to allow deep-linking to a specific tab.
+  const panelQuery = route.query.panel;
+  if (typeof panelQuery === "string" && panelQuery) {
+    const tab = panelQuery.toUpperCase() as AsidePanelTab;
+    if (ASIDE_PANEL_TABS.includes(tab)) {
+      asidePanelTab.value = tab;
+    } else {
+      asidePanelTab.value = storedLastVisitedSidebarTab.value;
+    }
+  } else {
+    asidePanelTab.value = storedLastVisitedSidebarTab.value;
+  }
 
   watch(
     asidePanelTab,

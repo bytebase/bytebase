@@ -6,6 +6,7 @@ import {
   AccessGrant_Status,
   ActivateAccessGrantRequestSchema,
   CreateAccessGrantRequestSchema,
+  GetAccessGrantRequestSchema,
   ListAccessGrantsRequestSchema,
   RevokeAccessGrantRequestSchema,
   SearchMyAccessGrantsRequestSchema,
@@ -82,6 +83,12 @@ interface ListAccessGrantsParams {
 }
 
 export const useAccessGrantStore = defineStore("accessGrant", () => {
+  const getAccessGrant = async (name: string) => {
+    return await accessGrantServiceClientConnect.getAccessGrant(
+      create(GetAccessGrantRequestSchema, { name })
+    );
+  };
+
   const searchMyAccessGrants = async (params: ListAccessGrantsParams) => {
     return await accessGrantServiceClientConnect.searchMyAccessGrants(
       create(SearchMyAccessGrantsRequestSchema, {
@@ -131,6 +138,7 @@ export const useAccessGrantStore = defineStore("accessGrant", () => {
   };
 
   return {
+    getAccessGrant,
     searchMyAccessGrants,
     createAccessGrant,
     listAccessGrants,

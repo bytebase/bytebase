@@ -17,14 +17,19 @@
       </span>
     </div>
 
-    <p
-      class="max-w-full text-xs wrap-break-word font-mono line-clamp-2"
-      :class="{ 'line-through text-gray-400': isExpired || isRevoked }"
-    >
-      {{ grant.query }}
-    </p>
+    <NTooltip placement="right">
+      <template #trigger>
+        <p
+          class="max-w-full text-xs wrap-break-word whitespace-pre-wrap font-mono line-clamp-2"
+          :class="{ 'line-through text-gray-400': isExpired || isRevoked }"
+        >
+          {{ grant.query }}
+        </p>
+      </template>
+      <pre class="max-w-lg whitespace-pre-wrap text-xs">{{ grant.query }}</pre>
+    </NTooltip>
 
-    <div class="w-full flex flex-col gap-y-1">
+    <div class="w-full flex flex-col gap-y-2">
       <NTooltip :disabled="allDatabaseNames.length <= 2" placement="right">
         <template #trigger>
           <span class="text-xs text-gray-400 truncate">
@@ -38,7 +43,7 @@
       <div class="flex items-center gap-x-1">
         <NButton
           v-if="isActive && !isExpired"
-          quaternary
+          tertiary
           size="tiny"
           type="primary"
           @click.stop="$emit('run', grant)"
@@ -47,7 +52,7 @@
         </NButton>
         <NButton
           v-if="grant.issue"
-          quaternary
+          tertiary
           size="tiny"
           tag="a"
           :href="issueLink"
@@ -65,11 +70,15 @@
 import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import {
+  getAccessGrantDisplayStatus,
+  getAccessGrantExpireTimeMs,
+  getAccessGrantStatusTagType,
+} from "@/utils/accessGrant";
 
 const props = defineProps<{
   grant: AccessGrant;
@@ -90,46 +99,18 @@ const isRevoked = computed(
   () => props.grant.status === AccessGrant_Status.REVOKED
 );
 
-const expireTimeMs = computed(() => {
-  if (props.grant.expiration.case === "expireTime") {
-    return getTimeForPbTimestampProtoEs(props.grant.expiration.value);
-  }
-  return undefined;
-});
+const expireTimeMs = computed(() => getAccessGrantExpireTimeMs(props.grant));
 
 const isExpired = computed(() => {
   if (!isActive.value || expireTimeMs.value === undefined) return false;
   return expireTimeMs.value < Date.now();
 });
 
-const displayStatus = computed(() => {
-  if (isActive.value && isExpired.value) return "EXPIRED";
-  switch (props.grant.status) {
-    case AccessGrant_Status.PENDING:
-      return "PENDING";
-    case AccessGrant_Status.ACTIVE:
-      return "ACTIVE";
-    case AccessGrant_Status.REVOKED:
-      return "REVOKED";
-    default:
-      return "UNKNOWN";
-  }
-});
+const displayStatus = computed(() => getAccessGrantDisplayStatus(props.grant));
 
-const statusTagType = computed(() => {
-  switch (displayStatus.value) {
-    case "ACTIVE":
-      return "success";
-    case "PENDING":
-      return "warning";
-    case "EXPIRED":
-      return "default";
-    case "REVOKED":
-      return "error";
-    default:
-      return "default";
-  }
-});
+const statusTagType = computed(() =>
+  getAccessGrantStatusTagType(displayStatus.value)
+);
 
 const statusLabel = computed(() => {
   return displayStatus.value;
@@ -137,19 +118,18 @@ const statusLabel = computed(() => {
 
 const expirationText = computed(() => {
   if (expireTimeMs.value === undefined) return "";
+  const dateStr = new Date(expireTimeMs.value).toLocaleString();
   if (isActive.value && !isExpired.value) {
     const diff = expireTimeMs.value - Date.now();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     if (hours >= 24) {
-      return new Date(expireTimeMs.value).toLocaleString();
+      return t("sql-editor.expire-at", { time: dateStr });
     }
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours > 0) {
-      return t("sql-editor.time-left", { time: `${hours}h${minutes}m` });
-    }
-    return t("sql-editor.time-left", { time: `${minutes}m` });
+    const duration = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+    return t("sql-editor.expire-in", { time: duration });
   }
-  return new Date(expireTimeMs.value).toLocaleString();
+  return t("sql-editor.expire-at", { time: dateStr });
 });
 
 const allDatabaseNames = computed(() => {

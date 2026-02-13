@@ -7,7 +7,7 @@
       <div class="flex flex-col justify-center items-center pb-1">
         <router-link target="_blank" rel="noopener noreferrer" :to="linkTarget">
           <img
-            class="w-[36px] h-auto"
+            class="w-9 h-auto"
             src="@/assets/logo-icon.svg"
             alt="Bytebase"
           />
@@ -21,6 +21,7 @@
       />
       <TabItem tab="SCHEMA" :size="size" @click="handleClickTab('SCHEMA')" />
       <TabItem tab="HISTORY" :size="size" @click="handleClickTab('HISTORY')" />
+      <TabItem v-if="project.allowJustInTimeAccess" tab="ACCESS" :size="size" @click="handleClickTab('ACCESS')" />
     </div>
 
     <div class="flex flex-col justify-end items-center"></div>
@@ -32,6 +33,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
+import { useProjectV1Store, useSQLEditorStore } from "@/store";
 import { type AsidePanelTab, useSQLEditorContext } from "../../context";
 import { type Size } from "./common";
 import TabItem from "./TabItem.vue";
@@ -47,6 +49,12 @@ withDefaults(
 
 const route = useRoute();
 const { asidePanelTab } = useSQLEditorContext();
+const editorStore = useSQLEditorStore();
+const projectStore = useProjectV1Store();
+
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
+);
 
 const linkTarget = computed(() => {
   // If we have a project in the route, navigate to that project's detail page

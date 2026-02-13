@@ -41,10 +41,8 @@
               <MaskingReasonPopover
                 v-if="getMaskingReason && getMaskingReason(columnIndex)"
                 :reason="getMaskingReason(columnIndex)!"
-                class="ml-0.5 shrink-0"
-              />
-              <SensitiveDataIcon
-                v-else-if="isSensitiveColumn(columnIndex)"
+                :statement="statement"
+                :database="database.name"
                 class="ml-0.5 shrink-0"
               />
               :
@@ -80,7 +78,6 @@ import type {
 import { type SearchParams } from "@/utils";
 import { useBinaryFormatContext } from "./DataTable/common/binary-format-store";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
-import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
 import type {
   ResultTableColumn,
   ResultTableRow,
@@ -95,6 +92,7 @@ const props = defineProps<{
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: Database;
+  statement?: string;
   search: SearchParams;
 }>();
 

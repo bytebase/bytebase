@@ -12,6 +12,9 @@
     <!-- Grant Request View -->
     <GrantRequestView v-else-if="issueType === IssueType.GRANT_REQUEST" />
 
+    <!-- Access Grant View -->
+    <AccessGrantView v-else-if="issueType === IssueType.ACCESS_GRANT" />
+
     <!-- Database Change View -->
     <DatabaseChangeView v-else-if="issueType === IssueType.DATABASE_CHANGE" />
   </IssueBaseLayout>
@@ -21,6 +24,7 @@
 import { computed, onMounted, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { usePlanContextWithIssue } from "@/components/Plan";
+import AccessGrantView from "@/components/Plan/components/IssueReviewView/AccessGrantView.vue";
 import { DatabaseChangeView } from "@/components/Plan/components/IssueReviewView/DatabaseChangeView";
 import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
@@ -32,6 +36,7 @@ enum IssueType {
   CREATE_DATABASE = "CREATE_DATABASE",
   EXPORT_DATA = "EXPORT_DATA",
   GRANT_REQUEST = "GRANT_REQUEST",
+  ACCESS_GRANT = "ACCESS_GRANT",
   DATABASE_CHANGE = "DATABASE_CHANGE",
 }
 
@@ -46,6 +51,8 @@ const isLoading = ref(true);
 const issueType = computed(() => {
   if (issue.value.type === Issue_Type.GRANT_REQUEST)
     return IssueType.GRANT_REQUEST;
+  if (issue.value.type === Issue_Type.ACCESS_GRANT)
+    return IssueType.ACCESS_GRANT;
 
   const specs = plan.value.specs;
   if (specs.every((s) => s.config.case === "createDatabaseConfig"))

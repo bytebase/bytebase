@@ -41,7 +41,7 @@
         >
           <div class="border-t border-block-border">
             <div
-              class="h-[38px] flex gap-x-2 px-3 items-center cursor-pointer overflow-hidden"
+              class="h-9.5 flex gap-x-2 px-3 items-center cursor-pointer overflow-hidden"
               :class="[index === menuIndex && 'bg-gray-200/75']"
               :data-index="index"
               :data-value="option.value"

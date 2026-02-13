@@ -24,15 +24,10 @@
           </h1>
         </div>
         <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
-          <ComponentPermissionGuard
+          <ProjectSecuritySettingPanel
+            ref="projectSecuritySettingPanelRef"
             :project="project"
-            :permissions="['bb.policies.get']"
-          >
-            <ProjectSecuritySettingPanel
-              ref="projectSecuritySettingPanelRef"
-              :project="project"
-            />
-          </ComponentPermissionGuard>
+          />
         </div>
       </div>
 
@@ -50,11 +45,11 @@
               'bb.projects.update'
             ]"
           >
-          <ProjectIssueRelatedSettingPanel
-            ref="projectIssueRelatedSettingPanelRef"
-            :project="project"
-            :allow-edit="!slotProps.disabled"
-          />
+            <ProjectIssueRelatedSettingPanel
+              ref="projectIssueRelatedSettingPanelRef"
+              :project="project"
+              :allow-edit="!slotProps.disabled"
+            />
           </PermissionGuardWrapper>
         </div>
       </div>
@@ -164,7 +159,6 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
-import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";

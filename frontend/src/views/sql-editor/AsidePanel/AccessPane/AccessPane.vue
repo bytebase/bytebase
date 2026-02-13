@@ -76,12 +76,16 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { NButton } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, h, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import type { ScopeOption } from "@/components/AdvancedSearch/types";
+import type {
+  ScopeOption,
+  ValueOption,
+} from "@/components/AdvancedSearch/types";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
   type AccessFilter,
@@ -97,8 +101,15 @@ import {
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { getDefaultPagination, type SearchParams } from "@/utils";
-import { getValuesFromSearchParams } from "@/utils/v1/advanced-search/common";
+import {
+  extractDatabaseResourceName,
+  getDefaultPagination,
+  type SearchParams,
+} from "@/utils";
+import {
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
+} from "@/utils/v1/advanced-search/common";
 import { useSQLEditorContext } from "../../context";
 import AccessGrantItem from "./AccessGrantItem.vue";
 import AccessGrantRequestDrawer from "./AccessGrantRequestDrawer.vue";
@@ -108,6 +119,7 @@ const PAGE_SIZE = getDefaultPagination();
 const { t } = useI18n();
 const editorStore = useSQLEditorStore();
 const tabStore = useSQLEditorTabStore();
+const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
 const { instance: currentInstance } = useConnectionOfCurrentSQLEditorTab();
 const { execute } = useExecuteSQL();
@@ -130,35 +142,69 @@ const searchParams = ref<SearchParams>({
   scopes: [],
 });
 
-const scopeOptions = computed((): ScopeOption[] => [
-  {
-    id: "status",
-    title: t("common.status"),
-    allowMultiple: true,
-    options: [
-      {
-        value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
-        keywords: ["active"],
-        render: () => t("common.active"),
-      },
-      {
-        value: AccessGrant_Status[AccessGrant_Status.PENDING],
-        keywords: ["pending"],
-        render: () => t("common.pending"),
-      },
-      {
-        value: "EXPIRED",
-        keywords: ["expired"],
-        render: () => t("sql-editor.expired"),
-      },
-      {
-        value: AccessGrant_Status[AccessGrant_Status.REVOKED],
-        keywords: ["revoked"],
-        render: () => t("common.revoked"),
-      },
-    ],
-  },
-]);
+const scopeOptions = computed((): ScopeOption[] => {
+  const options: ScopeOption[] = [
+    {
+      id: "status",
+      title: t("common.status"),
+      allowMultiple: true,
+      options: [
+        {
+          value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
+          keywords: ["active"],
+          render: () => t("common.active"),
+        },
+        {
+          value: AccessGrant_Status[AccessGrant_Status.PENDING],
+          keywords: ["pending"],
+          render: () => t("common.pending"),
+        },
+        {
+          value: "EXPIRED",
+          keywords: ["expired"],
+          render: () => t("sql-editor.expired"),
+        },
+        {
+          value: AccessGrant_Status[AccessGrant_Status.REVOKED],
+          keywords: ["revoked"],
+          render: () => t("common.revoked"),
+        },
+      ],
+    },
+  ];
+  const project = editorStore.project;
+  if (project) {
+    options.push({
+      id: "database",
+      title: t("common.database"),
+      search: ({ keyword, nextPageToken: pageToken }) =>
+        databaseStore
+          .fetchDatabases({
+            parent: project,
+            pageToken: pageToken,
+            pageSize: PAGE_SIZE,
+            filter: { query: keyword },
+          })
+          .then((resp) => ({
+            nextPageToken: resp.nextPageToken,
+            options: resp.databases.map<ValueOption>((db) => {
+              const { database: dbName } = extractDatabaseResourceName(db.name);
+              return {
+                value: db.name,
+                keywords: [dbName, db.name],
+                render: () =>
+                  h(RichDatabaseName, {
+                    database: db,
+                    showInstance: true,
+                    showEngineIcon: true,
+                  }),
+              };
+            }),
+          })),
+    });
+  }
+  return options;
+});
 
 const selectedStatuses = computed(() =>
   getValuesFromSearchParams(searchParams.value, "status")
@@ -185,6 +231,15 @@ const filter = computed((): AccessFilter => {
     }
   }
 
+  const database = getValueFromSearchParams(
+    searchParams.value,
+    "database",
+    undefined
+  );
+  if (database) {
+    f.target = database;
+  }
+
   const queryText = searchParams.value.query.trim();
   if (queryText) {
     f.statement = queryText;
@@ -199,12 +254,12 @@ const fetchAccessGrants = async (resetList = true) => {
 
   loading.value = true;
   try {
-    const response = await accessGrantStore.searchMyAccessGrants(
-      project,
-      filter.value,
-      PAGE_SIZE,
-      resetList ? undefined : nextPageToken.value
-    );
+    const response = await accessGrantStore.searchMyAccessGrants({
+      parent: project,
+      filter: filter.value,
+      pageSize: PAGE_SIZE,
+      pageToken: resetList ? undefined : nextPageToken.value,
+    });
     if (resetList) {
       accessGrantList.value = response.accessGrants;
     } else {
@@ -222,11 +277,13 @@ watch([() => editorStore.project, filter], () => fetchAccessGrants(), {
   deep: true,
 });
 
-// Auto-clear highlight after 3 seconds.
+// When a new grant is highlighted (e.g. created from the drawer in other panels),
+// refresh the list so it appears, then auto-clear the highlight after 3 seconds.
 watch(
   highlightAccessGrantName,
-  (name) => {
+  async (name) => {
     if (name) {
+      await fetchAccessGrants();
       setTimeout(() => {
         if (highlightAccessGrantName.value === name) {
           highlightAccessGrantName.value = undefined;

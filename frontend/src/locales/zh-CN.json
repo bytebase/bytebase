@@ -175,6 +175,9 @@
     "download": "下载",
     "deleted": "已删除",
     "active": "开启",
+    "activated": "已激活",
+    "pending": "待审批",
+    "revoked": "已撤销",
     "reopen": "重开",
     "plan": "变更计划",
     "rollout": "发布",
@@ -1072,6 +1075,9 @@
       "high": "高风险"
     },
     "issue-name": "工单名称",
+    "access-grant": {
+      "details": "访问授权详情"
+    },
     "grant-request": {
       "details": "请求详细",
       "expired-at": "过期时间",
@@ -1993,7 +1999,6 @@
     "invalid-database": "数据库 {database} 无效",
     "request-aborted": "用户中止了请求",
     "no-data-source": "没有可查询的数据源。请检查环境或项目的数据源查询策略。",
-    "database-not-queriable": "数据库不可查询",
     "no-queriable-database": "没有可查询的数据库",
     "rows": "条记录",
     "vertical-display": "竖向展示",
@@ -2127,7 +2132,28 @@
     "search-scope-row-number-title": "行号",
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "scroll-to-top": "滚动到顶部",
-    "scroll-to-bottom": "滚动到底部"
+    "scroll-to-bottom": "滚动到底部",
+    "jit": "即时访问",
+    "request-access": "申请访问",
+    "no-access-requests": "暂无访问请求",
+    "request-jit": "申请即时访问",
+    "view-issue": "查看工单",
+    "expire-at": "{time} 过期",
+    "expire-in": "{time} 后过期",
+    "and-n-more-databases": "及其他 {n} 个数据库",
+    "expired": "已过期",
+    "grant-type-unmask": "脱敏豁免",
+    "request-data-access": "申请数据访问",
+    "access-type-unmask": "查看未脱敏的敏感数据",
+    "duration-hours": "{hours} 小时",
+    "duration-day": "{days} 天",
+    "duration-days": "{days} 天",
+    "access-grants": "访问授权",
+    "access-grants-redirect-hint": "前往 {link} 查看和管理您自己的访问授权。",
+    "revoke-access": "撤销",
+    "revoke-confirm": "确定要撤销此访问授权吗？",
+    "activate-access": "激活",
+    "activate-confirm": "确定要激活此访问授权吗？"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

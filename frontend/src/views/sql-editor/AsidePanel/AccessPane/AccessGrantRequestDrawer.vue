@@ -30,11 +30,12 @@
             {{ $t("common.statement") }}
             <RequiredStar class="ml-0.5" />
           </label>
-          <NInput
-            v-model:value="form.query"
-            type="textarea"
-            :rows="6"
-            style="font-family: monospace"
+          <MonacoEditor
+            class="border rounded-[3px] h-40"
+            :content="form.query"
+            language="sql"
+            :auto-complete-context="autoCompleteContext"
+            @update:content="form.query = $event"
           />
         </div>
 
@@ -106,6 +107,7 @@ import { NButton, NCheckbox, NDatePicker, NInput, NSelect } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseSelect, Drawer, DrawerContent } from "@/components/v2";
 import { accessGrantServiceClientConnect } from "@/connect";
@@ -121,7 +123,11 @@ import {
   AccessGrantSchema,
   CreateAccessGrantRequestSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
-import { extractIssueUID, extractProjectResourceName } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  extractIssueUID,
+  extractProjectResourceName,
+} from "@/utils";
 import { useSQLEditorContext } from "../../context";
 
 const props = withDefaults(
@@ -167,6 +173,13 @@ const form = reactive({
   duration: 4,
   customExpireTime: undefined as number | undefined,
   reason: "",
+});
+
+const autoCompleteContext = computed(() => {
+  const db = form.targets[0];
+  if (!db) return undefined;
+  const { instance } = extractDatabaseResourceName(db);
+  return { instance, database: db };
 });
 
 const durationOptions = computed(() => [

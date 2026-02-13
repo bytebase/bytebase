@@ -40,11 +40,10 @@
         >
           {{ accessGrant.query }}
         </div>
+        <NCheckbox :checked="accessGrant.unmask" :disabled="true">
+          {{ $t("sql-editor.access-type-unmask") }}
+        </NCheckbox>
       </div>
-
-      <NCheckbox :checked="accessGrant.unmask" :disabled="true">
-      {{ $t("sql-editor.access-type-unmask") }}
-      </NCheckbox>
 
       <!-- Expiration Time -->
       <div class="flex flex-col gap-y-2">
@@ -72,10 +71,10 @@ import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay
 import { useAccessGrantStore, useDatabaseV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
-import { extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../../../logic";
 
-const { issue } = usePlanContextWithIssue();
+const { issue, project } = usePlanContextWithIssue();
 const dbStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
 
@@ -96,11 +95,18 @@ watchEffect(async () => {
     return;
   }
   try {
-    const project = `projects/${extractProjectResourceName(issue.value.name)}`;
-    const response = await accessGrantStore.searchMyAccessGrants(project, {
-      name,
-    });
-    accessGrant.value = response.accessGrants[0];
+    let grant: AccessGrant | undefined;
+    if (hasProjectPermissionV2(project.value, "bb.accessGrants.get")) {
+      grant = await accessGrantStore.getAccessGrant(name);
+    } else {
+      const parent = `projects/${extractProjectResourceName(issue.value.name)}`;
+      const response = await accessGrantStore.searchMyAccessGrants({
+        parent,
+        filter: { name },
+      });
+      grant = response.accessGrants[0];
+    }
+    accessGrant.value = grant;
     // Pre-fetch databases for display
     if (accessGrant.value) {
       for (const target of accessGrant.value.targets) {

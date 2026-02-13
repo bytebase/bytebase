@@ -6,6 +6,7 @@
           <FileCodeIcon v-if="tab === 'WORKSHEET'" />
           <DatabaseIcon v-else-if="tab === 'SCHEMA'" />
           <HistoryIcon v-else-if="tab === 'HISTORY'" />
+          <ShieldCheckIcon v-else-if="tab === 'ACCESS'" />
         </template>
       </NButton>
     </template>
@@ -16,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { FileCodeIcon, HistoryIcon } from "lucide-vue-next";
+import { FileCodeIcon, HistoryIcon, ShieldCheckIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -47,6 +48,8 @@ const text = computed(() => {
       return t("worksheet.self");
     case "HISTORY":
       return t("common.history");
+    case "ACCESS":
+      return t("sql-editor.jit");
   }
   console.assert(false, "should never reach this line");
   return "";

@@ -2,6 +2,7 @@
   <div ref="containerRef" class="w-full relative">
     <NInput
       ref="inputRef"
+      v-bind="$attrs"
       v-model:value="inputText"
       :placeholder="placeholder ?? $t('issue.advanced-search.self')"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
@@ -26,7 +27,7 @@
             <ScopeTags
               :params="params"
               :scope-options="scopeOptions"
-              :focused-tag-id="focusedTagId"
+              :focused-tag-index="focusedTagIndex"
               @select-scope="selectScopeFromTag"
               @remove-scope="removeScope"
             />
@@ -90,7 +91,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
-import type { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
 import {
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
@@ -185,7 +186,7 @@ const tagsContainerRef = ref<HTMLElement>();
 const inputText = ref(props.params.query);
 const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
-const focusedTagId = ref<SearchScopeId>();
+const focusedTagIndex = ref<number>();
 
 const editableScopes = computed(() => {
   return props.params.scopes.filter((s) => !s.readonly);
@@ -348,7 +349,7 @@ const clearable = computed(() => {
 const hideMenu = () => {
   nextTick(() => {
     state.menuView = undefined;
-    focusedTagId.value = undefined;
+    focusedTagIndex.value = undefined;
   });
 };
 
@@ -362,15 +363,11 @@ const moveMenuIndex = (delta: -1 | 1) => {
   menuIndex.value = target;
 };
 
-const removeScope = (id: SearchScopeId) => {
-  const updated = upsertScope({
-    params: props.params,
-    scopes: {
-      id,
-      value: "",
-    },
+const removeScope = (index: number) => {
+  emit("update:params", {
+    ...props.params,
+    scopes: props.params.scopes.filter((_, i) => i !== index),
   });
-  emit("update:params", updated);
 };
 
 const selectScope = (
@@ -426,16 +423,16 @@ const selectValue = (value: string) => {
   hideMenu();
 };
 
-const selectScopeFromTag = (id: SearchScopeId) => {
-  if (state.scopeOptions.find((opt) => opt.id === id)) {
+const selectScopeFromTag = (scope: SearchScope) => {
+  if (state.scopeOptions.find((opt) => opt.id === scope.id)) {
     // For AdvancedSearch supported scopes
-    selectScope(id);
+    selectScope(scope.id);
     return;
   }
 
   // Unsupported scope for AdvancedSearch
   // emit an event and wish the parent UI can handle this
-  emit("select-unsupported-scope", id);
+  emit("select-unsupported-scope", scope.id);
   hideMenu();
 };
 
@@ -496,27 +493,27 @@ const handleKeyDown = (e: KeyboardEvent) => {
   const { key } = e;
   if (key === "Backspace" && inputText.value === "") {
     // Pressing "backspace" when the input box is empty
-    if (focusedTagId.value) {
+    if (focusedTagIndex.value !== undefined) {
       e.stopPropagation();
       e.preventDefault();
       // Delete the focusedTag if it exists
-      const id = focusedTagId.value;
-      focusedTagId.value = undefined;
-      removeScope(id);
+      const index = focusedTagIndex.value;
+      focusedTagIndex.value = undefined;
+      removeScope(index);
       return;
     } else {
       e.stopPropagation();
       e.preventDefault();
       // Otherwise mark the last editable scope as focused.
-      const id = last(editableScopes.value)?.id;
-      if (id) {
-        focusedTagId.value = id;
-        scrollScopeTagIntoViewIfNeeded(id);
+      const scope = last(editableScopes.value);
+      if (scope) {
+        focusedTagIndex.value = editableScopes.value.length - 1;
+        scrollScopeTagIntoViewIfNeeded(scope.id);
       }
       return;
     }
   }
-  focusedTagId.value = undefined;
+  focusedTagIndex.value = undefined;
 
   if (key === "ArrowUp") {
     moveMenuIndex(-1);
@@ -541,7 +538,7 @@ const handleKeyUp = (e: KeyboardEvent) => {
   }
   if (key === "Backspace" && inputText.value === "") {
     // backspace key might be processed by KeyDown
-    if (focusedTagId.value) {
+    if (focusedTagIndex.value !== undefined) {
       return;
     }
   }
@@ -654,7 +651,7 @@ onMounted(() => {
 watch(
   () => state.menuView,
   () => {
-    focusedTagId.value = undefined;
+    focusedTagIndex.value = undefined;
     menuIndex.value = 0;
     if (state.menuView === "value" && state.currentScope) {
       const value = getValueFromSearchParams(props.params, state.currentScope);

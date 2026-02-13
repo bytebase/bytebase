@@ -254,7 +254,6 @@ import {
   getConnectionForSQLEditorTab,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  isDatabaseV1Queryable,
   storageKeySqlEditorShowMissingQueryDb,
   useDynamicLocalStorage,
 } from "@/utils";
@@ -393,9 +392,7 @@ const onBatchQueryContextChange = async (
 const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
   for (const databaseName of batchQueryContext.databases) {
     const database = databaseStore.getDatabaseByName(databaseName);
-    if (isDatabaseV1Queryable(database)) {
-      return database;
-    }
+    return database;
   }
 
   for (const databaseGroupName of batchQueryContext.databaseGroups ?? []) {
@@ -405,9 +402,7 @@ const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
     );
     for (const matchedDatabase of databaseGroup.matchedDatabases) {
       const database = databaseStore.getDatabaseByName(matchedDatabase.name);
-      if (isDatabaseV1Queryable(database)) {
-        return database;
-      }
+      return database;
     }
   }
 };
@@ -607,9 +602,6 @@ const connect = (node: SQLEditorTreeNode) => {
     return;
   }
   const database = node.meta.target as Database;
-  if (!isDatabaseV1Queryable(database)) {
-    return;
-  }
 
   const batchQueryDatabases = [
     ...selectedDatabaseGroupNames.value,
@@ -642,11 +634,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     checkTooltip = t("sql-editor.matched-in-group", { title: checkedByGroup });
   } else if (tabStore.currentTab?.connection.database === databaseName) {
     checkTooltip = t("sql-editor.current-connection");
-  } else if (databaseName) {
-    const database = (node as SQLEditorTreeNode<"database">).meta.target;
-    if (!isDatabaseV1Queryable(database)) {
-      checkTooltip = t("sql-editor.database-not-queriable");
-    }
   }
 
   return h(Label, {

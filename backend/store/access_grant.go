@@ -388,7 +388,9 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 				if !ok {
 					return nil, errors.Errorf("contains argument must be a string")
 				}
-				return qb.Q().Space("access_grant.payload->>'query' ILIKE ?", "%"+value+"%"), nil
+				// Normalize whitespace on both sides so "SELECT *" matches "SELECT\n  *".
+				normalizedValue := strings.Join(strings.Fields(value), " ")
+				return qb.Q().Space("regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if variable != "status" {
