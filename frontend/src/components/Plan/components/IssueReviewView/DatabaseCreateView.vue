@@ -72,8 +72,8 @@
 
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
-import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
+import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
+import TaskRunTable from "@/components/RolloutV1/components/TaskRun/TaskRunTable.vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import {
   useCurrentProjectV1,
