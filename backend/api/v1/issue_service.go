@@ -846,6 +846,17 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 		return nil, err
 	}
+	// Permission check: allow issue creator or users with bb.issues.update permission.
+	if user.Email != issue.CreatorEmail {
+		ok, err := s.iamManager.CheckPermission(ctx, permission.IssuesUpdate, user)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+		}
+		if !ok {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssuesUpdate))
+		}
+	}
+
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
