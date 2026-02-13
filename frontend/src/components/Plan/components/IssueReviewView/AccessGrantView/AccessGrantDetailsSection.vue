@@ -45,17 +45,26 @@
         </NCheckbox>
       </div>
 
-      <!-- Expiration Time -->
+      <!-- Expiration -->
       <div class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
-          {{ $t("issue.grant-request.expired-at") }}
+          <template v-if="expirationInfo.type === 'duration'">
+            {{ $t("common.duration") }}
+          </template>
+          <template v-else>
+            {{ $t("issue.grant-request.expired-at") }}
+          </template>
         </span>
         <div class="text-base">
-          {{
-            expireTime
-              ? dayjs(expireTime).format("LLL")
-              : $t("project.members.never-expires")
-          }}
+          <template v-if="expirationInfo.type === 'datetime'">
+            {{ expirationInfo.value }}
+          </template>
+          <template v-else-if="expirationInfo.type === 'duration'">
+            {{ expirationInfo.value }}
+          </template>
+          <template v-else>
+            {{ $t("project.members.never-expires") }}
+          </template>
         </div>
       </div>
     </div>
@@ -63,15 +72,15 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { NCheckbox } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { useAccessGrantStore, useDatabaseV1Store } from "@/store";
-import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
+import { getAccessGrantExpirationText } from "@/utils/accessGrant";
 import { usePlanContextWithIssue } from "../../../logic";
 
 const { issue, project } = usePlanContextWithIssue();
@@ -81,11 +90,9 @@ const accessGrantStore = useAccessGrantStore();
 const isLoading = ref(true);
 const accessGrant = ref<AccessGrant>();
 
-const expireTime = computed(() => {
-  if (accessGrant.value?.expiration.case === "expireTime") {
-    return getDateForPbTimestampProtoEs(accessGrant.value.expiration.value);
-  }
-  return undefined;
+const expirationInfo = computed(() => {
+  if (!accessGrant.value) return { type: "never" as const };
+  return getAccessGrantExpirationText(accessGrant.value);
 });
 
 watchEffect(async () => {

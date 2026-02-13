@@ -407,6 +407,11 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 		if p.IssueId != 0 {
 			ag.Issue = common.FormatIssue(msg.ProjectID, int(p.IssueId))
 		}
+		if ag.Expiration == nil && p.RequestedDuration != nil {
+			ag.Expiration = &v1pb.AccessGrant_Ttl{
+				Ttl: p.RequestedDuration,
+			}
+		}
 	}
 	return ag
 }

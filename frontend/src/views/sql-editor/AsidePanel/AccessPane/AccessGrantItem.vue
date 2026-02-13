@@ -76,6 +76,7 @@ import {
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import {
   getAccessGrantDisplayStatus,
+  getAccessGrantExpirationText,
   getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
 } from "@/utils/accessGrant";
@@ -116,20 +117,25 @@ const statusLabel = computed(() => {
   return displayStatus.value;
 });
 
+const expirationInfo = computed(() =>
+  getAccessGrantExpirationText(props.grant)
+);
+
 const expirationText = computed(() => {
-  if (expireTimeMs.value === undefined) return "";
-  const dateStr = new Date(expireTimeMs.value).toLocaleString();
-  if (isActive.value && !isExpired.value) {
+  const info = expirationInfo.value;
+  if (info.type === "never") return t("project.members.never-expires");
+  if (info.type === "duration") return info.value;
+  if (isActive.value && !isExpired.value && expireTimeMs.value !== undefined) {
     const diff = expireTimeMs.value - Date.now();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     if (hours >= 24) {
-      return t("sql-editor.expire-at", { time: dateStr });
+      return t("sql-editor.expire-at", { time: info.value });
     }
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const duration = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
-    return t("sql-editor.expire-in", { time: duration });
+    const dur = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+    return t("sql-editor.expire-in", { time: dur });
   }
-  return t("sql-editor.expire-at", { time: dateStr });
+  return t("sql-editor.expire-at", { time: info.value });
 });
 
 const allDatabaseNames = computed(() => {
