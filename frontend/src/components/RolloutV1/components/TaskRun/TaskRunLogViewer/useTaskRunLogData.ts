@@ -79,11 +79,60 @@ export const useTaskRunLogData = (
   // Track fetch version to handle race conditions
   let fetchVersion = 0;
 
+  const fetchReleaseSheets = async (
+    releaseName: string,
+    version: number
+  ): Promise<void> => {
+    const release = await releaseStore.fetchReleaseByName(releaseName, true);
+    if (version !== fetchVersion) return;
+
+    const results = await Promise.all(
+      release.files
+        .filter((f) => f.sheet && f.version)
+        .map(async (file) => {
+          try {
+            const s = await sheetServiceClientConnect.getSheet({
+              name: file.sheet,
+              raw: true,
+            });
+            return { version: file.version, sheet: s };
+          } catch {
+            return null;
+          }
+        })
+    );
+    if (version !== fetchVersion) return;
+
+    const newMap = new Map<string, Sheet>();
+    for (const r of results) {
+      if (r?.sheet) newMap.set(r.version, r.sheet);
+    }
+    sheetsMap.value = newMap;
+  };
+
+  const fetchSingleSheet = async (
+    sheetName: string,
+    version: number
+  ): Promise<void> => {
+    try {
+      const fetched = await sheetServiceClientConnect.getSheet({
+        name: sheetName,
+        raw: true,
+      });
+      if (version !== fetchVersion) return;
+      sheet.value = fetched;
+    } catch {
+      if (version === fetchVersion) {
+        sheet.value = undefined;
+      }
+    }
+  };
+
   // Fetch sheet(s) based on task type
   watch(
     task,
     async (currentTask) => {
-      const currentFetchVersion = ++fetchVersion;
+      const currentVersion = ++fetchVersion;
 
       if (!currentTask) {
         sheet.value = undefined;
@@ -91,67 +140,20 @@ export const useTaskRunLogData = (
         return;
       }
 
-      if (isReleaseBasedTask(currentTask)) {
-        // Release task: fetch release and build sheets map by version
-        const releaseName = releaseNameOfTaskV1(currentTask);
-        if (!releaseName) return;
-
-        try {
-          const release = await releaseStore.fetchReleaseByName(
-            releaseName,
-            true
-          );
-          // Abort if a newer fetch has started
-          if (currentFetchVersion !== fetchVersion) return;
-
-          // Fetch all sheets in parallel
-          const filesToFetch = release.files.filter(
-            (f) => f.sheet && f.version
-          );
-          const sheetPromises = filesToFetch.map(async (file) => {
-            try {
-              const fetchedSheet = await sheetServiceClientConnect.getSheet({
-                name: file.sheet,
-                raw: true,
-              });
-              return { version: file.version, sheet: fetchedSheet };
-            } catch {
-              return null;
-            }
-          });
-
-          const results = await Promise.all(sheetPromises);
-          // Abort if a newer fetch has started
-          if (currentFetchVersion !== fetchVersion) return;
-
-          const newSheetsMap = new Map<string, Sheet>();
-          for (const result of results) {
-            if (result?.sheet) {
-              newSheetsMap.set(result.version, result.sheet);
-            }
+      try {
+        if (isReleaseBasedTask(currentTask)) {
+          const releaseName = releaseNameOfTaskV1(currentTask);
+          if (releaseName) {
+            await fetchReleaseSheets(releaseName, currentVersion);
           }
-          sheetsMap.value = newSheetsMap;
-        } catch {
-          // Ignore release fetch errors
-        }
-      } else {
-        // Non-release task: fetch single sheet
-        const sheetName = sheetNameOfTaskV1(currentTask);
-        if (!sheetName) return;
-
-        try {
-          const fetchedSheet = await sheetServiceClientConnect.getSheet({
-            name: sheetName,
-            raw: true,
-          });
-          // Abort if a newer fetch has started
-          if (currentFetchVersion !== fetchVersion) return;
-          sheet.value = fetchedSheet;
-        } catch {
-          if (currentFetchVersion === fetchVersion) {
-            sheet.value = undefined;
+        } else {
+          const sheetName = sheetNameOfTaskV1(currentTask);
+          if (sheetName) {
+            await fetchSingleSheet(sheetName, currentVersion);
           }
         }
+      } catch {
+        // Ignore fetch errors
       }
     },
     { immediate: true }

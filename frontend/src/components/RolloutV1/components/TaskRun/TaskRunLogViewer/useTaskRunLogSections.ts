@@ -124,6 +124,87 @@ export const useTaskRunLogSections = (
     return new TextDecoder().decode(subarray);
   };
 
+  const getCommandExecuteDetail = (
+    entry: TaskRunLogEntry,
+    sheetContent: Uint8Array | undefined,
+    sheetsMapValue: Map<string, Sheet> | undefined,
+    fileVersion?: string
+  ): string => {
+    const cmd = entry.commandExecute;
+    if (!cmd) return "";
+    if (cmd.response?.error) return cmd.response.error;
+
+    const statement =
+      cmd.statement ??
+      (cmd.range
+        ? extractStatementFromRange(
+            cmd.range,
+            sheetContent,
+            sheetsMapValue,
+            fileVersion
+          )
+        : undefined);
+    if (statement) {
+      const stmt = statement.trim().replace(/\s+/g, " ");
+      return stmt.length > 80 ? stmt.substring(0, 80) + "..." : stmt;
+    }
+    return "-";
+  };
+
+  const getTransactionControlDetail = (entry: TaskRunLogEntry): string => {
+    const txn = entry.transactionControl;
+    if (!txn) return "";
+    const typeLabels: Record<number, string> = {
+      [TaskRunLogEntry_TransactionControl_Type.BEGIN]: "BEGIN",
+      [TaskRunLogEntry_TransactionControl_Type.COMMIT]: "COMMIT",
+      [TaskRunLogEntry_TransactionControl_Type.ROLLBACK]: "ROLLBACK",
+    };
+    const typeStr = typeLabels[txn.type] ?? "";
+    return txn.error ? `${typeStr} error: ${txn.error}` : typeStr;
+  };
+
+  const getTimedEntryDetail = (
+    data:
+      | { error?: string; startTime?: unknown; endTime?: unknown }
+      | undefined,
+    runningLabel: string
+  ): string => {
+    if (!data) return "";
+    if (data.error) return data.error;
+    if (data.startTime && data.endTime) return "completed";
+    return runningLabel;
+  };
+
+  const getPriorBackupDetail = (entry: TaskRunLogEntry): string => {
+    const backup = entry.priorBackup;
+    if (!backup) return "";
+    if (backup.error) return backup.error;
+    const items = backup.priorBackupDetail?.items;
+    if (items?.length) {
+      return t("task-run.log-detail.backup-completed", {
+        count: items.length,
+      });
+    }
+    if (backup.startTime && backup.endTime) return "completed";
+    return t("task-run.log-detail.backing-up");
+  };
+
+  const getRetryInfoDetail = (entry: TaskRunLogEntry): string => {
+    const retry = entry.retryInfo;
+    if (!retry) return "";
+    const attempt = t("task-run.log-detail.retry-attempt", {
+      current: retry.retryCount,
+      max: retry.maximumRetries,
+    });
+    return retry.error ? `${attempt} - ${retry.error}` : attempt;
+  };
+
+  const getReleaseFileExecuteDetail = (entry: TaskRunLogEntry): string => {
+    const rfe = entry.releaseFileExecute;
+    if (!rfe) return "";
+    return rfe.filePath ? `${rfe.version}: ${rfe.filePath}` : rfe.version;
+  };
+
   const getEntryDetail = (
     entry: TaskRunLogEntry,
     sheetContent: Uint8Array | undefined,
@@ -131,90 +212,36 @@ export const useTaskRunLogSections = (
     fileVersion?: string
   ): string => {
     switch (entry.type) {
-      case TaskRunLogEntry_Type.COMMAND_EXECUTE: {
-        const cmd = entry.commandExecute;
-        if (!cmd) return "";
-        if (cmd.response?.error) return cmd.response.error;
-
-        let statement: string | undefined;
-        if (cmd.statement) {
-          statement = cmd.statement;
-        } else if (cmd.range) {
-          statement = extractStatementFromRange(
-            cmd.range,
-            sheetContent,
-            sheetsMapValue,
-            fileVersion
-          );
-        }
-        if (statement) {
-          const stmt = statement.trim().replace(/\s+/g, " ");
-          return stmt.length > 80 ? stmt.substring(0, 80) + "..." : stmt;
-        }
-        return "-";
-      }
-      case TaskRunLogEntry_Type.TRANSACTION_CONTROL: {
-        const txn = entry.transactionControl;
-        if (!txn) return "";
-        const typeLabels: Record<number, string> = {
-          [TaskRunLogEntry_TransactionControl_Type.BEGIN]: "BEGIN",
-          [TaskRunLogEntry_TransactionControl_Type.COMMIT]: "COMMIT",
-          [TaskRunLogEntry_TransactionControl_Type.ROLLBACK]: "ROLLBACK",
-        };
-        const typeStr = typeLabels[txn.type] ?? "";
-        return txn.error ? `${typeStr} error: ${txn.error}` : typeStr;
-      }
-      case TaskRunLogEntry_Type.SCHEMA_DUMP: {
-        const dump = entry.schemaDump;
-        if (!dump) return "";
-        if (dump.error) return dump.error;
-        if (dump.startTime && dump.endTime) return "completed";
-        return t("task-run.log-detail.dumping");
-      }
-      case TaskRunLogEntry_Type.DATABASE_SYNC: {
-        const sync = entry.databaseSync;
-        if (!sync) return "";
-        if (sync.error) return sync.error;
-        if (sync.startTime && sync.endTime) return "completed";
-        return t("task-run.log-detail.syncing");
-      }
-      case TaskRunLogEntry_Type.PRIOR_BACKUP: {
-        const backup = entry.priorBackup;
-        if (!backup) return "";
-        if (backup.error) return backup.error;
-        const items = backup.priorBackupDetail?.items;
-        if (items?.length) {
-          return t("task-run.log-detail.backup-completed", {
-            count: items.length,
-          });
-        }
-        if (backup.startTime && backup.endTime) return "completed";
-        return t("task-run.log-detail.backing-up");
-      }
-      case TaskRunLogEntry_Type.RETRY_INFO: {
-        const retry = entry.retryInfo;
-        if (!retry) return "";
-        const attempt = t("task-run.log-detail.retry-attempt", {
-          current: retry.retryCount,
-          max: retry.maximumRetries,
-        });
-        return retry.error ? `${attempt} - ${retry.error}` : attempt;
-      }
-      case TaskRunLogEntry_Type.COMPUTE_DIFF: {
-        const diff = entry.computeDiff;
-        if (!diff) return "";
-        if (diff.error) return diff.error;
-        if (diff.startTime && diff.endTime) return "completed";
-        return t("task-run.log-detail.computing");
-      }
-      case TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE: {
-        const rfe = entry.releaseFileExecute;
-        if (!rfe) return "";
-        if (rfe.filePath) {
-          return `${rfe.version}: ${rfe.filePath}`;
-        }
-        return rfe.version;
-      }
+      case TaskRunLogEntry_Type.COMMAND_EXECUTE:
+        return getCommandExecuteDetail(
+          entry,
+          sheetContent,
+          sheetsMapValue,
+          fileVersion
+        );
+      case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
+        return getTransactionControlDetail(entry);
+      case TaskRunLogEntry_Type.SCHEMA_DUMP:
+        return getTimedEntryDetail(
+          entry.schemaDump,
+          t("task-run.log-detail.dumping")
+        );
+      case TaskRunLogEntry_Type.DATABASE_SYNC:
+        return getTimedEntryDetail(
+          entry.databaseSync,
+          t("task-run.log-detail.syncing")
+        );
+      case TaskRunLogEntry_Type.PRIOR_BACKUP:
+        return getPriorBackupDetail(entry);
+      case TaskRunLogEntry_Type.RETRY_INFO:
+        return getRetryInfoDetail(entry);
+      case TaskRunLogEntry_Type.COMPUTE_DIFF:
+        return getTimedEntryDetail(
+          entry.computeDiff,
+          t("task-run.log-detail.computing")
+        );
+      case TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE:
+        return getReleaseFileExecuteDetail(entry);
       default:
         return "";
     }
@@ -559,16 +586,15 @@ export const useTaskRunLogSections = (
     return expandedReleaseFiles.value.has(fileId);
   };
 
-  // Get all section IDs (from flat sections, release file groups, and replica groups)
-  const getAllSectionIds = (): string[] => {
+  // All section/replica/file IDs as computeds to avoid nested function depth issues
+  const allSectionIds = computed((): string[] => {
     if (hasMultipleReplicas.value) {
-      return replicaGroups.value.flatMap((group) => {
-        const orphanSectionIds = group.sections.map((s) => s.id);
-        const fileSectionIds = group.releaseFileGroups.flatMap((fg) =>
+      return replicaGroups.value.flatMap((group) => [
+        ...group.sections.map((s) => s.id),
+        ...group.releaseFileGroups.flatMap((fg) =>
           fg.sections.map((s) => s.id)
-        );
-        return [...orphanSectionIds, ...fileSectionIds];
-      });
+        ),
+      ]);
     }
     if (hasReleaseFiles.value) {
       return releaseFileGroups.value.flatMap((fg) =>
@@ -576,15 +602,13 @@ export const useTaskRunLogSections = (
       );
     }
     return sections.value.map((section) => section.id);
-  };
+  });
 
-  // Get all replica IDs
-  const getAllReplicaIds = (): string[] => {
+  const allReplicaIds = computed((): string[] => {
     return replicaGroups.value.map((group) => group.replicaId);
-  };
+  });
 
-  // Get all release file IDs
-  const getAllReleaseFileIds = (): string[] => {
+  const allReleaseFileIds = computed((): string[] => {
     if (hasMultipleReplicas.value) {
       return replicaGroups.value.flatMap((group) =>
         group.releaseFileGroups.map(
@@ -593,90 +617,83 @@ export const useTaskRunLogSections = (
       );
     }
     return releaseFileGroups.value.map((_, idx) => `file-${idx}`);
-  };
+  });
 
   const expandAll = () => {
-    // Expand all sections
-    for (const sectionId of getAllSectionIds()) {
+    for (const sectionId of allSectionIds.value) {
       addToSet(expandedSections, sectionId);
       deleteFromSet(userCollapsedSections, sectionId);
     }
-    // Expand all replica groups (for multi-replica view)
     if (hasMultipleReplicas.value) {
-      for (const replicaId of getAllReplicaIds()) {
+      for (const replicaId of allReplicaIds.value) {
         addToSet(expandedReplicas, replicaId);
         deleteFromSet(userCollapsedReplicas, replicaId);
       }
     }
-    // Expand all release file groups
-    for (const fileId of getAllReleaseFileIds()) {
+    for (const fileId of allReleaseFileIds.value) {
       addToSet(expandedReleaseFiles, fileId);
       deleteFromSet(userCollapsedReleaseFiles, fileId);
     }
   };
 
   const collapseAll = () => {
-    // Collapse all sections
-    for (const sectionId of getAllSectionIds()) {
+    for (const sectionId of allSectionIds.value) {
       deleteFromSet(expandedSections, sectionId);
       addToSet(userCollapsedSections, sectionId);
     }
-    // Collapse all replica groups (for multi-replica view)
     if (hasMultipleReplicas.value) {
-      for (const replicaId of getAllReplicaIds()) {
+      for (const replicaId of allReplicaIds.value) {
         deleteFromSet(expandedReplicas, replicaId);
         addToSet(userCollapsedReplicas, replicaId);
       }
     }
-    // Collapse all release file groups
-    for (const fileId of getAllReleaseFileIds()) {
+    for (const fileId of allReleaseFileIds.value) {
       deleteFromSet(expandedReleaseFiles, fileId);
       addToSet(userCollapsedReleaseFiles, fileId);
     }
   };
 
   const areAllExpanded = computed((): boolean => {
-    const allSectionIds = getAllSectionIds();
-    if (allSectionIds.length === 0) return false;
+    if (allSectionIds.value.length === 0) return false;
 
-    const allSectionsExpanded = allSectionIds.every((id) =>
+    const allSectionsExpanded = allSectionIds.value.every((id) =>
       expandedSections.value.has(id)
     );
+    const allFilesExpanded =
+      allReleaseFileIds.value.length === 0 ||
+      allReleaseFileIds.value.every((id) => expandedReleaseFiles.value.has(id));
 
-    // Check release file groups
-    const allReleaseFileIds = getAllReleaseFileIds();
-    const allReleaseFilesExpanded =
-      allReleaseFileIds.length === 0 ||
-      allReleaseFileIds.every((id) => expandedReleaseFiles.value.has(id));
-
-    // For multi-replica view, also check replica groups
     if (hasMultipleReplicas.value) {
-      const allReplicaIds = getAllReplicaIds();
-      const allReplicasExpanded = allReplicaIds.every((id) =>
+      const allReplicasExpanded = allReplicaIds.value.every((id) =>
         expandedReplicas.value.has(id)
       );
-      return (
-        allSectionsExpanded && allReplicasExpanded && allReleaseFilesExpanded
-      );
+      return allSectionsExpanded && allReplicasExpanded && allFilesExpanded;
     }
 
-    return allSectionsExpanded && allReleaseFilesExpanded;
+    return allSectionsExpanded && allFilesExpanded;
   });
+
+  const countSections = (secs: Section[]): number => secs.length;
+
+  const countEntries = (secs: Section[]): number =>
+    secs.reduce((sum, s) => sum + s.entryCount, 0);
 
   const totalSections = computed((): number => {
     if (hasMultipleReplicas.value) {
-      return replicaGroups.value.reduce((sum, group) => {
-        const orphanCount = group.sections.length;
-        const fileCount = group.releaseFileGroups.reduce(
-          (fSum, fg) => fSum + fg.sections.length,
-          0
-        );
-        return sum + orphanCount + fileCount;
-      }, 0);
+      return replicaGroups.value.reduce(
+        (sum, group) =>
+          sum +
+          countSections(group.sections) +
+          group.releaseFileGroups.reduce(
+            (fSum, fg) => fSum + countSections(fg.sections),
+            0
+          ),
+        0
+      );
     }
     if (hasReleaseFiles.value) {
       return releaseFileGroups.value.reduce(
-        (sum, fg) => sum + fg.sections.length,
+        (sum, fg) => sum + countSections(fg.sections),
         0
       );
     }
@@ -685,27 +702,24 @@ export const useTaskRunLogSections = (
 
   const totalEntries = computed((): number => {
     if (hasMultipleReplicas.value) {
-      return replicaGroups.value.reduce((sum, group) => {
-        const orphanEntries = group.sections.reduce(
-          (sSum, section) => sSum + section.entryCount,
-          0
-        );
-        const fileEntries = group.releaseFileGroups.reduce(
-          (fSum, fg) =>
-            fSum + fg.sections.reduce((sSum, s) => sSum + s.entryCount, 0),
-          0
-        );
-        return sum + orphanEntries + fileEntries;
-      }, 0);
-    }
-    if (hasReleaseFiles.value) {
-      return releaseFileGroups.value.reduce(
-        (sum, fg) =>
-          sum + fg.sections.reduce((sSum, s) => sSum + s.entryCount, 0),
+      return replicaGroups.value.reduce(
+        (sum, group) =>
+          sum +
+          countEntries(group.sections) +
+          group.releaseFileGroups.reduce(
+            (fSum, fg) => fSum + countEntries(fg.sections),
+            0
+          ),
         0
       );
     }
-    return sections.value.reduce((sum, section) => sum + section.entryCount, 0);
+    if (hasReleaseFiles.value) {
+      return releaseFileGroups.value.reduce(
+        (sum, fg) => sum + countEntries(fg.sections),
+        0
+      );
+    }
+    return countEntries(sections.value);
   });
 
   const totalDuration = computed((): string => {
