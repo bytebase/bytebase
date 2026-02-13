@@ -155,6 +155,7 @@ message WorkspaceApprovalSetting {
       CREATE_DATABASE = 2;
       EXPORT_DATA = 3;
       REQUEST_ROLE = 4;
+      REQUEST_ACCESS = 5;
     }
   }
   repeated Rule rules = 1;
