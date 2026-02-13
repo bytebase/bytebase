@@ -2603,7 +2603,8 @@
           "change_database": "データベースの変更",
           "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
-          "request-role": "ロールのリクエスト"
+          "request-role": "ロールのリクエスト",
+          "request-access": "ジャストインタイムアクセスのリクエスト"
         }
       }
     },

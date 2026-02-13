@@ -2603,7 +2603,8 @@
           "change_database": "Thay đổi cơ sở dữ liệu",
           "create_database": "Tạo cơ sở dữ liệu",
           "data_export": "Xuất dữ liệu",
-          "request-role": "Yêu cầu vai trò"
+          "request-role": "Yêu cầu vai trò",
+          "request-access": "Yêu cầu quyền truy cập Just-In-Time"
         }
       }
     },

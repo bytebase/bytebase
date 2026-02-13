@@ -17,6 +17,7 @@ import type {
 } from "../types";
 import {
   ExprType,
+  isBooleanFactor,
   isCollectionOperator,
   isCompareOperator,
   isConditionGroupExpr,
@@ -49,6 +50,16 @@ const getConstantStringValue = (expr: CELExpr): string => {
     return expr.exprKind.value.constantKind.value;
   }
   return "";
+};
+
+const getConstantBoolValue = (expr: CELExpr): boolean => {
+  if (
+    expr.exprKind?.case === "constExpr" &&
+    expr.exprKind.value.constantKind?.case === "boolValue"
+  ) {
+    return expr.exprKind.value.constantKind.value;
+  }
+  return false;
 };
 
 // For simplify UI implementation, the "root" condition need to be a group.
@@ -136,6 +147,13 @@ const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
       type: ExprType.Condition,
       operator,
       args: [factor, getConstantInt64Value(valueExpr)],
+    };
+  }
+  if (isBooleanFactor(factor)) {
+    return {
+      type: ExprType.Condition,
+      operator,
+      args: [factor, getConstantBoolValue(valueExpr)],
     };
   }
   if (isStringFactor(factor)) {

@@ -2,6 +2,7 @@ import {
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_ROLE,
   CEL_ATTRIBUTE_REQUEST_TIME,
+  CEL_ATTRIBUTE_REQUEST_UNMASK,
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
@@ -55,10 +56,17 @@ export const StringFactorList = [
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 
+export const BooleanFactorList = [CEL_ATTRIBUTE_REQUEST_UNMASK] as const;
+export type BooleanFactor = (typeof BooleanFactorList)[number];
+
 export const TimestampFactorList = [CEL_ATTRIBUTE_REQUEST_TIME] as const;
 export type TimestampFactor = (typeof TimestampFactorList)[number];
 
-export type Factor = NumberFactor | StringFactor | TimestampFactor;
+export type Factor =
+  | NumberFactor
+  | StringFactor
+  | BooleanFactor
+  | TimestampFactor;
 
 export const isNumberFactor = (factor: string): factor is NumberFactor => {
   return NumberFactorList.includes(factor as NumberFactor);
@@ -66,6 +74,10 @@ export const isNumberFactor = (factor: string): factor is NumberFactor => {
 
 export const isStringFactor = (factor: string): factor is StringFactor => {
   return StringFactorList.includes(factor as StringFactor);
+};
+
+export const isBooleanFactor = (factor: string): factor is BooleanFactor => {
+  return BooleanFactorList.includes(factor as BooleanFactor);
 };
 
 export const isTimestampFactor = (
