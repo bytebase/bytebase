@@ -11,10 +11,10 @@
     >
       <div class="flex flex-col gap-y-6">
         <div class="flex flex-col gap-y-2">
-          <label class="text-sm font-medium text-control">
+          <div class="text-sm font-medium text-control">
             {{ $t("common.databases") }}
             <RequiredStar class="ml-0.5" />
-          </label>
+          </div>
           <DatabaseSelect
             :value="form.targets"
             :project-name="editorStore.project"
@@ -26,10 +26,10 @@
         </div>
 
         <div class="flex flex-col gap-y-2">
-          <label class="text-sm font-medium text-control">
+          <div class="text-sm font-medium text-control">
             {{ $t("common.statement") }}
             <RequiredStar class="ml-0.5" />
-          </label>
+          </div>
           <MonacoEditor
             class="border rounded-[3px] h-40"
             :content="form.query"
@@ -40,9 +40,9 @@
         </div>
 
         <div class="flex flex-col gap-y-2">
-          <label class="text-sm font-medium text-control">
+          <div class="text-sm font-medium text-control">
             {{ $t("sql-editor.grant-type-unmask") }}
-          </label>
+          </div>
           <div class="flex flex-col gap-y-1">
             <NCheckbox v-model:checked="form.unmask">
               {{ $t("sql-editor.access-type-unmask") }}
@@ -51,10 +51,10 @@
         </div>
 
         <div class="flex flex-col gap-y-2">
-          <label class="text-sm font-medium text-control">
+          <div class="text-sm font-medium text-control">
             {{ $t("common.duration") }}
             <RequiredStar class="ml-0.5" />
-          </label>
+          </div>
           <NSelect
             v-model:value="form.duration"
             :options="durationOptions"
@@ -69,9 +69,9 @@
         </div>
 
         <div class="flex flex-col gap-y-2">
-          <label class="text-sm font-medium text-control">
+          <div class="text-sm font-medium text-control">
             {{ $t("common.reason") }}
-          </label>
+          </div>
           <NInput
             v-model:value="form.reason"
             type="textarea"

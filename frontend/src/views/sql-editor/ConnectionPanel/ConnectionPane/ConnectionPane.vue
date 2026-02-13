@@ -390,19 +390,17 @@ const onBatchQueryContextChange = async (
 };
 
 const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
-  for (const databaseName of batchQueryContext.databases) {
-    const database = databaseStore.getDatabaseByName(databaseName);
-    return database;
+  if (batchQueryContext.databases.length > 0) {
+    return databaseStore.getDatabaseByName(batchQueryContext.databases[0]);
   }
 
   for (const databaseGroupName of batchQueryContext.databaseGroups ?? []) {
     const databaseGroup = dbGroupStore.getDBGroupByName(databaseGroupName);
-    await databaseStore.batchGetOrFetchDatabases(
+    const databases = await databaseStore.batchGetOrFetchDatabases(
       databaseGroup.matchedDatabases.map((db) => db.name)
     );
-    for (const matchedDatabase of databaseGroup.matchedDatabases) {
-      const database = databaseStore.getDatabaseByName(matchedDatabase.name);
-      return database;
+    if (databases.length > 0) {
+      return databases[0]
     }
   }
 };

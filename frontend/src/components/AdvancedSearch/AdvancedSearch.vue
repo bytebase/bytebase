@@ -424,7 +424,7 @@ const selectValue = (value: string) => {
 };
 
 const selectScopeFromTag = (scope: SearchScope) => {
-  if (state.scopeOptions.find((opt) => opt.id === scope.id)) {
+  if (state.scopeOptions.some((opt) => opt.id === scope.id)) {
     // For AdvancedSearch supported scopes
     selectScope(scope.id);
     return;
@@ -492,26 +492,23 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if (e.defaultPrevented) return;
   const { key } = e;
   if (key === "Backspace" && inputText.value === "") {
+    e.stopPropagation();
+    e.preventDefault();
     // Pressing "backspace" when the input box is empty
     if (focusedTagIndex.value !== undefined) {
-      e.stopPropagation();
-      e.preventDefault();
       // Delete the focusedTag if it exists
       const index = focusedTagIndex.value;
       focusedTagIndex.value = undefined;
       removeScope(index);
-      return;
     } else {
-      e.stopPropagation();
-      e.preventDefault();
       // Otherwise mark the last editable scope as focused.
       const scope = last(editableScopes.value);
       if (scope) {
         focusedTagIndex.value = editableScopes.value.length - 1;
         scrollScopeTagIntoViewIfNeeded(scope.id);
       }
-      return;
     }
+    return;
   }
   focusedTagIndex.value = undefined;
 
