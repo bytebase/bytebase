@@ -202,6 +202,7 @@ const (
 	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 2
 	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 3
 	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 4
+	WorkspaceApprovalSetting_Rule_REQUEST_ACCESS     WorkspaceApprovalSetting_Rule_Source = 5
 )
 
 // Enum value maps for WorkspaceApprovalSetting_Rule_Source.
@@ -212,6 +213,7 @@ var (
 		2: "CREATE_DATABASE",
 		3: "EXPORT_DATA",
 		4: "REQUEST_ROLE",
+		5: "REQUEST_ACCESS",
 	}
 	WorkspaceApprovalSetting_Rule_Source_value = map[string]int32{
 		"SOURCE_UNSPECIFIED": 0,
@@ -219,6 +221,7 @@ var (
 		"CREATE_DATABASE":    2,
 		"EXPORT_DATA":        3,
 		"REQUEST_ROLE":       4,
+		"REQUEST_ACCESS":     5,
 	}
 )
 
@@ -2136,6 +2139,7 @@ type WorkspaceApprovalSetting_Rule struct {
 	// When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
 	// When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
 	// When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
+	// When source is REQUEST_ACCESS, support: resource.environment_id, resource.project_id, request.unmask
 	//
 	// For examples:
 	// resource.environment_id == "prod" && statement.affected_rows >= 100
@@ -2951,19 +2955,20 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04INFO\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\f\n" +
-	"\bCRITICAL\x10\x03\"\x8b\x03\n" +
+	"\bCRITICAL\x10\x03\"\xa0\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12@\n" +
-	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xac\x02\n" +
+	"\x05rules\x18\x01 \x03(\v2*.bytebase.v1.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc1\x02\n" +
 	"\x04Rule\x129\n" +
 	"\btemplate\x18\x01 \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\btemplate\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12I\n" +
-	"\x06source\x18\x03 \x01(\x0e21.bytebase.v1.WorkspaceApprovalSetting.Rule.SourceR\x06source\"m\n" +
+	"\x06source\x18\x03 \x01(\x0e21.bytebase.v1.WorkspaceApprovalSetting.Rule.SourceR\x06source\"\x81\x01\n" +
 	"\x06Source\x12\x16\n" +
 	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
 	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
-	"\fREQUEST_ROLE\x10\x04\"\x8a\x06\n" +
+	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\x8a\x06\n" +
 	"\x19DataClassificationSetting\x12Y\n" +
 	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\x91\x05\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +

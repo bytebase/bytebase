@@ -45,6 +45,8 @@ const (
 	CELAttributeRequestExpirationDays = "request.expiration_days"
 	// CELAttributeRequestRole is the requested role.
 	CELAttributeRequestRole = "request.role"
+	// CELAttributeRequestUnmask indicates whether the request includes unmask permission.
+	CELAttributeRequestUnmask = "request.unmask"
 	// CELAttributeRequestTime is the timestamp of the request.
 	CELAttributeRequestTime = "request.time"
 )
