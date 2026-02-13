@@ -19,6 +19,12 @@
       @update:value="setNumberValue(Number($event))"
     />
     <SingleSelect
+      v-if="isBoolValue"
+      :value="`${getBoolValue()}`"
+      :expr="expr"
+      @update:value="setBoolValue($event === 'true')"
+    />
+    <SingleSelect
       v-if="isStringValue"
       :value="getStringValue()"
       :expr="expr"
@@ -47,6 +53,7 @@ import { isNumber } from "lodash-es";
 import { computed, watch } from "vue";
 import {
   type ConditionExpr,
+  isBooleanFactor,
   isCollectionOperator,
   isCompareOperator,
   isEqualityOperator,
@@ -80,6 +87,12 @@ const { optionConfigMap } = useExprEditorContext();
 const isNumberValue = computed(() => {
   if (isCompareOperator(operator.value)) return true;
   if (isEqualityOperator(operator.value) && isNumberFactor(factor.value)) {
+    return true;
+  }
+  return false;
+});
+const isBoolValue = computed(() => {
+  if (isEqualityOperator(operator.value) && isBooleanFactor(factor.value)) {
     return true;
   }
   return false;
@@ -119,6 +132,15 @@ const setNumberValue = (value: number) => {
   props.expr.args[1] = value;
 };
 
+const getBoolValue = () => {
+  const value = props.expr.args[1];
+  if (typeof value !== "boolean") return false;
+  return value;
+};
+const setBoolValue = (value: boolean) => {
+  props.expr.args[1] = value;
+};
+
 const getStringValue = () => {
   const value = props.expr.args[1];
   if (typeof value !== "string") return "";
@@ -144,6 +166,9 @@ watch(
   ([factor, operator]) => {
     if (isNumberFactor(factor)) {
       setNumberValue(0);
+    }
+    if (isBooleanFactor(factor)) {
+      setBoolValue(true);
     }
     if (isStringFactor(factor)) {
       if (isCollectionOperator(operator)) {

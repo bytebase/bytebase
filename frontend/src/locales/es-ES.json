@@ -2603,7 +2603,8 @@
           "change_database": "Cambiar base de datos",
           "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
-          "request-role": "Rol de solicitud"
+          "request-role": "Rol de solicitud",
+          "request-access": "Solicitar acceso Just-In-Time"
         }
       }
     },

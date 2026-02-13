@@ -143,8 +143,7 @@ const wrapCELExpr = (object: CELExpr["exprKind"]): CELExpr => {
   });
 };
 
-// Note: We don't need to wrap date type factor right now. Put it here is just for prevent eslint error.
-const wrapConstExpr = (value: number | string | Date): CELExpr => {
+const wrapConstExpr = (value: number | string | boolean | Date): CELExpr => {
   if (typeof value === "string") {
     return wrapCELExpr({
       case: "constExpr",
@@ -163,6 +162,17 @@ const wrapConstExpr = (value: number | string | Date): CELExpr => {
         constantKind: {
           case: "int64Value",
           value: BigInt(value),
+        },
+      }),
+    });
+  }
+  if (typeof value === "boolean") {
+    return wrapCELExpr({
+      case: "constExpr",
+      value: create(ConstantSchema, {
+        constantKind: {
+          case: "boolValue",
+          value,
         },
       }),
     });

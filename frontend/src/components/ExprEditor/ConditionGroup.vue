@@ -143,6 +143,7 @@ import {
   type ConditionGroupExpr,
   ExprType,
   type Factor,
+  isBooleanFactor,
   isConditionExpr,
   isConditionGroupExpr,
   isNumberFactor,
@@ -192,8 +193,9 @@ const OPERATORS: SelectOption[] = [
   { label: operatorLabel("_||_"), value: "_||_" },
 ];
 
-const getDefaultValue = (factor: Factor): string | number | Date => {
+const getDefaultValue = (factor: Factor): string | number | boolean | Date => {
   if (isNumberFactor(factor)) return 0;
+  if (isBooleanFactor(factor)) return true;
   if (isStringFactor(factor)) return "";
   if (isTimestampFactor(factor)) return new Date();
   return "";

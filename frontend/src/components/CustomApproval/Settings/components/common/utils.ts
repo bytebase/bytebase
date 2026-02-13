@@ -17,6 +17,7 @@ import {
 import {
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
   CEL_ATTRIBUTE_REQUEST_ROLE,
+  CEL_ATTRIBUTE_REQUEST_UNMASK,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
   CEL_ATTRIBUTE_RESOURCE_DB_ENGINE,
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
@@ -131,6 +132,8 @@ export const approvalSourceText = (
       return t("custom-approval.risk-rule.risk.namespace.data_export");
     case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
       return t("custom-approval.risk-rule.risk.namespace.request-role");
+    case WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS:
+      return t("custom-approval.risk-rule.risk.namespace.request-access");
     default:
       return "UNRECOGNIZED";
   }
@@ -165,6 +168,14 @@ export const ApprovalSourceFactorMap: Map<
       CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
       CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
       CEL_ATTRIBUTE_REQUEST_ROLE,
+    ],
+  ],
+  [
+    WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS,
+    [
+      CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+      CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
+      CEL_ATTRIBUTE_REQUEST_UNMASK,
     ],
   ],
 ]);
@@ -206,6 +217,12 @@ export const getApprovalOptionConfigMap = (
         break;
       case CEL_ATTRIBUTE_RISK_LEVEL:
         options = getRiskLevelOptions();
+        break;
+      case CEL_ATTRIBUTE_REQUEST_UNMASK:
+        options = [
+          { label: "true", value: "true" },
+          { label: "false", value: "false" },
+        ];
         break;
       default:
         break;

@@ -2603,7 +2603,8 @@
           "change_database": "变更数据库",
           "create_database": "创建数据库",
           "data_export": "导出数据",
-          "request-role": "请求角色"
+          "request-role": "请求角色",
+          "request-access": "请求即时访问"
         }
       }
     },

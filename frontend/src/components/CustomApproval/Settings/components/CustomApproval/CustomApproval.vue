@@ -18,6 +18,7 @@ const supportedSourceList = computed(() => [
   WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE,
   WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA,
   WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE,
+  WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS,
   WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED,
 ]);
 </script>

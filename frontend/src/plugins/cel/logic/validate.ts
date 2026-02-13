@@ -6,6 +6,7 @@ import type {
   SimpleExpr,
 } from "../types";
 import {
+  isBooleanFactor,
   isCollectionExpr,
   isCompareExpr,
   isConditionExpr,
@@ -49,6 +50,7 @@ export const validateSimpleExpr = (expr: SimpleExpr): boolean => {
       const [factor, value] = condition.args;
       if (isStringFactor(factor)) return validateString(value);
       if (isNumberFactor(factor)) return validateNumber(value);
+      if (isBooleanFactor(factor)) return typeof value === "boolean";
     }
     if (isCompareExpr(condition)) {
       const value = condition.args[1];

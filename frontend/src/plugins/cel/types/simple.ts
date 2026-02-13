@@ -1,6 +1,11 @@
 /// Define a simplified version (less nested) of CEL Expr.
 /// Convenient for local editing.
-import type { NumberFactor, StringFactor, TimestampFactor } from "./factor";
+import type {
+  BooleanFactor,
+  NumberFactor,
+  StringFactor,
+  TimestampFactor,
+} from "./factor";
 import {
   type CollectionOperator,
   type CompareOperator,
@@ -25,7 +30,10 @@ interface BaseConditionExpr {
 
 export interface EqualityExpr extends BaseConditionExpr {
   operator: EqualityOperator;
-  args: [StringFactor | NumberFactor, string | number];
+  args: [
+    StringFactor | NumberFactor | BooleanFactor,
+    string | number | boolean,
+  ];
 }
 
 export interface CompareExpr extends BaseConditionExpr {
