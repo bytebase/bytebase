@@ -1,5 +1,6 @@
 // Rollout
 export { default as RolloutBreadcrumb } from "./components/Rollout/RolloutBreadcrumb.vue";
+export { default as RolloutDataTable } from "./components/Rollout/RolloutDataTable.vue";
 export { default as RolloutView } from "./components/Rollout/RolloutView.vue";
 
 // Stage
