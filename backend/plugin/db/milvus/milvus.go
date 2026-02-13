@@ -120,12 +120,63 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return results, nil
 }
 
-func (*Driver) SyncInstance(context.Context) (*db.InstanceMetadata, error) {
-	return nil, errors.New("milvus driver is not implemented")
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	version, _ := d.fetchVersion(ctx)
+
+	collections, err := d.listCollections(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to sync milvus collections")
+	}
+
+	tables := make([]*storepb.TableMetadata, 0, len(collections))
+	for _, collection := range collections {
+		tables = append(tables, &storepb.TableMetadata{Name: collection})
+	}
+
+	return &db.InstanceMetadata{
+		Version: version,
+		Databases: []*storepb.DatabaseSchemaMetadata{
+			{
+				Name: d.databaseName(),
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Tables: tables,
+					},
+				},
+			},
+		},
+	}, nil
 }
 
-func (*Driver) SyncDBSchema(context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	return nil, errors.New("milvus driver is not implemented")
+func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	collections, err := d.listCollections(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list milvus collections")
+	}
+
+	tables := make([]*storepb.TableMetadata, 0, len(collections))
+	for _, collection := range collections {
+		resp, err := d.callMilvus(ctx, "/v2/vectordb/collections/describe", map[string]any{
+			"collectionName": collection,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to describe collection %q", collection)
+		}
+		table := &storepb.TableMetadata{
+			Name:    collection,
+			Columns: parseCollectionColumns(resp),
+		}
+		tables = append(tables, table)
+	}
+
+	return &storepb.DatabaseSchemaMetadata{
+		Name: d.databaseName(),
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Tables: tables,
+			},
+		},
+	}, nil
 }
 
 func (*Driver) Dump(context.Context, io.Writer, *storepb.DatabaseSchemaMetadata) error {
@@ -218,10 +269,185 @@ func (d *Driver) callMilvus(ctx context.Context, path string, payload map[string
 	if err := json.Unmarshal(rawResp, &parsed); err != nil {
 		return nil, errors.Wrap(err, "failed to decode milvus response")
 	}
-	if code, ok := parsed["code"].(float64); ok && int(code) != 0 {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("milvus returned non-zero code %d", int(code)))
+	if code, ok := parseMilvusCode(parsed["code"]); ok && code != 0 {
+		message := strings.TrimSpace(fmt.Sprintf("%v", parsed["message"]))
+		if message == "" || message == "<nil>" {
+			message = fmt.Sprintf("milvus returned non-zero code %d", code)
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.New(message))
 	}
 	return parsed, nil
+}
+
+func parseMilvusCode(value any) (int, bool) {
+	switch v := value.(type) {
+	case float64:
+		return int(v), true
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case json.Number:
+		n, err := strconv.Atoi(v.String())
+		if err != nil {
+			return 0, false
+		}
+		return n, true
+	default:
+		return 0, false
+	}
+}
+
+func (d *Driver) databaseName() string {
+	if strings.TrimSpace(d.config.ConnectionContext.DatabaseName) != "" {
+		return d.config.ConnectionContext.DatabaseName
+	}
+	return "default"
+}
+
+func (d *Driver) listCollections(ctx context.Context) ([]string, error) {
+	resp, err := d.callMilvus(ctx, "/v2/vectordb/collections/list", map[string]any{})
+	if err != nil {
+		return nil, err
+	}
+	return extractCollectionNames(resp), nil
+}
+
+func (d *Driver) fetchVersion(ctx context.Context) (string, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, d.baseURL+"/version", nil)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create version request")
+	}
+	if d.token != "" {
+		request.Header.Set("Authorization", "Bearer "+d.token)
+	}
+	resp, err := d.httpClient.Do(request)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to call milvus version endpoint")
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read version response")
+	}
+	if resp.StatusCode >= 400 {
+		return "", errors.Errorf("milvus version request failed with status %d", resp.StatusCode)
+	}
+	bodyText := strings.TrimSpace(string(body))
+	if bodyText == "" {
+		return "", errors.New("empty version response")
+	}
+
+	var payload any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return bodyText, nil
+	}
+	version := extractVersion(payload)
+	if version == "" {
+		return "", errors.New("version field not found in response")
+	}
+	return version, nil
+}
+
+func extractVersion(v any) string {
+	switch obj := v.(type) {
+	case map[string]any:
+		for _, key := range []string{"version", "buildVersion", "gitVersion"} {
+			if raw, ok := obj[key]; ok {
+				if version, ok := raw.(string); ok && strings.TrimSpace(version) != "" {
+					return version
+				}
+			}
+		}
+		for _, key := range []string{"data", "result"} {
+			if nested, ok := obj[key]; ok {
+				if version := extractVersion(nested); version != "" {
+					return version
+				}
+			}
+		}
+	case []any:
+		for _, item := range obj {
+			if version := extractVersion(item); version != "" {
+				return version
+			}
+		}
+	}
+	return ""
+}
+
+func extractCollectionNames(resp map[string]any) []string {
+	var collections []string
+	appendNames := func(items []any) {
+		for _, item := range items {
+			name := strings.TrimSpace(fmt.Sprintf("%v", item))
+			if name != "" && name != "<nil>" {
+				collections = append(collections, name)
+			}
+		}
+	}
+
+	switch data := resp["data"].(type) {
+	case []any:
+		appendNames(data)
+	case map[string]any:
+		if values, ok := data["collections"].([]any); ok {
+			appendNames(values)
+		}
+		if values, ok := data["collectionNames"].([]any); ok {
+			appendNames(values)
+		}
+	}
+
+	slices.Sort(collections)
+	return slices.Compact(collections)
+}
+
+func parseCollectionColumns(resp map[string]any) []*storepb.ColumnMetadata {
+	data, ok := resp["data"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	fields, ok := data["fields"].([]any)
+	if !ok {
+		if schema, ok := data["schema"].(map[string]any); ok {
+			fields, _ = schema["fields"].([]any)
+		}
+	}
+	if len(fields) == 0 {
+		return nil
+	}
+
+	columns := make([]*storepb.ColumnMetadata, 0, len(fields))
+	for i, field := range fields {
+		fieldMap, ok := field.(map[string]any)
+		if !ok {
+			continue
+		}
+		name := strings.TrimSpace(fmt.Sprintf("%v", fieldMap["name"]))
+		if name == "" || name == "<nil>" {
+			continue
+		}
+		columnType := strings.TrimSpace(fmt.Sprintf("%v", fieldMap["dataType"]))
+		if columnType == "" || columnType == "<nil>" {
+			columnType = strings.TrimSpace(fmt.Sprintf("%v", fieldMap["type"]))
+		}
+		if columnType == "" || columnType == "<nil>" {
+			columnType = "UNKNOWN"
+		}
+		nullable := true
+		switch v := fieldMap["nullable"].(type) {
+		case bool:
+			nullable = v
+		}
+		columns = append(columns, &storepb.ColumnMetadata{
+			Name:     name,
+			Position: int32(i + 1),
+			Type:     columnType,
+			Nullable: nullable,
+		})
+	}
+	return columns
 }
 
 func parseSelectFields(raw string) []string {
