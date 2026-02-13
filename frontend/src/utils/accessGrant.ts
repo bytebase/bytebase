@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AccessGrant,
@@ -17,7 +18,35 @@ export const getAccessGrantExpireTimeMs = (
   if (grant.expiration.case === "expireTime") {
     return getTimeForPbTimestampProtoEs(grant.expiration.value);
   }
+  if (grant.expiration.case === "ttl") {
+    return Date.now() + Number(grant.expiration.value.seconds) * 1000;
+  }
   return undefined;
+};
+
+export const getAccessGrantExpirationText = (
+  grant: AccessGrant
+):
+  | { type: "datetime"; value: string }
+  | { type: "duration"; value: string }
+  | { type: "never" } => {
+  if (grant.expiration.case === "expireTime") {
+    const ms = getTimeForPbTimestampProtoEs(grant.expiration.value);
+    return { type: "datetime", value: dayjs(ms).format("LLL") };
+  }
+  if (grant.expiration.case === "ttl") {
+    const totalSeconds = Number(grant.expiration.value.seconds);
+    const dur = dayjs.duration(totalSeconds, "seconds");
+    const days = Math.floor(dur.asDays());
+    const hours = dur.hours();
+    const minutes = dur.minutes();
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    return { type: "duration", value: parts.join("") || "<1m" };
+  }
+  return { type: "never" };
 };
 
 export const getAccessGrantDisplayStatus = (
