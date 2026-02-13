@@ -72,7 +72,7 @@ import { ArrowUpRightIcon } from "lucide-vue-next";
 import { computed, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
+import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRun/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
 import { sheetServiceClientConnect } from "@/connect";
 import { useRevisionStore } from "@/store";

@@ -75,6 +75,27 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int)
 		return errors.Errorf("task %v not found", taskUID)
 	}
 
+	// Validate task freshness before execution.
+	if err := s.validateTaskFreshness(ctx, task); err != nil {
+		slog.Warn("task run blocked by drift validation",
+			slog.Int("id", task.ID),
+			slog.String("type", task.Type.String()),
+			log.BBError(err),
+		)
+		taskRunStatusPatch := &store.TaskRunStatusPatch{
+			ID:      taskRunUID,
+			Updater: "",
+			Status:  storepb.TaskRun_FAILED,
+			ResultProto: &storepb.TaskRunResult{
+				Detail: err.Error(),
+			},
+		}
+		if _, patchErr := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); patchErr != nil {
+			return errors.Wrapf(patchErr, "failed to mark task run as failed after drift detection")
+		}
+		return nil
+	}
+
 	executor, ok := s.executorMap[task.Type]
 	if !ok {
 		return errors.Errorf("executor not found for task type: %v", task.Type)
@@ -198,6 +219,53 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 
 	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
 	s.bus.PlanCompletionCheckChan <- task.PlanID
+}
+
+// validateTaskFreshness checks for state drift between task creation and execution time.
+// Returns an error if the target database has been deleted, its project has changed,
+// or its environment has changed since the task was created.
+func (s *Scheduler) validateTaskFreshness(ctx context.Context, task *store.TaskMessage) error {
+	// DATABASE_CREATE tasks have DatabaseName = nil — the database doesn't exist yet.
+	if task.Type == storepb.Task_DATABASE_CREATE {
+		return nil
+	}
+
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &task.InstanceID,
+		DatabaseName: task.DatabaseName,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get database for drift validation")
+	}
+	if database == nil {
+		return errors.Errorf("target database %q on instance %q has been deleted", task.GetDatabaseName(), task.InstanceID)
+	}
+
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get plan for drift validation")
+	}
+	if plan == nil {
+		return errors.Errorf("plan %d not found", task.PlanID)
+	}
+
+	return checkTaskDrift(task, database, plan)
+}
+
+// checkTaskDrift performs the actual drift comparison logic.
+// Returns nil if no drift, or an error describing the drift.
+func checkTaskDrift(task *store.TaskMessage, database *store.DatabaseMessage, plan *store.PlanMessage) error {
+	// Check project drift.
+	if database.ProjectID != plan.ProjectID {
+		return errors.Errorf("target database belongs to project %q, but plan belongs to project %q", database.ProjectID, plan.ProjectID)
+	}
+
+	// Check environment drift.
+	if task.Environment != "" && database.EffectiveEnvironmentID != nil && *database.EffectiveEnvironmentID != task.Environment {
+		return errors.Errorf("target database is in environment %q, but task expected environment %q", *database.EffectiveEnvironmentID, task.Environment)
+	}
+
+	return nil
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.

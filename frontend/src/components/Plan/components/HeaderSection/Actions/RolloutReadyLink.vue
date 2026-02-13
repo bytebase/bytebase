@@ -16,7 +16,7 @@ import { ArrowUpRightIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
-import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {

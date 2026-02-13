@@ -204,6 +204,7 @@ const (
 	WorkspaceApprovalSetting_Rule_CREATE_DATABASE    WorkspaceApprovalSetting_Rule_Source = 2
 	WorkspaceApprovalSetting_Rule_EXPORT_DATA        WorkspaceApprovalSetting_Rule_Source = 3
 	WorkspaceApprovalSetting_Rule_REQUEST_ROLE       WorkspaceApprovalSetting_Rule_Source = 4
+	WorkspaceApprovalSetting_Rule_REQUEST_ACCESS     WorkspaceApprovalSetting_Rule_Source = 5
 )
 
 // Enum value maps for WorkspaceApprovalSetting_Rule_Source.
@@ -214,6 +215,7 @@ var (
 		2: "CREATE_DATABASE",
 		3: "EXPORT_DATA",
 		4: "REQUEST_ROLE",
+		5: "REQUEST_ACCESS",
 	}
 	WorkspaceApprovalSetting_Rule_Source_value = map[string]int32{
 		"SOURCE_UNSPECIFIED": 0,
@@ -221,6 +223,7 @@ var (
 		"CREATE_DATABASE":    2,
 		"EXPORT_DATA":        3,
 		"REQUEST_ROLE":       4,
+		"REQUEST_ACCESS":     5,
 	}
 )
 
@@ -2462,19 +2465,20 @@ const file_store_setting_proto_rawDesc = "" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +
 	"\n" +
-	"\x06EDITOR\x10\x02\"\x94\x03\n" +
+	"\x06EDITOR\x10\x02\"\xa9\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12C\n" +
-	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xb2\x02\n" +
+	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc7\x02\n" +
 	"\x04Rule\x12<\n" +
 	"\btemplate\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\btemplate\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12L\n" +
-	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"m\n" +
+	"\x06source\x18\x03 \x01(\x0e24.bytebase.store.WorkspaceApprovalSetting.Rule.SourceR\x06source\"\x81\x01\n" +
 	"\x06Source\x12\x16\n" +
 	"\x12SOURCE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCHANGE_DATABASE\x10\x01\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
 	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
-	"\fREQUEST_ROLE\x10\x04\"\x96\x06\n" +
+	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\x96\x06\n" +
 	"\x19DataClassificationSetting\x12\\\n" +
 	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\x9a\x05\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +

@@ -377,8 +377,7 @@ func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *
 	case storepb.Issue_DATABASE_EXPORT:
 		return buildCELVariablesForDataExport(ctx, stores, issue)
 	case storepb.Issue_ACCESS_GRANT:
-		// TODO: approval flow for the ACCESS_GRANT issue
-		return nil, true, nil
+		return buildCELVariablesForAccessGrant(ctx, stores, issue)
 	default:
 		return nil, false, errors.Errorf("unknown issue type %v", issue.Type)
 	}
@@ -734,6 +733,67 @@ func buildCELVariablesForGrantRequest(ctx context.Context, stores *store.Store, 
 	return celVarsList, true, nil
 }
 
+// buildCELVariablesForAccessGrant builds CEL variables for ACCESS_GRANT issues.
+func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+	payload := issue.Payload
+	if payload.AccessGrantId == "" {
+		return nil, false, errors.New("access grant id not found in issue payload")
+	}
+
+	accessGrantID := payload.AccessGrantId
+	accessGrant, err := stores.GetAccessGrant(ctx, &store.FindAccessGrantMessage{ID: &accessGrantID})
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "failed to get access grant %s", accessGrantID)
+	}
+	if accessGrant == nil {
+		return nil, false, errors.Errorf("access grant %s not found", accessGrantID)
+	}
+
+	baseVars := map[string]any{
+		common.CELAttributeResourceProjectID: issue.ProjectID,
+		common.CELAttributeRequestUnmask:     accessGrant.Payload.Unmask,
+	}
+
+	targets := accessGrant.Payload.Targets
+	if len(targets) == 0 {
+		return []map[string]any{baseVars}, true, nil
+	}
+
+	var celVarsList []map[string]any
+	for _, target := range targets {
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
+		if err != nil {
+			return nil, false, errors.Wrapf(err, "failed to parse target %q", target)
+		}
+
+		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, false, errors.Wrapf(err, "failed to get database %q", target)
+		}
+		if len(databases) == 0 {
+			continue
+		}
+
+		database := databases[0]
+		celVars := maps.Clone(baseVars)
+		if database.EffectiveEnvironmentID != nil {
+			celVars[common.CELAttributeResourceEnvironmentID] = *database.EffectiveEnvironmentID
+		} else {
+			celVars[common.CELAttributeResourceEnvironmentID] = ""
+		}
+		celVarsList = append(celVarsList, celVars)
+	}
+
+	if len(celVarsList) == 0 {
+		celVarsList = append(celVarsList, baseVars)
+	}
+
+	return celVarsList, true, nil
+}
+
 // getDatabasesForGrantRequest fetches database messages for the given database identifiers.
 // Used exclusively by grant request approval flow to retrieve database information.
 // Returns a deduplicated list of databases.
@@ -806,8 +866,7 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	case storepb.Issue_DATABASE_EXPORT:
 		return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA, nil
 	case storepb.Issue_ACCESS_GRANT:
-		// TODO: the approval source type for access request
-		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, nil
+		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS, nil
 	default:
 		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("unknown issue type %v", issue.Type)
 	}

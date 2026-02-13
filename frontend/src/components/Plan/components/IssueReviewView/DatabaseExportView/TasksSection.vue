@@ -22,8 +22,7 @@
           />
           <TaskStatusActions
             :task="task"
-            :task-runs="getTaskRunsForTask(task)"
-            :rollout="rollout"
+            :stage="getStageForTask(task)!"
             :size="'tiny'"
             @action-confirmed="handleActionConfirmed"
           />
@@ -52,14 +51,14 @@
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
-import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import TaskStatusActions from "@/components/RolloutV1/components/TaskStatusActions.vue";
-import { taskRunNamePrefix, useDatabaseV1Store } from "@/store";
-import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
+import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
+import TaskStatusActions from "@/components/RolloutV1/components/Task/TaskStatusActions.vue";
+import { useDatabaseV1Store } from "@/store";
+import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContextWithRollout } from "../../../logic";
 import { useExpandableList } from ".";
 
-const { plan, rollout, taskRuns, events } = usePlanContextWithRollout();
+const { plan, rollout, events } = usePlanContextWithRollout();
 const dbStore = useDatabaseV1Store();
 
 const tasks = computed(() => {
@@ -80,10 +79,10 @@ const {
   remainingCount,
 } = useExpandableList(tasks);
 
-// Get task runs for a specific task
-const getTaskRunsForTask = (task: Task) => {
-  return taskRuns.value.filter((run) =>
-    run.name.startsWith(`${task.name}/${taskRunNamePrefix}`)
+// Get the stage that contains a given task
+const getStageForTask = (task: Task): Stage | undefined => {
+  return rollout.value.stages.find((stage) =>
+    stage.tasks.some((t) => t.name === task.name)
   );
 };
 

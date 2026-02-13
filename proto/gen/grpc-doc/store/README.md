@@ -4579,6 +4579,7 @@ The severity level for SQL review rules.
 | CREATE_DATABASE | 2 |  |
 | EXPORT_DATA | 3 |  |
 | REQUEST_ROLE | 4 |  |
+| REQUEST_ACCESS | 5 |  |
 
 
 

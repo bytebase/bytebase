@@ -101,21 +101,21 @@ const rolloutRoutes: RouteRecordRaw[] = [
         path: "",
         name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
         component: () =>
-          import("@/components/RolloutV1/components/RolloutView.vue"),
+          import("@/components/RolloutV1/components/Rollout/RolloutView.vue"),
         props: true,
       },
       {
         path: "stages/:stageId",
         name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
         component: () =>
-          import("@/components/RolloutV1/components/RolloutView.vue"),
+          import("@/components/RolloutV1/components/Rollout/RolloutView.vue"),
         props: true,
       },
       {
         path: "stages/:stageId/tasks/:taskId",
         name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
         component: () =>
-          import("@/components/RolloutV1/components/TaskView.vue"),
+          import("@/components/RolloutV1/components/Task/TaskView.vue"),
         props: true,
       },
     ],

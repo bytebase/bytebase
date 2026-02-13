@@ -24,10 +24,10 @@
 import { Clock4Icon } from "lucide-vue-next";
 import { computed } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";
-import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import { humanizeDate } from "@/utils";
+import VCSIcon from "../VCSIcon.vue";
 import { useReleaseDetailContext } from "./context";
 
 const { release } = useReleaseDetailContext();
