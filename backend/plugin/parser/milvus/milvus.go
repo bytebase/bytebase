@@ -55,6 +55,8 @@ func validateQuery(statement string) (bool, bool, error) {
 			strings.HasPrefix(lower, "show"),
 			strings.HasPrefix(lower, "desc "),
 			strings.HasPrefix(lower, "describe "),
+			strings.HasPrefix(lower, "search "),
+			strings.HasPrefix(lower, "hybrid search "),
 			strings.HasPrefix(lower, "with "),
 			strings.HasPrefix(lower, "explain select"),
 			strings.HasPrefix(lower, "explain with"):

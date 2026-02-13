@@ -11,13 +11,64 @@ import (
 // It keeps statement ranges/positions stable for editor features.
 func SplitSQL(statement string) ([]base.Statement, error) {
 	var (
-		stmts      []base.Statement
-		startByte  int
-		currentPos int
+		stmts            []base.Statement
+		startByte        int
+		currentPos       int
+		singleQuoted     bool
+		doubleQuoted     bool
+		escaped          bool
+		braceDepth       int
+		bracketDepth     int
+		parenthesesDepth int
 	)
 
 	for currentPos < len(statement) {
-		if statement[currentPos] == ';' {
+		ch := statement[currentPos]
+		if escaped {
+			escaped = false
+			currentPos++
+			continue
+		}
+		if ch == '\\' && (singleQuoted || doubleQuoted) {
+			escaped = true
+			currentPos++
+			continue
+		}
+		if ch == '\'' && !doubleQuoted {
+			singleQuoted = !singleQuoted
+			currentPos++
+			continue
+		}
+		if ch == '"' && !singleQuoted {
+			doubleQuoted = !doubleQuoted
+			currentPos++
+			continue
+		}
+		if singleQuoted || doubleQuoted {
+			currentPos++
+			continue
+		}
+		switch ch {
+		case '{':
+			braceDepth++
+		case '}':
+			if braceDepth > 0 {
+				braceDepth--
+			}
+		case '[':
+			bracketDepth++
+		case ']':
+			if bracketDepth > 0 {
+				bracketDepth--
+			}
+		case '(':
+			parenthesesDepth++
+		case ')':
+			if parenthesesDepth > 0 {
+				parenthesesDepth--
+			}
+		}
+		if ch == ';' && braceDepth == 0 && bracketDepth == 0 && parenthesesDepth == 0 {
 			endByte := currentPos + 1
 			stmts = append(stmts, makeStatement(statement, startByte, endByte))
 			startByte = endByte

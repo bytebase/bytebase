@@ -77,8 +77,51 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (*Driver) Execute(context.Context, string, db.ExecuteOptions) (int64, error) {
-	return 0, errors.New("milvus driver is not implemented")
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	stmts, err := base.SplitMultiSQL(storepb.Engine_MILVUS, statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to split statements")
+	}
+	stmts = base.FilterEmptyStatements(stmts)
+	if len(stmts) == 0 {
+		return 0, nil
+	}
+
+	const (
+		defaultMaxRetries = 2
+		baseBackoff       = 100 * time.Millisecond
+	)
+
+	maxRetries := opts.MaximumRetries
+	if maxRetries <= 0 {
+		maxRetries = defaultMaxRetries
+	}
+
+	for _, stmt := range stmts {
+		endpoint, payload, err := parseExecuteOperation(stmt.Text)
+		if err != nil {
+			return 0, err
+		}
+
+		attempts := maxRetries + 1
+		for attempt := 0; attempt < attempts; attempt++ {
+			_, callErr := d.callMilvus(ctx, endpoint, payload)
+			if callErr == nil {
+				break
+			}
+			if attempt == attempts-1 || !isRetryableMilvusError(callErr) {
+				return 0, errors.Wrapf(callErr, "failed to execute milvus operation %q", strings.TrimSpace(stmt.Text))
+			}
+			backoff := baseBackoff * time.Duration(1<<attempt)
+			select {
+			case <-ctx.Done():
+				return 0, errors.Wrap(ctx.Err(), "milvus operation retry canceled")
+			case <-time.After(backoff):
+			}
+		}
+	}
+
+	return 0, nil
 }
 
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
@@ -187,7 +230,287 @@ var (
 	showCollectionsRE = regexp.MustCompile(`(?i)^\s*show\s+collections\s*;?\s*$`)
 	describeRE        = regexp.MustCompile(`(?i)^\s*desc(ribe)?\s+collection\s+([A-Za-z0-9_]+)\s*;?\s*$`)
 	selectRE          = regexp.MustCompile(`(?i)^\s*select\s+(.+?)\s+from\s+([A-Za-z0-9_]+)(?:\s+where\s+(.+?))?(?:\s+limit\s+([0-9]+))?\s*;?\s*$`)
+	searchRE          = regexp.MustCompile(`(?is)^\s*search\s+([A-Za-z0-9_]+)\s+with\s+(\{.*\})\s*;?\s*$`)
+	hybridSearchRE    = regexp.MustCompile(`(?is)^\s*hybrid\s+search\s+([A-Za-z0-9_]+)\s+with\s+(\{.*\})\s*;?\s*$`)
+
+	createCollectionRE = regexp.MustCompile(`(?is)^\s*create\s+collection\s+([A-Za-z0-9_]+)(?:\s+with\s+(\{.*\}))?\s*;?\s*$`)
+	dropCollectionRE   = regexp.MustCompile(`(?i)^\s*drop\s+collection\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	alterCollectionRE  = regexp.MustCompile(`(?is)^\s*alter\s+collection\s+([A-Za-z0-9_]+)\s+with\s+(\{.*\})\s*;?\s*$`)
+	loadCollectionRE   = regexp.MustCompile(`(?i)^\s*load\s+collection\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	releaseCollectRE   = regexp.MustCompile(`(?i)^\s*release\s+collection\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+
+	createPartRE  = regexp.MustCompile(`(?i)^\s*create\s+partition\s+([A-Za-z0-9_]+)\s+in\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	dropPartRE    = regexp.MustCompile(`(?i)^\s*drop\s+partition\s+([A-Za-z0-9_]+)\s+in\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	loadPartRE    = regexp.MustCompile(`(?i)^\s*load\s+partition\s+([A-Za-z0-9_]+)\s+in\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	releasePartRE = regexp.MustCompile(`(?i)^\s*release\s+partition\s+([A-Za-z0-9_]+)\s+in\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+
+	createIndexRE = regexp.MustCompile(`(?is)^\s*create\s+index\s+on\s+([A-Za-z0-9_]+)\s+field\s+([A-Za-z0-9_]+)(?:\s+with\s+(\{.*\}))?\s*;?\s*$`)
+	dropIndexRE   = regexp.MustCompile(`(?i)^\s*drop\s+index\s+on\s+([A-Za-z0-9_]+)(?:\s+name\s+([A-Za-z0-9_]+))?\s*;?\s*$`)
+	alterIndexRE  = regexp.MustCompile(`(?is)^\s*alter\s+index\s+on\s+([A-Za-z0-9_]+)\s+name\s+([A-Za-z0-9_]+)\s+with\s+(\{.*\})\s*;?\s*$`)
+
+	createAliasRE = regexp.MustCompile(`(?i)^\s*create\s+alias\s+([A-Za-z0-9_]+)\s+for\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	dropAliasRE   = regexp.MustCompile(`(?i)^\s*drop\s+alias\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	alterAliasRE  = regexp.MustCompile(`(?i)^\s*alter\s+alias\s+([A-Za-z0-9_]+)\s+to\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+
+	createUserRE = regexp.MustCompile(`(?is)^\s*create\s+user\s+([A-Za-z0-9_]+)\s+with\s+password\s+'([^']+)'\s*;?\s*$`)
+	dropUserRE   = regexp.MustCompile(`(?i)^\s*drop\s+user\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	createRoleRE = regexp.MustCompile(`(?i)^\s*create\s+role\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	dropRoleRE   = regexp.MustCompile(`(?i)^\s*drop\s+role\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	grantRoleRE  = regexp.MustCompile(`(?i)^\s*grant\s+role\s+([A-Za-z0-9_]+)\s+to\s+user\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	revokeRoleRE = regexp.MustCompile(`(?i)^\s*revoke\s+role\s+([A-Za-z0-9_]+)\s+from\s+user\s+([A-Za-z0-9_]+)\s*;?\s*$`)
+	insertDataRE = regexp.MustCompile(`(?is)^\s*insert\s+into\s+([A-Za-z0-9_]+)\s+values\s+(\[.*\]|\{.*\})\s*;?\s*$`)
+	upsertDataRE = regexp.MustCompile(`(?is)^\s*upsert\s+into\s+([A-Za-z0-9_]+)\s+values\s+(\[.*\]|\{.*\})\s*;?\s*$`)
+	deleteDataRE = regexp.MustCompile(`(?is)^\s*delete\s+from\s+([A-Za-z0-9_]+)\s+where\s+(.+?)\s*;?\s*$`)
 )
+
+func parseExecuteOperation(stmt string) (string, map[string]any, error) {
+	if matches := createCollectionRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		payload := map[string]any{"collectionName": matches[1]}
+		extra, err := parseJSONObject(matches[2])
+		if err != nil {
+			return "", nil, err
+		}
+		mergePayload(payload, extra)
+		return "/v2/vectordb/collections/create", payload, nil
+	}
+	if matches := dropCollectionRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/collections/drop", map[string]any{"collectionName": matches[1]}, nil
+	}
+	if matches := alterCollectionRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		extra, err := parseJSONObject(matches[2])
+		if err != nil {
+			return "", nil, err
+		}
+		payload := map[string]any{"collectionName": matches[1]}
+		mergePayload(payload, extra)
+		return "/v2/vectordb/collections/alter", payload, nil
+	}
+	if matches := loadCollectionRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/collections/load", map[string]any{"collectionName": matches[1]}, nil
+	}
+	if matches := releaseCollectRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/collections/release", map[string]any{"collectionName": matches[1]}, nil
+	}
+	if matches := createPartRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/partitions/create", map[string]any{
+			"collectionName": matches[2],
+			"partitionName":  matches[1],
+		}, nil
+	}
+	if matches := dropPartRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/partitions/drop", map[string]any{
+			"collectionName": matches[2],
+			"partitionName":  matches[1],
+		}, nil
+	}
+	if matches := loadPartRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/partitions/load", map[string]any{
+			"collectionName": matches[2],
+			"partitionNames": []string{matches[1]},
+		}, nil
+	}
+	if matches := releasePartRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/partitions/release", map[string]any{
+			"collectionName": matches[2],
+			"partitionNames": []string{matches[1]},
+		}, nil
+	}
+	if matches := createIndexRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		extra, err := parseJSONObject(matches[3])
+		if err != nil {
+			return "", nil, err
+		}
+		indexParams, err := normalizeCreateIndexParams(matches[2], extra)
+		if err != nil {
+			return "", nil, err
+		}
+		payload := map[string]any{
+			"collectionName": matches[1],
+			"indexParams":    indexParams,
+		}
+		return "/v2/vectordb/indexes/create", payload, nil
+	}
+	if matches := dropIndexRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		payload := map[string]any{"collectionName": matches[1]}
+		if matches[2] != "" {
+			payload["indexName"] = matches[2]
+		}
+		return "/v2/vectordb/indexes/drop", payload, nil
+	}
+	if matches := alterIndexRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		payload := map[string]any{"collectionName": matches[1]}
+		extra, err := parseJSONObject(matches[3])
+		if err != nil {
+			return "", nil, err
+		}
+		payload["indexName"] = matches[2]
+		if indexParams, ok := extra["indexParams"]; ok {
+			payload["indexParams"] = indexParams
+			delete(extra, "indexParams")
+		}
+		if params, ok := extra["params"]; ok {
+			payload["params"] = params
+			delete(extra, "params")
+		}
+		if len(extra) > 0 {
+			payload["params"] = extra
+		}
+		return "/v2/vectordb/indexes/alter", payload, nil
+	}
+	if matches := createAliasRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/aliases/create", map[string]any{
+			"aliasName":      matches[1],
+			"collectionName": matches[2],
+		}, nil
+	}
+	if matches := dropAliasRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/aliases/drop", map[string]any{"aliasName": matches[1]}, nil
+	}
+	if matches := alterAliasRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/aliases/alter", map[string]any{
+			"aliasName":      matches[1],
+			"collectionName": matches[2],
+		}, nil
+	}
+	if matches := createUserRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/users/create", map[string]any{
+			"userName": matches[1],
+			"password": matches[2],
+		}, nil
+	}
+	if matches := dropUserRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/users/drop", map[string]any{"userName": matches[1]}, nil
+	}
+	if matches := createRoleRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/roles/create", map[string]any{"roleName": matches[1]}, nil
+	}
+	if matches := dropRoleRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/roles/drop", map[string]any{"roleName": matches[1]}, nil
+	}
+	if matches := grantRoleRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/users/grant_role", map[string]any{
+			"roleName": matches[1],
+			"userName": matches[2],
+		}, nil
+	}
+	if matches := revokeRoleRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/users/revoke_role", map[string]any{
+			"roleName": matches[1],
+			"userName": matches[2],
+		}, nil
+	}
+	if matches := insertDataRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		data, err := parseJSONArrayOrObject(matches[2])
+		if err != nil {
+			return "", nil, err
+		}
+		return "/v2/vectordb/entities/insert", map[string]any{
+			"collectionName": matches[1],
+			"data":           data,
+		}, nil
+	}
+	if matches := upsertDataRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		data, err := parseJSONArrayOrObject(matches[2])
+		if err != nil {
+			return "", nil, err
+		}
+		return "/v2/vectordb/entities/upsert", map[string]any{
+			"collectionName": matches[1],
+			"data":           data,
+		}, nil
+	}
+	if matches := deleteDataRE.FindStringSubmatch(stmt); len(matches) > 0 {
+		return "/v2/vectordb/entities/delete", map[string]any{
+			"collectionName": matches[1],
+			"filter":         strings.TrimSpace(matches[2]),
+		}, nil
+	}
+
+	return "", nil, connect.NewError(connect.CodeInvalidArgument, errors.New("unsupported milvus execute statement"))
+}
+
+func parseJSONObject(raw string) (map[string]any, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid JSON payload"))
+	}
+	return payload, nil
+}
+
+func parseJSONArrayOrObject(raw string) ([]map[string]any, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("data payload is required"))
+	}
+
+	if strings.HasPrefix(raw, "{") {
+		var one map[string]any
+		if err := json.Unmarshal([]byte(raw), &one); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid JSON payload"))
+		}
+		return []map[string]any{one}, nil
+	}
+
+	var many []map[string]any
+	if err := json.Unmarshal([]byte(raw), &many); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid JSON payload"))
+	}
+	return many, nil
+}
+
+func normalizeCreateIndexParams(fieldName string, extra map[string]any) ([]map[string]any, error) {
+	if extra == nil {
+		return []map[string]any{{"fieldName": fieldName}}, nil
+	}
+
+	if raw, ok := extra["indexParams"]; ok {
+		switch v := raw.(type) {
+		case []any:
+			params := make([]map[string]any, 0, len(v))
+			for _, item := range v {
+				obj, ok := item.(map[string]any)
+				if !ok {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("indexParams entries must be JSON objects"))
+				}
+				fieldNameValue := strings.TrimSpace(fmt.Sprintf("%v", obj["fieldName"]))
+				if fieldNameValue == "" || fieldNameValue == "<nil>" {
+					obj["fieldName"] = fieldName
+				}
+				params = append(params, obj)
+			}
+			return params, nil
+		case map[string]any:
+			fieldNameValue := strings.TrimSpace(fmt.Sprintf("%v", v["fieldName"]))
+			if fieldNameValue == "" || fieldNameValue == "<nil>" {
+				v["fieldName"] = fieldName
+			}
+			return []map[string]any{v}, nil
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("indexParams must be an object or array of objects"))
+		}
+	}
+
+	param := map[string]any{"fieldName": fieldName}
+	for k, v := range extra {
+		param[k] = v
+	}
+	return []map[string]any{param}, nil
+}
+
+func mergePayload(basePayload map[string]any, extra map[string]any) {
+	for k, v := range extra {
+		basePayload[k] = v
+	}
+}
+
+func isRetryableMilvusError(err error) bool {
+	code := connect.CodeOf(err)
+	return code == connect.CodeUnavailable || code == connect.CodeDeadlineExceeded || code == connect.CodeResourceExhausted
+}
 
 func (d *Driver) executeStatement(ctx context.Context, stmt string, limit int) (*v1pb.QueryResult, error) {
 	switch {
@@ -235,8 +558,65 @@ func (d *Driver) executeStatement(ctx context.Context, stmt string, limit int) (
 			return nil, err
 		}
 		return convertQueryResult(resp), nil
+	case searchRE.MatchString(stmt):
+		matches := searchRE.FindStringSubmatch(stmt)
+		payload, err := parseSearchPayload(matches[1], matches[2], limit)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := d.callMilvus(ctx, "/v2/vectordb/entities/search", payload)
+		if err != nil {
+			return nil, err
+		}
+		return convertSearchResult(resp), nil
+	case hybridSearchRE.MatchString(stmt):
+		matches := hybridSearchRE.FindStringSubmatch(stmt)
+		payload, err := parseHybridSearchPayload(matches[1], matches[2], limit)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := d.callMilvus(ctx, "/v2/vectordb/entities/hybrid_search", payload)
+		if err != nil {
+			return nil, err
+		}
+		return convertSearchResult(resp), nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("unsupported milvus statement"))
+	}
+}
+
+func parseSearchPayload(collectionName, rawJSON string, limit int) (map[string]any, error) {
+	payload, err := parseJSONObject(rawJSON)
+	if err != nil {
+		return nil, err
+	}
+	if payload == nil {
+		payload = make(map[string]any)
+	}
+	payload["collectionName"] = collectionName
+	applyQueryLimit(payload, limit)
+	return payload, nil
+}
+
+func parseHybridSearchPayload(collectionName, rawJSON string, limit int) (map[string]any, error) {
+	payload, err := parseJSONObject(rawJSON)
+	if err != nil {
+		return nil, err
+	}
+	if payload == nil {
+		payload = make(map[string]any)
+	}
+	payload["collectionName"] = collectionName
+	applyQueryLimit(payload, limit)
+	return payload, nil
+}
+
+func applyQueryLimit(payload map[string]any, limit int) {
+	if _, ok := payload["limit"]; ok {
+		return
+	}
+	if limit > 0 {
+		payload["limit"] = limit
 	}
 }
 
@@ -255,7 +635,7 @@ func (d *Driver) callMilvus(ctx context.Context, path string, payload map[string
 	}
 	resp, err := d.httpClient.Do(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to call milvus")
+		return nil, connect.NewError(connect.CodeUnavailable, errors.Wrapf(err, "failed to call milvus endpoint %q", path))
 	}
 	defer resp.Body.Close()
 	rawResp, err := io.ReadAll(resp.Body)
@@ -263,20 +643,46 @@ func (d *Driver) callMilvus(ctx context.Context, path string, payload map[string
 		return nil, errors.Wrap(err, "failed to read response")
 	}
 	if resp.StatusCode >= 400 {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("milvus request failed with status %d", resp.StatusCode))
+		return nil, connect.NewError(mapHTTPStatusToConnectCode(resp.StatusCode), errors.Errorf("milvus request to %q failed with status %d", path, resp.StatusCode))
 	}
 	var parsed map[string]any
 	if err := json.Unmarshal(rawResp, &parsed); err != nil {
-		return nil, errors.Wrap(err, "failed to decode milvus response")
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to decode milvus response"))
 	}
 	if code, ok := parseMilvusCode(parsed["code"]); ok && code != 0 {
 		message := strings.TrimSpace(fmt.Sprintf("%v", parsed["message"]))
 		if message == "" || message == "<nil>" {
 			message = fmt.Sprintf("milvus returned non-zero code %d", code)
 		}
-		return nil, connect.NewError(connect.CodeInternal, errors.New(message))
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("milvus endpoint %q returned code %d: %s", path, code, message))
 	}
 	return parsed, nil
+}
+
+func mapHTTPStatusToConnectCode(status int) connect.Code {
+	switch status {
+	case http.StatusBadRequest:
+		return connect.CodeInvalidArgument
+	case http.StatusUnauthorized:
+		return connect.CodeUnauthenticated
+	case http.StatusForbidden:
+		return connect.CodePermissionDenied
+	case http.StatusNotFound:
+		return connect.CodeNotFound
+	case http.StatusConflict:
+		return connect.CodeAlreadyExists
+	case http.StatusTooManyRequests:
+		return connect.CodeResourceExhausted
+	case http.StatusRequestTimeout, http.StatusGatewayTimeout:
+		return connect.CodeDeadlineExceeded
+	case http.StatusBadGateway, http.StatusServiceUnavailable:
+		return connect.CodeUnavailable
+	default:
+		if status >= 500 {
+			return connect.CodeInternal
+		}
+		return connect.CodeUnknown
+	}
 }
 
 func parseMilvusCode(value any) (int, bool) {
@@ -549,6 +955,38 @@ func convertQueryResult(resp map[string]any) *v1pb.QueryResult {
 		result.Rows = append(result.Rows, queryRow)
 	}
 	return result
+}
+
+func convertSearchResult(resp map[string]any) *v1pb.QueryResult {
+	rows, ok := resp["data"].([]any)
+	if !ok || len(rows) == 0 {
+		return &v1pb.QueryResult{}
+	}
+
+	normalized := make([]any, 0, len(rows))
+	for _, row := range rows {
+		object, ok := row.(map[string]any)
+		if !ok {
+			continue
+		}
+		item := make(map[string]any, len(object)+1)
+		for k, v := range object {
+			item[k] = v
+		}
+		if _, hasDistance := item["distance"]; !hasDistance {
+			if score, hasScore := item["score"]; hasScore {
+				item["distance"] = score
+			}
+		}
+		if _, hasScore := item["score"]; !hasScore {
+			if distance, hasDistance := item["distance"]; hasDistance {
+				item["score"] = distance
+			}
+		}
+		normalized = append(normalized, item)
+	}
+
+	return convertQueryResult(map[string]any{"data": normalized})
 }
 
 func toRowValue(v any) *v1pb.RowValue {
