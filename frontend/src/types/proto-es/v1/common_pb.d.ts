@@ -341,6 +341,13 @@ export enum Engine {
    * @generated from enum value: CASSANDRA = 25;
    */
   CASSANDRA = 25,
+
+  /**
+   * Milvus vector database.
+   *
+   * @generated from enum value: MILVUS = 26;
+   */
+  MILVUS = 26,
 }
 
 /**
@@ -776,4 +783,3 @@ export enum StatementType {
  * Describes the enum bytebase.v1.StatementType.
  */
 export declare const StatementTypeSchema: GenEnum<StatementType>;
-
