@@ -837,9 +837,10 @@ Authorization method for RPC calls.
 | parent | [string](#string) |  | The parent project of the access grants. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of access grants to return. |
 | page_token | [string](#string) |  | A page token from a previous ListAccessGrants call. |
-| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: - name: the fullname in &#34;projects/{project}/accessGrants/{access_grant}&#34; format, support &#34;==&#34; operator. - creator: the creator name in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - status: the access status, support &#34;==&#34; and &#34;in&#34; operator. - issue: the access issue fullname, support &#34;==&#34; operator. - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator
+| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: - name: the fullname in &#34;projects/{project}/accessGrants/{access_grant}&#34; format, support &#34;==&#34; operator. - creator: the creator name in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - status: the access status, support &#34;==&#34; and &#34;in&#34; operator. - issue: the access issue fullname, support &#34;==&#34; operator. - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator - target: the target database fullname, support &#34;==&#34; operator.
 
-Examples: - creator == &#34;users/dev@example.com&#34; - status == &#34;ACTIVE&#34; - status in [&#34;ACTIVE&#34;, &#34;PENDING&#34;] - creator == &#34;users/dev@example.com&#34; &amp;&amp; status == &#34;ACTIVE&#34; - issue == &#34;projects/x/issues/123&#34; - status == &#34;ACTIVE&#34; &amp;&amp; expire_time &gt; &#34;2024-02-01T00:00:00Z&#34; |
+Examples: - creator == &#34;users/dev@example.com&#34; - status == &#34;ACTIVE&#34; - status in [&#34;ACTIVE&#34;, &#34;PENDING&#34;] - creator == &#34;users/dev@example.com&#34; &amp;&amp; status == &#34;ACTIVE&#34; - issue == &#34;projects/x/issues/123&#34; - status == &#34;ACTIVE&#34; &amp;&amp; expire_time &gt; &#34;2024-02-01T00:00:00Z&#34; - target == &#34;instances/sample/databases/employee&#34; |
+| order_by | [string](#string) |  | The order by of access grants. Support creator, expire_time, create_time. The default sorting order is ascending. For example: - order_by = &#34;creator&#34; - order_by = &#34;expire_time desc&#34; - order_by = &#34;expire_time asc, create_time desc&#34; |
 
 
 
@@ -888,7 +889,8 @@ Examples: - creator == &#34;users/dev@example.com&#34; - status == &#34;ACTIVE&#
 | parent | [string](#string) |  | The parent project to search in. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of access grants to return. |
 | page_token | [string](#string) |  | A page token from a previous SearchMyAccessGrants call. |
-| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: name, status, expire_time, create_time Examples: - &#39;name = &#34;projects/x/accessGrants/uuid&#34;&#39; - &#39;status = &#34;ACTIVE&#34;&#39; - &#39;status = &#34;ACTIVE&#34; AND expire_time &gt; &#34;2024-02-01T00:00:00Z&#34;&#39; |
+| filter | [string](#string) |  | Check the filter field in the ListAccessGrantsRequest message. |
+| order_by | [string](#string) |  | Check the order_by field in the ListAccessGrantsRequest message. |
 
 
 

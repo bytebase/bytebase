@@ -168,11 +168,7 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  isDatabaseV1Queryable,
-  isWorksheetWritableV1,
-  keyboardShortcutStr,
-} from "@/utils";
+import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import ContainerChooser from "./ContainerChooser.vue";
@@ -210,7 +206,7 @@ const isEmptyStatement = computed(() => {
   }
   return tab.statement === "";
 });
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { t } = useI18n();
 
 const showSheetsFeature = computed(() => {
@@ -236,7 +232,7 @@ const allowQuery = computed(() => {
     return !!currentTab.value?.connection.table;
   }
 
-  return isDatabaseV1Queryable(database.value);
+  return true;
 });
 
 const canWriteSheet = computed(() => {

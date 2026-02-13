@@ -31,7 +31,13 @@ import {
 } from "@/utils";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
 
-export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
+export const ASIDE_PANEL_TABS = [
+  "SCHEMA",
+  "WORKSHEET",
+  "HISTORY",
+  "ACCESS",
+] as const;
+export type AsidePanelTab = (typeof ASIDE_PANEL_TABS)[number];
 
 const minimumEditorPanelSize = 0.5;
 
@@ -77,6 +83,9 @@ export type SQLEditorContext = {
   >;
 
   pendingInsertAtCaret: Ref<string | undefined>;
+
+  // The resource name of a newly created access grant to highlight in the list.
+  highlightAccessGrantName: Ref<string | undefined>;
 
   events: SQLEditorEvents;
 
@@ -299,6 +308,7 @@ export const provideSQLEditorContext = () => {
     editorPanelSize,
     schemaViewer: ref(undefined),
     pendingInsertAtCaret: ref(),
+    highlightAccessGrantName: ref<string | undefined>(),
     events: new Emittery(),
 
     maybeSwitchProject,

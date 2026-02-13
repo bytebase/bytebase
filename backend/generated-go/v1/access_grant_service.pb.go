@@ -330,6 +330,7 @@ type ListAccessGrantsRequest struct {
 	// - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
 	// - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
 	// - query: the access query, support "==" and ".contains(xx)" operator
+	// - target: the target database fullname, support "==" operator.
 	//
 	// Examples:
 	// - creator == "users/dev@example.com"
@@ -338,7 +339,15 @@ type ListAccessGrantsRequest struct {
 	// - creator == "users/dev@example.com" && status == "ACTIVE"
 	// - issue == "projects/x/issues/123"
 	// - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
-	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	// - target == "instances/sample/databases/employee"
+	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	// The order by of access grants.
+	// Support creator, expire_time, create_time. The default sorting order is ascending.
+	// For example:
+	// - order_by = "creator"
+	// - order_by = "expire_time desc"
+	// - order_by = "expire_time asc, create_time desc"
+	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -397,6 +406,13 @@ func (x *ListAccessGrantsRequest) GetPageToken() string {
 func (x *ListAccessGrantsRequest) GetFilter() string {
 	if x != nil {
 		return x.Filter
+	}
+	return ""
+}
+
+func (x *ListAccessGrantsRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -612,13 +628,10 @@ type SearchMyAccessGrantsRequest struct {
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token from a previous SearchMyAccessGrants call.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	// Filter expression using AIP-160 syntax.
-	// Supported fields: name, status, expire_time, create_time
-	// Examples:
-	//   - 'name = "projects/x/accessGrants/uuid"'
-	//   - 'status = "ACTIVE"'
-	//   - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
-	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	// Check the filter field in the ListAccessGrantsRequest message.
+	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	// Check the order_by field in the ListAccessGrantsRequest message.
+	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -677,6 +690,13 @@ func (x *SearchMyAccessGrantsRequest) GetPageToken() string {
 func (x *SearchMyAccessGrantsRequest) GetFilter() string {
 	if x != nil {
 		return x.Filter
+	}
+	return ""
+}
+
+func (x *SearchMyAccessGrantsRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -769,14 +789,15 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"expiration\"M\n" +
 	"\x15GetAccessGrantRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name\"\xa3\x01\n" +
+	"\x18bytebase.com/AccessGrantR\x04name\"\xbe\x01\n" +
 	"\x17ListAccessGrantsRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
-	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x81\x01\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\x12\x19\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x81\x01\n" +
 	"\x18ListAccessGrantsResponse\x12=\n" +
 	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x92\x01\n" +
@@ -789,14 +810,15 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\x18bytebase.com/AccessGrantR\x04name\"P\n" +
 	"\x18RevokeAccessGrantRequest\x124\n" +
 	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name\"\xa7\x01\n" +
+	"\x18bytebase.com/AccessGrantR\x04name\"\xc2\x01\n" +
 	"\x1bSearchMyAccessGrantsRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
-	"\x06filter\x18\x04 \x01(\tR\x06filter\"\x85\x01\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\x12\x19\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x85\x01\n" +
 	"\x1cSearchMyAccessGrantsResponse\x12=\n" +
 	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xf0\b\n" +

@@ -11903,6 +11903,7 @@ components:
              - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
              - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
              - query: the access query, support "==" and ".contains(xx)" operator
+             - target: the target database fullname, support "==" operator.
 
              Examples:
              - creator == "users/dev@example.com"
@@ -11911,6 +11912,17 @@ components:
              - creator == "users/dev@example.com" && status == "ACTIVE"
              - issue == "projects/x/issues/123"
              - status == "ACTIVE" && expire_time > "2024-02-01T00:00:00Z"
+             - target == "instances/sample/databases/employee"
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of access grants.
+             Support creator, expire_time, create_time. The default sorting order is ascending.
+             For example:
+             - order_by = "creator"
+             - order_by = "expire_time desc"
+             - order_by = "expire_time asc, create_time desc"
       title: ListAccessGrantsRequest
       additionalProperties: false
     bytebase.v1.ListAccessGrantsResponse:
@@ -15887,13 +15899,11 @@ components:
         filter:
           type: string
           title: filter
-          description: |-
-            Filter expression using AIP-160 syntax.
-             Supported fields: name, status, expire_time, create_time
-             Examples:
-               - 'name = "projects/x/accessGrants/uuid"'
-               - 'status = "ACTIVE"'
-               - 'status = "ACTIVE" AND expire_time > "2024-02-01T00:00:00Z"'
+          description: Check the filter field in the ListAccessGrantsRequest message.
+        orderBy:
+          type: string
+          title: order_by
+          description: Check the order_by field in the ListAccessGrantsRequest message.
       title: SearchMyAccessGrantsRequest
       additionalProperties: false
     bytebase.v1.SearchMyAccessGrantsResponse:

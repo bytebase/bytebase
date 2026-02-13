@@ -79,7 +79,6 @@
               <span>{{ extractReleaseUID(database.release) }}</span>
             </dd>
             <SQLEditorButtonV1
-              v-if="allowQuery"
               class="text-sm md:mr-4"
               :database="database"
               :label="true"
@@ -261,7 +260,6 @@ import {
   getDatabaseProject,
   getInstanceResource,
   instanceV1HasAlterSchema,
-  isDatabaseV1Queryable,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
 } from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
@@ -353,10 +351,6 @@ watchEffect(() => {
 
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(getInstanceResource(database.value));
-});
-
-const allowQuery = computed(() => {
-  return isDatabaseV1Queryable(database.value);
 });
 
 const tryTransferProject = () => {

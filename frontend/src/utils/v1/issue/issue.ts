@@ -49,6 +49,10 @@ export const isGrantRequestIssue = (issue: Issue): boolean => {
   return issue.type === Issue_Type.GRANT_REQUEST;
 };
 
+export const isAccessGrantIssue = (issue: Issue): boolean => {
+  return issue.type === Issue_Type.ACCESS_GRANT;
+};
+
 export const isDatabaseDataExportIssue = (issue: Issue): boolean => {
   return issue.type === Issue_Type.DATABASE_EXPORT;
 };

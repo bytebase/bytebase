@@ -50,7 +50,7 @@
             v-bind="tableResize.getColumnProps(columnIndex + 1)"
             @click="e => handleSelectColumn(e, columnIndex)"
           >
-            <div class="flex items-center overflow-hidden">
+            <div class="flex items-center overflow-hidden gap-x-1">
               <span class="flex flex-row items-center select-none">
                 <template
                   v-if="String(header.name).length > 0"
@@ -63,11 +63,9 @@
               <MaskingReasonPopover
                 v-if="getMaskingReason && getMaskingReason(columnIndex)"
                 :reason="getMaskingReason(columnIndex)!"
-                class="ml-0.5 shrink-0"
-              />
-              <SensitiveDataIcon
-                v-else-if="isSensitiveColumn(columnIndex)"
-                class="ml-0.5 shrink-0"
+                :statement="statement"
+                :database="database.name"
+                class="shrink-0"
               />
 
               <ColumnSortedIcon
@@ -222,7 +220,6 @@ import {
 } from "./common/binary-format-store";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
 import MaskingReasonPopover from "./common/MaskingReasonPopover.vue";
-import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import type {
   ResultTableColumn,
@@ -241,6 +238,7 @@ const props = defineProps<{
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: Database;
+  statement?: string;
   sortState?: SortState;
   search: SearchParams;
 }>();

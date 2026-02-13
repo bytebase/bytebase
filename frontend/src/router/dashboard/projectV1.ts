@@ -24,6 +24,7 @@ export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
 export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.detail`;
+export const PROJECT_V1_ROUTE_ACCESS_GRANTS = `${PROJECT_V1_ROUTE_DASHBOARD}.access-grants`;
 export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SERVICE_ACCOUNTS = `${PROJECT_V1_ROUTE_DASHBOARD}.service-accounts`;
 export const PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES = `${PROJECT_V1_ROUTE_DASHBOARD}.workload-identities`;
@@ -148,6 +149,16 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.databases.list"],
         },
         component: () => import("@/views/project/ProjectDatabaseDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "access-grants",
+        name: PROJECT_V1_ROUTE_ACCESS_GRANTS,
+        meta: {
+          title: () => t("sql-editor.access-grants"),
+        },
+        component: () =>
+          import("@/views/project/ProjectAccessGrantDashboard.vue"),
         props: true,
       },
       {

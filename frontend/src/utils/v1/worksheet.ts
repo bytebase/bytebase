@@ -16,7 +16,6 @@ import {
   getInstanceResource,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
-  isDatabaseV1Queryable,
 } from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {
@@ -119,9 +118,6 @@ export const extractWorksheetConnection = async (worksheet: {
       const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
         worksheet.database
       );
-      if (!isDatabaseV1Queryable(database)) {
-        return connection;
-      }
       const { instance } = extractDatabaseResourceName(database.name);
       connection.instance = instance;
       connection.database = database.name;

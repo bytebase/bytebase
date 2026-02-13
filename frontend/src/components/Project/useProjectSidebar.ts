@@ -11,6 +11,7 @@ import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { t } from "@/plugins/i18n";
 import {
+  PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
@@ -29,6 +30,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { isDev } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
@@ -141,6 +143,12 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
             title: t("common.webhooks"),
             path: PROJECT_V1_ROUTE_WEBHOOKS,
             type: "div",
+          },
+          {
+            title: t("sql-editor.access-grants"),
+            path: PROJECT_V1_ROUTE_ACCESS_GRANTS,
+            type: "div",
+            hide: !isDev(),
           },
           {
             title: t("project.masking-exemption.self"),

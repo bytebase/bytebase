@@ -1,8 +1,8 @@
 <template>
   <NTooltip :animated="false" :delay="250">
     <template #trigger>
-      <heroicons-outline:eye-slash
-        class="w-[12px] h-[12px] -mb-[2px]"
+      <EyeOffIcon
+        class="w-3 h-3 -mb-0.5"
         :class="[clickable && 'cursor-pointer']"
         v-bind="$attrs"
         @click="handleClick"
@@ -16,6 +16,7 @@
 </template>
 
 <script lang="ts" setup>
+import { EyeOffIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";

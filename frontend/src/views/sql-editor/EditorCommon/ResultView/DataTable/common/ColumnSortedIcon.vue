@@ -1,5 +1,5 @@
 <template>
-  <span class="w-4 h-auto opacity-80 ml-1 shrink-0">
+  <span class="w-4 h-auto opacity-80 shrink-0">
     <ArrowDownWideNarrow
       v-if="!isSorted || isSorted === 'desc'"
       class="w-full h-auto"

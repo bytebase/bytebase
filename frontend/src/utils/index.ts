@@ -25,5 +25,6 @@ export * from "./iam";
 export * from "./auto-route";
 export * from "./pagination";
 export * from "./expr";
+export * from "./accessGrant";
 export * from "./storage-keys";
 export * from "./storage-migrate";

@@ -5,7 +5,7 @@
         <NCheckbox
           class="mr-2"
           :checked="checked"
-          :disabled="checkDisabled || !canQuery"
+          :disabled="checkDisabled"
           @click.stop.prevent=""
           @update:checked="$emit('update:checked', $event)"
         />
@@ -25,9 +25,10 @@
     />
 
     <RequestQueryButton
-      v-if="showRequestQueryButton"
+      v-if="!canQuery"
       class="ml-auto"
       :text="true"
+      :prefer-jit="false"
       :permission-denied-detail="create(PermissionDeniedDetailSchema, {
         resources: [database.name],
         requiredPermissions: ['bb.sql.select']
@@ -68,8 +69,4 @@ const database = computed(
 );
 
 const canQuery = computed(() => isDatabaseV1Queryable(database.value));
-
-const showRequestQueryButton = computed(() => {
-  return !canQuery.value;
-});
 </script>

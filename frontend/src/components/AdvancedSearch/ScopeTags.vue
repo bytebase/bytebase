@@ -8,8 +8,8 @@
     :bordered="false"
     size="small"
     style="--n-icon-size: 12px"
-    v-bind="tagProps(scope)"
-    @close="$emit('remove-scope', scope.id, scope.value)"
+    v-bind="tagProps(i)"
+    @close="$emit('remove-scope', i)"
     @click.stop.prevent="handleClick(scope)"
   >
     <div class="flex items-center gap-1">
@@ -25,25 +25,25 @@ import type { TagProps } from "naive-ui";
 import { NTag } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { UNKNOWN_ID } from "@/types";
-import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScope } from "@/utils";
 import { callCssVariable, extractDatabaseResourceName } from "@/utils";
 import type { ScopeOption } from "./types";
 
 const props = defineProps<{
   params: SearchParams;
   scopeOptions: ScopeOption[];
-  focusedTagId?: SearchScopeId;
+  focusedTagIndex?: number;
 }>();
 
 const emit = defineEmits<{
-  (event: "remove-scope", id: SearchScopeId, value: string): void;
-  (event: "select-scope", id: SearchScopeId, value: string): void;
+  (event: "remove-scope", index: number): void;
+  (event: "select-scope", scope: SearchScope): void;
 }>();
 
 const { t } = useI18n();
 
-const tagProps = (scope: SearchScope): TagProps => {
-  if (props.focusedTagId !== scope.id) {
+const tagProps = (index: number): TagProps => {
+  if (props.focusedTagIndex !== index) {
     return {};
   }
   return {
@@ -79,6 +79,6 @@ const handleClick = (scope: SearchScope) => {
     return;
   }
 
-  emit("select-scope", scope.id, scope.value);
+  emit("select-scope", scope);
 };
 </script>

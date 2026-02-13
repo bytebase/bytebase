@@ -23,32 +23,6 @@
     <div>
       <div class="flex items-center gap-x-2">
         <Switch
-          v-model:value="state.allowRequestRole"
-          :text="true"
-          :disabled="
-            !allowUpdateIssueProjectSetting ||
-            loading
-          "
-        />
-        <div class="textlabel flex items-center gap-x-2">
-          {{
-            $t(
-              "project.settings.issue-related.allow-request-role.self"
-            )
-          }}
-        </div>
-      </div>
-      <div class="mt-1 text-sm text-gray-400">
-        {{
-          $t(
-            "project.settings.issue-related.allow-request-role.description"
-          )
-        }}
-      </div>
-    </div>
-    <div>
-      <div class="flex items-center gap-x-2">
-        <Switch
           v-model:value="state.forceIssueLabels"
           :text="true"
           :disabled="
@@ -304,7 +278,6 @@ import {
 
 interface LocalState {
   issueLabels: Label[];
-  allowRequestRole: boolean;
   enforceSqlReview: boolean;
   forceIssueLabels: boolean;
   enforceIssueTitle: boolean;
@@ -321,7 +294,6 @@ const getInitialLocalState = (): LocalState => {
   if (!props.project) {
     return {
       issueLabels: [],
-      allowRequestRole: false,
       forceIssueLabels: false,
       enforceIssueTitle: false,
       enforceSqlReview: false,
@@ -338,7 +310,6 @@ const getInitialLocalState = (): LocalState => {
   }
   return {
     issueLabels: cloneDeep(props.project.issueLabels),
-    allowRequestRole: props.project.allowRequestRole,
     forceIssueLabels: props.project.forceIssueLabels,
     enforceIssueTitle: props.project.enforceIssueTitle,
     enforceSqlReview: props.project.enforceSqlReview,
@@ -469,9 +440,6 @@ const updateMask = computed(() => {
   }
   if (state.allowSelfApproval !== props.project.allowSelfApproval) {
     mask.push("allow_self_approval");
-  }
-  if (!isEqual(state.allowRequestRole, props.project.allowRequestRole)) {
-    mask.push("allow_request_role");
   }
   if (
     !isEqual(

@@ -175,6 +175,9 @@
     "download": "ダウンロード",
     "deleted": "削除されました",
     "active": "アクティブ",
+    "activated": "有効化しました",
+    "pending": "保留中",
+    "revoked": "取り消し済み",
     "reopen": "再開",
     "plan": "プラン",
     "rollout": "リリース",
@@ -1072,6 +1075,9 @@
       "high": "高い"
     },
     "issue-name": "イシュー名",
+    "access-grant": {
+      "details": "Access Grant Details"
+    },
     "grant-request": {
       "details": "リクエストの詳細",
       "expired-at": "有効期限",
@@ -1872,6 +1878,10 @@
         "allow-request-role": {
           "self": "ロールリクエストを許可",
           "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます"
+        },
+        "allow-jit": {
+          "self": "ジャストインタイムアクセスを許可",
+          "description": "有効にすると、ユーザーは SQL エディタでジャストインタイムアクセスをリクエストして使用できます。"
         }
       },
       "project-labels": {
@@ -1993,7 +2003,6 @@
     "invalid-database": "無効なデータベース {database}",
     "request-aborted": "ユーザーがリクエストを中止しました",
     "no-data-source": "クエリ可能なデータソースがありません。環境またはプロジェクトのデータソースクエリポリシーを確認してください。",
-    "database-not-queriable": "データベースはクエリできません",
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "rows": "記録",
     "vertical-display": "縦型表示",
@@ -2127,7 +2136,28 @@
     "search-scope-row-number-title": "行番号",
     "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
     "scroll-to-top": "先頭へスクロール",
-    "scroll-to-bottom": "末尾へスクロール"
+    "scroll-to-bottom": "末尾へスクロール",
+    "jit": "Just-In-Time Access",
+    "request-access": "Request Access",
+    "no-access-requests": "No access requests",
+    "request-jit": "Request just-in-time access",
+    "view-issue": "View Issue",
+    "expire-at": "Expire at {time}",
+    "expire-in": "Expire in {time}",
+    "and-n-more-databases": "and {n} more databases",
+    "expired": "Expired",
+    "grant-type-unmask": "Unmask",
+    "request-data-access": "Request Data Access",
+    "access-type-unmask": "See unmasked sensitive data",
+    "duration-hours": "{hours} hour | {hours} hours",
+    "duration-day": "{days} day",
+    "duration-days": "{days} days",
+    "access-grants": "Access Grants",
+    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
+    "revoke-access": "Revoke",
+    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "activate-access": "Activate",
+    "activate-confirm": "Are you sure you want to activate this access grant?"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

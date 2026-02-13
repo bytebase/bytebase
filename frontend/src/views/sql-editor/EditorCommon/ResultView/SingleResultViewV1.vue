@@ -104,6 +104,7 @@
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
         :database="database"
+        :statement="params.statement"
         :active-row-index="activeRowIndex"
         :search="state.searchParams"
       />
@@ -115,6 +116,7 @@
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
         :database="database"
+        :statement="params.statement"
         :sort-state="state.sortState"
         :active-row-index="activeRowIndex"
         :search="state.searchParams"

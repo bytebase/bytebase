@@ -3,20 +3,20 @@
     <PermissionGuardWrapper
       v-slot="slotProps"
       :project="project"
-      :permissions="['bb.issues.create']"
+      :permissions="[requiredPermission]"
     >
       <NButton
         type="primary"
         :text="text"
         :size="size"
-        :disabled="slotProps.disabled || !hasRequestRoleFeature"
+        :disabled="slotProps.disabled || !hasRequestFeature"
         @click="onClick"
       >
         <template #icon>
-          <ShieldUserIcon v-if="hasRequestRoleFeature" class="w-4 h-4" />
-          <FeatureBadge v-else :clickable="false" :feature="PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW" />
+          <ShieldUserIcon v-if="hasRequestFeature" class="w-4 h-4" />
+          <FeatureBadge v-else :clickable="false" :feature="requiredFeature" />
         </template>
-        {{ $t("sql-editor.request-query") }}
+        {{ useJIT ? $t("sql-editor.request-jit") : $t("sql-editor.request-query") }}
       </NButton>
     </PermissionGuardWrapper>
 
@@ -28,6 +28,12 @@
       :role="PresetRoleType.SQL_EDITOR_USER"
       :required-permissions="permissionDeniedDetail.requiredPermissions"
       @close="showPanel = false"
+    />
+    <AccessGrantRequestDrawer
+      v-if="showJITDrawer"
+      :query="statement"
+      :targets="missingResources.map(r => r.databaseFullName)"
+      @close="showJITDrawer = false"
     />
   </div>
 </template>
@@ -41,14 +47,21 @@ import GrantRequestPanel from "@/components/GrantRequestPanel";
 import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
-import { type DatabaseResource, PresetRoleType } from "@/types";
+import {
+  type DatabaseResource,
+  type Permission,
+  PresetRoleType,
+} from "@/types";
 import { type PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import AccessGrantRequestDrawer from "@/views/sql-editor/AsidePanel/AccessPane/AccessGrantRequestDrawer.vue";
 
 const props = withDefaults(
   defineProps<{
     size?: "tiny" | "medium";
     text: boolean;
+    preferJit: boolean;
+    statement?: string;
     permissionDeniedDetail: PermissionDeniedDetail;
   }>(),
   {
@@ -57,11 +70,36 @@ const props = withDefaults(
 );
 
 const showPanel = ref(false);
+const showJITDrawer = ref(false);
 const editorStore = useSQLEditorStore();
 const projectStore = useProjectV1Store();
-const hasRequestRoleFeature = computed(() =>
-  hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
 );
+
+const useJIT = computed(() => {
+  return (
+    props.preferJit &&
+    project.value.allowJustInTimeAccess &&
+    props.permissionDeniedDetail.requiredPermissions.some((p) =>
+      p.startsWith("bb.sql.")
+    )
+  );
+});
+
+const requiredPermission = computed(
+  (): Permission =>
+    useJIT.value ? "bb.accessGrants.create" : "bb.issues.create"
+);
+
+const requiredFeature = computed(() =>
+  useJIT.value
+    ? PlanFeature.FEATURE_JIT
+    : PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
+);
+
+const hasRequestFeature = computed(() => hasFeature(requiredFeature.value));
 
 const missingResources = computed((): DatabaseResource[] => {
   const resources: DatabaseResource[] = [];
@@ -74,10 +112,6 @@ const missingResources = computed((): DatabaseResource[] => {
   return resources;
 });
 
-const project = computed(() =>
-  projectStore.getProjectByName(editorStore.project)
-);
-
 const available = computed(() => {
   return project.value.allowRequestRole;
 });
@@ -85,6 +119,11 @@ const available = computed(() => {
 const onClick = (e: MouseEvent) => {
   e.stopPropagation();
   e.preventDefault();
-  showPanel.value = true;
+
+  if (useJIT.value) {
+    showJITDrawer.value = true;
+  } else {
+    showPanel.value = true;
+  }
 };
 </script>

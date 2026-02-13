@@ -55,6 +55,7 @@
           <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
           <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
           <HistoryPane v-if="asidePanelTab === 'HISTORY'" />
+          <AccessPane v-if="asidePanelTab === 'ACCESS'" />
         </div>
       </div>
     </div>
@@ -71,6 +72,7 @@ import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
+import AccessPane from "./AccessPane";
 import ActionBar from "./ActionBar";
 import GutterBar from "./GutterBar";
 import HistoryPane from "./HistoryPane";
