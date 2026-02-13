@@ -400,7 +400,7 @@ const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
       databaseGroup.matchedDatabases.map((db) => db.name)
     );
     if (databases.length > 0) {
-      return databases[0]
+      return databases[0];
     }
   }
 };
