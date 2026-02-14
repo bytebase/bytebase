@@ -27,10 +27,8 @@ import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { issueServiceClientConnect } from "@/connect";
 import {
-  extractUserEmail,
   pushNotification,
   useCurrentProjectV1,
-  useCurrentUserV1,
 } from "@/store";
 import {
   IssueStatus,
@@ -48,18 +46,12 @@ const { plan, issue } = usePlanContextWithIssue();
 const isDatabaseChangePlan = computed(() =>
   plan.value.specs.some((spec) => spec.config?.case === "changeDatabaseConfig")
 );
-const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { refreshResources } = useResourcePoller();
 
 const allowChange = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) {
     return false;
-  }
-
-  // Allowed if current user is the creator.
-  if (extractUserEmail(issue.value.creator) === currentUser.value.email) {
-    return true;
   }
 
   return hasProjectPermissionV2(project.value, "bb.issues.update");

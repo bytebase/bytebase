@@ -25,10 +25,8 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import {
-  extractUserEmail,
   pushNotification,
   useCurrentProjectV1,
-  useCurrentUserV1,
 } from "@/store";
 import {
   IssueSchema,
@@ -44,7 +42,6 @@ import { usePlanContext } from "../../logic";
 type ViewMode = "EDIT" | "VIEW";
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const {
   isCreating,
@@ -105,10 +102,6 @@ const allowEdit = computed(() => {
 
   // If issue exists, check issue permissions
   if (issue.value) {
-    // Allowed if current user is the creator.
-    if (extractUserEmail(issue.value.creator) === currentUser.value.email) {
-      return true;
-    }
     // Allowed if current user has related permission.
     if (hasProjectPermissionV2(project.value, "bb.issues.update")) {
       return true;
