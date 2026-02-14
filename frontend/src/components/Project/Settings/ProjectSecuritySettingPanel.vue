@@ -43,6 +43,9 @@
             )
           }}
         </div>
+        <ApprovalFlowIndicator
+          :source="WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE"
+        />
       </div>
       <div class="mt-1 text-sm text-gray-400">
         {{
@@ -78,6 +81,9 @@
             )
           }}
         </div>
+        <ApprovalFlowIndicator
+          :source="WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS"
+        />
       </div>
       <div class="mt-1 text-sm text-gray-400">
         {{
@@ -105,7 +111,9 @@ import {
 } from "@/store";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { isDev } from "@/utils";
+import ApprovalFlowIndicator from "./ApprovalFlowIndicator.vue";
 
 const props = defineProps<{
   project: Project;
