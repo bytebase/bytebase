@@ -58,7 +58,7 @@ service IssueService {
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.issues.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Updates an issue's properties such as title, description, or labels.
