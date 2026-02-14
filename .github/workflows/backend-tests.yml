@@ -88,3 +88,48 @@ jobs:
         # sort: cut into columns by delimiter ' ' (single space) and sort by column 3 (test time in seconds) as numeric type in reverse order (largest comes first)
         # awk: accumulate sum by test time in seconds
         run: grep --color=never -e '--- PASS:' -e '--- FAIL:' test.log | sed 's/[:()]//g' | awk '{print $2,$3,$4}' | sort -t' ' -nk3 -r | awk '{sum += $3; print $1,$2,$3,sum"s"}'
+
+  milvus-integration-tests:
+    runs-on: self-hosted
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.7'
+          cache: false # Caching is slow.
+      - name: Start Milvus standalone in Docker
+        run: |
+          docker rm -f milvus-it-ci >/dev/null 2>&1 || true
+          docker run -d --name milvus-it-ci \
+            --security-opt seccomp:unconfined \
+            -e ETCD_USE_EMBED=true \
+            -e ETCD_DATA_DIR=/var/lib/milvus/etcd \
+            -e COMMON_STORAGETYPE=local \
+            -p 19530/tcp \
+            milvusdb/milvus:v2.4.15 \
+            milvus run standalone
+          MILVUS_PORT="$(docker port milvus-it-ci 19530/tcp | awk -F: '{print $2}')"
+          echo "BYTEBASE_TEST_MILVUS_HOST=127.0.0.1" >> "$GITHUB_ENV"
+          echo "BYTEBASE_TEST_MILVUS_PORT=${MILVUS_PORT}" >> "$GITHUB_ENV"
+      - name: Wait for Milvus readiness
+        run: |
+          for i in $(seq 1 180); do
+            if curl -m 3 -sS -X POST "http://127.0.0.1:${BYTEBASE_TEST_MILVUS_PORT}/v2/vectordb/collections/list" \
+              -H 'Content-Type: application/json' -d '{}' | grep -q '"code":0'; then
+              echo "Milvus is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Milvus failed to become ready in time"
+          docker logs --tail 200 milvus-it-ci || true
+          exit 1
+      - name: Run Milvus phase-0 gate
+        env:
+          BYTEBASE_TEST_MILVUS_HOST: ${{ env.BYTEBASE_TEST_MILVUS_HOST }}
+          BYTEBASE_TEST_MILVUS_PORT: ${{ env.BYTEBASE_TEST_MILVUS_PORT }}
+        run: ./scripts/test_milvus_phase0_gate.sh
+      - name: Cleanup Milvus container
+        if: always()
+        run: docker rm -f milvus-it-ci || true

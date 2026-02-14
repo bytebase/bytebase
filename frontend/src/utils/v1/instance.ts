@@ -94,6 +94,7 @@ export const supportedEngineV1List = () => {
     Engine.COCKROACHDB,
     Engine.COSMOSDB,
     Engine.CASSANDRA,
+    Engine.MILVUS,
     Engine.TRINO,
     Engine.DORIS,
   ];
@@ -359,6 +360,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "CosmosDB";
     case Engine.CASSANDRA:
       return "Cassandra";
+    case Engine.MILVUS:
+      return "Milvus";
     case Engine.TRINO:
       return "Trino";
   }
