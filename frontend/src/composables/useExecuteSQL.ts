@@ -331,7 +331,7 @@ const useExecuteSQL = () => {
       flattenNoSQLResult(resultSet);
     }
 
-    if (isOnlySelectError(resultSet)) {
+    if (isDisallowChangeDatabaseError(resultSet)) {
       // Show a tips to navigate to issue creation
       // if the user is allowed to create issue in the project.
       if (
@@ -358,8 +358,8 @@ const useExecuteSQL = () => {
   };
 };
 
-const isOnlySelectError = (resultSet: SQLResultSetV1) => {
-  return resultSet.results.some((result) => {
+const isDisallowChangeDatabaseError = (resultSet: SQLResultSetV1) => {
+  const isCommandError = resultSet.results.some((result) => {
     return (
       result.detailedError.case === "commandError" &&
       [
@@ -368,6 +368,18 @@ const isOnlySelectError = (resultSet: SQLResultSetV1) => {
         QueryResult_CommandError_Type.NON_READ_ONLY,
       ].includes(result.detailedError.value.commandType)
     );
+  });
+  if (isCommandError) {
+    return true;
+  }
+
+  return resultSet.results.some((result) => {
+    if (result.detailedError.case === "permissionDenied") {
+      return result.detailedError.value.requiredPermissions.some((p) => {
+        return p === "bb.sql.ddl" || p === "bb.sql.dml";
+      });
+    }
+    return false;
   });
 };
 
