@@ -1,8 +1,3 @@
-import { pullAt } from "lodash-es";
-import { computed, type Raw, ref, unref, watchEffect } from "vue";
-import type { MaybeRef } from "@/types";
-import type { VueClass } from "./types";
-
 // Tailwind CSS default breakpoints
 // https://tailwindcss.com/docs/responsive-design
 export const TailwindBreakpoints = {
@@ -60,37 +55,4 @@ export const callCssVariable = (
   }
 
   return value;
-};
-
-export const useClassStack = () => {
-  type StackItem = {
-    id: number;
-    classes: VueClass;
-  };
-  const context = {
-    serial: 0,
-  };
-  const stack = ref<Raw<StackItem>[]>([]);
-  const override = (classes: MaybeRef<VueClass>) => {
-    watchEffect((cleanup) => {
-      const id = context.serial++;
-      stack.value.push({
-        id,
-        classes: unref(classes),
-      });
-
-      cleanup(() => {
-        const index = stack.value.findIndex((item) => item.id === id);
-        if (index >= 0) {
-          pullAt(stack.value, index);
-        }
-      });
-    });
-  };
-
-  const classes = computed(() => {
-    return stack.value.map((item) => item.classes);
-  });
-
-  return { override, classes };
 };

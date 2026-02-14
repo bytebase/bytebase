@@ -1,31 +1,32 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4">
-    <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
-    <AuditLogSearch v-model:params="state.params">
-      <template #searchbox-suffix>
-        <DataExportButton
-          v-if="hasProjectPermissionV2(project, 'bb.auditLogs.export')"
-          size="medium"
-          :support-formats="[
-            ExportFormat.CSV,
-            ExportFormat.JSON,
-            ExportFormat.XLSX,
-          ]"
-          :tooltip="disableExportTip"
-          :view-mode="'DROPDOWN'"
-          :disabled="!hasAuditLogFeature || !!disableExportTip"
-          @export="(params) => pagedAuditLogDataTableRef?.handleExport(params)"
-        />
-      </template>
-    </AuditLogSearch>
-
+  <div class="py-4 w-full flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
+      <AuditLogSearch v-model:params="state.params">
+        <template #searchbox-suffix>
+          <DataExportButton
+            v-if="hasProjectPermissionV2(project, 'bb.auditLogs.export')"
+            size="medium"
+            :support-formats="[
+              ExportFormat.CSV,
+              ExportFormat.JSON,
+              ExportFormat.XLSX,
+            ]"
+            :tooltip="disableExportTip"
+            :view-mode="'DROPDOWN'"
+            :disabled="!hasAuditLogFeature || !!disableExportTip"
+            @export="(params) => pagedAuditLogDataTableRef?.handleExport(params)"
+          />
+        </template>
+      </AuditLogSearch>
+    </div>
     <PagedAuditLogDataTable
       v-if="hasAuditLogFeature"
       ref="pagedAuditLogDataTableRef"
       :parent="projectName"
       :filter="searchAuditLogs"
     />
-    <NEmpty class="py-12 border rounded-sm" v-else />
+    <NEmpty v-else class="mx-4 py-12 border rounded-sm" />
   </div>
 </template>
 

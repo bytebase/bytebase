@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4 text-sm">
+  <div class="w-full px-4 py-4 flex flex-col gap-y-4 text-sm">
     <FeatureAttention :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
     <BBAttention v-if="hasCustomApprovalFeature" type="info" :description="$t('custom-approval.rule.first-match-wins')" />
 

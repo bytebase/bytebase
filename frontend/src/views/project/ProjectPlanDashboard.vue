@@ -1,53 +1,52 @@
 <template>
-  <div v-if="ready" class="w-full">
-    <NAlert
-      v-if="!hideHint"
-      type="info"
-      closable
-      class="mb-4"
-      @close="dismissHint"
-    >
-      {{ $t("plan.subtitle") }}
-    </NAlert>
-    <div
-      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
-    >
-      <div class="w-full flex flex-1 items-center justify-between gap-x-2">
-        <AdvancedSearch
-          v-model:params="state.params"
-          class="flex-1"
-          :scope-options="scopeOptions"
-        />
-        <PermissionGuardWrapper
-          v-slot="slotProps"
-          :project="project"
-          :permissions="['bb.plans.create']"
-        >
-          <NButton
-            type="primary"
-            :disabled="slotProps.disabled"
-            @click="showAddSpecDrawer = true"
+  <div v-if="ready" class="py-4 w-full flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <NAlert
+        v-if="!hideHint"
+        type="info"
+        closable
+        @close="dismissHint"
+      >
+        {{ $t("plan.subtitle") }}
+      </NAlert>
+      <div
+        class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
+      >
+        <div class="w-full flex flex-1 items-center justify-between gap-x-2">
+          <AdvancedSearch
+            v-model:params="state.params"
+            class="flex-1"
+            :scope-options="scopeOptions"
+          />
+          <PermissionGuardWrapper
+            v-slot="slotProps"
+            :project="project"
+            :permissions="['bb.plans.create']"
           >
-            <template #icon>
-              <PlusIcon class="w-4 h-4" />
-            </template>
-            {{ $t("plan.new-plan") }}
-          </NButton>
-        </PermissionGuardWrapper>
+            <NButton
+              type="primary"
+              :disabled="slotProps.disabled"
+              @click="showAddSpecDrawer = true"
+            >
+              <template #icon>
+                <PlusIcon class="w-4 h-4" />
+              </template>
+              {{ $t("plan.new-plan") }}
+            </NButton>
+          </PermissionGuardWrapper>
+        </div>
       </div>
     </div>
-
-    <div class="relative w-full mt-4 min-h-80">
-      <PagedTable
-        ref="planPagedTable"
-        :session-key="`bb.${project.name}.plan-table`"
-        :fetch-list="fetchPlanList"
-      >
-        <template #table="{ list, loading }">
-          <PlanDataTable :loading="loading" :plan-list="list" />
-        </template>
-      </PagedTable>
-    </div>
+    <PagedTable
+      ref="planPagedTable"
+      :session-key="`bb.${project.name}.plan-table`"
+      :footer-class="'mx-4'"
+      :fetch-list="fetchPlanList"
+    >
+      <template #table="{ list, loading }">
+        <PlanDataTable :loading="loading" :plan-list="list" />
+      </template>
+    </PagedTable>
   </div>
 
   <AddSpecDrawer

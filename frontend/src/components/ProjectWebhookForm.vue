@@ -262,7 +262,6 @@ import { BBAttention } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { MissingExternalURLAttention } from "@/components/v2/Form";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
-import { useBodyLayoutContext } from "@/layouts/common";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
@@ -311,10 +310,6 @@ const dialog = useDialog();
 const settingStore = useSettingV1Store();
 const projectStore = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("!pb-0");
-
 onMounted(async () => {
   await settingStore.getOrFetchSettingByName(Setting_SettingName.APP_IM);
 });

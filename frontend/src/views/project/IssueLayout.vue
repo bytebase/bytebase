@@ -35,7 +35,6 @@ import { HeaderSection } from "@/components/Plan/components";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
-import { useBodyLayoutContext } from "@/layouts/common";
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { setDocumentTitle } from "@/utils";
@@ -85,10 +84,6 @@ providePlanContext({
 });
 
 provideSidebarContext(containerRef);
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("py-0! px-0!");
 
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const { project } = useProjectByName(projectName);

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mx-auto flex flex-col gap-y-4 pb-4">
+  <div class="w-full px-4 mx-auto flex flex-col py-4">
     <NTabs v-model:value="state.selectedTab" type="line" animated>
       <NTabPane name="MEMBERS">
         <template #tab>

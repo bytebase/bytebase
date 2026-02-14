@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full overflow-hidden flex flex-col">
+  <div class="w-full h-full overflow-hidden flex flex-col px-4">
     <p class="text-sm text-gray-500">
       {{ $t("database.sync-schema.description") }}
       <LearnMoreLink

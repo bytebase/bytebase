@@ -1886,7 +1886,11 @@
         "allow-jit": {
           "self": "Allow just-in-time access",
           "description": "Once enabled, users can request and use the just-in-time access in the SQL Editor."
-        }
+        },
+        "approval-flow-configured": "Approval flow configured",
+        "approval-flow-fallback": "Using fallback approval rule",
+        "approval-flow-not-configured": "No approval flow configured",
+        "view-approval-flow": "View approval flow"
       },
       "project-labels": {
         "self": "Project Labels",

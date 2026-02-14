@@ -18,8 +18,7 @@
         <div
           id="bb-layout-main"
           ref="mainContainerRef"
-          class="md:min-w-0 flex-1 overflow-y-auto py-4"
-          :class="mainContainerClasses"
+          class="md:min-w-0 flex-1 overflow-y-auto"
         >
           <!-- Start main area-->
           <router-view name="content" />
@@ -40,7 +39,7 @@ import { provideBodyLayoutContext } from "./common";
 
 const mainContainerRef = ref<HTMLDivElement>();
 
-const { mainContainerClasses } = provideBodyLayoutContext({
+provideBodyLayoutContext({
   mainContainerRef,
 });
 </script>

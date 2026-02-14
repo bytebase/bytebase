@@ -1,5 +1,5 @@
 <template>
-  <SyncDatabaseSchema :key="project.name" :project="project" />
+  <SyncDatabaseSchema class="py-4" :key="project.name" :project="project" />
 </template>
 
 <script setup lang="ts">

@@ -1,5 +1,6 @@
 <template>
   <ProjectWebhookForm
+    class="pt-4"
     :create="true"
     :project="project"
     :webhook="defaultNewWebhook"

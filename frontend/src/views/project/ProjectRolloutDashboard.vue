@@ -1,37 +1,37 @@
 <template>
-  <div class="w-full">
-    <div
-      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
-    >
-      <div class="w-full flex flex-1 items-center justify-between gap-x-2">
-        <AdvancedSearch
-          v-model:params="state.params"
-          class="flex-1"
-          :scope-options="scopeOptions"
-        />
-        <UpdatedTimeRange
-          :params="state.params"
-          @update:params="state.params = $event"
-        />
+  <div class="py-4 w-full flex flex-col">
+    <div class="px-4 pb-2">
+      <div
+        class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
+      >
+        <div class="w-full flex flex-1 items-center justify-between gap-x-2">
+          <AdvancedSearch
+            v-model:params="state.params"
+            class="flex-1"
+            :scope-options="scopeOptions"
+          />
+          <UpdatedTimeRange
+            :params="state.params"
+            @update:params="state.params = $event"
+          />
+        </div>
       </div>
     </div>
-
-    <div class="relative w-full mt-4 min-h-80">
-      <PagedTable
-        ref="rolloutPagedTable"
-        :key="project.name"
-        :session-key="`project-${project.name}-rollouts`"
-        :fetch-list="fetchRolloutList"
-      >
-        <template #table="{ list, loading }">
-          <RolloutDataTable
-            :bordered="true"
-            :loading="loading"
-            :rollout-list="list"
-          />
-        </template>
-      </PagedTable>
-    </div>
+    <PagedTable
+      ref="rolloutPagedTable"
+      :key="project.name"
+      :session-key="`project-${project.name}-rollouts`"
+      :footer-class="'mx-4'"
+      :fetch-list="fetchRolloutList"
+    >
+      <template #table="{ list, loading }">
+        <RolloutDataTable
+          :bordered="false"
+          :loading="loading"
+          :rollout-list="list"
+        />
+      </template>
+    </PagedTable>
   </div>
 </template>
 

@@ -47,7 +47,7 @@ const props = withDefaults(
     selectedDatabaseGroupNames?: string[];
   }>(),
   {
-    bordered: true,
+    bordered: false,
     pageSize: 20,
     selectedDatabaseGroupNames: () => [],
   }

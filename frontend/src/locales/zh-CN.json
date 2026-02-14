@@ -1884,7 +1884,11 @@
         "allow-jit": {
           "self": "允许即时访问",
           "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。"
-        }
+        },
+        "approval-flow-configured": "审批流程已配置",
+        "approval-flow-fallback": "使用默认审批规则",
+        "approval-flow-not-configured": "未配置审批流程",
+        "view-approval-flow": "查看审批流程"
       },
       "project-labels": {
         "self": "项目标签",

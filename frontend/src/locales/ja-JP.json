@@ -1884,7 +1884,11 @@
         "allow-jit": {
           "self": "ジャストインタイムアクセスを許可",
           "description": "有効にすると、ユーザーは SQL エディタでジャストインタイムアクセスをリクエストして使用できます。"
-        }
+        },
+        "approval-flow-configured": "承認フローが設定済み",
+        "approval-flow-fallback": "フォールバック承認ルールを使用中",
+        "approval-flow-not-configured": "承認フローが未設定",
+        "view-approval-flow": "承認フローを表示"
       },
       "project-labels": {
         "self": "プロジェクトラベル",

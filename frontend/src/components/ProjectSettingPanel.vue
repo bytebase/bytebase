@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-0 pt-4">
+  <div class="w-full flex flex-col gap-y-0 pt-4 px-4">
     <div class="divide-y divide-block-border">
       <!-- General Settings Section -->
       <div class="pb-6 lg:flex">

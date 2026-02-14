@@ -3,6 +3,7 @@
     size="small"
     :columns="columnList"
     :data="auditLogList"
+    :bordered="false"
     :striped="true"
     :loading="loading"
     :row-key="(data: AuditLog) => data.name"

@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto flex flex-col gap-y-4">
+  <div class="px-4 py-4 mx-auto flex flex-col gap-y-4">
     <div class="textinfolabel">
       {{ $t("sql-review.description") }}
       <LearnMoreLink

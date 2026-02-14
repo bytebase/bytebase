@@ -39,7 +39,6 @@ import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue"
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import RolloutBreadcrumb from "@/components/RolloutV1/components/Rollout/RolloutBreadcrumb.vue";
-import { useBodyLayoutContext } from "@/layouts/common";
 import { usePolicyV1Store, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -97,8 +96,6 @@ providePlanContext({
 });
 
 provideSidebarContext(containerRef);
-
-useBodyLayoutContext().overrideMainContainerClass("py-0! px-0!");
 
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const { project } = useProjectByName(projectName);

@@ -1,4 +1,5 @@
 <template>
+  <div class="px-4 py-4">
   <p class="text-sm text-gray-500 mb-4">
     {{ $t("two-factor.description") }}
     <LearnMoreLink
@@ -107,6 +108,7 @@
     :secret="currentUser.tempOtpSecret"
     @close="state.showSecretModal = false"
   />
+  </div>
 </template>
 
 <script lang="ts" setup>

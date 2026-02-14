@@ -1884,7 +1884,11 @@
         "allow-jit": {
           "self": "Cho phép truy cập tức thời",
           "description": "Khi được bật, người dùng có thể yêu cầu và sử dụng quyền truy cập tức thời trong Trình soạn thảo SQL."
-        }
+        },
+        "approval-flow-configured": "Quy trình phê duyệt đã được cấu hình",
+        "approval-flow-fallback": "Đang sử dụng quy tắc phê duyệt mặc định",
+        "approval-flow-not-configured": "Chưa cấu hình quy trình phê duyệt",
+        "view-approval-flow": "Xem quy trình phê duyệt"
       },
       "project-labels": {
         "self": "Nhãn dự án",

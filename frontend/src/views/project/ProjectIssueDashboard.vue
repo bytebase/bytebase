@@ -1,5 +1,5 @@
 <template>
-  <ProjectIssuesPanel v-if="ready" :project="project" />
+  <ProjectIssuesPanel v-if="ready" class="py-4" :project="project" />
 </template>
 
 <script lang="ts" setup>

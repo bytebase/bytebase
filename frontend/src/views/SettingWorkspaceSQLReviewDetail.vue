@@ -1,4 +1,5 @@
 <template>
+  <div class="px-4 py-4">
   <SQLReviewCreation
     v-if="state.editMode"
     key="sql-review-creation"
@@ -168,6 +169,7 @@
     :review="reviewPolicy"
     @close="state.showResourcePanel = false"
   />
+  </div>
 </template>
 
 <script lang="tsx" setup>

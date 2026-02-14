@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 min-h-full">
+  <div class="min-h-full">
     <router-view :allow-edit="allowEdit" v-bind="$attrs" />
   </div>
 </template>
