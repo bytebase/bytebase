@@ -2312,12 +2312,12 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x04DONE\x10\x02\x12\f\n" +
 	"\bCANCELED\x10\x032\xd8\x0f\n" +
 	"\fIssueService\x12\x80\x01\n" +
-	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"B\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\x9c\x01\n" +
+	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"B\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x02\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\x9c\x01\n" +
 	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"X\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x94\x01\n" +
 	"\n" +
 	"ListIssues\x12\x1e.bytebase.v1.ListIssuesRequest\x1a\x1f.bytebase.v1.ListIssuesResponse\"E\xdaA\x06parent\x8a\xea0\x0ebb.issues.list\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=projects/*}/issues\x12\x9a\x01\n" +
 	"\fSearchIssues\x12 .bytebase.v1.SearchIssuesRequest\x1a!.bytebase.v1.SearchIssuesResponse\"E\x8a\xea0\rbb.issues.get\x90\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{parent=projects/*}/issues:search\x12\xa7\x01\n" +
-	"\vUpdateIssue\x12\x1f.bytebase.v1.UpdateIssueRequest\x1a\x12.bytebase.v1.Issue\"c\xdaA\x11issue,update_mask\x8a\xea0\x10bb.issues.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x05issue2$/v1/{issue.name=projects/*/issues/*}\x12\xc0\x01\n" +
+	"\vUpdateIssue\x12\x1f.bytebase.v1.UpdateIssueRequest\x1a\x12.bytebase.v1.Issue\"c\xdaA\x11issue,update_mask\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02-:\x05issue2$/v1/{issue.name=projects/*/issues/*}\x12\xc0\x01\n" +
 	"\x11ListIssueComments\x12%.bytebase.v1.ListIssueCommentsRequest\x1a&.bytebase.v1.ListIssueCommentsResponse\"\\\xdaA\x06parent\x8a\xea0\x15bb.issueComments.list\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=projects/*/issues/*}/issueComments\x12\xd2\x01\n" +
 	"\x12CreateIssueComment\x12&.bytebase.v1.CreateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"y\xdaA\x14parent,issue_comment\x8a\xea0\x17bb.issueComments.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x029:\rissue_comment\"(/v1/{parent=projects/*/issues/*}:comment\x12\xdf\x01\n" +
 	"\x12UpdateIssueComment\x12&.bytebase.v1.UpdateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"\x85\x01\xdaA parent,issue_comment,update_mask\x8a\xea0\x17bb.issueComments.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x029:\rissue_comment2(/v1/{parent=projects/*/issues/*}:comment\x12\xcd\x01\n" +
