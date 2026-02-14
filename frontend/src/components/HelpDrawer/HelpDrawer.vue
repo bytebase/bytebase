@@ -14,7 +14,14 @@
       <div v-if="state.html" class="overflow-auto" v-html="state.html"></div>
       <template #footer>
         <div class="flex flex-col items-center gap-y-4 pb-10">
-          <button
+          <NButton
+            v-if="isGuide"
+            text
+            size="small"
+            @click="onDismissAll"
+          >
+            {{ $t("help-drawer.dont-show-again") }}
+          </NButton>
             v-if="isGuide"
             class="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
             @click="onDismissAll"
