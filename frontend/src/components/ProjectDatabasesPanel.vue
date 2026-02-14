@@ -1,34 +1,36 @@
 <template>
-  <div class="flex flex-col gap-y-2">
-    <div
-      class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
-    >
-      <AdvancedSearch
-        v-model:params="state.params"
-        class="flex-1"
-        :autofocus="false"
-        :placeholder="$t('database.filter-database')"
-        :scope-options="scopeOptions"
-      />
-      <PermissionGuardWrapper
-        v-slot="slotProps"
-        :project="project"
-        :permissions="[
-          'bb.instances.list',
-          ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
-        ]"
+  <div class="py-4 flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <div
+        class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
       >
-        <NButton
-          type="primary"
-          :disabled="slotProps.disabled"
-          @click="state.showCreateDrawer = true"
+        <AdvancedSearch
+          v-model:params="state.params"
+          class="flex-1"
+          :autofocus="false"
+          :placeholder="$t('database.filter-database')"
+          :scope-options="scopeOptions"
+        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.instances.list',
+            ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+          ]"
         >
-          <template #icon>
-            <PlusIcon class="h-4 w-4" />
-          </template>
-          {{ $t("quick-action.new-db") }}
-        </NButton>
-      </PermissionGuardWrapper>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click="state.showCreateDrawer = true"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("quick-action.new-db") }}
+          </NButton>
+        </PermissionGuardWrapper>
+      </div>
     </div>
     <DatabaseOperations
       :project-name="project.name"
@@ -39,8 +41,10 @@
     <PagedDatabaseTable
       ref="pagedDatabaseTableRef"
       mode="PROJECT"
+      :bordered="false"
       :show-selection="true"
       :filter="filter"
+      :footer-class="'mx-4'"
       :parent="project.name"
       v-model:selected-database-names="state.selectedDatabaseNames"
     />

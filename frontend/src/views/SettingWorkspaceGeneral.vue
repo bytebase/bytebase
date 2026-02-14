@@ -1,5 +1,5 @@
 <template>
-  <div class="divide-y divide-block-border pt-2">
+  <div class="px-4 divide-y divide-block-border py-4">
     <GeneralSetting
       ref="generalSettingRef"
       :title="$t('common.general')"
@@ -51,7 +51,7 @@
       />
     </PermissionGuardWrapper>
 
-    <div v-if="isDirty" class="sticky bottom-0 z-10">
+    <div v-if="isDirty" class="sticky bottom-0 z-10 -mb-4">
       <div
         class="flex justify-between w-full py-4 border-t border-block-border bg-white"
       >
@@ -84,7 +84,6 @@ import {
 } from "@/components/GeneralSetting";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
-import { useBodyLayoutContext } from "@/layouts/common";
 import { pushNotification } from "@/store";
 
 const route = useRoute();
@@ -116,10 +115,6 @@ const settingRefList = computed(() => {
     auditLogStdoutSettingRef,
   ];
 });
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("!pb-0");
 
 onMounted(async () => {
   // If the route has a hash, try to scroll to the element with the value.

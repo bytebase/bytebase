@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 flex flex-col h-full items-center relative">
+  <div class="py-4 px-4 flex flex-col h-full items-center relative">
     <div class="flex-1" />
     <div class="flex-[60%] flex flex-col gap-y-6">
       <div class="flex items-baseline gap-x-4">

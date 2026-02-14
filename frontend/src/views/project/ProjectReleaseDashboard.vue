@@ -1,5 +1,5 @@
 <template>
-  <ProjectReleasesPanel :project="project" />
+  <ProjectReleasesPanel class="py-4" :project="project" />
 </template>
 
 <script lang="ts" setup>

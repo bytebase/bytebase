@@ -86,7 +86,6 @@ import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue"
 import FeatureAttention from "@/components/FeatureGuard/FeatureAttention.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
-import { useBodyLayoutContext } from "@/layouts/common";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
 import {
   featureToRef,
@@ -187,8 +186,4 @@ watchEffect(async () => {
     view: DatabaseGroupView.FULL,
   });
 });
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("py-0!");
 </script>

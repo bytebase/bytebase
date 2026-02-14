@@ -1,53 +1,54 @@
 <template>
-  <div class="w-full">
-    <div
-      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
-    >
-      <div class="flex flex-1 max-w-full items-center gap-x-2">
-        <IssueSearch
-          v-model:params="state.params"
-          class="flex-1"
-          :override-scope-id-list="overrideSearchScopeIdList"
-        >
-          <template #searchbox-suffix>
-            <PermissionGuardWrapper
-              v-slot="slotProps"
-              :project="specificProject"
-              :permissions="[
-                ...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE
-              ]"
-            >
-              <NButton
-                type="primary"
-                :disabled="slotProps.disabled"
-                @click="state.showRequestExportPanel = true"
+  <div class="py-4 w-full flex flex-col">
+    <div class="px-4 pb-2">
+      <div
+        class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
+      >
+        <div class="flex flex-1 max-w-full items-center gap-x-2">
+          <IssueSearch
+            v-model:params="state.params"
+            class="flex-1"
+            :override-scope-id-list="overrideSearchScopeIdList"
+          >
+            <template #searchbox-suffix>
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :project="specificProject"
+                :permissions="[
+                  ...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE
+                ]"
               >
-                <template #icon>
-                  <DownloadIcon class="h-4 w-4" />
-                </template>
-                {{ $t("quick-action.request-export-data") }}
-              </NButton>
-            </PermissionGuardWrapper>
-          </template>
-        </IssueSearch>
+                <NButton
+                  type="primary"
+                  :disabled="slotProps.disabled"
+                  @click="state.showRequestExportPanel = true"
+                >
+                  <template #icon>
+                    <DownloadIcon class="h-4 w-4" />
+                  </template>
+                  {{ $t("quick-action.request-export-data") }}
+                </NButton>
+              </PermissionGuardWrapper>
+            </template>
+          </IssueSearch>
+        </div>
       </div>
     </div>
-
-    <div class="relative w-full mt-4 min-h-80">
-      <PagedTable
-        ref="issuePagedTable"
-        :session-key="'export-center'"
-        :fetch-list="fetchIssueList"
-      >
-        <template #table="{ list, loading }">
-          <IssueTableV1
-            :loading="loading"
-            :issue-list="list"
-            :highlight-text="state.params.query"
-          />
-        </template>
-      </PagedTable>
-    </div>
+    <PagedTable
+      ref="issuePagedTable"
+      :session-key="'export-center'"
+      :footer-class="'mx-4'"
+      :fetch-list="fetchIssueList"
+    >
+      <template #table="{ list, loading }">
+        <IssueTableV1
+          class="border-x-0"
+          :loading="loading"
+          :issue-list="list"
+          :highlight-text="state.params.query"
+        />
+      </template>
+    </PagedTable>
   </div>
 
   <Drawer

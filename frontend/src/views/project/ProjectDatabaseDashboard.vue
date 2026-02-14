@@ -1,5 +1,5 @@
 <template>
-  <ProjectDatabasesPanel :project="project" />
+  <ProjectDatabasesPanel class="py-4" :project="project" />
 </template>
 
 <script lang="ts" setup>

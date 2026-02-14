@@ -1,8 +1,9 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <div
-      class="flex flex-row justify-between items-center gap-x-2"
-    >
+  <div class="py-4 flex flex-col">
+    <div class="px-4 pb-2">
+      <div
+        class="flex flex-row justify-between items-center gap-x-2"
+      >
       <DatabaseSelect
         class="hidden sm:block"
         style="max-width: max-content"
@@ -55,6 +56,7 @@
           </NButton>
         </PermissionGuardWrapper>
       </div>
+    </div>
     </div>
     <MaskingExceptionUserTable
       size="medium"

@@ -2,6 +2,7 @@
   <PagedTable
     ref="auditPagedTable"
     :session-key="`bb.page-audit-log-table.settings-audit-log-v1-table.${parent}`"
+    :footer-class="'mx-4'"
     :fetch-list="fetchAuditLog"
     :order-keys="['create_time']"
   >

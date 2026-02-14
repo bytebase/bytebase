@@ -56,7 +56,6 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { useBodyLayoutContext } from "./common";
 
 const props = defineProps<{
   projectId: string;
@@ -117,8 +116,4 @@ const allowEdit = computed(() => {
 
   return hasProjectPermissionV2(project.value, "bb.projects.update");
 });
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("px-4");
 </script>

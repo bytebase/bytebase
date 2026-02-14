@@ -1,7 +1,8 @@
 <template>
-  <div class="w-full overflow-x-hidden flex flex-col gap-y-4 pb-4">
+  <div class="w-full px-4 overflow-x-hidden flex flex-col py-4">
     <BBAttention
       v-if="remainingUserCount <= 3"
+      class="mb-2"
       :type="'warning'"
       :title="$t('subscription.usage.user-count.title')"
       :description="userCountAttention"

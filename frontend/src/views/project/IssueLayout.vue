@@ -36,7 +36,6 @@ import { HeaderSection } from "@/components/Plan/components";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
-import { useBodyLayoutContext } from "@/layouts/common";
 
 const props = defineProps<{
   projectId: string;
@@ -83,10 +82,6 @@ providePlanContext({
 });
 
 provideSidebarContext(containerRef);
-
-const { overrideMainContainerClass } = useBodyLayoutContext();
-
-overrideMainContainerClass("py-0! px-0!");
 
 const documentTitle = computed(() => {
   if (isCreating.value) {

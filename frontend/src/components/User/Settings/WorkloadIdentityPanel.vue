@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full overflow-x-hidden flex flex-col gap-y-4 pb-4">
-    <div class="flex justify-between items-center">
+  <div class="w-full overflow-x-hidden flex flex-col py-4">
+    <div class="flex justify-between items-center px-4 pb-2">
       <div class="flex items-center gap-x-2">
         <p class="text-lg font-medium leading-7 text-main">
           <span>{{ $t("settings.members.workload-identities") }}</span>
@@ -33,6 +33,7 @@
       ref="workloadIdentityPagedTable"
       :session-key="sessionKey"
       :fetch-list="fetchWorkloadIdentityList"
+      :footer-class="'mx-4'"
     >
       <template #table="{ list, loading }">
         <UserDataTable
@@ -46,39 +47,40 @@
       </template>
     </PagedTable>
 
-    <div>
+    <div class="px-4">
       <NCheckbox v-model:checked="state.showInactiveList">
         <span class="textinfolabel">
           {{ $t("settings.members.show-inactive") }}
         </span>
       </NCheckbox>
-
-      <template v-if="state.showInactiveList">
-        <div class="flex justify-between items-center mt-2 mb-4">
-          <p class="text-lg font-medium leading-7">
-            <span>{{
-              $t("settings.members.inactive-workload-identities")
-            }}</span>
-          </p>
-        </div>
-
-        <PagedTable
-          ref="deletedWorkloadIdentityPagedTable"
-          :session-key="deletedSessionKey"
-          :fetch-list="fetchInactiveWorkloadIdentityList"
-        >
-          <template #table="{ list, loading }">
-            <UserDataTable
-              :loading="loading"
-              :show-roles="false"
-              :show-groups="false"
-              :user-list="list"
-              @user-updated="handleWorkloadIdentityRestore"
-            />
-          </template>
-        </PagedTable>
-      </template>
     </div>
+
+    <template v-if="state.showInactiveList">
+      <div class="flex justify-between items-center mt-2 px-4 pb-2">
+        <p class="text-lg font-medium leading-7">
+          <span>{{
+            $t("settings.members.inactive-workload-identities")
+          }}</span>
+        </p>
+      </div>
+
+      <PagedTable
+        ref="deletedWorkloadIdentityPagedTable"
+        :session-key="deletedSessionKey"
+        :fetch-list="fetchInactiveWorkloadIdentityList"
+        :footer-class="'mx-4'"
+      >
+        <template #table="{ list, loading }">
+          <UserDataTable
+            :loading="loading"
+            :show-roles="false"
+            :show-groups="false"
+            :user-list="list"
+            @user-updated="handleWorkloadIdentityRestore"
+          />
+        </template>
+      </PagedTable>
+    </template>
   </div>
 
   <CreateWorkloadIdentityDrawer

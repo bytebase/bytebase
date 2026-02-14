@@ -1,6 +1,6 @@
 <template>
   <DatabaseGroupForm
-    class="h-full"
+    class="py-4 h-full"
     :readonly="false"
     :project="project"
     @dismiss="() => router.back()"
