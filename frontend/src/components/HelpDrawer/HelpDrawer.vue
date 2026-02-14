@@ -13,7 +13,15 @@
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-if="state.html" class="overflow-auto" v-html="state.html"></div>
       <template #footer>
-        <div class="flex flex-row justify-center pb-10">
+        <div class="flex flex-col items-center gap-y-4 pb-10">
+          <NButton
+            v-if="isGuide"
+            text
+            size="small"
+            @click="onDismissAll"
+          >
+            {{ $t("help-drawer.dont-show-again") }}
+          </NButton>
           <div
             v-if="locale === 'zh-CN'"
             class="w-full flex flex-col items-center pt-2"
@@ -56,6 +64,7 @@
 
 <script lang="ts" setup>
 import type { Node, Tag } from "@markdoc/markdoc";
+import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -125,7 +134,11 @@ watch(
       (pair) => pair.routeName === routeName
     )?.helpName;
 
-    if (helpId && !uiStateStore.getIntroStateByKey(`${helpId}`)) {
+    if (
+      helpId &&
+      !uiStateStore.allHelpDrawersDismissed &&
+      !uiStateStore.getIntroStateByKey(`${helpId}`)
+    ) {
       state.helpTimer = window.setTimeout(() => {
         helpStore.showHelp(helpId, true);
         uiStateStore.saveIntroStateByKey({
@@ -162,6 +175,11 @@ watch(helpId, async (id) => {
     deactivate();
   }
 });
+
+const onDismissAll = () => {
+  uiStateStore.allHelpDrawersDismissed = true;
+  helpStore.exitHelp();
+};
 
 const onClose = () => {
   if (isGuide.value) {
