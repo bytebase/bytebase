@@ -120,9 +120,17 @@ const handleUpdateSelectedStatement = (value: string) => {
   });
 };
 
+// Guard flag to prevent a feedback loop: when the user selects text in the
+// editor, handleUpdateSelection stores the selection in the tab store, which
+// triggers the watcher below. Without this flag the watcher would call
+// setSelection() back on the editor, interrupting an in-progress mouse drag
+// and breaking double-click-drag word selection.
+let selectionFromEditor = false;
+
 const handleUpdateSelection = (selection: MonacoSelection | null) => {
   const tab = currentTab.value;
   if (!tab) return;
+  selectionFromEditor = true;
   tabStore.updateCurrentTab({
     editorState: {
       selection,
@@ -149,12 +157,13 @@ const getActiveStatement = () => {
 watch(
   () => currentTab.value?.editorState.selection?.toString(),
   () => {
-    if (!tabStore.currentTab?.editorState.selection) {
+    if (selectionFromEditor) {
+      selectionFromEditor = false;
       return;
     }
-    activeSQLEditorRef.value?.setSelection(
-      tabStore.currentTab.editorState.selection
-    );
+    const selection = tabStore.currentTab?.editorState.selection;
+    if (!selection) return;
+    activeSQLEditorRef.value?.setSelection(selection);
   }
 );
 

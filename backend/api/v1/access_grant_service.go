@@ -17,6 +17,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -143,6 +144,24 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 	if ag.Query == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("query is required"))
+	}
+
+	// Validate the query is a read-only statement (SELECT).
+	instanceID, _, err := common.GetInstanceDatabaseID(ag.Targets[0])
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", ag.Targets[0]))
+	}
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+	}
+	if instance == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+	}
+	if ok, _, err := parserbase.ValidateSQLForEditor(instance.Metadata.GetEngine(), ag.Query); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid query"))
+	} else if !ok {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only statements are allowed in access grants"))
 	}
 
 	creatorEmail, err := common.GetUserEmail(ag.Creator)
