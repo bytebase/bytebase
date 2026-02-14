@@ -1,7 +1,8 @@
 <template>
-  <div class="w-full overflow-x-hidden flex flex-col gap-y-4 pb-4">
+  <div class="w-full px-4 overflow-x-hidden flex flex-col py-4">
     <BBAttention
       v-if="remainingUserCount <= 3"
+      class="mb-2"
       :type="'warning'"
       :title="$t('subscription.usage.user-count.title')"
       :description="userCountAttention"
@@ -44,7 +45,7 @@
 
       <NTabPane name="GROUPS">
         <template #tab>
-          <div class="flex-1 flex gap-x-2">
+          <div>
             <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("settings.members.groups.self") }}</span>
             </p>
@@ -396,7 +397,6 @@ const fetchUserList = async ({
     pageSize,
     filter: {
       query: state.activeUserFilterText,
-      types: [UserType.USER],
     },
   });
   return { list: users, nextPageToken };
@@ -415,7 +415,6 @@ const fetchInactiveUserList = async ({
     filter: {
       query: state.inactiveUserFilterText,
       state: State.DELETED,
-      types: [UserType.USER],
     },
   });
   return { list: users, nextPageToken };

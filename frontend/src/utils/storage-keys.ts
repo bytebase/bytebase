@@ -11,6 +11,8 @@ export const STORAGE_KEY_SCHEMA_EDITOR_PREVIEW =
 export const STORAGE_KEY_ROLES_EXPIRATION =
   "bb.roles.last-expiration-selection";
 export const STORAGE_KEY_AI_DISMISS = "bb.ai.dismiss-placeholder";
+export const STORAGE_KEY_HELP_DRAWERS_DISMISSED =
+  "bb.help-drawers.all-dismissed";
 export const STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT = "bb.sql-editor.result-limit";
 export const STORAGE_KEY_SQL_EDITOR_REDIS_NODE = "bb.sql-editor.redis-node";
 export const STORAGE_KEY_SQL_EDITOR_LAST_PROJECT = "bb.sql-editor.last-project";

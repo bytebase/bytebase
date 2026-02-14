@@ -22,12 +22,6 @@
           >
             {{ $t("help-drawer.dont-show-again") }}
           </NButton>
-            v-if="isGuide"
-            class="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
-            @click="onDismissAll"
-          >
-            {{ $t("help-drawer.dont-show-again") }}
-          </button>
           <div
             v-if="locale === 'zh-CN'"
             class="w-full flex flex-col items-center pt-2"
@@ -70,6 +64,7 @@
 
 <script lang="ts" setup>
 import type { Node, Tag } from "@markdoc/markdoc";
+import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
