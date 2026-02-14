@@ -179,6 +179,41 @@ func TestSyncInstanceAndSchema(t *testing.T) {
 							"nullable": false,
 						},
 					},
+					"indexes": []map[string]any{
+						{
+							"indexName":  "idx_vector",
+							"fieldName":  "vector",
+							"indexType":  "HNSW",
+							"metricType": "L2",
+						},
+					},
+					"consistencyLevel": "Bounded",
+				},
+			})
+		case "/v2/vectordb/partitions/list":
+			require.Equal(t, http.MethodPost, r.Method)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"data": []map[string]any{
+					{"partitionName": "_default"},
+					{"partitionName": "p1"},
+				},
+			})
+		case "/v2/vectordb/aliases/list":
+			require.Equal(t, http.MethodPost, r.Method)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"data": []map[string]any{
+					{"aliasName": "alias_c1", "collectionName": "c1"},
+					{"aliasName": "alias_c2", "collectionName": "c2"},
+				},
+			})
+		case "/v2/vectordb/collections/get_load_state":
+			require.Equal(t, http.MethodPost, r.Method)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"code": 0,
+				"data": map[string]any{
+					"state": "Loaded",
 				},
 			})
 		default:
@@ -217,6 +252,13 @@ func TestSyncInstanceAndSchema(t *testing.T) {
 	require.Equal(t, "id", schema.Schemas[0].Tables[0].Columns[0].Name)
 	require.Equal(t, "Int64", schema.Schemas[0].Tables[0].Columns[0].Type)
 	require.False(t, schema.Schemas[0].Tables[0].Columns[0].Nullable)
+	require.Len(t, schema.Schemas[0].Tables[0].Indexes, 1)
+	require.Equal(t, "idx_vector", schema.Schemas[0].Tables[0].Indexes[0].Name)
+	require.Equal(t, []string{"vector"}, schema.Schemas[0].Tables[0].Indexes[0].Expressions)
+	require.Len(t, schema.Schemas[0].Tables[0].Partitions, 2)
+	require.Contains(t, schema.Schemas[0].Tables[0].CreateOptions, `"consistencyLevel":"Bounded"`)
+	require.Contains(t, schema.Schemas[0].Tables[0].CreateOptions, `"aliases":["alias_c1"]`)
+	require.Contains(t, schema.Schemas[0].Tables[0].CreateOptions, `"loadState":"Loaded"`)
 }
 
 func TestExecute_RoutesAndPayloads(t *testing.T) {
@@ -476,4 +518,50 @@ func TestFetchVersion_FallbackPlainText(t *testing.T) {
 	version, err := d.fetchVersion(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, "2.6.0", version)
+}
+
+func TestDump_MilvusSchema(t *testing.T) {
+	d := &Driver{}
+	var out bytes.Buffer
+
+	err := d.Dump(context.Background(), &out, &storepb.DatabaseSchemaMetadata{
+		Name: "milvus",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "c1",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "Int64", Nullable: false},
+							{Name: "vector", Type: "FloatVector", Nullable: false},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_vector",
+								Type:        "HNSW",
+								Expressions: []string{"vector"},
+								Definition:  `{"metricType":"L2","params":{"efConstruction":64}}`,
+							},
+						},
+						Partitions: []*storepb.TablePartitionMetadata{
+							{Name: "_default"},
+							{Name: "p1"},
+						},
+						CreateOptions: `{"aliases":["alias_c1"],"consistencyLevel":"Bounded","loadState":"Loaded"}`,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	dump := out.String()
+	require.Contains(t, dump, "create collection c1 with")
+	require.Contains(t, dump, `"consistencyLevel":"Bounded"`)
+	require.Contains(t, dump, "create index on c1 field vector with")
+	require.Contains(t, dump, `"indexName":"idx_vector"`)
+	require.Contains(t, dump, "create partition _default in c1;")
+	require.Contains(t, dump, "create partition p1 in c1;")
+	require.Contains(t, dump, "create alias alias_c1 for c1;")
+	require.Contains(t, dump, "load collection c1;")
 }
