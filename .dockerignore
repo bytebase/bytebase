@@ -1,6 +1,7 @@
 frontend/node_modules
 bytebase-build
 .cache
+.pnpm-store
 .git
 frontend/dist
 backend/server/dist
