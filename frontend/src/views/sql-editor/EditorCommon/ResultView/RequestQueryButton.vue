@@ -82,8 +82,8 @@ const useJIT = computed(() => {
   return (
     props.preferJit &&
     project.value.allowJustInTimeAccess &&
-    props.permissionDeniedDetail.requiredPermissions.some((p) =>
-      p.startsWith("bb.sql.")
+    props.permissionDeniedDetail.requiredPermissions.every(
+      (p) => p === "bb.sql.select"
     )
   );
 });
