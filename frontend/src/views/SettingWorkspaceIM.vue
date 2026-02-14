@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4 pb-4">
+  <div class="w-full px-4 flex flex-col gap-y-4 py-4">
     <div class="textinfolabel">
       {{ $t("settings.im-integration.description") }}
       <LearnMoreLink

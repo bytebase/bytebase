@@ -1,5 +1,5 @@
 <template>
-  <div :key="viewId" class="flex flex-col">
+  <div :key="viewId" class="py-4 flex flex-col">
     <IssueSearch
       v-model:params="state.params"
       :components="['searchbox', 'time-range', 'presets', 'status']"
@@ -7,23 +7,22 @@
       class="px-4 pb-2"
     />
 
-    <div class="relative min-h-80">
-      <PagedTable
-        ref="issuePagedTable"
-        session-key="bb.issue-table.my-issues"
-        :fetch-list="fetchIssueList"
-      >
-        <template #table="{ list, loading }">
-          <IssueTableV1
-            class="border-x-0"
-            :loading="loading"
-            :issue-list="list"
-            :highlight-text="state.params.query"
-            :show-project="true"
-          />
-        </template>
-      </PagedTable>
-    </div>
+    <PagedTable
+      ref="issuePagedTable"
+      session-key="bb.issue-table.my-issues"
+      :footer-class="'mx-4'"
+      :fetch-list="fetchIssueList"
+    >
+      <template #table="{ list, loading }">
+        <IssueTableV1
+          class="border-x-0"
+          :loading="loading"
+          :issue-list="list"
+          :highlight-text="state.params.query"
+          :show-project="true"
+        />
+      </template>
+    </PagedTable>
   </div>
 </template>
 

@@ -6,7 +6,7 @@
       :columns="columnList"
       :data="planList"
       :striped="true"
-      :bordered="true"
+      :bordered="false"
       :loading="loading"
       :scroll-x="scrollX"
       :row-key="(plan: Plan) => plan.name"

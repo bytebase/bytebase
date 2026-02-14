@@ -1,43 +1,44 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <FeatureAttention :feature="PlanFeature.FEATURE_DATABASE_GROUPS" />
-
-    <div class="flex flex-row items-center justify-end gap-x-2">
-      <SearchBox
-        v-model:value="state.searchText"
-        style="max-width: 100%"
-        :placeholder="$t('common.filter-by-name')"
-      />
-      <PermissionGuardWrapper
-        v-slot="slotProps"
-        :project="project"
-        :permissions="['bb.databaseGroups.create']"
-      >
-        <NButton
-          type="primary"
-          :disabled="slotProps.disabled"
-          @click="
-            () => {
-              if (!hasDBGroupFeature) {
-                state.showFeatureModal = true;
-                return;
-              }
-              router.push({
-                name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
-              });
-            }
-          "
+  <div class="py-4 flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <FeatureAttention :feature="PlanFeature.FEATURE_DATABASE_GROUPS" />
+      <div class="flex flex-row items-center justify-end gap-x-2">
+        <SearchBox
+          v-model:value="state.searchText"
+          style="max-width: 100%"
+          :placeholder="$t('common.filter-by-name')"
+        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="['bb.databaseGroups.create']"
         >
-          <template #icon>
-            <PlusIcon class="w-4" />
-            <FeatureBadge
-              :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
-              class="text-white"
-            />
-          </template>
-          {{ $t("database-group.create") }}
-        </NButton>
-      </PermissionGuardWrapper>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click="
+              () => {
+                if (!hasDBGroupFeature) {
+                  state.showFeatureModal = true;
+                  return;
+                }
+                router.push({
+                  name: PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE,
+                });
+              }
+            "
+          >
+            <template #icon>
+              <PlusIcon class="w-4" />
+              <FeatureBadge
+                :feature="PlanFeature.FEATURE_DATABASE_GROUPS"
+                class="text-white"
+              />
+            </template>
+            {{ $t("database-group.create") }}
+          </NButton>
+        </PermissionGuardWrapper>
+      </div>
     </div>
     <ProjectDatabaseGroupPanel :project="project" :filter="state.searchText" />
   </div>

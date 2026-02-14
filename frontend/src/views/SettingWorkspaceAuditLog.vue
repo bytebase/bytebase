@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4 pb-6">
+  <div class="px-4 py-4">
     <FeatureAttention :feature="PlanFeature.FEATURE_AUDIT_LOG" />
     <AuditLogSearch v-model:params="state.params">
       <template #searchbox-suffix>
@@ -18,15 +18,14 @@
         />
       </template>
     </AuditLogSearch>
-
-    <PagedAuditLogDataTable
-      v-if="hasAuditLogFeature"
-      ref="pagedAuditLogDataTableRef"
-      :parent="parent"
-      :filter="searchAuditLogs"
-    />
-    <NEmpty class="py-12 border rounded-sm" v-else />
   </div>
+  <PagedAuditLogDataTable
+    v-if="hasAuditLogFeature"
+    ref="pagedAuditLogDataTableRef"
+    :parent="parent"
+    :filter="searchAuditLogs"
+  />
+  <NEmpty class="mx-4 py-12 border rounded-sm" v-else />
 </template>
 
 <script lang="ts" setup>

@@ -1,12 +1,12 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4">
-    <FeatureAttention :feature="PlanFeature.FEATURE_JIT" />
+  <div class="py-4 w-full flex flex-col">
+    <FeatureAttention class="mx-4 mb-2" :feature="PlanFeature.FEATURE_JIT" />
 
     <ComponentPermissionGuard
       :project="project"
       :permissions="['bb.accessGrants.list']"
     >
-      <div class="flex items-center gap-x-2">
+      <div class="px-4 pb-2 flex items-center gap-x-2">
         <AdvancedSearch
           class="flex-1"
           :params="searchParams"
@@ -22,6 +22,7 @@
         ref="pagedTableRef"
         :key="projectName"
         :session-key="`project-${projectName}-access-grants`"
+        :footer-class="'mx-4'"
         :fetch-list="fetchList"
         :order-keys="ORDER_KEYS"
       >
@@ -30,7 +31,7 @@
             v-if="hasJITFeature"
             :columns="getSortedColumns(sorters)"
             :data="list"
-            :bordered="true"
+            :bordered="false"
             :striped="true"
             :loading="loading"
             :row-key="(row: AccessGrant) => row.name"
@@ -41,7 +42,7 @@
       </PagedTable>
     </ComponentPermissionGuard>
 
-    <NAlert v-if="!canList" type="info">
+    <NAlert v-if="!canList" type="info" class="mx-4 mt-2">
       <i18n-t keypath="sql-editor.access-grants-redirect-hint" tag="span">
         <template #link>
           <router-link

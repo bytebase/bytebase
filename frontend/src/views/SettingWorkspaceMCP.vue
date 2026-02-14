@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-6 pb-4">
+  <div class="w-full px-4 flex flex-col gap-y-6 py-4">
     <!-- Header -->
     <div>
       <h2 class="text-lg font-medium">{{ $t("settings.mcp.title") }}</h2>

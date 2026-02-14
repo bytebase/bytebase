@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-y-6 text-sm">
+  <div class="w-full px-4 py-4 flex flex-col gap-y-6 text-sm">
     <FeatureAttention
       :feature="PlanFeature.FEATURE_RISK_ASSESSMENT"
       class="mb-2"

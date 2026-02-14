@@ -1,33 +1,35 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <BBAttention
-      v-if="remainingInstanceCount <= 3"
-      :type="'warning'"
-      :title="$t('subscription.usage.instance-count.title')"
-      :description="instanceCountAttention"
-    />
-    <div class="px-4 flex items-center gap-x-2">
-      <AdvancedSearch
-        v-model:params="state.params"
-        :autofocus="false"
-        :placeholder="$t('instance.filter-instance-name')"
-        :scope-options="scopeOptions"
+  <div class="py-4 flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <BBAttention
+        v-if="remainingInstanceCount <= 3"
+        :type="'warning'"
+        :title="$t('subscription.usage.instance-count.title')"
+        :description="instanceCountAttention"
       />
-      <PermissionGuardWrapper
-        v-slot="slotProps"
-        :permissions="['bb.instances.create']"
-      >
-        <NButton
-          type="primary"
-          :disabled="slotProps.disabled"
-          @click="showCreateInstanceDrawer"
+      <div class="flex items-center gap-x-2">
+        <AdvancedSearch
+          v-model:params="state.params"
+          :autofocus="false"
+          :placeholder="$t('instance.filter-instance-name')"
+          :scope-options="scopeOptions"
+        />
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :permissions="['bb.instances.create']"
         >
-          <template #icon>
-            <PlusIcon class="h-4 w-4" />
-          </template>
-          {{ $t("quick-action.add-instance") }}
-        </NButton>
-      </PermissionGuardWrapper>
+          <NButton
+            type="primary"
+            :disabled="slotProps.disabled"
+            @click="showCreateInstanceDrawer"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("quick-action.add-instance") }}
+          </NButton>
+        </PermissionGuardWrapper>
+      </div>
     </div>
     <div>
       <InstanceOperations

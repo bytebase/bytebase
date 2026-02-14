@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <div class="flex items-center justify-end">
+  <div class="py-4 flex flex-col">
+    <div class="px-4 pb-2 flex items-center justify-end">
       <PermissionGuardWrapper
         v-slot="slotProps"
         :project="project"
@@ -23,7 +23,7 @@
       :columns="columnList"
       :striped="true"
       :row-key="(webhook: Webhook) => webhook.name"
-      :bordered="true"
+      :bordered="false"
       :row-props="rowProps"
     />
   </div>

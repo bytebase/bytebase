@@ -1,5 +1,6 @@
 <template>
   <ProjectWebhookForm
+    class="pt-4"
     :allow-edit="allowEdit"
     :create="false"
     :project="project"

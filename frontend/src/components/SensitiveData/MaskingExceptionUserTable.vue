@@ -4,7 +4,7 @@
     :columns="accessTableColumns"
     :data="filteredList"
     :row-key="(row: AccessUser) => row.key"
-    :bordered="true"
+    :bordered="false"
     :striped="true"
     :loading="!ready || state.loading"
     :max-height="'calc(100vh - 15rem)'"

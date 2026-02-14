@@ -1,5 +1,5 @@
 <template>
-  <ProjectMemberPanel :project="project" :allow-edit="allowEdit" />
+  <ProjectMemberPanel class="py-4" :project="project" :allow-edit="allowEdit" />
 </template>
 
 <script setup lang="ts">

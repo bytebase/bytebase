@@ -1,34 +1,34 @@
 <template>
-  <div class="flex flex-col gap-y-2">
-    <NAlert
-      v-if="!hideHint"
-      type="info"
-      closable
-      @close="dismissHint"
-    >
-      {{ $t("issue.subtitle") }}
-    </NAlert>
-    <IssueSearch
-      v-model:params="state.params"
-      :components="['searchbox', 'time-range', 'presets', 'status']"
-    />
-
-    <div class="relative min-h-80">
-      <PagedTable
-        ref="issuePagedTable"
-        session-key="bb.issue-table.project-issues"
-        :fetch-list="fetchIssueList"
+  <div class="flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <NAlert
+        v-if="!hideHint"
+        type="info"
+        closable
+        @close="dismissHint"
       >
-        <template #table="{ list, loading }">
-          <IssueTableV1
-            :bordered="true"
-            :loading="loading"
-            :issue-list="list"
-            :highlight-text="state.params.query"
-          />
-        </template>
-      </PagedTable>
+        {{ $t("issue.subtitle") }}
+      </NAlert>
+      <IssueSearch
+        v-model:params="state.params"
+        :components="['searchbox', 'time-range', 'presets', 'status']"
+      />
     </div>
+    <PagedTable
+      ref="issuePagedTable"
+      session-key="bb.issue-table.project-issues"
+      :footer-class="'mx-4'"
+      :fetch-list="fetchIssueList"
+    >
+      <template #table="{ list, loading }">
+        <IssueTableV1
+          class="border-x-0"
+          :loading="loading"
+          :issue-list="list"
+          :highlight-text="state.params.query"
+        />
+      </template>
+    </PagedTable>
   </div>
 </template>
 

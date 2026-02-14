@@ -1,15 +1,15 @@
 <template>
   <div class="w-full mx-auto flex flex-col gap-y-4">
-    <div class="textinfolabel">
+    <div class="textinfolabel px-4 pt-4">
       {{ $t("project.members.description") }}
       <LearnMoreLink
         url="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
       />
     </div>
 
-    <NTabs v-model:value="state.selectedTab" type="bar" animated>
+    <NTabs v-model:value="state.selectedTab" type="bar" :tabs-padding="16" animated>
       <template #suffix>
-        <div class="flex justify-end gap-x-2">
+        <div class="flex justify-end gap-x-2 pr-4">
           <SearchBox
             v-model:value="state.searchText"
             :placeholder="$t('settings.members.search-member')"

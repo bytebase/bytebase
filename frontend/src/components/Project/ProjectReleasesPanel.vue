@@ -1,40 +1,41 @@
 <template>
-  <div class="w-full flex flex-col gap-y-4">
-    <NAlert type="info">
-      <span>{{ $t("release.usage-description") }}</span>
-      <LearnMoreLink
-        url="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
-        class="ml-1"
-      />
-    </NAlert>
-
-    <!-- Category Filter -->
-    <div class="flex items-center gap-x-4">
-      <NSelect
-        v-model:value="selectedCategory"
-        :options="categoryOptions"
-        :placeholder="$t('release.filter-by-category')"
-        :loading="categoriesLoading"
-        clearable
-        class="w-64"
-      />
-      <NButton
-        v-if="selectedCategory"
-        @click="clearFilters"
-        quaternary
-      >
-        {{ $t('common.clear-filters') }}
-      </NButton>
+  <div class="w-full flex flex-col">
+    <div class="px-4 flex flex-col gap-y-2 pb-2">
+      <NAlert type="info">
+        <span>{{ $t("release.usage-description") }}</span>
+        <LearnMoreLink
+          url="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
+          class="ml-1"
+        />
+      </NAlert>
+      <!-- Category Filter -->
+      <div class="flex items-center gap-x-4">
+        <NSelect
+          v-model:value="selectedCategory"
+          :options="categoryOptions"
+          :placeholder="$t('release.filter-by-category')"
+          :loading="categoriesLoading"
+          clearable
+          class="w-64"
+        />
+        <NButton
+          v-if="selectedCategory"
+          @click="clearFilters"
+          quaternary
+        >
+          {{ $t('common.clear-filters') }}
+        </NButton>
+      </div>
     </div>
-
     <PagedTable
       :key="`${project.name}-${selectedCategory || 'all'}`"
       :session-key="`project-${project.name}-releases`"
+      :footer-class="'mx-4'"
       :fetch-list="fetchReleaseList"
     >
       <template #table="{ list, loading }">
         <ReleaseDataTable
-          :bordered="true"
+          :bordered="false"
           :loading="loading"
           :release-list="list"
         />
