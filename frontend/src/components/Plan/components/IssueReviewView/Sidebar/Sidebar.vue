@@ -26,10 +26,7 @@ import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { issueServiceClientConnect } from "@/connect";
-import {
-  pushNotification,
-  useCurrentProjectV1,
-} from "@/store";
+import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
   IssueStatus,
   UpdateIssueRequestSchema,
