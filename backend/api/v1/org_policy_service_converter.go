@@ -68,6 +68,7 @@ func ConvertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 					Value: payload.StringPayload.Value,
 				},
 			}
+		default:
 		}
 
 		rules = append(rules, v1Rule)
@@ -136,6 +137,7 @@ func ConvertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 					Value: payload.StringPayload.Value,
 				},
 			}
+		default:
 		}
 
 		ruleList = append(ruleList, storeRule)

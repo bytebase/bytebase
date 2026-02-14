@@ -83,6 +83,7 @@ func convertValue(typeName string, _ *sql.ColumnType, value any) *v1pb.RowValue 
 				},
 			}
 		}
+	default:
 	}
 	return util.NullRowValue
 }

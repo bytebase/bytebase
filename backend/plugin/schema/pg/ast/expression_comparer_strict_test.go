@@ -1,4 +1,4 @@
-package ast
+package ast //nolint:revive // intentional package name
 
 import (
 	"fmt"

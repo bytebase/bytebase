@@ -117,6 +117,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 					break
 				}
 			}
+		default:
 		}
 		if !validAudience {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: audience mismatch")

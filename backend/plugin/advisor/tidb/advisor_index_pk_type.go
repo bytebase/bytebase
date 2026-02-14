@@ -137,6 +137,7 @@ func (v *indexPkTypeChecker) Enter(in ast.Node) (ast.Node, bool) {
 			default:
 			}
 		}
+	default:
 	}
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, &storepb.Advice{

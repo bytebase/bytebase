@@ -288,6 +288,7 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 				},
 			}
 		}
+	default:
 	}
 
 	switch secret.SecretType {

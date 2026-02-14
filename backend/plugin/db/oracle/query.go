@@ -96,6 +96,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		if raw.Valid {
 			return convertTimestamp(typeName, columnType, raw.Time)
 		}
+	default:
 	}
 	return util.NullRowValue
 }

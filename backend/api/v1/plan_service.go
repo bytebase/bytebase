@@ -842,6 +842,7 @@ func convertToPlanSpec(projectID string, spec *storepb.PlanConfig_Spec) *v1pb.Pl
 		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(projectID, v)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
 		v1Spec.Config = convertToPlanSpecExportDataConfig(projectID, v)
+	default:
 	}
 
 	return v1Spec
@@ -914,6 +915,7 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 		storeSpec.Config = convertPlanSpecChangeDatabaseConfig(v)
 	case *v1pb.Plan_Spec_ExportDataConfig:
 		storeSpec.Config = convertPlanSpecExportDataConfig(v)
+	default:
 	}
 	return storeSpec
 }
@@ -1030,6 +1032,7 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 				EndPosition:   convertToPosition(report.SqlReviewReport.EndPosition),
 			},
 		}
+	default:
 	}
 	return resultV1
 }

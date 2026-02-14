@@ -295,6 +295,7 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 	case *storepb.IssueCommentPayload_PlanSpecUpdate_:
 		projectID, _, _ := common.GetProjectIDIssueUID(issueName)
 		r.Event = convertToIssueCommentEventPlanSpecUpdate(projectID, e)
+	default:
 	}
 
 	return r

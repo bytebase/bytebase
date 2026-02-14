@@ -69,6 +69,7 @@ func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectS
 			if os == nil {
 				return ""
 			}
+		default:
 		}
 
 		if os.SemanticType != "" {

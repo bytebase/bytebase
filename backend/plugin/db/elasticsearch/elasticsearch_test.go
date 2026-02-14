@@ -182,6 +182,7 @@ func TestJSONParsing(t *testing.T) {
 			case []any:
 				// Array case
 				columnNames = append(columnNames, "result")
+			default:
 			}
 
 			// Verify column count matches

@@ -156,6 +156,7 @@ func extractTableList(node ast.Node, input []*ast.TableName, asName bool) []*ast
 			// BYT-8415: Handle UNION ALL and other set operations in FROM subqueries
 			input = extractTableList(s, input, asName)
 		}
+	default:
 	}
 	return input
 }
@@ -168,6 +169,7 @@ func unfoldSelectList(list *ast.SetOprSelectList, unfoldList *ast.SetOprSelectLi
 			unfoldList.Selects = append(unfoldList.Selects, s)
 		case *ast.SetOprSelectList:
 			unfoldSelectList(s, unfoldList)
+		default:
 		}
 	}
 }

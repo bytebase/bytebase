@@ -107,6 +107,7 @@ func (checker *indexKeyNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 				}
 			}
 		}
+	default:
 	}
 
 	for _, index := range indexList {

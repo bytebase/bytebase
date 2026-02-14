@@ -648,6 +648,7 @@ func convertAlgorithm(v1Algo *v1pb.Algorithm) *storepb.Algorithm {
 				Substitution: mask.InnerOuterMask.Substitution,
 			},
 		}
+	default:
 	}
 	return storeAlgo
 }
@@ -686,6 +687,7 @@ func convertToAlgorithm(storeAlgo *storepb.Algorithm) *v1pb.Algorithm {
 				Substitution: mask.InnerOuterMask.Substitution,
 			},
 		}
+	default:
 	}
 	return v1Algo
 }

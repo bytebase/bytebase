@@ -168,6 +168,7 @@ func (checker *columnCurrentTimeCountLimitChecker) Enter(in ast.Node) (ast.Node,
 			default:
 			}
 		}
+	default:
 	}
 
 	return in, false

@@ -48,6 +48,7 @@ func (l *queryTypeListener) EnterSupportedDmlStatementAlias(ctx *parser.Supporte
 			hasExplain = stmt.Explain() != nil
 		case *parser.MergeIntoContext:
 			hasExplain = stmt.Explain() != nil
+		default:
 		}
 
 		if hasExplain {

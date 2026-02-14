@@ -43,6 +43,7 @@ func (q *querySpanExtractor) extractPredicateColumnFromExpression(
 		if err := q.extractPredicateColumnFromSubquery(typedCtx); err != nil {
 			return err
 		}
+	default:
 	}
 
 	// Recursively process all child nodes following TSQL pattern

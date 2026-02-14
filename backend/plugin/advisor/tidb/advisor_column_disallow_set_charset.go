@@ -96,6 +96,7 @@ func (checker *columnDisallowSetCharsetChecker) Enter(in ast.Node) (ast.Node, bo
 				break
 			}
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

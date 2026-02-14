@@ -95,6 +95,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				},
 			}
 		}
+	default:
 	}
 	return util.NullRowValue
 }

@@ -126,6 +126,7 @@ func (v *tableRequirePKChecker) Enter(in ast.Node) (ast.Node, bool) {
 				// Skip other alter table specification types
 			}
 		}
+	default:
 	}
 
 	return in, false

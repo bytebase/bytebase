@@ -234,6 +234,7 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				line:      in.OriginTextPosition(),
 			})
 		}
+	default:
 	}
 
 	return res

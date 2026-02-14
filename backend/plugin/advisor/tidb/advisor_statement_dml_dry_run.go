@@ -155,6 +155,7 @@ func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
+	default:
 	}
 
 	return in, false

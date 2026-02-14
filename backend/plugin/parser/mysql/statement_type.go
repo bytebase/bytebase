@@ -102,6 +102,7 @@ func getStatementType(stmt *base.ANTLRAST) storepb.StatementType {
 							return storepb.StatementType_INSERT
 						case *mysql.UpdateStatementContext:
 							return storepb.StatementType_UPDATE
+						default:
 						}
 					}
 				default:

@@ -130,6 +130,7 @@ func (checker *collationAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 				// Other alter table types
 			}
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

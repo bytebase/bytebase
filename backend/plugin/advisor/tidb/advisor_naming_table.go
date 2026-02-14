@@ -95,6 +95,7 @@ func (v *namingTableConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 		for _, table2Table := range node.TableToTables {
 			tableNames = append(tableNames, table2Table.NewTable.Name.O)
 		}
+	default:
 	}
 
 	for _, tableName := range tableNames {

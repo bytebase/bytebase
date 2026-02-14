@@ -128,6 +128,7 @@ func (checker *charsetAllowlistChecker) Enter(in ast.Node) (ast.Node, bool) {
 			default:
 			}
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

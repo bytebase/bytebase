@@ -183,6 +183,7 @@ func (*namingFKConventionChecker) getMetaDataList(in ast.Node) []*indexMetaData 
 				})
 			}
 		}
+	default:
 	}
 
 	return res

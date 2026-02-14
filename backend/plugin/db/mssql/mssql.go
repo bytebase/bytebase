@@ -579,6 +579,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 			ret = append(ret, queryResult)
 			nextResultSetIdx = getNextResultSetIdx(stmtTypes, nextResultSetIdx+1)
 			skipRowsAffected = true
+		default:
 		}
 	}
 

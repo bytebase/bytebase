@@ -336,6 +336,7 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 				StringValue: string(fRune([]rune(s))),
 			},
 		}
+	default:
 	}
 	return nil
 }
@@ -431,6 +432,7 @@ func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 				StringValue: string(middle([]byte(s))),
 			},
 		}
+	default:
 	}
 
 	return &v1pb.RowValue{
@@ -541,6 +543,7 @@ func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 				StringValue: string(middle([]byte(s))),
 			},
 		}
+	default:
 	}
 
 	return &v1pb.RowValue{

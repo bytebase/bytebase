@@ -263,6 +263,7 @@ func (q *querySpanExtractor) extractQueryExpressionBody(ctx parser.IQueryExpress
 					Columns: newQuerySpanResults,
 				}
 			}
+		default:
 		}
 	}
 
@@ -339,6 +340,7 @@ func (q *querySpanExtractor) extractTableValueConstructor(ctx parser.ITableValue
 					IsPlainField:  true,
 				})
 			}
+		default:
 		}
 	}
 
@@ -1069,6 +1071,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *parser.Query
 					}
 				}
 			}
+		default:
 		}
 	}
 
@@ -1128,6 +1131,7 @@ func (l *recursiveCTEExtractListener) EnterQueryExpressionBody(ctx *parser.Query
 					return
 				}
 				itemFields = tableSource.GetQuerySpanResult()
+			default:
 			}
 			if len(fieldList) == 0 {
 				fieldList = itemFields

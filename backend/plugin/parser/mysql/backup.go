@@ -263,6 +263,7 @@ func extractCTE(ctx antlr.ParserRuleContext) string {
 		if node.WithClause() != nil {
 			return node.GetParser().GetTokenStream().GetTextFromRuleContext(node.WithClause())
 		}
+	default:
 	}
 
 	return ""

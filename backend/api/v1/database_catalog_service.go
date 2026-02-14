@@ -182,6 +182,7 @@ func convertStoreObjectSchema(objectSchema *storepb.ObjectSchema) *v1pb.ObjectSc
 				Kind: convertStoreObjectSchema(objectSchema.GetArrayKind().GetKind()),
 			},
 		}
+	default:
 	}
 	o.SemanticType = objectSchema.SemanticType
 	return o
@@ -257,6 +258,7 @@ func convertV1ObjectSchema(objectSchema *v1pb.ObjectSchema) *storepb.ObjectSchem
 				Kind: convertV1ObjectSchema(objectSchema.GetArrayKind().GetKind()),
 			},
 		}
+	default:
 	}
 	o.SemanticType = objectSchema.SemanticType
 	return o

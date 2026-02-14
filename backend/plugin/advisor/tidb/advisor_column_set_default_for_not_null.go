@@ -116,6 +116,7 @@ func (checker *columnSetDefaultForNotNullChecker) Enter(in ast.Node) (ast.Node, 
 				// Skip other alter table specification types
 			}
 		}
+	default:
 	}
 
 	for _, column := range notNullColumnWithNoDefault {

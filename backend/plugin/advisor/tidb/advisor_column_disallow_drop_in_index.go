@@ -74,6 +74,7 @@ func (checker *columnDisallowDropInIndexChecker) Enter(in ast.Node) (ast.Node, b
 		checker.addIndexColumn(node)
 	case *ast.AlterTableStmt:
 		return checker.dropColumn(node)
+	default:
 	}
 	return in, false
 }

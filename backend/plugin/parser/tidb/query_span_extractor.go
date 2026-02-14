@@ -577,6 +577,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 		*tidbast.GetFormatSelectorExpr,
 		*tidbast.DefaultExpr:
 		// No expression need to extract.
+	default:
 	}
 	return base.SourceColumnSet{}, nil
 }

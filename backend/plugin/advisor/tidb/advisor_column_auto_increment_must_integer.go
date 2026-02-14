@@ -109,6 +109,7 @@ func (checker *columnAutoIncrementMustIntegerChecker) Enter(in ast.Node) (ast.No
 				// Ignore other alter table specs
 			}
 		}
+	default:
 	}
 
 	for _, column := range columnList {

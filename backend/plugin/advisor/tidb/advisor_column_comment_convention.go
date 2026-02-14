@@ -115,6 +115,7 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 			default:
 			}
 		}
+	default:
 	}
 
 	for _, column := range columnList {

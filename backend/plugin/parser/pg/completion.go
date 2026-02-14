@@ -657,6 +657,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							Type: base.CandidateTypeTable,
 							Text: c.quotedIdentifierIfNeeded(reference.Table),
 						})
+					default:
 					}
 				}
 			}
@@ -688,6 +689,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									})
 								}
 							}
+						default:
 						}
 					}
 				} else if len(c.references) > 0 {
@@ -710,6 +712,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									Text: c.quotedIdentifierIfNeeded(column),
 								})
 							}
+						default:
 						}
 					}
 				} else {

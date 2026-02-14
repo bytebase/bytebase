@@ -101,6 +101,7 @@ func (checker *columnAutoIncrementMustUnsignedChecker) Enter(in ast.Node) (ast.N
 			default:
 			}
 		}
+	default:
 	}
 
 	for _, column := range columnList {

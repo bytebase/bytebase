@@ -77,6 +77,7 @@ func (checker *tableDisallowPartitionChecker) Enter(in ast.Node) (ast.Node, bool
 				break
 			}
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

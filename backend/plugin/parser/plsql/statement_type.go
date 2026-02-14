@@ -63,6 +63,7 @@ func getStatementType(node antlr.Tree) storepb.StatementType {
 		return storepb.StatementType_INSERT
 	case *parser.Update_statementContext:
 		return storepb.StatementType_UPDATE
+	default:
 	}
 	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 }

@@ -126,6 +126,7 @@ func (checker *indexNoDuplicateColumnChecker) Enter(in ast.Node) (ast.Node, bool
 				}
 			}
 		}
+	default:
 	}
 
 	for _, column := range columnList {

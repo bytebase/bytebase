@@ -147,6 +147,7 @@ func (checker *indexTotalNumberLimitChecker) Enter(in ast.Node) (ast.Node, bool)
 		}
 	case *ast.CreateIndexStmt:
 		checker.lineForTable[node.Table.Name.O] = node.OriginTextPosition()
+	default:
 	}
 
 	return in, false
@@ -179,6 +180,7 @@ func createIndex(in ast.Node) bool {
 			return true
 		default:
 		}
+	default:
 	}
 	return false
 }

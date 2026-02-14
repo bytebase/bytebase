@@ -108,6 +108,7 @@ func (q *querySpanExtractor) extractPredicateColumnFromExpression(
 		if err := q.extractPredicateColumnFromSubquery(ctx); err != nil {
 			return err
 		}
+	default:
 	}
 
 	var list []antlr.ParserRuleContext

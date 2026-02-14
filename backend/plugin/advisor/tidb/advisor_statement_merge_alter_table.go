@@ -91,6 +91,7 @@ func (checker *statementMergeAlterTableChecker) Enter(in ast.Node) (ast.Node, bo
 		data.count++
 		data.lastLine = checker.line
 		checker.tableMap[node.Table.Name.O] = data
+	default:
 	}
 
 	return in, false

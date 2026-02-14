@@ -2690,6 +2690,7 @@ func (q *querySpanExtractor) findColumnNameInExpression(node antlr.ParseTree) st
 			return funcName
 		}
 		return pgUnknownFieldName
+	default:
 	}
 
 	// Recursively search children

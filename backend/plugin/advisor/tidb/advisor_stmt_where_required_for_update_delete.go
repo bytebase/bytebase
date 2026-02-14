@@ -72,6 +72,7 @@ func (v *whereRequirementForUpdateDeleteChecker) Enter(in ast.Node) (ast.Node, b
 		if node.Where == nil {
 			code = advisorcode.StatementNoWhere
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

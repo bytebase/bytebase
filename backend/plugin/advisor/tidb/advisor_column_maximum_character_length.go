@@ -111,6 +111,7 @@ func (checker *columnMaximumCharacterLengthChecker) Enter(in ast.Node) (ast.Node
 				break
 			}
 		}
+	default:
 	}
 
 	if tableName != "" {

@@ -115,6 +115,7 @@ func (v *indexTypeNoBlobChecker) Enter(in ast.Node) (ast.Node, bool) {
 			pds := v.addIndex(tableName, node.OriginTextPosition(), indexSpec)
 			pkDataList = append(pkDataList, pds...)
 		}
+	default:
 	}
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, &storepb.Advice{

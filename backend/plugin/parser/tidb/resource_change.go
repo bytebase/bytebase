@@ -50,6 +50,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 			if len(sampleDMLs) < common.MaximumLintExplainSize {
 				sampleDMLs = append(sampleDMLs, trimStatement(node.Text()))
 			}
+		default:
 		}
 	}
 

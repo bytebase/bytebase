@@ -220,6 +220,7 @@ func (checker *namingUKConventionChecker) getMetaDataList(in ast.Node) []*indexM
 				line:      in.OriginTextPosition(),
 			})
 		}
+	default:
 	}
 
 	return res

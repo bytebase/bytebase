@@ -315,6 +315,7 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 		updateDatabaseRequests = append(updateDatabaseRequests, r)
 	case *v1pb.BatchUpdateDatabasesRequest:
 		updateDatabaseRequests = append(updateDatabaseRequests, r.Requests...)
+	default:
 	}
 	for _, r := range updateDatabaseRequests {
 		if hasPath(r.GetUpdateMask(), "project") {

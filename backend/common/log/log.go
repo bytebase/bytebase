@@ -1,4 +1,4 @@
-package log
+package log //nolint:revive // intentional package name
 
 import (
 	"fmt"

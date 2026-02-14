@@ -112,6 +112,7 @@ func (v *columnRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 			default:
 			}
 		}
+	default:
 	}
 	return in, false
 }

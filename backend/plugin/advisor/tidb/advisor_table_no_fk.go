@@ -82,6 +82,7 @@ func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
 				})
 			}
 		}
+	default:
 	}
 
 	return in, false

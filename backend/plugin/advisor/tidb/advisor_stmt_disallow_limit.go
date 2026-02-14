@@ -77,6 +77,7 @@ func (checker *statementDisallowLimitChecker) Enter(in ast.Node) (ast.Node, bool
 		if useLimit(node) {
 			code = advisorcode.InsertUseLimit
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

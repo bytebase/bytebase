@@ -120,6 +120,7 @@ func (checker *columRequireDefaultChecker) Enter(in ast.Node) (ast.Node, bool) {
 			default:
 			}
 		}
+	default:
 	}
 
 	for _, column := range columnList {

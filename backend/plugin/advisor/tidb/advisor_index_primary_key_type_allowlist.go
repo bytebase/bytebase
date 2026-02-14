@@ -115,6 +115,7 @@ func (v *indexPrimaryKeyTypeAllowlistChecker) Enter(in ast.Node) (ast.Node, bool
 				// Ignore other alter table specs
 			}
 		}
+	default:
 	}
 	for _, pd := range pkDataList {
 		v.adviceList = append(v.adviceList, &storepb.Advice{

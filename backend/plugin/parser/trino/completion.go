@@ -746,6 +746,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) []b
 									Text: c.quotedIdentifierIfNeeded(reference.Table),
 								}
 							}
+						default:
 						}
 					}
 					if context.catalog == "" && context.schema == "" {
@@ -813,6 +814,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) []b
 									}
 								}
 							}
+						default:
 						}
 					}
 

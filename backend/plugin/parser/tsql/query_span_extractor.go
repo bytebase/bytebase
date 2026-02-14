@@ -3453,6 +3453,7 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expr %s is sensitive", c.GetText())
 				}
 				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			default:
 			}
 		}
 		return anchor, nil

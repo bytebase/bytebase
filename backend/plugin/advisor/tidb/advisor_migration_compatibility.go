@@ -148,6 +148,7 @@ func (v *compatibilityChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if v.lastCreateTable != node.Table.Name.O && node.KeyType == ast.IndexKeyTypeUnique {
 			code = advisorcode.CompatibilityAddUniqueKey
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {

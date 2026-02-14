@@ -845,6 +845,7 @@ func (*metadataExtractor) extractPartitions(ctx mysql.IPartitionClauseContext, t
 		} else if def.BitExpr() != nil {
 			partitionExpr = def.BitExpr().GetText()
 		}
+	default:
 	}
 
 	// For KEY partitions without explicit columns, MySQL uses all primary key columns

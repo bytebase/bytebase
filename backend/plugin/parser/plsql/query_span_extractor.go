@@ -933,6 +933,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 			list = append(list, rule.Multi_column_for_loop())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
+	default:
 	}
 
 	return "", nil, nil

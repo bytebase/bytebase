@@ -493,6 +493,7 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 					sheetSha256: config.ExportDataConfig.SheetSha256,
 				})
 			}
+		default:
 		}
 	}
 

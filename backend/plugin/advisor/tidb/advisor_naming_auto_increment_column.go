@@ -127,6 +127,7 @@ func (checker *namingAutoIncrementColumnChecker) Enter(in ast.Node) (ast.Node, b
 			default:
 			}
 		}
+	default:
 	}
 
 	for _, column := range columnList {

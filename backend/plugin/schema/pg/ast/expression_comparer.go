@@ -1,4 +1,4 @@
-package ast
+package ast //nolint:revive // intentional package name
 
 import (
 	"strings"
@@ -455,6 +455,7 @@ func (c *PostgreSQLExpressionComparer) calculateComplexity(expr ExpressionAST) i
 		}
 	case *LiteralExpr:
 		// Literal values are simple, base complexity already added
+	default:
 	}
 
 	return complexity
@@ -541,6 +542,7 @@ func (c *PostgreSQLExpressionComparer) countExpressionTypes(expr ExpressionAST, 
 		stats.ListCount++
 	case *ParenthesesExpr:
 		stats.ParenthesesCount++
+	default:
 	}
 
 	// Recursively count children

@@ -1,4 +1,4 @@
-package ast
+package ast //nolint:revive // intentional package name
 
 import (
 	"fmt"
@@ -84,6 +84,7 @@ func (v *ExpressionValidatorVisitor) visitRecursively(expr ExpressionAST) {
 		v.validateList(e)
 	case *ParenthesesExpr:
 		v.validateParentheses(e)
+	default:
 	}
 
 	// Recursively validate children

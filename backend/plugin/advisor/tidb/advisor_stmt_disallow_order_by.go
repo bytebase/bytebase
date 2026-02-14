@@ -73,6 +73,7 @@ func (checker *disallowOrderByChecker) Enter(in ast.Node) (ast.Node, bool) {
 		if node.Order != nil {
 			code = advisorcode.DeleteUseOrderBy
 		}
+	default:
 	}
 
 	if code != advisorcode.Ok {
