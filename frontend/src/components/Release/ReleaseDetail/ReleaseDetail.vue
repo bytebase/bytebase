@@ -29,10 +29,14 @@
 
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_RELEASE_DETAIL } from "@/router/dashboard/projectV1";
+import { useProjectByName } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Release_File } from "@/types/proto-es/v1/release_service_pb";
+import { setDocumentTitle } from "@/utils";
 import BasicInfo from "./BasicInfo.vue";
 import { provideReleaseDetailContext } from "./context";
 import NavBar from "./NavBar";
@@ -43,23 +47,26 @@ interface LocalState {
   selectedReleaseFile?: Release_File;
 }
 
+const { t } = useI18n();
 const route = useRoute();
 const { release } = provideReleaseDetailContext();
 const state = reactive<LocalState>({});
 
-const documentTitle = computed(() => {
-  if (route.name !== PROJECT_V1_ROUTE_RELEASE_DETAIL) {
-    return undefined;
-  }
+const projectId = computed(() => {
   const parts = release.value.name.split("/");
-  return parts[parts.length - 1] || release.value.name;
+  const idx = parts.indexOf("projects");
+  return idx >= 0 ? parts[idx + 1] : "";
 });
+const projectResourceName = computed(
+  () => `${projectNamePrefix}${projectId.value}`
+);
+const { project } = useProjectByName(projectResourceName);
 
 watch(
-  documentTitle,
-  (title) => {
-    if (title) {
-      document.title = title;
+  [() => route.name, () => project.value.title],
+  () => {
+    if (route.name === PROJECT_V1_ROUTE_RELEASE_DETAIL) {
+      setDocumentTitle(t("release.releases"), project.value.title);
     }
   },
   { immediate: true }

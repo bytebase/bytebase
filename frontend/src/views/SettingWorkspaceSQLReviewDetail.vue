@@ -173,7 +173,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { useTitle } from "@vueuse/core";
 import { NButton, NDivider, NTag } from "naive-ui";
 import {
   computed,
@@ -205,7 +204,11 @@ import {
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
-import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  setDocumentTitle,
+  sqlReviewNameFromSlug,
+} from "@/utils";
 
 const props = defineProps<{
   sqlReviewPolicySlug: string;
@@ -402,7 +405,13 @@ const onRemove = () => {
   });
 };
 
-useTitle(computed(() => reviewPolicy.value.name));
+watch(
+  () => reviewPolicy.value.name,
+  (name) => {
+    setDocumentTitle(name);
+  },
+  { immediate: true }
+);
 </script>
 
 <style lang="postcss" scoped>

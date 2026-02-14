@@ -1,5 +1,5 @@
-import { useTitle } from "@vueuse/core";
-import { nextTick, ref } from "vue";
+import { nextTick } from "vue";
+import { setDocumentTitle } from "@/utils";
 import {
   createRouter,
   createWebHistory,
@@ -265,17 +265,17 @@ router.beforeEach((to, from, next) => {
   });
 });
 
-const DEFAULT_DOCUMENT_TITLE = "Bytebase";
-const title = ref(DEFAULT_DOCUMENT_TITLE);
-useTitle(title);
-
 router.afterEach((to /*, from */) => {
-  // Needs to use nextTick otherwise title will still be the one from the previous route.
+  // Skip routes where a layout component manages the document title:
+  // - ProjectV1Layout handles project-scoped routes (have projectId param)
+  // - SettingLayout handles settings routes (marked with overrideDocumentTitle)
+  if (to.params.projectId || to.meta.overrideDocumentTitle) return;
+
   nextTick(() => {
     if (to.meta.title) {
-      document.title = to.meta.title(to);
+      setDocumentTitle(to.meta.title(to));
     } else {
-      document.title = DEFAULT_DOCUMENT_TITLE;
+      setDocumentTitle();
     }
   });
 });

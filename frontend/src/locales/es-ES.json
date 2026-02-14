@@ -272,7 +272,9 @@
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
   },
   "error-page": {
-    "go-back-home": "Volver al inicio"
+    "forbidden": "Prohibido",
+    "go-back-home": "Volver al inicio",
+    "not-found": "No encontrado"
   },
   "refresh-remind": {
     "title": "Versión obsoleta detectada",

@@ -272,7 +272,9 @@
     "unknown": "Unknown"
   },
   "error-page": {
-    "go-back-home": "Go back home"
+    "forbidden": "Forbidden",
+    "go-back-home": "Go back home",
+    "not-found": "Not Found"
   },
   "refresh-remind": {
     "title": "Outdated version detected",

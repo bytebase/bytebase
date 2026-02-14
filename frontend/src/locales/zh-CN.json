@@ -272,7 +272,9 @@
     "delete-resource-description": "删除「{name}」后将无法恢复，请确认。"
   },
   "error-page": {
-    "go-back-home": "回到主页"
+    "forbidden": "禁止访问",
+    "go-back-home": "回到主页",
+    "not-found": "页面未找到"
   },
   "refresh-remind": {
     "title": "检测到过时版本",

@@ -272,7 +272,9 @@
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
   },
   "error-page": {
-    "go-back-home": "ホームページに戻る"
+    "forbidden": "アクセス禁止",
+    "go-back-home": "ホームページに戻る",
+    "not-found": "ページが見つかりません"
   },
   "refresh-remind": {
     "title": "古いバージョンが検出されました",

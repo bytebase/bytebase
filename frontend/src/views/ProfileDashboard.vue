@@ -213,7 +213,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
-import { useTitle } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import { EllipsisIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
@@ -226,6 +225,7 @@ import {
   onUnmounted,
   reactive,
   ref,
+  watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -271,7 +271,12 @@ import {
   UpdateUserRequestSchema,
   UserType,
 } from "@/types/proto-es/v1/user_service_pb";
-import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
+import {
+  displayRoleTitle,
+  hasWorkspacePermissionV2,
+  setDocumentTitle,
+  sortRoles,
+} from "@/utils";
 import { migrateUserStorage } from "@/utils/storage-migrate";
 
 interface LocalState {
@@ -564,5 +569,11 @@ const dropDownOptions = computed((): DropdownOption[] => [
   },
 ]);
 
-useTitle(computed(() => user.value.title));
+watch(
+  () => user.value.title,
+  (title) => {
+    setDocumentTitle(title);
+  },
+  { immediate: true }
+);
 </script>

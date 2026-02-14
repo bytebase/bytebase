@@ -22,9 +22,8 @@
 </template>
 
 <script lang="tsx" setup>
-import { useTitle } from "@vueuse/core";
 import { NSpin } from "naive-ui";
-import { computed, ref, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import {
@@ -36,6 +35,9 @@ import { HeaderSection } from "@/components/Plan/components";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
+import { useProjectByName } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import { setDocumentTitle } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -83,23 +85,29 @@ providePlanContext({
 
 provideSidebarContext(containerRef);
 
-const documentTitle = computed(() => {
-  if (isCreating.value) {
-    return t("plan.new-plan");
-  } else {
-    if (ready.value) {
-      if (issue.value) {
-        return issue.value.title;
-      }
-      if (plan.value) {
-        return plan.value.title;
+const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
+const { project } = useProjectByName(projectName);
+
+watch(
+  [
+    isCreating,
+    ready,
+    () => issue.value?.title,
+    () => plan.value?.title,
+    () => project.value.title,
+  ],
+  () => {
+    if (isCreating.value) {
+      setDocumentTitle(t("plan.new-plan"), project.value.title);
+    } else if (ready.value) {
+      const entityTitle = issue.value?.title || plan.value?.title;
+      if (entityTitle) {
+        setDocumentTitle(entityTitle, project.value.title);
       }
     }
-  }
-  return t("common.loading");
-});
-
-useTitle(documentTitle);
+  },
+  { immediate: true }
+);
 
 // Set up navigation guards to check for unsaved changes
 const handleRouteNavigation = async (
