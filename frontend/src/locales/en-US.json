@@ -2132,6 +2132,8 @@
       "contact-the-admin-to-grant-access": "Contact to the admin to grant access."
     },
     "upload-file": "Upload file",
+    "copy-results": "Copy",
+    "copy-with-headers": "Copy with headers",
     "copy-selected-results": "Copy selected data by {action} or {button}",
     "cancel-selection": "Cancel selection",
     "format-default": "Default",

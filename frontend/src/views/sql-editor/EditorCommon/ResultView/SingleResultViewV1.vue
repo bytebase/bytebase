@@ -60,6 +60,22 @@
             {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
+        <NDropdown
+          trigger="click"
+          :options="copyDropdownOptions"
+          @select="handleCopyOptionSelect"
+        >
+          <NButton
+            size="small"
+            :disabled="copyResultsDisabled"
+            style="--n-padding: 0 8px"
+          >
+            <template #icon>
+              <CopyIcon class="w-4 h-4" />
+            </template>
+            {{ $t("sql-editor.copy-results") }}
+          </NButton>
+        </NDropdown>
         <template v-if="showExport">
           <DataExportButton
             size="small"
@@ -249,8 +265,15 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
-import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
-import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
+import { ArrowDownIcon, ArrowUpIcon, CopyIcon, XIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NDropdown,
+  NFormItem,
+  NSwitch,
+  NTooltip,
+} from "naive-ui";
+import type { DropdownOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -267,7 +290,11 @@ import EllipsisText from "@/components/EllipsisText.vue";
 import { CopyButton, Drawer, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
-import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
+import {
+  pushNotification,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
+} from "@/store";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -628,12 +655,38 @@ const getMaskingReason = (columnIndex: number) => {
   return reason;
 };
 
-provideSelectionContext({
+const { copyAll } = provideSelectionContext({
   columns,
   rows,
   binaryFormatContext,
   resultViewContext,
 });
+
+const copyResultsDisabled = computed(
+  () => props.disallowCopyingData || rows.value.length === 0
+);
+
+const copyDropdownOptions = computed((): DropdownOption[] => [
+  {
+    label: t("sql-editor.copy-results"),
+    key: "copy",
+  },
+  {
+    label: t("sql-editor.copy-with-headers"),
+    key: "copy-with-headers",
+  },
+]);
+
+const handleCopyOptionSelect = (key: string) => {
+  const withHeaders = key === "copy-with-headers";
+  if (copyAll(withHeaders)) {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.copied"),
+    });
+  }
+};
 
 const engine = computed(() => getInstanceResource(props.database).engine);
 

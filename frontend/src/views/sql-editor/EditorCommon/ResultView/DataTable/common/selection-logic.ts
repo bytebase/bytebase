@@ -24,6 +24,14 @@ import type { ResultTableColumn, ResultTableRow } from "./types";
 
 const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
 
+/**
+ * Escape every cell for TSV copy so the exact value is preserved on re-import.
+ * Always wrap in quotes and escape internal " as "" so we're safe for any content.
+ */
+const escapeCellForTSV = (s: string): string => {
+  return `"${String(s).replace(/"/g, '""')}"`;
+};
+
 export type SelectionState = {
   rows: number[];
   columns: number[];
@@ -37,6 +45,7 @@ export type SelectionContext = {
   toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
   copy: () => boolean;
+  copyAll: (withHeaders: boolean) => boolean;
 };
 
 export const KEY = Symbol(
@@ -167,8 +176,12 @@ export const provideSelectionContext = ({
       });
     }
 
-    // Fall back to default formatting
-    return String(extractSQLRowValuePlain(value));
+    // Fall back to default formatting; null/undefined → empty (per TSV/CSV convention)
+    const plain = extractSQLRowValuePlain(value);
+    if (plain === null || plain === undefined) {
+      return "";
+    }
+    return String(plain);
   };
 
   const getValues = () => {
@@ -183,19 +196,22 @@ export const provideSelectionContext = ({
         return "";
       }
 
-      // Get the cell value
-      return getFormattedValue({
-        value: cell,
-        colIndex: state.value.columns[0],
-        rowIndex: state.value.rows[0],
-      });
+      // Get the cell value (exact for re-import)
+      return escapeCellForTSV(
+        getFormattedValue({
+          value: cell,
+          colIndex: state.value.columns[0],
+          rowIndex: state.value.rows[0],
+        })
+      );
     }
 
-    // build column name
-    let columnNames = ["index", ...columns.value.map((c) => c.name)];
+    // build column name (escaped for exact re-import)
+    let columnNames = ["index", ...columns.value.map((c) => escapeCellForTSV(c.name))];
     if (state.value.columns.length > 0) {
       columnNames = state.value.columns.map(
-        (columnIndex) => columns.value[columnIndex]?.name ?? ""
+        (columnIndex) =>
+          escapeCellForTSV(columns.value[columnIndex]?.name ?? "")
       );
     }
 
@@ -216,13 +232,15 @@ export const provideSelectionContext = ({
       const value = data
         .map((row, rowIdx) => {
           return row.values
-            .map((cell, colIdx) => {
-              return getFormattedValue({
-                value: cell,
-                colIndex: colIdx,
-                rowIndex: state.value.rows[rowIdx],
-              });
-            })
+            .map((cell, colIdx) =>
+              escapeCellForTSV(
+                getFormattedValue({
+                  value: cell,
+                  colIndex: colIdx,
+                  rowIndex: state.value.rows[rowIdx],
+                })
+              )
+            )
             .join("\t");
         })
         .join("\n");
@@ -248,13 +266,15 @@ export const provideSelectionContext = ({
       const value = values
         .map((cells, rowIdx) =>
           cells
-            .map((cell, colIdx) => {
-              return getFormattedValue({
-                value: cell,
-                rowIndex: rowIdx,
-                colIndex: state.value.columns[colIdx],
-              });
-            })
+            .map((cell, colIdx) =>
+              escapeCellForTSV(
+                getFormattedValue({
+                  value: cell,
+                  rowIndex: rowIdx,
+                  colIndex: state.value.columns[colIdx],
+                })
+              )
+            )
             .join("\t")
         )
         .join("\n");
@@ -263,6 +283,59 @@ export const provideSelectionContext = ({
     }
 
     return "";
+  };
+
+  const getValuesForAllRows = (withHeaders: boolean): string => {
+    if (rows.value.length === 0) {
+      return "";
+    }
+    const columnNames = columns.value.map((c) => escapeCellForTSV(c.name));
+    const dataLines = rows.value.map((row, rowIdx) =>
+      row.item.values
+        .map((cell, colIdx) =>
+          escapeCellForTSV(
+            getFormattedValue({
+              value: cell,
+              colIndex: colIdx,
+              rowIndex: rowIdx,
+            })
+          )
+        )
+        .join("\t")
+    );
+    if (withHeaders) {
+      return `${columnNames.join("\t")}\n${dataLines.join("\n")}`;
+    }
+    return dataLines.join("\n");
+  };
+
+  const copyAll = (withHeaders: boolean) => {
+    if (disabled.value || !isSupported.value) {
+      return false;
+    }
+    const values = getValuesForAllRows(withHeaders);
+    if (!values) {
+      return false;
+    }
+    copying.value = true;
+    copyTextToClipboard(values)
+      .catch((err: unknown) => {
+        const errors = [t("common.failed")];
+        if (err instanceof Error) {
+          errors.push(err.message);
+        }
+        pushNotification({
+          module: "bytebase",
+          style: "WARN",
+          title: errors.join(": "),
+        });
+      })
+      .finally(() => {
+        nextTick(() => {
+          copying.value = false;
+        });
+      });
+    return true;
   };
 
   const copy = () => {
@@ -325,6 +398,7 @@ export const provideSelectionContext = ({
     toggleSelectCell,
     deselect,
     copy,
+    copyAll,
   };
   provide(KEY, context);
   return context;

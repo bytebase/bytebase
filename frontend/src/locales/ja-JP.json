@@ -2132,6 +2132,8 @@
       "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。"
     },
     "upload-file": "ファイルをアップロードする",
+    "copy-results": "コピー",
+    "copy-with-headers": "ヘッダー付きでコピー",
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
     "cancel-selection": "選択をキャンセル",
     "format-default": "デフォルト",
