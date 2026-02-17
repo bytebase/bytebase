@@ -309,11 +309,7 @@ export const provideSelectionContext = ({
     return dataLines.join("\n");
   };
 
-  const copyAll = (withHeaders: boolean) => {
-    if (disabled.value || !isSupported.value) {
-      return false;
-    }
-    const values = getValuesForAllRows(withHeaders);
+  const performCopy = (values: string): boolean => {
     if (!values) {
       return false;
     }
@@ -338,33 +334,14 @@ export const provideSelectionContext = ({
     return true;
   };
 
+  const copyAll = (withHeaders: boolean) => {
+    if (disabled.value || !isSupported.value) return false;
+    return performCopy(getValuesForAllRows(withHeaders));
+  };
+
   const copy = () => {
-    if (disabled.value || !isSupported.value) {
-      return false;
-    }
-    const values = getValues();
-    if (!values) {
-      return false;
-    }
-    copying.value = true;
-    copyTextToClipboard(values)
-      .catch((err: unknown) => {
-        const errors = [t("common.failed")];
-        if (err instanceof Error) {
-          errors.push(err.message);
-        }
-        pushNotification({
-          module: "bytebase",
-          style: "WARN",
-          title: errors.join(": "),
-        });
-      })
-      .finally(() => {
-        nextTick(() => {
-          copying.value = false;
-        });
-      });
-    return true;
+    if (disabled.value || !isSupported.value) return false;
+    return performCopy(getValues());
   };
 
   useEventListener("keydown", (e) => {
