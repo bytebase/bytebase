@@ -29,7 +29,7 @@ const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
  * Always wrap in quotes and escape internal " as "" so we're safe for any content.
  */
 const escapeCellForTSV = (s: string): string => {
-  return `"${String(s).replace(/"/g, '""')}"`;
+  return `"${String(s).replaceAll('"', '""')}"`;
 };
 
 export type SelectionState = {
