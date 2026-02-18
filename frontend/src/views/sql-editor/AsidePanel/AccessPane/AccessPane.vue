@@ -15,21 +15,29 @@
         :cache-query="false"
         @update:params="searchParams = $event"
       />
-      <NButton
-        ghost
-        size="small"
-        type="primary"
-        :style="{
-          width: useSmallLayout ? '100%' : 'auto'
-        }"
-        :disabled="!hasJITFeature"
-        @click="showDrawer = true"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.accessGrants.create'
+        ]"
       >
-        <template v-if="!hasJITFeature" #icon>
-          <FeatureBadge :clickable="false" :feature="PlanFeature.FEATURE_JIT" />
-        </template>
-        {{ $t("sql-editor.request-access") }}
-      </NButton>
+        <NButton
+          ghost
+          size="small"
+          type="primary"
+          :style="{
+            width: useSmallLayout ? '100%' : 'auto'
+          }"
+          :disabled="!hasJITFeature || slotProps.disabled"
+          @click="showDrawer = true"
+        >
+          <template v-if="!hasJITFeature" #icon>
+            <FeatureBadge :clickable="false" :feature="PlanFeature.FEATURE_JIT" />
+          </template>
+          {{ $t("sql-editor.request-access") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <AccessGrantItem
@@ -85,6 +93,7 @@ import type {
 } from "@/components/AdvancedSearch/types";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
@@ -93,6 +102,7 @@ import {
   useAccessGrantStore,
   useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
+  useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -117,6 +127,7 @@ import AccessGrantRequestDrawer from "./AccessGrantRequestDrawer.vue";
 const PAGE_SIZE = getDefaultPagination();
 
 const { t } = useI18n();
+const projectStore = useProjectV1Store();
 const editorStore = useSQLEditorStore();
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
@@ -136,6 +147,10 @@ const useSmallLayout = computed(
 );
 
 const hasJITFeature = computed(() => hasFeature(PlanFeature.FEATURE_JIT));
+
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
+);
 
 const searchParams = ref<SearchParams>({
   query: "",

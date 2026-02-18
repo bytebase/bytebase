@@ -11,6 +11,7 @@
     </template>
 
     <RoutePermissionGuard
+      class="m-4"
       :project="project"
       :routes="projectRoutes"
     >

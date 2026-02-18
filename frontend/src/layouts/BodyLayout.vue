@@ -55,6 +55,7 @@
           class="md:min-w-0 flex-1 overflow-y-auto"
         >
           <RoutePermissionGuard
+            class="m-4"
             :routes="[
               ...workspaceRoutes,
               ...workspaceSettingRoutes,
