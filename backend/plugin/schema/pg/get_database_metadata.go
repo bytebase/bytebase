@@ -2456,11 +2456,12 @@ func (e *metadataExtractor) generateIndexDefinition(ctx *parser.IndexstmtContext
 	if len(index.Expressions) > 0 {
 		columnList := make([]string, len(index.Expressions))
 		for i, expr := range index.Expressions {
+			quoted := quoteIndexExpression(expr)
 			// Add DESC if needed
 			if i < len(index.Descending) && index.Descending[i] {
-				columnList[i] = fmt.Sprintf("%s DESC", expr)
+				columnList[i] = fmt.Sprintf("%s DESC", quoted)
 			} else {
-				columnList[i] = expr
+				columnList[i] = quoted
 			}
 		}
 		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(columnList, ", ")))
@@ -2561,11 +2562,12 @@ func (*metadataExtractor) generateConstraintIndexDefinition(index *storepb.Index
 	if len(index.Expressions) > 0 {
 		columnList := make([]string, len(index.Expressions))
 		for i, expr := range index.Expressions {
+			quoted := quoteIndexExpression(expr)
 			// Add DESC if needed
 			if i < len(index.Descending) && index.Descending[i] {
-				columnList[i] = fmt.Sprintf("%s DESC", expr)
+				columnList[i] = fmt.Sprintf("%s DESC", quoted)
 			} else {
-				columnList[i] = expr
+				columnList[i] = quoted
 			}
 		}
 		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(columnList, ", ")))
