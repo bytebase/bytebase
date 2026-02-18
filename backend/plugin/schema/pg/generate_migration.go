@@ -17,6 +17,26 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 )
 
+// quoteIndexExpression wraps a PostgreSQL identifier in double quotes when it
+// contains uppercase letters (to preserve case sensitivity). Complex expressions
+// (function calls, operators) and already-quoted identifiers are unchanged.
+func quoteIndexExpression(expr string) string {
+	if expr == "" || strings.HasPrefix(expr, `"`) {
+		return expr
+	}
+	if strings.ContainsAny(expr, "() +-*/,:`'") {
+		return expr
+	}
+	// Only quote if the identifier contains uppercase letters,
+	// which require quoting to preserve case in PostgreSQL.
+	for _, r := range expr {
+		if r >= 'A' && r <= 'Z' {
+			return `"` + expr + `"`
+		}
+	}
+	return expr
+}
+
 func init() {
 	schema.RegisterGenerateMigration(storepb.Engine_POSTGRES, generateMigration)
 }
@@ -3143,7 +3163,7 @@ func writeMigrationPrimaryKey(out *strings.Builder, schema, table string, index 
 		if i > 0 {
 			_, _ = out.WriteString(`, `)
 		}
-		_, _ = out.WriteString(expr)
+		_, _ = out.WriteString(quoteIndexExpression(expr))
 	}
 
 	_, _ = out.WriteString(`);`)
@@ -3164,7 +3184,7 @@ func writeMigrationUniqueKey(out *strings.Builder, schema, table string, index *
 		if i > 0 {
 			_, _ = out.WriteString(`, `)
 		}
-		_, _ = out.WriteString(expr)
+		_, _ = out.WriteString(quoteIndexExpression(expr))
 	}
 
 	_, _ = out.WriteString(`);`)
