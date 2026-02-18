@@ -216,7 +216,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 		slog.Warn("invalid access grant payload", slog.String("access_grant", accessGrantID))
 		return nil
 	}
-	if accessGrant.Payload.Query != request.Statement {
+	if strings.TrimSpace(accessGrant.Payload.Query) != strings.TrimSpace(request.Statement) {
 		slog.Warn("statement does not match access grant", slog.String("access_grant", accessGrantID))
 		return nil
 	}

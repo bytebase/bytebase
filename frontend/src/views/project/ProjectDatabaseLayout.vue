@@ -1,5 +1,6 @@
 <template>
   <router-view
+    class="p-4"
     :project-id="projectId"
     :instance-id="instanceId"
     :database-name="databaseName"

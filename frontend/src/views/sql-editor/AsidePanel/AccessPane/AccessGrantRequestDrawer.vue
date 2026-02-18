@@ -30,6 +30,9 @@
             {{ $t("common.statement") }}
             <RequiredStar class="ml-0.5" />
           </div>
+          <BBAttention type="info">
+            {{ $t("sql-editor.only-select-allowed") }}
+          </BBAttention>
           <MonacoEditor
             class="border rounded-[3px] h-40"
             :content="form.query"
@@ -71,6 +74,7 @@
         <div class="flex flex-col gap-y-2">
           <div class="text-sm font-medium text-control">
             {{ $t("common.reason") }}
+            <RequiredStar class="ml-0.5" />
           </div>
           <NInput
             v-model:value="form.reason"
@@ -107,6 +111,7 @@ import { NButton, NCheckbox, NDatePicker, NInput, NSelect } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseSelect, Drawer, DrawerContent } from "@/components/v2";
@@ -197,6 +202,7 @@ const isDateDisabled = (ts: number) => {
 const allowSubmit = computed(() => {
   if (form.targets.length === 0) return false;
   if (!form.query.trim()) return false;
+  if (!form.reason) return false;
   if (form.duration === -1 && !form.customExpireTime) return false;
   return true;
 });

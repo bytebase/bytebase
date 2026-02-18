@@ -64,9 +64,9 @@ func (d *suggestingDecoder) Decode(v any) error {
 
 	suggestions := findSimilar(unknownField, candidates, 3)
 	if len(suggestions) == 0 {
-		return errors.Wrapf(err, "Valid fields: %s", strings.Join(candidates, ", "))
+		return errors.Wrapf(err, "valid fields: %s", strings.Join(candidates, ", "))
 	}
-	return errors.Wrapf(err, "Did you mean: %s?", strings.Join(suggestions, ", "))
+	return errors.Wrapf(err, "did you mean: %s?", strings.Join(suggestions, ", "))
 }
 
 // findSimilar returns up to maxResults field names sorted by edit distance.

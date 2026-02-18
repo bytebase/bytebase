@@ -4,6 +4,7 @@
 
     <ComponentPermissionGuard
       :project="project"
+      class="mx-4"
       :permissions="['bb.accessGrants.list']"
     >
       <div class="px-4 pb-2 flex items-center gap-x-2">
@@ -42,7 +43,7 @@
       </PagedTable>
     </ComponentPermissionGuard>
 
-    <NAlert v-if="!canList" type="info" class="mx-4 mt-2">
+    <BBAttention v-if="!canList" type="info" class="mx-4 mt-2">
       <i18n-t keypath="sql-editor.access-grants-redirect-hint" tag="span">
         <template #link>
           <router-link
@@ -57,14 +58,13 @@
           </router-link>
         </template>
       </i18n-t>
-    </NAlert>
+    </BBAttention>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { DataTableColumn, DataTableSortState } from "naive-ui";
 import {
-  NAlert,
   NButton,
   NDataTable,
   NEmpty,
@@ -75,6 +75,7 @@ import {
 import { computed, h, ref, type VNode, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
+import { BBAttention } from "@/bbkit";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type {

@@ -46,7 +46,7 @@
       </div>
 
       <!-- Expiration -->
-      <div class="flex flex-col gap-y-2">
+      <div class="flex flex-col gap-y-1">
         <span class="text-sm text-control-light">
           <template v-if="expirationInfo.type === 'duration'">
             {{ $t("common.duration") }}
