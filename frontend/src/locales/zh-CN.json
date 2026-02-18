@@ -2738,6 +2738,10 @@
       "self": "SQL 编辑器用户",
       "description": "可查询指定范围的数据。"
     },
+    "sql-editor-read-user": {
+      "self": "SQL 编辑器只读用户",
+      "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。"
+    },
     "gitops-service-agent": {
       "self": "GitOps 服务代理",
       "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。"

@@ -2738,6 +2738,10 @@
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
     },
+    "sql-editor-read-user": {
+      "self": "SQL Editor Read User",
+      "description": "Read-only permissions for querying database data, without DDL or DML access."
+    },
     "gitops-service-agent": {
       "self": "GitOps Service Agent",
       "description": "Permissions for automated CI/CD workflows to create and execute database changes via GitOps."

@@ -10,6 +10,7 @@ const (
 	ProjectOwnerRole       = "projectOwner"
 	ProjectDeveloperRole   = "projectDeveloper"
 	SQLEditorUserRole      = "sqlEditorUser"
+	SQLEditorReadUserRole  = "sqlEditorReadUser"
 	ProjectReleaserRole    = "projectReleaser"
 	GitOpsServiceAgentRole = "gitopsServiceAgent"
 	ProjectViewerRole      = "projectViewer"
@@ -481,6 +482,27 @@ var PredefinedRoles = []*RoleMessage{
 			permission.ProjectsGetIAMPolicy,
 			permission.SQLDdl,
 			permission.SQLDml,
+			permission.SQLExplain,
+			permission.SQLInfo,
+			permission.SQLSelect,
+			permission.WorksheetsGet,
+		),
+	},
+	{
+		ResourceID: SQLEditorReadUserRole,
+		Name:       "SQL Editor Read User",
+		Predefined: true,
+		Permissions: permissionSet(
+			permission.DatabaseCatalogsGet,
+			permission.DatabaseGroupsGet,
+			permission.DatabaseGroupsList,
+			permission.DatabasesCheck,
+			permission.DatabasesGet,
+			permission.DatabasesGetSchema,
+			permission.DatabasesList,
+			permission.DatabasesSync,
+			permission.ProjectsGet,
+			permission.ProjectsGetIAMPolicy,
 			permission.SQLExplain,
 			permission.SQLInfo,
 			permission.SQLSelect,

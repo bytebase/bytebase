@@ -8977,9 +8977,9 @@ If the condition evaluates to false, then this binding does not apply to the cur
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Support variables:
-resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator.
-resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator.
-resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; role, support &#34;==&#34; operator.
+resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/sqlEditorReadUser&#34; roles, support &#34;==&#34; operator.
+resource.schema_name: the schema name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/sqlEditorReadUser&#34; roles, support &#34;==&#34; operator.
+resource.table_name: the table name, used by the &#34;roles/sqlEditorUser&#34; and &#34;roles/sqlEditorReadUser&#34; roles, support &#34;==&#34; operator.
 resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator.
 request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 

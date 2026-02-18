@@ -2738,6 +2738,10 @@
       "self": "SQLエディタのユーザー",
       "description": "指定した範囲内のデータをクエリできます。"
     },
+    "sql-editor-read-user": {
+      "self": "SQLエディタ読み取り専用ユーザー",
+      "description": "DDLまたはDMLアクセスなしで、データベースデータのクエリのための読み取り専用権限。"
+    },
     "gitops-service-agent": {
       "self": "GitOps サービスエージェント",
       "description": "GitOps を介して自動化された CI/CD ワークフローでデータベース変更を作成および実行するための権限。"
