@@ -1,8 +1,9 @@
--- For roles with bb.sql.ddl or bb.sql.dml permissions (excluding projectOwner),
--- add "resource.environment_id in [...]" to the binding condition expression
--- if it doesn't already have one.
--- The environment list is populated from existing QUERY_DATA policies:
--- environments where DDL or DML is not disallowed are included.
+-- Migrate IAM bindings based on environment DDL/DML policies.
+-- No-op if all environments allow both DDL and DML.
+-- Otherwise:
+--   1. Replace sqlEditorUser with sqlEditorReadUser (keep existing conditions intact)
+--   2. Add a new sqlEditorUser binding scoped to allowed environments
+--   3. Scope custom roles with bb.sql.ddl/bb.sql.dml to allowed environments
 
 WITH
 -- Get all environment IDs from the setting table
@@ -36,18 +37,12 @@ env_list AS (
     SELECT COALESCE(string_agg('"' || env_id || '"', ', '), '') AS env_ids
     FROM allowed_envs
 ),
-roles_with_env_limitation AS (
-    -- Predefined role with bb.sql.ddl/bb.sql.dml (excluding projectOwner)
-    SELECT 'roles/sqlEditorUser' AS role_name
-    UNION ALL
-    -- Custom roles with bb.sql.ddl or bb.sql.dml
+-- Custom roles with bb.sql.ddl or bb.sql.dml
+custom_roles_with_env_limitation AS (
     SELECT 'roles/' || resource_id AS role_name
     FROM role
-    WHERE resource_id != 'projectOwner'
-    AND (
-        permissions->'permissions' @> '["bb.sql.ddl"]'::jsonb
-        OR permissions->'permissions' @> '["bb.sql.dml"]'::jsonb
-    )
+    WHERE permissions->'permissions' @> '["bb.sql.ddl"]'::jsonb
+       OR permissions->'permissions' @> '["bb.sql.dml"]'::jsonb
 )
 UPDATE policy
 SET payload = (
@@ -55,32 +50,67 @@ SET payload = (
         payload,
         '{bindings}',
         (
-            SELECT COALESCE(jsonb_agg(
-                CASE
-                    WHEN binding->>'role' IN (SELECT role_name FROM roles_with_env_limitation)
-                         AND COALESCE(binding->'condition'->>'expression', '') NOT LIKE '%resource.environment_id%'
-                    THEN
-                        CASE
-                            -- condition key doesn't exist: create it with expression
-                            WHEN binding->'condition' IS NULL
-                            THEN binding || jsonb_build_object('condition', jsonb_build_object('expression', 'resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']'))
-                            -- condition exists but expression is empty or missing
-                            WHEN COALESCE(binding->'condition'->>'expression', '') = ''
-                            THEN jsonb_set(binding, '{condition,expression}', to_jsonb('resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']'))
-                            -- condition exists with non-empty expression: append
-                            ELSE jsonb_set(
-                                binding,
-                                '{condition,expression}',
-                                to_jsonb((binding->'condition'->>'expression') || ' && resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']')
-                            )
-                        END
-                    ELSE binding
-                END
-            ), '[]'::jsonb)
-            FROM jsonb_array_elements(payload->'bindings') AS binding
+            SELECT COALESCE(jsonb_agg(new_binding ORDER BY ord), '[]'::jsonb)
+            FROM (
+                -- Existing bindings: swap sqlEditorUser -> sqlEditorReadUser,
+                -- and add env condition to custom roles with DDL/DML
+                SELECT rn AS ord,
+                    CASE
+                        -- sqlEditorUser: replace with sqlEditorReadUser
+                        WHEN binding->>'role' = 'roles/sqlEditorUser'
+                             AND COALESCE(binding->'condition'->>'expression', '') NOT LIKE '%resource.environment_id%'
+                        THEN jsonb_set(binding, '{role}', '"roles/sqlEditorReadUser"')
+
+                        -- Custom roles: add env condition
+                        WHEN binding->>'role' IN (SELECT role_name FROM custom_roles_with_env_limitation)
+                             AND COALESCE(binding->'condition'->>'expression', '') NOT LIKE '%resource.environment_id%'
+                        THEN
+                            CASE
+                                -- condition key doesn't exist: create it with expression
+                                WHEN binding->'condition' IS NULL
+                                THEN binding || jsonb_build_object('condition', jsonb_build_object('expression', 'resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']'))
+                                -- condition exists but expression is empty or missing
+                                WHEN COALESCE(binding->'condition'->>'expression', '') = ''
+                                THEN jsonb_set(binding, '{condition,expression}', to_jsonb('resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']'))
+                                -- condition exists with non-empty expression: append
+                                ELSE jsonb_set(binding, '{condition,expression}', to_jsonb((binding->'condition'->>'expression') || ' && resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']'))
+                            END
+
+                        ELSE binding
+                    END AS new_binding
+                FROM jsonb_array_elements(payload->'bindings') WITH ORDINALITY AS t(binding, rn)
+
+                UNION ALL
+
+                -- New sqlEditorUser bindings scoped to allowed environments
+                SELECT 1000000 + rn AS ord,
+                    CASE
+                        WHEN binding->'condition' IS NULL OR COALESCE(binding->'condition'->>'expression', '') = ''
+                        THEN jsonb_build_object(
+                            'role', 'roles/sqlEditorUser',
+                            'members', binding->'members',
+                            'condition', jsonb_build_object('expression', 'resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']')
+                        )
+                        ELSE jsonb_build_object(
+                            'role', 'roles/sqlEditorUser',
+                            'members', binding->'members',
+                            'condition', jsonb_build_object('expression', (binding->'condition'->>'expression') || ' && resource.environment_id in [' || (SELECT env_ids FROM env_list) || ']')
+                        )
+                    END AS new_binding
+                FROM jsonb_array_elements(payload->'bindings') WITH ORDINALITY AS t(binding, rn)
+                WHERE binding->>'role' = 'roles/sqlEditorUser'
+                  AND COALESCE(binding->'condition'->>'expression', '') NOT LIKE '%resource.environment_id%'
+                  AND (SELECT env_ids FROM env_list) != ''
+            ) sub
         )
     )
 )
 WHERE type = 'IAM'
   AND resource_type = 'PROJECT'
-  AND payload->'bindings' IS NOT NULL;
+  AND payload->'bindings' IS NOT NULL
+  -- Skip if all environments allow both DDL and DML
+  AND EXISTS (
+      SELECT 1 FROM all_envs e
+      JOIN env_policy ep ON e.env_id = ep.env_id
+      WHERE ep.disallow_ddl OR ep.disallow_dml
+  );
