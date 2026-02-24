@@ -54,10 +54,11 @@ const (
 	ServiceAccountNamePrefix   = "serviceAccounts/"
 	WorkloadIdentityNamePrefix = "workloadIdentities/"
 
-	SchemaSuffix    = "/schema"
-	SDLSchemaSuffix = "/sdlSchema"
-	MetadataSuffix  = "/metadata"
-	CatalogSuffix   = "/catalog"
+	SchemaSuffix       = "/schema"
+	SDLSchemaSuffix    = "/sdlSchema"
+	SchemaStringSuffix = "/schemaString"
+	MetadataSuffix     = "/metadata"
+	CatalogSuffix      = "/catalog"
 
 	UserBindingPrefix             = "user:"
 	GroupBindingPrefix            = "group:"
