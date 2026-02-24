@@ -11,31 +11,37 @@ SET payload = (
     SELECT jsonb_set(
         payload,
         '{bindings}',
-        (
-            SELECT jsonb_agg(
-                jsonb_set(
-                    binding,
-                    '{members}',
-                    (
-                        SELECT jsonb_agg(
-                            CASE
-                                WHEN member_text NOT LIKE 'users/%'
-                                THEN member
-                                WHEN p.type = 'SERVICE_ACCOUNT'
-                                THEN to_jsonb('serviceAccounts/' || email_extracted.email)
-                                WHEN p.type = 'WORKLOAD_IDENTITY'
-                                THEN to_jsonb('workloadIdentities/' || email_extracted.email)
-                                ELSE member
-                            END
+        COALESCE(
+            (
+                SELECT jsonb_agg(
+                    jsonb_set(
+                        binding,
+                        '{members}',
+                        COALESCE(
+                            (
+                                SELECT jsonb_agg(
+                                    CASE
+                                        WHEN member_text NOT LIKE 'users/%'
+                                        THEN member
+                                        WHEN p.type = 'SERVICE_ACCOUNT'
+                                        THEN to_jsonb('serviceAccounts/' || email_extracted.email)
+                                        WHEN p.type = 'WORKLOAD_IDENTITY'
+                                        THEN to_jsonb('workloadIdentities/' || email_extracted.email)
+                                        ELSE member
+                                    END
+                                )
+                                FROM jsonb_array_elements(binding->'members') AS member,
+                                     LATERAL (SELECT member #>> '{}' AS member_text) AS extracted,
+                                     LATERAL (SELECT substring(member_text FROM 7) AS email) AS email_extracted
+                                LEFT JOIN principal p ON p.email = email_extracted.email
+                            ),
+                            '[]'::jsonb
                         )
-                        FROM jsonb_array_elements(binding->'members') AS member,
-                             LATERAL (SELECT member #>> '{}' AS member_text) AS extracted,
-                             LATERAL (SELECT substring(member_text FROM 7) AS email) AS email_extracted
-                        LEFT JOIN principal p ON p.email = email_extracted.email
                     )
                 )
-            )
-            FROM jsonb_array_elements(payload->'bindings') AS binding
+                FROM jsonb_array_elements(payload->'bindings') AS binding
+            ),
+            '[]'::jsonb
         )
     )
 )
@@ -49,31 +55,37 @@ SET payload = (
     SELECT jsonb_set(
         payload,
         '{exemptions}',
-        (
-            SELECT jsonb_agg(
-                jsonb_set(
-                    exemption,
-                    '{members}',
-                    (
-                        SELECT jsonb_agg(
-                            CASE
-                                WHEN member_text NOT LIKE 'users/%'
-                                THEN member
-                                WHEN p.type = 'SERVICE_ACCOUNT'
-                                THEN to_jsonb('serviceAccounts/' || email_extracted.email)
-                                WHEN p.type = 'WORKLOAD_IDENTITY'
-                                THEN to_jsonb('workloadIdentities/' || email_extracted.email)
-                                ELSE member
-                            END
+        COALESCE(
+            (
+                SELECT jsonb_agg(
+                    jsonb_set(
+                        exemption,
+                        '{members}',
+                        COALESCE(
+                            (
+                                SELECT jsonb_agg(
+                                    CASE
+                                        WHEN member_text NOT LIKE 'users/%'
+                                        THEN member
+                                        WHEN p.type = 'SERVICE_ACCOUNT'
+                                        THEN to_jsonb('serviceAccounts/' || email_extracted.email)
+                                        WHEN p.type = 'WORKLOAD_IDENTITY'
+                                        THEN to_jsonb('workloadIdentities/' || email_extracted.email)
+                                        ELSE member
+                                    END
+                                )
+                                FROM jsonb_array_elements(exemption->'members') AS member,
+                                     LATERAL (SELECT member #>> '{}' AS member_text) AS extracted,
+                                     LATERAL (SELECT substring(member_text FROM 7) AS email) AS email_extracted
+                                LEFT JOIN principal p ON p.email = email_extracted.email
+                            ),
+                            '[]'::jsonb
                         )
-                        FROM jsonb_array_elements(exemption->'members') AS member,
-                             LATERAL (SELECT member #>> '{}' AS member_text) AS extracted,
-                             LATERAL (SELECT substring(member_text FROM 7) AS email) AS email_extracted
-                        LEFT JOIN principal p ON p.email = email_extracted.email
                     )
                 )
-            )
-            FROM jsonb_array_elements(payload->'exemptions') AS exemption
+                FROM jsonb_array_elements(payload->'exemptions') AS exemption
+            ),
+            '[]'::jsonb
         )
     )
 )
