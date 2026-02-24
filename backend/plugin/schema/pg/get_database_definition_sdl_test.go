@@ -2107,3 +2107,68 @@ $$`,
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
+
+func TestOverloadedFunctionsPreservedInDump(t *testing.T) {
+	oneArgDef := `CREATE OR REPLACE FUNCTION "public"."camel_to_snake"(camel_cased_text character varying)
+ RETURNS character varying
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+  RETURN lower(camel_cased_text);
+END;
+$function$`
+	twoArgDef := `CREATE OR REPLACE FUNCTION "public"."camel_to_snake"(camel_cased_text character varying, case_directive character varying)
+ RETURNS character varying
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+  RETURN lower(camel_cased_text || '_' || case_directive);
+END;
+$function$`
+
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "camel_to_snake",
+						Signature:  "camel_to_snake(camel_cased_text character varying)",
+						Definition: oneArgDef,
+					},
+					{
+						Name:       "camel_to_snake",
+						Signature:  "camel_to_snake(camel_cased_text character varying, case_directive character varying)",
+						Definition: twoArgDef,
+					},
+				},
+			},
+		},
+	}
+
+	oneArgSubstring := `"camel_to_snake"(camel_cased_text character varying)`
+	twoArgSubstring := `"camel_to_snake"(camel_cased_text character varying, case_directive character varying)`
+
+	// Test non-SDL format (GetDatabaseDefinition)
+	result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, result, oneArgSubstring)
+	assert.Contains(t, result, twoArgSubstring)
+	assert.Equal(t, 2, strings.Count(result, "CREATE OR REPLACE FUNCTION"), "both overloads must survive in non-SDL dump")
+
+	// Test SDL format
+	resultSDL, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, resultSDL, oneArgSubstring)
+	assert.Contains(t, resultSDL, twoArgSubstring)
+	assert.Equal(t, 2, strings.Count(resultSDL, "CREATE OR REPLACE FUNCTION"), "both overloads must survive in SDL dump")
+
+	// Test single-schema path (GetSchemaDefinition)
+	resultSchema, err := GetSchemaDefinition(metadata.Schemas[0])
+	require.NoError(t, err)
+	assert.Contains(t, resultSchema, oneArgSubstring)
+	assert.Contains(t, resultSchema, twoArgSubstring)
+	assert.Equal(t, 2, strings.Count(resultSchema, "CREATE OR REPLACE FUNCTION"), "both overloads must survive in single-schema dump")
+}
