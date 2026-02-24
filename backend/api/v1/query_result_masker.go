@@ -60,8 +60,21 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
 			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
 		}
-		// Skip masking for error result.
+		// Skip masking for error result, but redact the error message if the
+		// statement touches masked columns — database errors can contain
+		// actual column values (e.g. "invalid input syntax for type integer: '<value>'").
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
+			if i < len(spans) && spans[i] != nil {
+				maskers, _, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
+				if err == nil {
+					for _, mk := range maskers {
+						if _, isNone := mk.(*masker.NoneMasker); !isNone {
+							results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
+							break
+						}
+					}
+				}
+			}
 			continue
 		}
 		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
