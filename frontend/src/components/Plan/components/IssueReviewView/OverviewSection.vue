@@ -40,7 +40,6 @@
                 <EnvironmentV1Name
                   :environment="getEnvironmentEntity(stage.environment)"
                   :link="false"
-                  :null-environment-placeholder="'Null'"
                 />
               </div>
               <span

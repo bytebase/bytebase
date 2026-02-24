@@ -77,12 +77,15 @@ const columnList = computed(
           const releaseName = parts[parts.length - 1] || release.name;
           return (
             <p class="inline-flex w-full items-center gap-x-2">
-              <span class="shrink truncate">{releaseName}</span>
-              {release.state === State.DELETED && (
-                <NTag class="shrink-0" type="default" size="small">
-                  {t("common.abandoned")}
-                </NTag>
-              )}
+              <span
+                class={[
+                  "shrink truncate",
+                  release.state === State.DELETED &&
+                    "text-control-light line-through",
+                ]}
+              >
+                {releaseName}
+              </span>
             </p>
           );
         },

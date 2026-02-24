@@ -217,7 +217,7 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
           ...environment,
           id,
           name,
-          title: name,
+          title: id,
         };
       }
       return environment;

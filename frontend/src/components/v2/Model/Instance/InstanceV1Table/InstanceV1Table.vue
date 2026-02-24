@@ -143,7 +143,6 @@ const columnList = computed((): InstanceDataTableColumn[] => {
         )}
         link={false}
         showColor={true}
-        nullEnvironmentPlaceholder="Null"
       />
     ),
   };

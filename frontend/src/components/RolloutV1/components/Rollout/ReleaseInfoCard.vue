@@ -3,14 +3,7 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-2 text-sm font-medium">
         <PackageIcon class="w-4 h-4" />
-        <span :class="compact ? '' : 'text-base'">{{ releaseTitle }}</span>
-        <NTag
-          v-if="release && release.state === State.DELETED"
-          size="small"
-          type="default"
-        >
-          {{ $t("common.abandoned") }}
-        </NTag>
+        <span :class="[compact ? '' : 'text-base', isDeleted && 'text-control-light line-through']">{{ releaseTitle }}</span>
       </div>
       <NButton
         v-if="release && isValidReleaseName(release.name)"
@@ -143,7 +136,7 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import { ExternalLinkIcon, PackageIcon } from "lucide-vue-next";
-import { NButton, NTag } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
@@ -166,6 +159,8 @@ const { t } = useI18n();
 const { release, ready: releaseReady } = useReleaseByName(
   computed(() => props.releaseName)
 );
+
+const isDeleted = computed(() => release.value?.state === State.DELETED);
 
 const maxDisplayedFiles = computed(() => (props.compact ? 4 : 6));
 

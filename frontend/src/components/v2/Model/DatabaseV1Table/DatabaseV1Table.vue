@@ -144,7 +144,6 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
         link={false}
         showColor={true}
         keyword={props.keyword}
-        nullEnvironmentPlaceholder="Null"
       />
     ),
   };
