@@ -63,17 +63,12 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
 		// actual column values (e.g. "invalid input syntax for type integer: '<value>'").
+		// We check SourceColumns (covers SELECT, WHERE, JOIN, etc.) rather than
+		// just Results (SELECT output) to catch cases like:
+		//   SELECT name FROM t WHERE CAST(masked_col AS int) > 5
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
-			if i < len(spans) && spans[i] != nil {
-				maskers, _, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
-				if err == nil {
-					for _, mk := range maskers {
-						if _, isNone := mk.(*masker.NoneMasker); !isNone {
-							results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
-							break
-						}
-					}
-				}
+			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
 			}
 			continue
 		}
@@ -85,6 +80,38 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// spanTouchesMaskedColumns checks whether any column referenced anywhere in
+// the query (SELECT, WHERE, JOIN, etc.) has a masking policy applied.
+func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan) bool {
+	if len(span.SourceColumns) == 0 {
+		return false
+	}
+
+	semanticTypesToMasker, err := buildSemanticTypeToMaskerMap(ctx, s.store)
+	if err != nil {
+		return false
+	}
+
+	data, err := newMaskingDataProviderFromColumns(ctx, s.store, instance, span.SourceColumns)
+	if err != nil {
+		return false
+	}
+
+	for column := range span.SourceColumns {
+		mk, _, err := s.getMaskerForColumnResource(ctx, m, instance, column, data, user, semanticTypesToMasker)
+		if err != nil {
+			continue
+		}
+		if mk == nil {
+			continue
+		}
+		if _, isNone := mk.(*masker.NoneMasker); !isNone {
+			return true
+		}
+	}
+	return false
 }
 
 func getAlgorithmName(m masker.Masker) string {
