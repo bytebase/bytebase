@@ -84,8 +84,23 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in
 // the query (SELECT, WHERE, JOIN, etc.) has a masking policy applied.
+//
+// We collect column-level entries from span.Results[*].SourceColumns and
+// span.PredicateColumns rather than span.SourceColumns, because some engines
+// (e.g. MySQL) populate span.SourceColumns with table-level entries only
+// (Column field is empty), which cannot be matched against column configs.
 func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan) bool {
-	if len(span.SourceColumns) == 0 {
+	// Collect all column-level source columns from SELECT results and predicates.
+	allColumns := make(parserbase.SourceColumnSet)
+	for _, r := range span.Results {
+		for col := range r.SourceColumns {
+			allColumns[col] = true
+		}
+	}
+	for col := range span.PredicateColumns {
+		allColumns[col] = true
+	}
+	if len(allColumns) == 0 {
 		return false
 	}
 
@@ -94,12 +109,12 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 		return false
 	}
 
-	data, err := newMaskingDataProviderFromColumns(ctx, s.store, instance, span.SourceColumns)
+	data, err := newMaskingDataProvider(ctx, s.store, instance, span)
 	if err != nil {
 		return false
 	}
 
-	for column := range span.SourceColumns {
+	for column := range allColumns {
 		mk, _, err := s.getMaskerForColumnResource(ctx, m, instance, column, data, user, semanticTypesToMasker)
 		if err != nil {
 			continue

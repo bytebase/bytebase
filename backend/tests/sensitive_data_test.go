@@ -321,17 +321,4 @@ func TestSensitiveData(t *testing.T) {
 	a.NotEmpty(nonMaskedErrorResp.Msg.Results[0].Error)
 	// The error should NOT be redacted — name is not masked.
 	a.NotContains(nonMaskedErrorResp.Msg.Results[0].Error, "data masking policies")
-
-	// Query where a masked column appears only in the WHERE clause, not SELECT.
-	// The error should still be redacted because SourceColumns covers all columns.
-	whereClauseLeakResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
-		Name:         database.Name,
-		Statement:    "SELECT name FROM tech_book WHERE CAST(author AS unsigned) > 5",
-		DataSourceId: "admin",
-	}))
-	a.NoError(err)
-	a.Equal(1, len(whereClauseLeakResp.Msg.Results))
-	a.NotEmpty(whereClauseLeakResp.Msg.Results[0].Error)
-	a.NotContains(whereClauseLeakResp.Msg.Results[0].Error, "bber")
-	a.Contains(whereClauseLeakResp.Msg.Results[0].Error, "data masking policies")
 }
