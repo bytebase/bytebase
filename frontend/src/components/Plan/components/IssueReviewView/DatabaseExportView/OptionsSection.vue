@@ -46,15 +46,17 @@
 </template>
 
 <script lang="ts" setup>
-import { create } from "@bufbuild/protobuf";
-import { cloneDeep } from "lodash-es";
+import { clone, create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
-import type { Plan_ExportDataConfig } from "@/types/proto-es/v1/plan_service_pb";
-import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_ExportDataConfigSchema,
+  PlanSchema,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { usePlanContext } from "../../../logic";
 import ExportFormatSelector from "../../ExportOption/ExportFormatSelector.vue";
 import ExportPasswordInputer from "../../ExportOption/ExportPasswordInputer.vue";
@@ -76,7 +78,7 @@ const exportDataConfig = computed(() => {
 // Local editing state
 const state = reactive({
   isEditing: false,
-  editableConfig: {} as Plan_ExportDataConfig,
+  editableConfig: create(Plan_ExportDataConfigSchema, {}),
 });
 
 // Initialize editableConfig when exportDataConfig becomes available
@@ -85,7 +87,10 @@ watchEffect(() => {
     exportDataConfig.value &&
     Object.keys(state.editableConfig).length === 0
   ) {
-    state.editableConfig = { ...exportDataConfig.value };
+    state.editableConfig = clone(
+      Plan_ExportDataConfigSchema,
+      exportDataConfig.value
+    );
   }
 });
 
@@ -135,7 +140,10 @@ const handleEdit = () => {
   if (!exportDataConfig.value) return;
 
   state.isEditing = true;
-  state.editableConfig = { ...exportDataConfig.value };
+  state.editableConfig = clone(
+    Plan_ExportDataConfigSchema,
+    exportDataConfig.value
+  );
 };
 
 const handleSave = async () => {
@@ -148,7 +156,7 @@ const handleSave = async () => {
       throw new Error("Cannot find export data spec to update");
     }
 
-    const planPatch = cloneDeep(plan.value);
+    const planPatch = clone(PlanSchema, plan.value);
     const specToPatch = planPatch.specs.find(
       (spec) => spec.id === exportDataSpec.id
     );
@@ -158,7 +166,10 @@ const handleSave = async () => {
     }
 
     // Update the export config
-    specToPatch.config.value = { ...state.editableConfig };
+    specToPatch.config.value = clone(
+      Plan_ExportDataConfigSchema,
+      state.editableConfig
+    );
 
     const request = create(UpdatePlanRequestSchema, {
       plan: planPatch,
@@ -189,7 +200,10 @@ const handleSave = async () => {
 const handleCancel = () => {
   state.isEditing = false;
   if (exportDataConfig.value) {
-    state.editableConfig = { ...exportDataConfig.value };
+    state.editableConfig = clone(
+      Plan_ExportDataConfigSchema,
+      exportDataConfig.value
+    );
   }
 };
 </script>
