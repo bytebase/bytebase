@@ -148,10 +148,14 @@ const mergePolicyBinding = async () => {
   }
 
   for (const binding of bindingMap.values()) {
-    policy.bindings.push({
-      ...binding,
-      members: [...new Set(binding.members)],
-    });
+    policy.bindings.push(
+      create(BindingSchema, {
+        role: binding.role,
+        members: [...new Set(binding.members)],
+        condition: binding.condition,
+        parsedExpr: binding.parsedExpr,
+      })
+    );
   }
 
   return policy;
