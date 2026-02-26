@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -99,6 +100,8 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 	}
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
+	databaseConfig = normalizeCatalogSchemaNames(databaseConfig, dbMetadata.GetProto())
+
 	if err := s.store.UpdateDBSchema(ctx, database.InstanceID, database.DatabaseName, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -198,6 +201,106 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 		c.Schemas = append(c.Schemas, s)
 	}
 	return c
+}
+
+// normalizeCatalogSchemaNames fixes empty schema names in the catalog config
+// by resolving them against the actual database metadata. This prevents catalog
+// corruption where columns end up under a nameless schema entry.
+func normalizeCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storepb.DatabaseSchemaMetadata) *storepb.DatabaseConfig {
+	if metadata == nil {
+		return config
+	}
+
+	// Check if any schema has an empty name that doesn't match metadata.
+	hasEmptyConfigSchema := false
+	for _, sc := range config.Schemas {
+		if sc.Name == "" {
+			hasEmptyConfigSchema = true
+			break
+		}
+	}
+	if !hasEmptyConfigSchema {
+		return config
+	}
+
+	// Check if metadata legitimately has an empty schema name (e.g. Cassandra, MySQL).
+	metadataHasEmptySchema := false
+	for _, ms := range metadata.Schemas {
+		if ms.Name == "" {
+			metadataHasEmptySchema = true
+			break
+		}
+	}
+	if metadataHasEmptySchema {
+		return config
+	}
+
+	// Build table→schemaName map from metadata for resolving empty schema names.
+	tableToSchema := make(map[string]string)
+	for _, ms := range metadata.Schemas {
+		for _, mt := range ms.Tables {
+			tableToSchema[mt.Name] = ms.Name
+		}
+	}
+
+	// Resolve empty schema names and collect into a merged map.
+	schemaMap := make(map[string]*storepb.SchemaCatalog)
+	var schemaOrder []string
+	for _, sc := range config.Schemas {
+		name := sc.Name
+		if name == "" {
+			// Infer schema name from the first table that exists in metadata.
+			for _, tc := range sc.Tables {
+				if resolved, ok := tableToSchema[tc.Name]; ok {
+					name = resolved
+					break
+				}
+			}
+			if name == "" {
+				// No tables matched metadata — drop this orphan schema.
+				slog.Warn("dropping catalog schema with empty name: no matching tables in metadata")
+				continue
+			}
+			slog.Info("resolved empty catalog schema name", slog.String("resolvedName", name))
+		}
+
+		if existing, ok := schemaMap[name]; ok {
+			// Merge tables into the existing schema entry.
+			existing.Tables = mergeTableCatalogs(existing.Tables, sc.Tables)
+		} else {
+			merged := &storepb.SchemaCatalog{Name: name, Tables: sc.Tables}
+			schemaMap[name] = merged
+			schemaOrder = append(schemaOrder, name)
+		}
+	}
+
+	result := &storepb.DatabaseConfig{}
+	for _, name := range schemaOrder {
+		result.Schemas = append(result.Schemas, schemaMap[name])
+	}
+	return result
+}
+
+// mergeTableCatalogs merges two table catalog lists, preferring entries from
+// the override list when table names conflict.
+func mergeTableCatalogs(base, override []*storepb.TableCatalog) []*storepb.TableCatalog {
+	tableMap := make(map[string]*storepb.TableCatalog, len(base))
+	var order []string
+	for _, t := range base {
+		tableMap[t.Name] = t
+		order = append(order, t.Name)
+	}
+	for _, t := range override {
+		if _, ok := tableMap[t.Name]; !ok {
+			order = append(order, t.Name)
+		}
+		tableMap[t.Name] = t
+	}
+	result := make([]*storepb.TableCatalog, 0, len(order))
+	for _, name := range order {
+		result = append(result, tableMap[name])
+	}
+	return result
 }
 
 func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {

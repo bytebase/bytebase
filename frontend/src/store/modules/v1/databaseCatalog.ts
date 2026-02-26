@@ -69,9 +69,6 @@ export const useDatabaseCatalogV1Store = defineStore(
         }
       }
 
-      console.debug("[getOrFetchDatabaseCatalog]", {
-        name: catalogResourceName,
-      });
       const request = create(GetDatabaseCatalogRequestSchema, {
         name: catalogResourceName,
       });
@@ -111,13 +108,14 @@ export const useDatabaseCatalogV1Store = defineStore(
         });
       }
 
-      return (
-        getCache(database) ??
-        create(DatabaseCatalogSchema, {
+      const cached = getCache(database);
+      if (!cached) {
+        return create(DatabaseCatalogSchema, {
           name: ensureDatabaseCatalogResourceName(database),
           schemas: [],
-        })
-      );
+        });
+      }
+      return cached;
     };
 
     const removeCache = (name: string) => {
