@@ -229,6 +229,9 @@ func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
 }
 
 // buildTableToSchemaMap creates a table name to schema name lookup from metadata.
+// If the same table name exists in multiple schemas, the last one wins. This is
+// acceptable because the map is only used for resolving empty schema names in
+// corrupted catalog entries — an inherently ambiguous situation.
 func buildTableToSchemaMap(metadata *storepb.DatabaseSchemaMetadata) map[string]string {
 	m := make(map[string]string)
 	for _, ms := range metadata.Schemas {
@@ -281,8 +284,9 @@ func inferSchemaName(tables []*storepb.TableCatalog, tableToSchema map[string]st
 	return ""
 }
 
-// mergeTableCatalogs merges two table catalog lists, preferring entries from
-// the override list when table names conflict.
+// mergeTableCatalogs merges two table catalog lists. When both lists contain
+// the same table, columns are merged (override wins per column name) to avoid
+// losing column-level config from either side.
 func mergeTableCatalogs(base, override []*storepb.TableCatalog) []*storepb.TableCatalog {
 	tableMap := make(map[string]*storepb.TableCatalog, len(base))
 	var order []string
@@ -291,16 +295,41 @@ func mergeTableCatalogs(base, override []*storepb.TableCatalog) []*storepb.Table
 		order = append(order, t.Name)
 	}
 	for _, t := range override {
-		if _, ok := tableMap[t.Name]; !ok {
+		if existing, ok := tableMap[t.Name]; ok {
+			mergeColumnCatalogs(existing, t)
+		} else {
+			tableMap[t.Name] = t
 			order = append(order, t.Name)
 		}
-		tableMap[t.Name] = t
 	}
 	result := make([]*storepb.TableCatalog, 0, len(order))
 	for _, name := range order {
 		result = append(result, tableMap[name])
 	}
 	return result
+}
+
+// mergeColumnCatalogs merges columns from src into dst. For duplicate column
+// names, the src entry wins. Non-column fields (classification) are taken from
+// src if non-empty.
+func mergeColumnCatalogs(dst, src *storepb.TableCatalog) {
+	if src.Classification != "" {
+		dst.Classification = src.Classification
+	}
+	if len(src.Columns) == 0 {
+		return
+	}
+	colMap := make(map[string]int, len(dst.Columns))
+	for i, c := range dst.Columns {
+		colMap[c.Name] = i
+	}
+	for _, c := range src.Columns {
+		if idx, ok := colMap[c.Name]; ok {
+			dst.Columns[idx] = c
+		} else {
+			dst.Columns = append(dst.Columns, c)
+		}
+	}
 }
 
 func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
