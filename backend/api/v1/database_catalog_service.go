@@ -63,7 +63,11 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 		}), nil
 	}
 
-	return connect.NewResponse(convertDatabaseConfig(database, dbMetadata.GetConfig())), nil
+	// Normalize legacy corrupted data (empty schema names) on read so the
+	// frontend receives correct schema names and self-heals on next edit.
+	config := normalizeCatalogSchemaNames(dbMetadata.GetConfig(), dbMetadata.GetProto())
+
+	return connect.NewResponse(convertDatabaseConfig(database, config)), nil
 }
 
 // UpdateDatabaseCatalog updates a database catalog.
@@ -100,7 +104,10 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 	}
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
-	databaseConfig = normalizeCatalogSchemaNames(databaseConfig, dbMetadata.GetProto())
+
+	if err := validateCatalogSchemaNames(databaseConfig, dbMetadata.GetProto()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 
 	if err := s.store.UpdateDBSchema(ctx, database.InstanceID, database.DatabaseName, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -201,6 +208,20 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 		c.Schemas = append(c.Schemas, s)
 	}
 	return c
+}
+
+// validateCatalogSchemaNames rejects empty schema names for engines that use
+// named schemas. Engines like Cassandra/MySQL where metadata has empty schema
+// names are allowed through.
+func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storepb.DatabaseSchemaMetadata) error {
+	if !hasEmptySchemaName(config.Schemas) {
+		return nil
+	}
+	// Engines like Cassandra/MySQL legitimately use empty schema names.
+	if metadata != nil && hasEmptySchemaName(metadata.Schemas) {
+		return nil
+	}
+	return errors.New("schema name must not be empty for this database engine")
 }
 
 // normalizeCatalogSchemaNames fixes empty schema names in the catalog config
