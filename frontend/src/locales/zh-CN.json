@@ -2763,7 +2763,8 @@
     "delete-group": "删除数据库组 {name}"
   },
   "export-center": {
-    "self": "导出中心"
+    "self": "导出中心",
+    "data-export": "数据导出"
   },
   "schema-designer": {
     "use-tips": "选择需要设计的表"

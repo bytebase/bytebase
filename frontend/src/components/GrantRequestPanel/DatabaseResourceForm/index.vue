@@ -3,7 +3,7 @@
     <NRadioGroup
       :value="state.radioValue"
       :disabled="disabled || state.loading"
-      class="w-full flex! flex-row justify-start items-center gap-4"
+      class="w-full flex! flex-col sm:flex-row justify-start sm:items-center gap-2 sm:gap-4"
       @update:value="onSelectUpdate"
     >
       <NTooltip trigger="hover">

@@ -205,7 +205,7 @@
     </template>
     <template #footer>
       <div class="flex justify-end">
-        <div class="flex items-center gap-x-3">
+        <div class="flex items-center gap-x-2">
           <NButton v-if="create" @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>

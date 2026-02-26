@@ -148,14 +148,27 @@ psql -U bbdev bbdev
 
 - **Code Review** — Follow [Google's Code Review Guideline](https://google.github.io/eng-practices/)
 - **Author Responsibility** — Authors are responsible for driving discussions, resolving comments, and promptly merging pull requests
-- **Breaking Changes** — Add the `breaking` label to PRs that contain breaking changes, including:
-  - API breaking changes (removed/renamed endpoints, changed request/response formats)
-  - Database schema breaking changes that are not backward-compatible
-  - Proto message breaking changes (removed/renamed fields, changed field types)
-  - Configuration breaking changes (removed flags, changed behavior)
 - **Description** — Clearly describe what the PR changes and why
 - **Testing** — Include information about how the changes were tested
 - **SonarCloud** — When creating or updating a PR, update `.sonarcloud.properties` to reflect the latest file structure. Use `sonar.exclusions` for generated code, build artifacts, and dependencies (directory paths only). Use `sonar.test.inclusions` for test file patterns (wildcards like `**/*_test.go`). Use `sonar.cpd.exclusions` to skip copy-paste detection on test files
+
+### Breaking Change Check (MANDATORY before `gh pr create`)
+
+**Before every `gh pr create`, you MUST review the diff against the base branch and check for:**
+
+1. **API breaking changes** — removed/renamed endpoints, changed request/response formats, removed/renamed query parameters
+2. **Database schema breaking changes** — dropped columns/tables, non-backward-compatible migrations
+3. **Proto breaking changes** — removed/renamed fields, changed field numbers/types, removed RPCs
+4. **Configuration breaking changes** — removed flags, changed default behavior, renamed environment variables
+5. **Behavior changes** — changed default values, altered existing workflows, modified permission/access control logic
+6. **Webhook/event changes** — renamed/removed events, changed payload formats
+7. **UI workflow changes** — redesigned user-facing flows that change how users perform existing tasks (e.g., merging steps, splitting pages, changing navigation)
+
+**If ANY of the above apply:**
+1. Add `--label breaking` to the `gh pr create` command
+2. Include a `## Breaking Changes` section in the PR description summarizing what changed and what users need to be aware of
+
+Do NOT skip this check. Do NOT assume changes are non-breaking without reviewing the diff.
 
 ## Common Go Lint Rules
 

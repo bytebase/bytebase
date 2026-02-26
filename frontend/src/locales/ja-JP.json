@@ -2763,7 +2763,8 @@
     "delete-group": "データベースグループを削除する"
   },
   "export-center": {
-    "self": "エクスポートセンター"
+    "self": "エクスポートセンター",
+    "data-export": "データエクスポート"
   },
   "schema-designer": {
     "use-tips": "デザインするテーブルを選択してください"
