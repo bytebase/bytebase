@@ -256,42 +256,54 @@ func buildTableToSchemaMap(metadata *storepb.DatabaseSchemaMetadata) map[string]
 //   - Unambiguous match in metadata → assign to that schema
 //   - Ambiguous or unknown → keep in empty-name schema (don't guess)
 func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[string]string) *storepb.DatabaseConfig {
-	schemaMap := make(map[string]*storepb.SchemaCatalog)
-	var schemaOrder []string
-
-	addTable := func(name string, tc *storepb.TableCatalog) {
-		if existing, ok := schemaMap[name]; ok {
-			existing.Tables = mergeTableCatalogs(existing.Tables, []*storepb.TableCatalog{tc})
-		} else {
-			schemaMap[name] = &storepb.SchemaCatalog{Name: name, Tables: []*storepb.TableCatalog{tc}}
-			schemaOrder = append(schemaOrder, name)
-		}
-	}
+	b := &schemaBuilder{}
 
 	for _, sc := range config.Schemas {
 		if sc.Name != "" {
-			if existing, ok := schemaMap[sc.Name]; ok {
-				existing.Tables = mergeTableCatalogs(existing.Tables, sc.Tables)
-			} else {
-				schemaMap[sc.Name] = &storepb.SchemaCatalog{Name: sc.Name, Tables: sc.Tables}
-				schemaOrder = append(schemaOrder, sc.Name)
-			}
+			b.addTables(sc.Name, sc.Tables)
 			continue
 		}
-
 		for _, tc := range sc.Tables {
-			if target, ok := tableToSchema[tc.Name]; ok {
-				slog.Warn("resolved empty catalog schema table", slog.String("table", tc.Name), slog.String("resolvedSchema", target))
-				addTable(target, tc)
-			} else {
-				addTable("", tc)
-			}
+			target := resolveTableSchema(tc.Name, tableToSchema)
+			b.addTables(target, []*storepb.TableCatalog{tc})
 		}
 	}
 
+	return b.build()
+}
+
+// resolveTableSchema returns the schema name for a table if unambiguous,
+// or "" if the table is ambiguous or unknown.
+func resolveTableSchema(tableName string, tableToSchema map[string]string) string {
+	if target, ok := tableToSchema[tableName]; ok {
+		slog.Warn("resolved empty catalog schema table", slog.String("table", tableName), slog.String("resolvedSchema", target))
+		return target
+	}
+	return ""
+}
+
+// schemaBuilder accumulates schema catalogs, merging tables when schemas overlap.
+type schemaBuilder struct {
+	schemas map[string]*storepb.SchemaCatalog
+	order   []string
+}
+
+func (b *schemaBuilder) addTables(schema string, tables []*storepb.TableCatalog) {
+	if b.schemas == nil {
+		b.schemas = make(map[string]*storepb.SchemaCatalog)
+	}
+	if existing, ok := b.schemas[schema]; ok {
+		existing.Tables = mergeTableCatalogs(existing.Tables, tables)
+	} else {
+		b.schemas[schema] = &storepb.SchemaCatalog{Name: schema, Tables: tables}
+		b.order = append(b.order, schema)
+	}
+}
+
+func (b *schemaBuilder) build() *storepb.DatabaseConfig {
 	result := &storepb.DatabaseConfig{}
-	for _, name := range schemaOrder {
-		result.Schemas = append(result.Schemas, schemaMap[name])
+	for _, name := range b.order {
+		result.Schemas = append(result.Schemas, b.schemas[name])
 	}
 	return result
 }
