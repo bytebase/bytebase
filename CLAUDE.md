@@ -164,7 +164,9 @@ psql -U bbdev bbdev
 6. **Webhook/event changes** — renamed/removed events, changed payload formats
 7. **UI workflow changes** — redesigned user-facing flows that change how users perform existing tasks (e.g., merging steps, splitting pages, changing navigation)
 
-**If ANY of the above apply, add `--label breaking` to the `gh pr create` command.**
+**If ANY of the above apply:**
+1. Add `--label breaking` to the `gh pr create` command
+2. Include a `## Breaking Changes` section in the PR description summarizing what changed and what users need to be aware of
 
 Do NOT skip this check. Do NOT assume changes are non-breaking without reviewing the diff.
 
