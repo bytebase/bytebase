@@ -2161,7 +2161,8 @@
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "activate-access": "激活",
-    "activate-confirm": "确定要激活此访问授权吗？"
+    "activate-confirm": "确定要激活此访问授权吗？",
+    "re-request": "重新申请"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

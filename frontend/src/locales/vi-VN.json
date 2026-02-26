@@ -2161,7 +2161,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "activate-access": "Activate",
-    "activate-confirm": "Are you sure you want to activate this access grant?"
+    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "re-request": "Yêu cầu lại"
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",

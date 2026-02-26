@@ -56,7 +56,7 @@
           size="tiny"
           @click.stop="$emit('request', grant)"
         >
-          Re-request
+          {{ $t("sql-editor.re-request") }}
         </NButton>
         <NButton
           v-if="grant.issue"
