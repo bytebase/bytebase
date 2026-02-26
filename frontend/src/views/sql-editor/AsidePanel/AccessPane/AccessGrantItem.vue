@@ -21,7 +21,7 @@
       <template #trigger>
         <p
           class="max-w-full text-xs wrap-break-word whitespace-pre-wrap font-mono line-clamp-2"
-          :class="{ 'line-through text-gray-400': isExpired || isRevoked }"
+          :class="{ 'line-through text-gray-400': isExpired || isRevoked || isRejectedOrCanceled }"
         >
           {{ grant.query }}
         </p>
@@ -74,6 +74,7 @@ import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   getAccessGrantDisplayStatus,
   getAccessGrantExpirationText,
@@ -84,6 +85,7 @@ import {
 const props = defineProps<{
   grant: AccessGrant;
   highlight?: boolean;
+  issue?: Issue;
 }>();
 
 defineEmits<{
@@ -107,14 +109,35 @@ const isExpired = computed(() => {
   return expireTimeMs.value < Date.now();
 });
 
-const displayStatus = computed(() => getAccessGrantDisplayStatus(props.grant));
+const displayStatus = computed(() =>
+  getAccessGrantDisplayStatus(props.grant, props.issue)
+);
 
 const statusTagType = computed(() =>
   getAccessGrantStatusTagType(displayStatus.value)
 );
 
+const isRejectedOrCanceled = computed(
+  () => displayStatus.value === "REJECTED" || displayStatus.value === "CANCELED"
+);
+
 const statusLabel = computed(() => {
-  return displayStatus.value;
+  switch (displayStatus.value) {
+    case "ACTIVE":
+      return t("common.active");
+    case "PENDING":
+      return t("common.pending");
+    case "EXPIRED":
+      return t("sql-editor.expired");
+    case "REVOKED":
+      return t("common.revoked");
+    case "REJECTED":
+      return t("common.rejected");
+    case "CANCELED":
+      return t("common.canceled");
+    default:
+      return displayStatus.value;
+  }
 });
 
 const expirationInfo = computed(() =>

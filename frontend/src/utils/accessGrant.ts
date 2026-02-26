@@ -4,12 +4,19 @@ import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 export type AccessGrantDisplayStatus =
   | "ACTIVE"
   | "PENDING"
   | "EXPIRED"
   | "REVOKED"
+  | "REJECTED"
+  | "CANCELED"
   | "UNKNOWN";
 
 export const getAccessGrantExpireTimeMs = (
@@ -50,7 +57,8 @@ export const getAccessGrantExpirationText = (
 };
 
 export const getAccessGrantDisplayStatus = (
-  grant: AccessGrant
+  grant: AccessGrant,
+  issue?: Issue
 ): AccessGrantDisplayStatus => {
   const expireMs = getAccessGrantExpireTimeMs(grant);
   if (
@@ -62,6 +70,14 @@ export const getAccessGrantDisplayStatus = (
   }
   switch (grant.status) {
     case AccessGrant_Status.PENDING:
+      if (issue) {
+        if (issue.approvalStatus === Issue_ApprovalStatus.REJECTED) {
+          return "REJECTED";
+        }
+        if (issue.status === IssueStatus.CANCELED) {
+          return "CANCELED";
+        }
+      }
       return "PENDING";
     case AccessGrant_Status.ACTIVE:
       return "ACTIVE";
@@ -81,7 +97,10 @@ export const getAccessGrantStatusTagType = (
     case "PENDING":
       return "warning";
     case "REVOKED":
+    case "REJECTED":
       return "error";
+    case "CANCELED":
+      return "default";
     default:
       return "default";
   }
