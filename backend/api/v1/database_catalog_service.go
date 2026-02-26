@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -216,8 +215,8 @@ func normalizeCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *store
 		return config
 	}
 
-	tableToSchema, ambiguousTables := buildTableToSchemaMap(metadata)
-	return resolveEmptySchemaNames(config, tableToSchema, ambiguousTables, defaultSchemaFromSearchPath(metadata))
+	tableToSchema := buildTableToSchemaMap(metadata)
+	return resolveEmptySchemaNames(config, tableToSchema)
 }
 
 func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
@@ -229,46 +228,24 @@ func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
 	return false
 }
 
-// buildTableToSchemaMap creates a table name to schema name lookup from metadata.
-// Returns two maps: unambiguous (table→schema for unique tables) and ambiguous
-// (tables that exist in multiple schemas). Callers use the ambiguous set to
-// distinguish "table in multiple schemas" from "table not in any schema".
-func buildTableToSchemaMap(metadata *storepb.DatabaseSchemaMetadata) (unambiguous map[string]string, ambiguous map[string]bool) {
+// buildTableToSchemaMap creates a table name → schema name lookup from metadata.
+// Tables that exist in multiple schemas are excluded (ambiguous) — we don't
+// guess which schema is correct; those tables stay in the empty-name schema.
+func buildTableToSchemaMap(metadata *storepb.DatabaseSchemaMetadata) map[string]string {
 	m := make(map[string]string)
-	amb := make(map[string]bool)
+	ambiguous := make(map[string]bool)
 	for _, ms := range metadata.Schemas {
 		for _, mt := range ms.Tables {
 			if _, exists := m[mt.Name]; exists {
-				amb[mt.Name] = true
+				ambiguous[mt.Name] = true
 			}
 			m[mt.Name] = ms.Name
 		}
 	}
-	for name := range amb {
+	for name := range ambiguous {
 		delete(m, name)
 	}
-	return m, amb
-}
-
-// defaultSchemaFromSearchPath returns the first concrete schema name from the
-// metadata search path (skipping "$user" and empty entries). This is used as
-// a fallback when table-based resolution is ambiguous.
-func defaultSchemaFromSearchPath(metadata *storepb.DatabaseSchemaMetadata) string {
-	if metadata.SearchPath == "" {
-		return ""
-	}
-	for _, part := range strings.Split(metadata.SearchPath, ",") {
-		schema := strings.TrimSpace(part)
-		// Strip quotes.
-		schema = strings.Trim(schema, "\"'")
-		schema = strings.TrimSpace(schema)
-		// Skip $user placeholder and empty entries.
-		if schema == "" || schema == "$user" {
-			continue
-		}
-		return schema
-	}
-	return ""
+	return m
 }
 
 // resolveEmptySchemaNames resolves empty schema names by placing each table
@@ -277,9 +254,8 @@ func defaultSchemaFromSearchPath(metadata *storepb.DatabaseSchemaMetadata) strin
 //
 // Resolution per table:
 //   - Unambiguous match in metadata → assign to that schema
-//   - Ambiguous (exists in multiple schemas) → assign to fallbackSchema if available
-//   - Unknown (not in any metadata schema) → keep in empty-name schema
-func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[string]string, ambiguousTables map[string]bool, fallbackSchema string) *storepb.DatabaseConfig {
+//   - Ambiguous or unknown → keep in empty-name schema (don't guess)
+func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[string]string) *storepb.DatabaseConfig {
 	schemaMap := make(map[string]*storepb.SchemaCatalog)
 	var schemaOrder []string
 
@@ -304,11 +280,12 @@ func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[s
 		}
 
 		for _, tc := range sc.Tables {
-			target := resolveTableSchema(tc.Name, tableToSchema, ambiguousTables, fallbackSchema)
-			if target != "" {
+			if target, ok := tableToSchema[tc.Name]; ok {
 				slog.Warn("resolved empty catalog schema table", slog.String("table", tc.Name), slog.String("resolvedSchema", target))
+				addTable(target, tc)
+			} else {
+				addTable("", tc)
 			}
-			addTable(target, tc)
 		}
 	}
 
@@ -317,19 +294,6 @@ func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[s
 		result.Schemas = append(result.Schemas, schemaMap[name])
 	}
 	return result
-}
-
-// resolveTableSchema determines the target schema for a single table.
-// Unknown tables (not in any metadata schema) are left unresolved rather
-// than assigned to fallbackSchema — they may be stale catalog entries.
-func resolveTableSchema(tableName string, tableToSchema map[string]string, ambiguousTables map[string]bool, fallbackSchema string) string {
-	if name, ok := tableToSchema[tableName]; ok {
-		return name
-	}
-	if ambiguousTables[tableName] && fallbackSchema != "" {
-		return fallbackSchema
-	}
-	return ""
 }
 
 // mergeTableCatalogs merges two table catalog lists. When both lists contain

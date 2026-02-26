@@ -142,27 +142,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
-			name: "ambiguous table falls back to search_path default schema",
-			config: &storepb.DatabaseConfig{
-				Schemas: []*storepb.SchemaCatalog{
-					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
-				},
-			},
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
-					{Name: "audit", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
-				},
-				SearchPath: "\"$user\", public",
-			},
-			want: &storepb.DatabaseConfig{
-				Schemas: []*storepb.SchemaCatalog{
-					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
-				},
-			},
-		},
-		{
-			name: "ambiguous table with no search_path preserved as-is",
+			name: "ambiguous table preserved as-is",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
@@ -204,7 +184,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
-			name: "unknown table not assigned to fallback schema",
+			name: "unknown table preserved as-is",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "stale_table"}}},
@@ -214,7 +194,6 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 				Schemas: []*storepb.SchemaMetadata{
 					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "users"}}},
 				},
-				SearchPath: "\"$user\", public",
 			},
 			want: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
