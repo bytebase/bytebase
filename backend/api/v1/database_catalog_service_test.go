@@ -181,6 +181,48 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
+			name: "mixed tables in one empty schema split to correct schemas",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{
+						{Name: "users", Columns: []*storepb.ColumnCatalog{{Name: "email", SemanticType: "PII"}}},
+						{Name: "logs", Columns: []*storepb.ColumnCatalog{{Name: "ip", SemanticType: "PII"}}},
+					}},
+				},
+			},
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "users"}}},
+					{Name: "audit", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
+				},
+			},
+			want: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "users", Columns: []*storepb.ColumnCatalog{{Name: "email", SemanticType: "PII"}}}}},
+					{Name: "audit", Tables: []*storepb.TableCatalog{{Name: "logs", Columns: []*storepb.ColumnCatalog{{Name: "ip", SemanticType: "PII"}}}}},
+				},
+			},
+		},
+		{
+			name: "unknown table not assigned to fallback schema",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "stale_table"}}},
+				},
+			},
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "users"}}},
+				},
+				SearchPath: "\"$user\", public",
+			},
+			want: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "stale_table"}}},
+				},
+			},
+		},
+		{
 			name: "multiple empty schemas resolve to different real schemas",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
