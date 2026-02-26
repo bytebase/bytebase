@@ -2763,7 +2763,8 @@
     "delete-group": "Eliminar el grupo de bases de datos {name}"
   },
   "export-center": {
-    "self": "centro de exportacion"
+    "self": "centro de exportacion",
+    "data-export": "Exportación de datos"
   },
   "schema-designer": {
     "use-tips": "Selecciona las tablas a diseñar"

@@ -2763,7 +2763,8 @@
     "delete-group": "Xóa nhóm cơ sở dữ liệu {name}"
   },
   "export-center": {
-    "self": "Trung tâm xuất"
+    "self": "Trung tâm xuất",
+    "data-export": "Xuất dữ liệu"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."

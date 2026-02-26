@@ -2763,7 +2763,8 @@
     "delete-group": "Delete the database group {name}"
   },
   "export-center": {
-    "self": "Export Center"
+    "self": "Export Center",
+    "data-export": "Data Export"
   },
   "schema-designer": {
     "use-tips": "Click a table to start."

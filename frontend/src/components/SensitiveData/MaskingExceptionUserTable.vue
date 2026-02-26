@@ -8,6 +8,7 @@
     :striped="true"
     :loading="!ready || state.loading"
     :max-height="'calc(100vh - 15rem)'"
+    :scroll-x="scrollX"
     virtual-scroll
   />
 </template>
@@ -234,6 +235,7 @@ const accessTableColumns = computed(
       {
         key: "member",
         title: t("common.members"),
+        minWidth: 140,
         resizable: true,
         render: (item: AccessUser) => {
           if (item.member.startsWith(groupBindingPrefix)) {
@@ -251,6 +253,7 @@ const accessTableColumns = computed(
       {
         key: "resource",
         title: t("common.resource"),
+        minWidth: 200,
         resizable: true,
         hide: !props.showDatabaseColumn,
         render: (item: AccessUser) => {
@@ -260,6 +263,7 @@ const accessTableColumns = computed(
       {
         key: "expire",
         title: t("common.expiration"),
+        minWidth: 200,
         render: (item: AccessUser) => {
           return (
             <NDatePicker
@@ -283,6 +287,7 @@ const accessTableColumns = computed(
       {
         key: "reason",
         title: t("common.reason"),
+        minWidth: 120,
         render: (item: AccessUser) => {
           return item.description;
         },
@@ -309,6 +314,12 @@ const accessTableColumns = computed(
     ].filter((column) => !column.hide) as DataTableColumn<AccessUser>[];
   }
 );
+
+const scrollX = computed(() => {
+  return accessTableColumns.value.reduce((sum, col) => {
+    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
+  }, 0);
+});
 
 const revokeAccessAlert = (item: AccessUser) => {
   $dialog.warning({
