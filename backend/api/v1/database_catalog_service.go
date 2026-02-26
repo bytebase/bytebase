@@ -320,7 +320,8 @@ func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[s
 }
 
 // resolveTableSchema determines the target schema for a single table.
-// Returns "" if the table cannot be resolved (unknown table without fallback).
+// Unknown tables (not in any metadata schema) are left unresolved rather
+// than assigned to fallbackSchema — they may be stale catalog entries.
 func resolveTableSchema(tableName string, tableToSchema map[string]string, ambiguousTables map[string]bool, fallbackSchema string) string {
 	if name, ok := tableToSchema[tableName]; ok {
 		return name
