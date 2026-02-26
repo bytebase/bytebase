@@ -66,7 +66,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		// just Results (SELECT output) to catch cases like:
 		//   SELECT name FROM t WHERE CAST(masked_col AS int) > 5
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
-			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i], action) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
 			}
 			continue
@@ -88,7 +88,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 // span.PredicateColumns rather than span.SourceColumns, because some engines
 // (e.g. MySQL) populate span.SourceColumns with table-level entries only
 // (Column field is empty), which cannot be matched against column configs.
-func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan) bool {
+func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) bool {
 	// Collect all column-level source columns from SELECT results and predicates.
 	allColumns := make(parserbase.SourceColumnSet)
 	for _, r := range span.Results {
@@ -108,13 +108,10 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 		return false
 	}
 
-	data, err := newMaskingDataProvider(ctx, s.store, instance, span)
-	if err != nil {
-		return false
-	}
+	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
 
 	for column := range allColumns {
-		mk, _, err := s.getMaskerForColumnResource(ctx, m, instance, column, data, user, semanticTypesToMasker)
+		mk, _, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, user, semanticTypesToMasker)
 		if err != nil {
 			continue
 		}
