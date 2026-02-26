@@ -303,7 +303,6 @@ const useExecuteSQL = () => {
         schema: context.params.connection.schema,
         container: context.params.connection.table,
         queryOption: queryOption,
-        accessGrant: context.params.accessGrant,
       }),
       abortController.signal
     );

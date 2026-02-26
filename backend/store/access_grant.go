@@ -350,7 +350,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("query value must be a string")
 					}
-					return qb.Q().Space("access_grant.payload->>'query' = ?", queryStr), nil
+					return qb.Q().Space("btrim(access_grant.payload->>'query') = ?", strings.TrimSpace(queryStr)), nil
 				case "issue":
 					issueStr, ok := value.(string)
 					if !ok {

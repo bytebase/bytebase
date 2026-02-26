@@ -7287,7 +7287,6 @@ OrgPolicyService manages organizational policies at various resource levels.
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 | query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
 | container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
-| access_grant | [string](#string) | optional | The access grant to apply the query. Format: projects/{project}/accessGrants/{access_grant} |
 
 
 

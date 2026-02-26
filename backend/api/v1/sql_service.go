@@ -163,77 +163,66 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 	}
 }
 
-// Validate and load access grant if provided.
+// preCheckAccess finds and returns the best matching active access grant for the query.
+// It lists access grants filtered by project, creator, status, statement, target database,
+// and expiry, then prefers the grant with unmask=true if available.
 func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
-	if request.AccessGrant == nil || *request.AccessGrant == "" {
-		return nil
-	}
-
-	accessGrantID := *request.AccessGrant
-	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(accessGrantID)
-	if err != nil {
-		slog.Warn("invalid access grant id", slog.String("access_grant", accessGrantID), log.BBError(err))
-		return nil
-	}
-	if database.ProjectID != projectID {
-		slog.Warn("project for access and database not match", slog.String("access_grant", accessGrantID), slog.String("access_grant_project", projectID), slog.String("database_project", database.ProjectID))
-		return nil
-	}
-
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
+		ResourceID: &database.ProjectID,
 	})
 	if err != nil {
-		slog.Warn("failed to find project", slog.String("project_id", projectID), log.BBError(err))
+		slog.Warn("failed to find project", slog.String("project_id", database.ProjectID), log.BBError(err))
 		return nil
 	}
 	if project == nil {
-		slog.Warn("project not found", slog.String("project_id", projectID))
+		slog.Warn("project not found", slog.String("project_id", database.ProjectID))
 		return nil
 	}
 	if !project.Setting.AllowJustInTimeAccess {
-		slog.Warn("JIT is not enabled in the project", slog.String("project_id", projectID))
+		slog.Debug("JIT is not enabled in the project", slog.String("project_id", database.ProjectID))
 		return nil
 	}
 
-	accessGrant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-		ID:        &accessGrantID,
-		ProjectID: &projectID,
-	})
-	if err != nil {
-		slog.Warn("failed to get access grant", slog.String("access_grant", accessGrantID), log.BBError(err))
-		return nil
-	}
-	if accessGrant == nil {
-		slog.Warn("access grant not found", slog.String("access_grant", accessGrantID))
-		return nil
-	}
-	if accessGrant.Status != storepb.AccessGrant_ACTIVE {
-		slog.Warn("access grant is not active", slog.String("access_grant", accessGrantID), slog.String("status", accessGrant.Status.String()))
-		return nil
-	}
-	if accessGrant.Payload == nil {
-		slog.Warn("invalid access grant payload", slog.String("access_grant", accessGrantID))
-		return nil
-	}
-	if strings.TrimSpace(accessGrant.Payload.Query) != strings.TrimSpace(request.Statement) {
-		slog.Warn("statement does not match access grant", slog.String("access_grant", accessGrantID))
-		return nil
-	}
-	if accessGrant.ExpireTime != nil && accessGrant.ExpireTime.Before(time.Now()) {
-		slog.Warn("access grant has expired", slog.String("access_grant", accessGrantID), slog.String("expire_time", accessGrant.ExpireTime.String()))
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
 		return nil
 	}
 
 	databaseFullName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-	for _, target := range accessGrant.Payload.Targets {
-		if target == databaseFullName {
-			return accessGrant
-		}
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	filter := fmt.Sprintf(
+		`status == "ACTIVE" && target == %q && expire_time > %q && query == %q`,
+		databaseFullName,
+		now,
+		strings.TrimSpace(request.Statement),
+	)
+	filterQ, err := store.GetListAccessGrantFilter(filter)
+	if err != nil {
+		slog.Warn("failed to build access grant filter", log.BBError(err))
+		return nil
 	}
 
-	slog.Warn("database not found in access grant targets", slog.String("access_grant", accessGrantID), slog.String("database", databaseFullName))
-	return nil
+	grants, err := s.store.ListAccessGrants(ctx, &store.FindAccessGrantMessage{
+		ProjectID: &database.ProjectID,
+		Creator:   &user.Email,
+		FilterQ:   filterQ,
+	})
+	if err != nil {
+		slog.Warn("failed to list access grants", log.BBError(err))
+		return nil
+	}
+
+	if len(grants) == 0 {
+		return nil
+	}
+	// Pick the best grant (prefer unmask=true).
+	for _, grant := range grants {
+		if grant.Payload != nil && grant.Payload.Unmask {
+			return grant
+		}
+	}
+	return grants[0]
 }
 
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {

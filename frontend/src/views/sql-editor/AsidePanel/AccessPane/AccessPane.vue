@@ -387,7 +387,6 @@ const handleRun = async (grant: AccessGrant) => {
       engine: currentInstance.value.engine,
       explain: false,
       selection: null,
-      accessGrant: grant.name,
     });
   });
 };
