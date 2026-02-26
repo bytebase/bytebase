@@ -282,10 +282,11 @@ func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[s
 		if name == "" {
 			name = inferSchemaName(sc.Tables, tableToSchema, fallbackSchema)
 			if name == "" {
-				slog.Warn("dropping catalog schema with empty name: no matching tables in metadata")
-				continue
+				// Preserve unresolvable schemas as-is to avoid silent data loss.
+				slog.Warn("keeping catalog schema with empty name: no matching tables in metadata")
+			} else {
+				slog.Warn("resolved empty catalog schema name", slog.String("resolvedName", name))
 			}
-			slog.Warn("resolved empty catalog schema name", slog.String("resolvedName", name))
 		}
 
 		if existing, ok := schemaMap[name]; ok {

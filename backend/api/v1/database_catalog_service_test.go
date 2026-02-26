@@ -89,7 +89,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
-			name: "orphan empty schema dropped",
+			name: "orphan empty schema preserved as-is",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "users"}}},
@@ -104,6 +104,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			want: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "users"}}},
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "nonexistent"}}},
 				},
 			},
 		},
@@ -161,7 +162,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
-			name: "ambiguous table with no search_path dropped",
+			name: "ambiguous table with no search_path preserved as-is",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
@@ -173,7 +174,32 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 					{Name: "audit", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
 				},
 			},
-			want: &storepb.DatabaseConfig{},
+			want: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
+				},
+			},
+		},
+		{
+			name: "multiple empty schemas resolve to different real schemas",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "users", Columns: []*storepb.ColumnCatalog{{Name: "email", SemanticType: "PII"}}}}},
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs", Columns: []*storepb.ColumnCatalog{{Name: "ip", SemanticType: "PII"}}}}},
+				},
+			},
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "users"}}},
+					{Name: "audit", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
+				},
+			},
+			want: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "users", Columns: []*storepb.ColumnCatalog{{Name: "email", SemanticType: "PII"}}}}},
+					{Name: "audit", Tables: []*storepb.TableCatalog{{Name: "logs", Columns: []*storepb.ColumnCatalog{{Name: "ip", SemanticType: "PII"}}}}},
+				},
+			},
 		},
 	}
 
