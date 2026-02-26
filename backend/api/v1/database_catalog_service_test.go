@@ -122,7 +122,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
-			name: "empty schema with table in multiple metadata schemas - first match wins",
+			name: "ambiguous table name across schemas - last metadata schema wins in map",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
@@ -223,6 +223,70 @@ func TestMergeTableCatalogs(t *testing.T) {
 					require.Equal(t, wantCol.Name, gotTable.Columns[j].Name)
 					require.Equal(t, wantCol.SemanticType, gotTable.Columns[j].SemanticType)
 				}
+			}
+		})
+	}
+}
+
+func TestMergeColumnCatalogs(t *testing.T) {
+	tests := []struct {
+		name         string
+		dst          *storepb.TableCatalog
+		src          *storepb.TableCatalog
+		wantColumns  []*storepb.ColumnCatalog
+		wantClassify string
+	}{
+		{
+			name: "new columns appended",
+			dst:  &storepb.TableCatalog{Name: "t", Columns: []*storepb.ColumnCatalog{{Name: "a", SemanticType: "X"}}},
+			src:  &storepb.TableCatalog{Name: "t", Columns: []*storepb.ColumnCatalog{{Name: "b", SemanticType: "Y"}}},
+			wantColumns: []*storepb.ColumnCatalog{
+				{Name: "a", SemanticType: "X"},
+				{Name: "b", SemanticType: "Y"},
+			},
+		},
+		{
+			name: "duplicate column - src wins",
+			dst:  &storepb.TableCatalog{Name: "t", Columns: []*storepb.ColumnCatalog{{Name: "a", SemanticType: "OLD"}}},
+			src:  &storepb.TableCatalog{Name: "t", Columns: []*storepb.ColumnCatalog{{Name: "a", SemanticType: "NEW"}}},
+			wantColumns: []*storepb.ColumnCatalog{
+				{Name: "a", SemanticType: "NEW"},
+			},
+		},
+		{
+			name:         "classification from src overrides dst",
+			dst:          &storepb.TableCatalog{Name: "t", Classification: "old-class"},
+			src:          &storepb.TableCatalog{Name: "t", Classification: "new-class"},
+			wantClassify: "new-class",
+		},
+		{
+			name:         "empty classification from src preserves dst",
+			dst:          &storepb.TableCatalog{Name: "t", Classification: "keep"},
+			src:          &storepb.TableCatalog{Name: "t", Classification: ""},
+			wantClassify: "keep",
+		},
+		{
+			name: "src with no columns preserves dst columns",
+			dst:  &storepb.TableCatalog{Name: "t", Columns: []*storepb.ColumnCatalog{{Name: "a", SemanticType: "X"}}},
+			src:  &storepb.TableCatalog{Name: "t"},
+			wantColumns: []*storepb.ColumnCatalog{
+				{Name: "a", SemanticType: "X"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mergeColumnCatalogs(tc.dst, tc.src)
+			if tc.wantColumns != nil {
+				require.Equal(t, len(tc.wantColumns), len(tc.dst.Columns), "column count")
+				for i, want := range tc.wantColumns {
+					require.Equal(t, want.Name, tc.dst.Columns[i].Name)
+					require.Equal(t, want.SemanticType, tc.dst.Columns[i].SemanticType)
+				}
+			}
+			if tc.wantClassify != "" {
+				require.Equal(t, tc.wantClassify, tc.dst.Classification)
 			}
 		})
 	}

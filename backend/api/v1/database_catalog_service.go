@@ -106,7 +106,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(req.Msg.GetCatalog()), nil
+	return connect.NewResponse(convertDatabaseConfig(database, databaseConfig)), nil
 }
 
 func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.DatabaseConfig) *v1pb.DatabaseCatalog {
@@ -256,7 +256,7 @@ func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[s
 				slog.Warn("dropping catalog schema with empty name: no matching tables in metadata")
 				continue
 			}
-			slog.Info("resolved empty catalog schema name", slog.String("resolvedName", name))
+			slog.Warn("resolved empty catalog schema name", slog.String("resolvedName", name))
 		}
 
 		if existing, ok := schemaMap[name]; ok {
@@ -309,9 +309,9 @@ func mergeTableCatalogs(base, override []*storepb.TableCatalog) []*storepb.Table
 	return result
 }
 
-// mergeColumnCatalogs merges columns from src into dst. For duplicate column
-// names, the src entry wins. Non-column fields (classification) are taken from
-// src if non-empty.
+// mergeColumnCatalogs merges columns from src into dst in-place, mutating dst.
+// For duplicate column names, the src entry wins. Non-column fields
+// (classification) are taken from src if non-empty.
 func mergeColumnCatalogs(dst, src *storepb.TableCatalog) {
 	if src.Classification != "" {
 		dst.Classification = src.Classification
