@@ -684,6 +684,10 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
+	if err := rejectAccessRequestIssue(ctx, s.store, issue); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
@@ -1020,6 +1024,11 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		if updatedIssue == nil {
 			slog.Error("updated issue not found", "issueUID", issueUID)
 			continue
+		}
+		if newStatus == storepb.Issue_CANCELED {
+			if err := rejectAccessRequestIssue(ctx, s.store, updatedIssue); err != nil {
+				slog.Error("failed to revoke access grant for cancelled issue", "issueUID", issueUID, log.BBError(err))
+			}
 		}
 	}
 
