@@ -1,0 +1,36 @@
+# Test cases for extractPredicateFields (via analyzeRequestBody).
+- description: "match query"
+  body: '{"query": {"match": {"email": "alice@example.com"}}}'
+  wantFields:
+    - "email"
+- description: "term query"
+  body: '{"query": {"term": {"status": "active"}}}'
+  wantFields:
+    - "status"
+- description: "range query"
+  body: '{"query": {"range": {"age": {"gte": 18}}}}'
+  wantFields:
+    - "age"
+- description: "bool with must and filter"
+  body: '{"query": {"bool": {"must": [{"match": {"name": "Alice"}}], "filter": [{"term": {"status": "active"}}]}}}'
+  wantFields:
+    - "name"
+    - "status"
+- description: "exists query"
+  body: '{"query": {"exists": {"field": "email"}}}'
+  wantFields:
+    - "email"
+- description: "nested query"
+  body: '{"query": {"nested": {"path": "comments", "query": {"match": {"comments.text": "hello"}}}}}'
+  wantFields:
+    - "comments.text"
+- description: "no query clause"
+  body: '{"size": 10}'
+  wantFields: []
+- description: "match_all"
+  body: '{"query": {"match_all": {}}}'
+  wantFields: []
+- description: "wildcard query"
+  body: '{"query": {"wildcard": {"name": {"value": "ali*"}}}}'
+  wantFields:
+    - "name"

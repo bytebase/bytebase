@@ -1,0 +1,180 @@
+# Test cases for classifyMaskableAPI.
+# MaskableAPI enum: APIUnsupported=0, APIMaskSearch=1, APIMaskGetDoc=2, APIMaskGetSource=3, APIMaskMGet=4, APIMaskExplain=5, APIBlocked=6
+
+# Supported: _search
+- description: "POST _search"
+  method: "POST"
+  url: "/my-index/_search"
+  wantAPI: 1
+  wantIndex: "my-index"
+- description: "GET _search"
+  method: "GET"
+  url: "/my-index/_search"
+  wantAPI: 1
+  wantIndex: "my-index"
+- description: "POST _search with query params"
+  method: "POST"
+  url: "/my-index/_search?size=10"
+  wantAPI: 1
+  wantIndex: "my-index"
+
+# Supported: _msearch
+- description: "POST _msearch without index"
+  method: "POST"
+  url: "/_msearch"
+  wantAPI: 1
+  wantIndex: ""
+- description: "POST _msearch with index"
+  method: "POST"
+  url: "/my-index/_msearch"
+  wantAPI: 1
+  wantIndex: "my-index"
+
+# Supported: GET _doc
+- description: "GET _doc"
+  method: "GET"
+  url: "/my-index/_doc/1"
+  wantAPI: 2
+  wantIndex: "my-index"
+
+# Supported: GET _source
+- description: "GET _source"
+  method: "GET"
+  url: "/my-index/_source/1"
+  wantAPI: 3
+  wantIndex: "my-index"
+
+# Supported: _mget
+- description: "POST _mget without index"
+  method: "POST"
+  url: "/_mget"
+  wantAPI: 4
+  wantIndex: ""
+- description: "POST _mget with index"
+  method: "POST"
+  url: "/my-index/_mget"
+  wantAPI: 4
+  wantIndex: "my-index"
+- description: "GET _mget without index"
+  method: "GET"
+  url: "/_mget"
+  wantAPI: 4
+  wantIndex: ""
+
+# Supported: _explain
+- description: "POST _explain"
+  method: "POST"
+  url: "/my-index/_explain/1"
+  wantAPI: 5
+  wantIndex: "my-index"
+
+# Blocked endpoints
+- description: "POST _async_search blocked"
+  method: "POST"
+  url: "/my-index/_async_search"
+  wantAPI: 6
+  wantIndex: "my-index"
+- description: "GET _async_search status blocked"
+  method: "GET"
+  url: "/_async_search/abc123"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _search/scroll blocked"
+  method: "POST"
+  url: "/_search/scroll"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _search_template blocked"
+  method: "POST"
+  url: "/my-index/_search_template"
+  wantAPI: 6
+  wantIndex: "my-index"
+- description: "POST _msearch/template blocked"
+  method: "POST"
+  url: "/_msearch/template"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _sql blocked"
+  method: "POST"
+  url: "/_sql"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _eql/search blocked"
+  method: "POST"
+  url: "/my-index/_eql/search"
+  wantAPI: 6
+  wantIndex: "my-index"
+- description: "POST _esql/query blocked"
+  method: "POST"
+  url: "/_esql/query"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _terms_enum blocked"
+  method: "POST"
+  url: "/my-index/_terms_enum"
+  wantAPI: 6
+  wantIndex: "my-index"
+- description: "GET _termvectors blocked"
+  method: "GET"
+  url: "/my-index/_termvectors/1"
+  wantAPI: 6
+  wantIndex: "my-index"
+
+# OpenSearch blocked endpoints
+- description: "POST _plugins/_asynchronous_search blocked (OpenSearch)"
+  method: "POST"
+  url: "/_plugins/_asynchronous_search"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _plugins/_sql blocked (OpenSearch)"
+  method: "POST"
+  url: "/_plugins/_sql"
+  wantAPI: 6
+  wantIndex: ""
+- description: "POST _plugins/_ppl blocked (OpenSearch)"
+  method: "POST"
+  url: "/_plugins/_ppl"
+  wantAPI: 6
+  wantIndex: ""
+
+# Unsupported (no user data)
+- description: "HEAD _doc unsupported"
+  method: "HEAD"
+  url: "/my-index/_doc/1"
+  wantAPI: 0
+  wantIndex: ""
+- description: "PUT _doc unsupported"
+  method: "PUT"
+  url: "/my-index/_doc/1"
+  wantAPI: 0
+  wantIndex: ""
+- description: "DELETE _doc unsupported"
+  method: "DELETE"
+  url: "/my-index/_doc/1"
+  wantAPI: 0
+  wantIndex: ""
+- description: "GET _cat/indices unsupported"
+  method: "GET"
+  url: "/_cat/indices"
+  wantAPI: 0
+  wantIndex: ""
+- description: "GET _cluster/health unsupported"
+  method: "GET"
+  url: "/_cluster/health"
+  wantAPI: 0
+  wantIndex: ""
+- description: "POST _count unsupported"
+  method: "POST"
+  url: "/my-index/_count"
+  wantAPI: 0
+  wantIndex: ""
+- description: "POST _validate/query unsupported"
+  method: "POST"
+  url: "/my-index/_validate/query"
+  wantAPI: 0
+  wantIndex: ""
+- description: "PUT index unsupported"
+  method: "PUT"
+  url: "/my-index"
+  wantAPI: 0
+  wantIndex: ""

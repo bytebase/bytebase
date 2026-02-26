@@ -299,7 +299,9 @@ export const instanceV1MaskingForNoSQL = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.MONGODB, Engine.COSMOSDB].includes(engine);
+  return [Engine.MONGODB, Engine.COSMOSDB, Engine.ELASTICSEARCH].includes(
+    engine
+  );
 };
 
 export const engineOfInstanceV1 = (
