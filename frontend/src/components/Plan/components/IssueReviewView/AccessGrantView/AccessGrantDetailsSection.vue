@@ -40,7 +40,7 @@
         >
           {{ accessGrant.query }}
         </div>
-        <NCheckbox :checked="accessGrant.unmask" :disabled="true">
+        <NCheckbox :checked="accessGrant.unmask" :readonly="true">
           {{ $t("sql-editor.access-type-unmask") }}
         </NCheckbox>
       </div>

@@ -16,7 +16,7 @@ export interface AccessFilter {
   name?: string;
   statement?: string;
   creator?: string;
-  status?: AccessGrant_Status;
+  status?: AccessGrant_Status[];
   issue?: string;
   target?: string;
   createdTsAfter?: number;
@@ -32,11 +32,10 @@ const getListAccessFilter = (filter: AccessFilter | undefined): string => {
   if (filter.name) {
     parts.push(`name == "${filter.name}"`);
   }
-  if (
-    filter.status !== undefined &&
-    filter.status !== AccessGrant_Status.STATUS_UNSPECIFIED
-  ) {
-    parts.push(`status == "${AccessGrant_Status[filter.status]}"`);
+  if (filter.status !== undefined && filter.status.length > 0) {
+    parts.push(
+      `status in [${filter.status.map((s) => `"${AccessGrant_Status[s]}"`).join(", ")}]`
+    );
   }
   if (filter.statement) {
     parts.push(`query.matches("${filter.statement.trim()}")`);

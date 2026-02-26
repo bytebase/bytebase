@@ -71,7 +71,7 @@ export const useDropdown = () => {
       if (instance && instanceV1HasReadonlyMode(instance)) {
         items.push({
           key: "connect",
-          label: t("sql-editor.connect"),
+          label: t("database.select"),
           icon: () => <LinkIcon class="w-4 h-4" />,
           onSelect: () => {
             setConnection({
@@ -84,7 +84,7 @@ export const useDropdown = () => {
         });
         items.push({
           key: "connect-in-new-tab",
-          label: t("sql-editor.connect-in-new-tab"),
+          label: t("sql-editor.open-in-new-tab"),
           icon: () => <LinkIcon class="w-4 h-4" />,
           onSelect: () => {
             setConnection({

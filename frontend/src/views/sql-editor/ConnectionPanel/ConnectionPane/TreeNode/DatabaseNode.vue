@@ -28,7 +28,6 @@
       v-if="!canQuery"
       class="ml-auto"
       :text="true"
-      :prefer-jit="false"
       :permission-denied-detail="create(PermissionDeniedDetailSchema, {
         resources: [database.name],
         requiredPermissions: ['bb.sql.select']

@@ -18,7 +18,6 @@
             <RequestQueryButton
               v-if="!!permissionDeniedError"
               :text="false"
-              :prefer-jit="true"
               :statement="resultSet.results[0]?.statement"
               :permission-denied-detail="permissionDeniedError"
             />
@@ -75,7 +74,6 @@
                 <RequestQueryButton
                   v-if="!!permissionDeniedError"
                   :text="false"
-                  :prefer-jit="true"
                   :statement="result.statement"
                   :permission-denied-detail="permissionDeniedError"
                 />
@@ -140,7 +138,6 @@
             <RequestQueryButton
               v-if="!!permissionDeniedError"
               :text="false"
-              :prefer-jit="true"
               :statement="resultSet.results[0]?.statement"
               :permission-denied-detail="permissionDeniedError"
             />
