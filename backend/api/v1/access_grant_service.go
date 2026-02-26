@@ -310,21 +310,6 @@ func activateAccessGrant(ctx context.Context, stores *store.Store, accessGrantNa
 	return updated, nil
 }
 
-func revokeAccessGrantByName(ctx context.Context, stores *store.Store, accessGrantName string) (*store.AccessGrantMessage, error) {
-	_, accessGrantID, err := common.GetProjectIDAccessGrantID(accessGrantName)
-	if err != nil {
-		return nil, err
-	}
-	status := storepb.AccessGrant_REVOKED
-	updated, err := stores.UpdateAccessGrant(ctx, accessGrantID, &store.UpdateAccessGrantMessage{
-		Status: &status,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to revoke access grant")
-	}
-	return updated, nil
-}
-
 // RevokeAccessGrant revokes an active access grant.
 func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *connect.Request[v1pb.RevokeAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {

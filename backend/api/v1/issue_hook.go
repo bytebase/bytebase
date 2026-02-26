@@ -131,18 +131,3 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 
 	return updatedIssue, nil
 }
-
-// rejectAccessRequestIssue revokes the access grant when an ACCESS_GRANT issue is rejected or cancelled.
-func rejectAccessRequestIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) error {
-	if issue.Type != storepb.Issue_ACCESS_GRANT {
-		return nil
-	}
-	if issue.Payload.AccessGrantId == "" {
-		return nil
-	}
-	accessGrantName := common.FormatAccessGrant(issue.ProjectID, issue.Payload.AccessGrantId)
-	if _, err := revokeAccessGrantByName(ctx, stores, accessGrantName); err != nil {
-		return errors.Wrapf(err, "failed to revoke access grant %v", accessGrantName)
-	}
-	return nil
-}
