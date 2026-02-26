@@ -45,6 +45,7 @@
         :key="grant.name"
         :grant="grant"
         :highlight="grant.name === highlightAccessGrantName"
+        :issue="issueByGrantName.get(grant.name)"
         @run="handleRun"
         @request="handleRequest"
       />
@@ -106,6 +107,7 @@ import {
   useAccessGrantStore,
   useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
+  useIssueV1Store,
   useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -114,6 +116,7 @@ import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
@@ -136,6 +139,7 @@ const editorStore = useSQLEditorStore();
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
+const issueStore = useIssueV1Store();
 const { instance: currentInstance } = useConnectionOfCurrentSQLEditorTab();
 const { execute } = useExecuteSQL();
 const { highlightAccessGrantName } = useSQLEditorContext();
@@ -145,6 +149,8 @@ const loading = ref(false);
 const pendingCreate = ref<AccessGrant>();
 const accessGrantList = ref<AccessGrant[]>([]);
 const nextPageToken = ref("");
+// Maps access grant name → Issue for PENDING grants with an associated issue.
+const issueByGrantName = ref<Map<string, Issue>>(new Map());
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const useSmallLayout = computed(
@@ -279,6 +285,27 @@ const filter = computed((): AccessFilter => {
   return f;
 });
 
+const fetchIssuesForPendingGrants = async (grants: AccessGrant[]) => {
+  const pendingWithIssue = grants.filter(
+    (g) => g.status === AccessGrant_Status.PENDING && g.issue
+  );
+  const results = await Promise.all(
+    pendingWithIssue.map(async (g) => {
+      try {
+        const issue = await issueStore.fetchIssueByName(g.issue, true);
+        return { grantName: g.name, issue };
+      } catch {
+        return undefined;
+      }
+    })
+  );
+  for (const r of results) {
+    if (r) {
+      issueByGrantName.value.set(r.grantName, r.issue);
+    }
+  }
+};
+
 const fetchAccessGrants = async (resetList = true) => {
   const project = editorStore.project;
   if (!project) return;
@@ -293,10 +320,12 @@ const fetchAccessGrants = async (resetList = true) => {
     });
     if (resetList) {
       accessGrantList.value = response.accessGrants;
+      issueByGrantName.value = new Map();
     } else {
       accessGrantList.value.push(...response.accessGrants);
     }
     nextPageToken.value = response.nextPageToken;
+    await fetchIssuesForPendingGrants(response.accessGrants);
   } finally {
     loading.value = false;
   }

@@ -52,6 +52,7 @@
     "latest": "Latest",
     "error": "Error",
     "canceled": "Canceled",
+    "rejected": "Rejected",
     "approve": "Approve",
     "done": "Done",
     "create": "Create",

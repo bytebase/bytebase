@@ -4,7 +4,7 @@ import Emittery from "emittery";
 import { cloneDeep, uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import type { Subscription } from "rxjs";
-import { fromEventPattern, map, Observable } from "rxjs";
+import { fromEventPattern, Observable } from "rxjs";
 import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { refreshTokens } from "@/connect/refreshToken";
@@ -115,7 +115,6 @@ const createStreamingQueryController = () => {
   const connect = (
     initialRequest: AdminExecuteRequest | undefined = undefined
   ) => {
-    const request$ = input$.pipe(map((params) => mapRequest(params)));
     const abortController = new AbortController();
 
     const url = new URL(`${window.location.origin}${ENDPOINT}`);
@@ -137,9 +136,9 @@ const createStreamingQueryController = () => {
         if (initialRequest) {
           send(initialRequest);
         }
-        requestSubscription = request$.subscribe({
-          next(request) {
-            send(request);
+        requestSubscription = input$.subscribe({
+          next(params) {
+            send(mapRequest(params));
           },
         });
       });
