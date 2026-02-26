@@ -122,7 +122,7 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 			},
 		},
 		{
-			name: "ambiguous table name across schemas - last metadata schema wins in map",
+			name: "unambiguous table resolved from non-default schema",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
@@ -139,6 +139,41 @@ func TestNormalizeCatalogSchemaNames(t *testing.T) {
 					{Name: "audit", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
 				},
 			},
+		},
+		{
+			name: "ambiguous table falls back to search_path default schema",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
+				},
+			},
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
+					{Name: "audit", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
+				},
+				SearchPath: "\"$user\", public",
+			},
+			want: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
+				},
+			},
+		},
+		{
+			name: "ambiguous table with no search_path dropped",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{
+					{Name: "", Tables: []*storepb.TableCatalog{{Name: "logs"}}},
+				},
+			},
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
+					{Name: "audit", Tables: []*storepb.TableMetadata{{Name: "logs"}}},
+				},
+			},
+			want: &storepb.DatabaseConfig{},
 		},
 	}
 
