@@ -207,57 +207,49 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 // by resolving them against the actual database metadata. This prevents catalog
 // corruption where columns end up under a nameless schema entry.
 func normalizeCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storepb.DatabaseSchemaMetadata) *storepb.DatabaseConfig {
-	if metadata == nil {
+	if metadata == nil || !hasEmptySchemaName(config.Schemas) {
+		return config
+	}
+	// Engines like Cassandra/MySQL legitimately use empty schema names.
+	if hasEmptySchemaName(metadata.Schemas) {
 		return config
 	}
 
-	// Check if any schema has an empty name that doesn't match metadata.
-	hasEmptyConfigSchema := false
-	for _, sc := range config.Schemas {
-		if sc.Name == "" {
-			hasEmptyConfigSchema = true
-			break
+	tableToSchema := buildTableToSchemaMap(metadata)
+	return resolveEmptySchemaNames(config, tableToSchema)
+}
+
+func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
+	for _, s := range schemas {
+		if s.GetName() == "" {
+			return true
 		}
 	}
-	if !hasEmptyConfigSchema {
-		return config
-	}
+	return false
+}
 
-	// Check if metadata legitimately has an empty schema name (e.g. Cassandra, MySQL).
-	metadataHasEmptySchema := false
-	for _, ms := range metadata.Schemas {
-		if ms.Name == "" {
-			metadataHasEmptySchema = true
-			break
-		}
-	}
-	if metadataHasEmptySchema {
-		return config
-	}
-
-	// Build table→schemaName map from metadata for resolving empty schema names.
-	tableToSchema := make(map[string]string)
+// buildTableToSchemaMap creates a table name to schema name lookup from metadata.
+func buildTableToSchemaMap(metadata *storepb.DatabaseSchemaMetadata) map[string]string {
+	m := make(map[string]string)
 	for _, ms := range metadata.Schemas {
 		for _, mt := range ms.Tables {
-			tableToSchema[mt.Name] = ms.Name
+			m[mt.Name] = ms.Name
 		}
 	}
+	return m
+}
 
-	// Resolve empty schema names and collect into a merged map.
+// resolveEmptySchemaNames resolves empty schema names using the table-to-schema
+// map and merges any resulting duplicate schemas.
+func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[string]string) *storepb.DatabaseConfig {
 	schemaMap := make(map[string]*storepb.SchemaCatalog)
 	var schemaOrder []string
+
 	for _, sc := range config.Schemas {
 		name := sc.Name
 		if name == "" {
-			// Infer schema name from the first table that exists in metadata.
-			for _, tc := range sc.Tables {
-				if resolved, ok := tableToSchema[tc.Name]; ok {
-					name = resolved
-					break
-				}
-			}
+			name = inferSchemaName(sc.Tables, tableToSchema)
 			if name == "" {
-				// No tables matched metadata — drop this orphan schema.
 				slog.Warn("dropping catalog schema with empty name: no matching tables in metadata")
 				continue
 			}
@@ -265,11 +257,9 @@ func normalizeCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *store
 		}
 
 		if existing, ok := schemaMap[name]; ok {
-			// Merge tables into the existing schema entry.
 			existing.Tables = mergeTableCatalogs(existing.Tables, sc.Tables)
 		} else {
-			merged := &storepb.SchemaCatalog{Name: name, Tables: sc.Tables}
-			schemaMap[name] = merged
+			schemaMap[name] = &storepb.SchemaCatalog{Name: name, Tables: sc.Tables}
 			schemaOrder = append(schemaOrder, name)
 		}
 	}
@@ -279,6 +269,16 @@ func normalizeCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *store
 		result.Schemas = append(result.Schemas, schemaMap[name])
 	}
 	return result
+}
+
+// inferSchemaName returns the schema name for the first table that exists in metadata.
+func inferSchemaName(tables []*storepb.TableCatalog, tableToSchema map[string]string) string {
+	for _, tc := range tables {
+		if name, ok := tableToSchema[tc.Name]; ok {
+			return name
+		}
+	}
+	return ""
 }
 
 // mergeTableCatalogs merges two table catalog lists, preferring entries from
