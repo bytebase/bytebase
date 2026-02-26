@@ -76,7 +76,7 @@ import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { issueServiceClientConnect } from "@/connect";
-import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
+import { useCurrentProjectV1, useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -92,7 +92,6 @@ defineProps<{
 }>();
 
 const { issue } = usePlanContext();
-const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const { project } = useCurrentProjectV1();
 
@@ -122,9 +121,6 @@ const description = computed(() => {
 });
 
 const allowEdit = computed(() => {
-  if (currentUser.value.name === creator.value?.name) {
-    return true;
-  }
   return hasProjectPermissionV2(project.value, "bb.issues.update");
 });
 
