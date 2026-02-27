@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -63,11 +62,7 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 		}), nil
 	}
 
-	// Normalize legacy corrupted data (empty schema names) on read so the
-	// frontend receives correct schema names and self-heals on next edit.
-	config := normalizeCatalogSchemaNames(dbMetadata.GetConfig(), dbMetadata.GetProto())
-
-	return connect.NewResponse(convertDatabaseConfig(database, config)), nil
+	return connect.NewResponse(convertDatabaseConfig(database, dbMetadata.GetConfig())), nil
 }
 
 // UpdateDatabaseCatalog updates a database catalog.
@@ -224,22 +219,6 @@ func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storep
 	return errors.New("schema name must not be empty for this database engine")
 }
 
-// normalizeCatalogSchemaNames fixes empty schema names in the catalog config
-// by resolving them against the actual database metadata. This prevents catalog
-// corruption where columns end up under a nameless schema entry.
-func normalizeCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storepb.DatabaseSchemaMetadata) *storepb.DatabaseConfig {
-	if metadata == nil || !hasEmptySchemaName(config.Schemas) {
-		return config
-	}
-	// Engines like Cassandra/MySQL legitimately use empty schema names.
-	if hasEmptySchemaName(metadata.Schemas) {
-		return config
-	}
-
-	tableToSchema := buildTableToSchemaMap(metadata)
-	return resolveEmptySchemaNames(config, tableToSchema)
-}
-
 func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
 	for _, s := range schemas {
 		if s.GetName() == "" {
@@ -247,134 +226,6 @@ func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
 		}
 	}
 	return false
-}
-
-// buildTableToSchemaMap creates a table name → schema name lookup from metadata.
-// Tables that exist in multiple schemas are excluded (ambiguous) — we don't
-// guess which schema is correct; those tables stay in the empty-name schema.
-func buildTableToSchemaMap(metadata *storepb.DatabaseSchemaMetadata) map[string]string {
-	m := make(map[string]string)
-	ambiguous := make(map[string]bool)
-	for _, ms := range metadata.Schemas {
-		for _, mt := range ms.Tables {
-			if _, exists := m[mt.Name]; exists {
-				ambiguous[mt.Name] = true
-			}
-			m[mt.Name] = ms.Name
-		}
-	}
-	for name := range ambiguous {
-		delete(m, name)
-	}
-	return m
-}
-
-// resolveEmptySchemaNames resolves empty schema names by placing each table
-// into its correct schema individually. This handles the case where a single
-// empty-name schema entry contains tables from different real schemas.
-//
-// Resolution per table:
-//   - Unambiguous match in metadata → assign to that schema
-//   - Ambiguous or unknown → keep in empty-name schema (don't guess)
-func resolveEmptySchemaNames(config *storepb.DatabaseConfig, tableToSchema map[string]string) *storepb.DatabaseConfig {
-	b := &schemaBuilder{}
-
-	for _, sc := range config.Schemas {
-		if sc.Name != "" {
-			b.addTables(sc.Name, sc.Tables)
-			continue
-		}
-		for _, tc := range sc.Tables {
-			target := resolveTableSchema(tc.Name, tableToSchema)
-			b.addTables(target, []*storepb.TableCatalog{tc})
-		}
-	}
-
-	return b.build()
-}
-
-// resolveTableSchema returns the schema name for a table if unambiguous,
-// or "" if the table is ambiguous or unknown.
-func resolveTableSchema(tableName string, tableToSchema map[string]string) string {
-	if target, ok := tableToSchema[tableName]; ok {
-		slog.Warn("resolved empty catalog schema table", slog.String("table", tableName), slog.String("resolvedSchema", target))
-		return target
-	}
-	return ""
-}
-
-// schemaBuilder accumulates schema catalogs, merging tables when schemas overlap.
-type schemaBuilder struct {
-	schemas map[string]*storepb.SchemaCatalog
-	order   []string
-}
-
-func (b *schemaBuilder) addTables(schema string, tables []*storepb.TableCatalog) {
-	if b.schemas == nil {
-		b.schemas = make(map[string]*storepb.SchemaCatalog)
-	}
-	if existing, ok := b.schemas[schema]; ok {
-		existing.Tables = mergeTableCatalogs(existing.Tables, tables)
-	} else {
-		b.schemas[schema] = &storepb.SchemaCatalog{Name: schema, Tables: tables}
-		b.order = append(b.order, schema)
-	}
-}
-
-func (b *schemaBuilder) build() *storepb.DatabaseConfig {
-	result := &storepb.DatabaseConfig{}
-	for _, name := range b.order {
-		result.Schemas = append(result.Schemas, b.schemas[name])
-	}
-	return result
-}
-
-// mergeTableCatalogs merges two table catalog lists. When both lists contain
-// the same table, columns are merged (override wins per column name) to avoid
-// losing column-level config from either side.
-func mergeTableCatalogs(base, override []*storepb.TableCatalog) []*storepb.TableCatalog {
-	tableMap := make(map[string]*storepb.TableCatalog, len(base))
-	var order []string
-	for _, t := range base {
-		tableMap[t.Name] = t
-		order = append(order, t.Name)
-	}
-	for _, t := range override {
-		if existing, ok := tableMap[t.Name]; ok {
-			mergeColumnCatalogs(existing, t)
-		} else {
-			tableMap[t.Name] = t
-			order = append(order, t.Name)
-		}
-	}
-	result := make([]*storepb.TableCatalog, 0, len(order))
-	for _, name := range order {
-		result = append(result, tableMap[name])
-	}
-	return result
-}
-
-// mergeColumnCatalogs merges columns from src into dst in-place, mutating dst.
-// For duplicate column names, the src entry wins. Non-column fields
-// (classification) are taken from src if non-empty.
-func mergeColumnCatalogs(dst, src *storepb.TableCatalog) {
-	if src.Classification != "" {
-		dst.Classification = src.Classification
-	}
-	if len(src.Columns) == 0 {
-		return
-	}
-	colMap := make(map[string]int, len(dst.Columns))
-	for i, c := range dst.Columns {
-		colMap[c.Name] = i
-	}
-	for _, c := range src.Columns {
-		if idx, ok := colMap[c.Name]; ok {
-			dst.Columns[idx] = c
-		} else {
-			dst.Columns = append(dst.Columns, c)
-		}
-	}
 }
 
 func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
