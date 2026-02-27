@@ -299,6 +299,9 @@ func tidbDropIndex(d *model.DatabaseMetadata, node *tidbast.DropIndexStmt) *stor
 	}
 
 	if err := table.DropIndex(node.IndexName); err != nil {
+		if node.IfExists {
+			return nil
+		}
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.IndexNotExists.Int32(),

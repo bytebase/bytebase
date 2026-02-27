@@ -420,6 +420,36 @@
     : true\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   advice: null
 - statement: "CREATE TABLE t(\n  a int PRIMARY KEY DEFAULT 1,\n  b varchar(200) CHARACTER\
+    \ SET utf8mb4 NOT NULL UNIQUE\n);\nDROP INDEX IF EXISTS nonexistent on t;"
+  ignore_case_sensitive: false
+  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
+    \        {\n          \"name\": \"t\",\n          \"columns\": [\n           \
+    \ {\n              \"name\": \"a\",\n              \"position\": 1,\n        \
+    \      \"default\": \"1\",\n              \"type\": \"int(11)\"\n            },\n\
+    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
+    \              \"type\": \"varchar(200)\",\n              \"characterSet\": \"\
+    utf8mb4\"\n            }\n          ],\n          \"indexes\": [\n           \
+    \ {\n              \"name\": \"PRIMARY\",\n              \"expressions\": [\n\
+    \                \"a\"\n              ],\n              \"type\": \"BTREE\",\n\
+    \              \"unique\": true,\n              \"primary\": true,\n         \
+    \     \"visible\": true\n            },\n            {\n              \"name\"\
+    : \"b\",\n              \"expressions\": [\n                \"b\"\n          \
+    \    ],\n              \"type\": \"BTREE\",\n              \"unique\": true,\n\
+    \              \"visible\": true\n            }\n          ]\n        }\n     \
+    \ ]\n    }\n  ]\n}"
+  advice: null
+- statement: "CREATE TABLE t(\n  a int PRIMARY KEY DEFAULT 1,\n  b varchar(200) CHARACTER\
+    \ SET utf8mb4 NOT NULL UNIQUE\n);\nDROP INDEX nonexistent on t;"
+  ignore_case_sensitive: false
+  want: ''
+  advice:
+    status: 1
+    code: 809
+    title: index "nonexistent" does not exist in table "t"
+    content: index "nonexistent" does not exist in table "t"
+    startPosition:
+      line: 0
+- statement: "CREATE TABLE t(\n  a int PRIMARY KEY DEFAULT 1,\n  b varchar(200) CHARACTER\
     \ SET utf8mb4 NOT NULL UNIQUE\n);\nDROP INDEX b on t;"
   ignore_case_sensitive: false
   want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
