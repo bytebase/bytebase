@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/gosimple/slug"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -87,7 +85,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.IssueCreated != nil {
 			actor = e.IssueCreated.Creator
 			issue = e.IssueCreated.Issue
-			link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", externalURL, e.Project.ResourceID, slug.Make(issue.Title), issue.UID)
+			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
 			webhookCtx.Description = fmt.Sprintf("%s created issue %s", actor.Name, issue.Title)
 		}
 
@@ -98,7 +96,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.ApprovalRequested != nil {
 			actor = e.ApprovalRequested.Creator
 			issue = e.ApprovalRequested.Issue
-			link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", externalURL, e.Project.ResourceID, slug.Make(issue.Title), issue.UID)
+			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
 			mentionUsers = make([]*store.UserMessage, 0, len(e.ApprovalRequested.Approvers))
 			for _, user := range e.ApprovalRequested.Approvers {
 				mentionUsers = append(mentionUsers, &store.UserMessage{
@@ -116,7 +114,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.SentBack != nil {
 			actor = e.SentBack.Approver
 			issue = e.SentBack.Issue
-			link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", externalURL, e.Project.ResourceID, slug.Make(issue.Title), issue.UID)
+			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
 			webhookCtx.Description = fmt.Sprintf("%s sent back the issue: %s", e.SentBack.Approver.Name, e.SentBack.Reason)
 			mentionUsers = []*store.UserMessage{
 				{
