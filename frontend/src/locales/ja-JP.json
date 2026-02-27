@@ -1040,7 +1040,9 @@
       "name": "名前",
       "updated": "更新日時",
       "creator": "作成者",
-      "current-approver": "現在の承認者"
+      "approved": "Approved",
+      "approval-progress": "{approved}/{total} Approvals",
+      "waiting-role": "Waiting: {role}"
     },
     "migration-mode": {
       "online": {
@@ -2626,8 +2628,7 @@
       },
       "skip": "承認不要",
       "issue-review": {
-        "sent-back": "戻ってきた",
-        "review-sent-back-by": "{user} から承認が返されました"
+        "sent-back": "戻ってきた"
       },
       "add-rule": "ルールを追加",
       "edit-rule": "ルールを編集",

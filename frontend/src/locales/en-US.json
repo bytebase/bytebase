@@ -1040,7 +1040,9 @@
       "name": "Name",
       "updated": "Updated",
       "creator": "Creator",
-      "current-approver": "Current approver"
+      "approved": "Approved",
+      "approval-progress": "{approved}/{total} Approvals",
+      "waiting-role": "Waiting: {role}"
     },
     "migration-mode": {
       "online": {
@@ -2626,8 +2628,7 @@
       },
       "skip": "No approval required",
       "issue-review": {
-        "sent-back": "Sent back",
-        "review-sent-back-by": "Review sent back by {user}"
+        "sent-back": "Sent back"
       },
       "add-rule": "Add rule",
       "edit-rule": "Edit rule",

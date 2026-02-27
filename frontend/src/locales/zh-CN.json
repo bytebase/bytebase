@@ -1040,7 +1040,9 @@
       "name": "名称",
       "updated": "更新于",
       "creator": "创建人",
-      "current-approver": "当前审批人"
+      "approved": "已审批",
+      "approval-progress": "{approved}/{total} 已审批",
+      "waiting-role": "等待: {role}"
     },
     "migration-mode": {
       "online": {
@@ -2626,8 +2628,7 @@
       },
       "skip": "无需审批",
       "issue-review": {
-        "sent-back": "被退回",
-        "review-sent-back-by": "审批被 {user} 退回"
+        "sent-back": "被退回"
       },
       "add-rule": "添加规则",
       "edit-rule": "编辑规则",
