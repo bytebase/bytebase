@@ -224,7 +224,7 @@ const schemaList = computed(() => {
 });
 
 watch(
-  () => props.database.name,
+  [() => props.database.name, schemaList],
   async () => {
     state.loading = true;
     if (schemaList.value.length > 0) {
