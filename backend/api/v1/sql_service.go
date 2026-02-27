@@ -32,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	esparser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -584,6 +585,45 @@ func queryRetry(
 		}
 	}
 
+	// Pre-execution check for Elasticsearch: reject blocked APIs and predicate violations
+	// before sending the query to the server.
+	if !queryContext.Explain && !queryContext.SkipMasking &&
+		instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH &&
+		licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		for _, stmt := range statements {
+			parsed, parseErr := esparser.ParseElasticsearchREST(stmt.Text)
+			if parseErr != nil || len(parsed.Requests) == 0 {
+				continue
+			}
+			req := parsed.Requests[0]
+			analysis := esparser.AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
+			if analysis.API == esparser.APIUnsupported {
+				continue
+			}
+			indexName := analysis.Index
+			if indexName == "" {
+				continue
+			}
+			objectSchema, schemaErr := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+			if schemaErr != nil {
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.Wrapf(schemaErr, "failed to get object schema for index %q", indexName))
+			}
+			if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
+				continue
+			}
+			if err := checkElasticsearchRequestBlocked(analysis); err != nil {
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			for _, field := range analysis.PredicateFields {
+				semanticType := lookupSemanticTypeByDotPath(field, objectSchema)
+				if semanticType != "" {
+					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", field, semanticType))
+				}
+			}
+		}
+	}
+
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", originalStatement))
 	results, duration, queryErr := executeWithTimeout(
 		ctx,
@@ -725,6 +765,90 @@ func queryRetry(
 						row.Values[0] = &v1pb.RowValue{
 							Kind: &v1pb.RowValue_StringValue{
 								StringValue: string(maskedValue),
+							},
+						}
+					}
+				}
+			}
+		} else if instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
+			for _, result := range results {
+				parsed, err := esparser.ParseElasticsearchREST(result.Statement)
+				if err != nil || len(parsed.Requests) == 0 {
+					continue
+				}
+				req := parsed.Requests[0]
+				analysis := esparser.AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
+
+				if analysis.API == esparser.APIUnsupported || analysis.API == esparser.APIBlocked {
+					continue
+				}
+
+				indexName := analysis.Index
+				if indexName == "" {
+					continue
+				}
+				objectSchema, err := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+				if err != nil {
+					return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
+				}
+				if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
+					continue
+				}
+
+				semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
+				if err != nil {
+					return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+				}
+
+				// Apply masking based on API type.
+				for _, row := range result.Rows {
+					for colIdx, colName := range result.ColumnNames {
+						if colIdx >= len(row.Values) {
+							break
+						}
+						value := row.Values[colIdx].GetStringValue()
+						if value == "" {
+							continue
+						}
+
+						var maskedValue string
+						var maskErr error
+
+						switch analysis.API {
+						case esparser.APIMaskSearch:
+							switch colName {
+							case "hits":
+								maskedValue, maskErr = maskElasticsearchHitsColumn(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
+							case "responses":
+								maskedValue, maskErr = maskElasticsearchMSearchResponses(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
+							default:
+								continue
+							}
+						case esparser.APIMaskGetDoc, esparser.APIMaskExplain:
+							if colName == "_source" {
+								maskedValue, maskErr = maskElasticsearchDocSource(value, objectSchema, semanticTypeToMaskerMap)
+							} else {
+								continue
+							}
+						case esparser.APIMaskGetSource:
+							maskedValue, maskErr = maskElasticsearchGetSourceColumn(colName, value, objectSchema, semanticTypeToMaskerMap)
+						case esparser.APIMaskMGet:
+							if colName == "docs" {
+								maskedValue, maskErr = maskElasticsearchMGetSource(value, objectSchema, semanticTypeToMaskerMap)
+							} else {
+								continue
+							}
+						default:
+							continue
+						}
+
+						if maskErr != nil {
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask ES response"))
+						}
+
+						row.Values[colIdx] = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: maskedValue,
 							},
 						}
 					}

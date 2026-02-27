@@ -1,0 +1,100 @@
+# Test cases for analyzeRequestBody.
+# BlockedFeature enum: BlockedFeatureAggs=0, BlockedFeatureSuggest=1, BlockedFeatureScriptFields=2,
+#   BlockedFeatureRuntimeMappings=3, BlockedFeatureStoredFields=4, BlockedFeatureDocvalueFields=5
+- description: "empty body"
+  body: "{}"
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "simple query only"
+  body: '{"query": {"match_all": {}}}'
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: aggregations with aggs key"
+  body: '{"query": {"match_all": {}}, "aggs": {"status_count": {"terms": {"field": "status"}}}}'
+  wantBlocked:
+    - 0
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: aggregations with aggregations key"
+  body: '{"aggregations": {"status_count": {"terms": {"field": "status"}}}}'
+  wantBlocked:
+    - 0
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: suggest"
+  body: '{"suggest": {"my-suggest": {"text": "test", "term": {"field": "title"}}}}'
+  wantBlocked:
+    - 1
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: script_fields"
+  body: '{"script_fields": {"my_field": {"script": "doc[''price''].value * 2"}}}'
+  wantBlocked:
+    - 2
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: runtime_mappings"
+  body: '{"runtime_mappings": {"day_of_week": {"type": "keyword"}}}'
+  wantBlocked:
+    - 3
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: stored_fields"
+  body: '{"stored_fields": ["title"]}'
+  wantBlocked:
+    - 4
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "blocked: docvalue_fields"
+  body: '{"docvalue_fields": ["date"]}'
+  wantBlocked:
+    - 5
+  wantSourceDisabled: false
+  wantInnerHits: false
+- description: "source disabled"
+  body: '{"_source": false}'
+  wantSourceDisabled: true
+  wantInnerHits: false
+- description: "source field list"
+  body: '{"_source": ["name", "email"]}'
+  wantSourceDisabled: false
+  wantSourceFields:
+    - "name"
+    - "email"
+  wantInnerHits: false
+- description: "source includes/excludes"
+  body: '{"_source": {"includes": ["name", "contact.*"]}}'
+  wantSourceDisabled: false
+  wantSourceFields:
+    - "name"
+    - "contact.*"
+  wantInnerHits: false
+- description: "fields parameter"
+  body: '{"fields": ["created_at", "status"]}'
+  wantSourceDisabled: false
+  wantFields:
+    - "created_at"
+    - "status"
+  wantInnerHits: false
+- description: "highlight fields"
+  body: '{"highlight": {"fields": {"message": {}, "title": {}}}}'
+  wantSourceDisabled: false
+  wantHighlight:
+    - "message"
+    - "title"
+  wantInnerHits: false
+- description: "sort fields"
+  body: '{"sort": [{"date": "desc"}, "_score", {"price": {"order": "asc"}}]}'
+  wantSourceDisabled: false
+  wantSort:
+    - "date"
+    - "price"
+  wantInnerHits: false
+- description: "inner_hits present in nested query"
+  body: '{"query": {"nested": {"path": "comments", "inner_hits": {}}}}'
+  wantSourceDisabled: false
+  wantInnerHits: true
+- description: "inner_hits absent"
+  body: '{"query": {"match": {"title": "test"}}}'
+  wantSourceDisabled: false
+  wantInnerHits: false

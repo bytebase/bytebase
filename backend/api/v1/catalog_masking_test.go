@@ -223,7 +223,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 			want: `{"name": "John", "information": {"ssn": "******"}}`,
 		},
 		{
-			description: "Recursive apply the masker to the object",
+			description: "tagged root replaces each field value directly",
 			input:       `{"name": "John", "information": {"ssn": "123-45-6789"}}`,
 			objectSchema: &storepb.ObjectSchema{
 				Type:         storepb.ObjectSchema_OBJECT,
@@ -232,7 +232,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 			semanticTypeToMasker: map[string]masker.Masker{
 				"SSN": masker.NewFullMasker("******"),
 			},
-			want: `{"name": "******", "information": {"ssn": "******"}}`,
+			want: `{"name": "******", "information": "******"}`,
 		},
 		{
 			description: "Mask the array",
@@ -261,6 +261,63 @@ func TestWalkAndMaskJSON(t *testing.T) {
 				"SSN": masker.NewFullMasker("******"),
 			},
 			want: `{"name": "John", "information": ["******", "******"]}`,
+		},
+		{
+			description: "tagged field with object value is replaced directly",
+			input:       `{"name": "John", "address": {"street": "123 Main St", "city": "NYC"}}`,
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"address": {
+								Type:         storepb.ObjectSchema_OBJECT,
+								SemanticType: "PII",
+								Kind: &storepb.ObjectSchema_StructKind_{
+									StructKind: &storepb.ObjectSchema_StructKind{
+										Properties: map[string]*storepb.ObjectSchema{
+											"street": {Type: storepb.ObjectSchema_STRING},
+											"city":   {Type: storepb.ObjectSchema_STRING},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			semanticTypeToMasker: map[string]masker.Masker{
+				"PII": masker.NewFullMasker("******"),
+			},
+			want: `{"name": "John", "address": "******"}`,
+		},
+		{
+			description: "tagged field with array value is replaced directly",
+			input:       `{"name": "John", "tags": ["tag1", "tag2", "tag3"]}`,
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"tags": {
+								Type:         storepb.ObjectSchema_ARRAY,
+								SemanticType: "PII",
+								Kind: &storepb.ObjectSchema_ArrayKind_{
+									ArrayKind: &storepb.ObjectSchema_ArrayKind{
+										Kind: &storepb.ObjectSchema{
+											Type: storepb.ObjectSchema_STRING,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			semanticTypeToMasker: map[string]masker.Masker{
+				"PII": masker.NewFullMasker("******"),
+			},
+			want: `{"name": "John", "tags": "******"}`,
 		},
 		{
 			description: "mask following the field paths",
@@ -314,9 +371,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 			},
 			want: `{
     "firstName": "John",
-    "address": {
-        "street": "******"
-    },
+    "address": "******",
     "creditCard": {
         "number": "******"
     }

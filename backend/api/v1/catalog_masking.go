@@ -110,11 +110,7 @@ func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*base.PathAST, o
 		o, parentSemanticType = getObjectSchemaByPath(o, ast)
 		if parentSemanticType != "" {
 			if m, ok := semanticTypeToMasker[parentSemanticType]; ok {
-				maskedData, err := applyMaskerToData(value, m)
-				if err != nil {
-					return nil, err
-				}
-				result[key] = maskedData
+				result[key] = getJSONMemberFromRowValue(m.Mask(nil))
 				continue
 			}
 		}
@@ -182,13 +178,9 @@ func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, sema
 	switch data := data.(type) {
 	case map[string]any:
 		if objectSchema.SemanticType != "" {
-			// If the outer semantic type is found, apply the masker recursively to the object.
+			// If the semantic type is found, replace the entire value directly.
 			if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
-				maskedData, err := applyMaskerToData(data, m)
-				if err != nil {
-					return nil, err
-				}
-				return maskedData, nil
+				return getJSONMemberFromRowValue(m.Mask(nil)), nil
 			}
 		} else {
 			// Otherwise, recursively walk the object.
@@ -211,13 +203,9 @@ func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, sema
 		return data, nil
 	case []any:
 		if objectSchema.SemanticType != "" {
-			// If the outer semantic type is found, apply the masker recursively to the array.
+			// If the semantic type is found, replace the entire value directly.
 			if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
-				maskedData, err := applyMaskerToData(data, m)
-				if err != nil {
-					return nil, err
-				}
-				return maskedData, nil
+				return getJSONMemberFromRowValue(m.Mask(nil)), nil
 			}
 		} else {
 			arrayKind := objectSchema.GetArrayKind()

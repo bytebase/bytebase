@@ -1,0 +1,169 @@
+# Test data for Elasticsearch response masking.
+#
+# ObjectSchema used by all tests:
+#   - "email"         : STRING, semanticType "bb.default"
+#   - "contact.phone" : STRING, semanticType "bb.default"
+#   - "name"          : STRING  (no semantic type)
+#   - "age"           : NUMBER  (no semantic type)
+#   - "contact.city"  : STRING  (no semantic type)
+#
+# The masker for "bb.default" is DefaultFullMasker which replaces values with "******".
+#
+# MaskableAPI enum: APIUnsupported=0, APIMaskSearch=1, APIMaskGetDoc=2, APIMaskGetSource=3, APIMaskMGet=4, APIMaskExplain=5, APIBlocked=6
+# BlockedFeature enum: BlockedFeatureAggs=0, BlockedFeatureSuggest=1, BlockedFeatureScriptFields=2,
+#   BlockedFeatureRuntimeMappings=3, BlockedFeatureStoredFields=4, BlockedFeatureDocvalueFields=5
+
+lookupSemanticType:
+  - description: "email field"
+    dotPath: "email"
+    wantType: "bb.default"
+  - description: "nested contact.phone"
+    dotPath: "contact.phone"
+    wantType: "bb.default"
+  - description: "name field (no semantic type)"
+    dotPath: "name"
+    wantType: ""
+  - description: "age field (no semantic type)"
+    dotPath: "age"
+    wantType: ""
+  - description: "contact.city (no semantic type)"
+    dotPath: "contact.city"
+    wantType: ""
+  - description: "unknown field"
+    dotPath: "unknown"
+    wantType: ""
+  - description: "contact.unknown"
+    dotPath: "contact.unknown"
+    wantType: ""
+  - description: "deeply.nested.path"
+    dotPath: "deeply.nested.path"
+    wantType: ""
+  - description: "empty path"
+    dotPath: ""
+    wantType: ""
+
+maskHitsColumn:
+  - description: "masks _source fields"
+    input: '{"total":{"value":1},"hits":[{"_index":"test","_id":"1","_source":{"name":"Alice","email":"alice@example.com","contact":{"phone":"555-1234","city":"NYC"}}}]}'
+    want: '{"total":{"value":1},"hits":[{"_index":"test","_id":"1","_source":{"name":"Alice","email":"******","contact":{"phone":"******","city":"NYC"}}}]}'
+  - description: "no hits array"
+    input: '{"total":{"value":0}}'
+    want: '{"total":{"value":0}}'
+  - description: "hit without _source"
+    input: '{"total":{"value":1},"hits":[{"_index":"test","_id":"1"}]}'
+    want: '{"total":{"value":1},"hits":[{"_index":"test","_id":"1"}]}'
+  - description: "multiple hits"
+    input: '{"total":{"value":2},"hits":[{"_id":"1","_source":{"name":"Alice","email":"a@b.com"}},{"_id":"2","_source":{"name":"Bob","email":"b@c.com"}}]}'
+    want: '{"total":{"value":2},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"}},{"_id":"2","_source":{"name":"Bob","email":"******"}}]}'
+  - description: "masks fields section"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"fields":{"email":["alice@example.com"],"contact.phone":["555-1234"],"name":["Alice"]}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"fields":{"email":["******"],"contact.phone":["******"],"name":["Alice"]}}]}'
+  - description: "masks highlight section"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"highlight":{"email":["<em>alice</em>@example.com"],"name":["<em>Alice</em>"]}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"highlight":{"email":["******"],"name":["<em>Alice</em>"]}}]}'
+  - description: "masks sort array"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"sort":[1234567890,"alice@example.com"]}]}'
+    sortFields:
+      - "age"
+      - "email"
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"sort":[1234567890,"******"]}]}'
+  - description: "masks fields highlight and sort together"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"fields":{"email":["alice@example.com"],"contact.phone":["555-1234"],"name":["Alice"]},"highlight":{"email":["<em>alice</em>@example.com"],"name":["<em>Alice</em>"]},"sort":[1234567890,"alice@example.com"]}]}'
+    sortFields:
+      - "age"
+      - "email"
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"fields":{"email":["******"],"contact.phone":["******"],"name":["Alice"]},"highlight":{"email":["******"],"name":["<em>Alice</em>"]},"sort":[1234567890,"******"]}]}'
+  - description: "sort with fewer sortFields than sort values"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","sort":[1234567890,"alice@example.com","extra"]}]}'
+    sortFields:
+      - "age"
+    want: '{"total":{"value":1},"hits":[{"_id":"1","sort":[1234567890,"alice@example.com","extra"]}]}'
+
+maskDocSource:
+  - description: "masks _source column"
+    input: '{"name":"Alice","email":"alice@example.com","contact":{"phone":"555-1234","city":"NYC"}}'
+    want: '{"name":"Alice","email":"******","contact":{"phone":"******","city":"NYC"}}'
+
+maskGetSourceColumn:
+  - description: "masks sensitive field"
+    fieldName: "email"
+    input: '"alice@example.com"'
+    want: '"******"'
+  - description: "does not mask non-sensitive field"
+    fieldName: "name"
+    input: '"Alice"'
+    want: '"Alice"'
+  - description: "masks nested object field"
+    fieldName: "contact"
+    input: '{"phone":"555-1234","city":"NYC"}'
+    want: '{"phone":"******","city":"NYC"}'
+  - description: "unknown field passes through"
+    fieldName: "unknown_field"
+    input: '"value"'
+    want: '"value"'
+
+maskMGetSource:
+  - description: "masks docs"
+    input: '[{"_index":"test","_id":"1","found":true,"_source":{"name":"Alice","email":"a@b.com"}},{"_index":"test","_id":"2","found":true,"_source":{"name":"Bob","email":"b@c.com"}}]'
+    want: '[{"_index":"test","_id":"1","found":true,"_source":{"name":"Alice","email":"******"}},{"_index":"test","_id":"2","found":true,"_source":{"name":"Bob","email":"******"}}]'
+
+maskMSearchResponses:
+  - description: "masks each response"
+    input: '[{"hits":{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"}}]}},{"hits":{"total":{"value":1},"hits":[{"_id":"2","_source":{"name":"Bob","email":"bob@example.com","contact":{"phone":"555-1234","city":"NYC"}}}]}}]'
+    want: '[{"hits":{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"}}]}},{"hits":{"total":{"value":1},"hits":[{"_id":"2","_source":{"name":"Bob","email":"******","contact":{"phone":"******","city":"NYC"}}}]}}]'
+  - description: "empty responses array"
+    input: '[]'
+    want: '[]'
+  - description: "response without hits passes through"
+    input: '[{"status":200},{"hits":{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"}}]}}]'
+    want: '[{"status":200},{"hits":{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"}}]}}]'
+  - description: "response with inner_hits"
+    input: '[{"hits":{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"inner_hits":{"comments":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"Bob","email":"bob@example.com"}}]}}}}]}}]'
+    want: '[{"hits":{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"inner_hits":{"comments":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"Bob","email":"******"}}]}}}}]}}]'
+
+maskInnerHits:
+  - description: "masks inner_hits _source"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"inner_hits":{"comments":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"Bob","email":"bob@example.com","contact":{"phone":"555-9999","city":"LA"}}}]}}}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"inner_hits":{"comments":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"Bob","email":"******","contact":{"phone":"******","city":"LA"}}}]}}}}]}'
+  - description: "masks inner_hits fields and highlight"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"inner_hits":{"nested":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"Inner","email":"inner@example.com"},"fields":{"email":["inner@example.com"],"name":["Inner"]},"highlight":{"email":["<em>inner</em>@example.com"]}}]}}}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"inner_hits":{"nested":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"Inner","email":"******"},"fields":{"email":["******"],"name":["Inner"]},"highlight":{"email":["******"]}}]}}}}]}'
+  - description: "masks nested inner_hits recursively"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Root","email":"root@example.com"},"inner_hits":{"level1":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"L1","email":"l1@example.com"},"inner_hits":{"level2":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"L2","email":"l2@example.com"}}]}}}}]}}}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Root","email":"******"},"inner_hits":{"level1":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"L1","email":"******"},"inner_hits":{"level2":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"L2","email":"******"}}]}}}}]}}}}]}'
+  - description: "no inner_hits passes through"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"}}]}'
+  - description: "multiple inner_hits groups"
+    input: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"alice@example.com"},"inner_hits":{"group_a":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"GA","email":"ga@example.com"}}]}},"group_b":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"GB","email":"gb@example.com"}}]}}}}]}'
+    want: '{"total":{"value":1},"hits":[{"_id":"1","_source":{"name":"Alice","email":"******"},"inner_hits":{"group_a":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"GA","email":"******"}}]}},"group_b":{"hits":{"total":{"value":1},"hits":[{"_source":{"name":"GB","email":"******"}}]}}}}]}'
+
+checkBlocked:
+  - description: "allowed search"
+    api: 1
+    index: "my-index"
+    wantError: false
+  - description: "blocked API"
+    api: 6
+    index: "my-index"
+    wantError: true
+    wantErrorContains: "not supported when data masking"
+  - description: "blocked feature aggs"
+    api: 1
+    index: "my-index"
+    blockedFeatures:
+      - 0
+    wantError: true
+    wantErrorContains: "aggregations"
+  - description: "multiple blocked features"
+    api: 1
+    index: "my-index"
+    blockedFeatures:
+      - 0
+      - 1
+      - 2
+    wantError: true
+    wantErrorContains: "aggregations"
+  - description: "unsupported API passes through"
+    api: 0
+    wantError: false
