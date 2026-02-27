@@ -61,13 +61,14 @@
           </template>
         </NTooltip>
         <NDropdown
+          v-if="!props.disallowCopyingData"
           trigger="click"
           :options="copyDropdownOptions"
           @select="handleCopyOptionSelect"
         >
           <NButton
             size="small"
-            :disabled="copyResultsDisabled"
+            :disabled="rows.length === 0"
             style="--n-padding: 0 8px"
           >
             <template #icon>
@@ -661,10 +662,6 @@ const { copyAll } = provideSelectionContext({
   binaryFormatContext,
   resultViewContext,
 });
-
-const copyResultsDisabled = computed(
-  () => props.disallowCopyingData || rows.value.length === 0
-);
 
 const copyDropdownOptions = computed((): DropdownOption[] => [
   {
