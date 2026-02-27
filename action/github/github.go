@@ -99,86 +99,91 @@ func upsertComment(resp *v1pb.CheckReleaseResponse, ghe *githubEnv) error {
 	return nil
 }
 
+// ddlDryRunCode is the advisor code for DDL dry run failures.
+const ddlDryRunCode = 257
+
+type finding struct {
+	file    string
+	line    int
+	level   v1pb.Advice_Level
+	code    int32
+	content string
+}
+
 func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
-	var errorCount, warningCount int
+	var ddlFindings, reviewFindings []finding
 	for _, result := range resp.Results {
 		for _, advice := range result.Advices {
-			switch advice.Status {
-			case v1pb.Advice_WARNING:
-				warningCount++
-			case v1pb.Advice_ERROR:
-				errorCount++
-			case v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED, v1pb.Advice_SUCCESS:
-				// No action needed
-			default:
-				// Ignore unknown advice statuses
+			if advice.Status == v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED || advice.Status == v1pb.Advice_SUCCESS {
+				continue
+			}
+			f := finding{
+				file:    result.File,
+				line:    common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine())),
+				level:   advice.Status,
+				code:    advice.Code,
+				content: advice.Content,
+			}
+			if advice.Code == ddlDryRunCode {
+				ddlFindings = append(ddlFindings, f)
+			} else {
+				reviewFindings = append(reviewFindings, f)
 			}
 		}
 	}
 
 	var sb strings.Builder
 	_, _ = sb.WriteString(commentHeader + "\n")
-	_, _ = sb.WriteString("## SQL Review Summary\n\n")
-	_, _ = sb.WriteString(fmt.Sprintf("* Total Affected Rows: **%d**\n", resp.AffectedRows))
-	_, _ = sb.WriteString(fmt.Sprintf("* Overall Risk Level: **%s**\n", formatRiskLevel(resp.RiskLevel)))
-	_, _ = sb.WriteString(fmt.Sprintf("* Advices Statistics: **%d Error(s), %d Warning(s)**\n", errorCount, warningCount))
-	_, _ = sb.WriteString("### Detailed Results\n")
-	_, _ = sb.WriteString(`
-<table>
-  <thead>
-    <tr>
-      <th>File</th>
-      <th>Target</th>
-      <th>Affected Rows</th>
-      <th>Risk Level</th>
-      <th>Advices</th>
-    </tr>
-  </thead>
-  <tbody>`)
-	for _, result := range resp.Results {
-		if sb.Len() > maxCommentLength-1000 {
-			break
-		}
-		var errorCount, warningCount int
-		for _, advice := range result.Advices {
-			switch advice.Status {
-			case v1pb.Advice_WARNING:
-				warningCount++
-			case v1pb.Advice_ERROR:
-				errorCount++
-			case v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED, v1pb.Advice_SUCCESS:
-				// No action needed
-			default:
-				// Ignore unknown advice statuses
-			}
-		}
-		counts := []string{}
-		if errorCount > 0 {
-			counts = append(counts, fmt.Sprintf("%d Error(s)", errorCount))
-		}
-		if warningCount > 0 {
-			counts = append(counts, fmt.Sprintf("%d Warning(s)", warningCount))
-		}
-		adviceCell := "-"
-		if len(counts) > 0 {
-			adviceCell = strings.Join(counts, ", ")
-		}
+	_, _ = sb.WriteString("## SQL Review\n\n")
+	_, _ = sb.WriteString(fmt.Sprintf("* Affected Rows: **%d**\n", resp.AffectedRows))
+	_, _ = sb.WriteString(fmt.Sprintf("* Risk Level: **%s**\n", formatRiskLevel(resp.RiskLevel)))
 
-		_, _ = sb.WriteString(fmt.Sprintf(`<tr>
-<td>%s</td>
-<td>%s</td>
-<td>%d</td>
-<td>%s</td>
-<td>%s</td>
-</tr>`, result.File, result.Target, result.AffectedRows, formatRiskLevel(result.RiskLevel), adviceCell))
+	if len(ddlFindings) == 0 && len(reviewFindings) == 0 {
+		_, _ = sb.WriteString("\nAll checks passed.\n")
+		return sb.String()
 	}
-	_, _ = sb.WriteString("</tbody></table>")
+
+	if len(ddlFindings) > 0 {
+		_, _ = sb.WriteString("\n### DDL Executability\n\n")
+		_, _ = sb.WriteString("| File | Line | Error |\n")
+		_, _ = sb.WriteString("|------|------|-------|\n")
+		for _, f := range ddlFindings {
+			if sb.Len() > maxCommentLength-500 {
+				_, _ = sb.WriteString("\n_... truncated due to comment length limit._\n")
+				return sb.String()
+			}
+			_, _ = sb.WriteString(fmt.Sprintf("| %s | %d | %s |\n", f.file, f.line, f.content))
+		}
+	}
+
+	if len(reviewFindings) > 0 {
+		_, _ = sb.WriteString("\n### SQL Review Policy\n\n")
+		_, _ = sb.WriteString("| File | Line | Level | Finding |\n")
+		_, _ = sb.WriteString("|------|------|-------|--------|\n")
+		for _, f := range reviewFindings {
+			if sb.Len() > maxCommentLength-500 {
+				_, _ = sb.WriteString("\n_... truncated due to comment length limit._\n")
+				return sb.String()
+			}
+			_, _ = sb.WriteString(fmt.Sprintf("| %s | %d | %s | %s |\n", f.file, f.line, formatAdviceLevel(f.level), f.content))
+		}
+	}
+
 	return sb.String()
 }
 
+func formatAdviceLevel(s v1pb.Advice_Level) string {
+	switch s {
+	case v1pb.Advice_ERROR:
+		return "❌"
+	case v1pb.Advice_WARNING:
+		return "⚠️"
+	default:
+		return ""
+	}
+}
+
 func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
-	// annotation template
-	// `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. Targets: ${targets.join(', ')} https://docs.bytebase.com/sql-review/error-codes#${advice.code}`
 	for _, result := range resp.Results {
 		for _, advice := range result.Advices {
 			var sb strings.Builder
@@ -197,16 +202,22 @@ func writeAnnotations(resp *v1pb.CheckReleaseResponse) error {
 			_, _ = sb.WriteString(",line=")
 			_, _ = sb.WriteString(strconv.Itoa(common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine()))))
 			_, _ = sb.WriteString(",title=")
-			_, _ = sb.WriteString(advice.Title)
+			if advice.Code == ddlDryRunCode {
+				_, _ = sb.WriteString("DDL Executability")
+			} else {
+				_, _ = sb.WriteString(advice.Title)
+			}
 			_, _ = sb.WriteString(" (")
 			_, _ = sb.WriteString(strconv.Itoa(int(advice.Code)))
 			_, _ = sb.WriteString(")::")
 			_, _ = sb.WriteString(advice.Content)
 			_, _ = sb.WriteString(". Targets: ")
 			_, _ = sb.WriteString(result.Target)
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(" https://docs.bytebase.com/sql-review/error-codes#")
-			_, _ = sb.WriteString(strconv.Itoa(int(advice.Code)))
+			// Only add doc link for non-DDL dry run codes.
+			if advice.Code != ddlDryRunCode {
+				_, _ = sb.WriteString(" https://docs.bytebase.com/sql-review/error-codes#")
+				_, _ = sb.WriteString(strconv.Itoa(int(advice.Code)))
+			}
 			fmt.Println(sb.String())
 		}
 	}

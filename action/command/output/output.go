@@ -78,9 +78,19 @@ func writeOutputJSON(w *world.World) error {
 	return nil
 }
 
-// writeGitHubStepSummary writes the GitHub step summary for rollout operations.
+// writeGitHubStepSummary writes the GitHub step summary for rollout and check operations.
 func writeGitHubStepSummary(w *world.World) error {
-	if w.Platform != world.GitHub || !w.IsRollout {
+	if w.Platform != world.GitHub {
+		return nil
+	}
+
+	var summary string
+	switch {
+	case w.IsRollout:
+		summary = github.BuildSummaryMarkdown(w)
+	case w.OutputMap.CheckResults != nil:
+		summary = github.BuildCheckSummaryMarkdown(w)
+	default:
 		return nil
 	}
 
@@ -91,7 +101,6 @@ func writeGitHubStepSummary(w *world.World) error {
 	}
 	defer f.Close()
 
-	summary := github.BuildSummaryMarkdown(w)
 	if _, err := f.WriteString(summary); err != nil {
 		return errors.Wrapf(err, "failed to write GitHub step summary: %s", filename)
 	}

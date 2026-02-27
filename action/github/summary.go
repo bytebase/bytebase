@@ -1,8 +1,10 @@
 package github
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/bytebase/bytebase/action/common"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -21,6 +23,65 @@ func BuildSummaryMarkdown(w *world.World) string {
 
 	// Add stage status table
 	buildOutputStagesMarkdown(w, &sb)
+
+	return sb.String()
+}
+
+// BuildCheckSummaryMarkdown generates a GitHub step summary for check operations.
+func BuildCheckSummaryMarkdown(w *world.World) string {
+	resp := w.OutputMap.CheckResults
+	if resp == nil {
+		return ""
+	}
+
+	var sb strings.Builder
+	_, _ = sb.WriteString("## SQL Review\n\n")
+	_, _ = sb.WriteString(fmt.Sprintf("* Affected Rows: **%d**\n", resp.AffectedRows))
+	_, _ = sb.WriteString(fmt.Sprintf("* Risk Level: **%s**\n", formatRiskLevel(resp.RiskLevel)))
+
+	var ddlFindings, reviewFindings []finding
+	for _, result := range resp.Results {
+		for _, advice := range result.Advices {
+			if advice.Status == v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED || advice.Status == v1pb.Advice_SUCCESS {
+				continue
+			}
+			f := finding{
+				file:    result.File,
+				line:    common.ConvertLineToActionLine(int(advice.GetStartPosition().GetLine())),
+				level:   advice.Status,
+				code:    advice.Code,
+				content: advice.Content,
+			}
+			if advice.Code == ddlDryRunCode {
+				ddlFindings = append(ddlFindings, f)
+			} else {
+				reviewFindings = append(reviewFindings, f)
+			}
+		}
+	}
+
+	if len(ddlFindings) == 0 && len(reviewFindings) == 0 {
+		_, _ = sb.WriteString("\nAll checks passed.\n")
+		return sb.String()
+	}
+
+	if len(ddlFindings) > 0 {
+		_, _ = sb.WriteString("\n### DDL Executability\n\n")
+		_, _ = sb.WriteString("| File | Line | Error |\n")
+		_, _ = sb.WriteString("|------|------|-------|\n")
+		for _, f := range ddlFindings {
+			_, _ = sb.WriteString(fmt.Sprintf("| %s | %d | %s |\n", f.file, f.line, f.content))
+		}
+	}
+
+	if len(reviewFindings) > 0 {
+		_, _ = sb.WriteString("\n### SQL Review Policy\n\n")
+		_, _ = sb.WriteString("| File | Line | Level | Finding |\n")
+		_, _ = sb.WriteString("|------|------|-------|--------|\n")
+		for _, f := range reviewFindings {
+			_, _ = sb.WriteString(fmt.Sprintf("| %s | %d | %s | %s |\n", f.file, f.line, formatAdviceLevel(f.level), f.content))
+		}
+	}
 
 	return sb.String()
 }
