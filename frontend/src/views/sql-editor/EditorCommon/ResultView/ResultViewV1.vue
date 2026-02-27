@@ -191,6 +191,7 @@ import type {
   ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
+import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL";
 import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
   usePolicyV1Store,
@@ -208,7 +209,6 @@ import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
-import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL"
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
