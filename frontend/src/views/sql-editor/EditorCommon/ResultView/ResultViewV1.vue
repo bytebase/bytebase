@@ -188,6 +188,7 @@ import type {
   ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
+import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL";
 import { useSQLEditorTabStore, useSQLStore } from "@/store";
 import {
   usePolicyV1Store,
@@ -238,7 +239,10 @@ const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(
 
 const permissionDeniedError = computed(
   (): PermissionDeniedDetail | undefined => {
-    for (const result of props.resultSet?.results ?? []) {
+    if (!props.resultSet || isDisallowChangeDatabaseError(props.resultSet)) {
+      return undefined;
+    }
+    for (const result of props.resultSet.results) {
       if (result.detailedError.case === "permissionDenied") {
         return result.detailedError.value;
       }
