@@ -16,6 +16,11 @@
           :autofocus="false"
           :cache-query="true"
         />
+        <TimeRange
+          v-model:show="showTimeRange"
+          v-model:params="searchParams"
+          @update:params="$emit('update:params', $event)"
+        />
       </div>
 
       <PagedTable
@@ -77,7 +82,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
-import AdvancedSearch from "@/components/AdvancedSearch";
+import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
 import type {
   ScopeOption,
   ValueOption,
@@ -106,11 +111,14 @@ import {
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  type AccessGrantFilterStatus,
   extractDatabaseResourceName,
   getAccessGrantDisplayStatus,
+  getAccessGrantDisplayStatusText,
   getAccessGrantExpirationText,
   getAccessGrantStatusTagType,
   getDefaultPagination,
+  getTsRangeFromSearchParams,
   hasProjectPermissionV2,
   type SearchParams,
 } from "@/utils";
@@ -133,6 +141,7 @@ const me = useCurrentUserV1();
 const userStore = useUserStore();
 const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
+const showTimeRange = ref(false);
 
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const { project } = useProjectByName(projectName);
@@ -243,15 +252,12 @@ const scopeOptions = computed((): ScopeOption[] => [
 
 const filter = computed((): AccessFilter => {
   const f: AccessFilter = {};
-  const statuses = getValuesFromSearchParams(searchParams.value, "status");
-  f.status = statuses
-    .filter((s) => s !== "EXPIRED")
-    .map((s) => AccessGrant_Status[s as keyof typeof AccessGrant_Status]);
-  if (statuses.includes("EXPIRED")) {
-    f.expireTsBefore = Date.now();
-  } else if (f.status.includes(AccessGrant_Status.ACTIVE)) {
-    f.expireTsAfter = Date.now();
-  }
+  const statuses = getValuesFromSearchParams(
+    searchParams.value,
+    "status"
+  ) as AccessGrantFilterStatus[];
+  f.status = statuses;
+
   const creator = getValueFromSearchParams(
     searchParams.value,
     "creator",
@@ -271,6 +277,15 @@ const filter = computed((): AccessFilter => {
   const queryText = searchParams.value.query.trim();
   if (queryText) {
     f.statement = queryText;
+  }
+
+  const createdTsRange = getTsRangeFromSearchParams(
+    searchParams.value,
+    "created"
+  );
+  if (createdTsRange) {
+    f.createdTsAfter = createdTsRange[0];
+    f.createdTsBefore = createdTsRange[1];
   }
   return f;
 });
@@ -359,7 +374,7 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
           size: "small",
           bordered: false,
         },
-        { default: () => status }
+        { default: () => getAccessGrantDisplayStatusText(grant) }
       );
     },
   },

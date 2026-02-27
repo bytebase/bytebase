@@ -18,7 +18,7 @@
             <RequestQueryButton
               v-if="!!permissionDeniedError"
               :text="false"
-              :statement="resultSet.results[0]?.statement"
+              :statement="executeParams.statement"
               :permission-denied-detail="permissionDeniedError"
             />
           </template>

@@ -1909,7 +1909,8 @@
       "workspace-level-roles": "ワークスペースレベルのロール",
       "project-level-roles": "プロジェクトレベルのロール",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する"
+      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
+      "disallow-ddl": "すべての環境で DDL/DML ステートメントの実行を禁止する。"
     },
     "select": "アイテムを選択",
     "all": "全てのアイテム",

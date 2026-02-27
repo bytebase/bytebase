@@ -11,18 +11,17 @@ import {
   RevokeAccessGrantRequestSchema,
   SearchMyAccessGrantsRequestSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import { type AccessGrantFilterStatus } from "@/utils";
 
 export interface AccessFilter {
   name?: string;
   statement?: string;
   creator?: string;
-  status?: AccessGrant_Status[];
+  status?: AccessGrantFilterStatus[];
   issue?: string;
   target?: string;
   createdTsAfter?: number;
   createdTsBefore?: number;
-  expireTsAfter?: number;
-  expireTsBefore?: number;
 }
 
 const getListAccessFilter = (filter: AccessFilter | undefined): string => {
@@ -33,9 +32,24 @@ const getListAccessFilter = (filter: AccessFilter | undefined): string => {
     parts.push(`name == "${filter.name}"`);
   }
   if (filter.status !== undefined && filter.status.length > 0) {
-    parts.push(
-      `status in [${filter.status.map((s) => `"${AccessGrant_Status[s]}"`).join(", ")}]`
-    );
+    const statusFilter: string[] = [];
+    for (const status of filter.status) {
+      switch (status) {
+        case "ACTIVE":
+          statusFilter.push(
+            `(status == "${AccessGrant_Status[AccessGrant_Status.ACTIVE]}" && expire_time > "${new Date().toISOString()}")`
+          );
+          break;
+        case "EXPIRED":
+          statusFilter.push(`expire_time <= "${new Date().toISOString()}"`);
+          break;
+        default:
+          statusFilter.push(
+            `status == "${status as keyof typeof AccessGrant_Status}"`
+          );
+      }
+    }
+    parts.push(`(${statusFilter.join(" || ")})`);
   }
   if (filter.statement) {
     parts.push(`query.matches("${filter.statement.trim()}")`);
@@ -57,16 +71,6 @@ const getListAccessFilter = (filter: AccessFilter | undefined): string => {
   if (filter.createdTsBefore !== undefined) {
     parts.push(
       `create_time <= "${new Date(filter.createdTsBefore).toISOString()}"`
-    );
-  }
-  if (filter.expireTsAfter !== undefined) {
-    parts.push(
-      `expire_time >= "${new Date(filter.expireTsAfter).toISOString()}"`
-    );
-  }
-  if (filter.expireTsBefore !== undefined) {
-    parts.push(
-      `expire_time <= "${new Date(filter.expireTsBefore).toISOString()}"`
     );
   }
 

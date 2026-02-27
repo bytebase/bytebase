@@ -1909,7 +1909,8 @@
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
       "project-level-roles": "Roles a nivel de proyecto",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados"
+      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
+      "disallow-ddl": "No permitir ejecutar sentencias DDL/DML en ningún entorno."
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",

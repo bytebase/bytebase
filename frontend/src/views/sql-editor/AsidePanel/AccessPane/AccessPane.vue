@@ -119,6 +119,7 @@ import {
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  type AccessGrantFilterStatus,
   extractDatabaseResourceName,
   getDefaultPagination,
   type SearchParams,
@@ -250,23 +251,19 @@ const scopeOptions = computed((): ScopeOption[] => {
   return options;
 });
 
-const selectedStatuses = computed(() =>
-  getValuesFromSearchParams(searchParams.value, "status")
+const selectedStatuses = computed(
+  () =>
+    getValuesFromSearchParams(
+      searchParams.value,
+      "status"
+    ) as AccessGrantFilterStatus[]
 );
 
 // Build AccessFilter from search params.
 const filter = computed((): AccessFilter => {
-  const f: AccessFilter = {};
-
-  const statuses = selectedStatuses.value;
-  f.status = statuses
-    .filter((s) => s !== "EXPIRED")
-    .map((s) => AccessGrant_Status[s as keyof typeof AccessGrant_Status]);
-  if (statuses.includes("EXPIRED")) {
-    f.expireTsBefore = Date.now();
-  } else if (f.status.includes(AccessGrant_Status.ACTIVE)) {
-    f.expireTsAfter = Date.now();
-  }
+  const f: AccessFilter = {
+    status: selectedStatuses.value,
+  };
 
   const database = getValueFromSearchParams(
     searchParams.value,

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full p-2 gap-y-2 border-b flex flex-col justify-start items-start cursor-pointer hover:bg-gray-50"
+    class="w-full p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-gray-50"
     :class="highlight ? 'highlight-pulse' : 'transition-colors duration-1000'"
   >
     <div class="w-full flex flex-row justify-between items-center gap-x-2">
@@ -12,16 +12,22 @@
           {{ $t("sql-editor.grant-type-unmask") }}
         </NTag>
       </div>
-      <span class="text-xs text-gray-500 shrink-0">
-        {{ expirationText }}
-      </span>
+      <NEllipsis
+        v-if="expirationText"
+        :line-clamp="1"
+        :tooltip="true"
+      >
+        <span class="text-xs text-gray-500 shrink-0">
+          {{ expirationText }}
+        </span>
+      </NEllipsis>
     </div>
 
     <NTooltip placement="right">
       <template #trigger>
         <p
           class="max-w-full text-xs wrap-break-word whitespace-pre-wrap font-mono line-clamp-2"
-          :class="{ 'line-through text-gray-400': isExpired || isRevoked || isRejectedOrCanceled }"
+          :class="{ 'line-through text-gray-400': isExpired || isRejectedOrCanceled }"
         >
           {{ grant.query }}
         </p>
@@ -40,51 +46,53 @@
           <span v-for="name in allDatabaseNames" :key="name">{{ name }}</span>
         </div>
       </NTooltip>
-      <div class="flex items-center gap-x-1">
-        <NButton
-          v-if="isActive && !isExpired"
-          tertiary
-          size="tiny"
-          type="primary"
-          @click.stop="$emit('run', grant)"
-        >
-          {{ $t("common.run") }}
-        </NButton>
-        <NButton
-          v-else-if="grant.status !== AccessGrant_Status.PENDING"
-          tertiary
-          size="tiny"
-          @click.stop="$emit('request', grant)"
-        >
-          {{ $t("sql-editor.re-request") }}
-        </NButton>
-        <NButton
-          v-if="grant.issue"
-          tertiary
-          size="tiny"
-          tag="a"
-          :href="issueLink"
-          target="_blank"
-          @click.stop
-        >
-          {{ $t("sql-editor.view-issue") }}
-        </NButton>
+      <div class="flex items-center justify-between gap-x-1">
+        <div>
+          <NButton
+            v-if="isActive"
+            size="tiny"
+            secondary
+            type="primary"
+            @click.stop="$emit('run', grant)"
+          >
+            {{ $t("common.run") }}
+          </NButton>
+        </div>
+        <div class="flex items-center gap-x-1">
+          <NButton
+            v-if="isRejectedOrCanceled"
+            tertiary
+            size="tiny"
+            @click.stop="$emit('request', grant)"
+          >
+            {{ $t("sql-editor.re-request") }}
+          </NButton>
+          <NButton
+            v-if="grant.issue"
+            tertiary
+            size="tiny"
+            tag="a"
+            :href="issueLink"
+            target="_blank"
+            @click.stop
+          >
+            {{ $t("sql-editor.view-issue") }}
+          </NButton>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NTag, NTooltip } from "naive-ui";
+import { NButton, NEllipsis, NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  type AccessGrant,
-  AccessGrant_Status,
-} from "@/types/proto-es/v1/access_grant_service_pb";
+import { type AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   getAccessGrantDisplayStatus,
+  getAccessGrantDisplayStatusText,
   getAccessGrantExpirationText,
   getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
@@ -103,50 +111,28 @@ defineEmits<{
 
 const { t } = useI18n();
 
-const isActive = computed(
-  () => props.grant.status === AccessGrant_Status.ACTIVE
-);
-
-const isRevoked = computed(
-  () => props.grant.status === AccessGrant_Status.REVOKED
-);
-
 const expireTimeMs = computed(() => getAccessGrantExpireTimeMs(props.grant));
-
-const isExpired = computed(() => {
-  if (!isActive.value || expireTimeMs.value === undefined) return false;
-  return expireTimeMs.value < Date.now();
-});
 
 const displayStatus = computed(() =>
   getAccessGrantDisplayStatus(props.grant, props.issue)
 );
+
+const isActive = computed(() => displayStatus.value === "ACTIVE");
+
+const isExpired = computed(() => {
+  return displayStatus.value === "EXPIRED";
+});
 
 const statusTagType = computed(() =>
   getAccessGrantStatusTagType(displayStatus.value)
 );
 
 const isRejectedOrCanceled = computed(
-  () => displayStatus.value === "REJECTED" || displayStatus.value === "CANCELED"
+  () => displayStatus.value !== "ACTIVE" && displayStatus.value !== "PENDING"
 );
 
 const statusLabel = computed(() => {
-  switch (displayStatus.value) {
-    case "ACTIVE":
-      return t("common.active");
-    case "PENDING":
-      return t("common.pending");
-    case "EXPIRED":
-      return t("sql-editor.expired");
-    case "REVOKED":
-      return t("common.revoked");
-    case "REJECTED":
-      return t("common.rejected");
-    case "CANCELED":
-      return t("common.canceled");
-    default:
-      return displayStatus.value;
-  }
+  return getAccessGrantDisplayStatusText(props.grant, props.issue);
 });
 
 const expirationInfo = computed(() =>
@@ -154,10 +140,17 @@ const expirationInfo = computed(() =>
 );
 
 const expirationText = computed(() => {
+  // Only show the expiration for ACTIVE/EXPIRED
+  if (displayStatus.value !== "ACTIVE" && displayStatus.value !== "EXPIRED") {
+    return;
+  }
+
   const info = expirationInfo.value;
-  if (info.type === "never") return t("project.members.never-expires");
-  if (info.type === "duration") return info.value;
-  if (isActive.value && !isExpired.value && expireTimeMs.value !== undefined) {
+  if (info.type === "never" || info.type === "duration") {
+    return;
+  }
+
+  if (!isExpired.value && expireTimeMs.value !== undefined) {
     const diff = expireTimeMs.value - Date.now();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     if (hours >= 24) {
@@ -167,7 +160,7 @@ const expirationText = computed(() => {
     const dur = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
     return t("sql-editor.expire-in", { time: dur });
   }
-  return t("sql-editor.expire-at", { time: info.value });
+  return `${t("issue.grant-request.expired-at")} ${info.value}`;
 });
 
 const allDatabaseNames = computed(() => {

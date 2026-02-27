@@ -307,6 +307,15 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 		case celast.CallKind:
 			functionName := expr.AsCall().FunctionName()
 			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
 			case celoperators.LogicalAnd:
 				for _, arg := range expr.AsCall().Args() {
 					qq, err := getFilter(arg)

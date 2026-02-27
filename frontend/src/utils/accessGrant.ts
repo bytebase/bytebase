@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { t } from "@/plugins/i18n";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AccessGrant,
@@ -10,11 +11,14 @@ import {
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 
-export type AccessGrantDisplayStatus =
+export type AccessGrantFilterStatus =
   | "ACTIVE"
   | "PENDING"
-  | "EXPIRED"
   | "REVOKED"
+  | "EXPIRED";
+
+export type AccessGrantDisplayStatus =
+  | AccessGrantFilterStatus
   | "REJECTED"
   | "CANCELED"
   | "UNKNOWN";
@@ -85,6 +89,29 @@ export const getAccessGrantDisplayStatus = (
       return "REVOKED";
     default:
       return "UNKNOWN";
+  }
+};
+
+export const getAccessGrantDisplayStatusText = (
+  grant: AccessGrant,
+  issue?: Issue
+) => {
+  const displayStatus = getAccessGrantDisplayStatus(grant, issue);
+  switch (displayStatus) {
+    case "ACTIVE":
+      return t("common.active");
+    case "PENDING":
+      return t("common.pending");
+    case "EXPIRED":
+      return t("sql-editor.expired");
+    case "REVOKED":
+      return t("common.revoked");
+    case "REJECTED":
+      return t("common.rejected");
+    case "CANCELED":
+      return t("common.canceled");
+    default:
+      return displayStatus;
   }
 };
 

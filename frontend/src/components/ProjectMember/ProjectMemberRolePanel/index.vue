@@ -49,8 +49,8 @@
         >
           {{ $t("project.members.project-level-roles") }}
         </p>
-        <div v-for="(b, index) in binding.projectRoleBindings" :key="index" class="mb-4">
-          <div class="py-2">
+        <div v-for="(b, index) in binding.projectRoleBindings" :key="index" class="mb-4 flex flex-col gap-y-2">
+          <div>
             <div
               class="w-full flex flex-row justify-start items-center gap-x-1"
             >
@@ -74,6 +74,21 @@
               {{ b.condition?.description }}
             </span>
           </div>
+          <BBAttention v-if="roleHasEnvironmentLimitation(b.role)" :type="'info'">
+            <div v-if="getEnvironmentLimitation(b).length > 0">
+              <p>
+                {{ $t("project.members.allow-ddl") }}
+              </p>
+              <ul class="list-disc pl-4">
+                <li v-for="env in getEnvironmentLimitation(b)" :key="env">
+                  {{ env }}
+                </li>
+              </ul>
+            </div>
+            <div v-else>
+              {{ $t("project.members.disallow-ddl") }}
+            </div>
+          </BBAttention>
           <NDataTable
             size="small"
             :columns="getDataTableColumns(b.role)"
@@ -146,7 +161,7 @@ import {
 } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBButtonConfirm } from "@/bbkit";
+import { BBAttention, BBButtonConfirm } from "@/bbkit";
 import type { MemberBinding } from "@/components/Member/types";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
@@ -167,7 +182,10 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
-import { roleHasDatabaseLimitation } from "../utils";
+import {
+  roleHasDatabaseLimitation,
+  roleHasEnvironmentLimitation,
+} from "../utils";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
 
@@ -349,6 +367,14 @@ const checkRoleExpired = (role: SingleBinding) => {
     return false;
   }
   return role.expiration < new Date();
+};
+
+const getEnvironmentLimitation = (rawBinding: Binding): string[] => {
+  if (!rawBinding.parsedExpr) {
+    return [];
+  }
+  const conditionExpr = convertFromExpr(rawBinding.parsedExpr);
+  return conditionExpr.environments ?? [];
 };
 
 const getSingleBindingList = (rawBinding: Binding): SingleBinding[] => {
