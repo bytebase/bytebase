@@ -2816,6 +2816,25 @@
     "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
     "filter-by-category": "按类别过滤"
   },
+  "gitops": {
+    "self": "GitOps",
+    "overview": {
+      "title": "GitOps 概览",
+      "description": "通过版本控制系统管理数据库架构变更。GitOps 允许您将代码仓库与 Bytebase 关联，从而自动化数据库部署。"
+    },
+    "workload-identity": {
+      "title": "工作负载身份",
+      "description": "选择或创建一个工作负载身份，用于 CI/CD 平台向 Bytebase 进行身份验证。",
+      "select-placeholder": "选择工作负载身份",
+      "no-identity": "未找到工作负载身份，请创建一个以开始使用。"
+    },
+    "workflow": {
+      "title": "CI/CD 工作流",
+      "description": "将此工作流文件复制到您的代码仓库中，以使用 Bytebase 自动化数据库架构迁移。",
+      "file-hint": "保存为仓库中的 {filePath}"
+    },
+    "documentation": "查看文档"
+  },
   "export-data": {
     "export-rows": "导出行数",
     "error": {
