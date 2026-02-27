@@ -208,6 +208,7 @@ import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
+import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL"
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
 
@@ -241,7 +242,10 @@ const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(
 
 const permissionDeniedError = computed(
   (): PermissionDeniedDetail | undefined => {
-    for (const result of props.resultSet?.results ?? []) {
+    if (!props.resultSet || isDisallowChangeDatabaseError(props.resultSet)) {
+      return undefined;
+    }
+    for (const result of props.resultSet.results) {
       if (result.detailedError.case === "permissionDenied") {
         return result.detailedError.value;
       }

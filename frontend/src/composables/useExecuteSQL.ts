@@ -358,7 +358,7 @@ const useExecuteSQL = () => {
   };
 };
 
-const isDisallowChangeDatabaseError = (resultSet: SQLResultSetV1) => {
+export const isDisallowChangeDatabaseError = (resultSet: SQLResultSetV1) => {
   const isCommandError = resultSet.results.some((result) => {
     return (
       result.detailedError.case === "commandError" &&
