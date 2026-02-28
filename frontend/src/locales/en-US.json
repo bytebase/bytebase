@@ -2014,6 +2014,7 @@
     "no-queriable-database": "No queriable database",
     "rows": "row | rows",
     "vertical-display": "Vertical display",
+    "table-view": "Table view",
     "no-history-found": "No history found",
     "search-history-by-statement": "Search by statement",
     "binary-format": "Binary format",
