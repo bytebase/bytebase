@@ -117,7 +117,11 @@ func (r *NamingIdentifierCaseRule) enterColumnDeclItemList(ctx *parser.Column_de
 
 	for _, item := range allItems {
 		if fullColDecl := item.Full_col_decl(); fullColDecl != nil {
-			originalID := fullColDecl.Col_decl().Column_name().Id_()
+			allIDs := fullColDecl.Col_decl().Column_name().AllId_()
+			if len(allIDs) == 0 {
+				continue
+			}
+			originalID := allIDs[len(allIDs)-1]
 			originalColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(originalID)
 			if strings.ToUpper(originalColName) != originalColName {
 				r.AddAdvice(&storepb.Advice{
@@ -137,7 +141,12 @@ func (r *NamingIdentifierCaseRule) enterAlterTable(ctx *parser.Alter_tableContex
 		return
 	}
 	r.currentOriginalTableName = ctx.Object_name(0).GetText()
-	renameToID := ctx.Table_column_action().Column_name(1).Id_()
+	renameColumnName := ctx.Table_column_action().Column_name(1)
+	allIDs := renameColumnName.AllId_()
+	if len(allIDs) == 0 {
+		return
+	}
+	renameToID := allIDs[len(allIDs)-1]
 	renameToColName := snowsqlparser.NormalizeSnowSQLObjectNamePart(renameToID)
 	if strings.ToUpper(renameToColName) != renameToColName {
 		r.AddAdvice(&storepb.Advice{

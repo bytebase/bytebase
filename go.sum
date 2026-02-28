@@ -863,6 +863,10 @@ github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/parser v0.0.0-20260227085144-840d74dd2c8b h1:IHEWYToZdRtK8EOO647ZKYnKHDgnWdRogVYZGBSJA6U=
 github.com/bytebase/parser v0.0.0-20260227085144-840d74dd2c8b/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
+github.com/bytebase/parser v0.0.0-20260227100815-f75e2976e671 h1:ExGX4K6VL5hGJL75ysQfyX2dixN8e3OYSgyRk2rGlNU=
+github.com/bytebase/parser v0.0.0-20260227100815-f75e2976e671/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
+github.com/bytebase/parser v0.0.0-20260228025849-39c76b45c98a h1:hTyZhniv0HzQYM2K6mG1XpOEKibsfLJ7jYhBf/1sXLc=
+github.com/bytebase/parser v0.0.0-20260228025849-39c76b45c98a/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94 h1:6PNsuNmSqCuR8Z616uQLzDIvujWCFsKzeVc3ECmVubk=

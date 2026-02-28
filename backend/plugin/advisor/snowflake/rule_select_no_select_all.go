@@ -87,15 +87,13 @@ func (*SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error 
 }
 
 func (r *SelectNoSelectAllRule) enterSelectListElem(ctx *parser.Select_list_elemContext) {
-	if v := ctx.Column_elem(); v != nil {
-		if v.STAR() != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.StatementSelectAll.Int32(),
-				Title:         r.title,
-				Content:       "Avoid using SELECT *.",
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + v.STAR().GetSymbol().GetLine()),
-			})
-		}
+	if v := ctx.Column_elem_star(); v != nil {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          code.StatementSelectAll.Int32(),
+			Title:         r.title,
+			Content:       "Avoid using SELECT *.",
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + v.STAR().GetSymbol().GetLine()),
+		})
 	}
 }

@@ -172,14 +172,14 @@ func (r *TableRequirePkRule) exitCreateTable() {
 }
 
 func (r *TableRequirePkRule) enterInlineConstraint(ctx *parser.Inline_constraintContext) {
-	if ctx.PRIMARY() == nil || r.currentNormalizedTableName == "" {
+	if ctx.Primary_key() == nil || r.currentNormalizedTableName == "" {
 		return
 	}
 	r.tableHasPrimaryKey[r.currentNormalizedTableName] = true
 }
 
 func (r *TableRequirePkRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_constraintContext) {
-	if ctx.PRIMARY() == nil || r.currentNormalizedTableName == "" || r.currentConstraintAction == currentConstraintActionNone {
+	if ctx.Primary_key() == nil || r.currentNormalizedTableName == "" || r.currentConstraintAction == currentConstraintActionNone {
 		return
 	}
 	switch r.currentConstraintAction {
@@ -197,7 +197,7 @@ func (r *TableRequirePkRule) enterConstraintAction(ctx *parser.Constraint_action
 	if r.currentNormalizedTableName == "" {
 		return
 	}
-	if ctx.DROP() != nil && ctx.PRIMARY() != nil {
+	if ctx.DROP() != nil && (ctx.Primary_key() != nil || ctx.PRIMARY() != nil) {
 		if _, ok := r.tableHasPrimaryKey[r.currentNormalizedTableName]; ok {
 			r.tableHasPrimaryKey[r.currentNormalizedTableName] = false
 			r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
