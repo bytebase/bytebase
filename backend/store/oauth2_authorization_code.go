@@ -37,7 +37,7 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 		return nil, err
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil { // NOSONAR: query is parameterized via qb.Query
 		return nil, errors.Wrap(err, "failed to create OAuth2 authorization code")
 	}
 	return create, nil
@@ -57,7 +57,7 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, code string) (*O
 
 	msg := &OAuth2AuthorizationCodeMessage{}
 	var configBytes []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
 		&msg.Code, &msg.ClientID, &msg.UserEmail, &configBytes, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -84,7 +84,7 @@ func (s *Store) DeleteOAuth2AuthorizationCode(ctx context.Context, code string) 
 		return err
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil { // NOSONAR: query is parameterized via qb.Query
 		return errors.Wrap(err, "failed to delete OAuth2 authorization code")
 	}
 	return nil
