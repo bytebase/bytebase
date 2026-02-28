@@ -640,6 +640,8 @@ const resultRowsText = computed(() => {
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
+  // Column indices don't match when showing flattened ES table view.
+  if (isESSearchResult.value && esTableView.value) return false;
   const maskingReason = props.result.masked?.[columnIndex];
   // Check if maskingReason exists and has actual content (not empty object)
   return (
@@ -651,6 +653,8 @@ const isSensitiveColumn = (columnIndex: number): boolean => {
 };
 
 const getMaskingReason = (columnIndex: number) => {
+  // Column indices don't match when showing flattened ES table view.
+  if (isESSearchResult.value && esTableView.value) return undefined;
   if (!props.result.masked || columnIndex >= props.result.masked.length) {
     return undefined;
   }
