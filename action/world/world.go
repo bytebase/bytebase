@@ -21,6 +21,7 @@ type World struct {
 	URL                  string
 	ServiceAccount       string
 	ServiceAccountSecret string
+	AccessToken          string // Alternative to service account auth, e.g. from workload identity exchange
 	Project              string // projects/{project}
 	Targets              []string
 	FilePattern          string
