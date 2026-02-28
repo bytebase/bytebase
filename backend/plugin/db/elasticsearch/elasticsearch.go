@@ -144,11 +144,14 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		return nil, errors.Wrap(err, "failed to get TLS config")
 	}
 
-	// Default to insecure if no SSL is configured
+	// Build TLS config if no SSL is configured
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{
 			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nolint:gosec // We use custom verification when verify_tls_certificate is set
+		}
+		if config.DataSource.GetVerifyTlsCertificate() {
+			tlsConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(nil, config.DataSource.Host)
 		}
 	} else {
 		// Ensure minimum TLS version
@@ -212,11 +215,14 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 		return nil, errors.Wrap(err, "failed to get TLS config")
 	}
 
-	// Default to insecure if no SSL is configured
+	// Build TLS config if no SSL is configured
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{
 			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nolint:gosec // We use custom verification when verify_tls_certificate is set
+		}
+		if config.DataSource.GetVerifyTlsCertificate() {
+			tlsConfig.VerifyPeerCertificate = util.CreateCertificateVerifier(nil, config.DataSource.Host)
 		}
 	} else {
 		// Ensure minimum TLS version
