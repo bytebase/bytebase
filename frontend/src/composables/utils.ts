@@ -330,8 +330,8 @@ export const flattenElasticsearchSearchResult = (
   const hitsArray = hitsObj?.hits;
   if (!Array.isArray(hitsArray) || hitsArray.length === 0) return undefined;
 
-  // Discover all columns: _index, _id, _score first, then union of all _source keys
-  const metaFields = ["_index", "_id", "_score"];
+  // Discover all columns: _id, _score first, then union of all _source keys
+  const metaFields = ["_id", "_score"];
   const sourceKeySet = new Set<string>();
   for (const hit of hitsArray) {
     if (hit._source && typeof hit._source === "object") {
