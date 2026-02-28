@@ -391,6 +391,31 @@ const viewMode = computed((): ViewMode => {
   return "RESULT";
 });
 
+const engine = computed(() => getInstanceResource(props.database).engine);
+
+const esTableView = useLocalStorage(STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW, true);
+
+const flattenedESResult = computed(() => {
+  if (engine.value !== Engine.ELASTICSEARCH) return undefined;
+  return flattenElasticsearchSearchResult(props.result);
+});
+
+const isESSearchResult = computed(() => flattenedESResult.value !== undefined);
+
+const activeResult = computed(() => {
+  if (isESSearchResult.value && esTableView.value) {
+    return flattenedESResult.value!;
+  }
+  return props.result;
+});
+
+watch(esTableView, () => {
+  state.sortState = undefined;
+  state.searchParams = { query: "", scopes: [] };
+  state.searchCandidateActiveIndex = -1;
+  state.searchCandidateRowIndexs = [];
+});
+
 const columns = computed((): ResultTableColumn[] => {
   return activeResult.value.columnNames.map<ResultTableColumn>(
     (columnName, index) => {
@@ -642,28 +667,6 @@ provideSelectionContext({
   rows,
   binaryFormatContext,
   resultViewContext,
-});
-
-const engine = computed(() => getInstanceResource(props.database).engine);
-
-const esTableView = useLocalStorage(STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW, true);
-
-const flattenedESResult = computed(() => {
-  if (engine.value !== Engine.ELASTICSEARCH) return undefined;
-  return flattenElasticsearchSearchResult(props.result);
-});
-
-const isESSearchResult = computed(() => flattenedESResult.value !== undefined);
-
-const activeResult = computed(() => {
-  if (isESSearchResult.value && esTableView.value) {
-    return flattenedESResult.value!;
-  }
-  return props.result;
-});
-
-watch(esTableView, () => {
-  state.sortState = undefined;
 });
 
 const showVisualizeButton = computed((): boolean => {
