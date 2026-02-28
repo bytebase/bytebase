@@ -636,7 +636,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
 		if queryContext.Schema != "" {
 			if err := crdb.Execute(func() error {
-				_, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName))
+				_, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)) // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
 				return err
 			}); err != nil {
 				return nil, err
