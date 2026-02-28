@@ -304,21 +304,13 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
   }
 };
 
-/**
- * Transforms an Elasticsearch _search QueryResult into a tabular format.
- * Detects the "hits" column, extracts hits.hits[], and flattens each hit's
- * _source fields into columns. Returns undefined if the result is not a
- * search response.
- */
-export const flattenElasticsearchSearchResult = (
-  result: QueryResult
-): QueryResult | undefined => {
-  // Find the "hits" column
+// Parses the hits array from an Elasticsearch _search QueryResult's "hits" column.
+const parseESHitsArray = (result: QueryResult): unknown[] | undefined => {
   const hitsColIdx = result.columnNames.indexOf("hits");
   if (hitsColIdx === -1 || result.rows.length === 0) return undefined;
 
   const hitsCell = result.rows[0]?.values[hitsColIdx];
-  if (!hitsCell || hitsCell.kind.case !== "stringValue") return undefined;
+  if (hitsCell?.kind.case !== "stringValue") return undefined;
 
   let hitsObj: Record<string, unknown>;
   try {
@@ -329,68 +321,100 @@ export const flattenElasticsearchSearchResult = (
 
   const hitsArray = hitsObj?.hits;
   if (!Array.isArray(hitsArray) || hitsArray.length === 0) return undefined;
+  return hitsArray;
+};
 
-  // Discover all columns: _id, _score first, then union of all _source keys
+// Discovers columns from ES hits: _id, _score, then sorted _source field keys.
+const discoverESColumns = (hitsArray: unknown[]) => {
   const metaFields = ["_id", "_score"];
   const sourceKeySet = new Set<string>();
   for (const hit of hitsArray) {
-    if (hit._source && typeof hit._source === "object") {
-      for (const key of Object.keys(hit._source)) {
+    const source = (hit as Record<string, unknown>)?._source;
+    if (source && typeof source === "object") {
+      for (const key of Object.keys(source)) {
         sourceKeySet.add(key);
       }
     }
   }
-  const sourceKeys = [...sourceKeySet].sort();
-  const allColumns = [...metaFields, ...sourceKeys];
-
+  const allColumns = [
+    ...metaFields,
+    ...[...sourceKeySet].sort((a, b) => a.localeCompare(b)),
+  ];
   const columnIndexMap = new Map<string, number>();
   for (let i = 0; i < allColumns.length; i++) {
     columnIndexMap.set(allColumns[i], i);
   }
+  return { metaFields, allColumns, columnIndexMap };
+};
 
-  // Build rows
-  const rows: QueryRow[] = [];
-  const columnTypeNames: string[] = Array.from({
-    length: allColumns.length,
-  }).map(() => "TEXT");
+// Builds a single QueryRow from an ES hit document.
+const buildESHitRow = (
+  hit: Record<string, unknown>,
+  metaFields: string[],
+  columnCount: number,
+  columnIndexMap: Map<string, number>,
+  columnTypeNames: string[]
+): QueryRow => {
+  const values: RowValue[] = Array.from({ length: columnCount }).map(() =>
+    createProto(RowValueSchema, {
+      kind: { case: "nullValue", value: NullValue.NULL_VALUE },
+    })
+  );
 
-  for (const hit of hitsArray) {
-    const values: RowValue[] = Array.from({ length: allColumns.length }).map(
-      () =>
-        createProto(RowValueSchema, {
-          kind: { case: "nullValue", value: NullValue.NULL_VALUE },
-        })
-    );
+  for (const field of metaFields) {
+    const idx = columnIndexMap.get(field);
+    if (idx === undefined) continue;
+    const val = hit[field];
+    if (val != null) {
+      const { value: formatted, type } = convertAnyToRowValue(val, false);
+      values[idx] = formatted;
+      columnTypeNames[idx] = type;
+    }
+  }
 
-    // Meta fields
-    for (const field of metaFields) {
-      const idx = columnIndexMap.get(field)!;
-      const val = hit[field];
-      if (val !== undefined && val !== null) {
-        const { value: formatted, type } = convertAnyToRowValue(val, false);
+  const source = hit._source;
+  if (source && typeof source === "object") {
+    for (const [key, val] of Object.entries(source)) {
+      const idx = columnIndexMap.get(key);
+      if (idx === undefined) continue;
+      if (val != null) {
+        const { value: formatted, type } = convertAnyToRowValue(val, true);
         values[idx] = formatted;
         columnTypeNames[idx] = type;
       }
     }
-
-    // _source fields
-    if (hit._source && typeof hit._source === "object") {
-      for (const [key, val] of Object.entries(hit._source)) {
-        const idx = columnIndexMap.get(key);
-        if (idx === undefined) continue;
-        if (val !== undefined && val !== null) {
-          const { value: formatted, type } = convertAnyToRowValue(
-            val as unknown,
-            true
-          );
-          values[idx] = formatted;
-          columnTypeNames[idx] = type;
-        }
-      }
-    }
-
-    rows.push(createProto(QueryRowSchema, { values }));
   }
+
+  return createProto(QueryRowSchema, { values });
+};
+
+/**
+ * Transforms an Elasticsearch _search QueryResult into a tabular format.
+ * Detects the "hits" column, extracts hits.hits[], and flattens each hit's
+ * _source fields into columns. Returns undefined if the result is not a
+ * search response.
+ */
+export const flattenElasticsearchSearchResult = (
+  result: QueryResult
+): QueryResult | undefined => {
+  const hitsArray = parseESHitsArray(result);
+  if (!hitsArray) return undefined;
+
+  const { metaFields, allColumns, columnIndexMap } =
+    discoverESColumns(hitsArray);
+  const columnTypeNames: string[] = Array.from({
+    length: allColumns.length,
+  }).map(() => "TEXT");
+
+  const rows = hitsArray.map((hit) =>
+    buildESHitRow(
+      hit as Record<string, unknown>,
+      metaFields,
+      allColumns.length,
+      columnIndexMap,
+      columnTypeNames
+    )
+  );
 
   return createProto(QueryResultSchema, {
     columnNames: allColumns,
