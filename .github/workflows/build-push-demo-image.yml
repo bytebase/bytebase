@@ -3,6 +3,9 @@ name: Build and Push Demo Image to GAR
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   GAR_LOCATION: us-central1
   GAR_REPOSITORY: bytebase

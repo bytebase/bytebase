@@ -7,6 +7,8 @@ on:
     paths-ignore:
       - 'proto/**'
 
+permissions: {}
+
 jobs:
   lint-protos:
     runs-on: ubuntu-latest

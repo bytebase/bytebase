@@ -9,6 +9,8 @@ on:
     paths-ignore:
       - 'frontend/**'
 
+permissions: {}
+
 jobs:
   static-checks:
     runs-on: ubuntu-latest

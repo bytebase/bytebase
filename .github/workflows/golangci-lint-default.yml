@@ -12,6 +12,8 @@ on:
       - 'go.mod'
       - 'proto/**/*.go'
 
+permissions: {}
+
 jobs:
   golangci-lint:
     runs-on: ubuntu-latest
