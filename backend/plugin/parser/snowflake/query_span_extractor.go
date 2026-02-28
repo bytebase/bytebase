@@ -195,7 +195,7 @@ func (q *querySpanExtractor) extractCTEFromWithExpression(withExpression parser.
 		if err != nil {
 			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commonTableExpression.GetStart().GetLine())
 		}
-		pseudoTable, err = q.applyCTEColumnList(normalizedCTEName, pseudoTable, commonTableExpression.Column_list())
+		pseudoTable, err = applyCTEColumnList(normalizedCTEName, pseudoTable, commonTableExpression.Column_list())
 		if err != nil {
 			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commonTableExpression.GetStart().GetLine())
 		}
@@ -219,7 +219,7 @@ func (q *querySpanExtractor) extractRecursiveCTE(cteName string, commonTableExpr
 	if err != nil {
 		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
 	}
-	anchorTableSource, err = q.applyCTEColumnList(cteName, anchorTableSource, commonTableExpression.Column_list())
+	anchorTableSource, err = applyCTEColumnList(cteName, anchorTableSource, commonTableExpression.Column_list())
 	if err != nil {
 		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
 	}
@@ -230,7 +230,7 @@ func (q *querySpanExtractor) extractRecursiveCTE(cteName string, commonTableExpr
 		if err != nil {
 			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
 		}
-		recursivePartTableSource, err = q.applyCTEColumnList(cteName, recursivePartTableSource, commonTableExpression.Column_list())
+		recursivePartTableSource, err = applyCTEColumnList(cteName, recursivePartTableSource, commonTableExpression.Column_list())
 		if err != nil {
 			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
 		}
@@ -277,7 +277,7 @@ func (q *querySpanExtractor) extractAnchorPseudoTableFromSelectStatementInParent
 	return nil, errors.Errorf("failed to extract anchor statement near line %d", ctx.GetStart().GetLine())
 }
 
-func (q *querySpanExtractor) applyCTEColumnList(cteName string, pseudoTable *base.PseudoTable, columnList parser.IColumn_listContext) (*base.PseudoTable, error) {
+func applyCTEColumnList(cteName string, pseudoTable *base.PseudoTable, columnList parser.IColumn_listContext) (*base.PseudoTable, error) {
 	if pseudoTable == nil {
 		pseudoTable = &base.PseudoTable{
 			Name:    cteName,
