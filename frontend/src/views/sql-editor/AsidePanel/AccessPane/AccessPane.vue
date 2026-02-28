@@ -2,7 +2,7 @@
   <div class="relative w-full h-full flex flex-col justify-start items-start gap-y-1">
     <div
       ref="containerRef"
-      class="w-full px-1 flex flex-wrap items-center gap-x-2 gap-y-1"
+      class="w-full px-1 flex flex-wrap items-center gap-x-2 gap-y-2"
     >
       <AdvancedSearch
         class="flex-1"
@@ -21,6 +21,7 @@
         :permissions="[
           'bb.accessGrants.create'
         ]"
+        class="ml-auto"
       >
         <NButton
           ghost
@@ -89,17 +90,11 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { NButton } from "naive-ui";
-import { computed, h, nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, nextTick, ref, watch } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import type {
-  ScopeOption,
-  ValueOption,
-} from "@/components/AdvancedSearch/types";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
-import { RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
   type AccessFilter,
@@ -120,7 +115,7 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantFilterStatus,
-  extractDatabaseResourceName,
+  getAccessSearchOptions,
   getDefaultPagination,
   type SearchParams,
 } from "@/utils";
@@ -134,11 +129,9 @@ import AccessGrantRequestDrawer from "./AccessGrantRequestDrawer.vue";
 
 const PAGE_SIZE = getDefaultPagination();
 
-const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const editorStore = useSQLEditorStore();
 const tabStore = useSQLEditorTabStore();
-const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
 const issueStore = useIssueV1Store();
 const { instance: currentInstance } = useConnectionOfCurrentSQLEditorTab();
@@ -187,68 +180,11 @@ const searchParams = ref<SearchParams>({
   ],
 });
 
-const scopeOptions = computed((): ScopeOption[] => {
-  const options: ScopeOption[] = [
-    {
-      id: "status",
-      title: t("common.status"),
-      allowMultiple: true,
-      options: [
-        {
-          value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
-          keywords: ["active"],
-          render: () => t("common.active"),
-        },
-        {
-          value: AccessGrant_Status[AccessGrant_Status.PENDING],
-          keywords: ["pending"],
-          render: () => t("common.pending"),
-        },
-        {
-          value: "EXPIRED",
-          keywords: ["expired"],
-          render: () => t("sql-editor.expired"),
-        },
-        {
-          value: AccessGrant_Status[AccessGrant_Status.REVOKED],
-          keywords: ["revoked"],
-          render: () => t("common.revoked"),
-        },
-      ],
-    },
-  ];
-  const project = editorStore.project;
-  if (project) {
-    options.push({
-      id: "database",
-      title: t("common.database"),
-      search: ({ keyword, nextPageToken: pageToken }) =>
-        databaseStore
-          .fetchDatabases({
-            parent: project,
-            pageToken: pageToken,
-            pageSize: PAGE_SIZE,
-            filter: { query: keyword },
-          })
-          .then((resp) => ({
-            nextPageToken: resp.nextPageToken,
-            options: resp.databases.map<ValueOption>((db) => {
-              const { database: dbName } = extractDatabaseResourceName(db.name);
-              return {
-                value: db.name,
-                keywords: [dbName, db.name],
-                render: () =>
-                  h(RichDatabaseName, {
-                    database: db,
-                    showInstance: true,
-                    showEngineIcon: true,
-                  }),
-              };
-            }),
-          })),
-    });
-  }
-  return options;
+const scopeOptions = computed(() => {
+  return getAccessSearchOptions({
+    project: editorStore.project,
+    showCreator: false,
+  });
 });
 
 const selectedStatuses = computed(

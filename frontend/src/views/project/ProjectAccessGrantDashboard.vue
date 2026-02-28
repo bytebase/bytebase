@@ -81,16 +81,9 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
 import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
-import type {
-  ScopeOption,
-  ValueOption,
-} from "@/components/AdvancedSearch/types";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import YouTag from "@/components/misc/YouTag.vue";
 import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
-import { RichDatabaseName } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { mapSorterStatus } from "@/components/v2/Model/utils";
 import {
@@ -98,26 +91,19 @@ import {
   featureToRef,
   pushNotification,
   useAccessGrantStore,
-  useCurrentUserV1,
-  useDatabaseV1Store,
   useProjectByName,
-  useUserStore,
 } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import {
-  type AccessGrant,
-  AccessGrant_Status,
-} from "@/types/proto-es/v1/access_grant_service_pb";
+import { type AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantFilterStatus,
-  extractDatabaseResourceName,
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
   getAccessGrantExpirationText,
   getAccessGrantStatusTagType,
-  getDefaultPagination,
+  getAccessSearchOptions,
   getTsRangeFromSearchParams,
   hasProjectPermissionV2,
   type SearchParams,
@@ -127,7 +113,6 @@ import {
   getValuesFromSearchParams,
 } from "@/utils/v1/advanced-search/common";
 
-const PAGE_SIZE = getDefaultPagination();
 const ORDER_KEYS = ["creator", "create_time", "expire_time"];
 
 const props = defineProps<{
@@ -137,9 +122,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
-const me = useCurrentUserV1();
-const userStore = useUserStore();
-const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
 const showTimeRange = ref(false);
 
@@ -164,91 +146,12 @@ const searchParams = ref<SearchParams>({
   scopes: [],
 });
 
-const scopeOptions = computed((): ScopeOption[] => [
-  {
-    id: "status",
-    title: t("common.status"),
-    allowMultiple: true,
-    options: [
-      {
-        value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
-        keywords: ["active"],
-        render: () => t("common.active"),
-      },
-      {
-        value: AccessGrant_Status[AccessGrant_Status.PENDING],
-        keywords: ["pending"],
-        render: () => t("common.pending"),
-      },
-      {
-        value: "EXPIRED",
-        keywords: ["expired"],
-        render: () => t("sql-editor.expired"),
-      },
-      {
-        value: AccessGrant_Status[AccessGrant_Status.REVOKED],
-        keywords: ["revoked"],
-        render: () => t("common.revoked"),
-      },
-    ],
-  },
-  {
-    id: "creator",
-    title: t("common.creator"),
-    search: ({ keyword, nextPageToken: pageToken }) =>
-      userStore
-        .fetchUserList({
-          pageToken,
-          pageSize: PAGE_SIZE,
-          filter: { query: keyword },
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: resp.users.map<ValueOption>((user) => ({
-            value: user.email,
-            keywords: [user.email, user.title],
-            render: () => {
-              const children = [
-                h(BBAvatar, { size: "TINY", username: user.title }),
-                h("span", user.title),
-              ];
-              if (user.name === me.value.name) {
-                children.push(h(YouTag));
-              }
-              return h("div", { class: "flex items-center gap-x-1" }, children);
-            },
-          })),
-        })),
-  },
-  {
-    id: "database",
-    title: t("common.database"),
-    search: ({ keyword, nextPageToken: pageToken }) =>
-      databaseStore
-        .fetchDatabases({
-          parent: projectName.value,
-          pageToken: pageToken,
-          pageSize: PAGE_SIZE,
-          filter: { query: keyword },
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: resp.databases.map<ValueOption>((db) => {
-            const { database: dbName } = extractDatabaseResourceName(db.name);
-            return {
-              value: db.name,
-              keywords: [dbName, db.name],
-              render: () =>
-                h(RichDatabaseName, {
-                  database: db,
-                  showInstance: true,
-                  showEngineIcon: true,
-                }),
-            };
-          }),
-        })),
-  },
-]);
+const scopeOptions = computed(() => {
+  return getAccessSearchOptions({
+    project: project.value.name,
+    showCreator: true,
+  });
+});
 
 const filter = computed((): AccessFilter => {
   const f: AccessFilter = {};

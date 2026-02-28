@@ -13,7 +13,7 @@ import {
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { extractSQLRowValuePlain, isDescendantOf } from "@/utils";
+import { extractSQLRowValuePlain } from "@/utils";
 import { type SQLResultViewContext } from "../../context";
 import {
   type BinaryFormatContext,
@@ -21,8 +21,6 @@ import {
   formatBinaryValue,
 } from "./binary-format-store";
 import type { ResultTableColumn, ResultTableRow } from "./types";
-
-const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
 
 export type SelectionState = {
   rows: number[];
@@ -124,14 +122,6 @@ export const provideSelectionContext = ({
       columns: [column],
     };
   };
-
-  useEventListener("click", (e) => {
-    if (copying.value) return;
-    if (isDescendantOf(e.target as Element, `.${PREVENT_DISMISS_SELECTION}`)) {
-      return;
-    }
-    deselect();
-  });
 
   const getFormattedValue = ({
     value,

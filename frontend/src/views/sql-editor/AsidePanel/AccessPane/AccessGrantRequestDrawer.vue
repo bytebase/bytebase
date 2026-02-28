@@ -68,7 +68,8 @@
             type="datetime"
             :is-date-disabled="isDateDisabled"
             clearable
-            :actions="['clear', 'confirm']"
+            :actions="null"
+            :update-value-on-close="true"
           />
         </div>
 
