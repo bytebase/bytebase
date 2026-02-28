@@ -79,7 +79,10 @@
                 <span class="text-sm font-medium">
                   {{ getCheckTypeLabel(group.type) }}
                 </span>
-                <NTooltip v-if="getCheckTypeDescription(group.type)">
+                <NTooltip
+                  v-if="getCheckTypeDescription(group.type)"
+                  style="max-width: 20rem"
+                >
                   <template #trigger>
                     <CircleQuestionMarkIcon
                       class="w-4 h-4 text-control-light"

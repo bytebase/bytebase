@@ -16,7 +16,7 @@
       <div class="flex text-main items-center gap-x-1">
         {{ $t("settings.members.select-account", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />
-        <NTooltip>
+        <NTooltip style="max-width: 20rem">
           <template #trigger>
             <CircleHelpIcon class="w-4 textinfolabel" />
           </template>

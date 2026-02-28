@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between gap-2">
       <div class="flex flex-row items-center gap-2">
         <h3 class="text-base">{{ $t("plan.checks.self") }}</h3>
-        <NTooltip v-if="isStatementOversized">
+        <NTooltip v-if="isStatementOversized" style="max-width: 20rem">
           <template #trigger>
             <NTag type="warning" round size="tiny">
               <template #icon>
@@ -38,7 +38,10 @@
         @click="openChecksDrawer($event)"
       />
 
-      <NTooltip v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0">
+      <NTooltip
+        v-if="checksOfSelectedSpec.length > 0 && affectedRows > 0"
+        style="max-width: 20rem"
+      >
         <template #trigger>
           <NTag round :bordered="false">
             <div class="flex items-center gap-1">

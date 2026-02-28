@@ -50,7 +50,10 @@
         <span class="text-success">{{ $t("common.success") }}</span>
       </span>
 
-      <NTooltip v-if="checkResults && affectedRows > 0">
+      <NTooltip
+        v-if="checkResults && affectedRows > 0"
+        style="max-width: 20rem"
+      >
         <template #trigger>
           <NTag round :bordered="false">
             <div class="flex items-center gap-1">

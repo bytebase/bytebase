@@ -12,7 +12,10 @@
       </span>
       <div v-else class="flex flex-row justify-start items-center gap-2">
         <SQLCheckBadge :advices="checkResult.advices" />
-        <NTooltip v-if="checkResult.affectedRows > 0">
+        <NTooltip
+          v-if="checkResult.affectedRows > 0"
+          style="max-width: 20rem"
+        >
           <template #trigger>
             <NTag round>
               <span class="opacity-80"
