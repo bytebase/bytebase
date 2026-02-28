@@ -112,7 +112,7 @@ func setupSampleInstance(ctx context.Context, databaseName string, port int, sam
 		return nil
 	}
 
-	if _, err := defaultDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName)); err != nil {
+	if _, err := defaultDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName)); err != nil { // NOSONAR(go:S2077) databaseName is a hardcoded constant from envDB map, not user input
 		return errors.Wrapf(err, "failed to create sample database")
 	}
 

@@ -427,12 +427,12 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 			explain = "SHOWPLAN_XML"
 		}
 		// Enable explain mode once for all statements
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s ON", explain)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s ON", explain)); err != nil { // NOSONAR(go:S2077) explain is a hardcoded constant ("SHOWPLAN_ALL" or "SHOWPLAN_XML"), not user input
 			return nil, errors.Wrap(err, "failed to enable explain mode")
 		}
 		// Ensure explain is turned off after processing
 		defer func() {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s OFF", explain)); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s OFF", explain)); err != nil { // NOSONAR(go:S2077) explain is a hardcoded constant ("SHOWPLAN_ALL" or "SHOWPLAN_XML"), not user input
 				slog.Warn("failed to disable explain mode", log.BBError(err))
 			}
 		}()
@@ -510,7 +510,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 
 	refinedBatch := batchBuf.String()
 	retmsg := &sqlexp.ReturnMessage{}
-	rows, qe := conn.QueryContext(ctx, refinedBatch, retmsg)
+	rows, qe := conn.QueryContext(ctx, refinedBatch, retmsg) // NOSONAR(go:S2077) intentional execution of user-authored SQL in SQL Editor
 	if qe != nil {
 		return nil, qe
 	}

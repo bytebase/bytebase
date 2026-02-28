@@ -340,6 +340,7 @@ func migrateAuditLogBatch(ctx context.Context, conn *sql.Conn, userMap map[int]s
 	}
 
 	// Execute bulk update: UPDATE audit_log SET ... FROM (VALUES ...) AS v(id, new_user) WHERE audit_log.id = v.id
+	// NOSONAR(go:S2077) only parameterized placeholders ($N) in Sprintf; actual data passed via valueArgs
 	updateSQL := fmt.Sprintf(`
 		UPDATE audit_log
 		SET payload = jsonb_set(payload, '{user}', to_jsonb(v.new_user))
