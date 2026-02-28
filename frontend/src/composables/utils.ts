@@ -8,8 +8,13 @@ import {
 } from "lossless-json";
 import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
-import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
+import type {
+  QueryResult,
+  QueryRow,
+  RowValue,
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
+  QueryResultSchema,
   QueryRowSchema,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
@@ -297,6 +302,104 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
     result.columnNames = columns;
     result.columnTypeNames = columnTypeNames;
   }
+};
+
+/**
+ * Transforms an Elasticsearch _search QueryResult into a tabular format.
+ * Detects the "hits" column, extracts hits.hits[], and flattens each hit's
+ * _source fields into columns. Returns undefined if the result is not a
+ * search response.
+ */
+export const flattenElasticsearchSearchResult = (
+  result: QueryResult
+): QueryResult | undefined => {
+  // Find the "hits" column
+  const hitsColIdx = result.columnNames.indexOf("hits");
+  if (hitsColIdx === -1 || result.rows.length === 0) return undefined;
+
+  const hitsCell = result.rows[0]?.values[hitsColIdx];
+  if (!hitsCell || hitsCell.kind.case !== "stringValue") return undefined;
+
+  let hitsObj: Record<string, unknown>;
+  try {
+    hitsObj = JSON.parse(hitsCell.kind.value);
+  } catch {
+    return undefined;
+  }
+
+  const hitsArray = hitsObj?.hits;
+  if (!Array.isArray(hitsArray) || hitsArray.length === 0) return undefined;
+
+  // Discover all columns: _index, _id, _score first, then union of all _source keys
+  const metaFields = ["_index", "_id", "_score"];
+  const sourceKeySet = new Set<string>();
+  for (const hit of hitsArray) {
+    if (hit._source && typeof hit._source === "object") {
+      for (const key of Object.keys(hit._source)) {
+        sourceKeySet.add(key);
+      }
+    }
+  }
+  const sourceKeys = [...sourceKeySet].sort();
+  const allColumns = [...metaFields, ...sourceKeys];
+
+  const columnIndexMap = new Map<string, number>();
+  for (let i = 0; i < allColumns.length; i++) {
+    columnIndexMap.set(allColumns[i], i);
+  }
+
+  // Build rows
+  const rows: QueryRow[] = [];
+  const columnTypeNames: string[] = Array.from({
+    length: allColumns.length,
+  }).map(() => "TEXT");
+
+  for (const hit of hitsArray) {
+    const values: RowValue[] = Array.from({ length: allColumns.length }).map(
+      () =>
+        createProto(RowValueSchema, {
+          kind: { case: "nullValue", value: NullValue.NULL_VALUE },
+        })
+    );
+
+    // Meta fields
+    for (const field of metaFields) {
+      const idx = columnIndexMap.get(field)!;
+      const val = hit[field];
+      if (val !== undefined && val !== null) {
+        const { value: formatted, type } = convertAnyToRowValue(val, false);
+        values[idx] = formatted;
+        columnTypeNames[idx] = type;
+      }
+    }
+
+    // _source fields
+    if (hit._source && typeof hit._source === "object") {
+      for (const [key, val] of Object.entries(hit._source)) {
+        const idx = columnIndexMap.get(key);
+        if (idx === undefined) continue;
+        if (val !== undefined && val !== null) {
+          const { value: formatted, type } = convertAnyToRowValue(
+            val as unknown,
+            true
+          );
+          values[idx] = formatted;
+          columnTypeNames[idx] = type;
+        }
+      }
+    }
+
+    rows.push(createProto(QueryRowSchema, { values }));
+  }
+
+  return createProto(QueryResultSchema, {
+    columnNames: allColumns,
+    columnTypeNames,
+    rows,
+    rowsCount: BigInt(rows.length),
+    statement: result.statement,
+    latency: result.latency,
+  });
 };
 
 const getNoSQLColumns = (rows: QueryRow[]) => {
