@@ -2,8 +2,20 @@
 package common
 
 import (
+	"math"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+func safeIntToInt32(v int) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
+}
 
 // ANTLRPosition is a position in a text expressed as one-based line and
 // zero-based column character (code point) offset integrated with ANTLR4.
@@ -54,28 +66,16 @@ func ConvertANTLRPositionToPosition(a *ANTLRPosition, text string) *storepb.Posi
 func ConvertANTLRLineToPosition(line int) *storepb.Position {
 	// ANTLR line numbers are 1-based, and Position uses 1-based line numbering.
 	// Just pass through the value, handling the 0 case for safety.
-	positionLine := line
-	if line < 1 {
-		positionLine = 1
-	}
+	positionLine := max(line, 1)
 	return &storepb.Position{
-		Line: int32(positionLine),
+		Line: safeIntToInt32(positionLine),
 	}
 }
 
-func ConvertTiDBParserErrorPositionToPosition(line, column int) *storepb.Position {
-	if line < 1 {
-		line = 1
-	}
-	if column < 1 {
-		column = 1
-	}
-
-	// TiDB parser provides 1-based line and column
-	// Store them as 1-based in Position
+func ConvertTiDBParserErrorPositionToPosition(line, column int32) *storepb.Position {
 	return &storepb.Position{
-		Line:   int32(line),
-		Column: int32(column),
+		Line:   max(line, 1),
+		Column: max(column, 1),
 	}
 }
 

@@ -159,16 +159,16 @@ func convertParserError(parserErr error) error {
 	if len(res[0]) != 3 {
 		return parserErr
 	}
-	line, err := strconv.Atoi(res[0][1])
+	line, err := strconv.ParseInt(res[0][1], 10, 32)
 	if err != nil {
 		return parserErr
 	}
-	column, err := strconv.Atoi(res[0][2])
+	column, err := strconv.ParseInt(res[0][2], 10, 32)
 	if err != nil {
 		return parserErr
 	}
 	return &base.SyntaxError{
-		Position: common.ConvertTiDBParserErrorPositionToPosition(line, column),
+		Position: common.ConvertTiDBParserErrorPositionToPosition(int32(line), int32(column)),
 		Message:  parserErr.Error(),
 	}
 }

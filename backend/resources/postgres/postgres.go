@@ -33,7 +33,7 @@ func start(port int, dataDir string, serverLog bool) (err error) {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uid},
 		}
 	}
 
@@ -59,7 +59,7 @@ func stop(pgDataDir string) error {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uid},
 		}
 	}
 
@@ -134,7 +134,7 @@ func initDB(pgDataDir, pgUser string) error {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uid},
 		}
 	}
 	// Suppress log spam
@@ -149,7 +149,7 @@ func initDB(pgDataDir, pgUser string) error {
 	return nil
 }
 
-func shouldSwitchUser() (int, int, bool, error) {
+func shouldSwitchUser() (uint32, uint32, bool, error) {
 	sameUser := true
 	bytebaseUser, err := user.Current()
 	if err != nil {
@@ -173,5 +173,5 @@ func shouldSwitchUser() (int, int, bool, error) {
 	if err != nil {
 		return 0, 0, false, err
 	}
-	return int(uid), int(gid), sameUser, nil
+	return uint32(uid), uint32(gid), sameUser, nil
 }

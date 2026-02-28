@@ -899,7 +899,7 @@ func (p *parser) string() (string, error) {
 						if err != nil {
 							break
 						}
-						uffff = (uffff << 4) + int(hex)
+						uffff = (uffff << 4) + int(uint32(hex))
 					}
 					// Treat uffff as UTF-16 encoded rune.
 					s += string(rune(uffff))

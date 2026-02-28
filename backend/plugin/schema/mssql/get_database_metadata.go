@@ -365,15 +365,15 @@ func parseSpatialIndexOption(optionCtx parser.ISpatial_index_optionContext, inde
 				densityPart := strings.TrimSpace(parts[1])
 
 				// Extract level number from "LEVEL_1", "LEVEL_2", etc.
-				levelNum := 0
+				var levelNum int32
 				if strings.HasPrefix(strings.ToUpper(levelPart), "LEVEL_") {
-					if num, err := strconv.Atoi(levelPart[6:]); err == nil {
-						levelNum = num
+					if num, err := strconv.ParseInt(levelPart[6:], 10, 32); err == nil {
+						levelNum = int32(num)
 					}
 				}
 
 				gridLevels = append(gridLevels, &storepb.GridLevel{
-					Level:   int32(levelNum),
+					Level:   levelNum,
 					Density: strings.ToUpper(densityPart),
 				})
 			}
@@ -385,7 +385,7 @@ func parseSpatialIndexOption(optionCtx parser.ISpatial_index_optionContext, inde
 	// Handle CELLS_PER_OBJECT
 	if optionCtx.CELLS_PER_OBJECT() != nil {
 		if decimalCtx := optionCtx.DECIMAL(); decimalCtx != nil {
-			if cellsPerObject, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+			if cellsPerObject, err := strconv.ParseInt(decimalCtx.GetText(), 10, 32); err == nil {
 				index.SpatialConfig.Tessellation.CellsPerObject = int32(cellsPerObject)
 			}
 		}
@@ -408,7 +408,7 @@ func parseRebuildIndexOption(rebuildCtx parser.IRebuild_index_optionContext, ind
 	// Handle FILLFACTOR
 	if rebuildCtx.FILLFACTOR() != nil {
 		if decimalCtx := rebuildCtx.DECIMAL(); decimalCtx != nil {
-			if fillFactor, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+			if fillFactor, err := strconv.ParseInt(decimalCtx.GetText(), 10, 32); err == nil {
 				index.SpatialConfig.Storage.Fillfactor = int32(fillFactor)
 			}
 		}
@@ -445,7 +445,7 @@ func parseRebuildIndexOption(rebuildCtx parser.IRebuild_index_optionContext, ind
 	// Handle MAXDOP
 	if rebuildCtx.MAXDOP() != nil {
 		if decimalCtx := rebuildCtx.DECIMAL(); decimalCtx != nil {
-			if maxdop, err := strconv.Atoi(decimalCtx.GetText()); err == nil {
+			if maxdop, err := strconv.ParseInt(decimalCtx.GetText(), 10, 32); err == nil {
 				index.SpatialConfig.Storage.Maxdop = int32(maxdop)
 			}
 		}

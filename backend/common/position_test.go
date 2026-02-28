@@ -47,8 +47,8 @@ func TestConvertANTLRPositionToPosition(t *testing.T) {
 func TestConvertTiDBParserErrorPositionToPosition(t *testing.T) {
 	testCases := []struct {
 		name         string
-		line         int
-		column       int
+		line         int32
+		column       int32
 		expectedLine int32
 		expectedCol  int32
 	}{
