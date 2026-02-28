@@ -38,6 +38,12 @@
         </span>
       </div>
       <div class="flex justify-between items-center shrink-0 gap-x-2">
+        <div v-if="isESSearchResult" class="flex items-center">
+          <NSwitch v-model:value="esTableView" size="small" />
+          <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
+            {{ $t("sql-editor.table-view") }}
+          </span>
+        </div>
         <div class="flex items-center">
           <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
@@ -248,6 +254,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { useLocalStorage } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
 import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
@@ -266,6 +273,7 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { CopyButton, Drawer, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { flattenElasticsearchSearchResult } from "@/composables/utils";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import type {
@@ -288,6 +296,7 @@ import {
   isNullOrUndefined,
   type SearchParams,
 } from "@/utils";
+import { STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW } from "@/utils/storage-keys";
 import {
   provideSQLResultViewContext,
   type SQLResultViewContext,
@@ -383,9 +392,9 @@ const viewMode = computed((): ViewMode => {
 });
 
 const columns = computed((): ResultTableColumn[] => {
-  return props.result.columnNames.map<ResultTableColumn>(
+  return activeResult.value.columnNames.map<ResultTableColumn>(
     (columnName, index) => {
-      const columnType = props.result.columnTypeNames[index];
+      const columnType = activeResult.value.columnTypeNames[index];
       return {
         id: columnName,
         name: columnName,
@@ -575,7 +584,7 @@ const rows = computed((): ResultTableRow[] => {
   const sortState = state.sortState;
 
   if (!sortState || !sortState.direction) {
-    return props.result.rows.map((item, index) => ({
+    return activeResult.value.rows.map((item, index) => ({
       key: index,
       item,
     }));
@@ -584,7 +593,7 @@ const rows = computed((): ResultTableRow[] => {
   const { columnIndex, direction } = sortState;
   const columnType = columns.value[columnIndex]?.columnType ?? "";
 
-  return props.result.rows
+  return activeResult.value.rows
     .map((item, index) => ({
       key: index,
       item,
@@ -636,6 +645,26 @@ provideSelectionContext({
 });
 
 const engine = computed(() => getInstanceResource(props.database).engine);
+
+const esTableView = useLocalStorage(STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW, true);
+
+const flattenedESResult = computed(() => {
+  if (engine.value !== Engine.ELASTICSEARCH) return undefined;
+  return flattenElasticsearchSearchResult(props.result);
+});
+
+const isESSearchResult = computed(() => flattenedESResult.value !== undefined);
+
+const activeResult = computed(() => {
+  if (isESSearchResult.value && esTableView.value) {
+    return flattenedESResult.value!;
+  }
+  return props.result;
+});
+
+watch(esTableView, () => {
+  state.sortState = undefined;
+});
 
 const showVisualizeButton = computed((): boolean => {
   return (
