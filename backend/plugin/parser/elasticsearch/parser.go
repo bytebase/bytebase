@@ -858,7 +858,7 @@ func (p *parser) array() ([]any, error) {
 
 func (p *parser) string() (string, error) {
 	s := ""
-	uffff := 0
+	var uffff int32
 	if p.ch == '"' {
 		if p.peek(0) == '"' && p.peek(1) == '"' {
 			// literal
@@ -899,7 +899,7 @@ func (p *parser) string() (string, error) {
 						if err != nil {
 							break
 						}
-						uffff = (uffff << 4) + int(uint32(hex))
+						uffff = (uffff << 4) | int32(hex&0xF)
 					}
 					// Treat uffff as UTF-16 encoded rune.
 					s += string(rune(uffff))

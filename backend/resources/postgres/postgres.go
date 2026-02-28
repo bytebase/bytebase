@@ -4,6 +4,7 @@ package postgres
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"os/exec"
 	"os/user"
@@ -113,6 +114,9 @@ func initDB(pgDataDir, pgUser string) error {
 		return err
 	}
 	if !sameUser {
+		if uid > math.MaxInt32 || gid > math.MaxInt32 {
+			return errors.Errorf("uid %d or gid %d exceeds maximum safe value", uid, gid)
+		}
 		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
 		for _, dir := range dirListToChown {
 			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
