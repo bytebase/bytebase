@@ -2014,6 +2014,7 @@
     "no-queriable-database": "没有可查询的数据库",
     "rows": "条记录",
     "vertical-display": "竖向展示",
+    "table-view": "Table view",
     "no-history-found": "暂无历史记录",
     "search-history-by-statement": "搜索 SQL 语句",
     "binary-format": "二进制格式",

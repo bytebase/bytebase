@@ -2014,6 +2014,7 @@
     "no-queriable-database": "No hay base de datos consultable",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
+    "table-view": "Table view",
     "no-history-found": "No se encontró historial",
     "search-history-by-statement": "Búsqueda por enunciado",
     "binary-format": "Formato binario",
