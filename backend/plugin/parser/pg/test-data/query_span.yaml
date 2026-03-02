@@ -2910,3 +2910,107 @@
           table: users
           column: ""
     predicatecolumns: []
+- description: jsonb_array_elements as table source
+  statement: SELECT * FROM t, jsonb_array_elements(a) AS elems WHERE id = 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: value
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+    predicatecolumns: []
+- description: jsonb_array_elements_text as table source with alias
+  statement: SELECT * FROM t CROSS JOIN LATERAL jsonb_array_elements_text(a) AS part WHERE id = 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: value
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+    predicatecolumns: []

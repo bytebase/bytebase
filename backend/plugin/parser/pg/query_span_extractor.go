@@ -26,6 +26,10 @@ const (
 	jsonEach               = "json_each"
 	jsonbEachText          = "jsonb_each_text"
 	jsonEachText           = "json_each_text"
+	jsonbArrayElements     = "jsonb_array_elements"
+	jsonArrayElements      = "json_array_elements"
+	jsonbArrayElementsText = "jsonb_array_elements_text"
+	jsonArrayElementsText  = "json_array_elements_text"
 	jsonPopulateRecord     = "json_populate_record"
 	jsonbPopulateRecord    = "jsonb_populate_record"
 	jsonPopulateRecordset  = "json_populate_recordset"
@@ -3782,6 +3786,35 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName st
 			})
 		}
 		tableSource.Name = tableName
+		return tableSource, nil
+	case jsonbArrayElements, jsonArrayElements, jsonbArrayElementsText, jsonArrayElementsText:
+		// jsonb_array_elements returns a single "value" column (unlike jsonb_each which returns key + value).
+		// SELECT * FROM t, jsonb_array_elements(a) AS elems;
+		var tableSource base.TableSource = &base.PseudoTable{
+			Name: "",
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          "value",
+					SourceColumns: make(base.SourceColumnSet, 0),
+				},
+			},
+		}
+		tableSource, err := applyFuncAliasClauseToTableSource(tableSource, alias)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to apply alias clause to %s", funcName)
+		}
+
+		if len(args) == 0 {
+			return nil, errors.Errorf("unexpected empty args for function %s", funcName)
+		}
+		fieldArg := args[0]
+		set, err := q.extractSourceColumnSetFromNode(fieldArg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract source columns from argument of %s", funcName)
+		}
+		for i := range tableSource.GetQuerySpanResult() {
+			tableSource.GetQuerySpanResult()[i].SourceColumns, _ = base.MergeSourceColumnSet(tableSource.GetQuerySpanResult()[i].SourceColumns, set)
+		}
 		return tableSource, nil
 	case jsonPopulateRecord, jsonbPopulateRecord, jsonPopulateRecordset, jsonbPopulateRecordset,
 		jsonToRecord, jsonbToRecord:
