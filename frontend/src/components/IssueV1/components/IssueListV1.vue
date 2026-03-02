@@ -17,7 +17,7 @@
         <NCheckbox
           v-if="showSelection"
           class="shrink-0 mt-1"
-          :checked="state.selectedIssueNameList.has(issue.name)"
+          :checked="selectedIssueNames.has(issue.name)"
           @update:checked="toggleSelection(issue)"
           @click.stop
         />
@@ -38,7 +38,7 @@
               </div>
               <a
                 :href="issueUrl(issue)"
-                class="font-medium text-main text-base truncate"
+                class="font-medium text-main text-base truncate hover:underline"
                 @click.stop
                 v-html="highlight(issue.title)"
               ></a>
@@ -68,7 +68,18 @@
                 )
               }}</span>
               <span>&middot;</span>
-              <span>{{ creatorName(issue) }}</span>
+              <router-link
+                :to="{
+                  name: WORKSPACE_ROUTE_USER_PROFILE,
+                  params: {
+                    principalEmail: creatorOfIssue(issue).email,
+                  },
+                }"
+                class="hover:underline"
+                @click.stop
+              >
+                {{ creatorOfIssue(issue).title }}
+              </router-link>
               <template v-if="showProject">
                 <span>&middot;</span>
                 <router-link
@@ -96,65 +107,7 @@
           </div>
 
           <!-- Right: approval status tag -->
-          <NTag
-            v-if="issue.approvalStatus === Issue_ApprovalStatus.CHECKING"
-            size="small"
-            round
-            class="shrink-0 mt-0.5"
-          >
-            {{ t("custom-approval.issue-review.generating-approval-flow") }}
-          </NTag>
-          <NTag
-            v-else-if="
-              issue.approvalStatus === Issue_ApprovalStatus.APPROVED
-            "
-            size="small"
-            round
-            type="success"
-            class="shrink-0 mt-0.5"
-          >
-            {{ t("issue.table.approved") }}
-          </NTag>
-          <NTag
-            v-else-if="
-              issue.approvalStatus === Issue_ApprovalStatus.REJECTED
-            "
-            size="small"
-            round
-            type="warning"
-            class="shrink-0 mt-0.5"
-          >
-            {{ t("custom-approval.approval-flow.issue-review.sent-back") }}
-          </NTag>
-          <div
-            v-else-if="
-              issue.approvalStatus === Issue_ApprovalStatus.PENDING &&
-              totalSteps(issue) > 0
-            "
-            class="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-0.5"
-          >
-            <NTag size="small" round>
-              {{
-                t("issue.table.approval-progress", {
-                  approved: issue.approvers.length,
-                  total: totalSteps(issue),
-                })
-              }}
-            </NTag>
-            <span
-              v-if="currentRoleName(issue)"
-              class="text-xs text-control-light whitespace-nowrap sm:mt-0.5"
-            >
-              {{
-                t("issue.table.waiting-role", {
-                  role: currentRoleName(issue),
-                })
-              }}
-            </span>
-          </div>
-          <NTag v-else size="small" round class="shrink-0 mt-0.5">
-            {{ t("custom-approval.approval-flow.skip") }}
-          </NTag>
+          <IssueApprovalStatus :issue="issue" />
         </div>
       </div>
     </NSpin>
@@ -171,18 +124,16 @@
 
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
-import { NCheckbox, NSpin, NTag } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { NCheckbox, NSpin } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
   getHighlightHTMLByRegExp,
@@ -191,12 +142,9 @@ import {
   projectOfIssue,
 } from "@/utils";
 import BatchIssueActionsV1 from "./BatchIssueActionsV1.vue";
+import IssueApprovalStatus from "./IssueApprovalStatus.vue";
 import { getValidIssueLabels } from "./IssueLabelSelector.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
-
-interface LocalState {
-  selectedIssueNameList: Set<string>;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -217,15 +165,12 @@ const props = withDefaults(
   }
 );
 
-const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
-const state = reactive<LocalState>({
-  selectedIssueNameList: new Set(),
-});
 
 const listRef = ref<HTMLDivElement>();
 const isListInViewport = useElementVisibilityInScrollParent(listRef);
+const selectedIssueNames = ref(new Set<string>());
 
 // Sorting: matching issues first when searching, then by ID descending
 const sortedIssueList = computed(() => {
@@ -248,39 +193,37 @@ const sortedIssueList = computed(() => {
 // Selection
 const selectedIssueList = computed(() => {
   return props.issueList.filter((issue) =>
-    state.selectedIssueNameList.has(issue.name)
+    selectedIssueNames.value.has(issue.name)
   );
 });
 
 const toggleSelection = (issue: Issue) => {
-  if (state.selectedIssueNameList.has(issue.name)) {
-    state.selectedIssueNameList.delete(issue.name);
+  if (selectedIssueNames.value.has(issue.name)) {
+    selectedIssueNames.value.delete(issue.name);
   } else {
-    state.selectedIssueNameList.add(issue.name);
+    selectedIssueNames.value.add(issue.name);
   }
 };
 
 watch(
   () => props.issueList,
   (list) => {
-    const oldIssueNames = Array.from(state.selectedIssueNameList.values());
     const newIssueNames = new Set(list.map((issue) => issue.name));
-    oldIssueNames.forEach((name) => {
+    for (const name of selectedIssueNames.value) {
       if (!newIssueNames.has(name)) {
-        state.selectedIssueNameList.delete(name);
+        selectedIssueNames.value.delete(name);
       }
-    });
+    }
   }
 );
 
 // Navigation
 const issueUrl = (issue: Issue) => {
   const issueRoute = getIssueRoute(issue);
-  const route = router.resolve({
+  return router.resolve({
     name: issueRoute.name,
     params: issueRoute.params,
-  });
-  return route.fullPath;
+  }).fullPath;
 };
 
 const onRowClick = (issue: Issue, e: MouseEvent) => {
@@ -301,100 +244,31 @@ const validLabels = (issue: Issue) => {
   );
 };
 
-// Creator display
-const creatorName = (issue: Issue) => {
-  const creator =
-    userStore.getUserByIdentifier(issue.creator) || unknownUser(issue.creator);
-  return creator.title;
-};
-
-// Approval progress helpers
-const totalSteps = (issue: Issue): number => {
-  return issue.approvalTemplate?.flow?.roles?.length ?? 0;
-};
-
-const currentRoleName = (issue: Issue): string => {
-  const currentRoleIndex = issue.approvers.length;
-  const role = issue.approvalTemplate?.flow?.roles?.[currentRoleIndex];
-  if (!role) return "";
-  return displayRoleTitle(role);
+// Creator
+const creatorOfIssue = (issue: Issue) => {
+  return (
+    userStore.getUserByIdentifier(issue.creator) || unknownUser(issue.creator)
+  );
 };
 
 // Search highlighting
-interface IssueNameSection {
-  text: string;
-  highlight: boolean;
-}
-
-const highlights = computed(() => {
-  if (!props.highlightText) {
-    return [];
-  }
+const highlightWords = computed(() => {
+  if (!props.highlightText) return [];
   return props.highlightText.toLowerCase().split(" ");
 });
 
 const highlight = (content: string) => {
   return getHighlightHTMLByRegExp(
     content,
-    highlights.value,
+    highlightWords.value,
     false,
     "bg-yellow-100"
   );
 };
 
-const issueHighlightSections = (
-  text: string,
-  highlights: string[]
-): IssueNameSection[] => {
-  if (!text) {
-    return [];
-  }
-  if (highlights.length === 0) {
-    return [{ text, highlight: false }];
-  }
-
-  for (let i = 0; i < highlights.length; i++) {
-    const highlight = highlights[i];
-    const sections = text.toLowerCase().split(highlight);
-    if (sections.length === 0) {
-      continue;
-    }
-
-    const resp: IssueNameSection[] = [];
-    let pos = 0;
-    const nextHighlights = [
-      ...highlights.slice(0, i),
-      ...highlights.slice(i + 1),
-    ];
-    for (const section of sections) {
-      if (section.length) {
-        resp.push(
-          ...issueHighlightSections(
-            text.slice(pos, pos + section.length),
-            nextHighlights
-          )
-        );
-        pos += section.length;
-      }
-      if (i < sections.length - 1) {
-        const t = text.slice(pos, pos + highlight.length);
-        if (t) {
-          resp.push({ text: t, highlight: true });
-        }
-        pos += highlight.length;
-      }
-    }
-    return resp;
-  }
-
-  return [{ text, highlight: false }];
-};
-
 const isIssueExpanded = (issue: Issue): boolean => {
-  if (!props.highlightText || !issue.description) {
-    return false;
-  }
-  const sections = issueHighlightSections(issue.description, highlights.value);
-  return sections.some((item) => item.highlight);
+  if (!props.highlightText || !issue.description) return false;
+  const desc = issue.description.toLowerCase();
+  return highlightWords.value.some((word) => desc.includes(word));
 };
 </script>
