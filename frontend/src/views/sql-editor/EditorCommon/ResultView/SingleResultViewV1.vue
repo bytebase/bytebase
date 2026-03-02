@@ -15,7 +15,7 @@
     <div
       class="result-toolbar relative w-full shrink-0 flex flex-row gap-x-4 justify-between items-center mb-2 hide-scrollbar"
     >
-      <div class="flex flex-row justify-start items-center mr-2 flex-1">
+      <div class="flex flex-row justify-start items-center gap-x-2 mr-2 flex-1">
         <AdvancedSearch
           v-model:params="state.searchParams"
           placeholder=""
@@ -23,19 +23,15 @@
           :cache-query="false"
           @keyup:enter="scrollToNextCandidate"
         />
-        <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
-          resultRowsText
-        }}</span>
-        <span
-          v-if="
-            currentTab?.mode !== 'ADMIN' &&
-            rows.length === editorStore.resultRowsLimit
-          "
-          class="ml-2 whitespace-nowrap text-sm text-gray-500"
-        >
-          <span>-</span>
-          <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
-        </span>
+        <NTooltip :disabled="!reachQueryLimit">
+          <template #trigger>
+            <div class="flex items-center gap-x-1 whitespace-nowrap text-sm text-gray-500">
+              <InfoIcon v-if="reachQueryLimit" class="w-4" />
+              {{ resultRowsText }}
+            </div>
+          </template>
+          {{ $t("sql-editor.rows-upper-limit") }}
+        </NTooltip>
       </div>
       <div class="flex justify-between items-center shrink-0 gap-x-2">
         <div v-if="isESSearchResult" class="flex items-center">
@@ -66,6 +62,17 @@
             {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
+        <NButton
+          v-if="!disallowCopyingData && rows.length > 0"
+          size="small"
+          style="--n-padding: 0 8px"
+          @click="copyAll"
+        >
+          <template #icon>
+            <CopyIcon class="w-4 h-4" />
+          </template>
+          {{ $t("common.copy") }}
+        </NButton>
         <template v-if="showExport">
           <DataExportButton
             size="small"
@@ -256,7 +263,13 @@
 import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CopyIcon,
+  InfoIcon,
+  XIcon,
+} from "lucide-vue-next";
 import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
@@ -364,7 +377,7 @@ const dataTableRef =
 const binaryFormatContext = provideBinaryFormatContext();
 
 const detail: SQLResultViewContext["detail"] = ref(undefined);
-const resultViewContext = provideSQLResultViewContext({
+provideSQLResultViewContext({
   dark: toRef(props, "dark"),
   disallowCopyingData: toRef(props, "disallowCopyingData"),
   detail,
@@ -633,6 +646,13 @@ const rows = computed((): ResultTableRow[] => {
     });
 });
 
+const reachQueryLimit = computed(() => {
+  return (
+    currentTab.value?.mode !== "ADMIN" &&
+    rows.value.length === editorStore.resultRowsLimit
+  );
+});
+
 // Computed property for result rows text to avoid accessing data.length twice
 const resultRowsText = computed(() => {
   const length = rows.value.length;
@@ -666,11 +686,11 @@ const getMaskingReason = (columnIndex: number) => {
   return reason;
 };
 
-provideSelectionContext({
+const { copyAll } = provideSelectionContext({
   columns,
   rows,
   binaryFormatContext,
-  resultViewContext,
+  disallowCopyingData: computed(() => props.disallowCopyingData),
 });
 
 const showVisualizeButton = computed((): boolean => {

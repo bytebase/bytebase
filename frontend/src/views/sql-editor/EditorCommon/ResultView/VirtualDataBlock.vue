@@ -36,15 +36,17 @@
             :key="column.id"
             class="flex items-start text-gray-500 dark:text-gray-300 text-sm"
           >
-            <div class="min-w-28 text-left flex items-start font-medium pt-1">
-              {{ column.name }}
-              <MaskingReasonPopover
-                v-if="getMaskingReason && getMaskingReason(columnIndex)"
-                :reason="getMaskingReason(columnIndex)!"
-                :statement="statement"
-                :database="database.name"
-                class="ml-0.5 shrink-0"
-              />
+            <div class="min-w-28 text-left flex items-center font-medium pt-1">
+              <div class="flex items-center gap-x-1">
+                {{ column.name }}
+                <MaskingReasonPopover
+                  v-if="getMaskingReason && getMaskingReason(columnIndex)"
+                  :reason="getMaskingReason(columnIndex)!"
+                  :statement="statement"
+                  :database="database.name"
+                  class="shrink-0"
+                />
+              </div>
               :
             </div>
             <div class="flex-1">
