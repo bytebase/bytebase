@@ -44,7 +44,7 @@
   </NPopover>
 
   <!-- No approval required -->
-  <NTag v-else size="small" round class="shrink-0 mt-1">
+  <NTag v-else size="small" round :bordered="false" class="shrink-0 mt-1">
     {{ t("custom-approval.approval-flow.skip") }}
   </NTag>
 </template>
