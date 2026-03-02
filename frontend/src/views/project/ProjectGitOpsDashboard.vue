@@ -2,91 +2,320 @@
   <div class="w-full px-4 flex flex-col gap-y-6 py-4">
     <!-- Header -->
     <div>
-      <h2 class="text-lg font-medium">
-        {{ $t("gitops.overview.title") }}
-      </h2>
+      <h2 class="text-lg font-medium">{{ $t("gitops.self") }}</h2>
       <p class="textinfolabel mt-1">
         {{ $t("gitops.overview.description") }}
       </p>
-    </div>
-
-    <!-- Warning if external URL not configured -->
-    <MissingExternalURLAttention />
-
-    <!-- Section 1: Workload Identity -->
-    <div class="flex flex-col gap-y-3">
-      <div class="flex flex-col gap-y-1">
-        <h3 class="text-base font-medium">
-          {{ $t("gitops.workload-identity.title") }}
-        </h3>
-        <p class="text-sm text-control-light">
-          {{ $t("gitops.workload-identity.description") }}
-        </p>
-      </div>
-      <div class="flex items-center gap-x-3">
-        <NSelect
-          v-model:value="selectedIdentityEmail"
-          :options="identityOptions"
-          :placeholder="$t('gitops.workload-identity.select-placeholder')"
-          clearable
-          class="max-w-md"
-        />
-        <NButton @click="showCreateDrawer = true">
-          {{ $t("common.create") }}
-        </NButton>
-      </div>
-      <p
-        v-if="identityOptions.length === 0 && !isLoading"
-        class="text-sm text-control-light"
-      >
-        {{ $t("gitops.workload-identity.no-identity") }}
+      <p class="textinfolabel mt-1">
+        {{ $t("gitops.overview.description-git") }}
       </p>
-      <!-- Repository link derived from workload identity -->
-      <a
-        v-if="repoUrl"
-        :href="repoUrl"
-        target="_blank"
-        class="text-sm text-accent hover:underline"
-      >
-        {{ repoUrl }} &rarr;
-      </a>
     </div>
 
-    <!-- Section 2: CI/CD Workflow YAML -->
-    <div class="flex flex-col gap-y-3">
-      <div class="flex flex-col gap-y-1">
-        <div class="flex items-center gap-x-2">
-          <h3 class="text-base font-medium">
-            {{ $t("gitops.workflow.title") }}
-          </h3>
-          <CopyButton :content="activeTabContent" />
+    <!-- Workflow diagram -->
+    <img
+      :src="gitopsWorkflowImage"
+      alt="GitOps Workflow"
+      class="w-full max-w-4xl"
+    />
+
+    <!-- Part 1: Checklist -->
+    <div class="flex flex-col gap-y-1">
+      <h2 class="text-lg font-medium mb-2">
+        {{ $t("gitops.checklist.title") }}
+      </h2>
+
+      <!-- Check 1: External URL -->
+      <div class="flex items-start gap-x-3 py-3">
+        <CheckIcon
+          v-if="hasExternalUrl"
+          class="w-5 h-5 text-success shrink-0 mt-0.5"
+        />
+        <MinusCircleIcon
+          v-else
+          class="w-5 h-5 text-warning shrink-0 mt-0.5"
+        />
+        <div class="flex flex-col gap-y-1">
+          <span class="text-sm font-medium">{{
+            $t("gitops.checklist.external-url")
+          }}</span>
+          <span v-if="hasExternalUrl" class="text-sm text-control-light">
+            {{ bytebaseUrl }}
+          </span>
+          <div v-else class="flex items-center gap-x-2">
+            <span class="text-sm text-warning">
+              {{ $t("gitops.checklist.external-url-missing") }}
+            </span>
+            <NButton
+              v-if="hasSettingPermission"
+              size="small"
+              @click="goToGeneralSettings"
+            >
+              {{ $t("gitops.checklist.configure") }}
+            </NButton>
+          </div>
         </div>
-        <p class="text-sm text-control-light">
-          {{ $t("gitops.workflow.description") }}
-        </p>
       </div>
-      <NTabs v-model:value="activeTab" type="line" animated>
-        <NTabPane
-          v-for="tab in tabs"
-          :key="tab.id"
-          :name="tab.id"
-          :tab="tab.title"
-        >
-          <p class="text-sm text-control-light mt-3">
-            {{ $t("gitops.workflow.file-hint", { filePath: tab.filePath }) }}
+
+      <!-- Check 2: Workload Identity -->
+      <div class="flex items-start gap-x-3 py-3">
+        <CheckIcon
+          v-if="selectedIdentityEmail"
+          class="w-5 h-5 text-success shrink-0 mt-0.5"
+        />
+        <MinusCircleIcon
+          v-else
+          class="w-5 h-5 text-warning shrink-0 mt-0.5"
+        />
+        <div class="flex flex-col gap-y-2 flex-1">
+          <span class="text-sm font-medium">{{
+            $t("gitops.checklist.workload-identity")
+          }}</span>
+          <div class="flex items-center gap-x-3">
+            <NSelect
+              v-model:value="selectedIdentityEmail"
+              :options="identityOptions"
+              :placeholder="
+                $t('gitops.workload-identity.select-placeholder')
+              "
+              clearable
+              class="max-w-md"
+            />
+            <NButton @click="showCreateDrawer = true">
+              {{ $t("common.create") }}
+            </NButton>
+          </div>
+          <p
+            v-if="identityOptions.length === 0 && !isLoading"
+            class="text-sm text-control-light"
+          >
+            {{ $t("gitops.workload-identity.no-identity") }}
           </p>
-          <NInput
-            :value="tab.content"
-            type="textarea"
-            readonly
-            :autosize="{ minRows: 10, maxRows: 30 }"
-            class="font-mono text-sm mt-2"
-          />
+          <a
+            v-if="repoUrl"
+            :href="repoUrl"
+            target="_blank"
+            class="text-sm text-accent hover:underline"
+          >
+            {{ repoUrl }} &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Check 3: Target Databases -->
+      <div class="flex items-start gap-x-3 py-3">
+        <CheckIcon
+          v-if="selectedDatabaseNames.length > 0"
+          class="w-5 h-5 text-success shrink-0 mt-0.5"
+        />
+        <MinusCircleIcon
+          v-else
+          class="w-5 h-5 text-warning shrink-0 mt-0.5"
+        />
+        <div class="flex flex-col gap-y-2 flex-1">
+          <span class="text-sm font-medium">{{
+            $t("gitops.checklist.target-databases")
+          }}</span>
+          <div class="max-w-md">
+            <DatabaseSelect
+              v-model:value="selectedDatabaseNames"
+              :project-name="projectName"
+              :multiple="true"
+            />
+          </div>
+          <p
+            v-if="targetsString"
+            class="text-sm text-control-light"
+          >
+            <span class="font-medium">targets:</span>
+            <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{
+              targetsString
+            }}</code>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Part 2: Workflow File -->
+    <div class="flex flex-col gap-y-3">
+      <h2 class="text-lg font-medium">
+        {{ $t("gitops.workflow.title") }}
+      </h2>
+      <p class="text-sm text-control-light">
+        {{ $t("gitops.workflow.description") }}
+      </p>
+
+      <!-- Runner type toggle -->
+      <div class="flex items-center gap-x-3">
+        <span class="text-sm font-medium">Runner:</span>
+        <NRadioGroup v-model:value="runnerType" size="small">
+          <NRadioButton value="self-hosted">Self-hosted</NRadioButton>
+          <NRadioButton value="cloud">GitHub / GitLab hosted</NRadioButton>
+        </NRadioGroup>
+      </div>
+
+      <NTabs v-model:value="activeTab" type="line" animated>
+        <NTabPane name="github-actions" tab="GitHub Actions">
+          <!-- sql-review.yml -->
+          <div class="flex flex-col gap-y-2 mt-3">
+            <div class="flex items-center gap-x-2">
+              <button
+                class="flex items-center gap-x-1 text-sm text-control-light hover:text-control cursor-pointer"
+                @click="showSqlReviewYaml = !showSqlReviewYaml"
+              >
+                <ChevronRightIcon
+                  v-if="!showSqlReviewYaml"
+                  class="w-4 h-4"
+                />
+                <ChevronDownIcon v-else class="w-4 h-4" />
+                {{
+                  $t("gitops.workflow.file-hint", {
+                    filePath: ".github/workflows/sql-review.yml",
+                  })
+                }}
+              </button>
+              <CopyButton :content="githubSqlReviewYaml" />
+            </div>
+            <NInput
+              v-show="showSqlReviewYaml"
+              :value="githubSqlReviewYaml"
+              type="textarea"
+              readonly
+              :autosize="{ minRows: 10, maxRows: 30 }"
+              class="font-mono text-sm"
+            />
+          </div>
+          <!-- release.yml -->
+          <div class="flex flex-col gap-y-2 mt-4">
+            <div class="flex items-center gap-x-2">
+              <button
+                class="flex items-center gap-x-1 text-sm text-control-light hover:text-control cursor-pointer"
+                @click="showReleaseYaml = !showReleaseYaml"
+              >
+                <ChevronRightIcon
+                  v-if="!showReleaseYaml"
+                  class="w-4 h-4"
+                />
+                <ChevronDownIcon v-else class="w-4 h-4" />
+                {{
+                  $t("gitops.workflow.file-hint", {
+                    filePath: ".github/workflows/release.yml",
+                  })
+                }}
+              </button>
+              <CopyButton :content="githubReleaseYaml" />
+            </div>
+            <NInput
+              v-show="showReleaseYaml"
+              :value="githubReleaseYaml"
+              type="textarea"
+              readonly
+              :autosize="{ minRows: 10, maxRows: 30 }"
+              class="font-mono text-sm"
+            />
+          </div>
+        </NTabPane>
+        <NTabPane name="gitlab-ci" tab="GitLab CI">
+          <div class="flex flex-col gap-y-2 mt-3">
+            <div class="flex items-center gap-x-2">
+              <button
+                class="flex items-center gap-x-1 text-sm text-control-light hover:text-control cursor-pointer"
+                @click="showGitlabCiYaml = !showGitlabCiYaml"
+              >
+                <ChevronRightIcon
+                  v-if="!showGitlabCiYaml"
+                  class="w-4 h-4"
+                />
+                <ChevronDownIcon v-else class="w-4 h-4" />
+                {{
+                  $t("gitops.workflow.file-hint", {
+                    filePath: ".gitlab-ci.yml",
+                  })
+                }}
+              </button>
+              <CopyButton :content="gitlabCiYaml" />
+            </div>
+            <NInput
+              v-show="showGitlabCiYaml"
+              :value="gitlabCiYaml"
+              type="textarea"
+              readonly
+              :autosize="{ minRows: 10, maxRows: 30 }"
+              class="font-mono text-sm"
+            />
+          </div>
         </NTabPane>
       </NTabs>
     </div>
 
-    <!-- Section 3: Documentation link -->
+    <!-- Part 3: Test Your Setup -->
+    <div class="flex flex-col gap-y-4">
+      <h2 class="text-lg font-medium">
+        {{ $t("gitops.test-setup.title") }}
+      </h2>
+      <p class="text-sm text-control-light">
+        {{ $t("gitops.test-setup.description") }}
+      </p>
+
+      <!-- Sample migration file -->
+      <div class="flex flex-col gap-y-2">
+        <div class="flex items-center gap-x-2">
+          <span class="text-sm text-control-light">{{ sampleFilePath }}</span>
+          <CopyButton :content="sampleSql" />
+        </div>
+        <NInput
+          :value="sampleSql"
+          type="textarea"
+          readonly
+          :autosize="{ minRows: 5, maxRows: 15 }"
+          class="font-mono text-sm"
+        />
+      </div>
+
+      <!-- Step-by-step instructions -->
+      <div class="flex flex-col gap-y-3">
+        <div class="flex items-start gap-x-3">
+          <span
+            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs shrink-0 mt-0.5"
+          >
+            1
+          </span>
+          <p class="text-sm text-control-light">
+            {{
+              $t("gitops.test-setup.step-create-branch", {
+                branch: branch,
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-start gap-x-3">
+          <span
+            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs shrink-0 mt-0.5"
+          >
+            2
+          </span>
+          <p class="text-sm text-control-light">
+            {{ $t("gitops.test-setup.step-sql-review") }}
+          </p>
+        </div>
+        <div class="flex items-start gap-x-3">
+          <span
+            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs shrink-0 mt-0.5"
+          >
+            3
+          </span>
+          <p class="text-sm text-control-light">
+            {{ $t("gitops.test-setup.step-merge") }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Naming convention hint -->
+      <p class="text-sm text-control-light">
+        {{ $t("gitops.test-setup.naming-convention") }}
+      </p>
+    </div>
+
+    <!-- Documentation link -->
     <div>
       <a
         href="https://www.bytebase.com/docs/vcs-integration/overview/"
@@ -107,21 +336,41 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput, NSelect, NTabPane, NTabs } from "naive-ui";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon, MinusCircleIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NInput,
+  NRadioButton,
+  NRadioGroup,
+  NSelect,
+  NTabPane,
+  NTabs,
+} from "naive-ui";
 import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
-import { CopyButton, MissingExternalURLAttention } from "@/components/v2";
-import { useActuatorV1Store, useProjectByName } from "@/store";
+import {
+  CopyButton,
+  DatabaseSelect,
+} from "@/components/v2";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import {
+  useActuatorV1Store,
+  useProjectByName,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useWorkloadIdentityStore } from "@/store/modules/workloadIdentity";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
+import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 
 const props = defineProps<{
   projectId: string;
 }>();
 
+const router = useRouter();
 const actuatorStore = useActuatorV1Store();
 const workloadIdentityStore = useWorkloadIdentityStore();
 
@@ -130,10 +379,28 @@ const { project: _project } = useProjectByName(projectName);
 
 const showCreateDrawer = ref(false);
 const selectedIdentityEmail = ref<string | null>(null);
+const selectedDatabaseNames = ref<string[]>([]);
 const isLoading = ref(false);
 const identityOptions = ref<{ label: string; value: string }[]>([]);
 const identityMap = ref<Map<string, WorkloadIdentity>>(new Map());
 const activeTab = ref("github-actions");
+const runnerType = ref<"self-hosted" | "cloud">("self-hosted");
+const showSqlReviewYaml = ref(false);
+const showReleaseYaml = ref(false);
+const showGitlabCiYaml = ref(false);
+
+const hasExternalUrl = computed(() => {
+  const url = actuatorStore.serverInfo?.externalUrl ?? "";
+  return url.length > 0;
+});
+
+const hasSettingPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.set")
+);
+
+const goToGeneralSettings = () => {
+  router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL });
+};
 
 const selectedIdentity = computed(() => {
   if (!selectedIdentityEmail.value) return undefined;
@@ -222,84 +489,251 @@ const bytebaseUrl = computed(() => {
   return url.replace(/\/$/, "");
 });
 
-const serviceAccountEmail = computed(() => {
+const workloadIdentityEmail = computed(() => {
   if (!selectedIdentityEmail.value) {
     return "{WORKLOAD_IDENTITY_EMAIL}";
   }
   return selectedIdentityEmail.value;
 });
 
-const githubActionsYaml = computed(() => {
-  return `name: Bytebase Schema Migration
+const targetsString = computed(() => {
+  if (selectedDatabaseNames.value.length === 0) {
+    return "";
+  }
+  return selectedDatabaseNames.value.join(",");
+});
+
+const targetsPlaceholder = computed(() => {
+  return targetsString.value || "instances/{instance}/databases/{database}";
+});
+
+const runsOn = computed(() => {
+  return runnerType.value === "self-hosted" ? "self-hosted" : "ubuntu-latest";
+});
+
+const sampleFilePath = "migrations/20240101000000_create_sample_table.sql";
+
+const sampleSql = `CREATE TABLE sample (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`;
+
+const githubSqlReviewYaml = computed(() => {
+  return `name: SQL Review
+on:
+  pull_request:
+    branches: ["${branch.value}"]
+    paths: ["migrations/*.sql"]
+jobs:
+  sql-review:
+    permissions:
+      id-token: write
+      pull-requests: write
+    runs-on: ${runsOn.value}
+    container:
+      image: bytebase/bytebase-action
+    env:
+      BYTEBASE_URL: ${bytebaseUrl.value}
+      BYTEBASE_WORKLOAD_IDENTITY: ${workloadIdentityEmail.value}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exchange token
+        id: bytebase-auth
+        run: |
+          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
+          ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
+            -H "Content-Type: application/json" \\
+            -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+            | jq -r '.accessToken')
+          echo "access-token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+      - name: SQL Review
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bytebase-action check \\
+            --url=$BYTEBASE_URL \\
+            --access-token=\${{ steps.bytebase-auth.outputs.access-token }} \\
+            --project=projects/${props.projectId} \\
+            --targets=${targetsPlaceholder.value} \\
+            --file-pattern=migrations/*.sql`;
+});
+
+const exchangeTokenStep = `      - name: Exchange token
+        id: bytebase-auth
+        run: |
+          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
+          ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
+            -H "Content-Type: application/json" \\
+            -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+            | jq -r '.accessToken')
+          echo "access-token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT`;
+
+const accessTokenFlag =
+  "--access-token=${{ steps.bytebase-auth.outputs.access-token }}";
+
+const githubReleaseYaml = computed(() => {
+  return `name: Rollout
 on:
   push:
     branches: ["${branch.value}"]
-
+    paths: ["migrations/*.sql"]
+env:
+  BYTEBASE_URL: ${bytebaseUrl.value}
+  BYTEBASE_WORKLOAD_IDENTITY: ${workloadIdentityEmail.value}
+  BYTEBASE_PROJECT: projects/${props.projectId}
 jobs:
-  bytebase:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${runsOn.value}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: echo "Building..."
+  create-rollout:
+    needs: build
+    permissions:
+      id-token: write
+    runs-on: ${runsOn.value}
+    container:
+      image: bytebase/bytebase-action
+    outputs:
+      bytebase-plan: \${{ steps.set-output.outputs.plan }}
+    steps:
+      - uses: actions/checkout@v4
+${exchangeTokenStep}
+      - name: Create rollout
+        run: |
+          bytebase-action rollout \\
+            --url=$BYTEBASE_URL \\
+            ${accessTokenFlag} \\
+            --project=$BYTEBASE_PROJECT \\
+            --targets=${targetsPlaceholder.value} \\
+            --file-pattern=migrations/*.sql \\
+            --output=\${{ runner.temp }}/bytebase-metadata.json
+      - name: Set output
+        id: set-output
+        run: |
+          PLAN=$(jq -r .plan \${{ runner.temp }}/bytebase-metadata.json)
+          echo "plan=$PLAN" >> $GITHUB_OUTPUT
+  deploy-to-test:
+    needs: create-rollout
+    permissions:
+      id-token: write
+    runs-on: ${runsOn.value}
+    environment: test
     container:
       image: bytebase/bytebase-action
     steps:
       - uses: actions/checkout@v4
-      - name: Bytebase Push
-        env:
-          BYTEBASE_URL: ${bytebaseUrl.value}
-          BYTEBASE_SERVICE_ACCOUNT: ${serviceAccountEmail.value}
-          BYTEBASE_SERVICE_ACCOUNT_SECRET: \${{ secrets.BYTEBASE_SERVICE_ACCOUNT_SECRET }}
+${exchangeTokenStep}
+      - name: Deploy to test
         run: |
-          bytebase-action check \\
-            --file-pattern "migrations/*.sql" \\
-            --project "projects/${props.projectId}" \\
-            --targets "instances/{instance}/databases/{database}"
           bytebase-action rollout \\
-            --file-pattern "migrations/*.sql" \\
-            --project "projects/${props.projectId}" \\
-            --targets "instances/{instance}/databases/{database}"`;
+            --url=$BYTEBASE_URL \\
+            ${accessTokenFlag} \\
+            --project=$BYTEBASE_PROJECT \\
+            --target-stage=environments/test \\
+            --plan=\${{ needs.create-rollout.outputs.bytebase-plan }}
+  deploy-to-prod:
+    needs: [deploy-to-test, create-rollout]
+    permissions:
+      id-token: write
+    runs-on: ${runsOn.value}
+    environment: prod
+    container:
+      image: bytebase/bytebase-action
+    steps:
+      - uses: actions/checkout@v4
+${exchangeTokenStep}
+      - name: Deploy to prod
+        run: |
+          bytebase-action rollout \\
+            --url=$BYTEBASE_URL \\
+            ${accessTokenFlag} \\
+            --project=$BYTEBASE_PROJECT \\
+            --target-stage=environments/prod \\
+            --plan=\${{ needs.create-rollout.outputs.bytebase-plan }}`;
 });
+
+const gitlabExchangeScript = `    - |
+      ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
+        -H "Content-Type: application/json" \\
+        -d "{\\"token\\":\\"$CI_JOB_JWT_V2\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+        | jq -r '.accessToken')
+      export BYTEBASE_ACCESS_TOKEN=$ACCESS_TOKEN`;
 
 const gitlabCiYaml = computed(() => {
   return `stages:
-  - bytebase
+  - sql-review
+  - create-rollout
+  - deploy-to-test
+  - deploy-to-prod
 
-bytebase:
-  stage: bytebase
+variables:
+  BYTEBASE_URL: ${bytebaseUrl.value}
+  BYTEBASE_WORKLOAD_IDENTITY: ${workloadIdentityEmail.value}
+  BYTEBASE_PROJECT: projects/${props.projectId}
+  BYTEBASE_TARGETS: ${targetsPlaceholder.value}
+  FILE_PATTERN: "migrations/*.sql"
+
+sql-review:
+  stage: sql-review
   image: bytebase/bytebase-action
-  variables:
-    BYTEBASE_URL: ${bytebaseUrl.value}
-    BYTEBASE_SERVICE_ACCOUNT: ${serviceAccountEmail.value}
-  script:
-    - |
-      bytebase-action check \\
-        --file-pattern "migrations/*.sql" \\
-        --project "projects/${props.projectId}" \\
-        --targets "instances/{instance}/databases/{database}"
-      bytebase-action rollout \\
-        --file-pattern "migrations/*.sql" \\
-        --project "projects/${props.projectId}" \\
-        --targets "instances/{instance}/databases/{database}"
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: bytebase
   rules:
-    - if: $CI_COMMIT_BRANCH == "${branch.value}"`;
-});
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+${gitlabExchangeScript}
+    - bytebase-action check --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --targets=$BYTEBASE_TARGETS --file-pattern=$FILE_PATTERN
 
-const tabs = computed(() => [
-  {
-    id: "github-actions",
-    title: "GitHub Actions",
-    content: githubActionsYaml.value,
-    filePath: ".github/workflows/bytebase.yml",
-  },
-  {
-    id: "gitlab-ci",
-    title: "GitLab CI",
-    content: gitlabCiYaml.value,
-    filePath: ".gitlab-ci.yml",
-  },
-]);
+create-rollout:
+  stage: create-rollout
+  image: bytebase/bytebase-action
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_COMMIT_BRANCH == "${branch.value}"
+  script:
+${gitlabExchangeScript}
+    - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --targets=$BYTEBASE_TARGETS --file-pattern=$FILE_PATTERN --output=bytebase-metadata.json
+  artifacts:
+    paths: [bytebase-metadata.json]
 
-const activeTabContent = computed(() => {
-  const tab = tabs.value.find((t) => t.id === activeTab.value);
-  return tab?.content ?? "";
+deploy-to-test:
+  stage: deploy-to-test
+  image: bytebase/bytebase-action
+  needs: [create-rollout]
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_COMMIT_BRANCH == "${branch.value}"
+  environment: test
+  script:
+${gitlabExchangeScript}
+    - PLAN=$(jq -r .plan bytebase-metadata.json)
+    - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --target-stage=environments/test --plan=$PLAN
+
+deploy-to-prod:
+  stage: deploy-to-prod
+  image: bytebase/bytebase-action
+  needs: [deploy-to-test]
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_COMMIT_BRANCH == "${branch.value}"
+  environment: prod
+  when: manual
+  script:
+${gitlabExchangeScript}
+    - PLAN=$(jq -r .plan bytebase-metadata.json)
+    - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --target-stage=environments/prod --plan=$PLAN`;
 });
 
 const fetchWorkloadIdentities = async () => {

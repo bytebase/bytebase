@@ -2819,19 +2819,33 @@
   "gitops": {
     "self": "GitOps",
     "overview": {
-      "title": "GitOps Overview",
-      "description": "Manage database schema changes through version control systems. GitOps enables you to automate database deployments by linking your repositories to Bytebase."
+      "description": "Bytebase GitOps lets you manage Database as Code by integrating database schema changes into your CI/CD pipeline.",
+      "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts."
+    },
+    "checklist": {
+      "title": "Checklist",
+      "external-url": "External URL",
+      "external-url-missing": "External URL is not configured.",
+      "configure": "Configure",
+      "workload-identity": "Workload Identity",
+      "target-databases": "Target Databases"
     },
     "workload-identity": {
-      "title": "Workload Identity",
-      "description": "Select or create a workload identity for your CI/CD platform to authenticate with Bytebase.",
       "select-placeholder": "Select a workload identity",
       "no-identity": "No workload identity found. Create one to get started."
     },
     "workflow": {
-      "title": "CI/CD Workflow",
-      "description": "Copy this workflow file into your repository to automate database schema migrations with Bytebase.",
+      "title": "Workflow File",
+      "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
       "file-hint": "Save as {filePath} in your repository"
+    },
+    "test-setup": {
+      "title": "Test Your Setup",
+      "description": "Verify the workflow is working end-to-end with a sample migration file.",
+      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
+      "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
+      "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
+      "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type."
     },
     "documentation": "View Documentation"
   },
