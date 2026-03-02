@@ -30,6 +30,9 @@
             {{ $t("common.statement") }}
             <RequiredStar class="ml-0.5" />
           </div>
+          <BBAttention type="info">
+            {{ $t("sql-editor.only-select-allowed") }}
+          </BBAttention>
           <MonacoEditor
             class="border rounded-[3px] h-40"
             :content="form.query"
@@ -52,7 +55,7 @@
 
         <div class="flex flex-col gap-y-2">
           <div class="text-sm font-medium text-control">
-            {{ $t("common.duration") }}
+            {{ $t("common.expiration") }}
             <RequiredStar class="ml-0.5" />
           </div>
           <NSelect
@@ -65,12 +68,15 @@
             type="datetime"
             :is-date-disabled="isDateDisabled"
             clearable
+            :actions="null"
+            :update-value-on-close="true"
           />
         </div>
 
         <div class="flex flex-col gap-y-2">
           <div class="text-sm font-medium text-control">
             {{ $t("common.reason") }}
+            <RequiredStar class="ml-0.5" />
           </div>
           <NInput
             v-model:value="form.reason"
@@ -102,11 +108,13 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { DurationSchema, TimestampSchema } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
 import { NButton, NCheckbox, NDatePicker, NInput, NSelect } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DatabaseSelect, Drawer, DrawerContent } from "@/components/v2";
@@ -190,13 +198,17 @@ const durationOptions = computed(() => [
   { label: t("common.custom"), value: -1 },
 ]);
 
-const isDateDisabled = (ts: number) => {
-  return ts < Date.now();
+const isDateDisabled = (date: number) => {
+  if (date < dayjs().startOf("day").valueOf()) {
+    return true;
+  }
+  return false;
 };
 
 const allowSubmit = computed(() => {
   if (form.targets.length === 0) return false;
   if (!form.query.trim()) return false;
+  if (!form.reason) return false;
   if (form.duration === -1 && !form.customExpireTime) return false;
   return true;
 });
@@ -205,21 +217,27 @@ const handleSubmit = async () => {
   if (isRequesting.value) return;
   isRequesting.value = true;
   try {
-    const ttlSeconds =
-      form.duration === -1
-        ? BigInt(Math.floor((form.customExpireTime! - Date.now()) / 1000))
-        : BigInt(form.duration * 3600);
-
     const accessGrant = create(AccessGrantSchema, {
       creator: `users/${currentUser.value.email}`,
       targets: form.targets,
       query: form.query,
       unmask: form.unmask,
       reason: form.reason,
-      expiration: {
-        case: "ttl",
-        value: create(DurationSchema, { seconds: ttlSeconds }),
-      },
+      expiration:
+        form.duration === -1
+          ? {
+              case: "expireTime" as const,
+              value: create(TimestampSchema, {
+                seconds: BigInt(Math.floor(form.customExpireTime! / 1000)),
+                nanos: (form.customExpireTime! % 1000) * 1000000,
+              }),
+            }
+          : {
+              case: "ttl" as const,
+              value: create(DurationSchema, {
+                seconds: BigInt(form.duration * 3600),
+              }),
+            },
     });
 
     const response = await accessGrantServiceClientConnect.createAccessGrant(

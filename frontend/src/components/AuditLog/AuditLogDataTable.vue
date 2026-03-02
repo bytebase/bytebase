@@ -15,7 +15,6 @@
 import { file_google_rpc_error_details } from "@buf/googleapis_googleapis.bufbuild_es/google/rpc/error_details_pb";
 import { createRegistry, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
-import dayjs from "dayjs";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import {
   type DataTableColumn,
@@ -49,7 +48,11 @@ import {
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
-import { extractProjectResourceName, humanizeDurationV1 } from "@/utils";
+import {
+  extractProjectResourceName,
+  formatAbsoluteDateTime,
+  humanizeDurationV1,
+} from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
 
 type AuditDataTableColumn = DataTableColumn<AuditLog> & {
@@ -92,8 +95,8 @@ const columnList = computed((): AuditDataTableColumn[] => {
         width: 220,
         resizable: true,
         render: (auditLog) =>
-          dayjs(getDateForPbTimestampProtoEs(auditLog.createTime)).format(
-            "YYYY-MM-DD HH:mm:ss Z"
+          formatAbsoluteDateTime(
+            getDateForPbTimestampProtoEs(auditLog.createTime)?.getTime() ?? 0
           ),
       },
       {

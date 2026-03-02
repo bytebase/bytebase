@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="[isLink && !plain && 'normal-link', isLink && 'hover:underline']"
     :style="
-      showColor && backgroundColorRgb
+      showColor && !isMissing && backgroundColorRgb
         ? {
             backgroundColor: `rgba(${backgroundColorRgb}, 0.1)`,
             borderTopColor: `rgb(${backgroundColorRgb})`,
@@ -17,8 +17,9 @@
     "
   >
     <span class="select-none inline-block truncate" :class="textClass">
-      <span v-if="isUnknown" class="text-gray-400 italic">
-        {{ nullEnvironmentPlaceholder }}
+      <span v-if="isUnset" class="text-control-light italic">{{ t("common.unassigned") }}</span>
+      <span v-else-if="isDeleted" class="text-control-light line-through">
+        {{ environment.title }}
       </span>
       <HighlightLabelText v-else :text="environment.title" :keyword="keyword" />
       <slot name="suffix">
@@ -26,7 +27,7 @@
       </slot>
     </span>
     <ProductionEnvironmentV1Icon
-      v-if="showIcon"
+      v-if="showIcon && !isMissing"
       :environment="environment"
       :class="iconClass ?? 'text-current!'"
       :tooltip="tooltip"
@@ -36,8 +37,11 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { useEnvironmentV1Store } from "@/store";
 import {
   formatEnvironmentName,
+  isValidEnvironmentName,
   NULL_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
 } from "@/types";
@@ -60,7 +64,6 @@ const props = withDefaults(
     textClass?: string;
     keyword?: string;
     showColor?: boolean;
-    nullEnvironmentPlaceholder?: string; // Placeholder for null/unknown environment.
   }>(),
   {
     tag: "span",
@@ -69,22 +72,34 @@ const props = withDefaults(
     iconClass: undefined,
     tooltip: false,
     suffix: "",
-    prefix: "",
     showIcon: true,
     textClass: "",
     keyword: "",
     showColor: true,
-    nullEnvironmentPlaceholder: "NULL ENVIRONMENT",
   }
 );
 
-const isUnknown = computed(
+const { t } = useI18n();
+const environmentStore = useEnvironmentV1Store();
+
+const isUnset = computed(
   () =>
     props.environment.name === UNKNOWN_ENVIRONMENT_NAME ||
     props.environment.name === NULL_ENVIRONMENT_NAME
 );
 
-const isLink = computed(() => props.link && !isUnknown.value);
+const isDeleted = computed(() => {
+  if (isUnset.value) return false;
+  const real = environmentStore.getEnvironmentByName(
+    props.environment.name,
+    false
+  );
+  return !isValidEnvironmentName(real.name);
+});
+
+const isMissing = computed(() => isUnset.value || isDeleted.value);
+
+const isLink = computed(() => props.link && !isMissing.value);
 
 const bindings = computed(() => {
   if (isLink.value) {

@@ -43,7 +43,6 @@
     "archive": "Lưu trữ",
     "archived": "Đã lưu trữ",
     "abandon": "Hủy bỏ",
-    "abandoned": "Đã hủy bỏ",
     "restored": "Restored",
     "no-license": "Không có giấy phép",
     "logout": "Đăng xuất",
@@ -53,6 +52,7 @@
     "latest": "Mới nhất",
     "error": "Lỗi",
     "canceled": "Đã hủy",
+    "rejected": "Đã từ chối",
     "approve": "Phê duyệt",
     "done": "Hoàn tất",
     "create": "Tạo",
@@ -226,7 +226,6 @@
     "permissions": "Quyền",
     "leave-without-saving": "Thoát mà không lưu?",
     "configure-now": "Cấu hình ngay",
-    "connection": "Kết nối",
     "resource": "Tài nguyên",
     "resources": "Tài nguyên",
     "closed": "Đã đóng",
@@ -1041,7 +1040,9 @@
       "name": "Tên",
       "updated": "Đã cập nhật",
       "creator": "Người tạo",
-      "current-approver": "Người phê duyệt hiện tại"
+      "approved": "Approved",
+      "approval-progress": "{approved}/{total} Approvals",
+      "waiting-role": "Waiting: {role}"
     },
     "migration-mode": {
       "online": {
@@ -1910,7 +1911,8 @@
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
       "project-level-roles": "Vai trò cấp độ dự án",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn"
+      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
+      "disallow-ddl": "Không cho phép chạy câu lệnh DDL/DML trong tất cả các môi trường."
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
@@ -2012,6 +2014,7 @@
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
+    "table-view": "Table view",
     "no-history-found": "Không tìm thấy lịch sử",
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "binary-format": "Định dạng nhị phân",
@@ -2044,7 +2047,6 @@
     "visualize-explain": "Trực quan hóa Giải thích",
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "close-sheet": "Đóng trang tính",
-    "connect": "Kết nối",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "admin-mode": {
       "self": "Chế độ quản trị",
@@ -2090,7 +2092,7 @@
     "pending-query": "Đang chờ truy vấn",
     "executing-query": "Đang thực hiện truy vấn",
     "request-query": "Yêu cầu truy vấn",
-    "connect-in-new-tab": "Kết nối trong tab mới",
+    "open-in-new-tab": "Mở trong tab mới",
     "copy-name": "Sao chép tên",
     "preview-table-data": "Xem trước dữ liệu bảng",
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
@@ -2165,7 +2167,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "activate-access": "Activate",
-    "activate-confirm": "Are you sure you want to activate this access grant?"
+    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "re-request": "Yêu cầu lại"
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",
@@ -2629,8 +2632,7 @@
       },
       "skip": "Không cần phê duyệt",
       "issue-review": {
-        "sent-back": "Đã gửi lại",
-        "review-sent-back-by": "Đánh giá đã gửi lại bởi {user}"
+        "sent-back": "Đã gửi lại"
       },
       "add-rule": "Thêm quy tắc",
       "edit-rule": "Chỉnh sửa quy tắc",
@@ -2740,6 +2742,10 @@
       "self": "Người dùng Trình soạn thảo SQL",
       "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
     },
+    "sql-editor-read-user": {
+      "self": "Người dùng Trình soạn thảo SQL chỉ đọc",
+      "description": "Quyền chỉ đọc để truy vấn dữ liệu cơ sở dữ liệu, không có quyền DDL hoặc DML."
+    },
     "gitops-service-agent": {
       "self": "Tác nhân Dịch vụ GitOps",
       "description": "Quyền cho quy trình CI/CD tự động để tạo và thực thi các thay đổi cơ sở dữ liệu qua GitOps."
@@ -2762,7 +2768,8 @@
     "delete-group": "Xóa nhóm cơ sở dữ liệu {name}"
   },
   "export-center": {
-    "self": "Trung tâm xuất"
+    "self": "Trung tâm xuất",
+    "data-export": "Xuất dữ liệu"
   },
   "schema-designer": {
     "use-tips": "Nhấp vào một bảng để bắt đầu."

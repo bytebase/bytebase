@@ -26,6 +26,8 @@ export const STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT =
   "bb.sql-editor.detail-panel.format";
 export const STORAGE_KEY_SQL_EDITOR_DETAIL_LINE_WRAP =
   "bb.sql-editor.detail-panel.line-wrap";
+export const STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW =
+  "bb.sql-editor.es-table-view";
 export const STORAGE_KEY_MY_ISSUES_TAB = "bb.components.MY_ISSUES.id";
 
 // --- User-scoped (cleaned on logout) ---

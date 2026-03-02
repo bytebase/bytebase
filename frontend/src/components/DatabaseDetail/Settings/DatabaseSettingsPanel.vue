@@ -7,7 +7,7 @@
         </p>
         <EnvironmentSelect
           class="mt-1 max-w-md"
-          :value="`${environmentNamePrefix}${environment.id}`"
+          :value="environmentSelectValue"
           :disabled="!allowUpdateDatabase"
           :clearable="!getInstanceResource(database).environment"
           :render-suffix="
@@ -35,12 +35,7 @@ import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentSelect } from "@/components/v2";
-import {
-  environmentNamePrefix,
-  pushNotification,
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import type { Environment } from "@/types/v1/environment";
@@ -56,14 +51,11 @@ const props = defineProps<{
 }>();
 
 const databaseStore = useDatabaseV1Store();
-const envStore = useEnvironmentV1Store();
 const { t } = useI18n();
 
-const environment = computed(() => {
-  return envStore.getEnvironmentByName(
-    props.database.effectiveEnvironment ?? ""
-  );
-});
+const environmentSelectValue = computed(
+  () => props.database.effectiveEnvironment || undefined
+);
 
 const allowUpdateDatabase = computed(() =>
   hasProjectPermissionV2(

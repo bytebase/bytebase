@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
@@ -22,12 +22,16 @@
     "rules": {
       "recommended": false,
       "complexity": {
+        "noUselessCatchBinding": "error",
         "noUselessEscapeInRegex": "error",
         "noUselessTypeConstraint": "error"
       },
       "correctness": {
         "noEmptyPattern": "error",
-        "noUnusedVariables": "error"
+        "noUnusedVariables": "error",
+        "noVueReservedKeys": "error",
+        "noVueReservedProps": "error",
+        "noVueSetupPropsReactivityLoss": "error"
       },
       "nursery": {
         "noForIn": "error",
@@ -62,6 +66,7 @@
           "options": { "allow": ["warn", "error", "debug", "assert", "log"] }
         },
         "noDebugger": "error",
+        "noDeprecatedImports": "error",
         "noExplicitAny": "error",
         "noExtraNonNullAssertion": "error",
         "noMisleadingInstantiator": "error",

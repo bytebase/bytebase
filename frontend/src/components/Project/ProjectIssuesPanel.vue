@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div class="px-4 flex flex-col gap-y-2 pb-2">
+    <div class="px-4 flex flex-col gap-y-2">
       <NAlert
         v-if="!hideHint"
         type="info"
@@ -11,7 +11,7 @@
       </NAlert>
       <IssueSearch
         v-model:params="state.params"
-        :components="['searchbox', 'time-range', 'presets', 'status']"
+        :components="['searchbox', 'time-range', 'presets']"
       />
     </div>
     <PagedTable
@@ -21,7 +21,7 @@
       :fetch-list="fetchIssueList"
     >
       <template #table="{ list, loading }">
-        <IssueTableV1
+        <IssueListV1
           class="border-x-0"
           :loading="loading"
           :issue-list="list"
@@ -37,7 +37,7 @@ import { NAlert } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
-import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import IssueListV1 from "@/components/IssueV1/components/IssueListV1.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   useCurrentUserV1,

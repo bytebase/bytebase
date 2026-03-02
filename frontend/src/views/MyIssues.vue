@@ -2,9 +2,9 @@
   <div :key="viewId" class="py-4 flex flex-col">
     <IssueSearch
       v-model:params="state.params"
-      :components="['searchbox', 'time-range', 'presets', 'status']"
+      :components="['searchbox', 'time-range', 'presets']"
       :default-params="computedDefaultParams"
-      class="px-4 pb-2"
+      class="px-4"
     />
 
     <PagedTable
@@ -14,7 +14,7 @@
       :fetch-list="fetchIssueList"
     >
       <template #table="{ list, loading }">
-        <IssueTableV1
+        <IssueListV1
           class="border-x-0"
           :loading="loading"
           :issue-list="list"
@@ -32,7 +32,7 @@ import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRoute, useRouter } from "vue-router";
 import { IssueSearch } from "@/components/IssueV1/components";
-import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
+import IssueListV1 from "@/components/IssueV1/components/IssueListV1.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   useCurrentUserV1,

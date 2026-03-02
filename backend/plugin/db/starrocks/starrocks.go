@@ -358,7 +358,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 }
 
 func (d *Driver) StopConnectionByID(id string) error {
-	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
+	_, err := d.db.Exec(fmt.Sprintf("KILL QUERY %s", id)) // NOSONAR(go:S2077) id is from CONNECTION_ID() server function, not user input
 	return err
 }
 

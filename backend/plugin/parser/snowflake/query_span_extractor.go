@@ -151,86 +151,14 @@ func (l *selectOnlyListener) EnterDml_command(ctx *parser.Dml_commandContext) {
 }
 
 func (q *querySpanExtractor) extractPseudoTableFromQueryStatement(ctx parser.IQuery_statementContext) (*base.PseudoTable, error) {
-	if ctx.With_expression() != nil {
-		allCommandTableExpression := ctx.With_expression().AllCommon_table_expression()
-		for _, commandTableExpression := range allCommandTableExpression {
-			normalizedCTEName := NormalizeSnowSQLObjectNamePart(commandTableExpression.Id_())
-			var err error
-			var pseudoTable *base.PseudoTable
-			if commandTableExpression.RECURSIVE() != nil || commandTableExpression.UNION() != nil {
-				// TODO(zp): refactor code
-				anchorTableSource, err := q.extractPseudoTableFromQueryStatement(commandTableExpression.Anchor_clause().Query_statement())
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
-				}
-				tempCte := &base.PseudoTable{
-					Name:    normalizedCTEName,
-					Columns: anchorTableSource.GetQuerySpanResult(),
-				}
-				q.ctes = append(q.ctes, tempCte)
-				originalSize := len(q.ctes)
-				for {
-					originalSize := len(q.ctes)
-					recursivePartTableSource, err := q.extractPseudoTableFromQueryStatement(commandTableExpression.Recursive_clause().Query_statement())
-					if err != nil {
-						return nil, errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", normalizedCTEName, commandTableExpression.Recursive_clause().GetStart().GetLine())
-					}
-					anchorQuerySpanResults := q.ctes[originalSize-1].GetQuerySpanResult()
-					recursivePartQuerySpanResults := recursivePartTableSource.GetQuerySpanResult()
-					if len(anchorQuerySpanResults) != len(recursivePartQuerySpanResults) {
-						return nil, errors.Errorf("recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q near line %d", len(anchorQuerySpanResults), len(recursivePartQuerySpanResults), normalizedCTEName, commandTableExpression.GetStart().GetLine())
-					}
-					changed := false
-					for i := range anchorQuerySpanResults {
-						var hasChange bool
-						anchorQuerySpanResults[i].SourceColumns, hasChange = base.MergeSourceColumnSet(anchorQuerySpanResults[i].SourceColumns, recursivePartQuerySpanResults[i].SourceColumns)
-						changed = changed || hasChange
-					}
-					tempCte := &base.PseudoTable{
-						Name:    normalizedCTEName,
-						Columns: anchorQuerySpanResults,
-					}
-					q.ctes = q.ctes[:originalSize-1]
-					if !changed {
-						break
-					}
-					q.ctes = append(q.ctes, tempCte)
-				}
-				q.ctes = q.ctes[:originalSize-1]
-				pseudoTable = tempCte
-			} else {
-				pseudoTable, err = q.extractPseudoTableFromQueryStatement(commandTableExpression.Query_statement())
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commandTableExpression.GetStart().GetLine())
-				}
-			}
-
-			if commandTableExpression.Column_list() != nil {
-				if len(commandTableExpression.Column_list().AllColumn_name()) != len(pseudoTable.GetQuerySpanResult()) {
-					return nil, errors.Errorf("the number of columns in the CTE %q near line %d returns %d fields, but the column list returns %d fields", normalizedCTEName, commandTableExpression.GetStart().GetLine(), len(pseudoTable.GetQuerySpanResult()), len(commandTableExpression.Column_list().AllColumn_name()))
-				}
-				for i, columnName := range commandTableExpression.Column_list().AllColumn_name() {
-					newPseudoTable := &base.PseudoTable{
-						Name:    normalizedCTEName,
-						Columns: make([]base.QuerySpanResult, 0),
-					}
-					newPseudoTable.Columns = append(newPseudoTable.Columns, pseudoTable.GetQuerySpanResult()[:i]...)
-					newPseudoTable.Columns = append(newPseudoTable.Columns, base.QuerySpanResult{
-						Name:          NormalizeSnowSQLObjectNamePart(columnName.Id_()),
-						SourceColumns: pseudoTable.GetQuerySpanResult()[i].SourceColumns,
-					})
-					newPseudoTable.Columns = append(newPseudoTable.Columns, pseudoTable.GetQuerySpanResult()[i+1:]...)
-					pseudoTable = newPseudoTable
-				}
-			}
-			q.ctes = append(q.ctes, pseudoTable)
-		}
+	if err := q.extractCTEFromWithExpression(ctx.With_expression()); err != nil {
+		return nil, err
 	}
 
-	selectStatement := ctx.Select_statement()
-	result, err := q.extractPseudoTableFromSelectStatement(selectStatement)
+	selectStatementInParentheses := ctx.Select_statement_in_parentheses()
+	result, err := q.extractPseudoTableFromSelectStatementInParentheses(selectStatementInParentheses)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", selectStatement.GetStart().GetLine())
+		return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", selectStatementInParentheses.GetStart().GetLine())
 	}
 
 	allSetOperators := ctx.AllSet_operators()
@@ -241,20 +169,219 @@ func (q *querySpanExtractor) extractPseudoTableFromQueryStatement(ctx parser.IQu
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, setOperator.GetStart().GetLine())
 		}
-		resultQuerySpanResults := result.GetQuerySpanResult()
-		rightQuerySpanResults := right.GetQuerySpanResult()
-		if len(resultQuerySpanResults) != len(rightQuerySpanResults) {
-			return nil, errors.Errorf("the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", selectStatement.GetStart().GetLine(), len(resultQuerySpanResults), i+1, setOperator.GetStart().GetLine(), len(rightQuerySpanResults))
-		}
-		for i := range rightQuerySpanResults {
-			result.Columns[i].SourceColumns, _ = base.MergeSourceColumnSet(resultQuerySpanResults[i].SourceColumns, rightQuerySpanResults[i].SourceColumns)
+		if err := mergeSetOperatorColumns(result, right, selectStatementInParentheses.GetStart().GetLine(), i+1, setOperator.GetStart().GetLine()); err != nil {
+			return nil, err
 		}
 	}
 	return result, nil
 }
 
+func (q *querySpanExtractor) extractCTEFromWithExpression(withExpression parser.IWith_expressionContext) error {
+	if withExpression == nil {
+		return nil
+	}
+
+	for _, commonTableExpression := range withExpression.AllCommon_table_expression() {
+		normalizedCTEName := NormalizeSnowSQLObjectNamePart(commonTableExpression.Id_())
+		isRecursiveCTE := withExpression.RECURSIVE() != nil || hasSetOperatorInSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+		if isRecursiveCTE {
+			if err := q.extractRecursiveCTE(normalizedCTEName, commonTableExpression); err != nil {
+				return err
+			}
+			continue
+		}
+
+		pseudoTable, err := q.extractPseudoTableFromSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+		if err != nil {
+			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commonTableExpression.GetStart().GetLine())
+		}
+		pseudoTable, err = applyCTEColumnList(normalizedCTEName, pseudoTable, commonTableExpression.Column_list())
+		if err != nil {
+			return errors.Wrapf(err, "failed to extract sensitive fields of the CTE %q near line %d", normalizedCTEName, commonTableExpression.GetStart().GetLine())
+		}
+		q.ctes = append(q.ctes, pseudoTable)
+	}
+	return nil
+}
+
+func hasSetOperatorInSelectStatementInParentheses(ctx parser.ISelect_statement_in_parenthesesContext) bool {
+	if ctx == nil {
+		return false
+	}
+	if ctx.Set_operators() != nil {
+		return true
+	}
+	return hasSetOperatorInSelectStatementInParentheses(ctx.Select_statement_in_parentheses())
+}
+
+func (q *querySpanExtractor) extractRecursiveCTE(cteName string, commonTableExpression parser.ICommon_table_expressionContext) error {
+	anchorTableSource, err := q.extractAnchorPseudoTableFromSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+	}
+	anchorTableSource, err = applyCTEColumnList(cteName, anchorTableSource, commonTableExpression.Column_list())
+	if err != nil {
+		return errors.Wrapf(err, "failed to extract sensitive fields of the anchor clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+	}
+
+	q.ctes = append(q.ctes, anchorTableSource)
+	for {
+		recursivePartTableSource, err := q.extractPseudoTableFromSelectStatementInParentheses(commonTableExpression.Select_statement_in_parentheses())
+		if err != nil {
+			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+		}
+		recursivePartTableSource, err = applyCTEColumnList(cteName, recursivePartTableSource, commonTableExpression.Column_list())
+		if err != nil {
+			return errors.Wrapf(err, "failed to extract sensitive fields of the recursive clause of recursive CTE %q near line %d", cteName, commonTableExpression.GetStart().GetLine())
+		}
+
+		currentCTE := q.ctes[len(q.ctes)-1]
+		mergedColumns, changed, err := mergeQuerySpanResults(currentCTE.GetQuerySpanResult(), recursivePartTableSource.GetQuerySpanResult(), cteName, commonTableExpression.GetStart().GetLine())
+		if err != nil {
+			return err
+		}
+		q.ctes[len(q.ctes)-1] = &base.PseudoTable{
+			Name:    cteName,
+			Columns: mergedColumns,
+		}
+		if !changed {
+			break
+		}
+	}
+	return nil
+}
+
+func (q *querySpanExtractor) extractAnchorPseudoTableFromSelectStatementInParentheses(ctx parser.ISelect_statement_in_parenthesesContext) (*base.PseudoTable, error) {
+	if ctx == nil {
+		return nil, errors.Errorf("empty select statement in parentheses")
+	}
+	if nested := ctx.Select_statement_in_parentheses(); nested != nil {
+		return q.extractAnchorPseudoTableFromSelectStatementInParentheses(nested)
+	}
+	if selectStatement := ctx.Select_statement(); selectStatement != nil {
+		return q.extractPseudoTableFromSelectStatement(selectStatement)
+	}
+	if withExpression := ctx.With_expression(); withExpression != nil {
+		originalCTECount := len(q.ctes)
+		if err := q.extractCTEFromWithExpression(withExpression); err != nil {
+			return nil, err
+		}
+		defer func() {
+			q.ctes = q.ctes[:originalCTECount]
+		}()
+		if setOperator := ctx.Set_operators(); setOperator != nil {
+			return q.extractPseudoTableFromSetOperator(setOperator)
+		}
+		return nil, errors.Errorf("failed to extract anchor statement near line %d", ctx.GetStart().GetLine())
+	}
+	return nil, errors.Errorf("failed to extract anchor statement near line %d", ctx.GetStart().GetLine())
+}
+
+func applyCTEColumnList(cteName string, pseudoTable *base.PseudoTable, columnList parser.IColumn_listContext) (*base.PseudoTable, error) {
+	if pseudoTable == nil {
+		pseudoTable = &base.PseudoTable{
+			Name:    cteName,
+			Columns: []base.QuerySpanResult{},
+		}
+	}
+
+	result := &base.PseudoTable{
+		Name:    cteName,
+		Columns: make([]base.QuerySpanResult, len(pseudoTable.GetQuerySpanResult())),
+	}
+	copy(result.Columns, pseudoTable.GetQuerySpanResult())
+
+	if columnList == nil {
+		return result, nil
+	}
+	if len(columnList.AllColumn_name()) != len(result.GetQuerySpanResult()) {
+		return nil, errors.Errorf("the number of columns in the CTE %q near line %d returns %d fields, but the column list returns %d fields", cteName, columnList.GetStart().GetLine(), len(result.GetQuerySpanResult()), len(columnList.AllColumn_name()))
+	}
+	for i, columnName := range columnList.AllColumn_name() {
+		result.Columns[i].Name = normalizeSnowSQLColumnName(columnName)
+	}
+	return result, nil
+}
+
+func mergeQuerySpanResults(currentColumns, newColumns []base.QuerySpanResult, cteName string, line int) ([]base.QuerySpanResult, bool, error) {
+	if len(currentColumns) != len(newColumns) {
+		return nil, false, errors.Errorf("recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q near line %d", len(newColumns), len(currentColumns), cteName, line)
+	}
+
+	mergedColumns := make([]base.QuerySpanResult, len(currentColumns))
+	copy(mergedColumns, currentColumns)
+	changed := false
+	for i := range mergedColumns {
+		var hasChange bool
+		mergedColumns[i].SourceColumns, hasChange = base.MergeSourceColumnSet(mergedColumns[i].SourceColumns, newColumns[i].SourceColumns)
+		changed = changed || hasChange
+	}
+	return mergedColumns, changed, nil
+}
+
+func mergeSetOperatorColumns(left, right *base.PseudoTable, leftLine, setOperatorIndex, rightLine int) error {
+	if left == nil || right == nil {
+		return nil
+	}
+	leftColumns := left.GetQuerySpanResult()
+	rightColumns := right.GetQuerySpanResult()
+	if len(leftColumns) != len(rightColumns) {
+		return errors.Errorf("the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", leftLine, len(leftColumns), setOperatorIndex, rightLine, len(rightColumns))
+	}
+	for i := range rightColumns {
+		left.Columns[i].SourceColumns, _ = base.MergeSourceColumnSet(leftColumns[i].SourceColumns, rightColumns[i].SourceColumns)
+	}
+	return nil
+}
+
 func (q *querySpanExtractor) extractPseudoTableFromSetOperator(ctx parser.ISet_operatorsContext) (*base.PseudoTable, error) {
-	return q.extractPseudoTableFromSelectStatement(ctx.Select_statement())
+	return q.extractPseudoTableFromSelectStatementInParentheses(ctx.Select_statement_in_parentheses())
+}
+
+func (q *querySpanExtractor) extractPseudoTableFromSelectStatementInParentheses(ctx parser.ISelect_statement_in_parenthesesContext) (*base.PseudoTable, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+
+	var result *base.PseudoTable
+	var err error
+	if selectStatement := ctx.Select_statement(); selectStatement != nil {
+		result, err = q.extractPseudoTableFromSelectStatement(selectStatement)
+		if err != nil {
+			return nil, err
+		}
+	} else if nested := ctx.Select_statement_in_parentheses(); nested != nil {
+		result, err = q.extractPseudoTableFromSelectStatementInParentheses(nested)
+		if err != nil {
+			return nil, err
+		}
+	} else if withExpression := ctx.With_expression(); withExpression != nil {
+		originalCTECount := len(q.ctes)
+		if err := q.extractCTEFromWithExpression(withExpression); err != nil {
+			return nil, err
+		}
+		defer func() {
+			q.ctes = q.ctes[:originalCTECount]
+		}()
+	}
+
+	if setOperator := ctx.Set_operators(); setOperator != nil {
+		right, err := q.extractPseudoTableFromSetOperator(setOperator)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract set operator near line %d", setOperator.GetStart().GetLine())
+		}
+		if result == nil {
+			return right, nil
+		}
+		if err := mergeSetOperatorColumns(result, right, ctx.GetStart().GetLine(), 1, setOperator.GetStart().GetLine()); err != nil {
+			return nil, err
+		}
+	}
+
+	if result == nil {
+		return nil, errors.Errorf("failed to extract select statement near line %d", ctx.GetStart().GetLine())
+	}
+	return result, nil
 }
 
 func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.ISelect_statementContext) (*base.PseudoTable, error) {
@@ -262,7 +389,7 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.IS
 		return nil, nil
 	}
 
-	if ctx.Select_optional_clauses().From_clause() != nil {
+	if ctx.Select_optional_clauses() != nil && ctx.Select_optional_clauses().From_clause() != nil {
 		tableSourcesFrom, err := q.extractTableSourceFromFromClause(ctx.Select_optional_clauses().From_clause())
 		if err != nil {
 			return nil, err
@@ -283,27 +410,34 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.IS
 	if ctx.Select_clause() != nil {
 		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
 	} else if ctx.Select_top_clause() != nil {
-		selectList = ctx.Select_clause().Select_list_no_top().Select_list()
+		selectList = ctx.Select_top_clause().Select_list_top().Select_list()
+	}
+	if selectList == nil {
+		return result, nil
 	}
 	for _, iSelectListElem := range selectList.AllSelect_list_elem() {
-		if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
-			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
-			if v := columnElem.Alias(); v != nil {
-				normalizedTableName = NormalizeSnowSQLObjectNamePart(v.Id_())
-			} else if v := columnElem.Object_name(); v != nil {
-				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectName(v, "", "")
+		if columnElemStar := iSelectListElem.Column_elem_star(); columnElemStar != nil {
+			normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectNameOrAlias(columnElemStar.Object_name_or_alias())
+			left, err := q.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
 			}
-			if columnElem.STAR() != nil {
-				left, err := q.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
+			left = filterExcludedColumns(left, iSelectListElem.Exclude_clause())
+			result.Columns = append(result.Columns, left...)
+		} else if columnElem := iSelectListElem.Column_elem(); columnElem != nil {
+			var normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName string
+			if v := columnElem.Object_name_or_alias(); v != nil {
+				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizedObjectNameOrAlias(v)
+			}
+			if columnName := columnElem.Column_name(); columnName != nil {
+				ids := columnName.AllId_()
+				if normalizedTableName == "" && len(ids) == 2 {
+					normalizedTableName = NormalizeSnowSQLObjectNamePart(ids[0])
 				}
-				result.Columns = append(result.Columns, left...)
-			} else if columnElem.Column_name() != nil {
-				normalizedColumnName = NormalizeSnowSQLObjectNamePart(columnElem.Column_name().Id_())
+				normalizedColumnName = normalizeSnowSQLColumnName(columnName)
 				querySpanResult, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnElem.Column_name().GetStart().GetLine())
+					return nil, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, columnName.GetStart().GetLine())
 				}
 				result.Columns = append(result.Columns, querySpanResult)
 			} else if columnElem.DOLLAR() != nil {
@@ -323,7 +457,7 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.IS
 				}
 				result.Columns = append(result.Columns, left[columnPosition-1])
 			}
-			if asAlias := columnElem.As_alias(); asAlias != nil {
+			if asAlias := iSelectListElem.As_alias(); asAlias != nil && len(result.Columns) > 0 {
 				result.Columns[len(result.Columns)-1].Name = NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
 			}
 		} else if expressionElem := iSelectListElem.Expression_elem(); expressionElem != nil {
@@ -347,13 +481,66 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.IS
 				})
 			}
 
-			if asAlias := expressionElem.As_alias(); asAlias != nil {
+			if asAlias := iSelectListElem.As_alias(); asAlias != nil && len(result.Columns) > 0 {
 				result.Columns[len(result.Columns)-1].Name = NormalizeSnowSQLObjectNamePart(asAlias.Alias().Id_())
 			}
 		}
 	}
 
 	return result, nil
+}
+
+func normalizedObjectNameOrAlias(ctx parser.IObject_name_or_aliasContext) (string, string, string) {
+	if ctx == nil {
+		return "", "", ""
+	}
+	if objectName := ctx.Object_name(); objectName != nil {
+		return normalizedObjectName(objectName, "", "")
+	}
+	if alias := ctx.Alias(); alias != nil {
+		return "", "", NormalizeSnowSQLObjectNamePart(alias.Id_())
+	}
+	return "", "", ""
+}
+
+func normalizeSnowSQLColumnName(columnName parser.IColumn_nameContext) string {
+	if columnName == nil {
+		return ""
+	}
+	ids := columnName.AllId_()
+	if len(ids) == 0 {
+		return ""
+	}
+	return NormalizeSnowSQLObjectNamePart(ids[len(ids)-1])
+}
+
+func filterExcludedColumns(columns []base.QuerySpanResult, excludeClause parser.IExclude_clauseContext) []base.QuerySpanResult {
+	if excludeClause == nil {
+		return columns
+	}
+
+	excludedColumns := make(map[string]bool)
+	if columnName := excludeClause.Column_name(); columnName != nil {
+		excludedColumns[normalizeSnowSQLColumnName(columnName)] = true
+	}
+	if columnList := excludeClause.Column_list_in_parentheses(); columnList != nil {
+		if list := columnList.Column_list(); list != nil {
+			for _, columnName := range list.AllColumn_name() {
+				excludedColumns[normalizeSnowSQLColumnName(columnName)] = true
+			}
+		}
+	}
+	if len(excludedColumns) == 0 {
+		return columns
+	}
+
+	var result []base.QuerySpanResult
+	for _, column := range columns {
+		if !excludedColumns[column.Name] {
+			result = append(result, column)
+		}
+	}
+	return result
 }
 
 // The closure of the IExprContext.
@@ -390,9 +577,6 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			return q.extractQuerySpanResultResultFromExpr(v)
 		}
 		if v := ctx.Iff_expr(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
-		}
-		if v := ctx.Full_column_name(); v != nil {
 			return q.extractQuerySpanResultResultFromExpr(v)
 		}
 		if v := ctx.Bracket_expression(); v != nil {
@@ -500,7 +684,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			Name:          ctx.GetText(),
 			SourceColumns: make(base.SourceColumnSet),
 		}
-		if v := ctx.Expr(); v != nil {
+		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
 			if err != nil {
 				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
@@ -672,8 +856,8 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 		}
 		return ctx.GetText(), querySpanResult, nil
 	case *parser.Primitive_expressionContext:
-		if v := ctx.Id_(); v != nil {
-			return q.extractQuerySpanResultResultFromExpr(v)
+		if v := ctx.AllId_(); len(v) > 0 {
+			return q.extractQuerySpanResultResultFromExpr(v[0])
 		}
 		return ctx.GetText(), base.QuerySpanResult{
 			Name: ctx.GetText(),
@@ -697,10 +881,10 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
-		if v := ctx.Expr(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
+		if v := ctx.AllExpr(); len(v) > 0 {
+			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v[0])
 			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v[0].GetText(), v[0].GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
@@ -739,10 +923,10 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			Name:          ctx.GetText(),
 			SourceColumns: make(base.SourceColumnSet),
 		}
-		if v := ctx.Expr(); v != nil {
-			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
+		if v := ctx.AllExpr(); len(v) > 0 {
+			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v[0])
 			if err != nil {
-				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v[0].GetText(), v[0].GetStart().GetLine())
 			}
 			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
@@ -962,7 +1146,7 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 	}
 
 	// TODO(zp): Handle the value clause.
-	if ctx.Values() != nil {
+	if ctx.Values_table() != nil {
 		return nil, nil
 	}
 
@@ -985,8 +1169,8 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 		return nil, nil
 	}
 
-	if ctx.Pivot_unpivot() != nil {
-		if v := ctx.Pivot_unpivot(); v.PIVOT() != nil {
+	if v := ctx.Pivot_unpivot(); v != nil {
+		if v.PIVOT() != nil {
 			pivotColumnName := v.AllId_()[1]
 			normalizedPivotColumnName := NormalizeSnowSQLObjectNamePart(pivotColumnName)
 			pivotColumnIndex := -1
@@ -1016,17 +1200,23 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 			}
 			result = append(result[:valueColumnIndex], result[valueColumnIndex+1:]...)
 
-			for _, literal := range v.AllLiteral() {
+			if v.Pivot_in_clause() == nil {
+				return nil, errors.Errorf("pivot in clause is missing near line %d", v.GetStart().GetLine())
+			}
+			for _, literal := range v.Pivot_in_clause().AllLiteral() {
 				result = append(result, base.QuerySpanResult{
 					Name:          literal.GetText(),
 					SourceColumns: pivotColumnInOriginalResult.SourceColumns,
 				})
 			}
-		} else if v := ctx.Pivot_unpivot(); v.UNPIVOT() != nil {
+		} else if v.UNPIVOT() != nil {
 			var strippedColumnIndices []int
 			var strippedColumnInOriginalResult []base.QuerySpanResult
-			for idx, columnName := range v.Column_list().AllColumn_name() {
-				normalizedColumnName := NormalizeSnowSQLObjectNamePart(columnName.Id_())
+			if v.Aliased_column_list() == nil {
+				return nil, errors.Errorf("aliased column list is missing for unpivot near line %d", v.GetStart().GetLine())
+			}
+			for idx, columnName := range v.Aliased_column_list().AllColumn_name() {
+				normalizedColumnName := normalizeSnowSQLColumnName(columnName)
 				for i, field := range result {
 					if field.Name == normalizedColumnName {
 						strippedColumnIndices = append(strippedColumnIndices, i)
@@ -1048,11 +1238,10 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 			valueColumnName := v.Id_(0)
 			normalizedValueColumnName := NormalizeSnowSQLObjectNamePart(valueColumnName)
 
-			nameColumnName := v.Column_name().Id_()
-			normalizedNameColumnName := NormalizeSnowSQLObjectNamePart(nameColumnName)
+			nameColumnName := normalizeSnowSQLColumnName(v.Column_name())
 
 			result = append(result, base.QuerySpanResult{
-				Name:          normalizedNameColumnName,
+				Name:          nameColumnName,
 				SourceColumns: make(base.SourceColumnSet),
 			}, base.QuerySpanResult{
 				Name:          normalizedValueColumnName,
@@ -1062,6 +1251,14 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 	}
 
 	// If the as alias is not nil, we should use the alias name to replace the original table name.
+	if ctx.Pivot_unpivot() != nil && ctx.Pivot_unpivot().As_alias() != nil {
+		id := ctx.Pivot_unpivot().As_alias().Alias().Id_()
+		aliasName := NormalizeSnowSQLObjectNamePart(id)
+		return &base.PseudoTable{
+			Name:    aliasName,
+			Columns: result,
+		}, nil
+	}
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()
 		aliasName := NormalizeSnowSQLObjectNamePart(id)

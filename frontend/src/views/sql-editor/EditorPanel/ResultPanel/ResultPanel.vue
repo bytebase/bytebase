@@ -88,7 +88,6 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { CircleAlertIcon, XIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NDropdown, NTabPane, NTabs, NTooltip } from "naive-ui";
@@ -99,7 +98,7 @@ import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { getDataSourceTypeI18n } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { getInstanceResource } from "@/utils";
+import { formatAbsoluteDateTime, getInstanceResource } from "@/utils";
 import BatchQuerySelect from "./BatchQuerySelect.vue";
 import DatabaseQueryContext from "./DatabaseQueryContext.vue";
 
@@ -232,7 +231,7 @@ const tabNamesMap = computed(() => {
         name = t("sql-editor.executing-query");
         break;
       default:
-        name = dayjs(context.beginTimestampMS).format("YYYY-MM-DD HH:mm:ss");
+        name = formatAbsoluteDateTime(context.beginTimestampMS ?? Date.now());
     }
     map.set(context.id, name);
   }

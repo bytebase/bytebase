@@ -4,17 +4,22 @@
 
     <ComponentPermissionGuard
       :project="project"
+      class="mx-4"
       :permissions="['bb.accessGrants.list']"
     >
       <div class="px-4 pb-2 flex items-center gap-x-2">
         <AdvancedSearch
           class="flex-1"
-          :params="searchParams"
+          v-model:params="searchParams"
           :scope-options="scopeOptions"
           :placeholder="$t('issue.advanced-search.filter')"
           :autofocus="false"
           :cache-query="true"
-          @update:params="searchParams = $event"
+        />
+        <TimeRange
+          v-model:show="showTimeRange"
+          v-model:params="searchParams"
+          @update:params="$emit('update:params', $event)"
         />
       </div>
 
@@ -42,7 +47,7 @@
       </PagedTable>
     </ComponentPermissionGuard>
 
-    <NAlert v-if="!canList" type="info" class="mx-4 mt-2">
+    <BBAttention v-if="!canList" type="info" class="mx-4 mt-2">
       <i18n-t keypath="sql-editor.access-grants-redirect-hint" tag="span">
         <template #link>
           <router-link
@@ -57,14 +62,13 @@
           </router-link>
         </template>
       </i18n-t>
-    </NAlert>
+    </BBAttention>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { DataTableColumn, DataTableSortState } from "naive-ui";
 import {
-  NAlert,
   NButton,
   NDataTable,
   NEmpty,
@@ -72,19 +76,14 @@ import {
   NTooltip,
   useDialog,
 } from "naive-ui";
-import { computed, h, ref, type VNode, watch } from "vue";
+import { computed, h, ref, type VNode, type VNodeChild, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
-import AdvancedSearch from "@/components/AdvancedSearch";
-import type {
-  ScopeOption,
-  ValueOption,
-} from "@/components/AdvancedSearch/types";
+import { useRouter } from "vue-router";
+import { BBAttention } from "@/bbkit";
+import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import YouTag from "@/components/misc/YouTag.vue";
 import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
-import { RichDatabaseName } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { mapSorterStatus } from "@/components/v2/Model/utils";
 import {
@@ -92,23 +91,21 @@ import {
   featureToRef,
   pushNotification,
   useAccessGrantStore,
-  useCurrentUserV1,
-  useDatabaseV1Store,
   useProjectByName,
-  useUserStore,
 } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import {
-  type AccessGrant,
-  AccessGrant_Status,
-} from "@/types/proto-es/v1/access_grant_service_pb";
+import { type AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  extractDatabaseResourceName,
+  type AccessGrantFilterStatus,
+  formatAbsoluteDateTime,
   getAccessGrantDisplayStatus,
+  getAccessGrantDisplayStatusText,
+  getAccessGrantExpirationText,
   getAccessGrantStatusTagType,
-  getDefaultPagination,
+  getAccessSearchOptions,
+  getTsRangeFromSearchParams,
   hasProjectPermissionV2,
   type SearchParams,
 } from "@/utils";
@@ -117,19 +114,17 @@ import {
   getValuesFromSearchParams,
 } from "@/utils/v1/advanced-search/common";
 
-const PAGE_SIZE = getDefaultPagination();
-const ORDER_KEYS = ["creator", "create_time"];
+const ORDER_KEYS = ["creator", "create_time", "expire_time"];
 
 const props = defineProps<{
   projectId: string;
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const dialog = useDialog();
-const me = useCurrentUserV1();
-const userStore = useUserStore();
-const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
+const showTimeRange = ref(false);
 
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const { project } = useProjectByName(projectName);
@@ -152,109 +147,21 @@ const searchParams = ref<SearchParams>({
   scopes: [],
 });
 
-const scopeOptions = computed((): ScopeOption[] => [
-  {
-    id: "status",
-    title: t("common.status"),
-    options: [
-      {
-        value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
-        keywords: ["active"],
-        render: () => t("common.active"),
-      },
-      {
-        value: AccessGrant_Status[AccessGrant_Status.PENDING],
-        keywords: ["pending"],
-        render: () => t("common.pending"),
-      },
-      {
-        value: "EXPIRED",
-        keywords: ["expired"],
-        render: () => t("sql-editor.expired"),
-      },
-      {
-        value: AccessGrant_Status[AccessGrant_Status.REVOKED],
-        keywords: ["revoked"],
-        render: () => t("common.revoked"),
-      },
-    ],
-  },
-  {
-    id: "creator",
-    title: t("common.creator"),
-    search: ({ keyword, nextPageToken: pageToken }) =>
-      userStore
-        .fetchUserList({
-          pageToken,
-          pageSize: PAGE_SIZE,
-          filter: { query: keyword },
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: resp.users.map<ValueOption>((user) => ({
-            value: user.email,
-            keywords: [user.email, user.title],
-            render: () => {
-              const children = [
-                h(BBAvatar, { size: "TINY", username: user.title }),
-                h("span", user.title),
-              ];
-              if (user.name === me.value.name) {
-                children.push(h(YouTag));
-              }
-              return h("div", { class: "flex items-center gap-x-1" }, children);
-            },
-          })),
-        })),
-  },
-  {
-    id: "database",
-    title: t("common.database"),
-    search: ({ keyword, nextPageToken: pageToken }) =>
-      databaseStore
-        .fetchDatabases({
-          parent: projectName.value,
-          pageToken: pageToken,
-          pageSize: PAGE_SIZE,
-          filter: { query: keyword },
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: resp.databases.map<ValueOption>((db) => {
-            const { database: dbName } = extractDatabaseResourceName(db.name);
-            return {
-              value: db.name,
-              keywords: [dbName, db.name],
-              render: () =>
-                h(RichDatabaseName, {
-                  database: db,
-                  showInstance: true,
-                  showEngineIcon: true,
-                }),
-            };
-          }),
-        })),
-  },
-]);
-
-const statusMap: Record<string, AccessGrant_Status> = {
-  ACTIVE: AccessGrant_Status.ACTIVE,
-  PENDING: AccessGrant_Status.PENDING,
-  REVOKED: AccessGrant_Status.REVOKED,
-  EXPIRED: AccessGrant_Status.ACTIVE,
-};
+const scopeOptions = computed(() => {
+  return getAccessSearchOptions({
+    project: project.value.name,
+    showCreator: true,
+  });
+});
 
 const filter = computed((): AccessFilter => {
   const f: AccessFilter = {};
-  const statuses = getValuesFromSearchParams(searchParams.value, "status");
-  if (statuses.length === 1) {
-    f.status = statusMap[statuses[0]];
-    if (statuses[0] === "EXPIRED") {
-      f.expireTsBefore = Date.now();
-    } else if (statuses[0] === "ACTIVE") {
-      f.expireTsAfter = Date.now();
-    }
-  }
+  const statuses = getValuesFromSearchParams(
+    searchParams.value,
+    "status"
+  ) as AccessGrantFilterStatus[];
+  f.status = statuses;
+
   const creator = getValueFromSearchParams(
     searchParams.value,
     "creator",
@@ -274,6 +181,15 @@ const filter = computed((): AccessFilter => {
   const queryText = searchParams.value.query.trim();
   if (queryText) {
     f.statement = queryText;
+  }
+
+  const createdTsRange = getTsRangeFromSearchParams(
+    searchParams.value,
+    "created"
+  );
+  if (createdTsRange) {
+    f.createdTsAfter = createdTsRange[0];
+    f.createdTsBefore = createdTsRange[1];
   }
   return f;
 });
@@ -362,7 +278,7 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
           size: "small",
           bordered: false,
         },
-        { default: () => status }
+        { default: () => getAccessGrantDisplayStatusText(grant) }
       );
     },
   },
@@ -380,7 +296,18 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
     render: (grant) => {
       if (!grant.createTime) return "-";
       const ms = getTimeForPbTimestampProtoEs(grant.createTime);
-      return h("span", { class: "text-sm" }, new Date(ms).toLocaleString());
+      return h("span", { class: "text-sm" }, formatAbsoluteDateTime(ms));
+    },
+  },
+  {
+    key: "expire_time",
+    title: t("common.expiration"),
+    sortOrder: false,
+    width: 180,
+    render: (grant) => {
+      const info = getAccessGrantExpirationText(grant);
+      if (info.type !== "datetime") return "-";
+      return h("span", { class: "text-sm" }, info.value);
     },
   },
   {
@@ -403,25 +330,47 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
     title: t("common.databases"),
     width: 200,
     render: (grant) => {
-      const names = getDatabaseNames(grant.targets);
-      if (names.length === 0) return "-";
-      const display =
-        names.length <= 2
-          ? names.join(", ")
-          : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-      if (names.length <= 2) {
-        return h("span", { class: "text-sm" }, display);
+      const targets = grant.targets;
+      if (targets.length === 0) return "-";
+      const renderLink = (target: string): VNodeChild => {
+        const name = getDatabaseNames([target])[0];
+        return h(
+          "span",
+          {
+            class: "normal-link hover:underline cursor-pointer text-sm",
+            onClick: () => router.push({ path: `/${target}` }),
+          },
+          name
+        );
+      };
+      const visible = targets.slice(0, 2);
+      const rest = targets.length - visible.length;
+      const children: VNodeChild[] = [];
+      visible.forEach((t, i) => {
+        if (i > 0) children.push(h("span", { class: "text-sm" }, ", "));
+        children.push(renderLink(t));
+      });
+      if (rest > 0) {
+        children.push(
+          h("span", { class: "text-sm text-control-placeholder" }, ` +${rest}`)
+        );
       }
+      const inline = h(
+        "div",
+        { class: "flex items-center truncate gap-x-0.5" },
+        children
+      );
+      if (rest <= 0) return inline;
       return h(
         NTooltip,
-        {},
+        { style: "background: white; color: inherit" },
         {
-          trigger: () => h("span", { class: "text-sm" }, display),
+          trigger: () => inline,
           default: () =>
             h(
               "div",
-              { class: "flex flex-col" },
-              names.map((name) => h("span", { key: name }, name))
+              { class: "flex flex-col gap-y-1" },
+              targets.map((t) => renderLink(t))
             ),
         }
       );

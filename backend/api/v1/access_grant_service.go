@@ -145,6 +145,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if ag.Query == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("query is required"))
 	}
+	if ag.Reason == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("reason is required"))
+	}
 
 	// Validate the query is a read-only statement (SELECT).
 	instanceID, _, err := common.GetInstanceDatabaseID(ag.Targets[0])

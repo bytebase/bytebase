@@ -8,8 +8,13 @@ import {
 } from "lossless-json";
 import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
-import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
+import type {
+  QueryResult,
+  QueryRow,
+  RowValue,
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
+  QueryResultSchema,
   QueryRowSchema,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
@@ -297,6 +302,128 @@ export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
     result.columnNames = columns;
     result.columnTypeNames = columnTypeNames;
   }
+};
+
+// Parses the hits array from an Elasticsearch _search QueryResult's "hits" column.
+const parseESHitsArray = (result: QueryResult): unknown[] | undefined => {
+  const hitsColIdx = result.columnNames.indexOf("hits");
+  if (hitsColIdx === -1 || result.rows.length === 0) return undefined;
+
+  const hitsCell = result.rows[0]?.values[hitsColIdx];
+  if (hitsCell?.kind.case !== "stringValue") return undefined;
+
+  let hitsObj: Record<string, unknown>;
+  try {
+    hitsObj = JSON.parse(hitsCell.kind.value);
+  } catch {
+    return undefined;
+  }
+
+  const hitsArray = hitsObj?.hits;
+  if (!Array.isArray(hitsArray) || hitsArray.length === 0) return undefined;
+  return hitsArray;
+};
+
+// Discovers columns from ES hits: _id, _score, then sorted _source field keys.
+const discoverESColumns = (hitsArray: unknown[]) => {
+  const metaFields = ["_id", "_score"];
+  const sourceKeySet = new Set<string>();
+  for (const hit of hitsArray) {
+    const source = (hit as Record<string, unknown>)?._source;
+    if (source && typeof source === "object") {
+      for (const key of Object.keys(source)) {
+        sourceKeySet.add(key);
+      }
+    }
+  }
+  const allColumns = [
+    ...metaFields,
+    ...[...sourceKeySet].sort((a, b) => a.localeCompare(b)),
+  ];
+  const columnIndexMap = new Map<string, number>();
+  for (let i = 0; i < allColumns.length; i++) {
+    columnIndexMap.set(allColumns[i], i);
+  }
+  return { metaFields, allColumns, columnIndexMap };
+};
+
+// Builds a single QueryRow from an ES hit document.
+const buildESHitRow = (
+  hit: Record<string, unknown>,
+  metaFields: string[],
+  columnCount: number,
+  columnIndexMap: Map<string, number>,
+  columnTypeNames: string[]
+): QueryRow => {
+  const values: RowValue[] = Array.from({ length: columnCount }).map(() =>
+    createProto(RowValueSchema, {
+      kind: { case: "nullValue", value: NullValue.NULL_VALUE },
+    })
+  );
+
+  for (const field of metaFields) {
+    const idx = columnIndexMap.get(field);
+    if (idx === undefined) continue;
+    const val = hit[field];
+    if (val != null) {
+      const { value: formatted, type } = convertAnyToRowValue(val, false);
+      values[idx] = formatted;
+      columnTypeNames[idx] = type;
+    }
+  }
+
+  const source = hit._source;
+  if (source && typeof source === "object") {
+    for (const [key, val] of Object.entries(source)) {
+      const idx = columnIndexMap.get(key);
+      if (idx === undefined) continue;
+      if (val != null) {
+        const { value: formatted, type } = convertAnyToRowValue(val, true);
+        values[idx] = formatted;
+        columnTypeNames[idx] = type;
+      }
+    }
+  }
+
+  return createProto(QueryRowSchema, { values });
+};
+
+/**
+ * Transforms an Elasticsearch _search QueryResult into a tabular format.
+ * Detects the "hits" column, extracts hits.hits[], and flattens each hit's
+ * _source fields into columns. Returns undefined if the result is not a
+ * search response.
+ */
+export const flattenElasticsearchSearchResult = (
+  result: QueryResult
+): QueryResult | undefined => {
+  const hitsArray = parseESHitsArray(result);
+  if (!hitsArray) return undefined;
+
+  const { metaFields, allColumns, columnIndexMap } =
+    discoverESColumns(hitsArray);
+  const columnTypeNames: string[] = Array.from({
+    length: allColumns.length,
+  }).map(() => "TEXT");
+
+  const rows = hitsArray.map((hit) =>
+    buildESHitRow(
+      hit as Record<string, unknown>,
+      metaFields,
+      allColumns.length,
+      columnIndexMap,
+      columnTypeNames
+    )
+  );
+
+  return createProto(QueryResultSchema, {
+    columnNames: allColumns,
+    columnTypeNames,
+    rows,
+    rowsCount: BigInt(rows.length),
+    statement: result.statement,
+    latency: result.latency,
+  });
 };
 
 const getNoSQLColumns = (rows: QueryRow[]) => {

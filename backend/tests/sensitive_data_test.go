@@ -294,4 +294,31 @@ func TestSensitiveData(t *testing.T) {
 	a.Equal("", result.Error)
 	diff = cmp.Diff(originData, result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
+
+	// Query with a type-incompatible function on a masked column.
+	// The database error message would normally contain the actual column value,
+	// but the masking pipeline should redact it.
+	errorLeakResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:         database.Name,
+		Statement:    "SELECT BIN_TO_UUID(author) FROM tech_book WHERE id = 1",
+		DataSourceId: "admin",
+	}))
+	a.NoError(err)
+	a.Equal(1, len(errorLeakResp.Msg.Results))
+	a.NotEmpty(errorLeakResp.Msg.Results[0].Error)
+	// The error should be redacted — must not contain the actual column value.
+	a.NotContains(errorLeakResp.Msg.Results[0].Error, "bber")
+	a.Contains(errorLeakResp.Msg.Results[0].Error, "data masking policies")
+
+	// Same query on a non-masked column should preserve the original error.
+	nonMaskedErrorResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:         database.Name,
+		Statement:    "SELECT BIN_TO_UUID(name) FROM tech_book WHERE id = 1",
+		DataSourceId: "admin",
+	}))
+	a.NoError(err)
+	a.Equal(1, len(nonMaskedErrorResp.Msg.Results))
+	a.NotEmpty(nonMaskedErrorResp.Msg.Results[0].Error)
+	// The error should NOT be redacted — name is not masked.
+	a.NotContains(nonMaskedErrorResp.Msg.Results[0].Error, "data masking policies")
 }

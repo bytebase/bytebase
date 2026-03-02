@@ -18,14 +18,11 @@
 
 <script setup lang="ts">
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { getTimeForPbTimestampProtoEs } from "@/types/timestamp";
+import { formatAbsoluteDateTime } from "@/utils";
 import { humanizeTs } from "@/utils/util";
-
-dayjs.extend(timezone);
 
 interface Props {
   timestamp?: Timestamp;
@@ -65,8 +62,6 @@ const humanizedTime = computed(() => {
 
 const fullDateTime = computed(() => {
   if (!timestampInMilliseconds.value) return "";
-
-  const date = dayjs(timestampInMilliseconds.value);
-  return date.local().format();
+  return formatAbsoluteDateTime(timestampInMilliseconds.value);
 });
 </script>

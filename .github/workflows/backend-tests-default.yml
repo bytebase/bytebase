@@ -11,6 +11,8 @@ on:
       - 'proto/**/*.go'
       - 'action/**'
 
+permissions: {}
+
 jobs:
   go-tests:
     runs-on: ubuntu-latest

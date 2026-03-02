@@ -25,7 +25,7 @@
         </NButton>
       </template>
       <template #button>
-        <NButton size="tiny" @click="copySelection" type="primary" secondary>
+        <NButton size="tiny" @click="copySelected" type="primary" secondary>
           <template #icon>
             <CopyIcon />
           </template>
@@ -45,12 +45,9 @@
 import { CopyIcon, InfoIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
 import { useSelectionContext } from "./DataTable/common/selection-logic";
 
-const { t } = useI18n();
-const { state: selectionState, copy, deselect } = useSelectionContext();
+const { state: selectionState, copySelected, deselect } = useSelectionContext();
 
 const shouldShow = computed(
   () =>
@@ -59,16 +56,4 @@ const shouldShow = computed(
 );
 
 const isMac = navigator.platform.match(/mac/i);
-
-const copySelection = () => {
-  const copied = copy();
-  if (!copied) {
-    return;
-  }
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.copied"),
-  });
-};
 </script>

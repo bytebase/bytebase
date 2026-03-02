@@ -2,7 +2,7 @@
   <div class="relative w-full h-full flex flex-col justify-start items-start gap-y-1">
     <div
       ref="containerRef"
-      class="w-full px-1 flex flex-wrap items-center gap-x-2 gap-y-1"
+      class="w-full px-1 flex flex-wrap items-center gap-x-2 gap-y-2"
     >
       <AdvancedSearch
         class="flex-1"
@@ -15,21 +15,30 @@
         :cache-query="false"
         @update:params="searchParams = $event"
       />
-      <NButton
-        ghost
-        size="small"
-        type="primary"
-        :style="{
-          width: useSmallLayout ? '100%' : 'auto'
-        }"
-        :disabled="!hasJITFeature"
-        @click="showDrawer = true"
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.accessGrants.create'
+        ]"
+        class="ml-auto"
       >
-        <template v-if="!hasJITFeature" #icon>
-          <FeatureBadge :clickable="false" :feature="PlanFeature.FEATURE_JIT" />
-        </template>
-        {{ $t("sql-editor.request-access") }}
-      </NButton>
+        <NButton
+          ghost
+          size="small"
+          type="primary"
+          :style="{
+            width: useSmallLayout ? '100%' : 'auto'
+          }"
+          :disabled="!hasJITFeature || slotProps.disabled"
+          @click="showDrawer = true"
+        >
+          <template v-if="!hasJITFeature" #icon>
+            <FeatureBadge :clickable="false" :feature="PlanFeature.FEATURE_JIT" />
+          </template>
+          {{ $t("sql-editor.request-access") }}
+        </NButton>
+      </PermissionGuardWrapper>
     </div>
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <AccessGrantItem
@@ -37,7 +46,9 @@
         :key="grant.name"
         :grant="grant"
         :highlight="grant.name === highlightAccessGrantName"
+        :issue="issueByGrantName.get(grant.name)"
         @run="handleRun"
+        @request="handleRequest"
       />
       <div
         v-if="nextPageToken"
@@ -68,6 +79,9 @@
 
     <AccessGrantRequestDrawer
       v-if="showDrawer"
+      :query="pendingCreate?.query"
+      :unmask="pendingCreate?.unmask"
+      :targets="pendingCreate?.targets"
       @close="handleDrawerClose"
     />
   </div>
@@ -76,16 +90,11 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { NButton } from "naive-ui";
-import { computed, h, nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, nextTick, ref, watch } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import type {
-  ScopeOption,
-  ValueOption,
-} from "@/components/AdvancedSearch/types";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { RichDatabaseName } from "@/components/v2";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
   type AccessFilter,
@@ -93,6 +102,8 @@ import {
   useAccessGrantStore,
   useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
+  useIssueV1Store,
+  useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -100,9 +111,11 @@ import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  extractDatabaseResourceName,
+  type AccessGrantFilterStatus,
+  getAccessSearchOptions,
   getDefaultPagination,
   type SearchParams,
 } from "@/utils";
@@ -116,120 +129,77 @@ import AccessGrantRequestDrawer from "./AccessGrantRequestDrawer.vue";
 
 const PAGE_SIZE = getDefaultPagination();
 
-const { t } = useI18n();
+const projectStore = useProjectV1Store();
 const editorStore = useSQLEditorStore();
 const tabStore = useSQLEditorTabStore();
-const databaseStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
+const issueStore = useIssueV1Store();
 const { instance: currentInstance } = useConnectionOfCurrentSQLEditorTab();
 const { execute } = useExecuteSQL();
 const { highlightAccessGrantName } = useSQLEditorContext();
 
 const showDrawer = ref(false);
 const loading = ref(false);
+const pendingCreate = ref<AccessGrant>();
 const accessGrantList = ref<AccessGrant[]>([]);
 const nextPageToken = ref("");
+// Maps access grant name → Issue for PENDING grants with an associated issue.
+const issueByGrantName = ref<Map<string, Issue>>(new Map());
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const useSmallLayout = computed(
   () => containerWidth.value > 0 && containerWidth.value < 250
 );
 
+watch(
+  () => showDrawer.value,
+  (showDrawer) => {
+    if (!showDrawer) {
+      pendingCreate.value = undefined;
+    }
+  }
+);
+
 const hasJITFeature = computed(() => hasFeature(PlanFeature.FEATURE_JIT));
+
+const project = computed(() =>
+  projectStore.getProjectByName(editorStore.project)
+);
 
 const searchParams = ref<SearchParams>({
   query: "",
-  scopes: [],
-});
-
-const scopeOptions = computed((): ScopeOption[] => {
-  const options: ScopeOption[] = [
+  scopes: [
     {
       id: "status",
-      title: t("common.status"),
-      allowMultiple: true,
-      options: [
-        {
-          value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
-          keywords: ["active"],
-          render: () => t("common.active"),
-        },
-        {
-          value: AccessGrant_Status[AccessGrant_Status.PENDING],
-          keywords: ["pending"],
-          render: () => t("common.pending"),
-        },
-        {
-          value: "EXPIRED",
-          keywords: ["expired"],
-          render: () => t("sql-editor.expired"),
-        },
-        {
-          value: AccessGrant_Status[AccessGrant_Status.REVOKED],
-          keywords: ["revoked"],
-          render: () => t("common.revoked"),
-        },
-      ],
+      value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
     },
-  ];
-  const project = editorStore.project;
-  if (project) {
-    options.push({
-      id: "database",
-      title: t("common.database"),
-      search: ({ keyword, nextPageToken: pageToken }) =>
-        databaseStore
-          .fetchDatabases({
-            parent: project,
-            pageToken: pageToken,
-            pageSize: PAGE_SIZE,
-            filter: { query: keyword },
-          })
-          .then((resp) => ({
-            nextPageToken: resp.nextPageToken,
-            options: resp.databases.map<ValueOption>((db) => {
-              const { database: dbName } = extractDatabaseResourceName(db.name);
-              return {
-                value: db.name,
-                keywords: [dbName, db.name],
-                render: () =>
-                  h(RichDatabaseName, {
-                    database: db,
-                    showInstance: true,
-                    showEngineIcon: true,
-                  }),
-              };
-            }),
-          })),
-    });
-  }
-  return options;
+    {
+      id: "status",
+      value: AccessGrant_Status[AccessGrant_Status.PENDING],
+    },
+  ],
 });
 
-const selectedStatuses = computed(() =>
-  getValuesFromSearchParams(searchParams.value, "status")
-);
+const scopeOptions = computed(() => {
+  return getAccessSearchOptions({
+    project: editorStore.project,
+    showCreator: false,
+  });
+});
 
-const statusMap: Record<string, AccessGrant_Status> = {
-  ACTIVE: AccessGrant_Status.ACTIVE,
-  PENDING: AccessGrant_Status.PENDING,
-  REVOKED: AccessGrant_Status.REVOKED,
-  EXPIRED: AccessGrant_Status.ACTIVE,
-};
+const selectedStatuses = computed(
+  () =>
+    getValuesFromSearchParams(
+      searchParams.value,
+      "status"
+    ) as AccessGrantFilterStatus[]
+);
 
 // Build AccessFilter from search params.
 const filter = computed((): AccessFilter => {
-  const f: AccessFilter = {};
-
-  const statuses = selectedStatuses.value;
-  if (statuses.length === 1) {
-    f.status = statusMap[statuses[0]];
-    if (statuses[0] === "EXPIRED") {
-      f.expireTsBefore = Date.now();
-    } else if (statuses[0] === "ACTIVE") {
-      f.expireTsAfter = Date.now();
-    }
-  }
+  const f: AccessFilter = {
+    status: selectedStatuses.value,
+  };
 
   const database = getValueFromSearchParams(
     searchParams.value,
@@ -248,6 +218,27 @@ const filter = computed((): AccessFilter => {
   return f;
 });
 
+const fetchIssuesForPendingGrants = async (grants: AccessGrant[]) => {
+  const pendingWithIssue = grants.filter(
+    (g) => g.status === AccessGrant_Status.PENDING && g.issue
+  );
+  const results = await Promise.all(
+    pendingWithIssue.map(async (g) => {
+      try {
+        const issue = await issueStore.fetchIssueByName(g.issue, true);
+        return { grantName: g.name, issue };
+      } catch {
+        return undefined;
+      }
+    })
+  );
+  for (const r of results) {
+    if (r) {
+      issueByGrantName.value.set(r.grantName, r.issue);
+    }
+  }
+};
+
 const fetchAccessGrants = async (resetList = true) => {
   const project = editorStore.project;
   if (!project) return;
@@ -262,10 +253,12 @@ const fetchAccessGrants = async (resetList = true) => {
     });
     if (resetList) {
       accessGrantList.value = response.accessGrants;
+      issueByGrantName.value = new Map();
     } else {
       accessGrantList.value.push(...response.accessGrants);
     }
     nextPageToken.value = response.nextPageToken;
+    await fetchIssuesForPendingGrants(response.accessGrants);
   } finally {
     loading.value = false;
   }
@@ -299,6 +292,11 @@ const handleDrawerClose = () => {
   fetchAccessGrants();
 };
 
+const handleRequest = async (grant: AccessGrant) => {
+  pendingCreate.value = grant;
+  showDrawer.value = true;
+};
+
 const handleRun = async (grant: AccessGrant) => {
   const database = grant.targets[0] ?? "";
   const instanceName = database.replace(/\/databases\/.*$/, "");
@@ -322,7 +320,6 @@ const handleRun = async (grant: AccessGrant) => {
       engine: currentInstance.value.engine,
       explain: false,
       selection: null,
-      accessGrant: grant.name,
     });
   });
 };

@@ -124,7 +124,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database owner")
 		}
-		if _, err := d.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
+		if _, err := d.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil { // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 	}
@@ -496,7 +496,7 @@ func (d *Driver) executeInTransactionMode(
 	if isPlsql {
 		if d.connectionCtx.TenantMode {
 			// USE SET SESSION ROLE to set the role for the current session.
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil { // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 			}
 		}
@@ -588,7 +588,7 @@ func (d *Driver) executeInTransactionMode(
 
 	if d.connectionCtx.TenantMode {
 		// USE SET SESSION ROLE to set the role for the current session.
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil { // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 	}
@@ -624,7 +624,7 @@ func (d *Driver) executeInAutoCommitMode(
 
 	if d.connectionCtx.TenantMode {
 		// USE SET SESSION ROLE to set the role for the current session.
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil { // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 	}
@@ -794,7 +794,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
 		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)); err != nil { // NOSONAR(go:S2077) safeSchemeName is sanitized via strings.ReplaceAll above
 				return nil, err
 			}
 		}

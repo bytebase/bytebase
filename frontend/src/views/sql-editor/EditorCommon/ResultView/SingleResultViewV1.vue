@@ -15,7 +15,7 @@
     <div
       class="result-toolbar relative w-full shrink-0 flex flex-row gap-x-4 justify-between items-center mb-2 hide-scrollbar"
     >
-      <div class="flex flex-row justify-start items-center mr-2 flex-1">
+      <div class="flex flex-row justify-start items-center gap-x-2 mr-2 flex-1">
         <AdvancedSearch
           v-model:params="state.searchParams"
           placeholder=""
@@ -23,21 +23,23 @@
           :cache-query="false"
           @keyup:enter="scrollToNextCandidate"
         />
-        <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
-          resultRowsText
-        }}</span>
-        <span
-          v-if="
-            currentTab?.mode !== 'ADMIN' &&
-            rows.length === editorStore.resultRowsLimit
-          "
-          class="ml-2 whitespace-nowrap text-sm text-gray-500"
-        >
-          <span>-</span>
-          <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
-        </span>
+        <NTooltip :disabled="!reachQueryLimit">
+          <template #trigger>
+            <div class="flex items-center gap-x-1 whitespace-nowrap text-sm text-gray-500">
+              <InfoIcon v-if="reachQueryLimit" class="w-4" />
+              {{ resultRowsText }}
+            </div>
+          </template>
+          {{ $t("sql-editor.rows-upper-limit") }}
+        </NTooltip>
       </div>
       <div class="flex justify-between items-center shrink-0 gap-x-2">
+        <div v-if="isESSearchResult" class="flex items-center">
+          <NSwitch v-model:value="esTableView" size="small" />
+          <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
+            {{ $t("sql-editor.table-view") }}
+          </span>
+        </div>
         <div class="flex items-center">
           <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
@@ -60,23 +62,17 @@
             {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
-        <NDropdown
-          v-if="!props.disallowCopyingData"
-          trigger="click"
-          :options="copyDropdownOptions"
-          @select="handleCopyOptionSelect"
+        <NButton
+          v-if="!disallowCopyingData && rows.length > 0"
+          size="small"
+          style="--n-padding: 0 8px"
+          @click="copyAll"
         >
-          <NButton
-            size="small"
-            :disabled="rows.length === 0"
-            style="--n-padding: 0 8px"
-          >
-            <template #icon>
-              <CopyIcon class="w-4 h-4" />
-            </template>
-            {{ $t("sql-editor.copy-results") }}
-          </NButton>
-        </NDropdown>
+          <template #icon>
+            <CopyIcon class="w-4 h-4" />
+          </template>
+          {{ $t("common.copy") }}
+        </NButton>
         <template v-if="showExport">
           <DataExportButton
             size="small"
@@ -171,7 +167,7 @@
           </NButton>
         </div>
 
-        <div class="flex flex-col gap-y-2">
+        <div class="flex flex-col gap-y-2 result-scroll-buttons">
           <NTooltip>
             <template #trigger>
               <div class="rounded-full shadow bg-white dark:bg-gray-800">
@@ -265,16 +261,16 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { useLocalStorage } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { ArrowDownIcon, ArrowUpIcon, CopyIcon, XIcon } from "lucide-vue-next";
 import {
-  NButton,
-  NDropdown,
-  NFormItem,
-  NSwitch,
-  NTooltip,
-} from "naive-ui";
-import type { DropdownOption } from "naive-ui";
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CopyIcon,
+  InfoIcon,
+  XIcon,
+} from "lucide-vue-next";
+import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -290,6 +286,7 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { CopyButton, Drawer, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { flattenElasticsearchSearchResult } from "@/composables/utils";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
   pushNotification,
@@ -316,6 +313,7 @@ import {
   isNullOrUndefined,
   type SearchParams,
 } from "@/utils";
+import { STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW } from "@/utils/storage-keys";
 import {
   provideSQLResultViewContext,
   type SQLResultViewContext,
@@ -383,7 +381,7 @@ const dataTableRef =
 const binaryFormatContext = provideBinaryFormatContext();
 
 const detail: SQLResultViewContext["detail"] = ref(undefined);
-const resultViewContext = provideSQLResultViewContext({
+provideSQLResultViewContext({
   dark: toRef(props, "dark"),
   disallowCopyingData: toRef(props, "disallowCopyingData"),
   detail,
@@ -410,10 +408,35 @@ const viewMode = computed((): ViewMode => {
   return "RESULT";
 });
 
+const engine = computed(() => getInstanceResource(props.database).engine);
+
+const esTableView = useLocalStorage(STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW, true);
+
+const flattenedESResult = computed(() => {
+  if (engine.value !== Engine.ELASTICSEARCH) return undefined;
+  return flattenElasticsearchSearchResult(props.result);
+});
+
+const isESSearchResult = computed(() => flattenedESResult.value !== undefined);
+
+const activeResult = computed(() => {
+  if (isESSearchResult.value && esTableView.value) {
+    return flattenedESResult.value!;
+  }
+  return props.result;
+});
+
+watch(esTableView, () => {
+  state.sortState = undefined;
+  state.searchParams = { query: "", scopes: [] };
+  state.searchCandidateActiveIndex = -1;
+  state.searchCandidateRowIndexs = [];
+});
+
 const columns = computed((): ResultTableColumn[] => {
-  return props.result.columnNames.map<ResultTableColumn>(
+  return activeResult.value.columnNames.map<ResultTableColumn>(
     (columnName, index) => {
-      const columnType = props.result.columnTypeNames[index];
+      const columnType = activeResult.value.columnTypeNames[index];
       return {
         id: columnName,
         name: columnName,
@@ -603,7 +626,7 @@ const rows = computed((): ResultTableRow[] => {
   const sortState = state.sortState;
 
   if (!sortState || !sortState.direction) {
-    return props.result.rows.map((item, index) => ({
+    return activeResult.value.rows.map((item, index) => ({
       key: index,
       item,
     }));
@@ -612,7 +635,7 @@ const rows = computed((): ResultTableRow[] => {
   const { columnIndex, direction } = sortState;
   const columnType = columns.value[columnIndex]?.columnType ?? "";
 
-  return props.result.rows
+  return activeResult.value.rows
     .map((item, index) => ({
       key: index,
       item,
@@ -627,6 +650,13 @@ const rows = computed((): ResultTableRow[] => {
     });
 });
 
+const reachQueryLimit = computed(() => {
+  return (
+    currentTab.value?.mode !== "ADMIN" &&
+    rows.value.length === editorStore.resultRowsLimit
+  );
+});
+
 // Computed property for result rows text to avoid accessing data.length twice
 const resultRowsText = computed(() => {
   const length = rows.value.length;
@@ -634,6 +664,8 @@ const resultRowsText = computed(() => {
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
+  // Column indices don't match when showing flattened ES table view.
+  if (isESSearchResult.value && esTableView.value) return false;
   const maskingReason = props.result.masked?.[columnIndex];
   // Check if maskingReason exists and has actual content (not empty object)
   return (
@@ -645,6 +677,8 @@ const isSensitiveColumn = (columnIndex: number): boolean => {
 };
 
 const getMaskingReason = (columnIndex: number) => {
+  // Column indices don't match when showing flattened ES table view.
+  if (isESSearchResult.value && esTableView.value) return undefined;
   if (!props.result.masked || columnIndex >= props.result.masked.length) {
     return undefined;
   }
@@ -660,32 +694,8 @@ const { copyAll } = provideSelectionContext({
   columns,
   rows,
   binaryFormatContext,
-  resultViewContext,
+  disallowCopyingData: computed(() => props.disallowCopyingData),
 });
-
-const copyDropdownOptions = computed((): DropdownOption[] => [
-  {
-    label: t("sql-editor.copy-results"),
-    key: "copy",
-  },
-  {
-    label: t("sql-editor.copy-with-headers"),
-    key: "copy-with-headers",
-  },
-]);
-
-const handleCopyOptionSelect = (key: string) => {
-  const withHeaders = key === "copy-with-headers";
-  if (copyAll(withHeaders)) {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  }
-};
-
-const engine = computed(() => getInstanceResource(props.database).engine);
 
 const showVisualizeButton = computed((): boolean => {
   return (

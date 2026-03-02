@@ -2,9 +2,10 @@
   <div class="flex flex-row items-center pl-4 gap-4">
     <div class="flex items-center gap-1">
       <Clock4Icon class="w-4 h-auto textinfolabel" />
-      <span class="textlabel">{{
-        humanizeDate(getDateForPbTimestampProtoEs(release.createTime))
-      }}</span>
+      <HumanizeDate
+        class="textlabel"
+        :date="getDateForPbTimestampProtoEs(release.createTime)"
+      />
     </div>
     <div
       v-if="vcsSource && vcsSource?.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED"
@@ -24,9 +25,9 @@
 import { Clock4Icon } from "lucide-vue-next";
 import { computed } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";
+import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { VCSType } from "@/types/proto-es/v1/common_pb";
-import { humanizeDate } from "@/utils";
 import VCSIcon from "../VCSIcon.vue";
 import { useReleaseDetailContext } from "./context";
 

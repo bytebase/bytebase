@@ -10,10 +10,9 @@
       <EnvironmentV1Name
         :link="false"
         :environment="environment"
-        :null-environment-placeholder="'Null'"
       />
     </span>
-    <span class="truncate text-gray-600">
+    <span :class="isInstanceMissing ? 'truncate text-control-light line-through' : 'truncate text-gray-600'">
       {{ instanceDisplayName }}
     </span>
     <ChevronRightIcon :class="chevronClass" />
@@ -75,6 +74,13 @@ const instanceResource = computed(() => {
   }
 
   return null; // Don't show instance icon if we can't resolve it
+});
+
+const isInstanceMissing = computed(() => {
+  return (
+    instanceResource.value === null &&
+    !!extractInstanceResourceName(props.database)
+  );
 });
 
 const instanceDisplayName = computed(() => {

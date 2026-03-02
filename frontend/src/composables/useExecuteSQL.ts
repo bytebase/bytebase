@@ -303,7 +303,6 @@ const useExecuteSQL = () => {
         schema: context.params.connection.schema,
         container: context.params.connection.table,
         queryOption: queryOption,
-        accessGrant: context.params.accessGrant,
       }),
       abortController.signal
     );
@@ -359,7 +358,7 @@ const useExecuteSQL = () => {
   };
 };
 
-const isDisallowChangeDatabaseError = (resultSet: SQLResultSetV1) => {
+export const isDisallowChangeDatabaseError = (resultSet: SQLResultSetV1) => {
   const isCommandError = resultSet.results.some((result) => {
     return (
       result.detailedError.case === "commandError" &&

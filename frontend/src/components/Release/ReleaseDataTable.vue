@@ -19,10 +19,10 @@ import { NDataTable, NTag } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
-import { humanizeTs } from "@/utils";
 
 interface LocalState {
   selectedReleaseNameList: Set<string>;
@@ -77,12 +77,15 @@ const columnList = computed(
           const releaseName = parts[parts.length - 1] || release.name;
           return (
             <p class="inline-flex w-full items-center gap-x-2">
-              <span class="shrink truncate">{releaseName}</span>
-              {release.state === State.DELETED && (
-                <NTag class="shrink-0" type="default" size="small">
-                  {t("common.abandoned")}
-                </NTag>
-              )}
+              <span
+                class={[
+                  "shrink truncate",
+                  release.state === State.DELETED &&
+                    "text-control-light line-through",
+                ]}
+              >
+                {releaseName}
+              </span>
             </p>
           );
         },
@@ -120,10 +123,11 @@ const columnList = computed(
         title: t("common.created-at"),
         width: 128,
         resizable: true,
-        render: (release) =>
-          humanizeTs(
-            getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000
-          ),
+        render: (release) => (
+          <HumanizeTs
+            ts={getTimeForPbTimestampProtoEs(release.createTime, 0) / 1000}
+          />
+        ),
       },
     ];
     return columns.filter((column) => !column.hide);

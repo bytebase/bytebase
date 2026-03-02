@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -63,9 +64,9 @@ func (d *suggestingDecoder) Decode(v any) error {
 
 	suggestions := findSimilar(unknownField, candidates, 3)
 	if len(suggestions) == 0 {
-		return fmt.Errorf("%w. Valid fields: %s", err, strings.Join(candidates, ", "))
+		return errors.Wrapf(err, "valid fields: %s", strings.Join(candidates, ", "))
 	}
-	return fmt.Errorf("%w. Did you mean: %s?", err, strings.Join(suggestions, ", "))
+	return errors.Wrapf(err, "did you mean: %s?", strings.Join(suggestions, ", "))
 }
 
 // findSimilar returns up to maxResults field names sorted by edit distance.
@@ -88,8 +89,8 @@ func findSimilar(input string, candidates []string, maxResults int) []string {
 			results = append(results, scored{name: c, dist: d})
 		}
 	}
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].dist < results[j].dist
+	slices.SortFunc(results, func(a, b scored) int {
+		return a.dist - b.dist
 	})
 	var out []string
 	for i := 0; i < len(results) && i < maxResults; i++ {

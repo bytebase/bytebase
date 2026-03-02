@@ -43,7 +43,6 @@
     "archive": "Archivo",
     "archived": "Archivada",
     "abandon": "Abandonar",
-    "abandoned": "Abandonado",
     "restored": "Restored",
     "no-license": "Sin licencia",
     "logout": "Cerrar sesión",
@@ -53,6 +52,7 @@
     "latest": "Último",
     "error": "Error",
     "canceled": "Cancelado",
+    "rejected": "Rechazado",
     "approve": "Aprobar",
     "done": "Hecho",
     "create": "Crear",
@@ -226,7 +226,6 @@
     "permissions": "Permisos",
     "leave-without-saving": "¿Salir sin guardar?",
     "configure-now": "Configurar ahora",
-    "connection": "Conexión",
     "resource": "Recurso",
     "resources": "Recursos",
     "closed": "Cerrado",
@@ -1041,7 +1040,9 @@
       "name": "Nombre",
       "updated": "Actualizado",
       "creator": "Creador",
-      "current-approver": "Aprobador actual"
+      "approved": "Approved",
+      "approval-progress": "{approved}/{total} Approvals",
+      "waiting-role": "Waiting: {role}"
     },
     "migration-mode": {
       "online": {
@@ -1910,7 +1911,8 @@
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
       "project-level-roles": "Roles a nivel de proyecto",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados"
+      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
+      "disallow-ddl": "No permitir ejecutar sentencias DDL/DML en ningún entorno."
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
@@ -2012,6 +2014,7 @@
     "no-queriable-database": "No hay base de datos consultable",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
+    "table-view": "Table view",
     "no-history-found": "No se encontró historial",
     "search-history-by-statement": "Búsqueda por enunciado",
     "binary-format": "Formato binario",
@@ -2044,7 +2047,6 @@
     "visualize-explain": "Visualizar explicación",
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "close-sheet": "Cerrar hoja",
-    "connect": "Conectar",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "admin-mode": {
       "self": "Modo administrador",
@@ -2090,7 +2092,7 @@
     "pending-query": "Consulta pendiente",
     "executing-query": "Ejecutando consulta",
     "request-query": "Solicitar consulta",
-    "connect-in-new-tab": "Conéctate en una nueva pestaña",
+    "open-in-new-tab": "Abrir en nueva pestaña",
     "copy-name": "Copiar nombre",
     "preview-table-data": "Vista previa de datos de la tabla",
     "view-database-detail": "Ver detalle de la base de datos",
@@ -2165,7 +2167,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "activate-access": "Activate",
-    "activate-confirm": "Are you sure you want to activate this access grant?"
+    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "re-request": "Volver a solicitar"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2629,8 +2632,7 @@
       },
       "skip": "No se requiere aprobación",
       "issue-review": {
-        "sent-back": "Devuelto",
-        "review-sent-back-by": "Reseña enviada por {user}"
+        "sent-back": "Devuelto"
       },
       "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
@@ -2740,6 +2742,10 @@
       "self": "Usuario del editor SQL",
       "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     },
+    "sql-editor-read-user": {
+      "self": "Usuario de solo lectura del editor SQL",
+      "description": "Permisos de solo lectura para consultar datos de la base de datos, sin acceso DDL o DML."
+    },
     "gitops-service-agent": {
       "self": "Agente de Servicio GitOps",
       "description": "Permisos para flujos de trabajo automatizados de CI/CD para crear y ejecutar cambios de base de datos a través de GitOps."
@@ -2762,7 +2768,8 @@
     "delete-group": "Eliminar el grupo de bases de datos {name}"
   },
   "export-center": {
-    "self": "centro de exportacion"
+    "self": "centro de exportacion",
+    "data-export": "Exportación de datos"
   },
   "schema-designer": {
     "use-tips": "Selecciona las tablas a diseñar"

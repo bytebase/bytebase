@@ -112,7 +112,7 @@ import {
   unknownUser,
 } from "@/types";
 import { PresetRoleType } from "@/types/iam";
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 
@@ -221,12 +221,12 @@ const updateProjectIamPolicyForMember = async (
         existingBinding.members.push(member);
       }
     } else {
-      policy.bindings.push({
-        role,
-        members: [member],
-        condition: undefined,
-        parsedExpr: undefined,
-      } as Binding);
+      policy.bindings.push(
+        create(BindingSchema, {
+          role,
+          members: [member],
+        })
+      );
     }
   }
 

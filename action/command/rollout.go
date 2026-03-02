@@ -55,7 +55,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		}()
 		w.IsRollout = true
 		ctx := command.Context()
-		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
+		client, err := NewClientFromWorld(w)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create client")
 		}

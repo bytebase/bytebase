@@ -142,7 +142,7 @@ func (r *ColumnNoNullRule) enterFullColDecl(ctx *parser.Full_col_declContext) {
 	if r.currentOriginalTableName == "" {
 		return
 	}
-	normalizedOriginalColumnID := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Col_decl().Column_name().Id_())
+	normalizedOriginalColumnID := normalizeSnowflakeColumnName(ctx.Col_decl().Column_name())
 	r.columnNullable[normalizedOriginalColumnID] = ctx.GetStart().GetLine()
 	for _, nullNotNull := range ctx.AllNull_not_null() {
 		if nullNotNull.NOT() != nil {
@@ -151,7 +151,7 @@ func (r *ColumnNoNullRule) enterFullColDecl(ctx *parser.Full_col_declContext) {
 		}
 	}
 	for _, constraint := range ctx.AllInline_constraint() {
-		if constraint.PRIMARY() != nil {
+		if constraint.Primary_key() != nil {
 			delete(r.columnNullable, normalizedOriginalColumnID)
 			break
 		}
@@ -162,10 +162,10 @@ func (r *ColumnNoNullRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_cons
 	if r.currentOriginalTableName == "" {
 		return
 	}
-	if ctx.PRIMARY() != nil {
+	if ctx.Primary_key() != nil {
 		for _, columnListInParentheses := range ctx.AllColumn_list_in_parentheses() {
 			for _, column := range columnListInParentheses.Column_list().AllColumn_name() {
-				normalizedOriginalColumnID := snowsqlparser.NormalizeSnowSQLObjectNamePart(column.Id_())
+				normalizedOriginalColumnID := normalizeSnowflakeColumnName(column)
 				delete(r.columnNullable, normalizedOriginalColumnID)
 			}
 		}
@@ -195,20 +195,35 @@ func (r *ColumnNoNullRule) enterTableColumnAction(ctx *parser.Table_column_actio
 		return
 	}
 	if ctx.ADD() != nil {
-		normalizedNewColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Column_name(0).Id_())
-		inlineConstraintHasPK := ctx.Inline_constraint() != nil && ctx.Inline_constraint().PRIMARY() != nil
-		inlineConstraintHasNotNull := ctx.Inline_constraint() != nil && (ctx.Inline_constraint().Null_not_null() != nil && ctx.Inline_constraint().Null_not_null().NOT() != nil)
-		hasNotNull := ctx.Null_not_null() != nil && ctx.Null_not_null().NOT() != nil
+		for _, fullColDecl := range ctx.AllFull_col_decl() {
+			normalizedNewColumnName := normalizeSnowflakeColumnName(fullColDecl.Col_decl().Column_name())
+			hasPK := false
+			for _, inlineConstraint := range fullColDecl.AllInline_constraint() {
+				if inlineConstraint.Primary_key() != nil {
+					hasPK = true
+					break
+				}
+			}
+			hasNotNull := false
+			for _, nullNotNull := range fullColDecl.AllNull_not_null() {
+				if nullNotNull.NOT() != nil {
+					hasNotNull = true
+					break
+				}
+			}
 
-		if !inlineConstraintHasPK && !inlineConstraintHasNotNull && !hasNotNull {
-			r.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
+			if !hasPK && !hasNotNull {
+				r.columnNullable[normalizedNewColumnName] = fullColDecl.GetStart().GetLine()
+			}
 		}
 		return
 	}
 	if ctx.Alter_modify() != nil {
-		normalizedOriginalColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Column_name(0).Id_())
-		if len(ctx.AllDROP()) == 1 && ctx.NOT() != nil && ctx.NULL_() != nil {
-			r.columnNullable[normalizedOriginalColumnName] = ctx.GetStart().GetLine()
+		for _, alterColumnClause := range ctx.AllAlter_column_clause() {
+			normalizedOriginalColumnName := normalizeSnowflakeColumnName(alterColumnClause.Column_name())
+			if alterColumnClause.DROP() != nil && alterColumnClause.NOT() != nil && alterColumnClause.NULL_() != nil {
+				r.columnNullable[normalizedOriginalColumnName] = alterColumnClause.GetStart().GetLine()
+			}
 		}
 		return
 	}
@@ -236,8 +251,19 @@ func (r *ColumnNoNullRule) enterAlterColumnDecl(ctx *parser.Alter_column_declCon
 	if r.currentOriginalTableName == "" {
 		return
 	}
-	normalizedNewColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(ctx.Column_name().Id_())
+	normalizedNewColumnName := normalizeSnowflakeColumnName(ctx.Column_name())
 	if ctx.Alter_column_opts().DROP() != nil && ctx.Alter_column_opts().NOT() != nil && ctx.Alter_column_opts().NULL_() != nil {
 		r.columnNullable[normalizedNewColumnName] = ctx.GetStart().GetLine()
 	}
+}
+
+func normalizeSnowflakeColumnName(columnName parser.IColumn_nameContext) string {
+	if columnName == nil {
+		return ""
+	}
+	allIDs := columnName.AllId_()
+	if len(allIDs) == 0 {
+		return ""
+	}
+	return snowsqlparser.NormalizeSnowSQLObjectNamePart(allIDs[len(allIDs)-1])
 }

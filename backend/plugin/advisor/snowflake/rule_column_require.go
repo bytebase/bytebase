@@ -142,7 +142,7 @@ func (r *ColumnRequireRule) enterColumnDeclItemList(ctx *parser.Column_decl_item
 	allColumnDeclItems := ctx.AllColumn_decl_item()
 	for _, columnDeclItem := range allColumnDeclItems {
 		if fullColDecl := columnDeclItem.Full_col_decl(); fullColDecl != nil {
-			normalizedColumnName := snowsqlparser.NormalizeSnowSQLObjectNamePart(fullColDecl.Col_decl().Column_name().Id_())
+			normalizedColumnName := normalizeSnowflakeColumnNameForRequire(fullColDecl.Col_decl().Column_name())
 			delete(r.currentMissingColumn, normalizedColumnName)
 		}
 	}
@@ -159,12 +159,20 @@ func (r *ColumnRequireRule) exitCreateTable(ctx *parser.Create_tableContext) {
 
 	slices.Sort(columnNames)
 	for _, column := range columnNames {
+		line := ctx.GetStart().GetLine()
+		if createTableClause := ctx.Create_table_clause(); createTableClause != nil {
+			if columnDeclItemListParen := createTableClause.Column_decl_item_list_paren(); columnDeclItemListParen != nil {
+				if columnDeclItemList := columnDeclItemListParen.Column_decl_item_list(); columnDeclItemList != nil && columnDeclItemList.GetStop() != nil {
+					line = columnDeclItemList.GetStop().GetLine()
+				}
+			}
+		}
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.NoRequiredColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table %s missing required column %q", r.currentOriginalTableName, column),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.Column_decl_item_list().GetStop().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),
 		})
 	}
 	r.currentOriginalTableName = ""
@@ -177,7 +185,7 @@ func (r *ColumnRequireRule) enterAlterTable(ctx *parser.Alter_tableContext) {
 }
 
 func (r *ColumnRequireRule) enterTableColumnAction(ctx *parser.Table_column_actionContext) {
-	if r.currentOriginalTableName == "" || len(ctx.AllDROP()) != 1 || ctx.Alter_modify() != nil {
+	if r.currentOriginalTableName == "" || ctx.DROP() == nil || ctx.Alter_modify() != nil {
 		return
 	}
 
@@ -188,6 +196,17 @@ func (r *ColumnRequireRule) enterTableColumnAction(ctx *parser.Table_column_acti
 			r.currentMissingColumn[normalizedColumnName] = true
 		}
 	}
+}
+
+func normalizeSnowflakeColumnNameForRequire(columnName parser.IColumn_nameContext) string {
+	if columnName == nil {
+		return ""
+	}
+	allIDs := columnName.AllId_()
+	if len(allIDs) == 0 {
+		return ""
+	}
+	return snowsqlparser.NormalizeSnowSQLObjectNamePart(allIDs[len(allIDs)-1])
 }
 
 func (r *ColumnRequireRule) exitAlterTable(ctx *parser.Alter_tableContext) {

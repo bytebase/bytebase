@@ -2,9 +2,11 @@ import { useLocalStorage } from "@vueuse/core";
 import { includes } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import { useProjectV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import {
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   STORAGE_KEY_SQL_EDITOR_LAST_PROJECT,
   STORAGE_KEY_SQL_EDITOR_REDIS_NODE,
@@ -12,6 +14,8 @@ import {
 } from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
+  const projectStore = useProjectV1Store();
+
   const resultRowsLimit = useLocalStorage(
     STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
     1000
@@ -61,6 +65,13 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const isShowExecutingHint = ref(false);
   const executingHintDatabase = ref<Database | undefined>();
 
+  const allowAdmin = computed(() => {
+    const project = projectStore.getProjectByName(
+      storedLastViewedProject.value
+    );
+    return hasProjectPermissionV2(project, "bb.sql.admin");
+  });
+
   return {
     resultRowsLimit,
     project: computed(() => storedLastViewedProject.value),
@@ -71,5 +82,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     isShowExecutingHint,
     executingHintDatabase,
     redisCommandOption,
+    allowAdmin,
   };
 });

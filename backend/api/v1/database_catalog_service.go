@@ -99,11 +99,16 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 	}
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
+
+	if err := validateCatalogSchemaNames(databaseConfig, dbMetadata.GetProto()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	if err := s.store.UpdateDBSchema(ctx, database.InstanceID, database.DatabaseName, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(req.Msg.GetCatalog()), nil
+	return connect.NewResponse(convertDatabaseConfig(database, databaseConfig)), nil
 }
 
 func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.DatabaseConfig) *v1pb.DatabaseCatalog {
@@ -198,6 +203,29 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 		c.Schemas = append(c.Schemas, s)
 	}
 	return c
+}
+
+// validateCatalogSchemaNames rejects empty schema names for engines that use
+// named schemas. Engines like Cassandra/MySQL where metadata has empty schema
+// names are allowed through.
+func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storepb.DatabaseSchemaMetadata) error {
+	if !hasEmptySchemaName(config.Schemas) {
+		return nil
+	}
+	// Engines like Cassandra/MySQL legitimately use empty schema names.
+	if metadata != nil && hasEmptySchemaName(metadata.Schemas) {
+		return nil
+	}
+	return errors.New("schema name must not be empty for this database engine")
+}
+
+func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
+	for _, s := range schemas {
+		if s.GetName() == "" {
+			return true
+		}
+	}
+	return false
 }
 
 func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {

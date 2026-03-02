@@ -14,7 +14,7 @@
       class="connection-panel-content"
     >
       <template #header>
-        <span>{{ $t("common.connection") }}</span>
+        <span>{{ $t("database.select") }}</span>
         <NTooltip v-if="allowManageInstance" placement="bottom">
           <template #trigger>
             <NButton

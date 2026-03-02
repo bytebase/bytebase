@@ -32,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	esparser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -163,77 +164,66 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 	}
 }
 
-// Validate and load access grant if provided.
+// preCheckAccess finds and returns the best matching active access grant for the query.
+// It lists access grants filtered by project, creator, status, statement, target database,
+// and expiry, then prefers the grant with unmask=true if available.
 func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
-	if request.AccessGrant == nil || *request.AccessGrant == "" {
-		return nil
-	}
-
-	accessGrantID := *request.AccessGrant
-	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(accessGrantID)
-	if err != nil {
-		slog.Warn("invalid access grant id", slog.String("access_grant", accessGrantID), log.BBError(err))
-		return nil
-	}
-	if database.ProjectID != projectID {
-		slog.Warn("project for access and database not match", slog.String("access_grant", accessGrantID), slog.String("access_grant_project", projectID), slog.String("database_project", database.ProjectID))
-		return nil
-	}
-
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
+		ResourceID: &database.ProjectID,
 	})
 	if err != nil {
-		slog.Warn("failed to find project", slog.String("project_id", projectID), log.BBError(err))
+		slog.Warn("failed to find project", slog.String("project_id", database.ProjectID), log.BBError(err))
 		return nil
 	}
 	if project == nil {
-		slog.Warn("project not found", slog.String("project_id", projectID))
+		slog.Warn("project not found", slog.String("project_id", database.ProjectID))
 		return nil
 	}
 	if !project.Setting.AllowJustInTimeAccess {
-		slog.Warn("JIT is not enabled in the project", slog.String("project_id", projectID))
+		slog.Debug("JIT is not enabled in the project", slog.String("project_id", database.ProjectID))
 		return nil
 	}
 
-	accessGrant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-		ID:        &accessGrantID,
-		ProjectID: &projectID,
-	})
-	if err != nil {
-		slog.Warn("failed to get access grant", slog.String("access_grant", accessGrantID), log.BBError(err))
-		return nil
-	}
-	if accessGrant == nil {
-		slog.Warn("access grant not found", slog.String("access_grant", accessGrantID))
-		return nil
-	}
-	if accessGrant.Status != storepb.AccessGrant_ACTIVE {
-		slog.Warn("access grant is not active", slog.String("access_grant", accessGrantID), slog.String("status", accessGrant.Status.String()))
-		return nil
-	}
-	if accessGrant.Payload == nil {
-		slog.Warn("invalid access grant payload", slog.String("access_grant", accessGrantID))
-		return nil
-	}
-	if accessGrant.Payload.Query != request.Statement {
-		slog.Warn("statement does not match access grant", slog.String("access_grant", accessGrantID))
-		return nil
-	}
-	if accessGrant.ExpireTime != nil && accessGrant.ExpireTime.Before(time.Now()) {
-		slog.Warn("access grant has expired", slog.String("access_grant", accessGrantID), slog.String("expire_time", accessGrant.ExpireTime.String()))
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
 		return nil
 	}
 
 	databaseFullName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-	for _, target := range accessGrant.Payload.Targets {
-		if target == databaseFullName {
-			return accessGrant
-		}
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	filter := fmt.Sprintf(
+		`status == "ACTIVE" && target == %q && expire_time > %q && query == %q`,
+		databaseFullName,
+		now,
+		strings.TrimSpace(request.Statement),
+	)
+	filterQ, err := store.GetListAccessGrantFilter(filter)
+	if err != nil {
+		slog.Warn("failed to build access grant filter", log.BBError(err))
+		return nil
 	}
 
-	slog.Warn("database not found in access grant targets", slog.String("access_grant", accessGrantID), slog.String("database", databaseFullName))
-	return nil
+	grants, err := s.store.ListAccessGrants(ctx, &store.FindAccessGrantMessage{
+		ProjectID: &database.ProjectID,
+		Creator:   &user.Email,
+		FilterQ:   filterQ,
+	})
+	if err != nil {
+		slog.Warn("failed to list access grants", log.BBError(err))
+		return nil
+	}
+
+	if len(grants) == 0 {
+		return nil
+	}
+	// Pick the best grant (prefer unmask=true).
+	for _, grant := range grants {
+		if grant.Payload != nil && grant.Payload.Unmask {
+			return grant
+		}
+	}
+	return grants[0]
 }
 
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
@@ -595,6 +585,45 @@ func queryRetry(
 		}
 	}
 
+	// Pre-execution check for Elasticsearch: reject blocked APIs and predicate violations
+	// before sending the query to the server.
+	if !queryContext.Explain && !queryContext.SkipMasking &&
+		instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH &&
+		licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		for _, stmt := range statements {
+			parsed, parseErr := esparser.ParseElasticsearchREST(stmt.Text)
+			if parseErr != nil || len(parsed.Requests) == 0 {
+				continue
+			}
+			req := parsed.Requests[0]
+			analysis := esparser.AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
+			if analysis.API == esparser.APIUnsupported {
+				continue
+			}
+			indexName := analysis.Index
+			if indexName == "" {
+				continue
+			}
+			objectSchema, schemaErr := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+			if schemaErr != nil {
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.Wrapf(schemaErr, "failed to get object schema for index %q", indexName))
+			}
+			if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
+				continue
+			}
+			if err := checkElasticsearchRequestBlocked(analysis); err != nil {
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			for _, field := range analysis.PredicateFields {
+				semanticType := lookupSemanticTypeByDotPath(field, objectSchema)
+				if semanticType != "" {
+					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", field, semanticType))
+				}
+			}
+		}
+	}
+
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", originalStatement))
 	results, duration, queryErr := executeWithTimeout(
 		ctx,
@@ -736,6 +765,90 @@ func queryRetry(
 						row.Values[0] = &v1pb.RowValue{
 							Kind: &v1pb.RowValue_StringValue{
 								StringValue: string(maskedValue),
+							},
+						}
+					}
+				}
+			}
+		} else if instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
+			for _, result := range results {
+				parsed, err := esparser.ParseElasticsearchREST(result.Statement)
+				if err != nil || len(parsed.Requests) == 0 {
+					continue
+				}
+				req := parsed.Requests[0]
+				analysis := esparser.AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
+
+				if analysis.API == esparser.APIUnsupported || analysis.API == esparser.APIBlocked {
+					continue
+				}
+
+				indexName := analysis.Index
+				if indexName == "" {
+					continue
+				}
+				objectSchema, err := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+				if err != nil {
+					return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
+				}
+				if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
+					continue
+				}
+
+				semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
+				if err != nil {
+					return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+				}
+
+				// Apply masking based on API type.
+				for _, row := range result.Rows {
+					for colIdx, colName := range result.ColumnNames {
+						if colIdx >= len(row.Values) {
+							break
+						}
+						value := row.Values[colIdx].GetStringValue()
+						if value == "" {
+							continue
+						}
+
+						var maskedValue string
+						var maskErr error
+
+						switch analysis.API {
+						case esparser.APIMaskSearch:
+							switch colName {
+							case "hits":
+								maskedValue, maskErr = maskElasticsearchHitsColumn(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
+							case "responses":
+								maskedValue, maskErr = maskElasticsearchMSearchResponses(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
+							default:
+								continue
+							}
+						case esparser.APIMaskGetDoc, esparser.APIMaskExplain:
+							if colName == "_source" {
+								maskedValue, maskErr = maskElasticsearchDocSource(value, objectSchema, semanticTypeToMaskerMap)
+							} else {
+								continue
+							}
+						case esparser.APIMaskGetSource:
+							maskedValue, maskErr = maskElasticsearchGetSourceColumn(colName, value, objectSchema, semanticTypeToMaskerMap)
+						case esparser.APIMaskMGet:
+							if colName == "docs" {
+								maskedValue, maskErr = maskElasticsearchMGetSource(value, objectSchema, semanticTypeToMaskerMap)
+							} else {
+								continue
+							}
+						default:
+							continue
+						}
+
+						if maskErr != nil {
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask ES response"))
+						}
+
+						row.Values[colIdx] = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: maskedValue,
 							},
 						}
 					}

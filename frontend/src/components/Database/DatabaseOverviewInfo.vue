@@ -47,13 +47,13 @@
         {{ $t("database.last-sync") }}
       </dt>
       <dd class="mt-1 text-sm text-main">
-        {{
-          humanizeDate(
+        <HumanizeDate
+          :date="
             database.successfulSyncTime
               ? new Date(Number(database.successfulSyncTime.seconds) * 1000)
               : undefined
-          )
-        }}
+          "
+        />
       </dd>
     </div>
   </dl>
@@ -69,9 +69,9 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   getDatabaseEngine,
-  humanizeDate,
   instanceV1HasCollationAndCharacterSet,
 } from "@/utils";
+import HumanizeDate from "../misc/HumanizeDate.vue";
 
 const props = defineProps<{
   database: Database;

@@ -57,14 +57,16 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
-	lowerCaseTableNames := 0
+	var lowerCaseTableNames int32
 	lowerCaseTableNamesText, err := d.getServerVariable(ctx, "lower_case_table_names")
 	if err != nil {
 		slog.Debug("failed to get lower_case_table_names variable", log.BBError(err))
 	} else {
-		lowerCaseTableNames, err = strconv.Atoi(lowerCaseTableNamesText)
+		v, err := strconv.ParseInt(lowerCaseTableNamesText, 10, 32)
 		if err != nil {
 			slog.Debug("failed to parse lower_case_table_names variable", log.BBError(err))
+		} else {
+			lowerCaseTableNames = int32(v)
 		}
 	}
 
@@ -108,7 +110,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		Version:   version,
 		Databases: databases,
 		Metadata: &storepb.Instance{
-			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
+			MysqlLowerCaseTableNames: lowerCaseTableNames,
 			Roles:                    instanceRoles,
 		},
 	}, nil

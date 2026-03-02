@@ -32,12 +32,10 @@
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  getDateForPbTimestampProtoEs,
-  getTimeForPbTimestampProtoEs,
-} from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { formatAbsoluteDateTime } from "@/utils";
 
 export type CommentLink = {
   title: string;
@@ -69,7 +67,7 @@ const comment = computed(() => {
   if (taskRun.status === TaskRun_Status.PENDING) {
     if (earliestAllowedTime.value) {
       return t("task-run.status.enqueued-with-rollout-time", {
-        time: new Date(earliestAllowedTime.value).toLocaleString(),
+        time: formatAbsoluteDateTime(earliestAllowedTime.value),
       });
     }
     return t("task-run.status.enqueued");
@@ -78,9 +76,9 @@ const comment = computed(() => {
       const cause = taskRun.schedulerInfo.waitingCause;
       if (cause?.cause?.case === "parallelTasksLimit") {
         return t("task-run.status.waiting-max-tasks-per-rollout", {
-          time: getDateForPbTimestampProtoEs(
-            taskRun.schedulerInfo.reportTime
-          )?.toLocaleString(),
+          time: formatAbsoluteDateTime(
+            getTimeForPbTimestampProtoEs(taskRun.schedulerInfo.reportTime)
+          ),
         });
       }
     }

@@ -1,6 +1,6 @@
 <template>
   <main
-    class="px-4 pt-4 flex-1 h-full relative pb-8 focus:outline-hidden xl:order-last"
+    class="pt-4 flex-1 h-full relative pb-8 focus:outline-hidden xl:order-last"
     tabindex="0"
   >
     <NoPermissionPlaceholder

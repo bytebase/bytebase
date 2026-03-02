@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
 import { useDatabaseV1Store, useQueryDataPolicy } from "@/store";
@@ -20,6 +19,7 @@ import {
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { wrapRefAsPromise } from "@/utils";
+import { formatAbsoluteDateTime } from "./datetime";
 import {
   extractDatabaseResourceName,
   getInstanceResource,
@@ -53,7 +53,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
 };
 
 const defaultSQLEditorTabTitle = () => {
-  return dayjs().format("YYYY-MM-DD HH:mm");
+  return formatAbsoluteDateTime(Date.now());
 };
 
 export const emptySQLEditorConnection = (): SQLEditorConnection => {

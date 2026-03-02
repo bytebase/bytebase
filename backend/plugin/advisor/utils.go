@@ -41,7 +41,7 @@ func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine st
 			return nil, err
 		}
 		// Use SET SESSION ROLE to match the execution logic in backend/plugin/db/pg/pg.go
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s';", owner)); err != nil {
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s';", owner)); err != nil { // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 			return nil, err
 		}
 	}

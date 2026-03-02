@@ -354,10 +354,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			allQuery = true
 		}
 
+		// Sanitize the schema name by escaping any quotes.
+		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
+
 		// If the queryContext.Schema is not empty, set the current schema to the given schema.
 		// Reference: https://docs.snowflake.com/en/sql-reference/sql/use-schema
 		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE SCHEMA %s;", queryContext.Schema)); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`USE SCHEMA "%s";`, safeSchemeName)); err != nil { // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
 				return nil, err
 			}
 		} else {

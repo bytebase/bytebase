@@ -21,11 +21,11 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from "dayjs";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { formatAbsoluteDateTime } from "@/utils";
 import { useResourcePoller } from "../logic/poller";
 
 const { t } = useI18n();
@@ -66,7 +66,7 @@ const lastRefreshDisplay = computed(() => {
     const seconds = Math.floor(diff / 1000);
     return t("common.n-seconds-ago", { count: seconds });
   }
-  return dayjs(lastRefreshTime.value).format("YYYY-MM-DD HH:mm:ss");
+  return formatAbsoluteDateTime(lastRefreshTime.value);
 });
 
 const handleRefresh = async () => {

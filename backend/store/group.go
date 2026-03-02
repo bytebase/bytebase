@@ -130,7 +130,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	}
 
 	var groups []*GroupMessage
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...) // NOSONAR: query is parameterized via qb.Query
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ID); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ID); err != nil { // NOSONAR: query is parameterized via qb.Query
 		return nil, err
 	}
 
@@ -252,7 +252,7 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 	var payload []byte
 	var email sql.NullString
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
 		&group.ID,
 		&email,
 		&group.Title,

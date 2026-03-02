@@ -217,7 +217,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 
 	if queryContext.Schema != "" {
 		escapedSchema := strings.ReplaceAll(queryContext.Schema, `"`, `""`)
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE \"%s\"", escapedSchema)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE \"%s\"", escapedSchema)); err != nil { // NOSONAR(go:S2077) schema is from server-side connection config, not user input
 			return nil, errors.Wrapf(err, "failed to set schema")
 		}
 	}

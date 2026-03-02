@@ -185,7 +185,7 @@ func (r *TableNoForeignKeyRule) enterConstraintAction(ctx *parser.Constraint_act
 	if r.currentNormalizedTableName == "" {
 		return
 	}
-	if ctx.DROP() != nil && ctx.FOREIGN() != nil {
+	if ctx.DROP() != nil && ctx.Foreign_key() != nil {
 		if times, ok := r.tableForeignKeyTimes[r.currentNormalizedTableName]; ok && times > 0 {
 			r.tableForeignKeyTimes[r.currentNormalizedTableName]--
 		}

@@ -53,7 +53,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		}()
 		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())
-		client, err := NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
+		client, err := NewClientFromWorld(w)
 		if err != nil {
 			return err
 		}

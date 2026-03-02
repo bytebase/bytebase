@@ -1,4 +1,4 @@
-import { create } from "@bufbuild/protobuf";
+import { clone, create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
@@ -10,6 +10,7 @@ import {
   CreateIdentityProviderRequestSchema,
   DeleteIdentityProviderRequestSchema,
   GetIdentityProviderRequestSchema,
+  IdentityProviderSchema,
   ListIdentityProvidersRequestSchema,
   UpdateIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
@@ -82,7 +83,11 @@ export const useIdentityProviderStore = defineStore("idp", () => {
       throw new Error(`identity provider with name ${update.name} not found`);
     }
 
-    const fullProvider = { ...originData, ...update } as IdentityProvider;
+    const fullProvider = clone(IdentityProviderSchema, originData);
+    if (update.title !== undefined) fullProvider.title = update.title;
+    if (update.domain !== undefined) fullProvider.domain = update.domain;
+    if (update.type !== undefined) fullProvider.type = update.type;
+    if (update.config !== undefined) fullProvider.config = update.config;
     const request = create(UpdateIdentityProviderRequestSchema, {
       identityProvider: fullProvider,
       updateMask: {

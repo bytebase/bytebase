@@ -1,6 +1,6 @@
 <template>
   <div class="py-4 w-full flex flex-col">
-    <div class="px-4 pb-2">
+    <div class="px-4">
       <div
         class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
       >
@@ -41,7 +41,7 @@
       :fetch-list="fetchIssueList"
     >
       <template #table="{ list, loading }">
-        <IssueTableV1
+        <IssueListV1
           class="border-x-0"
           :loading="loading"
           :issue-list="list"
@@ -69,8 +69,8 @@ import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import DataExportPrepForm from "@/components/DataExportPrepForm";
+import IssueListV1 from "@/components/IssueV1/components/IssueListV1.vue";
 import IssueSearch from "@/components/IssueV1/components/IssueSearch/IssueSearch.vue";
-import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";

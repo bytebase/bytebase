@@ -25,6 +25,7 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&w.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccount, "service-account", "", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccountSecret, "service-account-secret", "", "Bytebase Service account secret")
+	cmd.PersistentFlags().StringVar(&w.AccessToken, "access-token", "", "Bytebase access token (alternative to service account auth, e.g. from workload identity exchange)")
 	cmd.PersistentFlags().StringVar(&w.Project, "project", "projects/hr", "Bytebase project")
 	cmd.PersistentFlags().StringSliceVar(&w.Targets, "targets", []string{"instances/test-sample-instance/databases/hr_test", "instances/prod-sample-instance/databases/hr_prod"}, "Bytebase targets. Either one or more databases or a single databaseGroup")
 	cmd.PersistentFlags().StringVar(&w.FilePattern, "file-pattern", "", "File pattern to glob migration files")
@@ -51,6 +52,14 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 
 		return nil
 	}
+}
+
+// NewClientFromWorld creates a Client using the authentication method configured in World.
+func NewClientFromWorld(w *world.World) (*Client, error) {
+	if w.AccessToken != "" {
+		return NewClientWithAccessToken(w.URL, w.AccessToken)
+	}
+	return NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
 }
 
 func CheckVersionCompatibility(w *world.World, client *Client, cliVersion string) {

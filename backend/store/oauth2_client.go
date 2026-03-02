@@ -73,7 +73,7 @@ func (s *Store) ListOAuth2Clients(ctx context.Context, find *FindOAuth2ClientMes
 		return nil, err
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	rows, err := s.GetDB().QueryContext(ctx, query, args...) // NOSONAR: query is parameterized via qb.Query
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query OAuth2 clients")
 	}
@@ -110,7 +110,7 @@ func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, clientID str
 		return err
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil { // NOSONAR: query is parameterized via qb.Query
 		return errors.Wrap(err, "failed to update OAuth2 client last active at")
 	}
 	return nil

@@ -8,6 +8,11 @@ import DOMPurify from "dompurify";
 import { escape as escapeHtml, escapeRegExp, round } from "lodash-es";
 import semver from "semver";
 import { type Ref, watchEffect } from "vue";
+import {
+  formatAbsoluteDate,
+  formatRelativeTime,
+  RELATIVE_THRESHOLD_MS,
+} from "./datetime";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -23,17 +28,12 @@ export function isRelease(): boolean {
 }
 
 export function humanizeTs(ts: number): string {
-  const time = dayjs.utc(ts * 1000);
-  if (dayjs().year() == time.year()) {
-    if (dayjs().dayOfYear() == time.dayOfYear()) {
-      return time.local().format("HH:mm");
-    }
-    if (dayjs().diff(time, "days") < 3) {
-      return time.local().format("MMM D HH:mm");
-    }
-    return time.local().format("MMM D");
+  const timestampMs = ts * 1000;
+  const diff = Math.abs(Date.now() - timestampMs);
+  if (diff > RELATIVE_THRESHOLD_MS) {
+    return formatAbsoluteDate(timestampMs);
   }
-  return time.local().format("MMM D YYYY");
+  return formatRelativeTime(timestampMs);
 }
 
 export const humanizeDurationV1 = (duration: Duration | undefined) => {

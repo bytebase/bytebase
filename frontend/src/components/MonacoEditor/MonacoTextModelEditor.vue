@@ -51,7 +51,6 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { throttle } from "lodash-es";
 import * as monaco from "monaco-editor";
 import { NPopover } from "naive-ui";
@@ -67,6 +66,7 @@ import {
 } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { SQLDialect } from "@/types";
+import { formatAbsoluteDateTime } from "@/utils";
 import {
   type AutoCompleteContext,
   type AutoHeightOptions,
@@ -166,7 +166,7 @@ const connectionHeartbeatText = computed(() => {
   if (connectionState.value !== "ready") return "";
   const timestamp = connectionHeartbeat.value?.timestamp;
   if (!timestamp) return "";
-  const time = dayjs(timestamp).format("YYYY-MM-DD HH:mm:ss.SSS UTCZZ");
+  const time = formatAbsoluteDateTime(timestamp);
   return `Last heartbeat at ${time}`;
 });
 

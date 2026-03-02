@@ -129,7 +129,7 @@ import {
   useDatabaseV1ByName,
   useDBSchemaV1Store,
 } from "@/store";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
@@ -138,6 +138,7 @@ import {
 import {
   bytesToString,
   extractProjectResourceName,
+  formatAbsoluteDateTime,
   getInstanceResource,
   wrapRefAsPromise,
 } from "@/utils";
@@ -191,9 +192,9 @@ const formattedCreateTime = computed(() => {
   if (!changelog.value) {
     return "";
   }
-  return getDateForPbTimestampProtoEs(
-    changelog.value.createTime
-  )?.toLocaleString();
+  return formatAbsoluteDateTime(
+    getTimeForPbTimestampProtoEs(changelog.value.createTime)
+  );
 });
 
 const changelogSchema = computed(() => {

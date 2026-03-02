@@ -74,8 +74,8 @@ func (*WhereRequireForSelectRule) Name() string {
 
 // OnEnter is called when entering a parse tree node.
 func (r *WhereRequireForSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeQueryStatement {
-		r.enterQueryStatement(ctx.(*parser.Query_statementContext))
+	if nodeType == NodeTypeSelectStatement {
+		r.enterSelectStatement(ctx.(*parser.Select_statementContext))
 	}
 	return nil
 }
@@ -86,11 +86,11 @@ func (*WhereRequireForSelectRule) OnExit(_ antlr.ParserRuleContext, _ string) er
 	return nil
 }
 
-func (r *WhereRequireForSelectRule) enterQueryStatement(ctx *parser.Query_statementContext) {
-	if ctx.Select_statement() == nil {
+func (r *WhereRequireForSelectRule) enterSelectStatement(ctx *parser.Select_statementContext) {
+	if ctx == nil {
 		return
 	}
-	optional := ctx.Select_statement().Select_optional_clauses()
+	optional := ctx.Select_optional_clauses()
 	if optional == nil {
 		return
 	}

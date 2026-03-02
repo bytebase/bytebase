@@ -39,7 +39,7 @@
       title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 1
+        line: 5
         column: 0
       endposition: null
     - status: 2
@@ -47,7 +47,7 @@
       title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
-        line: 5
+        line: 8
         column: 0
       endposition: null
 - statement: |-

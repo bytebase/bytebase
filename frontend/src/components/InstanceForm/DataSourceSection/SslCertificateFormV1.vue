@@ -9,7 +9,7 @@
       <label class="textlabel block">
         {{ verifyLabel }}
       </label>
-      <NTooltip v-if="showTooltip">
+      <NTooltip v-if="showTooltip" style="max-width: 20rem">
         <template #trigger>
           <Info class="w-4 h-4 text-yellow-600" />
         </template>

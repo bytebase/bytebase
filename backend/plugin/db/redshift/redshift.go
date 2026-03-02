@@ -370,10 +370,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		return nil, nil
 	}
 
+	// Sanitize the schema name by escaping any quotes.
+	safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
+
 	// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
 	// Reference: https://docs.aws.amazon.com/redshift/latest/dg/r_search_path.html
 	if queryContext.Schema != "" {
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("set search_path to %s;", queryContext.Schema)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf(`set search_path to "%s";`, safeSchemeName)); err != nil { // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
 			return nil, err
 		}
 	}

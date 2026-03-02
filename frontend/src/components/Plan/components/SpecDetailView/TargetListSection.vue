@@ -18,9 +18,12 @@
 
     <NAlert v-if="!isLoadingTargets && nonEnvDatabaseNames.length > 0" type="warning">
       {{ $t("plan.targets.non-env-warning", { count: nonEnvDatabaseNames.length }) }}
-      <ul class="list-disc list-inside text-sm mt-1">
-        <li v-for="name in nonEnvDatabaseNames" :key="name">{{ name }}</li>
-      </ul>
+      <div class="flex flex-col gap-1 text-sm mt-1">
+        <div v-for="name in nonEnvDatabaseNames" :key="name" class="flex items-center gap-2">
+          <span class="w-1 h-1 rounded-full bg-current shrink-0" />
+          <DatabaseDisplay :database="name" />
+        </div>
+      </div>
     </NAlert>
 
     <div v-if="isLoadingTargets" class="flex items-center justify-center py-2">

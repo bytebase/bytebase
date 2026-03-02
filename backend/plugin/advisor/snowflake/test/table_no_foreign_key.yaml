@@ -1,7 +1,7 @@
 - statement: |-
     CREATE TABLE CUSTOMER
     (
-        ID            INT REFERENCES PERSON(ID),
+        ID            INT FOREIGN KEY REFERENCES PERSON(ID),
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
@@ -21,7 +21,7 @@
         ID            INT,
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100),
-        (ID) REFERENCES PERSON(ID)
+        FOREIGN KEY (ID) REFERENCES PERSON(ID)
     );
   changeType: 1
   want:
@@ -40,7 +40,7 @@
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
-    ALTER TABLE CUSTOMER ADD (ID) REFERENCES PERSON(ID);
+    ALTER TABLE CUSTOMER ADD FOREIGN KEY (ID) REFERENCES PERSON(ID);
   changeType: 1
   want:
     - status: 2
@@ -54,7 +54,7 @@
 - statement: |-
     CREATE TABLE "ANOTHER_SCHEMA"."CUSTOMER"
     (
-        ID            INT REFERENCES PERSON(ID),
+        ID            INT FOREIGN KEY REFERENCES PERSON(ID),
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );
@@ -72,7 +72,7 @@
 - statement: |-
     CREATE TABLE CUSTOMER
     (
-        ID            INT REFERENCES PERSON(ID),
+        ID            INT FOREIGN KEY REFERENCES PERSON(ID),
         FULL_NAME     VARCHAR(10),
         POSITION      VARCHAR(100)
     );

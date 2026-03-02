@@ -23,7 +23,11 @@ func (l *queryTypeListener) EnterBatch(ctx *parser.BatchContext) {
 }
 
 func (l *queryTypeListener) getQueryTypeForBatch(batch parser.IBatchContext) (base.QueryType, error) {
-	sqlCommand := batch.Sql_command()
+	sqlCommands := batch.AllSql_command()
+	if len(sqlCommands) == 0 {
+		return base.QueryTypeUnknown, nil
+	}
+	sqlCommand := sqlCommands[0]
 	switch {
 	case sqlCommand.Ddl_command() != nil:
 		return base.DDL, nil

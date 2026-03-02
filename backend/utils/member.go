@@ -15,7 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func validateIAMBinding(binding *storepb.Binding) bool {
+// ValidateIAMBinding checks if the binding's condition expression is still valid (e.g., not expired).
+func ValidateIAMBinding(binding *storepb.Binding) bool {
 	ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 	if err != nil {
 		slog.Error("failed to eval binding condition", slog.String("expression", binding.Condition.GetExpression()), log.BBError(err))
@@ -47,7 +48,7 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role st
 				continue
 			}
 
-			if !validateIAMBinding(binding) {
+			if !ValidateIAMBinding(binding) {
 				continue
 			}
 
@@ -188,7 +189,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 	for _, policy := range policies {
 		for _, binding := range policy.Bindings {
-			if !validateIAMBinding(binding) {
+			if !ValidateIAMBinding(binding) {
 				continue
 			}
 

@@ -19,7 +19,6 @@
           :show-icon="false"
           :link="link"
           :text-class="`text-control-light ${link ? 'hover:underline' : ''}`"
-          :null-environment-placeholder="'Null'"
         />
       </template>
     </InstanceV1Name>
@@ -36,7 +35,6 @@
           :show-icon="false"
           :link="link"
           :text-class="`text-control-light ${link ? 'hover:underline' : ''}`"
-          :null-environment-placeholder="'Null'"
         />
 
         <DatabaseV1Name

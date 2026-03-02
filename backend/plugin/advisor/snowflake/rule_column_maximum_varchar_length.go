@@ -115,9 +115,9 @@ func (r *ColumnMaximumVarcharLengthRule) checkDataType(ctx *parser.Data_typeCont
 	}
 
 	length := varcharDefaultLength
-	if v := ctx.Num(0); v != nil {
+	if v := ctx.Data_type_size(); v != nil && v.Num() != nil {
 		var err error
-		length, err = strconv.Atoi(v.GetText())
+		length, err = strconv.Atoi(v.Num().GetText())
 		if err != nil {
 			return
 		}

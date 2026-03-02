@@ -134,7 +134,8 @@ useResizeObserver(cellRef, () => {
 
 const clickable = computed(() => {
   if (truncated.value) return true;
-  if (getInstanceResource(props.database).engine === Engine.MONGODB) {
+  const eng = getInstanceResource(props.database).engine;
+  if (eng === Engine.MONGODB || eng === Engine.ELASTICSEARCH) {
     // A cheap way to check JSON string without paying the parsing cost.
     const maybeJSON = String(props.value).trim();
     return (

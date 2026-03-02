@@ -4,6 +4,7 @@ package postgres
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"os/exec"
 	"os/user"
@@ -33,7 +34,7 @@ func start(port int, dataDir string, serverLog bool) (err error) {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uid},
 		}
 	}
 
@@ -59,7 +60,7 @@ func stop(pgDataDir string) error {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uid},
 		}
 	}
 
@@ -113,6 +114,9 @@ func initDB(pgDataDir, pgUser string) error {
 		return err
 	}
 	if !sameUser {
+		if uid > math.MaxInt32 || gid > math.MaxInt32 {
+			return errors.Errorf("uid %d or gid %d exceeds maximum safe value", uid, gid)
+		}
 		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
 		for _, dir := range dirListToChown {
 			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
@@ -134,7 +138,7 @@ func initDB(pgDataDir, pgUser string) error {
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
-			Credential: &syscall.Credential{Uid: uint32(uid)},
+			Credential: &syscall.Credential{Uid: uid},
 		}
 	}
 	// Suppress log spam
@@ -149,7 +153,7 @@ func initDB(pgDataDir, pgUser string) error {
 	return nil
 }
 
-func shouldSwitchUser() (int, int, bool, error) {
+func shouldSwitchUser() (uint32, uint32, bool, error) {
 	sameUser := true
 	bytebaseUser, err := user.Current()
 	if err != nil {
@@ -173,5 +177,5 @@ func shouldSwitchUser() (int, int, bool, error) {
 	if err != nil {
 		return 0, 0, false, err
 	}
-	return int(uid), int(gid), sameUser, nil
+	return uint32(uid), uint32(gid), sameUser, nil
 }

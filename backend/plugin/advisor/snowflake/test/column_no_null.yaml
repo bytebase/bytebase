@@ -68,7 +68,7 @@
     - status: 2
       code: 402
       title: COLUMN_NO_NULL
-      content: After dropping NOT NULL of column AGE, it will be nullable, which is not allowed.
+      content: Column AGE is nullable, which is not allowed.
       startposition:
         line: 1
         column: 0

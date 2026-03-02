@@ -67,21 +67,16 @@ func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementConte
 
 	// if has set_operators, use last select_statement of set_operator.
 	var selectCtx *snowsql.Select_statementContext
-	if ctx.AllSet_operators() != nil {
+	if len(ctx.AllSet_operators()) > 0 {
 		setOperator := ctx.Set_operators(len(ctx.AllSet_operators()) - 1)
-		if setOperator != nil && setOperator.Select_statement() != nil {
-			var ok bool
-			if selectCtx, ok = setOperator.Select_statement().(*snowsql.Select_statementContext); !ok {
-				return
-			}
-		}
+		selectCtx = findRightMostSelectStatement(setOperator.Select_statement_in_parentheses())
 	}
 	// otherwise, ues outermost direct select_statement.
 	if selectCtx == nil {
-		var ok bool
-		if selectCtx, ok = ctx.Select_statement().(*snowsql.Select_statementContext); !ok {
-			return
-		}
+		selectCtx = findRightMostSelectStatement(ctx.Select_statement_in_parentheses())
+	}
+	if selectCtx == nil {
+		return
 	}
 
 	limitClause := selectCtx.Limit_clause()
@@ -134,4 +129,27 @@ func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementConte
 
 	// Append after select_optional_clauses.
 	r.rewriter.InsertAfterDefault(selectCtx.Select_optional_clauses().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
+}
+
+func findRightMostSelectStatement(ctx snowsql.ISelect_statement_in_parenthesesContext) *snowsql.Select_statementContext {
+	if ctx == nil {
+		return nil
+	}
+
+	if setOperator := ctx.Set_operators(); setOperator != nil {
+		if selectCtx := findRightMostSelectStatement(setOperator.Select_statement_in_parentheses()); selectCtx != nil {
+			return selectCtx
+		}
+	}
+	if nested := ctx.Select_statement_in_parentheses(); nested != nil {
+		if selectCtx := findRightMostSelectStatement(nested); selectCtx != nil {
+			return selectCtx
+		}
+	}
+	if selectStatement := ctx.Select_statement(); selectStatement != nil {
+		if selectCtx, ok := selectStatement.(*snowsql.Select_statementContext); ok {
+			return selectCtx
+		}
+	}
+	return nil
 }

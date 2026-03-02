@@ -1,8 +1,8 @@
 import {
   CircleDot,
   Database,
-  DownloadIcon,
   Settings,
+  ShieldCheck,
   Users,
   Workflow,
 } from "lucide-vue-next";
@@ -111,11 +111,29 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
       ...cicdRoutes,
       ...databaseRoutes,
       {
-        title: t("export-center.self"),
-        icon: () => h(DownloadIcon),
-        path: PROJECT_V1_ROUTE_EXPORT_CENTER,
+        title: t("settings.sidebar.data-access"),
+        icon: () => h(ShieldCheck),
         type: "div",
         hide: isDefaultProject.value,
+        expand: true,
+        children: [
+          {
+            title: t("sql-editor.access-grants"),
+            path: PROJECT_V1_ROUTE_ACCESS_GRANTS,
+            type: "div",
+            hide: !isDev(),
+          },
+          {
+            title: t("project.masking-exemption.self"),
+            path: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
+            type: "div",
+          },
+          {
+            title: t("export-center.data-export"),
+            path: PROJECT_V1_ROUTE_EXPORT_CENTER,
+            type: "div",
+          },
+        ],
       },
       {
         title: t("common.manage"),
@@ -142,17 +160,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
           {
             title: t("common.webhooks"),
             path: PROJECT_V1_ROUTE_WEBHOOKS,
-            type: "div",
-          },
-          {
-            title: t("sql-editor.access-grants"),
-            path: PROJECT_V1_ROUTE_ACCESS_GRANTS,
-            type: "div",
-            hide: !isDev(),
-          },
-          {
-            title: t("project.masking-exemption.self"),
-            path: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
             type: "div",
           },
           {

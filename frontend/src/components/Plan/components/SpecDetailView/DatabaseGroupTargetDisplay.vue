@@ -99,6 +99,12 @@ const databases = ref<string[]>([]);
 
 // Fetch database group and populate databases
 watchEffect(async () => {
+  const cached = dbGroupStore.getDBGroupByName(props.target);
+  if (!isValidDatabaseGroupName(cached.name)) {
+    databases.value = [];
+    return;
+  }
+
   try {
     const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(props.target, {
       view: DatabaseGroupView.FULL,

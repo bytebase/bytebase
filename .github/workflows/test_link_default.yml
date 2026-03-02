@@ -8,6 +8,8 @@ on:
     paths-ignore:
       - 'frontend/**'
 
+permissions: {}
+
 jobs:
   go-tests:
     runs-on: ubuntu-latest

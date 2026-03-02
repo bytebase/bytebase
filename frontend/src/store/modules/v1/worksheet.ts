@@ -1,4 +1,4 @@
-import { create } from "@bufbuild/protobuf";
+import { clone, create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
@@ -20,6 +20,7 @@ import {
   UpdateWorksheetOrganizerRequestSchema,
   UpdateWorksheetRequestSchema,
   WorksheetOrganizerSchema,
+  WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetUID,
@@ -109,7 +110,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   const createWorksheet = async (worksheet: Worksheet) => {
     const fullWorksheet = worksheet.name
       ? worksheet
-      : { ...worksheet, name: "" };
+      : clone(WorksheetSchema, worksheet);
     const request = create(CreateWorksheetRequestSchema, {
       worksheet: fullWorksheet,
     });

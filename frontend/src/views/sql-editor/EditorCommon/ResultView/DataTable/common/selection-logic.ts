@@ -12,24 +12,14 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
-import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
+import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import { extractSQLRowValuePlain, isDescendantOf } from "@/utils";
-import { type SQLResultViewContext } from "../../context";
 import {
   type BinaryFormatContext,
   detectBinaryFormat,
   formatBinaryValue,
 } from "./binary-format-store";
 import type { ResultTableColumn, ResultTableRow } from "./types";
-
-const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
-
-const escapeCellForTSV = (s: string): string => {
-  if (s.includes("\t") || s.includes("\n") || s.includes('"')) {
-    return `"${String(s).replaceAll('"', '""')}"`;
-  }
-  return s;
-}
 
 export type SelectionState = {
   rows: number[];
@@ -43,8 +33,8 @@ export type SelectionContext = {
   toggleSelectColumn: (column: number) => void;
   toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
-  copy: () => boolean;
-  copyAll: (withHeaders: boolean) => boolean;
+  copySelected: () => void;
+  copyAll: () => void;
 };
 
 export const KEY = Symbol(
@@ -55,12 +45,12 @@ export const provideSelectionContext = ({
   rows,
   columns,
   binaryFormatContext,
-  resultViewContext,
+  disallowCopyingData,
 }: {
   rows: ComputedRef<ResultTableRow[]>;
   columns: ComputedRef<ResultTableColumn[]>;
   binaryFormatContext: BinaryFormatContext;
-  resultViewContext: SQLResultViewContext;
+  disallowCopyingData: ComputedRef<boolean>;
 }) => {
   const { t } = useI18n();
   const { getBinaryFormat } = binaryFormatContext;
@@ -75,11 +65,12 @@ export const provideSelectionContext = ({
     columns: [],
   });
   const disabled = computed(() => {
-    return resultViewContext.disallowCopyingData.value;
+    return disallowCopyingData.value;
   });
-  const isCellSelected = computed(
-    () => state.value.rows.length === 1 && state.value.columns.length === 1
-  );
+  const checkIsSingleCellSelected = (state: SelectionState) => {
+    return state.rows.length === 1 && state.columns.length === 1;
+  };
+  const isCellSelected = computed(() => checkIsSingleCellSelected(state.value));
 
   const deselect = () => {
     state.value = {
@@ -133,13 +124,14 @@ export const provideSelectionContext = ({
     };
   };
 
-  useEventListener("click", (e) => {
-    if (copying.value) return;
-    if (isDescendantOf(e.target as Element, `.${PREVENT_DISMISS_SELECTION}`)) {
-      return;
+  // Escape values that contain TSV delimiters (\t, \n) or double quotes
+  // by wrapping in double quotes (standard TSV/CSV quoting convention).
+  const escapeTSVValue = (val: string): string => {
+    if (val.includes("\t") || val.includes("\n") || val.includes('"')) {
+      return `"${val.replaceAll('"', '""')}"`;
     }
-    deselect();
-  });
+    return val;
+  };
 
   const getFormattedValue = ({
     value,
@@ -183,73 +175,64 @@ export const provideSelectionContext = ({
     return String(plain);
   };
 
-  const getValues = () => {
-    if (isCellSelected.value) {
+  const getValues = (state: SelectionState) => {
+    if (checkIsSingleCellSelected(state)) {
       // single cell selected
-      const row = rows.value[state.value.rows[0]];
+      const row = rows.value[state.rows[0]];
       if (!row) {
         return "";
       }
-      const cell = row.item.values[state.value.columns[0]];
+      const cell = row.item.values[state.columns[0]];
       if (!cell) {
         return "";
       }
 
       return getFormattedValue({
         value: cell,
-        colIndex: state.value.columns[0],
-        rowIndex: state.value.rows[0],
+        colIndex: state.columns[0],
+        rowIndex: state.rows[0],
       });
     }
 
-    // build column name (escaped for exact re-import)
-    let columnNames = ["index", ...columns.value.map((c) => escapeCellForTSV(c.name))];
-    if (state.value.columns.length > 0) {
-      columnNames = state.value.columns.map(
-        (columnIndex) =>
-          escapeCellForTSV(columns.value[columnIndex]?.name ?? "")
-      );
-    }
-
-    if (state.value.rows.length > 0) {
+    if (state.rows.length > 0) {
+      const columnNames = ["index", ...columns.value.map((c) => c.name)];
       // multi-rows selected
-      const data: QueryRow[] = [];
-      for (const rowIndex of state.value.rows) {
-        const d = rows.value[rowIndex].item;
-        if (!d) {
+      const data: string[] = [];
+      for (const rowIndex of state.rows) {
+        const queryRow = rows.value[rowIndex].item;
+        if (!queryRow) {
           continue;
         }
-        data.push(d);
+
+        const rowStr = queryRow.values
+          .map((cell, colIdx) => {
+            return escapeTSVValue(
+              getFormattedValue({
+                value: cell,
+                colIndex: colIdx,
+                rowIndex,
+              })
+            );
+          })
+          .join("\t");
+
+        data.push(`${rowIndex}\t${rowStr}`);
       }
       if (data.length === 0) {
         return "";
       }
-
-      const value = data
-        .map((row, rowIdx) => {
-          return row.values
-            .map((cell, colIdx) =>
-              escapeCellForTSV(
-                getFormattedValue({
-                  value: cell,
-                  colIndex: colIdx,
-                  rowIndex: state.value.rows[rowIdx],
-                })
-              )
-            )
-            .join("\t");
-        })
-        .join("\n");
-
-      return `${columnNames.join("\t")}\n${value}`;
+      return `${columnNames.join("\t")}\n${data.join("\n")}`;
     }
 
-    if (state.value.columns.length > 0) {
+    if (state.columns.length > 0) {
+      const columnNames = state.columns.map(
+        (columnIndex) => columns.value[columnIndex]?.name ?? ""
+      );
       // multi-columns selected
       const values: RowValue[][] = [];
       for (const row of rows.value) {
         const cells: RowValue[] = [];
-        for (const column of state.value.columns) {
+        for (const column of state.columns) {
           const cell = row.item.values[column];
           if (!cell) continue;
           cells.push(cell);
@@ -262,15 +245,15 @@ export const provideSelectionContext = ({
       const value = values
         .map((cells, rowIdx) =>
           cells
-            .map((cell, colIdx) =>
-              escapeCellForTSV(
+            .map((cell, colIdx) => {
+              return escapeTSVValue(
                 getFormattedValue({
                   value: cell,
                   rowIndex: rowIdx,
-                  colIndex: state.value.columns[colIdx],
+                  colIndex: state.columns[colIdx],
                 })
-              )
-            )
+              );
+            })
             .join("\t")
         )
         .join("\n");
@@ -281,36 +264,23 @@ export const provideSelectionContext = ({
     return "";
   };
 
-  const getValuesForAllRows = (withHeaders: boolean): string => {
-    if (rows.value.length === 0) {
-      return "";
+  const copy = (state: SelectionState) => {
+    if (disabled.value || !isSupported.value || copying.value) {
+      return;
     }
-    const columnNames = columns.value.map((c) => escapeCellForTSV(c.name));
-    const dataLines = rows.value.map((row, rowIdx) =>
-      row.item.values
-        .map((cell, colIdx) =>
-          escapeCellForTSV(
-            getFormattedValue({
-              value: cell,
-              colIndex: colIdx,
-              rowIndex: rowIdx,
-            })
-          )
-        )
-        .join("\t")
-    );
-    if (withHeaders) {
-      return `${columnNames.join("\t")}\n${dataLines.join("\n")}`;
-    }
-    return dataLines.join("\n");
-  };
-
-  const performCopy = (values: string): boolean => {
+    const values = getValues(state);
     if (!values) {
-      return false;
+      return;
     }
     copying.value = true;
     copyTextToClipboard(values)
+      .then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.copied"),
+        });
+      })
       .catch((err: unknown) => {
         const errors = [t("common.failed")];
         if (err instanceof Error) {
@@ -327,18 +297,26 @@ export const provideSelectionContext = ({
           copying.value = false;
         });
       });
-    return true;
   };
 
-  const copyAll = (withHeaders: boolean) => {
-    if (disabled.value || !isSupported.value) return false;
-    return performCopy(getValuesForAllRows(withHeaders));
+  const copyAll = () => {
+    copy({
+      rows: rows.value.map((_, i) => i),
+      columns: [],
+    });
   };
 
-  const copy = () => {
-    if (disabled.value || !isSupported.value) return false;
-    return performCopy(getValues());
+  const copySelected = () => {
+    copy(state.value);
   };
+
+  useEventListener("click", (e) => {
+    if (copying.value) return;
+    if (isDescendantOf(e.target as Element, ".result-scroll-buttons")) {
+      return;
+    }
+    deselect();
+  });
 
   useEventListener("keydown", (e) => {
     if (disabled.value) return;
@@ -350,16 +328,9 @@ export const provideSelectionContext = ({
     }
     // Copy when Cmd/Ctrl + C is pressed.
     if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
-      const copied = copy();
-      if (copied) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("common.copied"),
-        });
-      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      copySelected();
     }
   });
 
@@ -370,7 +341,7 @@ export const provideSelectionContext = ({
     toggleSelectColumn,
     toggleSelectCell,
     deselect,
-    copy,
+    copySelected,
     copyAll,
   };
   provide(KEY, context);

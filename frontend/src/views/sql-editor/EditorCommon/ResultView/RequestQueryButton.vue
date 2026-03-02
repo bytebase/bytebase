@@ -60,7 +60,6 @@ const props = withDefaults(
   defineProps<{
     size?: "tiny" | "medium";
     text: boolean;
-    preferJit: boolean;
     statement?: string;
     permissionDeniedDetail: PermissionDeniedDetail;
   }>(),
@@ -80,7 +79,6 @@ const project = computed(() =>
 
 const useJIT = computed(() => {
   return (
-    props.preferJit &&
     project.value.allowJustInTimeAccess &&
     props.permissionDeniedDetail.requiredPermissions.every(
       (p) => p === "bb.sql.select"

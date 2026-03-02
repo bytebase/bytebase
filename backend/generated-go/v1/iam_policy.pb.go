@@ -266,9 +266,9 @@ type Binding struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Support variables:
-	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" role, support "==" operator.
-	// resource.schema_name: the schema name, used by the "roles/sqlEditorUser" role, support "==" operator.
-	// resource.table_name: the table name, used by the "roles/sqlEditorUser" role, support "==" operator.
+	// resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
+	// resource.schema_name: the schema name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
+	// resource.table_name: the table name, used by the "roles/sqlEditorUser" and "roles/sqlEditorReadUser" roles, support "==" operator.
 	// resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
 	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`.
 	//

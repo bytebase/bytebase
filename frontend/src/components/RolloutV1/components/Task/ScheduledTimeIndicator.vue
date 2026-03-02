@@ -12,17 +12,16 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { ClockIcon } from "lucide-vue-next";
 import { computed } from "vue";
+import { formatAbsoluteDateTime } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
     time?: Date | Timestamp;
     label?: string;
     size?: "small" | "medium";
-    format?: "time" | "datetime";
   }>(),
   {
     size: "small",
-    format: "time",
   }
 );
 
@@ -46,13 +45,6 @@ const formattedTime = computed(() => {
     date = new Date(Number(seconds) * 1000);
   }
 
-  if (props.format === "time") {
-    return date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  return date.toLocaleString();
+  return formatAbsoluteDateTime(date.getTime());
 });
 </script>

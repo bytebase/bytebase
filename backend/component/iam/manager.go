@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 type Manager struct {
@@ -102,6 +103,9 @@ func check(user *store.UserMessage, p permission.Permission, policy *storepb.Iam
 	userName := formatUserNameByType(user)
 
 	for _, binding := range policy.GetBindings() {
+		if !utils.ValidateIAMBinding(binding) {
+			continue
+		}
 		permissions := getPermissions(binding.GetRole())
 		if permissions == nil {
 			continue

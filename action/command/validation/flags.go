@@ -14,6 +14,10 @@ import (
 
 // ValidateFlags validates all the command line flags and environment variables.
 func ValidateFlags(w *world.World) error {
+	// Set access token from environment if not provided
+	if w.AccessToken == "" {
+		w.AccessToken = os.Getenv("BYTEBASE_ACCESS_TOKEN")
+	}
 	// Set service account and secret from environment if not provided
 	if w.ServiceAccount == "" {
 		w.ServiceAccount = os.Getenv("BYTEBASE_SERVICE_ACCOUNT")
@@ -27,12 +31,14 @@ func ValidateFlags(w *world.World) error {
 		w.Platform = world.GetJobPlatform()
 	}
 
-	// Validate service account
-	if w.ServiceAccount == "" {
-		return errors.Errorf("service-account is required and cannot be empty")
-	}
-	if w.ServiceAccountSecret == "" {
-		return errors.Errorf("service-account-secret is required and cannot be empty")
+	// Validate authentication: either access-token or service-account+secret
+	if w.AccessToken == "" {
+		if w.ServiceAccount == "" {
+			return errors.Errorf("service-account is required and cannot be empty")
+		}
+		if w.ServiceAccountSecret == "" {
+			return errors.Errorf("service-account-secret is required and cannot be empty")
+		}
 	}
 
 	// Validate URL format

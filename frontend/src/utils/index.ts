@@ -4,6 +4,7 @@ export * from "./role";
 export * from "./slug";
 export * from "./types";
 export * from "./util";
+export * from "./datetime";
 export * from "./label";
 export * from "./string";
 export * from "./sqlEditor";

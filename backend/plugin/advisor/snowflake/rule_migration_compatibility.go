@@ -201,14 +201,18 @@ func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableCont
 	if tableColumnAction == nil {
 		return
 	}
-	dropColumn := tableColumnAction.DROP(0)
+	dropColumn := tableColumnAction.DROP()
 	if dropColumn == nil {
 		return
 	}
 	allColumnName := tableColumnAction.Column_list().AllColumn_name()
 	normalizedAllColumnNames := make([]string, 0, len(allColumnName))
 	for _, columnName := range allColumnName {
-		normalizedAllColumnNames = append(normalizedAllColumnNames, fmt.Sprintf("%q", snowsqlparser.NormalizeSnowSQLObjectNamePart(columnName.Id_())))
+		allIDs := columnName.AllId_()
+		if len(allIDs) == 0 {
+			continue
+		}
+		normalizedAllColumnNames = append(normalizedAllColumnNames, fmt.Sprintf("%q", snowsqlparser.NormalizeSnowSQLObjectNamePart(allIDs[len(allIDs)-1])))
 	}
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.level,

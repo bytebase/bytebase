@@ -407,7 +407,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	}
 
 	var userMessages []*UserMessage
-	rows, err := txn.QueryContext(ctx, sql, args...)
+	rows, err := txn.QueryContext(ctx, sql, args...) // NOSONAR: query is parameterized via qb.Query
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +463,7 @@ func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any
 	var mfaConfigBytes []byte
 	var profileBytes []byte
 	var typeString string
-	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(
+	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan( // NOSONAR: query is parameterized via qb.Query
 		&user.ID,
 		&user.MemberDeleted,
 		&user.Email,
@@ -540,7 +540,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 	}
 
 	var userID int
-	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&userID, &create.CreatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&userID, &create.CreatedAt); err != nil { // NOSONAR: query is parameterized via qb.Query
 		return nil, err
 	}
 

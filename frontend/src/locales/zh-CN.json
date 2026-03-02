@@ -43,7 +43,6 @@
     "archive": "归档",
     "archived": "已归档",
     "abandon": "废弃",
-    "abandoned": "已废弃",
     "restored": "已恢复",
     "no-license": "无证书",
     "logout": "登出",
@@ -53,6 +52,7 @@
     "latest": "最新",
     "error": "错误",
     "canceled": "已取消",
+    "rejected": "已拒绝",
     "approve": "批准",
     "done": "完成",
     "create": "创建",
@@ -91,7 +91,7 @@
     "stage": "阶段",
     "task": "任务",
     "sql": "SQL",
-    "unassigned": "未指派",
+    "unassigned": "未分配",
     "new": "创建",
     "add": "添加",
     "confirm-and-update": "确认并更新",
@@ -226,7 +226,6 @@
     "permissions": "权限",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
-    "connection": "连接",
     "resource": "资源",
     "resources": "资源",
     "closed": "已关闭",
@@ -1041,7 +1040,9 @@
       "name": "名称",
       "updated": "更新于",
       "creator": "创建人",
-      "current-approver": "当前审批人"
+      "approved": "已审批",
+      "approval-progress": "{approved}/{total} 已审批",
+      "waiting-role": "等待: {role}"
     },
     "migration-mode": {
       "online": {
@@ -1910,7 +1911,8 @@
       "workspace-level-roles": "工作空间级别角色",
       "project-level-roles": "项目级别角色",
       "roles-are-filtered-by-permissions": "角色已按权限筛选",
-      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句"
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
+      "disallow-ddl": "禁止在所有环境中执行 DDL/DML 语句。"
     },
     "select": "选择项目",
     "all": "所有项目",
@@ -2012,6 +2014,7 @@
     "no-queriable-database": "没有可查询的数据库",
     "rows": "条记录",
     "vertical-display": "竖向展示",
+    "table-view": "Table view",
     "no-history-found": "暂无历史记录",
     "search-history-by-statement": "搜索 SQL 语句",
     "binary-format": "二进制格式",
@@ -2044,7 +2047,6 @@
     "visualize-explain": "可视化 Explain",
     "rows-upper-limit": "到达查询结果条数上限",
     "close-sheet": "关闭工作表",
-    "connect": "连接",
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
       "self": "管理员模式",
@@ -2090,7 +2092,7 @@
     "pending-query": "待处理查询",
     "executing-query": "执行查询",
     "request-query": "请求查询",
-    "connect-in-new-tab": "在新选项卡中连接",
+    "open-in-new-tab": "在新选项卡中打开",
     "copy-name": "复制名称",
     "preview-table-data": "预览表数据",
     "view-database-detail": "查看数据库详情",
@@ -2165,7 +2167,8 @@
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "activate-access": "激活",
-    "activate-confirm": "确定要激活此访问授权吗？"
+    "activate-confirm": "确定要激活此访问授权吗？",
+    "re-request": "重新申请"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2629,8 +2632,7 @@
       },
       "skip": "无需审批",
       "issue-review": {
-        "sent-back": "被退回",
-        "review-sent-back-by": "审批被 {user} 退回"
+        "sent-back": "被退回"
       },
       "add-rule": "添加规则",
       "edit-rule": "编辑规则",
@@ -2740,6 +2742,10 @@
       "self": "SQL 编辑器用户",
       "description": "可查询指定范围的数据。"
     },
+    "sql-editor-read-user": {
+      "self": "SQL 编辑器只读用户",
+      "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。"
+    },
     "gitops-service-agent": {
       "self": "GitOps 服务代理",
       "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。"
@@ -2762,7 +2768,8 @@
     "delete-group": "删除数据库组 {name}"
   },
   "export-center": {
-    "self": "导出中心"
+    "self": "导出中心",
+    "data-export": "数据导出"
   },
   "schema-designer": {
     "use-tips": "选择需要设计的表"

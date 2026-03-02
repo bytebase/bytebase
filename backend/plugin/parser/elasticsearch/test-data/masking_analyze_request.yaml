@@ -1,0 +1,27 @@
+# Test cases for AnalyzeRequest.
+# MaskableAPI enum: APIUnsupported=0, APIMaskSearch=1, APIMaskGetDoc=2, APIMaskGetSource=3, APIMaskMGet=4, APIMaskExplain=5, APIBlocked=6
+- description: "search with blocked feature"
+  method: "POST"
+  url: "/my-index/_search"
+  body: '{"aggs": {"x": {"terms": {"field": "status"}}}}'
+  wantAPI: 1
+  wantIndex: "my-index"
+  wantBlocked:
+    - 0
+- description: "get doc skips body analysis"
+  method: "GET"
+  url: "/my-index/_doc/1"
+  body: '{"aggs": {"x": {}}}'
+  wantAPI: 2
+- description: "blocked endpoint"
+  method: "POST"
+  url: "/_sql"
+  body: '{"query": "SELECT * FROM test"}'
+  wantAPI: 6
+- description: "search copies predicate fields"
+  method: "POST"
+  url: "/my-index/_search"
+  body: '{"query": {"match": {"email": "alice@example.com"}}}'
+  wantAPI: 1
+  wantPredicateFields:
+    - "email"

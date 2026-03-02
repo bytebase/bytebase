@@ -73,13 +73,22 @@ type Client struct {
 	options ClientOptions
 }
 
-// NewClient returns the new Bytebase API client with default options.
+// NewClient returns the new Bytebase API client with default options using service account auth.
 func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error) {
 	return NewClientWithOptions(url, serviceAccount, serviceAccountSecret, DefaultClientOptions())
 }
 
-// NewClientWithOptions returns a new Bytebase API client with custom options.
+// NewClientWithAccessToken returns a new Bytebase API client using a pre-obtained access token.
+func NewClientWithAccessToken(url, accessToken string) (*Client, error) {
+	return createClient(url, accessToken, "", "", DefaultClientOptions())
+}
+
+// NewClientWithOptions returns a new Bytebase API client with custom options using service account auth.
 func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts ClientOptions) (*Client, error) {
+	return createClient(url, "", serviceAccount, serviceAccountSecret, opts)
+}
+
+func createClient(url, accessToken, serviceAccount, serviceAccountSecret string, opts ClientOptions) (*Client, error) {
 	if opts.PageSize <= 0 {
 		opts.PageSize = 100
 	}
@@ -97,8 +106,15 @@ func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts
 		httpClient = &http.Client{Timeout: timeout}
 	}
 
-	// Create token refresher function
-	tokenRefresher := getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
+	var tokenRefresher func(ctx context.Context) (string, error)
+	if accessToken != "" {
+		// Use the provided access token directly; no refresh needed.
+		tokenRefresher = func(_ context.Context) (string, error) {
+			return accessToken, nil
+		}
+	} else {
+		tokenRefresher = getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
+	}
 
 	// Create unified interceptor
 	unifiedInt := newUnifiedInterceptor(opts.RetryConfig, tokenRefresher)

@@ -9,6 +9,7 @@ import {
   hasInstanceFeature as checkInstanceFeature,
   getDateForPbTimestampProtoEs,
   getMinimumRequiredPlan,
+  getTimeForPbTimestampProtoEs,
   instanceLimitFeature,
   PLANS,
 } from "@/types";
@@ -23,6 +24,7 @@ import {
   PlanType,
   UpdateSubscriptionRequestSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
+import { formatAbsoluteDateTime } from "@/utils/datetime";
 
 // The threshold of days before the license expiration date to show the warning.
 // Default is 7 days.
@@ -97,9 +99,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
       return "";
     }
 
-    return dayjs(
-      getDateForPbTimestampProtoEs(subscription.value.expiresTime)
-    ).format("YYYY/MM/DD HH:mm:ss");
+    return formatAbsoluteDateTime(
+      getTimeForPbTimestampProtoEs(subscription.value.expiresTime)
+    );
   });
 
   const isTrialing = computed(() => !!subscription.value?.trialing);

@@ -307,6 +307,15 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 		case celast.CallKind:
 			functionName := expr.AsCall().FunctionName()
 			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
 			case celoperators.LogicalAnd:
 				for _, arg := range expr.AsCall().Args() {
 					qq, err := getFilter(arg)
@@ -350,7 +359,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("query value must be a string")
 					}
-					return qb.Q().Space("access_grant.payload->>'query' = ?", queryStr), nil
+					return qb.Q().Space("btrim(access_grant.payload->>'query') = ?", strings.TrimSpace(queryStr)), nil
 				case "issue":
 					issueStr, ok := value.(string)
 					if !ok {

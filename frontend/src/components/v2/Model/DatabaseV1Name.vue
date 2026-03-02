@@ -6,15 +6,10 @@
     :class="[
       shouldShowLink && !plain && 'normal-link',
       shouldShowLink && 'hover:underline',
+      isDeleted && 'text-control-light line-through',
     ]"
   >
     <HighlightLabelText :text="extractDatabaseResourceName(database.name).databaseName" :keyword="keyword" />
-    <span
-      v-if="showNotFound && database.state === State.DELETED"
-      class="text-control-placeholder"
-    >
-      (NOT_FOUND)
-    </span>
   </component>
 </template>
 
@@ -31,16 +26,16 @@ const props = withDefaults(
     database: Database;
     link?: boolean;
     plain?: boolean;
-    showNotFound?: boolean;
     keyword?: string;
   }>(),
   {
     link: true,
     plain: false,
-    showNotFound: false,
     keyword: "",
   }
 );
+
+const isDeleted = computed(() => props.database.state === State.DELETED);
 
 const shouldShowLink = computed(() => {
   return props.link && props.database.state === State.ACTIVE;

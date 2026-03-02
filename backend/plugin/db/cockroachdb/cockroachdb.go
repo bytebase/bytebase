@@ -324,7 +324,7 @@ func (d *Driver) executeInTransactionMode(
 	if isPlsql {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 			return err
 		}); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -413,7 +413,7 @@ func (d *Driver) executeInTransactionMode(
 
 	// USE SET SESSION ROLE to set the role for the current session.
 	if err := crdb.Execute(func() error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 		return err
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -454,7 +454,7 @@ func (d *Driver) executeInAutoCommitMode(
 	if isPlsql {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 			return err
 		}); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -472,7 +472,7 @@ func (d *Driver) executeInAutoCommitMode(
 
 	// USE SET SESSION ROLE to set the role for the current session.
 	if err := crdb.Execute(func() error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
 		return err
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -630,10 +630,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			return nil, err
 		}
 
+		// Sanitize the schema name by escaping any quotes.
+		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
+
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
 		if queryContext.Schema != "" {
 			if err := crdb.Execute(func() error {
-				_, err := conn.ExecContext(ctx, fmt.Sprintf("SET search_path TO %s;", queryContext.Schema))
+				_, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)) // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
 				return err
 			}); err != nil {
 				return nil, err

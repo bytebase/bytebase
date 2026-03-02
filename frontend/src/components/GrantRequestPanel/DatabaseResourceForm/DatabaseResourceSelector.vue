@@ -10,7 +10,7 @@
     <NTransfer
       id="database-resource-selector"
       v-model:value="selectedValueList"
-      style="height: 512px"
+      class="h-[min(512px,60vh)]"
       :disabled="disabled"
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
@@ -609,7 +609,7 @@ const renderTargetList: TransferRenderSourceList = () => {
     data: targetTreeOptions.value,
     blockLine: true,
     virtualScroll: true,
-    style: "height: 468px", // since <NTransfer> height is 512
+    style: "height: calc(100% - 44px)",
     renderLabel: ({ option }: { option: TreeOption }) => {
       const node = option as DatabaseTreeOption;
       return (

@@ -117,7 +117,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 			if function.SkipDump {
 				continue
 			}
-			funcID := getObjectID(schema.Name, function.Name)
+			funcID := getObjectID(schema.Name, funcIdentity(function))
 			functionMap[funcID] = function
 			graph.AddNode(funcID)
 			for _, dependency := range function.DependencyTables {
@@ -405,7 +405,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		if function.SkipDump {
 			continue
 		}
-		funcID := getObjectID(schema.Name, function.Name)
+		funcID := getObjectID(schema.Name, funcIdentity(function))
 		functionMap[funcID] = function
 		graph.AddNode(funcID)
 		for _, dependency := range function.DependencyTables {
@@ -1353,6 +1353,15 @@ func writeAlterSequenceOwnedBy(out io.Writer, schema string, sequence *storepb.S
 	}
 	_, err := io.WriteString(out, "\";\n\n")
 	return err
+}
+
+// funcIdentity returns the unique identity for a function, preferring
+// the full signature (name + parameter types) to support overloaded functions.
+func funcIdentity(f *storepb.FunctionMetadata) string {
+	if f.Signature != "" {
+		return f.Signature
+	}
+	return f.Name
 }
 
 func getObjectID(schema string, object string) string {

@@ -23,9 +23,13 @@ import {
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams } from "@/utils";
-import { getValueFromSearchParams, upsertScope } from "@/utils";
+import {
+  getValueFromSearchParams,
+  getValuesFromSearchParams,
+  upsertScope,
+} from "@/utils";
 
-type PresetValue = "WAITING_APPROVAL" | "CREATED" | "ALL";
+type PresetValue = "WAITING_APPROVAL" | "OPEN" | "CLOSED" | "ALL";
 
 interface Preset {
   value: PresetValue;
@@ -49,8 +53,12 @@ const presets = computed((): Preset[] => [
     label: t("issue.waiting-approval"),
   },
   {
-    value: "CREATED",
-    label: t("common.created"),
+    value: "OPEN",
+    label: t("issue.table.open"),
+  },
+  {
+    value: "CLOSED",
+    label: t("issue.table.closed"),
   },
   {
     value: "ALL",
@@ -64,8 +72,6 @@ const activePreset = computed((): PresetValue | "" => {
 });
 
 const isActive = (preset: PresetValue): boolean => {
-  const myEmail = me.value.email;
-
   if (preset === "WAITING_APPROVAL") {
     return (
       getValueFromSearchParams(props.params, "approval") ===
@@ -73,8 +79,18 @@ const isActive = (preset: PresetValue): boolean => {
     );
   }
 
-  if (preset === "CREATED") {
-    return getValueFromSearchParams(props.params, "creator") === myEmail;
+  if (preset === "OPEN") {
+    const status = getValueFromSearchParams(props.params, "status");
+    const approval = getValueFromSearchParams(props.params, "approval");
+    return status === IssueStatus[IssueStatus.OPEN] && !approval;
+  }
+
+  if (preset === "CLOSED") {
+    const statuses = getValuesFromSearchParams(props.params, "status");
+    return (
+      statuses.includes(IssueStatus[IssueStatus.DONE]) &&
+      !statuses.includes(IssueStatus[IssueStatus.OPEN])
+    );
   }
 
   if (preset === "ALL") {
@@ -105,13 +121,19 @@ const selectPreset = (preset: PresetValue) => {
         { id: "current-approver", value: myEmail },
       ],
     });
-  } else if (preset === "CREATED") {
+  } else if (preset === "OPEN") {
+    newParams = upsertScope({
+      params: newParams,
+      scopes: [{ id: "status", value: IssueStatus[IssueStatus.OPEN] }],
+    });
+  } else if (preset === "CLOSED") {
     newParams = upsertScope({
       params: newParams,
       scopes: [
-        { id: "status", value: IssueStatus[IssueStatus.OPEN] },
-        { id: "creator", value: myEmail },
+        { id: "status", value: IssueStatus[IssueStatus.DONE] },
+        { id: "status", value: IssueStatus[IssueStatus.CANCELED] },
       ],
+      allowMultiple: true,
     });
   }
   // "ALL" preset keeps only readonly scopes (already done above)

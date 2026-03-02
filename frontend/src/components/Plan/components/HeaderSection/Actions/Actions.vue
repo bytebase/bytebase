@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { create } from "@bufbuild/protobuf";
+import { clone, create } from "@bufbuild/protobuf";
 import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -82,6 +82,7 @@ import {
   BatchUpdateIssuesStatusRequestSchema,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
   BatchRunTasksRequestSchema,
   CreateRolloutRequestSchema,
@@ -234,9 +235,9 @@ const handlePlanStateChange = async (action: "PLAN_CLOSE" | "PLAN_REOPEN") => {
     onPositiveClick: async () => {
       d.loading = true;
       try {
-        await planStore.updatePlan({ ...plan.value, state: newState }, [
-          "state",
-        ]);
+        const planPatch = clone(PlanSchema, plan.value);
+        planPatch.state = newState;
+        await planStore.updatePlan(planPatch, ["state"]);
         await resourcePoller.refreshResources();
       } catch (error) {
         pushNotification({
