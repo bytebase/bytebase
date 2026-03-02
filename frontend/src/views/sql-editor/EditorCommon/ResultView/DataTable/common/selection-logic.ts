@@ -13,7 +13,7 @@ import {
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { extractSQLRowValuePlain } from "@/utils";
+import { extractSQLRowValuePlain, isDescendantOf } from "@/utils";
 import {
   type BinaryFormatContext,
   detectBinaryFormat,
@@ -306,6 +306,14 @@ export const provideSelectionContext = ({
   const copySelected = () => {
     copy(state.value);
   };
+
+  useEventListener("click", (e) => {
+    if (copying.value) return;
+    if (isDescendantOf(e.target as Element, ".result-scroll-buttons")) {
+      return;
+    }
+    deselect();
+  });
 
   useEventListener("keydown", (e) => {
     if (disabled.value) return;

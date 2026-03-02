@@ -167,7 +167,7 @@
           </NButton>
         </div>
 
-        <div class="flex flex-col gap-y-2">
+        <div class="flex flex-col gap-y-2 result-scroll-buttons">
           <NTooltip>
             <template #trigger>
               <div class="rounded-full shadow bg-white dark:bg-gray-800">

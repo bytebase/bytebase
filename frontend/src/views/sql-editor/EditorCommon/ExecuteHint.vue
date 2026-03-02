@@ -50,6 +50,7 @@ import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/pro
 import {
   pushNotification,
   useDatabaseV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useStorageStore,
 } from "@/store";
@@ -58,7 +59,6 @@ import {
   extractDatabaseResourceName,
   extractProjectResourceName,
   getDatabaseEnvironment,
-  hasWorkspacePermissionV2,
 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
@@ -76,6 +76,7 @@ const emit = defineEmits<{
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
+const editorStore = useSQLEditorStore();
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -91,7 +92,7 @@ const actions = computed(() => {
     admin: false,
     issue: true,
   };
-  if (hasWorkspacePermissionV2("bb.sql.admin")) {
+  if (editorStore.allowAdmin) {
     actions.admin = true;
   }
 

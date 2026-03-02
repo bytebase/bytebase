@@ -9,7 +9,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import {
   type BatchQueryContext,
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -26,7 +26,6 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   getInstanceResource,
-  hasWorkspacePermissionV2,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   setDefaultDataSourceForConn,
@@ -40,6 +39,7 @@ type DropdownOptionWithTreeNode = DropdownOption & {
 export const useDropdown = () => {
   const router = useRouter();
   const editorContext = useSQLEditorContext();
+
   const { events: editorEvents, showConnectionPanel } = editorContext;
 
   const show = ref(false);
@@ -49,9 +49,8 @@ export const useDropdown = () => {
   });
   const context = ref<TreeNode>();
 
-  const allowAdmin = computed(() => hasWorkspacePermissionV2("bb.sql.admin"));
-
   const options = computed((): DropdownOptionWithTreeNode[] => {
+    const { allowAdmin } = useSQLEditorStore();
     const node = context.value;
     if (!node) {
       return [];
@@ -96,7 +95,7 @@ export const useDropdown = () => {
           },
         });
       }
-      if (allowAdmin.value) {
+      if (allowAdmin) {
         items.push({
           key: "connect-in-admin-mode",
           label: t("sql-editor.connect-in-admin-mode"),
