@@ -179,7 +179,11 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
+import {
+  displayRoleTitle,
+  formatAbsoluteDateTime,
+  hasProjectPermissionV2,
+} from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
 import {
@@ -359,7 +363,7 @@ const extractExpiration = (expiration?: Date) => {
   if (!expiration) {
     return t("project.members.never-expires");
   }
-  return expiration.toLocaleString();
+  return formatAbsoluteDateTime(expiration.getTime());
 };
 
 const checkRoleExpired = (role: SingleBinding) => {

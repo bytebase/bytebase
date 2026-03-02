@@ -76,10 +76,10 @@ import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRun/Task
 import { CopyButton } from "@/components/v2";
 import { sheetServiceClientConnect } from "@/connect";
 import { useRevisionStore } from "@/store";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
-import { bytesToString } from "@/utils";
+import { bytesToString, formatAbsoluteDateTime } from "@/utils";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
 
 interface LocalState {
@@ -113,9 +113,9 @@ const formattedCreateTime = computed(() => {
   if (!revision.value) {
     return "";
   }
-  return getDateForPbTimestampProtoEs(
-    revision.value.createTime
-  )?.toLocaleString();
+  return formatAbsoluteDateTime(
+    getTimeForPbTimestampProtoEs(revision.value.createTime)
+  );
 });
 
 const formattedStatementSize = computed(() => {

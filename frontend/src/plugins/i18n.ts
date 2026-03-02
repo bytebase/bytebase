@@ -42,11 +42,36 @@ const getValidLocale = () => {
   return "en-US";
 };
 
+const dtfOptions = {
+  full: {
+    month: "short" as const,
+    day: "numeric" as const,
+    year: "numeric" as const,
+    hour: "numeric" as const,
+    minute: "2-digit" as const,
+    timeZoneName: "short" as const,
+  },
+  date: {
+    month: "short" as const,
+    day: "numeric" as const,
+    year: "numeric" as const,
+  },
+  dateShort: {
+    month: "short" as const,
+    day: "numeric" as const,
+  },
+};
+
+const datetimeFormats = Object.fromEntries(
+  validLocaleList.map((l) => [l, dtfOptions])
+);
+
 const i18n = createI18n({
   legacy: false,
   locale: getValidLocale(),
   globalInjection: true,
   messages: mergedLocalMessage as Record<string, Record<string, string>>,
+  datetimeFormats,
   fallbackLocale: "en-US",
 });
 

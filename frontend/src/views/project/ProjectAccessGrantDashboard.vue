@@ -99,6 +99,7 @@ import { type AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantFilterStatus,
+  formatAbsoluteDateTime,
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
   getAccessGrantExpirationText,
@@ -295,7 +296,7 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
     render: (grant) => {
       if (!grant.createTime) return "-";
       const ms = getTimeForPbTimestampProtoEs(grant.createTime);
-      return h("span", { class: "text-sm" }, new Date(ms).toLocaleString());
+      return h("span", { class: "text-sm" }, formatAbsoluteDateTime(ms));
     },
   },
   {

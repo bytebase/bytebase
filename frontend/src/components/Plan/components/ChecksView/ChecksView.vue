@@ -90,9 +90,11 @@
                   </template>
                   {{ getCheckTypeDescription(group.type) }}
                 </NTooltip>
-                <span v-if="group.createTime" class="text-sm text-control-light">
-                  {{ formatTime(group.createTime) }}
-                </span>
+                <Timestamp
+                  v-if="group.createTime"
+                  :timestamp="group.createTime"
+                  custom-class="text-sm"
+                />
               </div>
             </div>
 
@@ -142,7 +144,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp as TimestampPb } from "@bufbuild/protobuf/wkt";
 import {
   AlertCircleIcon,
   CheckCircleIcon,
@@ -156,6 +158,7 @@ import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
+import Timestamp from "@/components/misc/Timestamp.vue";
 import {
   type PlanCheckRun,
   type PlanCheckRun_Result,
@@ -164,7 +167,6 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import { humanizeTs } from "@/utils";
 import CheckResultItem from "../common/CheckResultItem.vue";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
@@ -172,7 +174,7 @@ interface ResultGroup {
   key: string;
   type: PlanCheckRun_Result_Type;
   target: string;
-  createTime?: Timestamp;
+  createTime?: TimestampPb;
   results: PlanCheckRun_Result[];
 }
 
@@ -356,13 +358,6 @@ const getCheckTypeDescription = (type: PlanCheckRun_Result_Type) => {
     default:
       return undefined;
   }
-};
-
-const formatTime = (timestamp: Timestamp | undefined): string => {
-  if (!timestamp) return "";
-  return humanizeTs(
-    new Date(Number(timestamp.seconds) * 1000).getTime() / 1000
-  );
 };
 
 const adviceLevelToStatus: Partial<

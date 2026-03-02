@@ -50,7 +50,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
-import { STORAGE_KEY_ROLES_EXPIRATION } from "@/utils";
+import { formatAbsoluteDateTime, STORAGE_KEY_ROLES_EXPIRATION } from "@/utils";
 
 interface ExpirationOption {
   value: number;
@@ -117,7 +117,7 @@ const maximumRoleExpiration = computed(() => {
 });
 
 const formatExpirationDisplay = (timestampMs: number) => {
-  return dayjs(timestampMs).format("YYYY-MM-DD HH:mm:ss");
+  return formatAbsoluteDateTime(timestampMs);
 };
 
 const isDateDisabled = (date: number) => {

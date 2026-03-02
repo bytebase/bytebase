@@ -12,26 +12,21 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
-import { humanizeDate } from "@/utils";
+import { formatAbsoluteDateTime, humanizeDate } from "@/utils";
 
 const props = defineProps({
   date: {
     type: Object as PropType<Date>,
     default: undefined,
   },
-  format: {
-    type: String,
-    default: "YYYY-MM-DD HH:mm:ss UTCZZ",
-  },
 });
 
 const humanized = computed(() => humanizeDate(props.date));
 
 const detail = computed(() =>
-  dayjs(props.date?.getTime() ?? 0).format(props.format)
+  formatAbsoluteDateTime(props.date?.getTime() ?? 0)
 );
 </script>

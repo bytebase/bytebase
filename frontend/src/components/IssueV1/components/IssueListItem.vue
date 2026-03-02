@@ -49,7 +49,7 @@
             #{{ extractIssueUID(issue.name) }}
           </span>
           <span>&middot;</span>
-          <span>{{ updateTimeText }}</span>
+          <HumanizeTs :ts="createTimeTs" />
           <span>&middot;</span>
           <router-link
             :to="{
@@ -105,9 +105,9 @@ import {
   extractProjectResourceName,
   getHighlightHTMLByRegExp,
   getIssueRoute,
-  humanizeTs,
   projectOfIssue,
 } from "@/utils";
+import HumanizeTs from "../../misc/HumanizeTs.vue";
 import IssueApprovalStatus from "./IssueApprovalStatus.vue";
 import { getValidIssueLabels } from "./IssueLabelSelector.vue";
 import IssueStatusIcon from "./IssueStatusIcon.vue";
@@ -162,9 +162,9 @@ const creator = computed(() => {
 
 const project = computed(() => projectOfIssue(props.issue));
 
-const updateTimeText = computed(() => {
-  return humanizeTs(
-    getTimeForPbTimestampProtoEs(props.issue.updateTime, 0) / 1000
+const createTimeTs = computed(() => {
+  return Math.floor(
+    getTimeForPbTimestampProtoEs(props.issue.createTime, 0) / 1000
   );
 });
 

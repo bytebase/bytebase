@@ -2,6 +2,7 @@ import type { ComputedRef } from "vue";
 import { computed } from "vue";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { formatAbsoluteDateTime } from "@/utils";
 import { getTaskRunDuration } from "../TaskRun/useTaskRunUtils";
 
 export type TimingType = "scheduled" | "running" | "completed" | "none";
@@ -55,10 +56,7 @@ export const useTaskTiming = (
     const type = timingType.value;
 
     if (type === "scheduled" && scheduledTime.value) {
-      return scheduledTime.value.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      return formatAbsoluteDateTime(scheduledTime.value.getTime());
     }
 
     // Use getTaskRunDuration for running and completed tasks

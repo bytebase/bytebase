@@ -51,12 +51,11 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import type { PropType, VNode } from "vue";
 import { computed, defineComponent, nextTick, ref } from "vue";
 import Watermark from "@/components/misc/Watermark.vue";
 import { pushNotification } from "@/store";
-import { minmax } from "@/utils";
+import { formatAbsoluteDateTime, minmax } from "@/utils";
 import {
   calcBBox,
   fitBBox,
@@ -120,7 +119,7 @@ const resizeParams = computed(() => {
 });
 
 const now = computed((): string => {
-  return dayjs().format("YYYY-MM-DD HH:mm");
+  return formatAbsoluteDateTime(Date.now());
 });
 
 const DesktopRenderer = defineComponent({

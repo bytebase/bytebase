@@ -21,7 +21,7 @@
 
       <div class="mt-1 text-sm text-gray-600">
         <!-- Approved -->
-        <div v-if="status === 'approved'" class="flex flex-col items-start gap-1">
+        <div v-if="status === 'approved'" class="flex flex-row items-center gap-1">
           <span class="text-xs">
             {{ $t("custom-approval.issue-review.approved-by") }}
           </span>
@@ -33,7 +33,7 @@
 
         <!-- Rejected -->
         <div v-else-if="status === 'rejected'" class="flex flex-col gap-1">
-          <div class="flex flex-col items-start gap-1">
+          <div class="flex flex-row items-center gap-1">
             <span class="text-xs">
               {{ $t("custom-approval.issue-review.rejected-by") }}
             </span>
@@ -42,7 +42,7 @@
               :candidate="stepApprover.principal"
             />
           </div>
-          <div v-if="canReRequest" class="mt-1">
+          <div v-if="canReRequest && !readonly" class="mt-1">
             <NButton
               size="tiny"
               :loading="reRequesting"
@@ -58,13 +58,15 @@
 
         <!-- Current -->
         <div v-else-if="status === 'current'" class="flex flex-col gap-1">
-          <PotentialApprovers :users="potentialApprovers" />
-          <div
-            v-if="showSelfApprovalTip"
-            class="px-1 py-0.5 border rounded-sm text-xs bg-yellow-50 border-yellow-600 text-yellow-600"
-          >
-            {{ $t("custom-approval.issue-review.self-approval-not-allowed") }}
-          </div>
+          <template v-if="!readonly">
+            <PotentialApprovers :users="potentialApprovers" />
+            <div
+              v-if="showSelfApprovalTip"
+              class="px-1 py-0.5 border rounded-sm text-xs bg-yellow-50 border-yellow-600 text-yellow-600"
+            >
+              {{ $t("custom-approval.issue-review.self-approval-not-allowed") }}
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -80,12 +82,18 @@ import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
 import { useApprovalStep } from "./useApprovalStep";
 
-const props = defineProps<{
-  step: string;
-  stepIndex: number;
-  stepNumber: number;
-  issue: Issue;
-}>();
+const props = withDefaults(
+  defineProps<{
+    step: string;
+    stepIndex: number;
+    stepNumber: number;
+    issue: Issue;
+    readonly?: boolean;
+  }>(),
+  {
+    readonly: false,
+  }
+);
 
 const {
   status,

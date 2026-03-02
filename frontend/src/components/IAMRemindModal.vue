@@ -11,7 +11,7 @@
           <li v-for="(data, i) in pendingExpireRoles" :key="i">
             {{ displayRoleTitle(data.role.name) }}:
             <span class="text-red-400">
-              {{ data.expiration.format("YYYY-MM-DD HH:mm:ss") }}
+              {{ formatAbsoluteDateTime(data.expiration.valueOf()) }}
             </span>
           </li>
         </ul>
@@ -52,6 +52,7 @@ import {
   autoProjectRoute,
   displayRoleTitle,
   filterBindingsByUserName,
+  formatAbsoluteDateTime,
   storageKeyIamRemind,
   useDynamicLocalStorage,
 } from "@/utils";

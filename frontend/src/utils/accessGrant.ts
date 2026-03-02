@@ -19,6 +19,7 @@ import {
   Issue_ApprovalStatus,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { formatAbsoluteDateTime } from "@/utils/datetime";
 import { getDefaultPagination } from "@/utils/pagination";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 
@@ -54,7 +55,7 @@ export const getAccessGrantExpirationText = (
   | { type: "never" } => {
   if (grant.expiration.case === "expireTime") {
     const ms = getTimeForPbTimestampProtoEs(grant.expiration.value);
-    return { type: "datetime", value: dayjs(ms).format("LLL") };
+    return { type: "datetime", value: formatAbsoluteDateTime(ms) };
   }
   if (grant.expiration.case === "ttl") {
     const totalSeconds = Number(grant.expiration.value.seconds);

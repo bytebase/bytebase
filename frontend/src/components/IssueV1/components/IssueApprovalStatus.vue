@@ -39,6 +39,7 @@
         :step-index="index"
         :step-number="index + 1"
         :issue="issue"
+        readonly
       />
     </NTimeline>
   </NPopover>
