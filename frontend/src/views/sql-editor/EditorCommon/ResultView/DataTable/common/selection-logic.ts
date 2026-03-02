@@ -24,13 +24,12 @@ import type { ResultTableColumn, ResultTableRow } from "./types";
 
 const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
 
-/**
- * Escape every cell for TSV copy so the exact value is preserved on re-import.
- * Always wrap in quotes and escape internal " as "" so we're safe for any content.
- */
 const escapeCellForTSV = (s: string): string => {
-  return `"${String(s).replaceAll('"', '""')}"`;
-};
+  if (s.includes("\t") || s.includes("\n") || s.includes('"')) {
+    return `"${String(s).replaceAll('"', '""')}"`;
+  }
+  return s;
+}
 
 export type SelectionState = {
   rows: number[];
@@ -196,14 +195,11 @@ export const provideSelectionContext = ({
         return "";
       }
 
-      // Get the cell value (exact for re-import)
-      return escapeCellForTSV(
-        getFormattedValue({
-          value: cell,
-          colIndex: state.value.columns[0],
-          rowIndex: state.value.rows[0],
-        })
-      );
+      return getFormattedValue({
+        value: cell,
+        colIndex: state.value.columns[0],
+        rowIndex: state.value.rows[0],
+      });
     }
 
     // build column name (escaped for exact re-import)
