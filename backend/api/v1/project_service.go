@@ -578,7 +578,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
-	if err := validateIAMPolicy(ctx, s.store, req.Msg.Policy, oldIamPolicyMsg); err != nil {
+	if err := validateIAMPolicy(ctx, s.store, req.Msg, oldIamPolicyMsg); err != nil {
 		return nil, err
 	}
 
@@ -1038,13 +1038,13 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
-	policy *v1pb.IamPolicy,
+	msg *v1pb.SetIamPolicyRequest,
 	oldPolicyMessage *store.IamPolicyMessage,
 ) error {
-	if policy == nil {
+	if msg.Policy == nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Policy is required"))
 	}
-	if len(policy.Bindings) == 0 {
+	if len(msg.Policy.Bindings) == 0 {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
@@ -1069,7 +1069,7 @@ func validateIAMPolicy(
 	}
 
 	bindings := []*v1pb.Binding{}
-	for _, binding := range policy.Bindings {
+	for _, binding := range msg.Policy.Bindings {
 		if len(binding.Members) == 0 {
 			continue
 		}
@@ -1080,10 +1080,15 @@ func validateIAMPolicy(
 		}
 	}
 
-	return validateBindings(bindings, roleMessages, maximumRoleExpiration)
+	return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
 }
 
-func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maximumRoleExpiration *durationpb.Duration) error {
+func validateBindings(
+	parent string,
+	bindings []*v1pb.Binding,
+	roles []*store.RoleMessage,
+	maximumRoleExpiration *durationpb.Duration,
+) error {
 	existingRoles := make(map[string]bool)
 	for _, role := range roles {
 		existingRoles[common.FormatRole(role.ResourceID)] = true
@@ -1095,6 +1100,10 @@ func validateBindings(bindings []*v1pb.Binding, roles []*store.RoleMessage, maxi
 		}
 		if !existingRoles[binding.Role] {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("IAM Binding role %s does not exist", binding.Role))
+		}
+
+		if !strings.HasPrefix(parent, common.ProjectNamePrefix) {
+			continue
 		}
 
 		if _, err := common.ValidateProjectMemberCELExpr(binding.Condition); err != nil {

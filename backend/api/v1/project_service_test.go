@@ -245,7 +245,7 @@ func TestValidateBindings(t *testing.T) {
 
 	a := require.New(t)
 	for _, tt := range tests {
-		err := validateBindings(tt.bindings, tt.roles, nil)
+		err := validateBindings("projects/sample", tt.bindings, tt.roles, nil)
 		if tt.wantErr {
 			a.Error(err)
 		} else {
