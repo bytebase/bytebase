@@ -128,7 +128,7 @@ export const provideSelectionContext = ({
   // by wrapping in double quotes (standard TSV/CSV quoting convention).
   const escapeTSVValue = (val: string): string => {
     if (val.includes("\t") || val.includes("\n") || val.includes('"')) {
-      return `"${val.replace(/"/g, '""')}"`;
+      return `"${val.replaceAll('"', '""')}"`;
     }
     return val;
   };
@@ -294,7 +294,6 @@ export const provideSelectionContext = ({
           copying.value = false;
         });
       });
-    return;
   };
 
   const copyAll = () => {
