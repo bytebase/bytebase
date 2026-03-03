@@ -2158,6 +2158,7 @@
     "grant-type-unmask": "Unmask",
     "request-data-access": "Request Data Access",
     "access-type-unmask": "See unmasked sensitive data",
+    "unmask-warning": "ユーザーはこのクエリでマスク解除されたデータにアクセスします",
     "duration-hours": "{hours} hour | {hours} hours",
     "duration-day": "{days} day",
     "duration-days": "{days} days",

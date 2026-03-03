@@ -35,13 +35,21 @@
         <span class="text-sm text-control-light">
           {{ $t("common.statement") }}
         </span>
+        <BBAttention
+          v-if="accessGrant.unmask"
+          :type="'warning'"
+        >
+          {{ $t("sql-editor.unmask-warning") }}
+        </BBAttention>
         <div
           class="max-h-[10em] overflow-auto border rounded-sm p-2 font-mono text-sm whitespace-pre-wrap"
         >
           {{ accessGrant.query }}
         </div>
         <NCheckbox :checked="accessGrant.unmask" :readonly="true">
-          {{ $t("sql-editor.access-type-unmask") }}
+          <span class="text-base">
+            {{ $t("sql-editor.access-type-unmask") }}
+          </span>
         </NCheckbox>
       </div>
 
@@ -74,7 +82,7 @@
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
-import { BBSpin } from "@/bbkit";
+import { BBAttention, BBSpin } from "@/bbkit";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { useAccessGrantStore, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";

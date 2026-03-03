@@ -2158,6 +2158,7 @@
     "grant-type-unmask": "Unmask",
     "request-data-access": "Request Data Access",
     "access-type-unmask": "See unmasked sensitive data",
+    "unmask-warning": "Người dùng sẽ truy cập dữ liệu chưa được che giấu qua truy vấn này",
     "duration-hours": "{hours} hour | {hours} hours",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
