@@ -1,0 +1,49 @@
+maskDocument:
+  - description: mask nested object field
+    schema: nested
+    input: '{"name":"Alice","contact":{"phone":"123-456","city":"NYC"}}'
+    want: '{"name":"Alice","contact":{"phone":"******","city":"NYC"}}'
+
+  - description: mask array elements by semantic type
+    schema: array
+    input: '{"tags":["alpha","beta"],"count":2}'
+    want: '{"tags":["******","******"],"count":2}'
+
+  - description: tagged node replaces entire subtree
+    schema: tagged-node
+    input: '{"profile":{"ssn":"123-45-6789","address":"Main St"},"name":"Alice"}'
+    want: '{"profile":"******","name":"Alice"}'
+
+  - description: extended json style object is safe
+    schema: extended-json
+    input: '{"_id":{"$oid":"67d4aaee17bd0f3857a98b58"},"email":"alice@example.com","createdAt":{"$date":"2025-01-01T00:00:00Z"}}'
+    want: '{"_id":{"$oid":"67d4aaee17bd0f3857a98b58"},"email":"******","createdAt":{"$date":"2025-01-01T00:00:00Z"}}'
+
+  - description: non object payload is handled safely
+    schema: non-object
+    input: '"raw-string-result"'
+    want: '"raw-string-result"'
+
+checkBlocked:
+  - description: nil analysis allowed
+    analysisNil: true
+    wantError: false
+
+  - description: find allowed
+    api: find
+    operation: find
+    collection: users
+    wantError: false
+
+  - description: findOne allowed
+    api: findOne
+    operation: findOne
+    collection: users
+    wantError: false
+
+  - description: unsupported read blocked
+    api: unsupportedRead
+    operation: aggregate
+    collection: users
+    wantError: true
+    wantErrorContains: aggregate()
