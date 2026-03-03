@@ -338,11 +338,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	// Query check constraint info.
 	// information_schema.CHECK_CONSTRAINTS was added in TiDB v7.4.0.
 	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
-	atLeast7_4_0, err := tidbVersionAtLeast(version, "7.4.0")
+	hasCheckConstraints, err := tidbVersionAtLeast(version, "7.4.0")
 	if err != nil {
 		return nil, err
 	}
-	if atLeast7_4_0 {
+	if hasCheckConstraints {
 		checkMap, err = d.getCheckConstraintList(ctx, d.databaseName)
 		if err != nil {
 			return nil, err
