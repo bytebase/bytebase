@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -820,6 +821,17 @@ func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string
 	}
 
 	return checkMap, nil
+}
+
+// tidbVersionAtLeast checks if a TiDB version string (e.g., "v7.4.0") is
+// greater than or equal to the given threshold (e.g., "7.4.0").
+func tidbVersionAtLeast(version, threshold string) (bool, error) {
+	v := strings.TrimPrefix(version, "v")
+	semVersion, err := semver.Make(v)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to parse TiDB version %q", version)
+	}
+	return semVersion.GE(semver.MustParse(threshold)), nil
 }
 
 func stripSingleQuote(s string) string {
