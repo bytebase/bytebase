@@ -1,8 +1,8 @@
 <template>
   <RouterLink :to="rolloutRoute">
-    <NButton icon-placement="right" quaternary>
-      <TaskStatus :status="rolloutStatus" size="tiny" />
-      <span class="mx-1">{{ $t("common.rollout") }}</span>
+    <NButton icon-placement="right" secondary strong>
+      <TaskStatus :status="rolloutStatus" size="small" />
+      <span class="ml-2 mr-1">{{ $t("common.rollout") }}</span>
       <span>#{{ planID }}</span>
       <template #icon>
         <ArrowUpRightIcon class="opacity-60" />

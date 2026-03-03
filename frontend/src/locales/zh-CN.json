@@ -53,6 +53,7 @@
     "error": "错误",
     "canceled": "已取消",
     "rejected": "已拒绝",
+    "under-review": "审核中",
     "approve": "批准",
     "done": "完成",
     "create": "创建",
@@ -2629,9 +2630,6 @@
         "delete": "删除审批节点"
       },
       "skip": "无需审批",
-      "issue-review": {
-        "sent-back": "被退回"
-      },
       "add-rule": "添加规则",
       "edit-rule": "编辑规则",
       "fallback-rules": "兜底规则",

@@ -53,6 +53,7 @@
     "error": "間違い",
     "canceled": "キャンセル",
     "rejected": "却下",
+    "under-review": "レビュー中",
     "approve": "承認する",
     "done": "仕上げる",
     "create": "作成する",
@@ -2629,9 +2630,6 @@
         "delete": "承認ノードの削除"
       },
       "skip": "承認不要",
-      "issue-review": {
-        "sent-back": "戻ってきた"
-      },
       "add-rule": "ルールを追加",
       "edit-rule": "ルールを編集",
       "fallback-rules": "フォールバックルール",

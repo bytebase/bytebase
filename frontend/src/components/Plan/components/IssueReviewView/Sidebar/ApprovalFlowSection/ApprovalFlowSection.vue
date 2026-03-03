@@ -1,12 +1,16 @@
 <template>
   <div>
-    <div class="w-full flex flex-row items-center gap-2">
+    <div class="w-full flex flex-row items-center gap-2 flex-wrap">
       <h3 class="textlabel">{{ $t("issue.approval-flow.self") }}</h3>
       <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
       <RiskLevelIcon
         :risk-level="issue.riskLevel"
         :title="approvalTemplate?.title?.trim()"
       />
+      <div class="grow" />
+      <NTag class="truncate" v-if="statusTag" size="small" round :type="statusTag.type">
+        {{ statusTag.label }}
+      </NTag>
     </div>
 
     <div class="mt-2">
@@ -44,8 +48,10 @@
 </template>
 
 <script setup lang="ts">
-import { NTimeline } from "naive-ui";
+import type { TagProps } from "naive-ui";
+import { NTag, NTimeline } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -54,9 +60,16 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import ApprovalStepItem from "./ApprovalStepItem.vue";
 import RiskLevelIcon from "./RiskLevelIcon.vue";
 
+interface StatusTag {
+  label: string;
+  type?: TagProps["type"];
+}
+
 const props = defineProps<{
   issue: Issue;
 }>();
+
+const { t } = useI18n();
 
 const approvalTemplate = computed(() => {
   return props.issue.approvalTemplate;
@@ -64,5 +77,30 @@ const approvalTemplate = computed(() => {
 
 const approvalSteps = computed(() => {
   return approvalTemplate.value?.flow?.roles || [];
+});
+
+const statusTag = computed((): StatusTag | undefined => {
+  const status = props.issue.approvalStatus;
+  if (approvalSteps.value.length === 0) return undefined;
+
+  if (status === Issue_ApprovalStatus.APPROVED) {
+    return {
+      label: t("issue.table.approved"),
+      type: "success",
+    };
+  }
+  if (status === Issue_ApprovalStatus.REJECTED) {
+    return {
+      label: t("common.rejected"),
+      type: "warning",
+    };
+  }
+  if (status === Issue_ApprovalStatus.PENDING) {
+    return {
+      label: t("common.under-review"),
+      type: "info",
+    };
+  }
+  return undefined;
 });
 </script>
