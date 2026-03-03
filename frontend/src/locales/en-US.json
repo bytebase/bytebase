@@ -2629,9 +2629,6 @@
         "delete": "Delete approval node"
       },
       "skip": "No approval required",
-      "issue-review": {
-        "sent-back": "Sent back"
-      },
       "add-rule": "Add rule",
       "edit-rule": "Edit rule",
       "fallback-rules": "Fallback Rules",

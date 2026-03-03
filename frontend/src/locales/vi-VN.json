@@ -2629,9 +2629,6 @@
         "delete": "Xóa nút phê duyệt"
       },
       "skip": "Không cần phê duyệt",
-      "issue-review": {
-        "sent-back": "Đã gửi lại"
-      },
       "add-rule": "Thêm quy tắc",
       "edit-rule": "Chỉnh sửa quy tắc",
       "fallback-rules": "Quy tắc dự phòng",

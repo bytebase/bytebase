@@ -2629,9 +2629,6 @@
         "delete": "Eliminar nodo de aprobación"
       },
       "skip": "No se requiere aprobación",
-      "issue-review": {
-        "sent-back": "Devuelto"
-      },
       "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
       "fallback-rules": "Reglas de respaldo",

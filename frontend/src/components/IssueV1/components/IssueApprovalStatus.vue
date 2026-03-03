@@ -95,7 +95,7 @@ const statusTag = computed((): StatusTag | undefined => {
   }
   if (status === Issue_ApprovalStatus.REJECTED) {
     return {
-      label: t("custom-approval.approval-flow.issue-review.sent-back"),
+      label: t("common.rejected"),
       type: "warning",
       subtitle: progressText.value,
     };
