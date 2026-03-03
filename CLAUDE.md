@@ -154,7 +154,7 @@ psql -U bbdev bbdev
 
 ### Breaking Change Check (MANDATORY before `gh pr create`)
 
-**Before every `gh pr create`, you MUST review the diff against the base branch and check for:**
+**This is a required step in the PR creation workflow. Run `git diff main...HEAD` and check every item below BEFORE writing the `gh pr create` command. This step comes after pushing the branch and before creating the PR.**
 
 1. **API breaking changes** — removed/renamed endpoints, changed request/response formats, removed/renamed query parameters
 2. **Database schema breaking changes** — dropped columns/tables, non-backward-compatible migrations
