@@ -1,11 +1,15 @@
 <template>
   <form class="flex flex-col gap-y-6 px-1" @submit.prevent="trySignin()">
     <div>
-      <label class="block text-sm font-medium leading-5 text-control">
+      <label
+        for="demo-account"
+        class="block text-sm font-medium leading-5 text-control"
+      >
         {{ $t("auth.sign-in.demo-account") }}
       </label>
       <div class="mt-1">
         <NSelect
+          id="demo-account"
           v-model:value="selectedEmail"
           :options="accountOptions"
           size="large"
@@ -40,11 +44,10 @@ defineProps<{
   loading: boolean;
 }>();
 
-const emit = defineEmits<{
-  (event: "signin", payload: LoginRequest): void;
-}>();
+const emit = defineEmits<(event: "signin", payload: LoginRequest) => void>();
 
-const DEMO_PASSWORD = "12345678";
+// NOSONAR: Not a real credential — fixed demo account password, only used in demo mode.
+const DEMO_PASSWORD = "12345678"; // NOSONAR
 
 const accountOptions = [
   { label: "Demo (Workspace Admin)", value: "demo@example.com" },
