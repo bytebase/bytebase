@@ -87,13 +87,11 @@
 import { create } from "@bufbuild/protobuf";
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { AUTH_PASSWORD_FORGOT_MODULE } from "@/router/auth";
-import { useActuatorV1Store } from "@/store";
 import {
   type LoginRequest,
   LoginRequestSchema,
@@ -120,7 +118,6 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
-const { isDemo } = storeToRefs(useActuatorV1Store());
 
 const state = reactive<LocalState>({
   email: "",
@@ -128,23 +125,11 @@ const state = reactive<LocalState>({
   showPassword: false,
 });
 
-onMounted(async () => {
+onMounted(() => {
   const url = new URL(window.location.href);
   const params = new URLSearchParams(url.search);
-  state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
-  state.password = params.get("password") ?? (isDemo.value ? "12345678" : "");
-  state.showPassword = !!isDemo.value;
-
-  // Try to signin with example account in demo site.
-  if (
-    (window.location.href.startsWith("https://demo.bytebase.com") ||
-      window.location.href.startsWith("https://demo.sql-editor.com")) &&
-    isDemo.value &&
-    state.email &&
-    state.password
-  ) {
-    await trySignin();
-  }
+  state.email = params.get("email") ?? "";
+  state.password = params.get("password") ?? "";
 });
 
 const allowSignin = computed(() => {
