@@ -33,9 +33,14 @@ onMounted(async () => {
   const database = await databaseStore.getOrFetchDatabaseByName(
     `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
   );
-  await dbSchemaStore.getOrFetchDatabaseMetadata({
-    database: database.name,
-    silent: true,
-  });
+  try {
+    await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
+      silent: true,
+    });
+  } catch {
+    // Silently ignore permission errors — the page can still render
+    // without schema metadata.
+  }
 });
 </script>

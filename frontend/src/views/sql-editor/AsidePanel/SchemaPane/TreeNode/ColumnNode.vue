@@ -58,12 +58,12 @@ const columnMetadata = computed(() => {
     return tableMetadata.value?.columns.find((c) => c.name === column);
   } else if ("externalTable" in target.value) {
     const { externalTable } = target.value;
-    return schemaMetadata.externalTables
+    return schemaMetadata?.externalTables
       .find((t) => t.name === externalTable)
       ?.columns.find((c) => c.name === column);
   } else if ("view" in target.value) {
     const { view } = target.value;
-    return schemaMetadata.views
+    return schemaMetadata?.views
       .find((v) => v.name === view)
       ?.columns.find((c) => c.name === column);
   }

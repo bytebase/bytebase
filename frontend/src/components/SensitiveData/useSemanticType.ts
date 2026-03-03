@@ -1,6 +1,11 @@
+import { create } from "@bufbuild/protobuf";
 import { computed, type MaybeRef, unref, watchEffect } from "vue";
 import { useSettingV1Store } from "@/store";
-import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  SemanticTypeSetting_SemanticTypeSchema,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSemanticType = (semanticTypeId: MaybeRef<string>) => {
   const settingV1Store = useSettingV1Store();
@@ -26,6 +31,12 @@ export const useSemanticType = (semanticTypeId: MaybeRef<string>) => {
     const id = unref(semanticTypeId);
     if (!id) {
       return;
+    }
+    if (!hasWorkspacePermissionV2("bb.settings.get")) {
+      return create(SemanticTypeSetting_SemanticTypeSchema, {
+        id,
+        title: id,
+      });
     }
     return semanticTypeList.value.find((data) => data.id === id);
   });

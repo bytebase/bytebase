@@ -125,10 +125,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       silent = false,
       skipCache = false,
     } = params;
-    const { databaseName } = extractDatabaseResourceName(database);
+    const { databaseName, instanceName } =
+      extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(UNKNOWN_ID)
+      instanceName === String(UNKNOWN_ID)
     ) {
       return create(DatabaseMetadataSchema, {
         name: ensureDatabaseMetadataResourceName(
@@ -187,10 +188,38 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     database: string;
     schema: string;
   }) => {
-    return (
-      getSchemaList(database).find((s) => s.name === schema) ??
-      create(SchemaMetadataSchema, {})
-    );
+    return getSchemaList(database).find((s) => s.name === schema);
+  };
+
+  const getOrFetchSchemaMetadata = async ({
+    database,
+    schema,
+  }: {
+    database: string;
+    schema: string;
+  }) => {
+    const { databaseName } = extractDatabaseResourceName(database);
+    if (
+      databaseName === String(UNKNOWN_ID) ||
+      databaseName === String(UNKNOWN_ID)
+    ) {
+      return create(SchemaMetadataSchema, {
+        name: schema,
+      });
+    }
+
+    const schemaMetadata = getSchemaMetadata({ database, schema });
+    if (schemaMetadata?.name === schema) {
+      return schemaMetadata;
+    }
+
+    return getOrFetchDatabaseMetadata({
+      database,
+      silent: true,
+      filter: `schema == "${schema}"`,
+    }).then((res) => {
+      return res.schemas.find((s) => s.name === schema);
+    });
   };
 
   const getTableList = ({
@@ -393,6 +422,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     getOrFetchDatabaseMetadata,
     getSchemaList,
     getSchemaMetadata,
+    getOrFetchSchemaMetadata,
     getTableList,
     getTableMetadata,
     getOrFetchTableMetadata,

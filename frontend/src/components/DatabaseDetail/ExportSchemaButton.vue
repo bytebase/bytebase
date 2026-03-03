@@ -5,16 +5,18 @@
     :project="getDatabaseProject(database)"
     :permissions="['bb.databases.getSchema']"
   >
-    <NDropdown
-      :options="exportOptions"
-      :disabled="slotProps.disabled"
-      @select="handleExportFormat"
-      trigger="click"
-    >
-      <NButton :loading="exporting">
-        {{ $t("database.export-schema") }}
-      </NButton>
-    </NDropdown>
+    <div>
+      <NDropdown
+        :options="exportOptions"
+        :disabled="slotProps.disabled"
+        @select="handleExportFormat"
+        trigger="hover"
+      >
+        <NButton :loading="exporting">
+          {{ $t("database.export-schema") }}
+        </NButton>
+      </NDropdown>
+    </div>
   </PermissionGuardWrapper>
 </template>
 

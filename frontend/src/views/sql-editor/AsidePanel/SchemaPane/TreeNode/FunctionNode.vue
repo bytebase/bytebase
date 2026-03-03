@@ -32,6 +32,6 @@ const functionMetadata = computed(
     dbSchema.getSchemaMetadata({
       database: target.value.database,
       schema: target.value.schema,
-    }).functions[target.value.position]
+    })?.functions[target.value.position]
 );
 </script>

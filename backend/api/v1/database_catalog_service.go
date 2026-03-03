@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -216,7 +217,7 @@ func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storep
 	if metadata != nil && hasEmptySchemaName(metadata.Schemas) {
 		return nil
 	}
-	return errors.New("schema name must not be empty for this database engine")
+	return errors.Errorf("schema name must not be empty for database %v", strings.TrimSuffix(config.Name, common.CatalogSuffix))
 }
 
 func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {

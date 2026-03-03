@@ -19,14 +19,14 @@ export const updateColumnCatalog = async ({
   table,
   column,
   columnCatalog,
-  notification = "common.updated",
+  notification,
 }: {
   database: string;
   schema: string;
   table: string;
   column: string;
   columnCatalog: Partial<ColumnCatalog>;
-  notification?: string;
+  notification: string;
 }) => {
   const dbCatalogStore = useDatabaseCatalogV1Store();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });

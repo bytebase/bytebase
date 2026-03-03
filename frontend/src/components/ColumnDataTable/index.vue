@@ -274,7 +274,7 @@ const onClassificationIdApply = async (
     table: props.table.name,
     column,
     columnCatalog: { classification },
-    notification: !classification ? "common.removed" : undefined,
+    notification: !classification ? t("common.removed") : t("common.update"),
   });
 };
 
@@ -285,7 +285,7 @@ const onSemanticTypeApply = async (column: string, semanticType: string) => {
     table: props.table.name,
     column,
     columnCatalog: { semanticType },
-    notification: !semanticType ? "common.removed" : undefined,
+    notification: !semanticType ? t("common.removed") : t("common.update"),
   });
 };
 </script>
