@@ -56,42 +56,40 @@
       </div>
     </div>
 
-    <div v-if="isDev()">
-      <div class="flex items-center gap-x-2">
-        <PermissionGuardWrapper
-          v-slot="slotProps"
-          :project="project"
-          :permissions="[
-            'bb.projects.update'
-          ]"
-        >
-          <Switch
-            v-model:value="allowJustInTimeAccess"
-            :text="true"
-            :disabled="
-              slotProps.disabled ||
-              loading
-            "
-          />
-        </PermissionGuardWrapper>
-        <div class="textlabel flex items-center gap-x-2">
-          {{
-            $t(
-              "project.settings.issue-related.allow-jit.self"
-            )
-          }}
-        </div>
-        <ApprovalFlowIndicator
-          :source="WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS"
+    <div class="flex items-center gap-x-2">
+      <PermissionGuardWrapper
+        v-slot="slotProps"
+        :project="project"
+        :permissions="[
+          'bb.projects.update'
+        ]"
+      >
+        <Switch
+          v-model:value="allowJustInTimeAccess"
+          :text="true"
+          :disabled="
+            slotProps.disabled ||
+            loading
+          "
         />
-      </div>
-      <div class="mt-1 text-sm text-gray-400">
+      </PermissionGuardWrapper>
+      <div class="textlabel flex items-center gap-x-2">
         {{
           $t(
-            "project.settings.issue-related.allow-jit.description"
+            "project.settings.issue-related.allow-jit.self"
           )
         }}
       </div>
+      <ApprovalFlowIndicator
+        :source="WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS"
+      />
+    </div>
+    <div class="mt-1 text-sm text-gray-400">
+      {{
+        $t(
+          "project.settings.issue-related.allow-jit.description"
+        )
+      }}
     </div>
   </div>
 </template>
@@ -112,7 +110,6 @@ import {
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
-import { isDev } from "@/utils";
 import ApprovalFlowIndicator from "./ApprovalFlowIndicator.vue";
 
 const props = defineProps<{
