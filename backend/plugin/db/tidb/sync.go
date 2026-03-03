@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -136,6 +137,12 @@ func (d *Driver) getServerVariable(ctx context.Context, varName string) (string,
 func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	schemaMetadata := &storepb.SchemaMetadata{
 		Name: "",
+	}
+
+	// Query TiDB version for feature gating.
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// Query index info.
@@ -329,9 +336,17 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query check constraint info.
-	checkMap, err := d.getCheckConstraintList(ctx, d.databaseName)
+	// information_schema.CHECK_CONSTRAINTS was added in TiDB v7.4.0.
+	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+	hasCheckConstraints, err := tidbVersionAtLeast(version, "7.4.0")
 	if err != nil {
 		return nil, err
+	}
+	if hasCheckConstraints {
+		checkMap, err = d.getCheckConstraintList(ctx, d.databaseName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Query sequence info.
@@ -820,6 +835,17 @@ func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string
 	}
 
 	return checkMap, nil
+}
+
+// tidbVersionAtLeast checks if a TiDB version string (e.g., "v7.4.0") is
+// greater than or equal to the given threshold (e.g., "7.4.0").
+func tidbVersionAtLeast(version, threshold string) (bool, error) {
+	v := strings.TrimPrefix(version, "v")
+	semVersion, err := semver.Make(v)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to parse TiDB version %q", version)
+	}
+	return semVersion.GE(semver.MustParse(threshold)), nil
 }
 
 func stripSingleQuote(s string) string {
