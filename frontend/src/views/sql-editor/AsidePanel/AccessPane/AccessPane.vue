@@ -321,7 +321,7 @@ const handleRun = async (grant: AccessGrant) => {
       engine: currentInstance.value.engine,
       explain: false,
       selection: null,
-      limit: 0,
+      limit: 0, // no limit
     });
   });
 };
