@@ -125,10 +125,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       silent = false,
       skipCache = false,
     } = params;
-    const { databaseName } = extractDatabaseResourceName(database);
+    const { databaseName, instanceName } =
+      extractDatabaseResourceName(database);
     if (
       databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(UNKNOWN_ID)
+      instanceName === String(UNKNOWN_ID)
     ) {
       return create(DatabaseMetadataSchema, {
         name: ensureDatabaseMetadataResourceName(
