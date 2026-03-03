@@ -33,6 +33,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	esparser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
+	mongoparser "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -589,11 +590,43 @@ func queryRetry(
 		}
 	}
 
+	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
+		licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
+
+	// Pre-execution check for MongoDB: enforce Milestone 1 supported APIs and reject
+	// sensitive predicates before sending the query to the server.
+	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
+		for _, stmt := range statements {
+			analysis, analyzeErr := mongoparser.AnalyzeMaskingStatement(stmt.Text)
+			if analyzeErr != nil || analysis == nil || analysis.Collection == "" {
+				continue
+			}
+
+			objectSchema, schemaErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+			if schemaErr != nil {
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.Wrapf(schemaErr, "failed to get object schema for collection %q", analysis.Collection))
+			}
+			if objectSchema == nil {
+				continue
+			}
+
+			if err := checkMongoDBRequestBlocked(analysis); err != nil {
+				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
+			}
+
+			for _, field := range analysis.PredicateFields {
+				semanticType := lookupSemanticTypeByDotPath(field, objectSchema)
+				if semanticType != "" {
+					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", field, semanticType))
+				}
+			}
+		}
+	}
+
 	// Pre-execution check for Elasticsearch: reject blocked APIs and predicate violations
 	// before sending the query to the server.
-	if !queryContext.Explain && !queryContext.SkipMasking &&
-		instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH &&
-		licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
 		for _, stmt := range statements {
 			parsed, parseErr := esparser.ParseElasticsearchREST(stmt.Text)
 			if parseErr != nil || len(parsed.Requests) == 0 {
@@ -714,7 +747,7 @@ func queryRetry(
 		}
 	}
 
-	if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil && !queryContext.Explain {
+	if maskingEnabled {
 		slog.Debug("mask query results", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
 		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
@@ -771,6 +804,50 @@ func queryRetry(
 								StringValue: string(maskedValue),
 							},
 						}
+					}
+				}
+			}
+		} else if instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
+			semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
+			if err != nil {
+				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+			}
+
+			for _, result := range results {
+				analysis, analyzeErr := mongoparser.AnalyzeMaskingStatement(result.Statement)
+				if analyzeErr != nil || analysis == nil || analysis.Collection == "" {
+					continue
+				}
+				if analysis.API != mongoparser.MaskableAPIFind && analysis.API != mongoparser.MaskableAPIFindOne {
+					continue
+				}
+
+				objectSchema, schemaErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+				if schemaErr != nil {
+					return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(schemaErr, "failed to get object schema for collection %q", analysis.Collection))
+				}
+				if objectSchema == nil {
+					continue
+				}
+
+				for _, row := range result.Rows {
+					if len(row.Values) == 0 {
+						continue
+					}
+					value := row.Values[0].GetStringValue()
+					if value == "" {
+						continue
+					}
+
+					maskedValue, maskErr := maskMongoDBDocumentString(value, objectSchema, semanticTypeToMaskerMap)
+					if maskErr != nil {
+						return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask MongoDB response"))
+					}
+
+					row.Values[0] = &v1pb.RowValue{
+						Kind: &v1pb.RowValue_StringValue{
+							StringValue: maskedValue,
+						},
 					}
 				}
 			}
@@ -903,6 +980,35 @@ func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, 
 	for _, table := range tables {
 		if table.GetName() == containerName {
 			return table.GetObjectSchema(), nil
+		}
+	}
+
+	return nil, nil
+}
+
+func getMongoDBCollectionObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, collectionName string) (*storepb.ObjectSchema, error) {
+	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database schema: %q", databaseName)
+	}
+
+	if dbMetadata == nil {
+		return nil, nil
+	}
+
+	schemas := dbMetadata.GetConfig().GetSchemas()
+	if len(schemas) == 0 {
+		return nil, nil
+	}
+
+	for _, schema := range schemas {
+		for _, table := range schema.GetTables() {
+			if table.GetName() == collectionName {
+				return table.GetObjectSchema(), nil
+			}
 		}
 	}
 
