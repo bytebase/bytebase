@@ -22,8 +22,18 @@ import {
   hasProjectPermissionV2,
 } from "@/utils";
 import { useDatabaseV1Store } from "./database";
+import { useDBSchemaV1Store } from "./dbSchema";
 
 type DatabaseCatalogCacheKey = [string /* database catalog resource name */];
+
+const ensureDatabaseResourceName = (name: string) => {
+  return extractDatabaseResourceName(name).database;
+};
+
+const ensureDatabaseCatalogResourceName = (name: string) => {
+  const database = ensureDatabaseResourceName(name);
+  return `${database}/catalog`;
+};
 
 export const useDatabaseCatalogV1Store = defineStore(
   "databaseCatalog_v1",
@@ -31,6 +41,7 @@ export const useDatabaseCatalogV1Store = defineStore(
     const cacheByName = useCache<DatabaseCatalogCacheKey, DatabaseCatalog>(
       "bb.database-catalog.by-name"
     );
+    const dbSchemaStore = useDBSchemaV1Store();
 
     const getCache = (name: string): DatabaseCatalog | undefined => {
       const catalogResourceName = ensureDatabaseCatalogResourceName(name);
@@ -84,8 +95,28 @@ export const useDatabaseCatalogV1Store = defineStore(
     };
 
     const updateDatabaseCatalog = async (catalog: DatabaseCatalog) => {
+      const databaseName = ensureDatabaseResourceName(catalog.name);
+      const validCatalog = create(DatabaseCatalogSchema, {
+        name: catalog.name,
+        schemas: [],
+      });
+      for (const schema of catalog.schemas) {
+        try {
+          const schemaMetadata = await dbSchemaStore.getOrFetchSchemaMetadata({
+            database: databaseName,
+            schema: schema.name,
+          });
+          if (!schemaMetadata || schemaMetadata.name !== schema.name) {
+            continue;
+          }
+          validCatalog.schemas.push(schema);
+        } catch {
+          // fallback to add the schema catalog to avoid current user doesn't have the permission to get the metadata.
+          validCatalog.schemas.push(schema);
+        }
+      }
       const request = create(UpdateDatabaseCatalogRequestSchema, {
-        catalog: catalog,
+        catalog: validCatalog,
       });
       const response =
         await databaseCatalogServiceClientConnect.updateDatabaseCatalog(
@@ -131,14 +162,6 @@ export const useDatabaseCatalogV1Store = defineStore(
     };
   }
 );
-
-const ensureDatabaseResourceName = (name: string) => {
-  return extractDatabaseResourceName(name).database;
-};
-const ensureDatabaseCatalogResourceName = (name: string) => {
-  const database = ensureDatabaseResourceName(name);
-  return `${database}/catalog`;
-};
 
 export const getTableCatalog = (
   catalog: DatabaseCatalog,

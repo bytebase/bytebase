@@ -34,6 +34,6 @@ const procedureMetadata = computed(
     dbSchema.getSchemaMetadata({
       database: target.value.database,
       schema: target.value.schema,
-    }).procedures[target.value.position]
+    })?.procedures[target.value.position]
 );
 </script>

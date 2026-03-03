@@ -57,13 +57,15 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
 
     const key = getKey(keys);
     const abortController = new AbortController();
-    promise.then((entity: T) => {
-      if (abortController.signal.aborted) {
+    promise
+      .then((entity: T) => {
+        if (!abortController.signal.aborted) {
+          setEntity(keys, entity);
+        }
+      })
+      .finally(() => {
         invalidateRequest(keys);
-        return;
-      }
-      setEntity(keys, entity);
-    });
+      });
     requestCacheMap.set(key, {
       keys,
       promise,

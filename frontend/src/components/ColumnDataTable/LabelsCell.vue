@@ -20,6 +20,7 @@
 <script lang="ts" setup>
 import { PencilIcon } from "lucide-vue-next";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
 import { LabelsCell } from "@/components/v2/Model/cells";
 import { getColumnCatalog, useDatabaseCatalog } from "@/store";
@@ -41,6 +42,7 @@ const props = defineProps<{
 const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
+const { t } = useI18n();
 
 const databaseCatalog = useDatabaseCatalog(props.database, false);
 
@@ -66,6 +68,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     table: props.table,
     column: props.column,
     columnCatalog: { labels: labelsList[0] },
+    notification: t("common.update"),
   });
 };
 </script>
