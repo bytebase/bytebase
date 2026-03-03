@@ -288,8 +288,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
-		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
+	}
+	if accessGrant != nil {
+		// unset the query limit
+		queryContext.Limit = 0
+		queryContext.SkipMasking = accessGrant.Payload.Unmask
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema

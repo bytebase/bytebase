@@ -2158,6 +2158,7 @@
     "grant-type-unmask": "Unmask",
     "request-data-access": "Request Data Access",
     "access-type-unmask": "See unmasked sensitive data",
+    "unmask-warning": "El usuario accederá a datos sin enmascarar a través de esta consulta",
     "duration-hours": "{hours} hour | {hours} hours",
     "duration-day": "{days} day",
     "duration-days": "{days} days",

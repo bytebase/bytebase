@@ -56,40 +56,42 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-x-2">
-      <PermissionGuardWrapper
-        v-slot="slotProps"
-        :project="project"
-        :permissions="[
-          'bb.projects.update'
-        ]"
-      >
-        <Switch
-          v-model:value="allowJustInTimeAccess"
-          :text="true"
-          :disabled="
-            slotProps.disabled ||
-            loading
-          "
+    <div>
+      <div class="flex items-center gap-x-2">
+        <PermissionGuardWrapper
+          v-slot="slotProps"
+          :project="project"
+          :permissions="[
+            'bb.projects.update'
+          ]"
+        >
+          <Switch
+            v-model:value="allowJustInTimeAccess"
+            :text="true"
+            :disabled="
+              slotProps.disabled ||
+              loading
+            "
+          />
+        </PermissionGuardWrapper>
+        <div class="textlabel flex items-center gap-x-2">
+          {{
+            $t(
+              "project.settings.issue-related.allow-jit.self"
+            )
+          }}
+        </div>
+        <ApprovalFlowIndicator
+          :source="WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS"
         />
-      </PermissionGuardWrapper>
-      <div class="textlabel flex items-center gap-x-2">
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
         {{
           $t(
-            "project.settings.issue-related.allow-jit.self"
+            "project.settings.issue-related.allow-jit.description"
           )
         }}
       </div>
-      <ApprovalFlowIndicator
-        :source="WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS"
-      />
-    </div>
-    <div class="mt-1 text-sm text-gray-400">
-      {{
-        $t(
-          "project.settings.issue-related.allow-jit.description"
-        )
-      }}
     </div>
   </div>
 </template>

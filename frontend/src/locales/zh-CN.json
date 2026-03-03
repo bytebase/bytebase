@@ -2158,6 +2158,7 @@
     "grant-type-unmask": "脱敏豁免",
     "request-data-access": "申请数据访问",
     "access-type-unmask": "查看未脱敏的敏感数据",
+    "unmask-warning": "用户将通过此查询访问未脱敏的数据",
     "duration-hours": "{hours} 小时",
     "duration-day": "{days} 天",
     "duration-days": "{days} 天",

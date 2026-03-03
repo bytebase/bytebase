@@ -55,4 +55,5 @@ export type SQLEditorQueryParams = {
   // Use to calculate the advice position.
   selection: monaco.Selection | null;
   queryOption?: QueryOption;
+  limit?: number;
 };

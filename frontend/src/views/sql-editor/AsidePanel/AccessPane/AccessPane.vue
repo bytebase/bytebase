@@ -40,6 +40,7 @@
         </NButton>
       </PermissionGuardWrapper>
     </div>
+    <NDivider class="mt-2! mb-0!" />
     <div class="w-full flex flex-col justify-start items-start overflow-y-auto">
       <AccessGrantItem
         v-for="grant in accessGrantList"
@@ -89,7 +90,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { NButton } from "naive-ui";
+import { NButton, NDivider } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { FeatureBadge } from "@/components/FeatureGuard";
@@ -320,6 +321,7 @@ const handleRun = async (grant: AccessGrant) => {
       engine: currentInstance.value.engine,
       explain: false,
       selection: null,
+      limit: 0, // no limit
     });
   });
 };
