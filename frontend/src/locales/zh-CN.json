@@ -53,7 +53,7 @@
     "error": "错误",
     "canceled": "已取消",
     "rejected": "已拒绝",
-    "under-review": "审核中",
+    "under-review": "审批中",
     "approve": "批准",
     "done": "完成",
     "create": "创建",
@@ -2658,7 +2658,7 @@
       "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
       "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
       "integration": "与审批流集成",
-      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审核。"
+      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审批。"
     },
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
