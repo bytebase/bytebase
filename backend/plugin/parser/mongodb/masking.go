@@ -1,12 +1,12 @@
 package mongodb
 
 import (
-	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/pkg/errors"
 
 	mongoparser "github.com/bytebase/parser/mongodb"
 )
@@ -41,7 +41,7 @@ func AnalyzeMaskingStatement(statement string) (*MaskingAnalysis, error) {
 		return nil, nil
 	}
 	if len(raw.Errors) > 0 {
-		return nil, fmt.Errorf("failed to parse MongoDB statement: %s", raw.Errors[0].Message)
+		return nil, errors.Errorf("failed to parse MongoDB statement: %s", raw.Errors[0].Message)
 	}
 
 	if len(raw.Tree.AllStatement()) != 1 {
@@ -87,7 +87,7 @@ func (l *maskingAnalysisListener) EnterCollectionOperation(ctx *mongoparser.Coll
 	}
 	analysis.Collection = collection
 	if len(analysis.PredicateFields) > 0 {
-		sort.Strings(analysis.PredicateFields)
+		slices.Sort(analysis.PredicateFields)
 	}
 	l.analysis = analysis
 }
@@ -240,37 +240,52 @@ func collectPredicateFieldsFromDocument(doc mongoparser.IDocumentContext, prefix
 	if doc == nil {
 		return
 	}
-
 	for _, pair := range doc.AllPair() {
-		if pair == nil || pair.Key() == nil {
-			continue
-		}
+		collectPredicateFieldsFromPair(pair, prefix, fields)
+	}
+}
 
-		key := extractPairKey(pair.Key())
-		if key == "" {
-			continue
-		}
+func collectPredicateFieldsFromPair(pair mongoparser.IPairContext, prefix string, fields map[string]struct{}) {
+	if pair == nil || pair.Key() == nil {
+		return
+	}
 
-		if strings.HasPrefix(key, "$") {
-			if isLogicalOperator(key) {
-				collectLogicalOperatorValue(pair.Value(), prefix, fields)
-			}
-			continue
-		}
+	key := extractPairKey(pair.Key())
+	if key == "" {
+		return
+	}
 
-		fullPath := key
-		if prefix != "" {
-			fullPath = prefix + "." + key
-		}
-		fields[fullPath] = struct{}{}
+	if strings.HasPrefix(key, "$") {
+		collectLogicalPredicateFieldsByKey(key, pair.Value(), prefix, fields)
+		return
+	}
 
-		if childDoc := extractDocumentValue(pair.Value()); childDoc != nil {
-			collectPredicateFieldsFromDocument(childDoc, fullPath, fields)
-			continue
-		}
-		if childArr := extractArrayValue(pair.Value()); childArr != nil {
-			collectPredicateFieldsFromArray(childArr, fullPath, fields)
-		}
+	fullPath := buildPredicateFieldPath(prefix, key)
+	fields[fullPath] = struct{}{}
+	collectPredicateFieldValue(pair.Value(), fullPath, fields)
+}
+
+func collectLogicalPredicateFieldsByKey(key string, value mongoparser.IValueContext, prefix string, fields map[string]struct{}) {
+	if !isLogicalOperator(key) {
+		return
+	}
+	collectLogicalOperatorValue(value, prefix, fields)
+}
+
+func buildPredicateFieldPath(prefix, key string) string {
+	if prefix == "" {
+		return key
+	}
+	return prefix + "." + key
+}
+
+func collectPredicateFieldValue(value mongoparser.IValueContext, fullPath string, fields map[string]struct{}) {
+	if childDoc := extractDocumentValue(value); childDoc != nil {
+		collectPredicateFieldsFromDocument(childDoc, fullPath, fields)
+		return
+	}
+	if childArr := extractArrayValue(value); childArr != nil {
+		collectPredicateFieldsFromArray(childArr, fullPath, fields)
 	}
 }
 
