@@ -95,6 +95,12 @@ const statusTag = computed((): StatusTag | undefined => {
       type: "warning",
     };
   }
+  if (status === Issue_ApprovalStatus.PENDING) {
+    return {
+      label: t("common.under-review"),
+      type: "info",
+    };
+  }
   return undefined;
 });
 </script>

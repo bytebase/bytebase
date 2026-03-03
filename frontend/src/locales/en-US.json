@@ -53,6 +53,7 @@
     "error": "Error",
     "canceled": "Canceled",
     "rejected": "Rejected",
+    "under-review": "Under review",
     "approve": "Approve",
     "done": "Done",
     "create": "Create",
