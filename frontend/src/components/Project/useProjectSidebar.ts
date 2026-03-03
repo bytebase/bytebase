@@ -30,7 +30,6 @@ import {
 } from "@/router/dashboard/projectV1";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { isDev } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
@@ -121,7 +120,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
             title: t("sql-editor.access-grants"),
             path: PROJECT_V1_ROUTE_ACCESS_GRANTS,
             type: "div",
-            hide: !isDev(),
           },
           {
             title: t("project.masking-exemption.self"),
