@@ -17,38 +17,35 @@
               name="standard"
               tab="Standard"
             >
-              <PasswordSigninForm
+              <DemoSigninForm
+                v-if="isDemo"
                 :loading="state.isLoading"
                 @signin="trySignin"
               />
+              <template v-else>
+                <PasswordSigninForm
+                  :loading="state.isLoading"
+                  @signin="trySignin"
+                />
 
-              <div class="mt-3">
-                <div
-                  class="flex justify-center items-center text-sm text-control"
-                >
-                  <template v-if="isDemo">
-                    <span class="text-accent">
-                      {{
-                        $t("auth.sign-in.demo-note", {
-                          username: "demo@example.com",
-                          password: "12345678",
-                        })
-                      }}
-                    </span>
-                  </template>
-                  <template v-else-if="!disallowSignup">
-                    <span>
-                      {{ $t("auth.sign-in.new-user") }}
-                    </span>
-                    <router-link
-                      :to="{ name: AUTH_SIGNUP_MODULE, query: route.query }"
-                      class="accent-link px-2"
-                    >
-                      {{ $t("common.sign-up") }}
-                    </router-link>
-                  </template>
+                <div class="mt-3">
+                  <div
+                    class="flex justify-center items-center text-sm text-control"
+                  >
+                    <template v-if="!disallowSignup">
+                      <span>
+                        {{ $t("auth.sign-in.new-user") }}
+                      </span>
+                      <router-link
+                        :to="{ name: AUTH_SIGNUP_MODULE, query: route.query }"
+                        class="accent-link px-2"
+                      >
+                        {{ $t("common.sign-up") }}
+                      </router-link>
+                    </template>
+                  </div>
                 </div>
-              </div>
+              </template>
             </NTabPane>
 
             <template
@@ -186,6 +183,7 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin, BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import DemoSigninForm from "@/components/DemoSigninForm.vue";
 import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";

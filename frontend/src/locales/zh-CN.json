@@ -1566,7 +1566,7 @@
     "sign-in": {
       "forget-password": "忘记密码?",
       "new-user": "第一次使用 Bytebase?",
-      "demo-note": "邮箱:{username} 密码:{password}",
+      "demo-account": "Demo Account",
       "sign-in-with-idp": "通过 {idp} 登录"
     },
     "password-forget": {

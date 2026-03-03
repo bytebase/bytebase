@@ -1566,7 +1566,7 @@
     "sign-in": {
       "forget-password": "パスワードを忘れましたか？",
       "new-user": "Bytebase を初めて使用しますか?",
-      "demo-note": "メールアドレス: {username} パスワード: {password}",
+      "demo-account": "Demo Account",
       "sign-in-with-idp": "{idp} 経由でログイン"
     },
     "password-forget": {

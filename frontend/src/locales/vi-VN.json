@@ -1566,7 +1566,7 @@
     "sign-in": {
       "forget-password": "Quên mật khẩu?",
       "new-user": "Mới sử dụng Bytebase?",
-      "demo-note": "Email:{username} Mật khẩu:{password}",
+      "demo-account": "Demo Account",
       "sign-in-with-idp": "Đăng nhập bằng {idp}"
     },
     "password-forget": {

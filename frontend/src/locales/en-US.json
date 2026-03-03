@@ -1566,7 +1566,7 @@
     "sign-in": {
       "forget-password": "Forgot your password?",
       "new-user": "New to Bytebase?",
-      "demo-note": "Email:{username} Password:{password}",
+      "demo-account": "Demo Account",
       "sign-in-with-idp": "Sign in with {idp}"
     },
     "password-forget": {

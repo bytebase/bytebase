@@ -33,8 +33,23 @@ export type ConnectionState = {
   };
 };
 
+// In dev mode, BB_GRPC_LOCAL points directly to the backend (e.g. http://localhost:8080).
+// Use it for the WebSocket URL to bypass the Vite proxy which doesn't reliably forward
+// WebSocket upgrades in Vite 7.
+const lspHost = (() => {
+  const grpcLocal = import.meta.env.BB_GRPC_LOCAL;
+  if (grpcLocal) {
+    try {
+      return new URL(grpcLocal).host;
+    } catch {
+      // ignore
+    }
+  }
+  return location.host;
+})();
+
 const conn = shallowReactive<ConnectionState>({
-  url: createUrl(location.host, "/lsp").toString(),
+  url: createUrl(lspHost, "/lsp").toString(),
   state: "initial",
   ws: undefined,
   lastCommand: undefined,
