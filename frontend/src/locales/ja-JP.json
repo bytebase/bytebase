@@ -2629,9 +2629,6 @@
         "delete": "承認ノードの削除"
       },
       "skip": "承認不要",
-      "issue-review": {
-        "sent-back": "戻ってきた"
-      },
       "add-rule": "ルールを追加",
       "edit-rule": "ルールを編集",
       "fallback-rules": "フォールバックルール",

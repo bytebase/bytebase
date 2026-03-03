@@ -45,6 +45,9 @@
           <div v-if="canReRequest && !readonly" class="mt-1">
             <NButton
               size="tiny"
+              strong
+              secondary
+              type="info"
               :loading="reRequesting"
               @click="handleReRequestReview"
             >
