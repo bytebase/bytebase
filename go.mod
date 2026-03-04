@@ -34,7 +34,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260211083148-d2ea344b4b65
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/caarlos0/env/v11 v11.3.1
+	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible

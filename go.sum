@@ -263,8 +263,8 @@ github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b h1:FIMLXCmledlGHw7Nz
 github.com/bytebase/tidb v0.0.0-20251104040057-d29df9dd1b3b/go.mod h1:sXlW/IJbfyluk3KFfjOCNpN5CAtQos4/nxmRs2tCyn8=
 github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b h1:TJweAUQzFg8ZqIVk780o7k7nTDkYtKQU/44s4Ukv7vk=
 github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b/go.mod h1:F7q7Qh9lNJyVS5ZliB1hA4uioJN1tOfnNf9KleLZVqo=
-github.com/caarlos0/env/v11 v11.3.1 h1:cArPWC15hWmEt+gWk7YBi7lEXTXCvpaSdCiZE2X5mCA=
-github.com/caarlos0/env/v11 v11.3.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
+github.com/caarlos0/env/v11 v11.4.0 h1:Kcb6t5kIIr4XkoQC9AF2j+8E1Jsrl3Wz/hhm1LtoGAc=
+github.com/caarlos0/env/v11 v11.4.0/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
 github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5 h1:BjkPE3785EwPhhyuFkbINB+2a1xATwk8SNDWnJiD41g=
 github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5/go.mod h1:jtAfVaU/2cu1+wdSRPWE2c1N2qeAA3K4RH9pYgqwets=
 github.com/cenkalti/backoff/v3 v3.0.0/go.mod h1:cIeZDE3IrqwwJl6VUwCN6trj1oXrTS4rc0ij+ULvLYs=
