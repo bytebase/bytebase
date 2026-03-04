@@ -336,7 +336,12 @@
 </template>
 
 <script lang="ts" setup>
-import { CheckIcon, ChevronDownIcon, ChevronRightIcon, MinusCircleIcon } from "lucide-vue-next";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  MinusCircleIcon,
+} from "lucide-vue-next";
 import {
   NButton,
   NInput,
@@ -348,6 +353,7 @@ import {
 } from "naive-ui";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import { CopyButton, DatabaseSelect } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
@@ -358,7 +364,6 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 
 const props = defineProps<{
   projectId: string;
