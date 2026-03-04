@@ -1517,10 +1517,11 @@ When paginating, all other parameters provided to `ListIssueComments` must match
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - approval_status: issue approval status, support &#34;==&#34; operator. - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
+Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - risk_level: the issue risk level, support &#34;in&#34; operator, check the RiskLevel enum for the values. - approval_status: issue approval status, support &#34;==&#34; operator. - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; labels in [&#34;label1&#34;, &#34;label2&#34;] create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; |
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; labels in [&#34;label1&#34;, &#34;label2&#34;] risk_level in [&#34;HIGH&#34;, &#34;MODERATE&#34;] create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; |
 | query | [string](#string) |  | Query is the query statement. |
+| order_by | [string](#string) |  | The order by of issues. Support: - create_time - update_time The default sorting order is ascending. For example: - order_by = &#34;create_time desc&#34; - order_by = &#34;update_time asc&#34; |
 
 
 
@@ -1590,6 +1591,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. Check the filter field in the ListIssuesRequest message. |
 | query | [string](#string) |  | Query is the query statement. |
+| order_by | [string](#string) |  | The order by of issues. Support: - create_time - update_time The default sorting order is ascending. For example: - order_by = &#34;create_time desc&#34; - order_by = &#34;update_time asc&#34; |
 
 
 

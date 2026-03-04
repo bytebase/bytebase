@@ -85,8 +85,9 @@ const isActive = (preset: PresetValue): boolean => {
     return status === IssueStatus[IssueStatus.OPEN] && !approval;
   }
 
+  const statuses = getValuesFromSearchParams(props.params, "status");
+
   if (preset === "CLOSED") {
-    const statuses = getValuesFromSearchParams(props.params, "status");
     return (
       statuses.includes(IssueStatus[IssueStatus.DONE]) &&
       !statuses.includes(IssueStatus[IssueStatus.OPEN])
@@ -94,7 +95,7 @@ const isActive = (preset: PresetValue): boolean => {
   }
 
   if (preset === "ALL") {
-    return props.params.scopes.filter((s) => !s.readonly).length === 0;
+    return statuses.length === 0;
   }
 
   return false;

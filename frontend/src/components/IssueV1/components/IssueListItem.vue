@@ -49,6 +49,7 @@
             #{{ extractIssueUID(issue.name) }}
           </span>
           <span>&middot;</span>
+          {{ $t("common.created") }}
           <HumanizeTs :ts="createTimeTs" />
           <span>&middot;</span>
           <router-link

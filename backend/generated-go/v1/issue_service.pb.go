@@ -459,6 +459,7 @@ type ListIssuesRequest struct {
 	// - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	// - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
 	// - labels: the issue labels, support "==" and "in" operator.
+	// - risk_level: the issue risk level, support "in" operator, check the RiskLevel enum for the values.
 	// - approval_status: issue approval status, support "==" operator.
 	// - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
 	//
@@ -466,10 +467,20 @@ type ListIssuesRequest struct {
 	// creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
 	// status == "CANCELED" && type == "DATABASE_CHANGE"
 	// labels in ["label1", "label2"]
+	// risk_level in ["HIGH", "MODERATE"]
 	// create_time >= "2025-01-02T15:04:05Z07:00"
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Query is the query statement.
-	Query         string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	Query string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	// The order by of issues.
+	// Support:
+	// - create_time
+	// - update_time
+	// The default sorting order is ascending.
+	// For example:
+	// - order_by = "create_time desc"
+	// - order_by = "update_time asc"
+	OrderBy       string `protobuf:"bytes,6,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -535,6 +546,13 @@ func (x *ListIssuesRequest) GetFilter() string {
 func (x *ListIssuesRequest) GetQuery() string {
 	if x != nil {
 		return x.Query
+	}
+	return ""
+}
+
+func (x *ListIssuesRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -615,7 +633,16 @@ type SearchIssuesRequest struct {
 	// Check the filter field in the ListIssuesRequest message.
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Query is the query statement.
-	Query         string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	Query string `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	// The order by of issues.
+	// Support:
+	// - create_time
+	// - update_time
+	// The default sorting order is ascending.
+	// For example:
+	// - order_by = "create_time desc"
+	// - order_by = "update_time asc"
+	OrderBy       string `protobuf:"bytes,6,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -681,6 +708,13 @@ func (x *SearchIssuesRequest) GetFilter() string {
 func (x *SearchIssuesRequest) GetQuery() string {
 	if x != nil {
 		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchIssuesRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -2136,7 +2170,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12CreateIssueRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
-	"\x05issue\x18\x02 \x01(\v2\x12.bytebase.v1.IssueB\x03\xe0A\x02R\x05issue\"\xb3\x01\n" +
+	"\x05issue\x18\x02 \x01(\v2\x12.bytebase.v1.IssueB\x03\xe0A\x02R\x05issue\"\xce\x01\n" +
 	"\x11ListIssuesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
@@ -2144,17 +2178,19 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\x12\x14\n" +
-	"\x05query\x18\x05 \x01(\tR\x05query\"h\n" +
+	"\x05query\x18\x05 \x01(\tR\x05query\x12\x19\n" +
+	"\border_by\x18\x06 \x01(\tR\aorderBy\"h\n" +
 	"\x12ListIssuesResponse\x12*\n" +
 	"\x06issues\x18\x01 \x03(\v2\x12.bytebase.v1.IssueR\x06issues\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9c\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb7\x01\n" +
 	"\x13SearchIssuesRequest\x12\x1b\n" +
 	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\x12\x14\n" +
-	"\x05query\x18\x05 \x01(\tR\x05query\"j\n" +
+	"\x05query\x18\x05 \x01(\tR\x05query\x12\x19\n" +
+	"\border_by\x18\x06 \x01(\tR\aorderBy\"j\n" +
 	"\x14SearchIssuesResponse\x12*\n" +
 	"\x06issues\x18\x01 \x03(\v2\x12.bytebase.v1.IssueR\x06issues\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc1\x01\n" +

@@ -74,7 +74,36 @@ type FindIssueMessage struct {
 
 	Query *string
 
-	LabelList []string
+	LabelList     []string
+	RiskLevelList []storepb.RiskLevel
+	OrderByKeys   []*OrderByKey
+}
+
+// GetIssueOrders parses the order_by string and returns the corresponding OrderByKeys.
+func GetIssueOrders(orderBy string) ([]*OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	orderByKeys := []*OrderByKey{}
+	for _, key := range keys {
+		switch key.Key {
+		case "create_time":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "issue.created_at",
+				SortOrder: key.SortOrder,
+			})
+		case "update_time":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "issue.updated_at",
+				SortOrder: key.SortOrder,
+			})
+		default:
+			return nil, errors.Errorf(`invalid order key "%v"`, key.Key)
+		}
+	}
+	return orderByKeys, nil
 }
 
 // GetIssue gets issue by issue UID.
@@ -248,6 +277,22 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	}
 	if len(find.LabelList) != 0 {
 		where.And("payload->'labels' ??& ?::TEXT[]", find.LabelList)
+	}
+	if len(find.RiskLevelList) != 0 {
+		riskLevelStrings := make([]string, 0, len(find.RiskLevelList))
+		for _, rl := range find.RiskLevelList {
+			riskLevelStrings = append(riskLevelStrings, rl.String())
+		}
+		where.And("payload->>'riskLevel' = ANY(?)", riskLevelStrings)
+	}
+
+	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.id DESC" {
+		parts := make([]string, 0, len(find.OrderByKeys)+1)
+		for _, v := range find.OrderByKeys {
+			parts = append(parts, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		parts = append(parts, "issue.id DESC")
+		orderByClause = fmt.Sprintf("ORDER BY %s", strings.Join(parts, ", "))
 	}
 
 	q := qb.Q().Space(`

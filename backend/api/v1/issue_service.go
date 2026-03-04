@@ -203,6 +203,14 @@ func (s *IssueService) getIssueFind(
 						}
 						issueFind.LabelList = append(issueFind.LabelList, issueLabel)
 					}
+				case "risk_level":
+					for _, raw := range rawList {
+						riskLevel, err := convertToAPIRiskLevel(v1pb.RiskLevel(v1pb.RiskLevel_value[raw.(string)]))
+						if err != nil {
+							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert to risk level, err: %v", err))
+						}
+						issueFind.RiskLevelList = append(issueFind.RiskLevelList, riskLevel)
+					}
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q with %v operator", variable, celoperators.In))
 				}
@@ -246,6 +254,12 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 		return nil, err
 	}
 	issueFind.ProjectID = &projectID
+
+	orderByKeys, err := store.GetIssueOrders(req.Msg.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	issueFind.OrderByKeys = orderByKeys
 
 	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
@@ -294,6 +308,13 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, err
 	}
+
+	orderByKeys, err := store.GetIssueOrders(req.Msg.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	issueFind.OrderByKeys = orderByKeys
+
 	if projectID != "-" {
 		issueFind.ProjectID = &projectID
 	}

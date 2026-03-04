@@ -16,6 +16,11 @@
         v-bind="componentProps?.['time-range']"
         @update:params="$emit('update:params', $event)"
       />
+      <IssueSortDropdown
+        v-if="components.includes('sort')"
+        :order-by="orderBy"
+        @update:order-by="$emit('update:orderBy', $event)"
+      />
       <slot name="searchbox-suffix" />
     </div>
 
@@ -38,10 +43,11 @@ import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";
 
+import IssueSortDropdown from "./IssueSortDropdown.vue";
 import PresetButtons from "./PresetButtons.vue";
 import { useIssueSearchScopeOptions } from "./useIssueSearchScopeOptions";
 
-export type SearchComponent = "searchbox" | "presets" | "time-range";
+export type SearchComponent = "searchbox" | "presets" | "time-range" | "sort";
 
 const props = withDefaults(
   defineProps<{
@@ -51,17 +57,20 @@ const props = withDefaults(
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, Record<string, unknown>>>;
     defaultParams?: SearchParams;
+    orderBy?: string;
   }>(),
   {
     overrideScopeIdList: () => [],
     components: () => ["searchbox", "time-range", "presets"],
     componentProps: undefined,
     defaultParams: undefined,
+    orderBy: "create_time desc",
   }
 );
 
 defineEmits<{
   (event: "update:params", params: SearchParams): void;
+  (event: "update:orderBy", value: string): void;
 }>();
 
 const showTimeRange = ref(false);
@@ -77,6 +86,7 @@ const allowedScopes = computed((): SearchScopeId[] => {
     "status",
     "issue-label",
     "project",
+    "risk-level",
   ];
 });
 

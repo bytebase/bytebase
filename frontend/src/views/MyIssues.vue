@@ -2,7 +2,8 @@
   <div :key="viewId" class="py-4 flex flex-col">
     <IssueSearch
       v-model:params="state.params"
-      :components="['searchbox', 'time-range', 'presets']"
+      v-model:order-by="orderBy"
+      :components="['searchbox', 'time-range', 'sort', 'presets']"
       :default-params="computedDefaultParams"
       class="px-4"
     />
@@ -60,6 +61,7 @@ const route = useRoute();
 const router = useRouter();
 const me = useCurrentUserV1();
 const issueStore = useIssueV1Store();
+const orderBy = ref("");
 const issuePagedTable = ref<ComponentExposed<typeof PagedTable<Issue>>>();
 
 const viewId = useLocalStorage<string>(STORAGE_KEY_MY_ISSUES_TAB, "");
@@ -96,7 +98,9 @@ const state = reactive<LocalState>({
 const computedDefaultParams = computed(() => defaultSearchParams());
 
 const mergedIssueFilter = computed(() => {
-  return buildIssueFilterBySearchParams(state.params);
+  const filter = buildIssueFilterBySearchParams(state.params);
+  filter.orderBy = orderBy.value;
+  return filter;
 });
 
 const fetchIssueList = async ({

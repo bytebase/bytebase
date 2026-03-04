@@ -8223,6 +8223,7 @@ paths:
              - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
              - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
              - labels: the issue labels, support "==" and "in" operator.
+             - risk_level: the issue risk level, support "in" operator, check the RiskLevel enum for the values.
              - approval_status: issue approval status, support "==" operator.
              - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
 
@@ -8230,6 +8231,7 @@ paths:
              creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
              status == "CANCELED" && type == "DATABASE_CHANGE"
              labels in ["label1", "label2"]
+             risk_level in ["HIGH", "MODERATE"]
              create_time >= "2025-01-02T15:04:05Z07:00"
           schema:
             type: string
@@ -8244,6 +8246,7 @@ paths:
                - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
                - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
                - labels: the issue labels, support "==" and "in" operator.
+               - risk_level: the issue risk level, support "in" operator, check the RiskLevel enum for the values.
                - approval_status: issue approval status, support "==" operator.
                - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
 
@@ -8251,6 +8254,7 @@ paths:
                creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
                status == "CANCELED" && type == "DATABASE_CHANGE"
                labels in ["label1", "label2"]
+               risk_level in ["HIGH", "MODERATE"]
                create_time >= "2025-01-02T15:04:05Z07:00"
         - name: query
           in: query
@@ -8259,6 +8263,29 @@ paths:
             type: string
             title: query
             description: Query is the query statement.
+        - name: orderBy
+          in: query
+          description: |-
+            The order by of issues.
+             Support:
+             - create_time
+             - update_time
+             The default sorting order is ascending.
+             For example:
+             - order_by = "create_time desc"
+             - order_by = "update_time asc"
+          schema:
+            type: string
+            title: order_by
+            description: |-
+              The order by of issues.
+               Support:
+               - create_time
+               - update_time
+               The default sorting order is ascending.
+               For example:
+               - order_by = "create_time desc"
+               - order_by = "update_time asc"
       responses:
         "200":
           description: Success
@@ -9169,6 +9196,18 @@ paths:
                   type: string
                   title: query
                   description: Query is the query statement.
+                orderBy:
+                  type: string
+                  title: order_by
+                  description: |-
+                    The order by of issues.
+                     Support:
+                     - create_time
+                     - update_time
+                     The default sorting order is ascending.
+                     For example:
+                     - order_by = "create_time desc"
+                     - order_by = "update_time asc"
               title: SearchIssuesRequest
               additionalProperties: false
         required: true
@@ -21712,6 +21751,7 @@ components:
              - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
              - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
              - labels: the issue labels, support "==" and "in" operator.
+             - risk_level: the issue risk level, support "in" operator, check the RiskLevel enum for the values.
              - approval_status: issue approval status, support "==" operator.
              - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
 
@@ -21719,11 +21759,24 @@ components:
              creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
              status == "CANCELED" && type == "DATABASE_CHANGE"
              labels in ["label1", "label2"]
+             risk_level in ["HIGH", "MODERATE"]
              create_time >= "2025-01-02T15:04:05Z07:00"
         query:
           type: string
           title: query
           description: Query is the query statement.
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of issues.
+             Support:
+             - create_time
+             - update_time
+             The default sorting order is ascending.
+             For example:
+             - order_by = "create_time desc"
+             - order_by = "update_time asc"
       title: ListIssuesRequest
       required:
         - parent
@@ -25173,6 +25226,18 @@ components:
           type: string
           title: query
           description: Query is the query statement.
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of issues.
+             Support:
+             - create_time
+             - update_time
+             The default sorting order is ascending.
+             For example:
+             - order_by = "create_time desc"
+             - order_by = "update_time asc"
       title: SearchIssuesRequest
       required:
         - parent

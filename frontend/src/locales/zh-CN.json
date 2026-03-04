@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "排序",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "ascending": "正序",
+      "descending": "倒序"
+    },
     "table": {
       "open": "开启中",
       "closed": "已关闭",

@@ -1,5 +1,6 @@
 import { projectNamePrefix, userNamePrefix } from "@/store";
 import type { IssueFilter } from "@/types";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -41,6 +42,9 @@ export const buildIssueFilterBySearchParams = (
       : undefined,
     statusList: getValuesFromSearchParams(params, "status").map(
       (status) => IssueStatus[status as keyof typeof IssueStatus]
+    ),
+    riskLevelList: getValuesFromSearchParams(params, "risk-level").map(
+      (risk) => RiskLevel[risk as keyof typeof RiskLevel]
     ),
     labels,
   };

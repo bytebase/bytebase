@@ -11,6 +11,7 @@ import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useComm
 import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import { isValidProjectName } from "@/types";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -187,6 +188,29 @@ export const useIssueSearchScopeOptions = (
           };
         }),
         allowMultiple: true,
+      },
+      {
+        id: "risk-level",
+        title: t("issue.risk-level.self"),
+        description: t("issue.risk-level.filter"),
+        allowMultiple: true,
+        options: [
+          {
+            value: RiskLevel[RiskLevel.HIGH],
+            keywords: ["high"],
+            render: () => renderSpan(t("issue.risk-level.high")),
+          },
+          {
+            value: RiskLevel[RiskLevel.MODERATE],
+            keywords: ["moderate"],
+            render: () => renderSpan(t("issue.risk-level.moderate")),
+          },
+          {
+            value: RiskLevel[RiskLevel.LOW],
+            keywords: ["low"],
+            render: () => renderSpan(t("issue.risk-level.low")),
+          },
+        ],
       },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList.value);
