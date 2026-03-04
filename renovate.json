@@ -20,11 +20,6 @@
     {
       "groupName": "google.golang.org/genproto",
       "matchPackagePatterns": ["^google.golang.org/genproto"]
-    },
-    {
-      "groupName": "go-toolchain",
-      "description": "Group Go version and golangci-lint to avoid version mismatch",
-      "matchPackageNames": ["go", "golangci/golangci-lint"]
     }
   ],
   "ignoreDeps": [
