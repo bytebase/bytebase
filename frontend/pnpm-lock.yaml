@@ -130,8 +130,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.20.1
-        version: 1.20.1(@popperjs/core@2.11.8)(typescript@5.9.3)
+        specifier: 1.20.2
+        version: 1.20.2(@popperjs/core@2.11.8)(typescript@5.9.3)
       pinia:
         specifier: 3.0.4
         version: 3.0.4(typescript@5.9.3)(vue@3.5.29(typescript@5.9.3))
@@ -3173,8 +3173,8 @@ packages:
   fraction.js@5.3.4:
     resolution: {integrity: sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==}
 
-  framer-motion@12.27.1:
-    resolution: {integrity: sha512-cEAqO69kcZt3gL0TGua8WTgRQfv4J57nqt1zxHtLKwYhAwA0x9kDS/JbMa1hJbwkGY74AGJKvZ9pX/IqWZtZWQ==}
+  framer-motion@12.34.5:
+    resolution: {integrity: sha512-Z2dQ+o7BsfpJI3+u0SQUNCrN+ajCKJen1blC4rCHx1Ta2EOHs+xKJegLT2aaD9iSMbU3OoX+WabQXkloUbZmJQ==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -3850,14 +3850,14 @@ packages:
   moo@0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
 
-  motion-dom@12.27.1:
-    resolution: {integrity: sha512-V/53DA2nBqKl9O2PMJleSUb/G0dsMMeZplZwgIQf5+X0bxIu7Q1cTv6DrjvTTGYRm3+7Y5wMlRZ1wT61boU/bQ==}
+  motion-dom@12.34.5:
+    resolution: {integrity: sha512-k33CsnxO2K3gBRMUZT+vPmc4Utlb5menKdG0RyVNLtlqRaaJPRWlE9fXl8NTtfZ5z3G8TDvqSu0MENLqSTaHZA==}
 
-  motion-utils@12.24.10:
-    resolution: {integrity: sha512-x5TFgkCIP4pPsRLpKoI86jv/q8t8FQOiM/0E8QKBzfMozWHfkKap2gA1hOki+B5g3IsBNpxbUnfOum1+dgvYww==}
+  motion-utils@12.29.2:
+    resolution: {integrity: sha512-G3kc34H2cX2gI63RqU+cZq+zWRRPSsNIOjpdl9TN4AQwC4sgwYPl/Q/Obf/d53nOm569T0fYK+tcoSV50BWx8A==}
 
-  motion@12.27.1:
-    resolution: {integrity: sha512-FAZTPDm1LccBdWSL46WLnEdTSHmdVx+fdWK8f61qBQn67MmFefXLXlrwy94rK2DDsd9A50Gj8H+LYCgQ/cQlFg==}
+  motion@12.34.5:
+    resolution: {integrity: sha512-N06NLJ9IeBHeielRqIvYvjPfXuRdyTxa+9++BgpGa+hY2D7TcMkI6QzV3jaRuv0aZRXgMa7cPy9YcBUBisPzAQ==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -3993,8 +3993,8 @@ packages:
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
 
-  pev2@1.20.1:
-    resolution: {integrity: sha512-ir8x7nAwW+jAgnjWAUed2B8FDDtPF4FvRrEgmhpxIF+iBauYB3QKkCGhYJJyvsLx7nOgIfO1HUFaO5qNmlpNJw==}
+  pev2@1.20.2:
+    resolution: {integrity: sha512-eIbg6Uq3RcZ7PFBEcD489565g+RqgIGgddkR8V2SyeNA6lrFz8VXjFSq7/Koui4+SuYBV6L6qk6vc+vsoepuCg==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -7935,10 +7935,10 @@ snapshots:
 
   fraction.js@5.3.4: {}
 
-  framer-motion@12.27.1:
+  framer-motion@12.34.5:
     dependencies:
-      motion-dom: 12.27.1
-      motion-utils: 12.24.10
+      motion-dom: 12.34.5
+      motion-utils: 12.29.2
       tslib: 2.8.1
 
   fsevents@2.3.3:
@@ -8765,15 +8765,15 @@ snapshots:
 
   moo@0.5.2: {}
 
-  motion-dom@12.27.1:
+  motion-dom@12.34.5:
     dependencies:
-      motion-utils: 12.24.10
+      motion-utils: 12.29.2
 
-  motion-utils@12.24.10: {}
+  motion-utils@12.29.2: {}
 
-  motion@12.27.1:
+  motion@12.34.5:
     dependencies:
-      framer-motion: 12.27.1
+      framer-motion: 12.34.5
       tslib: 2.8.1
 
   ms@2.1.3: {}
@@ -8898,7 +8898,7 @@ snapshots:
 
   perfect-debounce@1.0.0: {}
 
-  pev2@1.20.1(@popperjs/core@2.11.8)(typescript@5.9.3):
+  pev2@1.20.2(@popperjs/core@2.11.8)(typescript@5.9.3):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.7.2
       '@fortawesome/free-solid-svg-icons': 6.7.2
@@ -8910,7 +8910,7 @@ snapshots:
       highlight.js: 11.11.1
       humanize-duration: 3.33.2
       lodash: 4.17.23
-      motion: 12.27.1
+      motion: 12.34.5
       splitpanes: 3.2.0(vue@3.5.29(typescript@5.9.3))
       vue: 3.5.29(typescript@5.9.3)
       vue-clipboard3: 2.0.0
