@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "排序",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "ascending": "正序",
+      "descending": "倒序"
+    },
     "table": {
       "open": "开启中",
       "closed": "已关闭",
@@ -1078,7 +1085,8 @@
       "self": "风险等级",
       "low": "低风险",
       "moderate": "中风险",
-      "high": "高风险"
+      "high": "高风险",
+      "filter": "按风险等级筛选"
     },
     "issue-name": "工单名称",
     "access-grant": {

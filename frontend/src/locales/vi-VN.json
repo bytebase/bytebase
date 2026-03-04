@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "Sắp xếp",
+      "created": "Thời gian tạo",
+      "updated": "Thời gian cập nhật",
+      "ascending": "Tăng dần",
+      "descending": "Giảm dần"
+    },
     "table": {
       "open": "Mở",
       "closed": "Đã đóng",
@@ -1078,7 +1085,8 @@
       "self": "Mức độ rủi ro",
       "low": "Thấp",
       "moderate": "Trung bình",
-      "high": "Cao"
+      "high": "Cao",
+      "filter": "Lọc theo mức độ rủi ro"
     },
     "issue-name": "Tên vấn đề",
     "access-grant": {

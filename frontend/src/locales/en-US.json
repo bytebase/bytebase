@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "Sort",
+      "created": "Create time",
+      "updated": "Update time",
+      "ascending": "Ascending",
+      "descending": "Descending"
+    },
     "table": {
       "open": "Open",
       "closed": "Closed",
@@ -1078,7 +1085,8 @@
       "self": "Risk level",
       "low": "Low",
       "moderate": "Moderate",
-      "high": "High"
+      "high": "High",
+      "filter": "Filter issues by risk level"
     },
     "issue-name": "Issue name",
     "access-grant": {

@@ -11,7 +11,8 @@
       </NAlert>
       <IssueSearch
         v-model:params="state.params"
-        :components="['searchbox', 'time-range', 'presets']"
+        v-model:order-by="orderBy"
+        :components="['searchbox', 'time-range', 'sort', 'presets']"
       />
     </div>
     <PagedTable
@@ -73,6 +74,7 @@ const route = useRoute();
 const router = useRouter();
 const me = useCurrentUserV1();
 const issueStore = useIssueV1Store();
+const orderBy = ref("");
 const issuePagedTable = ref<ComponentExposed<typeof PagedTable<Issue>>>();
 
 const uiStateStore = useUIStateStore();
@@ -130,7 +132,9 @@ const state = reactive<LocalState>({
 });
 
 const mergedIssueFilter = computed(() => {
-  return buildIssueFilterBySearchParams(state.params);
+  const filter = buildIssueFilterBySearchParams(state.params);
+  filter.orderBy = orderBy.value;
+  return filter;
 });
 
 const fetchIssueList = async ({

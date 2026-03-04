@@ -63,6 +63,9 @@ func (x *ListIssuesRequest) Equal(y *ListIssuesRequest) bool {
 	if x.Query != y.Query {
 		return false
 	}
+	if x.OrderBy != y.OrderBy {
+		return false
+	}
 	return true
 }
 
@@ -107,6 +110,9 @@ func (x *SearchIssuesRequest) Equal(y *SearchIssuesRequest) bool {
 		return false
 	}
 	if x.Query != y.Query {
+		return false
+	}
+	if x.OrderBy != y.OrderBy {
 		return false
 	}
 	return true

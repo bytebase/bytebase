@@ -40,6 +40,7 @@
             ></span>
             {{ label.value }}
           </span>
+          <RiskLevelIcon :risk-level="issue.riskLevel" class="shrink-0" />
         </div>
         <!-- Line 2: metadata -->
         <div
@@ -49,6 +50,7 @@
             #{{ extractIssueUID(issue.name) }}
           </span>
           <span>&middot;</span>
+          {{ $t("common.created") }}
           <HumanizeTs :ts="createTimeTs" />
           <span>&middot;</span>
           <router-link
@@ -95,6 +97,7 @@
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import RiskLevelIcon from "@/components/Plan/components/IssueReviewView/Sidebar/ApprovalFlowSection/RiskLevelIcon.vue";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { useUserStore } from "@/store";

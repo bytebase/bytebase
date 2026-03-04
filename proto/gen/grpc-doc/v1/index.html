@@ -5103,6 +5103,7 @@ Supported filters:
 - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values.
 - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator.
+- risk_level: the issue risk level, support &#34;in&#34; operator, check the RiskLevel enum for the values.
 - approval_status: issue approval status, support &#34;==&#34; operator.
 - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
 
@@ -5110,6 +5111,7 @@ For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;]
 status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34;
 labels in [&#34;label1&#34;, &#34;label2&#34;]
+risk_level in [&#34;HIGH&#34;, &#34;MODERATE&#34;]
 create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; </p></td>
                 </tr>
               
@@ -5118,6 +5120,20 @@ create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Query is the query statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of issues.
+Support:
+- create_time
+- update_time
+The default sorting order is ascending.
+For example:
+- order_by = &#34;create_time desc&#34;
+- order_by = &#34;update_time asc&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -5276,6 +5292,20 @@ Check the filter field in the ListIssuesRequest message. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Query is the query statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>order_by</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The order by of issues.
+Support:
+- create_time
+- update_time
+The default sorting order is ascending.
+For example:
+- order_by = &#34;create_time desc&#34;
+- order_by = &#34;update_time asc&#34; </p></td>
                 </tr>
               
             </tbody>

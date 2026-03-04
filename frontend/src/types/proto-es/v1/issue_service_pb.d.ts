@@ -108,6 +108,7 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    * - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
    * - labels: the issue labels, support "==" and "in" operator.
+   * - risk_level: the issue risk level, support "in" operator, check the RiskLevel enum for the values.
    * - approval_status: issue approval status, support "==" operator.
    * - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
    *
@@ -115,6 +116,7 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
    * status == "CANCELED" && type == "DATABASE_CHANGE"
    * labels in ["label1", "label2"]
+   * risk_level in ["HIGH", "MODERATE"]
    * create_time >= "2025-01-02T15:04:05Z07:00"
    *
    * @generated from field: string filter = 4;
@@ -127,6 +129,20 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * @generated from field: string query = 5;
    */
   query: string;
+
+  /**
+   * The order by of issues.
+   * Support:
+   * - create_time
+   * - update_time
+   * The default sorting order is ascending.
+   * For example:
+   * - order_by = "create_time desc"
+   * - order_by = "update_time asc"
+   *
+   * @generated from field: string order_by = 6;
+   */
+  orderBy: string;
 };
 
 /**
@@ -209,6 +225,20 @@ export declare type SearchIssuesRequest = Message<"bytebase.v1.SearchIssuesReque
    * @generated from field: string query = 5;
    */
   query: string;
+
+  /**
+   * The order by of issues.
+   * Support:
+   * - create_time
+   * - update_time
+   * The default sorting order is ascending.
+   * For example:
+   * - order_by = "create_time desc"
+   * - order_by = "update_time asc"
+   *
+   * @generated from field: string order_by = 6;
+   */
+  orderBy: string;
 };
 
 /**

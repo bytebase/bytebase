@@ -8,6 +8,7 @@ import { ref, watch } from "vue";
 import { issueServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { type IssueFilter } from "@/types";
+import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetIssueRequestSchema,
@@ -49,6 +50,11 @@ export const buildIssueFilter = (find: IssueFilter): string => {
       `status in [${find.statusList.map((s) => `"${IssueStatus[s]}"`).join(",")}]`
     );
   }
+  if (find.riskLevelList && find.riskLevelList.length > 0) {
+    filter.push(
+      `risk_level in [${find.riskLevelList.map((r) => `"${RiskLevel[r]}"`).join(",")}]`
+    );
+  }
   if (find.createdTsAfter) {
     filter.push(
       `create_time >= "${dayjs(find.createdTsAfter).utc().format()}"`
@@ -82,6 +88,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       query: find.query,
       pageSize,
       pageToken,
+      orderBy: find.orderBy,
     });
     const resp = await issueServiceClientConnect.searchIssues(request);
     const issues = resp.issues;

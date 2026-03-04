@@ -229,6 +229,19 @@ func convertToIssueStatus(status storepb.Issue_Status) v1pb.IssueStatus {
 	}
 }
 
+func convertToAPIRiskLevel(riskLevel v1pb.RiskLevel) (storepb.RiskLevel, error) {
+	switch riskLevel {
+	case v1pb.RiskLevel_LOW:
+		return storepb.RiskLevel_LOW, nil
+	case v1pb.RiskLevel_MODERATE:
+		return storepb.RiskLevel_MODERATE, nil
+	case v1pb.RiskLevel_HIGH:
+		return storepb.RiskLevel_HIGH, nil
+	default:
+		return storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Errorf("invalid risk level %v", riskLevel)
+	}
+}
+
 func convertToIssueRiskLevel(riskLevel storepb.RiskLevel) v1pb.RiskLevel {
 	switch riskLevel {
 	case storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED:
