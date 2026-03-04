@@ -73,7 +73,7 @@
     "vscode": "npm:@codingame/monaco-vscode-extension-api@26.2.1",
     "vscode-languageclient": "9.0.1",
     "vscode-ws-jsonrpc": "3.5.0",
-    "vue": "3.5.27",
+    "vue": "3.5.29",
     "vue-draggable-plus": "^0.6.0",
     "vueuc": "0.4.65"
   },
@@ -108,7 +108,7 @@
     "@vitejs/plugin-legacy": "~7.2.1",
     "@vitejs/plugin-vue": "6.0.4",
     "@vitejs/plugin-vue-jsx": "5.1.4",
-    "@vue/compiler-sfc": "3.5.27",
+    "@vue/compiler-sfc": "3.5.29",
     "@vue/eslint-config-typescript": "^14.5.0",
     "@vue/test-utils": "2.4.6",
     "@vue/tsconfig": "0.8.1",
