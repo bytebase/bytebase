@@ -49,8 +49,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.11.0))
       '@markdoc/markdoc':
-        specifier: 0.5.4
-        version: 0.5.4
+        specifier: 0.5.5
+        version: 0.5.5
       '@vueuse/core':
         specifier: 14.2.0
         version: 14.2.0(vue@3.5.27(typescript@5.9.3))
@@ -1729,8 +1729,8 @@ packages:
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
-  '@markdoc/markdoc@0.5.4':
-    resolution: {integrity: sha512-36YFNlqFk//gVNGm5xZaTWVwbAVF2AOmVjf1tiUrS6tCoD/YSkVy2E3CkAfhc5MlKcjparL/QFHCopxL4zRyaQ==}
+  '@markdoc/markdoc@0.5.5':
+    resolution: {integrity: sha512-WvFMmSFHy3MQYagWhqkaE1hBl4h7z3YTNufhzQjBngweY52de6DcoYIwjVln/OtNw939SzpImj3ZQUF/4DWkdQ==}
     engines: {node: '>=14.7.0'}
     peerDependencies:
       '@types/react': '*'
@@ -6395,7 +6395,7 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
-  '@markdoc/markdoc@0.5.4':
+  '@markdoc/markdoc@0.5.5':
     optionalDependencies:
       '@types/linkify-it': 3.0.5
       '@types/markdown-it': 12.2.3

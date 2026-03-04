@@ -28,7 +28,7 @@
     "@codingame/monaco-vscode-theme-service-override": "26.2.1",
     "@connectrpc/connect": "^2.1.1",
     "@connectrpc/connect-web": "^2.1.1",
-    "@markdoc/markdoc": "0.5.4",
+    "@markdoc/markdoc": "0.5.5",
     "@vueuse/core": "14.2.0",
     "bootstrap": "5.3.8",
     "crypto-js": "^4.2.0",
