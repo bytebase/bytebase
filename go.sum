@@ -824,10 +824,10 @@ github.com/ory/dockertest/v3 v3.12.0/go.mod h1:aKNDTva3cp8dwOWwb9cWuX84aH5akkxXR
 github.com/paulmach/orb v0.12.0 h1:z+zOwjmG3MyEEqzv92UN49Lg1JFYx0L9GpGKNVDKk1s=
 github.com/paulmach/orb v0.12.0/go.mod h1:5mULz1xQfs3bmQm63QEJA6lNGujuRafwA5S/EnuLaLU=
 github.com/paulmach/protoscan v0.2.1/go.mod h1:SpcSwydNLrxUGSDvXvO0P7g7AuhJ7lcKfDlhJCDw2gY=
-github.com/pb33f/jsonpath v0.7.1 h1:dEp6oIZuJbpDSyuHAl9m7GonoDW4M20BcD5vT0tPYRE=
-github.com/pb33f/jsonpath v0.7.1/go.mod h1:zBV5LJW4OQOPatmQE2QdKpGQJvhDTlE5IEj6ASaRNTo=
-github.com/pb33f/libopenapi v0.33.7 h1:UdpEXM8xHBRf3WoE/Cv+y81fn0Pg5FXLEme0y66oPMM=
-github.com/pb33f/libopenapi v0.33.7/go.mod h1:e/dmd2Pf1nkjqkI0r7guFSyt9T5V0IIQKgs0L6B/3b0=
+github.com/pb33f/jsonpath v0.8.1 h1:84C6QRyx6HcSm6PZnsMpcqYot3IsZ+m0n95+0NbBbvs=
+github.com/pb33f/jsonpath v0.8.1/go.mod h1:zBV5LJW4OQOPatmQE2QdKpGQJvhDTlE5IEj6ASaRNTo=
+github.com/pb33f/libopenapi v0.34.0 h1:jY8pf4yBHRObnNBrjuVDhVpgKjSUE8hLFpeoYtyQ/eo=
+github.com/pb33f/libopenapi v0.34.0/go.mod h1:YOP20KzYe3mhE5301aQzJtzQ9MnvhABBGO7RMttA4V4=
 github.com/pb33f/ordered-map/v2 v2.3.0 h1:k2OhVEQkhTCQMhAicQ3Z6iInzoZNQ7L9MVomwKBZ5WQ=
 github.com/pb33f/ordered-map/v2 v2.3.0/go.mod h1:oe5ue+6ZNhy7QN9cPZvPA23Hx0vMHnNVeMg4fGdCANw=
 github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
