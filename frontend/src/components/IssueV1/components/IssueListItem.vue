@@ -29,6 +29,7 @@
             @click.stop
             v-html="highlightedTitle"
           ></a>
+          <RiskLevelIcon :risk-level="issue.riskLevel" class="shrink-0" />
           <span
             v-for="label in labels"
             :key="label.value"
@@ -40,7 +41,6 @@
             ></span>
             {{ label.value }}
           </span>
-          <RiskLevelIcon :risk-level="issue.riskLevel" class="shrink-0" />
         </div>
         <!-- Line 2: metadata -->
         <div
