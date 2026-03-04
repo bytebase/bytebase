@@ -61,12 +61,130 @@ func TestAnalyzeMaskingStatement(t *testing.T) {
 			},
 		},
 		{
-			description: "aggregate is unsupported read api",
+			description: "aggregate with shape-preserving stages",
 			statement:   `db.users.aggregate([{$match: {name: "alice"}}])`,
 			want: &MaskingAnalysis{
-				API:        MaskableAPIUnsupportedRead,
+				API:             MaskableAPIAggregate,
+				Operation:       "aggregate",
+				Collection:      "users",
+				PredicateFields: []string{"name"},
+			},
+		},
+		{
+			description: "aggregate with multiple shape-preserving stages",
+			statement:   `db.users.aggregate([{$match: {status: "active"}}, {$sort: {name: 1}}, {$limit: 10}])`,
+			want: &MaskingAnalysis{
+				API:             MaskableAPIAggregate,
+				Operation:       "aggregate",
+				Collection:      "users",
+				PredicateFields: []string{"status"},
+			},
+		},
+		{
+			description: "aggregate match with logical operators",
+			statement:   `db.users.aggregate([{$match: {$or: [{age: {$gt: 18}}, {name: "alice"}]}}])`,
+			want: &MaskingAnalysis{
+				API:             MaskableAPIAggregate,
+				Operation:       "aggregate",
+				Collection:      "users",
+				PredicateFields: []string{"age", "name"},
+			},
+		},
+		{
+			description: "aggregate with addFields and unset",
+			statement:   `db.users.aggregate([{$addFields: {fullName: "test"}}, {$unset: "ssn"}])`,
+			want: &MaskingAnalysis{
+				API:        MaskableAPIAggregate,
 				Operation:  "aggregate",
 				Collection: "users",
+			},
+		},
+		{
+			description: "aggregate with empty pipeline",
+			statement:   `db.users.aggregate([])`,
+			want: &MaskingAnalysis{
+				API:        MaskableAPIAggregate,
+				Operation:  "aggregate",
+				Collection: "users",
+			},
+		},
+		{
+			description: "aggregate with no arguments",
+			statement:   `db.users.aggregate()`,
+			want: &MaskingAnalysis{
+				API:        MaskableAPIAggregate,
+				Operation:  "aggregate",
+				Collection: "users",
+			},
+		},
+		{
+			description: "aggregate with $group is unsupported",
+			statement:   `db.users.aggregate([{$group: {_id: "$status"}}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$group",
+			},
+		},
+		{
+			description: "aggregate with $project is unsupported",
+			statement:   `db.users.aggregate([{$match: {name: "alice"}}, {$project: {name: 1}}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$project",
+			},
+		},
+		{
+			description: "aggregate with $lookup is unsupported",
+			statement:   `db.users.aggregate([{$lookup: {from: "orders", localField: "_id", foreignField: "userId", as: "orders"}}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$lookup",
+			},
+		},
+		{
+			description: "aggregate with $out is unsupported",
+			statement:   `db.users.aggregate([{$match: {status: "active"}}, {$out: "activeUsers"}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$out",
+			},
+		},
+		{
+			description: "aggregate with $unwind is unsupported",
+			statement:   `db.users.aggregate([{$unwind: "$tags"}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$unwind",
+			},
+		},
+		{
+			description: "aggregate with $replaceRoot is unsupported",
+			statement:   `db.users.aggregate([{$replaceRoot: {newRoot: "$contact"}}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$replaceRoot",
+			},
+		},
+		{
+			description: "aggregate with $count is unsupported",
+			statement:   `db.users.aggregate([{$count: "total"}])`,
+			want: &MaskingAnalysis{
+				API:              MaskableAPIUnsupportedRead,
+				Operation:        "aggregate",
+				Collection:       "users",
+				UnsupportedStage: "$count",
 			},
 		},
 		{

@@ -31,6 +31,7 @@ type mongodbCheckBlockedCase struct {
 	API               string `yaml:"api"`
 	Operation         string `yaml:"operation"`
 	Collection        string `yaml:"collection"`
+	UnsupportedStage  string `yaml:"unsupportedStage"`
 	WantError         bool   `yaml:"wantError"`
 	WantErrorContains string `yaml:"wantErrorContains"`
 }
@@ -170,6 +171,8 @@ func mustMaskableAPI(t *testing.T, api string) mongoparser.MaskableAPI {
 		return mongoparser.MaskableAPIFindOne
 	case "unsupportedRead":
 		return mongoparser.MaskableAPIUnsupportedRead
+	case "aggregate":
+		return mongoparser.MaskableAPIAggregate
 	default:
 		require.Failf(t, "unknown api", "api %q not found", api)
 		return mongoparser.MaskableAPIUnsupported
@@ -200,9 +203,10 @@ func TestCheckMongoDBRequestBlocked(t *testing.T) {
 			var analysis *mongoparser.MaskingAnalysis
 			if !tc.AnalysisNil {
 				analysis = &mongoparser.MaskingAnalysis{
-					API:        mustMaskableAPI(t, tc.API),
-					Operation:  tc.Operation,
-					Collection: tc.Collection,
+					API:              mustMaskableAPI(t, tc.API),
+					Operation:        tc.Operation,
+					Collection:       tc.Collection,
+					UnsupportedStage: tc.UnsupportedStage,
 				}
 			}
 			err := checkMongoDBRequestBlocked(analysis)

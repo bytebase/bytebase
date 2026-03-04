@@ -19,6 +19,9 @@ func checkMongoDBRequestBlocked(analysis *mongoparser.MaskingAnalysis) error {
 		if operation == "" {
 			operation = "unknown"
 		}
+		if analysis.UnsupportedStage != "" {
+			return errors.Errorf("MongoDB aggregate() with stage %q on collection %q is not supported for dynamic masking. Supported operations are find(), findOne(), and aggregate() with shape-preserving stages only", analysis.UnsupportedStage, analysis.Collection)
+		}
 		return errors.Errorf("MongoDB operation %q on collection %q is not supported for dynamic masking in this release. Supported operations are find() and findOne()", operation+"()", analysis.Collection)
 	}
 	return nil

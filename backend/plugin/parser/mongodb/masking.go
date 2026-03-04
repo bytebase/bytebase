@@ -23,6 +23,8 @@ const (
 	MaskableAPIFindOne
 	// MaskableAPIUnsupportedRead means a read API that is blocked in Milestone 1.
 	MaskableAPIUnsupportedRead
+	// MaskableAPIAggregate means db.<collection>.aggregate(...) with only shape-preserving stages.
+	MaskableAPIAggregate
 )
 
 // MaskingAnalysis contains MongoDB statement data needed by masking checks.
@@ -31,6 +33,9 @@ type MaskingAnalysis struct {
 	Operation       string
 	Collection      string
 	PredicateFields []string
+	// UnsupportedStage is the first pipeline stage that prevents masking (e.g. "$group").
+	// Only set when API == MaskableAPIUnsupportedRead for aggregate pipelines.
+	UnsupportedStage string
 }
 
 // AnalyzeMaskingStatement analyzes a MongoDB shell statement for masking checks.
@@ -115,7 +120,7 @@ func classifyMaskingMethod(mc mongoparser.ICollectionMethodCallContext) *Masking
 	case mc.DistinctMethod() != nil:
 		return unsupportedReadAnalysis("distinct")
 	case mc.AggregateMethod() != nil:
-		return unsupportedReadAnalysis("aggregate")
+		return classifyAggregateForMasking(mc.AggregateMethod())
 	case mc.GetIndexesMethod() != nil:
 		return unsupportedReadAnalysis("getIndexes")
 	case mc.StatsMethod() != nil:
@@ -339,4 +344,90 @@ func isLogicalOperator(key string) bool {
 	default:
 		return false
 	}
+}
+
+// shapePreservingAggregateStages contains aggregate pipeline stages whose output
+// documents retain the collection's original structure (fields are not reshaped).
+var shapePreservingAggregateStages = map[string]bool{
+	"$match":           true,
+	"$sort":            true,
+	"$limit":           true,
+	"$skip":            true,
+	"$sample":          true,
+	"$addFields":       true,
+	"$set":             true,
+	"$unset":           true,
+	"$geoNear":         true,
+	"$setWindowFields": true,
+	"$fill":            true,
+	"$redact":          true,
+}
+
+func classifyAggregateForMasking(am mongoparser.IAggregateMethodContext) *MaskingAnalysis {
+	predicateFields, unsupportedStage := extractAggregatePredicateFields(am.Arguments())
+	if unsupportedStage != "" {
+		return &MaskingAnalysis{
+			API:              MaskableAPIUnsupportedRead,
+			Operation:        "aggregate",
+			UnsupportedStage: unsupportedStage,
+		}
+	}
+	return &MaskingAnalysis{
+		API:             MaskableAPIAggregate,
+		Operation:       "aggregate",
+		PredicateFields: predicateFields,
+	}
+}
+
+// extractAggregatePredicateFields walks the pipeline and returns predicate fields from $match stages.
+// The second return value is the first unsupported stage name, or "" if all stages are allowed.
+func extractAggregatePredicateFields(args mongoparser.IArgumentsContext) ([]string, string) {
+	if args == nil {
+		return nil, ""
+	}
+	allArgs := args.AllArgument()
+	if len(allArgs) == 0 {
+		return nil, ""
+	}
+
+	first := allArgs[0]
+	if first == nil || first.Value() == nil {
+		return nil, ""
+	}
+
+	arr := extractArrayValue(first.Value())
+	if arr == nil {
+		return nil, "unknown"
+	}
+
+	fields := make(map[string]struct{})
+	for _, elem := range arr.AllValue() {
+		doc := extractDocumentValue(elem)
+		if doc == nil {
+			return nil, "unknown"
+		}
+		pairs := doc.AllPair()
+		if len(pairs) == 0 {
+			continue
+		}
+		stageName := extractPairKey(pairs[0].Key())
+		if !shapePreservingAggregateStages[stageName] {
+			return nil, stageName
+		}
+		if stageName == "$match" {
+			stageDoc := extractDocumentValue(pairs[0].Value())
+			if stageDoc != nil {
+				collectPredicateFieldsFromDocument(stageDoc, "", fields)
+			}
+		}
+	}
+
+	if len(fields) == 0 {
+		return nil, ""
+	}
+	result := make([]string, 0, len(fields))
+	for field := range fields {
+		result = append(result, field)
+	}
+	return result, ""
 }

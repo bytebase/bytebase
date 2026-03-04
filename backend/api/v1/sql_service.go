@@ -818,7 +818,7 @@ func queryRetry(
 				if analyzeErr != nil || analysis == nil || analysis.Collection == "" {
 					continue
 				}
-				if analysis.API != mongoparser.MaskableAPIFind && analysis.API != mongoparser.MaskableAPIFindOne {
+				if analysis.API != mongoparser.MaskableAPIFind && analysis.API != mongoparser.MaskableAPIFindOne && analysis.API != mongoparser.MaskableAPIAggregate {
 					continue
 				}
 

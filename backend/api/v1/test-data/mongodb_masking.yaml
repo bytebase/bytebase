@@ -47,3 +47,17 @@ checkBlocked:
     collection: users
     wantError: true
     wantErrorContains: aggregate()
+
+  - description: aggregate allowed
+    api: aggregate
+    operation: aggregate
+    collection: users
+    wantError: false
+
+  - description: aggregate with unsupported stage blocked
+    api: unsupportedRead
+    operation: aggregate
+    collection: users
+    unsupportedStage: "$group"
+    wantError: true
+    wantErrorContains: aggregate() with stage "$group"
