@@ -29,9 +29,25 @@ jobs:
         with:
           go-version: '1.26.0'
           cache: false # Caching is slow.
-      - name: golangci-lint
+      - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
+          # renovate: datasource=github-releases depName=golangci/golangci-lint
           version: v2.10.1
-          args: --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
+          install-only: true
           skip-cache: true
+      - name: Verify Go version compatibility
+        run: |
+          GO_MAJOR_MINOR=$(go env GOVERSION | sed 's/go//' | cut -d. -f1-2)
+          LINT_GO=$(golangci-lint version --json 2>/dev/null | jq -r '.go // empty' || true)
+          if [ -z "$LINT_GO" ]; then
+            echo "Skipping compatibility check: unable to read golangci-lint Go version"
+            exit 0
+          fi
+          LINT_MAJOR_MINOR=$(echo "$LINT_GO" | sed 's/go//' | cut -d. -f1-2)
+          if [ "$GO_MAJOR_MINOR" != "$LINT_MAJOR_MINOR" ]; then
+            echo "::error::Go version mismatch: setup-go provides go${GO_MAJOR_MINOR} but golangci-lint was built with go${LINT_MAJOR_MINOR}. Update golangci-lint to a version built with go${GO_MAJOR_MINOR}."
+            exit 1
+          fi
+      - name: golangci-lint
+        run: golangci-lint run --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
