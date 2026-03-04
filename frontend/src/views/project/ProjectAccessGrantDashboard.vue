@@ -333,7 +333,7 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
                 {grant.unmask && (
                   <NTag
                     class="shrink-0"
-                    size="tiny"
+                    size="small"
                     type="warning"
                     round={true}
                     bordered={false}
