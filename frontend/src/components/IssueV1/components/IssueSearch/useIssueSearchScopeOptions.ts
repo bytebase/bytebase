@@ -138,6 +138,14 @@ export const useIssueSearchScopeOptions = (
         description: t("issue.advanced-search.scope.approval.description"),
         options: [
           {
+            value: Issue_ApprovalStatus[Issue_ApprovalStatus.CHECKING],
+            keywords: ["checking"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.approval.value.checking")
+              ),
+          },
+          {
             value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
             keywords: ["pending"],
             render: () =>
@@ -151,6 +159,22 @@ export const useIssueSearchScopeOptions = (
             render: () =>
               renderSpan(
                 t("issue.advanced-search.scope.approval.value.approved")
+              ),
+          },
+          {
+            value: Issue_ApprovalStatus[Issue_ApprovalStatus.REJECTED],
+            keywords: ["rejected"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.approval.value.rejected")
+              ),
+          },
+          {
+            value: Issue_ApprovalStatus[Issue_ApprovalStatus.SKIPPED],
+            keywords: ["skipped"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.approval.value.skipped")
               ),
           },
         ],

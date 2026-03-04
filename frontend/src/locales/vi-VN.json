@@ -1015,8 +1015,11 @@
         },
         "approval": {
           "value": {
+            "checking": "Đang kiểm tra",
             "pending": "Đang chờ phê duyệt",
-            "approved": "Đã phê duyệt"
+            "approved": "Đã phê duyệt",
+            "rejected": "Đã từ chối",
+            "skipped": "Đã bỏ qua"
           },
           "description": "Tìm kiếm theo trạng thái phê duyệt của vấn đề",
           "title": "Trạng thái phê duyệt"

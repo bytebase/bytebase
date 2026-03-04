@@ -1015,8 +1015,11 @@
         },
         "approval": {
           "value": {
+            "checking": "Checking",
             "pending": "Pending approval",
-            "approved": "Approved"
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "skipped": "Skipped"
           },
           "description": "Search by the issue approval status",
           "title": "Approval Status"
