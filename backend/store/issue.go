@@ -454,7 +454,7 @@ func getTSVector(text string) string {
 		if i != 0 {
 			_, _ = tsVector.WriteString(" ")
 		}
-		_, _ = tsVector.WriteString(fmt.Sprintf("%s:%d", part, i+1))
+		_, _ = fmt.Fprintf(&tsVector, "%s:%d", part, i+1)
 	}
 	return tsVector.String()
 }
@@ -474,7 +474,7 @@ func getTSQuery(text string) string {
 		if i != 0 {
 			_, _ = tsQuery.WriteString("|")
 		}
-		_, _ = tsQuery.WriteString(fmt.Sprintf("%s:*", part))
+		_, _ = fmt.Fprintf(&tsQuery, "%s:*", part)
 	}
 	return tsQuery.String()
 }

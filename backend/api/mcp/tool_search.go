@@ -119,10 +119,10 @@ func (s *Server) formatServiceList() string {
 
 	for _, svc := range services {
 		endpoints := s.openAPIIndex.GetServiceEndpoints(svc)
-		sb.WriteString(fmt.Sprintf("- **%s** (%d endpoints)\n", svc, len(endpoints)))
+		fmt.Fprintf(&sb, "- **%s** (%d endpoints)\n", svc, len(endpoints))
 	}
 
-	sb.WriteString(fmt.Sprintf("\nTotal: %d services\n", len(services)))
+	fmt.Fprintf(&sb, "\nTotal: %d services\n", len(services))
 	return sb.String()
 }
 
@@ -130,18 +130,18 @@ func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 	var sb strings.Builder
 
 	if limit > 0 && len(endpoints) > limit {
-		sb.WriteString(fmt.Sprintf("Showing %d of %d results:\n\n", limit, len(endpoints)))
+		fmt.Fprintf(&sb, "Showing %d of %d results:\n\n", limit, len(endpoints))
 		endpoints = endpoints[:limit]
 	} else {
-		sb.WriteString(fmt.Sprintf("Found %d endpoints:\n\n", len(endpoints)))
+		fmt.Fprintf(&sb, "Found %d endpoints:\n\n", len(endpoints))
 	}
 
 	for i, ep := range endpoints {
-		sb.WriteString(fmt.Sprintf("### %d. %s/%s\n", i+1, ep.Service, ep.Method))
-		sb.WriteString(fmt.Sprintf("%s\n", ep.Summary))
+		fmt.Fprintf(&sb, "### %d. %s/%s\n", i+1, ep.Service, ep.Method)
+		fmt.Fprintf(&sb, "%s\n", ep.Summary)
 
 		if len(ep.Permissions) > 0 {
-			sb.WriteString(fmt.Sprintf("Permissions: `%s`\n", strings.Join(ep.Permissions, "`, `")))
+			fmt.Fprintf(&sb, "Permissions: `%s`\n", strings.Join(ep.Permissions, "`, `"))
 		}
 		sb.WriteString("\n")
 	}
@@ -157,11 +157,11 @@ func (s *Server) formatEndpointDetail(operationID string) string {
 
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("## %s/%s\n\n", ep.Service, ep.Method))
-	sb.WriteString(fmt.Sprintf("%s\n\n", ep.Summary))
+	fmt.Fprintf(&sb, "## %s/%s\n\n", ep.Service, ep.Method)
+	fmt.Fprintf(&sb, "%s\n\n", ep.Summary)
 
 	if len(ep.Permissions) > 0 {
-		sb.WriteString(fmt.Sprintf("**Permissions:** `%s`\n\n", strings.Join(ep.Permissions, "`, `")))
+		fmt.Fprintf(&sb, "**Permissions:** `%s`\n\n", strings.Join(ep.Permissions, "`, `"))
 	}
 
 	// Request schema
@@ -205,7 +205,7 @@ func (s *Server) formatSchemaDetail(schemaName string) string {
 		displayName = "bytebase.v1." + schemaName
 	}
 
-	sb.WriteString(fmt.Sprintf("## %s\n\n", displayName))
+	fmt.Fprintf(&sb, "## %s\n\n", displayName)
 
 	// Check if it's an enum
 	if len(props) == 1 && props[0].Name == "enum" {

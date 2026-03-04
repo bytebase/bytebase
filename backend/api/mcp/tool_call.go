@@ -150,12 +150,12 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 func formatCallOutput(output CallOutput, endpoint *EndpointInfo) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("## %s\n\n", endpoint.OperationID))
+	fmt.Fprintf(&sb, "## %s\n\n", endpoint.OperationID)
 
 	if output.Error != "" {
-		sb.WriteString(fmt.Sprintf("**Error** (HTTP %d): %s\n\n", output.Status, output.Error))
+		fmt.Fprintf(&sb, "**Error** (HTTP %d): %s\n\n", output.Status, output.Error)
 	} else {
-		sb.WriteString(fmt.Sprintf("**Status:** %d OK\n\n", output.Status))
+		fmt.Fprintf(&sb, "**Status:** %d OK\n\n", output.Status)
 	}
 
 	if output.Response != nil {

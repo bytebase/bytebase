@@ -284,6 +284,7 @@ func extractSource(parsed map[string]any, result *RequestAnalysis) {
 				result.SourceFields = toStringSlice(arr)
 			}
 		}
+	default:
 	}
 }
 
@@ -350,6 +351,7 @@ func extractSortFields(parsed map[string]any) []string {
 					fields = append(fields, k)
 				}
 			}
+		default:
 		}
 	}
 	return fields
@@ -379,6 +381,7 @@ func containsKeyInValue(v any, key string) bool {
 				return true
 			}
 		}
+	default:
 	}
 	return false
 }
@@ -488,6 +491,7 @@ func extractCompoundClauseFields(clauseObj map[string]any, subQueryKeys []string
 			extractFieldsFromQuery(sq, fields)
 		case []any:
 			extractFieldsFromQueryArray(sq, fields)
+		default:
 		}
 	}
 }

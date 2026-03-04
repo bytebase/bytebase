@@ -226,17 +226,17 @@ func getMessageCard(context webhook.Context) *WebhookCard {
 	var markdownBuf strings.Builder
 
 	if context.Description != "" {
-		_, _ = markdownBuf.WriteString(fmt.Sprintf("%s\n", context.Description))
+		_, _ = fmt.Fprintf(&markdownBuf, "%s\n", context.Description)
 	}
 
 	for _, meta := range context.GetMetaList() {
-		_, _ = markdownBuf.WriteString(fmt.Sprintf("**%s**: %s\n", meta.Name, meta.Value))
+		_, _ = fmt.Fprintf(&markdownBuf, "**%s**: %s\n", meta.Name, meta.Value)
 	}
 
 	if context.ActorName != "" {
-		_, _ = markdownBuf.WriteString(fmt.Sprintf("**Actor**: %s (%s)\n", context.ActorName, context.ActorEmail))
+		_, _ = fmt.Fprintf(&markdownBuf, "**Actor**: %s (%s)\n", context.ActorName, context.ActorEmail)
 	}
-	_, _ = markdownBuf.WriteString(fmt.Sprintf("[View in Bytebase](%s)", context.Link))
+	_, _ = fmt.Fprintf(&markdownBuf, "[View in Bytebase](%s)", context.Link)
 
 	return &WebhookCard{
 		Config: WebhookCardConfig{

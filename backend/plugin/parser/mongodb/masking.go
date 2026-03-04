@@ -166,6 +166,7 @@ func extractCollectionName(access mongoparser.ICollectionAccessContext) string {
 		if sl := access.StringLiteral(); sl != nil {
 			return unquoteMongoString(sl.GetText())
 		}
+	default:
 	}
 	return ""
 }
@@ -323,6 +324,7 @@ func extractPairKey(keyCtx mongoparser.IKeyContext) string {
 		if sl := keyCtx.StringLiteral(); sl != nil {
 			return unquoteMongoString(sl.GetText())
 		}
+	default:
 	}
 	if keyCtx == nil {
 		return ""

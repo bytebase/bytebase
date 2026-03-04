@@ -705,7 +705,7 @@ func generateColumnDefinition(column *storepb.ColumnMetadata) string {
 		// Add IDENTITY if applicable
 		if column.IsIdentity {
 			_, _ = buf.WriteString(" IDENTITY(")
-			_, _ = buf.WriteString(fmt.Sprintf("%d,%d", column.IdentitySeed, column.IdentityIncrement))
+			_, _ = fmt.Fprintf(&buf, "%d,%d", column.IdentitySeed, column.IdentityIncrement)
 			_, _ = buf.WriteString(")")
 		}
 

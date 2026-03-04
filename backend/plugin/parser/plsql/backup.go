@@ -135,7 +135,7 @@ func generateSQLForTable(ctx base.TransformContext, statementInfoList []statemen
 	}
 
 	var buf strings.Builder
-	if _, err := buf.WriteString(fmt.Sprintf(`CREATE TABLE "%s"."%s" AS`+"\n", targetDatabase, targetTable)); err != nil {
+	if _, err := fmt.Fprintf(&buf, `CREATE TABLE "%s"."%s" AS`+"\n", targetDatabase, targetTable); err != nil {
 		return nil, errors.Wrap(err, "failed to write to buffer")
 	}
 	for i, info := range statementInfoList {
@@ -146,16 +146,16 @@ func generateSQLForTable(ctx base.TransformContext, statementInfoList []statemen
 		}
 		t := info.table
 		if t.Alias != "" {
-			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s".* FROM `, t.Alias)); err != nil {
+			if _, err := fmt.Fprintf(&buf, `  SELECT "%s".* FROM `, t.Alias); err != nil {
 				return nil, errors.Wrap(err, "failed to write to buffer")
 			}
 		} else {
 			if t.HasSchema {
-				if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s"."%s".* FROM `, t.Schema, t.Table)); err != nil {
+				if _, err := fmt.Fprintf(&buf, `  SELECT "%s"."%s".* FROM `, t.Schema, t.Table); err != nil {
 					return nil, errors.Wrap(err, "failed to write to buffer")
 				}
 			} else {
-				if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s".* FROM `, t.Table)); err != nil {
+				if _, err := fmt.Fprintf(&buf, `  SELECT "%s".* FROM `, t.Table); err != nil {
 					return nil, errors.Wrap(err, "failed to write to buffer")
 				}
 			}

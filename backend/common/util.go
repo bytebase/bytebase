@@ -211,7 +211,7 @@ func SanitizeUTF8String(s string) string {
 		_, wid := utf8.DecodeRuneInString(s[i:])
 		if wid == 1 {
 			i++
-			_, _ = b.WriteString(fmt.Sprintf("\\x%02x", c))
+			_, _ = fmt.Fprintf(&b, "\\x%02x", c)
 			continue
 		}
 		_, _ = b.WriteString(s[i : i+wid])

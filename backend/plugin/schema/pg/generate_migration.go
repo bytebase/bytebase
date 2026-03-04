@@ -1401,7 +1401,7 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 				if indexAST, ok := indexDiff.NewASTNode.(*pgparser.IndexstmtContext); ok {
 					if err := writeCreateIndexFromAST(&buf, indexAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
-						_, _ = buf.WriteString(fmt.Sprintf("-- Error creating index: %v\n", err))
+						_, _ = fmt.Fprintf(&buf, "-- Error creating index: %v\n", err)
 					}
 				}
 			}
@@ -1419,7 +1419,7 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 				if constraintAST, ok := checkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
 					if err := writeAddCheckConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
-						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding check constraint: %v\n", err))
+						_, _ = fmt.Fprintf(&buf, "-- Error adding check constraint: %v\n", err)
 					}
 				}
 			}
@@ -1437,7 +1437,7 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 				if constraintAST, ok := excludeDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
 					if err := writeAddExcludeConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
-						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding EXCLUDE constraint: %v\n", err))
+						_, _ = fmt.Fprintf(&buf, "-- Error adding EXCLUDE constraint: %v\n", err)
 					}
 				}
 			}
@@ -1455,7 +1455,7 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 				if constraintAST, ok := uniqueDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
 					if err := writeAddUniqueConstraintFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
-						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding unique constraint: %v\n", err))
+						_, _ = fmt.Fprintf(&buf, "-- Error adding unique constraint: %v\n", err)
 					}
 				}
 			}
@@ -1473,7 +1473,7 @@ func generateAlterTableWithOptions(tableDiff *schema.TableDiff, includeColumnAdd
 				if constraintAST, ok := pkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
 					if err := writeAddPrimaryKeyFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
-						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding primary key constraint: %v\n", err))
+						_, _ = fmt.Fprintf(&buf, "-- Error adding primary key constraint: %v\n", err)
 					}
 				}
 			}
@@ -1499,7 +1499,7 @@ func generateAlterTableForeignKeys(tableDiff *schema.TableDiff) (string, error) 
 				if constraintAST, ok := fkDiff.NewASTNode.(pgparser.ITableconstraintContext); ok {
 					if err := writeAddForeignKeyFromAST(&buf, tableDiff.SchemaName, tableDiff.TableName, constraintAST); err != nil {
 						// If AST extraction fails, log error but continue (non-fatal)
-						_, _ = buf.WriteString(fmt.Sprintf("-- Error adding foreign key constraint: %v\n", err))
+						_, _ = fmt.Fprintf(&buf, "-- Error adding foreign key constraint: %v\n", err)
 					}
 				}
 			}
