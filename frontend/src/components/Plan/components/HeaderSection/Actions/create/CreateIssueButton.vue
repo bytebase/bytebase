@@ -1,7 +1,7 @@
 <template>
   <NPopover
     trigger="click"
-    placement="bottom"
+    placement="bottom-end"
     :show="showPopover"
     @update:show="showPopover = $event"
   >
@@ -25,7 +25,10 @@
     </template>
 
     <template #default>
-      <div class="w-72 flex flex-col gap-y-3 p-1">
+      <div class="w-80 flex flex-col gap-y-3 p-1">
+        <NAlert v-if="showChecksWarning" type="warning">
+          {{ $t("issue.checks-warning-hint") }}
+        </NAlert>
         <div class="flex flex-col gap-y-1">
           <div class="font-medium text-control flex items-center gap-x-1">
             {{ $t("issue.labels") }}
@@ -39,7 +42,19 @@
             @update:selected="selectedLabels = $event"
           />
         </div>
-        <div class="flex justify-end gap-x-2">
+        <div class="flex items-center gap-x-2">
+          <NCheckbox
+            v-if="showChecksWarning"
+            v-model:checked="checksWarningAcknowledged"
+            size="small"
+          >
+            {{
+              $t("issue.action-anyway", {
+                action: $t("common.confirm"),
+              })
+            }}
+          </NCheckbox>
+          <div class="grow" />
           <NButton size="small" quaternary @click="showPopover = false">
             {{ $t("common.cancel") }}
           </NButton>
@@ -67,7 +82,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
-import { NButton, NPopover, NTooltip } from "naive-ui";
+import { NAlert, NButton, NCheckbox, NPopover, NTooltip } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -119,10 +134,13 @@ const {
   hasRunning: hasRunningPlanChecks,
 } = usePlanCheckStatus(plan);
 
-// Reset labels when popover opens
+const checksWarningAcknowledged = ref(false);
+
+// Reset state when popover opens
 watch(showPopover, (show) => {
   if (show) {
     selectedLabels.value = [];
+    checksWarningAcknowledged.value = false;
   }
 });
 
@@ -161,12 +179,30 @@ const errors = computed(() => {
   return list;
 });
 
+// Show warning when checks have errors for database change plans.
+// Backend always skips auto-rollout creation when checks have errors.
+// Only relevant for change-database plans (auto-rollout doesn't apply to exports).
+// When enforceSqlReview is on, the button is already disabled so this won't be visible.
+const showChecksWarning = computed(() => {
+  return (
+    planCheckSummaryStatus.value === Advice_Level.ERROR &&
+    plan.value.specs.length > 0 &&
+    plan.value.specs.every(
+      (spec) => spec.config?.case === "changeDatabaseConfig"
+    )
+  );
+});
+
 // Errors that disable the confirm button in popover
 const confirmErrors = computed(() => {
   const list: string[] = [];
 
   if (project.value.forceIssueLabels && selectedLabels.value.length === 0) {
     list.push(t("plan.labels-required-for-review"));
+  }
+
+  if (showChecksWarning.value && !checksWarningAcknowledged.value) {
+    list.push(t("issue.checks-warning-hint"));
   }
 
   return list;

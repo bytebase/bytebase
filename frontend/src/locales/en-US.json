@@ -1081,6 +1081,7 @@
     },
     "force-rollout-hint": "Proceed with manual rollout to override failed checks.",
     "checks-block-rollout-hint": "Failed checks are preventing rollout creation. Fix the errors to proceed.",
+    "checks-warning-hint": "This plan has failed checks. A manual rollout will be required upon approval.",
     "risk-level": {
       "self": "Risk level",
       "low": "Low",

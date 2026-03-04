@@ -56,8 +56,12 @@ const { refreshResources } = useResourcePoller();
 const { hasErrors: checksHaveErrors, hasRunning: checksRunning } =
   usePlanCheckStatus(plan);
 
-const isDatabaseChangePlan = computed(() =>
-  plan.value.specs.some((spec) => spec.config?.case === "changeDatabaseConfig")
+const isDatabaseChangePlan = computed(
+  () =>
+    plan.value.specs.length > 0 &&
+    plan.value.specs.every(
+      (spec) => spec.config?.case === "changeDatabaseConfig"
+    )
 );
 
 const isApproved = computed(() => {
