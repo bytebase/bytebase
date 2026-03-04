@@ -113,7 +113,7 @@ export const useIssueSearchScopeOptions = (
         id: "status",
         allowMultiple: true,
         title: t("common.status"),
-        description: t("issue.advanced-search.scope.approval.description"),
+        description: t("issue.advanced-search.scope.status.description"),
         options: [
           {
             value: IssueStatus[IssueStatus.OPEN],

@@ -1010,6 +1010,9 @@
           "title": "aprobador actual",
           "description": "Buscar por el aprobador actual del problema"
         },
+        "status": {
+          "description": "Buscar por el estado del issue"
+        },
         "approval": {
           "value": {
             "pending": "Aprobación pendiente",

@@ -1010,6 +1010,9 @@
           "title": "現在の承認者",
           "description": "イシューの現在の承認者による検索"
         },
+        "status": {
+          "description": "イシューのステータスで検索"
+        },
         "approval": {
           "value": {
             "pending": "保留中",

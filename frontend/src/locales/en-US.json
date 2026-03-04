@@ -1010,6 +1010,9 @@
           "title": "Current approver",
           "description": "Search by the issue current approver"
         },
+        "status": {
+          "description": "Search by the issue status"
+        },
         "approval": {
           "value": {
             "pending": "Pending approval",

@@ -1010,6 +1010,9 @@
           "title": "当前审批人",
           "description": "按工单的当前审批人搜索"
         },
+        "status": {
+          "description": "按工单状态搜索"
+        },
         "approval": {
           "value": {
             "pending": "待审批",
