@@ -56,11 +56,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         hide: isDefaultProject.value,
         children: [
           {
-            title: t("gitops.self"),
-            path: PROJECT_V1_ROUTE_GITOPS,
-            type: "div",
-          },
-          {
             title: t("plan.plans"),
             path: PROJECT_V1_ROUTE_PLANS,
             type: "div",
@@ -73,6 +68,11 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
           {
             title: t("release.releases"),
             path: PROJECT_V1_ROUTE_RELEASES,
+            type: "div",
+          },
+          {
+            title: t("gitops.self"),
+            path: PROJECT_V1_ROUTE_GITOPS,
             type: "div",
           },
         ],
