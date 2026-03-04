@@ -1072,6 +1072,8 @@
     "approval-flow": {
       "self": "Quy trình phê duyệt"
     },
+    "force-rollout-hint": "Tiến hành triển khai thủ công để bỏ qua các kiểm tra thất bại.",
+    "checks-block-rollout-hint": "Kiểm tra thất bại đang ngăn việc tạo triển khai. Hãy sửa lỗi để tiếp tục.",
     "risk-level": {
       "self": "Mức độ rủi ro",
       "low": "Thấp",
@@ -2814,6 +2816,39 @@
     },
     "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
     "filter-by-category": "Lọc theo danh mục"
+  },
+  "gitops": {
+    "self": "GitOps",
+    "overview": {
+      "description": "Bytebase GitOps cho phép bạn quản lý Database as Code bằng cách tích hợp các thay đổi schema cơ sở dữ liệu vào pipeline CI/CD.",
+      "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout."
+    },
+    "checklist": {
+      "title": "Danh sách kiểm tra",
+      "external-url": "URL bên ngoài",
+      "external-url-missing": "URL bên ngoài chưa được cấu hình.",
+      "configure": "Cấu hình",
+      "workload-identity": "Workload Identity",
+      "target-databases": "Cơ sở dữ liệu đích"
+    },
+    "workload-identity": {
+      "select-placeholder": "Chọn một workload identity",
+      "no-identity": "Không tìm thấy workload identity. Tạo một cái để bắt đầu."
+    },
+    "workflow": {
+      "title": "Tệp workflow",
+      "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
+      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn"
+    },
+    "test-setup": {
+      "title": "Kiểm tra cấu hình",
+      "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
+      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
+      "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
+      "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
+      "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi."
+    },
+    "documentation": "Xem tài liệu"
   },
   "export-data": {
     "export-rows": "Xuất số dòng",

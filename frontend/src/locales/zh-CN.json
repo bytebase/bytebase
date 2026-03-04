@@ -1079,6 +1079,8 @@
     "approval-flow": {
       "self": "审批流"
     },
+    "force-rollout-hint": "手动创建发布以跳过失败的 SQL 检查。",
+    "checks-block-rollout-hint": "SQL 检查失败导致无法创建发布。请修复错误后再继续。",
     "risk-level": {
       "self": "风险等级",
       "low": "低风险",
@@ -2821,6 +2823,39 @@
     },
     "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
     "filter-by-category": "按类别过滤"
+  },
+  "gitops": {
+    "self": "GitOps",
+    "overview": {
+      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
+      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。"
+    },
+    "checklist": {
+      "title": "检查清单",
+      "external-url": "外部访问地址",
+      "external-url-missing": "尚未配置外部访问地址。",
+      "configure": "去配置",
+      "workload-identity": "工作负载身份",
+      "target-databases": "目标数据库"
+    },
+    "workload-identity": {
+      "select-placeholder": "选择工作负载身份",
+      "no-identity": "未找到工作负载身份，请创建一个以开始使用。"
+    },
+    "workflow": {
+      "title": "工作流文件",
+      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
+      "file-hint": "保存为仓库中的 {filePath}"
+    },
+    "test-setup": {
+      "title": "测试您的配置",
+      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
+      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
+      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
+      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
+      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。"
+    },
+    "documentation": "查看文档"
   },
   "export-data": {
     "export-rows": "导出行数",

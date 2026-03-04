@@ -1072,6 +1072,8 @@
     "approval-flow": {
       "self": "承認の流れ"
     },
+    "force-rollout-hint": "手動でロールアウトを作成して、失敗したチェックをオーバーライドしてください。",
+    "checks-block-rollout-hint": "チェックの失敗によりロールアウトを作成できません。エラーを修正してから続行してください。",
     "risk-level": {
       "self": "リスクレベル",
       "low": "低い",
@@ -2814,6 +2816,39 @@
     },
     "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
     "filter-by-category": "カテゴリでフィルタリング"
+  },
+  "gitops": {
+    "self": "GitOps",
+    "overview": {
+      "description": "Bytebase GitOps は、データベーススキーマの変更を CI/CD パイプラインに統合し、Database as Code として管理できます。",
+      "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。"
+    },
+    "checklist": {
+      "title": "チェックリスト",
+      "external-url": "外部URL",
+      "external-url-missing": "外部URLが設定されていません。",
+      "configure": "設定",
+      "workload-identity": "ワークロードアイデンティティ",
+      "target-databases": "ターゲットデータベース"
+    },
+    "workload-identity": {
+      "select-placeholder": "ワークロードアイデンティティを選択",
+      "no-identity": "ワークロードアイデンティティが見つかりません。作成して始めましょう。"
+    },
+    "workflow": {
+      "title": "ワークフローファイル",
+      "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
+      "file-hint": "リポジトリ内に {filePath} として保存"
+    },
+    "test-setup": {
+      "title": "セットアップのテスト",
+      "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
+      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{branch} へのプルリクエストを作成します。",
+      "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",
+      "step-merge": "レビューが通過したら PR をマージします。Bytebase が自動的にロールアウトを作成し、ターゲット環境にデプロイします。",
+      "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。"
+    },
+    "documentation": "ドキュメントを見る"
   },
   "export-data": {
     "export-rows": "エクスポート行数",

@@ -16,6 +16,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
+  PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
   PROJECT_V1_ROUTE_MEMBERS,
@@ -54,6 +55,11 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         expand: true,
         hide: isDefaultProject.value,
         children: [
+          {
+            title: t("gitops.self"),
+            path: PROJECT_V1_ROUTE_GITOPS,
+            type: "div",
+          },
           {
             title: t("plan.plans"),
             path: PROJECT_V1_ROUTE_PLANS,

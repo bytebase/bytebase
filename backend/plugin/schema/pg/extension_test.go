@@ -590,6 +590,126 @@ func TestExtensionNotFilteredByArchiveSchemaFilter(t *testing.T) {
 	require.Equal(t, "test_table", filtered.TableChanges[0].TableName)
 }
 
+// TestExtensionSchemaSyncBug reproduces the customer-reported bug where Schema Sync:
+// 1. Incorrectly generates DROP EXTENSION even though the extension is identical in source and target
+// 2. Generates CREATE SCHEMA for a phantom schema named after the extension
+//
+// Root causes:
+// - Bug 1: EnterCreateextensionstmt doesn't parse VERSION from SQL → compareExtensions sees false mismatch
+// - Bug 2: EnterCommentstmt treats COMMENT ON EXTENSION as COMMENT ON SCHEMA → creates phantom schema
+func TestExtensionSchemaSyncBug(t *testing.T) {
+	t.Run("Bug1_version_not_parsed_from_SQL", func(t *testing.T) {
+		// The raw schema dump (produced by writeExtension) includes VERSION.
+		// GetDatabaseMetadata must parse it back correctly.
+		sql := `CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "tecbatch" VERSION '1.6';`
+
+		metadata, err := GetDatabaseMetadata(sql)
+		require.NoError(t, err)
+		require.NotNil(t, metadata)
+		require.Len(t, metadata.Extensions, 1, "Should have exactly 1 extension")
+
+		ext := metadata.Extensions[0]
+		require.Equal(t, "pg_trgm", ext.Name)
+		require.Equal(t, "tecbatch", ext.Schema)
+		require.Equal(t, "1.6", ext.Version, "BUG: VERSION not parsed from CREATE EXTENSION statement")
+	})
+
+	t.Run("Bug2_comment_on_extension_creates_phantom_schema", func(t *testing.T) {
+		// COMMENT ON EXTENSION should NOT create a schema entry.
+		sql := `CREATE SCHEMA IF NOT EXISTS "tecbatch";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "tecbatch" VERSION '1.6';
+COMMENT ON EXTENSION "pg_trgm" IS 'text similarity measurement and index searching based on trigrams';`
+
+		metadata, err := GetDatabaseMetadata(sql)
+		require.NoError(t, err)
+		require.NotNil(t, metadata)
+
+		// Should only have "public" (always created) and "tecbatch" schemas.
+		// Must NOT have a "pg_trgm" schema.
+		for _, s := range metadata.Schemas {
+			require.NotEqual(t, "pg_trgm", s.Name,
+				"BUG: COMMENT ON EXTENSION created a phantom schema named after the extension")
+		}
+
+		// Extension description should be populated (not lost).
+		require.Len(t, metadata.Extensions, 1)
+		require.Equal(t, "text similarity measurement and index searching based on trigrams",
+			metadata.Extensions[0].Description,
+			"BUG: COMMENT ON EXTENSION description not stored in extension metadata")
+	})
+
+	t.Run("Full_pipeline_no_false_diff", func(t *testing.T) {
+		// Simulate the exact Schema Sync flow:
+		// "old" = target DB metadata from live DB sync (has version + description)
+		// "new" = source DB metadata parsed from raw schema dump
+
+		// --- "old" metadata: target DB (from getExtensions live query) ---
+		oldMetadata := &storepb.DatabaseSchemaMetadata{
+			Extensions: []*storepb.ExtensionMetadata{
+				{
+					Name:        "pg_trgm",
+					Schema:      "tecbatch",
+					Version:     "1.6",
+					Description: "text similarity measurement and index searching based on trigrams",
+				},
+			},
+			Schemas: []*storepb.SchemaMetadata{
+				{Name: "public"},
+				{Name: "tecbatch"},
+			},
+		}
+
+		// --- "new" SQL: source DB schema dump (from writeExtension) ---
+		sourceSQL := `CREATE SCHEMA IF NOT EXISTS "tecbatch";
+
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "tecbatch" VERSION '1.6';
+
+COMMENT ON EXTENSION "pg_trgm" IS 'text similarity measurement and index searching based on trigrams';
+
+CREATE OR REPLACE FUNCTION "tecbatch"."contains_one_of"(str character varying, match_strs character varying[], match_case boolean)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+DECLARE
+  result boolean := false;
+BEGIN
+  RETURN result;
+END;
+$function$;`
+
+		// Parse source SQL (this is the buggy path)
+		newMetadata, err := GetDatabaseMetadata(sourceSQL)
+		require.NoError(t, err)
+
+		// Build model objects for differ
+		oldModel := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+		newModel := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+
+		// Run differ
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_POSTGRES, oldModel, newModel)
+		require.NoError(t, err)
+
+		// Generate migration DDL
+		migration, err := generateMigration(diff)
+		require.NoError(t, err)
+
+		// The source and target have identical extensions → migration should be empty
+		// (or at most contain the function CREATE which is expected).
+		require.NotContains(t, migration, "DROP EXTENSION",
+			"BUG: Schema Sync incorrectly drops pg_trgm extension that exists in both databases")
+		require.NotContains(t, migration, `CREATE SCHEMA IF NOT EXISTS "pg_trgm"`,
+			"BUG: Schema Sync creates phantom pg_trgm schema from COMMENT ON EXTENSION")
+		require.NotContains(t, migration, "CREATE EXTENSION",
+			"BUG: Schema Sync recreates pg_trgm extension even though it's identical")
+
+		// Log the migration for debugging if any assertions above fail
+		if t.Failed() {
+			t.Logf("Generated migration (should be empty or function-only):\n%s", migration)
+		}
+	})
+}
+
 // TestExtensionRoundtripNoDiff tests that dumping SDL from database doesn't create false diffs
 // This reproduces the issue where:
 // 1. User creates extension with format A (e.g., manual SQL)

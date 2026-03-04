@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 290" fill="none">
+  <style>
+    .phase { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; }
+    .title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; }
+    .desc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; fill: #6B7280; }
+    .badge { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
+    .trans { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 9px; font-weight: 600; }
+    .db-label { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 500; fill: #374151; }
+    .connector { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 9px; fill: #9CA3AF; }
+  </style>
+
+  <!-- Reusable logos -->
+  <defs>
+    <!-- GitHub logo (viewBox 0 0 26 26, scaled to fit 16x16) -->
+    <symbol id="github" viewBox="0 0 26 26">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M13 0.324219C5.85 0.324219 0 6.17422 0 13.3242C0 19.093 3.7375 23.968 8.85625 25.6742C9.50625 25.7555 9.75 25.4305 9.75 25.0242C9.75 24.6992 9.75 23.8867 9.75 22.8305C6.09375 23.643 5.3625 21.1242 5.3625 21.1242C4.79375 19.6617 3.9 19.2555 3.9 19.2555C2.68125 18.443 3.98125 18.443 3.98125 18.443C5.28125 18.5242 6.0125 19.743 6.0125 19.743C7.15 21.693 9.01875 21.1242 9.83125 20.7992C9.9125 19.9867 10.3188 19.418 10.6438 19.093C7.71875 18.768 4.7125 17.6305 4.7125 12.6742C4.7125 11.293 5.2 10.0742 6.0125 9.18047C5.85 8.85547 5.44375 7.55547 6.175 5.76797C6.175 5.76797 7.23125 5.44297 9.75 7.06797C10.8062 6.74297 11.8625 6.66172 13 6.66172C14.1375 6.66172 15.1938 6.82422 16.25 7.06797C18.7687 5.36172 19.825 5.68672 19.825 5.68672C20.5562 7.47422 20.0688 8.77422 19.9875 9.09922C20.8 9.99297 21.2875 11.1305 21.2875 12.593C21.2875 17.5492 18.2812 18.6867 15.3562 19.0117C15.8438 19.418 16.25 20.2305 16.25 21.4492C16.25 23.1555 16.25 24.618 16.25 25.0242C16.25 25.3492 16.4937 25.7555 17.1438 25.6742C22.2625 23.968 26 19.093 26 13.3242C26 6.17422 20.15 0.324219 13 0.324219Z" fill="currentColor"/>
+    </symbol>
+    <!-- Bytebase logo (viewBox 0 0 160 160, scaled to fit) -->
+    <symbol id="bytebase" viewBox="0 0 160 160">
+      <path d="M46.1905 152.505C29.9046 144.91 16.6497 132.054 8.56169 116.008C0.473633 99.9615 -1.97652 81.6593 1.60602 64.0506C5.18857 46.4418 14.5952 30.5519 28.3101 18.9414C42.025 7.33087 59.2495 0.675864 77.208 0.0487342C95.1666 -0.578395 112.813 4.85888 127.305 15.4844C141.796 26.11 152.288 41.3049 157.09 58.6209C161.893 75.9369 160.725 94.3654 153.776 110.937C146.827 127.508 134.501 141.258 118.785 149.97L80 80L46.1905 152.505Z" fill="#111827"/>
+      <path d="M118.708 150.012C107.686 156.106 95.3806 159.511 82.7937 159.951C70.2068 160.391 57.694 157.853 46.2734 152.543L80 80L118.708 150.012Z" fill="white"/>
+      <path d="M35 47.0375L125.88 47.0375L125.88 85.4375C125.88 95.4215 123.533 102.931 118.84 107.965C114.232 113.086 108.259 115.646 100.92 115.646C96.2267 115.646 92.1307 114.494 88.632 112.19C85.2187 109.971 82.616 106.899 80.824 102.974C79.2027 107.24 76.6427 110.611 73.144 113.086C69.6453 115.646 65.5067 116.926 60.728 116.926C52.7067 116.926 46.392 114.366 41.784 109.246C37.2613 104.126 35 96.7442 35 87.1015L35 47.0375ZM109.112 65.2135L89.4 65.2135V85.3095C89.4 88.9788 90.2107 91.7948 91.832 93.7575C93.5387 95.8055 96.0133 96.8295 99.256 96.8295C102.157 96.8295 104.504 95.8482 106.296 93.8855C108.173 92.0082 109.112 89.1495 109.112 85.3095L109.112 65.2135ZM72.504 65.2135H51.768V86.5895C51.768 90.4295 52.664 93.2882 54.456 95.1655C56.248 97.1282 58.808 98.1095 62.136 98.1095C65.2933 98.1095 67.8107 97.1282 69.688 95.1655C71.5653 93.2882 72.504 90.4295 72.504 86.5895V65.2135Z" fill="white"/>
+    </symbol>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1020" height="290" rx="12" fill="#FAFAFA" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- COL 1: DEVELOP (18–178)        -->
+  <!-- ═══════════════════════════════ -->
+
+  <text x="98" y="28" text-anchor="middle" class="phase" fill="#374151">DEVELOP</text>
+
+  <g transform="translate(18, 42)">
+    <rect x="0" y="0" width="160" height="68" rx="8" fill="white" stroke="#E5E7EB" stroke-width="1.5"/>
+    <!-- GitHub icon -->
+    <g transform="translate(12, 12)">
+      <use href="#github" width="16" height="16" color="#24292f"/>
+    </g>
+    <text x="36" y="24" class="badge" fill="#24292f">GITHUB</text>
+    <text x="10" y="44" class="title" fill="#111827">Write SQL files</text>
+    <text x="10" y="60" class="desc">migration or schema</text>
+  </g>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- TRANSITION 1 (178–296)         -->
+  <!-- ═══════════════════════════════ -->
+
+  <line x1="178" y1="76" x2="294" y2="76" stroke="#D1D5DB" stroke-width="1.5"/>
+  <polygon points="290,71 300,76 290,81" fill="#D1D5DB"/>
+  <rect x="200" y="82" width="72" height="18" rx="9" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+  <text x="236" y="94" text-anchor="middle" class="trans" fill="#4F46E5">PR created</text>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- COL 2: CI (302–572)            -->
+  <!-- ═══════════════════════════════ -->
+
+  <text x="437" y="28" text-anchor="middle" class="phase" fill="#4F46E5">CI</text>
+
+  <rect x="302" y="38" width="270" height="160" rx="10" fill="white" stroke="#C7D2FE" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+  <!-- GitHub row: Create PR -->
+  <g transform="translate(316, 52)">
+    <rect x="0" y="0" width="242" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <g transform="translate(12, 14)">
+      <use href="#github" width="16" height="16" color="#24292f"/>
+    </g>
+    <text x="36" y="24" class="title" fill="#111827" font-size="12">Create Pull Request</text>
+    <text x="36" y="39" class="desc">Open PR with SQL changes</text>
+  </g>
+
+  <!-- Arrow down: triggers -->
+  <line x1="437" y1="100" x2="437" y2="130" stroke="#D1D5DB" stroke-width="1.5"/>
+  <polygon points="432,127 437,136 442,127" fill="#D1D5DB"/>
+  <text x="457" y="120" class="connector">triggers</text>
+
+  <!-- Bytebase row: SQL Review -->
+  <g transform="translate(316, 138)">
+    <rect x="0" y="0" width="242" height="48" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+    <g transform="translate(10, 10)">
+      <use href="#bytebase" width="22" height="22"/>
+    </g>
+    <text x="40" y="24" class="title" fill="#312E81" font-size="12">SQL Review</text>
+    <text x="40" y="39" class="desc" fill="#4338CA">Check syntax, lint, enforce policy</text>
+  </g>
+
+  <!-- Arrow up-left from Bytebase back to GitHub: post review -->
+  <path d="M316 162 L286 162 L286 88 L316 88" stroke="#D1D5DB" stroke-width="1.5" fill="none" stroke-dasharray="4 2"/>
+  <polygon points="313,83 323,88 313,93" fill="#D1D5DB"/>
+  <text x="284" y="132" text-anchor="end" class="connector" font-size="8">post</text>
+  <text x="284" y="142" text-anchor="end" class="connector" font-size="8">review</text>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- TRANSITION 2 (572–708)         -->
+  <!-- ═══════════════════════════════ -->
+
+  <line x1="572" y1="76" x2="706" y2="76" stroke="#D1D5DB" stroke-width="1.5"/>
+  <polygon points="702,71 712,76 702,81" fill="#D1D5DB"/>
+  <rect x="601" y="82" width="72" height="18" rx="9" fill="#DCFCE7" stroke="#86EFAC" stroke-width="1"/>
+  <text x="637" y="94" text-anchor="middle" class="trans" fill="#166534">PR merged</text>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- COL 3: CD (714–1002)           -->
+  <!-- ═══════════════════════════════ -->
+
+  <text x="858" y="28" text-anchor="middle" class="phase" fill="#059669">CD</text>
+
+  <rect x="714" y="38" width="288" height="242" rx="10" fill="white" stroke="#A7F3D0" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+  <!-- GitHub row: Merge to branch -->
+  <g transform="translate(728, 52)">
+    <rect x="0" y="0" width="260" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <g transform="translate(12, 14)">
+      <use href="#github" width="16" height="16" color="#24292f"/>
+    </g>
+    <text x="36" y="24" class="title" fill="#111827" font-size="12">Merge to branch</text>
+    <text x="36" y="39" class="desc">Webhook notifies Bytebase</text>
+  </g>
+
+  <!-- Arrow down: triggers -->
+  <line x1="858" y1="100" x2="858" y2="130" stroke="#D1D5DB" stroke-width="1.5"/>
+  <polygon points="853,127 858,136 863,127" fill="#D1D5DB"/>
+  <text x="878" y="120" class="connector">triggers</text>
+
+  <!-- Bytebase row: Create Rollout -->
+  <g transform="translate(728, 138)">
+    <rect x="0" y="0" width="260" height="48" rx="8" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+    <g transform="translate(10, 10)">
+      <use href="#bytebase" width="22" height="22"/>
+    </g>
+    <text x="40" y="24" class="title" fill="#312E81" font-size="12">Create Rollout</text>
+    <text x="40" y="39" class="desc" fill="#4338CA">Plan and stage changes</text>
+  </g>
+
+  <!-- Arrow down: apply -->
+  <line x1="858" y1="186" x2="858" y2="216" stroke="#D1D5DB" stroke-width="1.5"/>
+  <polygon points="853,213 858,222 863,213" fill="#D1D5DB"/>
+  <text x="878" y="208" class="connector">apply</text>
+
+  <!-- Databases section -->
+  <g transform="translate(728, 224)">
+    <rect x="0" y="0" width="260" height="46" rx="8" fill="#F9FAFB" stroke="#D1D5DB" stroke-width="1"/>
+
+    <!-- Test DB -->
+    <g transform="translate(20, 8)">
+      <rect x="0" y="0" width="100" height="30" rx="6" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+      <path d="M14,11 C14,8.5 18,6 24,6 C30,6 34,8.5 34,11" stroke="#9CA3AF" stroke-width="0.8" fill="#E5E7EB"/>
+      <path d="M14,11 L14,20 C14,22.5 18,25 24,25 C30,25 34,22.5 34,20 L34,11" stroke="#9CA3AF" stroke-width="0.8" fill="#F3F4F6"/>
+      <path d="M14,11 C14,13.5 18,16 24,16 C30,16 34,13.5 34,11" stroke="#9CA3AF" stroke-width="0.8" fill="none"/>
+      <text x="44" y="19" class="db-label">Test</text>
+    </g>
+
+    <!-- Prod DB -->
+    <g transform="translate(140, 8)">
+      <rect x="0" y="0" width="100" height="30" rx="6" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+      <path d="M14,11 C14,8.5 18,6 24,6 C30,6 34,8.5 34,11" stroke="#9CA3AF" stroke-width="0.8" fill="#E5E7EB"/>
+      <path d="M14,11 L14,20 C14,22.5 18,25 24,25 C30,25 34,22.5 34,20 L34,11" stroke="#9CA3AF" stroke-width="0.8" fill="#F3F4F6"/>
+      <path d="M14,11 C14,13.5 18,16 24,16 C30,16 34,13.5 34,11" stroke="#9CA3AF" stroke-width="0.8" fill="none"/>
+      <text x="44" y="19" class="db-label">Prod</text>
+    </g>
+  </g>
+</svg>
