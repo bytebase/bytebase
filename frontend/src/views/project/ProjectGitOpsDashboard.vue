@@ -318,7 +318,7 @@
     <!-- Documentation link -->
     <div>
       <a
-        href="https://www.bytebase.com/docs/vcs-integration/overview/"
+        href="https://docs.bytebase.com/vcs-integration/overview?source=console"
         target="_blank"
         class="text-accent hover:underline"
       >
@@ -349,15 +349,9 @@ import {
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
-import {
-  CopyButton,
-  DatabaseSelect,
-} from "@/components/v2";
+import { CopyButton, DatabaseSelect } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  useActuatorV1Store,
-  useProjectByName,
-} from "@/store";
+import { useActuatorV1Store, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useWorkloadIdentityStore } from "@/store/modules/workloadIdentity";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
