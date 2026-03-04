@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "Sắp xếp",
+      "created": "Thời gian tạo",
+      "updated": "Thời gian cập nhật",
+      "ascending": "Tăng dần",
+      "descending": "Giảm dần"
+    },
     "table": {
       "open": "Mở",
       "closed": "Đã đóng",

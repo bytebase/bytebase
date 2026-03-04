@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "並べ替え",
+      "created": "作成日時",
+      "updated": "更新日時",
+      "ascending": "昇順",
+      "descending": "降順"
+    },
     "table": {
       "open": "オープン",
       "closed": "クローズ　",

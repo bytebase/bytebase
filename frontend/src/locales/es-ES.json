@@ -1035,6 +1035,13 @@
         }
       }
     },
+    "sort": {
+      "sort": "Ordenar",
+      "created": "Fecha de creación",
+      "updated": "Fecha de actualización",
+      "ascending": "Ascendente",
+      "descending": "Descendente"
+    },
     "table": {
       "open": "Abierto",
       "closed": "Cerrado",
