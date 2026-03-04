@@ -1085,7 +1085,8 @@
       "self": "リスクレベル",
       "low": "低い",
       "moderate": "適度",
-      "high": "高い"
+      "high": "高い",
+      "filter": "リスクレベルでフィルタリング"
     },
     "issue-name": "イシュー名",
     "access-grant": {

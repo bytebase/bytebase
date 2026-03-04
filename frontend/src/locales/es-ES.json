@@ -1085,7 +1085,8 @@
       "self": "Nivel de riesgo",
       "low": "Bajo",
       "moderate": "Moderado",
-      "high": "Alto"
+      "high": "Alto",
+      "filter": "Filtrar por nivel de riesgo"
     },
     "issue-name": "Nombre de la incidencia",
     "access-grant": {

@@ -1085,7 +1085,8 @@
       "self": "Mức độ rủi ro",
       "low": "Thấp",
       "moderate": "Trung bình",
-      "high": "Cao"
+      "high": "Cao",
+      "filter": "Lọc theo mức độ rủi ro"
     },
     "issue-name": "Tên vấn đề",
     "access-grant": {
