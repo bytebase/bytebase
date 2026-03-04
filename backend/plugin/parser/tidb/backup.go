@@ -108,11 +108,11 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
+	if _, err := fmt.Fprintf(&buf, "CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table); err != nil {
 		return nil, errors.Wrap(err, "failed to write create table statement")
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s`", databaseName, targetTable)); err != nil {
+	if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s`", databaseName, targetTable); err != nil {
 		return nil, errors.Wrap(err, "failed to write insert into statement")
 	}
 	if len(generatedColumns) > 0 {
@@ -125,7 +125,7 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 					return nil, errors.Wrap(err, "failed to write comma")
 				}
 			}
-			if _, err := buf.WriteString(fmt.Sprintf("`%s`", column)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "`%s`", column); err != nil {
 				return nil, errors.Wrap(err, "failed to write column")
 			}
 		}
@@ -144,7 +144,7 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 			tableNameOrAlias = item.table.Alias
 		}
 		if len(generatedColumns) == 0 {
-			if _, err := buf.WriteString(fmt.Sprintf("  SELECT `%s`.* FROM ", tableNameOrAlias)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "  SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 		} else {
@@ -157,7 +157,7 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 						return nil, errors.Wrap(err, "failed to write comma")
 					}
 				}
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`.`%s`", tableNameOrAlias, column)); err != nil {
+				if _, err := fmt.Fprintf(&buf, "`%s`.`%s`", tableNameOrAlias, column); err != nil {
 					return nil, errors.Wrap(err, "failed to write column")
 				}
 			}
@@ -210,7 +210,7 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 		// If enforce_gtid_consistency = true on MySQL 5.6+, we cannot run CREATE TABLE .. AS SELECT.
 		// So we need to create the table first and then run INSERT INTO .. SELECT.
 		var buf strings.Builder
-		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
+		if _, err := fmt.Fprintf(&buf, "CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
 		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
@@ -222,11 +222,11 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 			tableNameOrAlias = table.Alias
 		}
 		if len(generatedColumns) == 0 {
-			if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT `%s`.* FROM ", databaseName, targetTable, tableNameOrAlias)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT `%s`.* FROM ", databaseName, targetTable, tableNameOrAlias); err != nil {
 				return nil, errors.Wrap(err, "failed to write insert into statement")
 			}
 		} else {
-			if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` (", databaseName, targetTable)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (", databaseName, targetTable); err != nil {
 				return nil, errors.Wrap(err, "failed to write insert into statement")
 			}
 			for i, column := range normalColumns {
@@ -235,7 +235,7 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 						return nil, errors.Wrap(err, "failed to write comma")
 					}
 				}
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`", column)); err != nil {
+				if _, err := fmt.Fprintf(&buf, "`%s`", column); err != nil {
 					return nil, errors.Wrap(err, "failed to write column")
 				}
 			}
@@ -248,7 +248,7 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 						return nil, errors.Wrap(err, "failed to write comma")
 					}
 				}
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`.`%s`", tableNameOrAlias, column)); err != nil {
+				if _, err := fmt.Fprintf(&buf, "`%s`.`%s`", tableNameOrAlias, column); err != nil {
 					return nil, errors.Wrap(err, "failed to write column")
 				}
 			}

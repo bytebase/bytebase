@@ -119,9 +119,9 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 	var sb strings.Builder
 	_, _ = sb.WriteString(commentHeader + "\n")
 	_, _ = sb.WriteString("## SQL Review Summary\n\n")
-	_, _ = sb.WriteString(fmt.Sprintf("* Total Affected Rows: **%d**\n", resp.AffectedRows))
-	_, _ = sb.WriteString(fmt.Sprintf("* Overall Risk Level: **%s**\n", formatRiskLevel(resp.RiskLevel)))
-	_, _ = sb.WriteString(fmt.Sprintf("* Advices Statistics: **%d Error(s), %d Warning(s)**\n", errorCount, warningCount))
+	_, _ = fmt.Fprintf(&sb, "* Total Affected Rows: **%d**\n", resp.AffectedRows)
+	_, _ = fmt.Fprintf(&sb, "* Overall Risk Level: **%s**\n", formatRiskLevel(resp.RiskLevel))
+	_, _ = fmt.Fprintf(&sb, "* Advices Statistics: **%d Error(s), %d Warning(s)**\n", errorCount, warningCount)
 	_, _ = sb.WriteString("### Detailed Results\n")
 	_, _ = sb.WriteString(`
 <table>
@@ -164,13 +164,13 @@ func buildCommentMessage(resp *v1pb.CheckReleaseResponse) string {
 			adviceCell = strings.Join(counts, ", ")
 		}
 
-		_, _ = sb.WriteString(fmt.Sprintf(`<tr>
+		_, _ = fmt.Fprintf(&sb, `<tr>
 <td>%s</td>
 <td>%s</td>
 <td>%d</td>
 <td>%s</td>
 <td>%s</td>
-</tr>`, result.File, result.Target, result.AffectedRows, formatRiskLevel(result.RiskLevel), adviceCell))
+</tr>`, result.File, result.Target, result.AffectedRows, formatRiskLevel(result.RiskLevel), adviceCell)
 	}
 	_, _ = sb.WriteString("</tbody></table>")
 	return sb.String()

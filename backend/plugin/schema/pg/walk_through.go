@@ -1936,7 +1936,7 @@ func generateIndexName(tableName string, columnList []string, _ bool) string {
 		if col == "expr" {
 			builder.WriteString("expr")
 			if expressionID > 0 {
-				builder.WriteString(fmt.Sprintf("%d", expressionID))
+				fmt.Fprintf(&builder, "%d", expressionID)
 			}
 			expressionID++
 		} else {

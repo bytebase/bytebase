@@ -715,6 +715,7 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
 		s := t.In(z).Format(time.RFC3339Nano)
 		unmaskedData = s
+	default:
 	}
 	if isDataNullOrBool {
 		return &v1pb.RowValue{

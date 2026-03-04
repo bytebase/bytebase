@@ -147,15 +147,15 @@ func genMaterializedViewDDL(qualifiedName string, mtViewMeta *storepb.Materializ
 		return "", err
 	}
 
-	if _, err := builder.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s\n", qualifiedName)); err != nil {
+	if _, err := fmt.Fprintf(&builder, "CREATE MATERIALIZED VIEW %s\n", qualifiedName); err != nil {
 		return "", err
 	}
 
-	if _, err := builder.WriteString(fmt.Sprintf("COMMENT %s\n", mtViewMeta.Comment)); err != nil {
+	if _, err := fmt.Fprintf(&builder, "COMMENT %s\n", mtViewMeta.Comment); err != nil {
 		return "", err
 	}
 
-	if _, err := builder.WriteString(fmt.Sprintf("TBLPROPERTIES %s\n", tblProperties)); err != nil {
+	if _, err := fmt.Fprintf(&builder, "TBLPROPERTIES %s\n", tblProperties); err != nil {
 		return "", err
 	}
 
@@ -205,7 +205,7 @@ func formatTblProperties(tblAddInfo *tableAdditionalInfo) (string, error) {
 		if idx == len(tblAddInfo.tblProps)-1 {
 			comma = ""
 		}
-		if _, err := builder.WriteString(fmt.Sprintf("%s = %s%s\n", key, val, comma)); err != nil {
+		if _, err := fmt.Fprintf(&builder, "%s = %s%s\n", key, val, comma); err != nil {
 			return "", err
 		}
 		idx++

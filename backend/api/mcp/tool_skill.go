@@ -69,7 +69,7 @@ func (*Server) formatSkillList() string {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
 			meta := parseSkillMeta(entry.Name())
 			if meta != nil {
-				sb.WriteString(fmt.Sprintf("| %s | %s |\n", meta.Name, meta.Description))
+				fmt.Fprintf(&sb, "| %s | %s |\n", meta.Name, meta.Description)
 			}
 		}
 	}

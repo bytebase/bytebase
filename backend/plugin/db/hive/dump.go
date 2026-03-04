@@ -107,7 +107,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 				return errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
 			}
 
-			_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
+			_, _ = fmt.Fprintf(&builder, schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL)
 		}
 		_, _ = builder.WriteString(tableDDL)
 	}
@@ -153,7 +153,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 			return errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
 		}
 
-		_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", databaseName, mtView.Name), mtViewDDL))
+		_, _ = fmt.Fprintf(&builder, schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", databaseName, mtView.Name), mtViewDDL)
 	}
 
 	if _, err = io.WriteString(out, builder.String()); err != nil {
@@ -202,13 +202,13 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 	var builder strings.Builder
 
 	// index name, table name.
-	_, _ = builder.WriteString(fmt.Sprintf("CREATE INDEX `%s`\nON TABLE %s ", opts.indexName, fmt.Sprintf("`%s`.`%s`", opts.databaseName, opts.tableName)))
+	_, _ = fmt.Fprintf(&builder, "CREATE INDEX `%s`\nON TABLE %s ", opts.indexName, fmt.Sprintf("`%s`.`%s`", opts.databaseName, opts.tableName))
 
 	// column names.
 	formatColumn(&builder, opts.colNames)
 
 	// index type.
-	_, _ = builder.WriteString(fmt.Sprintf(")\nAS '%s'\n", opts.indexType))
+	_, _ = fmt.Fprintf(&builder, ")\nAS '%s'\n", opts.indexType)
 
 	// with deferred rebuild.
 	if opts.isWithDeferredRebuild {
@@ -223,7 +223,7 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 
 	// index table.
 	if opts.indexTableName != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("IN TABLE %s\n", opts.indexTableName))
+		_, _ = fmt.Fprintf(&builder, "IN TABLE %s\n", opts.indexTableName)
 	}
 
 	// row format.
@@ -237,10 +237,10 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 		return "", errors.New("keywords 'STORED AS' and 'STORED BY' cannot appear at the same time")
 	}
 	if opts.storedAs != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("STORED AS %s\n", opts.storedAs))
+		_, _ = fmt.Fprintf(&builder, "STORED AS %s\n", opts.storedAs)
 	}
 	if opts.storedBy != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("STORED BY '%s'\n", opts.storedBy))
+		_, _ = fmt.Fprintf(&builder, "STORED BY '%s'\n", opts.storedBy)
 	}
 
 	// location.
@@ -257,7 +257,7 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 
 	// comment.
 	if opts.comment != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("COMMENT '%s'\n", opts.comment))
+		_, _ = fmt.Fprintf(&builder, "COMMENT '%s'\n", opts.comment)
 	}
 
 	return builder.String(), nil
@@ -268,7 +268,7 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 	viewNameWithDB := fmt.Sprintf("`%s`.`%s`", opts.databaseName, opts.mtViewName)
 
 	// mtView name.
-	_, _ = builder.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s\n", viewNameWithDB))
+	_, _ = fmt.Fprintf(&builder, "CREATE MATERIALIZED VIEW %s\n", viewNameWithDB)
 
 	// disable rewrite.
 	if opts.disableRewrite {
@@ -277,7 +277,7 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 
 	// comment.
 	if opts.comment != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("COMMENT '%s'\n", opts.comment))
+		_, _ = fmt.Fprintf(&builder, "COMMENT '%s'\n", opts.comment)
 	}
 
 	// partitioned on.
@@ -310,10 +310,10 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 		return "", errors.New("keywords 'STORED AS' and 'STORED BY' cannot appear at the same time")
 	}
 	if opts.storedAs != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("STORED AS %s\n", opts.storedAs))
+		_, _ = fmt.Fprintf(&builder, "STORED AS %s\n", opts.storedAs)
 	}
 	if opts.storedBy != "" {
-		_, _ = builder.WriteString(fmt.Sprintf("STORED BY '%s'\n", opts.storedBy))
+		_, _ = fmt.Fprintf(&builder, "STORED BY '%s'\n", opts.storedBy)
 
 		// if with serde properties.
 		if opts.serdProperties != nil {
@@ -335,7 +335,7 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 	}
 
 	// as.
-	_, _ = builder.WriteString(fmt.Sprintf("AS %s \n", opts.as))
+	_, _ = fmt.Fprintf(&builder, "AS %s \n", opts.as)
 
 	return builder.String(), nil
 }

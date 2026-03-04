@@ -1511,7 +1511,7 @@ func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*storepb.Eve
 func buildEventTriggerDefinition(et *storepb.EventTriggerMetadata) string {
 	var buf strings.Builder
 	buf.WriteString("CREATE EVENT TRIGGER ")
-	buf.WriteString(fmt.Sprintf("%q", et.Name))
+	fmt.Fprintf(&buf, "%q", et.Name)
 	buf.WriteString(" ON ")
 	buf.WriteString(et.Event)
 
@@ -1530,10 +1530,10 @@ func buildEventTriggerDefinition(et *storepb.EventTriggerMetadata) string {
 
 	buf.WriteString("\n  EXECUTE FUNCTION ")
 	if et.FunctionSchema != "" {
-		buf.WriteString(fmt.Sprintf("%q", et.FunctionSchema))
+		fmt.Fprintf(&buf, "%q", et.FunctionSchema)
 		buf.WriteString(".")
 	}
-	buf.WriteString(fmt.Sprintf("%q", et.FunctionName))
+	fmt.Fprintf(&buf, "%q", et.FunctionName)
 	buf.WriteString("()")
 
 	return buf.String()

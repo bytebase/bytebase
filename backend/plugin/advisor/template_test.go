@@ -43,9 +43,9 @@ func TestTemplateAdvisorRegistrations(t *testing.T) {
 
 			if len(mismatches) > 0 {
 				var errMsg strings.Builder
-				errMsg.WriteString(fmt.Sprintf("\nFound %d advisor rule(s) in template that are NOT registered in Go code:\n", len(mismatches)))
+				fmt.Fprintf(&errMsg, "\nFound %d advisor rule(s) in template that are NOT registered in Go code:\n", len(mismatches))
 				for _, mismatch := range mismatches {
-					errMsg.WriteString(fmt.Sprintf("  - Engine: %s, Rule: %s\n", mismatch.Engine, mismatch.RuleType))
+					fmt.Fprintf(&errMsg, "  - Engine: %s, Rule: %s\n", mismatch.Engine, mismatch.RuleType)
 				}
 				errMsg.WriteString("\nTo fix this issue:\n")
 				errMsg.WriteString("1. Remove the invalid rule from the template file, OR\n")

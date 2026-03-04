@@ -167,11 +167,11 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
-	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
+	if _, err := fmt.Fprintf(&buf, "CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table); err != nil {
 		return nil, errors.Wrap(err, "failed to write create table statement")
 	}
 
-	if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s`", databaseName, targetTable)); err != nil {
+	if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s`", databaseName, targetTable); err != nil {
 		return nil, errors.Wrap(err, "failed to write insert into statement")
 	}
 	if len(generatedColumns) > 0 {
@@ -184,7 +184,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 					return nil, errors.Wrap(err, "failed to write comma")
 				}
 			}
-			if _, err := buf.WriteString(fmt.Sprintf("`%s`", column)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "`%s`", column); err != nil {
 				return nil, errors.Wrap(err, "failed to write column")
 			}
 		}
@@ -209,12 +209,12 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 		}
 		cteString := extractCTE(item.Tree)
 		if len(cteString) > 0 {
-			if _, err := buf.WriteString(fmt.Sprintf("%s ", cteString)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "%s ", cteString); err != nil {
 				return nil, errors.Wrap(err, "failed to write cte")
 			}
 		}
 		if len(generatedColumns) == 0 {
-			if _, err := buf.WriteString(fmt.Sprintf("SELECT `%s`.* FROM ", tableNameOrAlias)); err != nil {
+			if _, err := fmt.Fprintf(&buf, "SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 		} else {
@@ -227,7 +227,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 						return nil, errors.Wrap(err, "failed to write comma")
 					}
 				}
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`.`%s`", tableNameOrAlias, column)); err != nil {
+				if _, err := fmt.Fprintf(&buf, "`%s`.`%s`", tableNameOrAlias, column); err != nil {
 					return nil, errors.Wrap(err, "failed to write column")
 				}
 			}
