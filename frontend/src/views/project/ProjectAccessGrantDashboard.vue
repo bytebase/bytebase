@@ -66,7 +66,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
+import { useWindowSize } from "@vueuse/core";
 import type { DataTableColumn, DataTableSortState } from "naive-ui";
 import {
   NButton,
@@ -120,6 +121,7 @@ const props = defineProps<{
   projectId: string;
 }>();
 
+const { width: windowWidth } = useWindowSize();
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
@@ -264,6 +266,8 @@ const handleRevoke = (grant: AccessGrant) => {
   });
 };
 
+const isWideScreen = computed(() => windowWidth.value >= 1280);
+
 const columns = computed((): DataTableColumn<AccessGrant>[] => [
   {
     key: "status",
@@ -289,41 +293,63 @@ const columns = computed((): DataTableColumn<AccessGrant>[] => [
     ellipsis: true,
     render: (grant) => extractUserEmail(grant.creator),
   },
-  {
-    key: "create_time",
-    title: t("common.created-at"),
-    width: 180,
-    render: (grant) => {
-      if (!grant.createTime) return "-";
-      const ms = getTimeForPbTimestampProtoEs(grant.createTime);
-      return h("span", { class: "text-sm" }, formatAbsoluteDateTime(ms));
-    },
-  },
-  {
-    key: "expire_time",
-    title: t("common.expiration"),
-    sortOrder: false,
-    width: 180,
-    render: (grant) => {
-      const info = getAccessGrantExpirationText(grant);
-      if (info.type !== "datetime") return "-";
-      return h("span", { class: "text-sm" }, info.value);
-    },
-  },
+  ...(isWideScreen.value
+    ? ([
+        {
+          key: "create_time",
+          title: t("common.created-at"),
+          width: 180,
+          render: (grant: AccessGrant) => {
+            if (!grant.createTime) return "-";
+            const ms = getTimeForPbTimestampProtoEs(grant.createTime);
+            return h("span", { class: "text-sm" }, formatAbsoluteDateTime(ms));
+          },
+        },
+        {
+          key: "expire_time",
+          title: t("common.expiration"),
+          sortOrder: false as const,
+          width: 180,
+          render: (grant: AccessGrant) => {
+            const info = getAccessGrantExpirationText(grant);
+            if (info.type !== "datetime") return "-";
+            return h("span", { class: "text-sm" }, info.value);
+          },
+        },
+      ] as DataTableColumn<AccessGrant>[])
+    : []),
   {
     key: "query",
     title: t("common.statement"),
-    ellipsis: true,
-    render: (grant) =>
-      h(
-        NTooltip,
-        {},
-        {
-          trigger: () => h("span", { class: "font-mono text-xs" }, grant.query),
-          default: () =>
-            h("pre", { class: "max-w-lg whitespace-pre-wrap" }, grant.query),
-        }
-      ),
+    render: (grant) => {
+      return (
+        <NTooltip>
+          {{
+            trigger: () => (
+              <div class="flex items-center gap-x-1 overflow-hidden">
+                <span class="font-mono text-xs truncate shrink">
+                  {grant.query}
+                </span>
+                {grant.unmask && (
+                  <NTag
+                    class="shrink-0"
+                    size="small"
+                    type="warning"
+                    round={true}
+                    bordered={false}
+                  >
+                    {t("sql-editor.grant-type-unmask")}
+                  </NTag>
+                )}
+              </div>
+            ),
+            default: () => (
+              <pre class="max-w-lg whitespace-pre-wrap">{grant.query}</pre>
+            ),
+          }}
+        </NTooltip>
+      );
+    },
   },
   {
     key: "targets",
