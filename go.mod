@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/bigquery v1.73.1
 	cloud.google.com/go/cloudsqlconn v1.20.0
 	cloud.google.com/go/secretmanager v1.16.0
-	cloud.google.com/go/spanner v1.87.0
+	cloud.google.com/go/spanner v1.88.0
 	connectrpc.com/connect v1.19.1
 	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.3.0
@@ -97,9 +97,9 @@ require (
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/text v0.33.0
 	google.golang.org/api v0.265.0
-	google.golang.org/genproto v0.0.0-20260203192932-546029d2fa20
-	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20
+	google.golang.org/genproto v0.0.0-20260226221140-a57be14db171
+	google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/inf.v0 v0.9.1
@@ -124,7 +124,7 @@ require (
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.5.3 // indirect
+	github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp v1.6.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/apache/arrow-go/v18 v18.4.0 // indirect
@@ -322,7 +322,7 @@ require (
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
-	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/hjson/hjson-go/v4 v4.6.0
