@@ -321,7 +321,7 @@ importers:
         version: 8.5.6
       pretty-print-json:
         specifier: ^3.0.6
-        version: 3.0.6
+        version: 3.0.7
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -4078,8 +4078,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  pretty-print-json@3.0.6:
-    resolution: {integrity: sha512-wboR7e5Vqim2giCXJouicwrfB/+whrJuVByBB2/ItHOmEgIEkqKfRiqLR9Rr297cJjplfAyEjwxJ2DJmiPk1yA==}
+  pretty-print-json@3.0.7:
+    resolution: {integrity: sha512-/uSMbG4866Bniq893+qMKNArlaq5qWjH74+yRptgTe/F118OXZAgJ6tvSRA0fVn92wWFhRWvYWc75iSGPXLPbQ==}
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -9050,7 +9050,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  pretty-print-json@3.0.6: {}
+  pretty-print-json@3.0.7: {}
 
   process-nextick-args@2.0.1: {}
 
