@@ -1,6 +1,6 @@
 <template>
   <div class="w-full flex items-center gap-x-4 px-4 py-2">
-    <div class="textlabel h-[26px] inline-flex items-center">
+    <div class="textlabel h-6.5 inline-flex items-center">
       {{ $t("issue.sql-check.sql-checks") }}
     </div>
     <div
