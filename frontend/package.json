@@ -119,7 +119,7 @@
     "eslint-plugin-vue": "10.7.0",
     "jsdom": "27.4.0",
     "micromark-util-sanitize-uri": "^2.0.1",
-    "postcss": "8.5.6",
+    "postcss": "8.5.8",
     "pretty-print-json": "^3.0.6",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
