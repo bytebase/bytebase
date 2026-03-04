@@ -1807,13 +1807,21 @@ func (e *metadataExtractor) EnterCommentstmt(ctx *parser.CommentstmtContext) {
 		return
 	}
 
-	// Handle COMMENT ON SCHEMA
+	// Handle COMMENT ON SCHEMA / EXTENSION / etc.
 	if ctx.Object_type_name() != nil && ctx.Name() != nil {
-		// COMMENT ON SCHEMA name IS comment_text
-		schemaName := pgparser.NormalizePostgreSQLName(ctx.Name())
-		if schemaName != "" {
-			schema := e.getOrCreateSchema(schemaName)
-			schema.Comment = comment
+		objectType := strings.ToUpper(ctx.Object_type_name().GetText())
+		name := pgparser.NormalizePostgreSQLName(ctx.Name())
+		switch objectType {
+		case "SCHEMA":
+			if name != "" {
+				schema := e.getOrCreateSchema(name)
+				schema.Comment = comment
+			}
+		case "EXTENSION":
+			if ext, exists := e.extensions[name]; exists {
+				ext.Description = comment
+			}
+		default:
 		}
 		return
 	}
@@ -2235,22 +2243,34 @@ func (e *metadataExtractor) EnterCreateextensionstmt(ctx *parser.Createextension
 		Schema: "public", // Default schema
 	}
 
-	// Extract schema from extension options if present
-	if optList := ctx.Create_extension_opt_list(); optList != nil {
-		for _, optItem := range optList.AllCreate_extension_opt_item() {
-			if optItem == nil {
-				continue
-			}
-			// Check if this is a SCHEMA option
-			if optItem.SCHEMA() != nil && optItem.Name() != nil {
-				schemaName := pgparser.NormalizePostgreSQLName(optItem.Name())
-				extension.Schema = schemaName
-				break
-			}
+	extractExtensionOptions(extension, ctx.Create_extension_opt_list())
+	e.extensions[extension.Name] = extension
+}
+
+// extractExtensionOptions populates Schema and Version from CREATE EXTENSION options.
+func extractExtensionOptions(extension *storepb.ExtensionMetadata, optList parser.ICreate_extension_opt_listContext) {
+	if optList == nil {
+		return
+	}
+	for _, optItem := range optList.AllCreate_extension_opt_item() {
+		if optItem == nil {
+			continue
+		}
+		if optItem.SCHEMA() != nil && optItem.Name() != nil {
+			extension.Schema = pgparser.NormalizePostgreSQLName(optItem.Name())
+		}
+		if optItem.VERSION_P() != nil && optItem.Nonreservedword_or_sconst() != nil {
+			extension.Version = stripSingleQuotes(optItem.Nonreservedword_or_sconst().GetText())
 		}
 	}
+}
 
-	e.extensions[extension.Name] = extension
+// stripSingleQuotes removes surrounding single quotes from a SQL string constant.
+func stripSingleQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
 
 // EnterDefinestmt is called when entering a define statement (CREATE TYPE AS ENUM)
