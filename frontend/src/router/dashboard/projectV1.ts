@@ -36,6 +36,7 @@ export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollouts
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT = `${PROJECT_V1_ROUTE_ROLLOUTS}.rollout`;
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT}.stage`;
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
+export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 
 const issueRoutes: RouteRecordRaw[] = [
   {
@@ -462,6 +463,15 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
         ],
+      },
+      {
+        path: "gitops",
+        name: PROJECT_V1_ROUTE_GITOPS,
+        meta: {
+          title: () => t("gitops.self"),
+        },
+        component: () => import("@/views/project/ProjectGitOpsDashboard.vue"),
+        props: true,
       },
       ...issueRoutes,
       ...rolloutRoutes,

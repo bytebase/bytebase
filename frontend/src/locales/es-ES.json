@@ -2815,6 +2815,39 @@
     "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
     "filter-by-category": "Filtrar por categoría"
   },
+  "gitops": {
+    "self": "GitOps",
+    "overview": {
+      "description": "Bytebase GitOps le permite gestionar Database as Code integrando los cambios de esquema de base de datos en su pipeline de CI/CD.",
+      "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues."
+    },
+    "checklist": {
+      "title": "Lista de verificación",
+      "external-url": "URL externa",
+      "external-url-missing": "La URL externa no está configurada.",
+      "configure": "Configurar",
+      "workload-identity": "Identidad de carga de trabajo",
+      "target-databases": "Bases de datos de destino"
+    },
+    "workload-identity": {
+      "select-placeholder": "Seleccionar una identidad de carga de trabajo",
+      "no-identity": "No se encontró ninguna identidad de carga de trabajo. Cree una para comenzar."
+    },
+    "workflow": {
+      "title": "Archivo de flujo de trabajo",
+      "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
+      "file-hint": "Guardar como {filePath} en su repositorio"
+    },
+    "test-setup": {
+      "title": "Pruebe su configuración",
+      "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
+      "step-create-branch": "Cree una nueva rama, agregue el archivo anterior y abra una pull request dirigida a {branch}.",
+      "step-sql-review": "SQL Review se ejecuta automáticamente en la pull request y publica comentarios de revisión.",
+      "step-merge": "Una vez que la revisión pase, fusione el PR. Bytebase creará automáticamente un despliegue y lo implementará en los entornos de destino.",
+      "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio."
+    },
+    "documentation": "Ver documentación"
+  },
   "export-data": {
     "export-rows": "Exportar filas",
     "error": {
