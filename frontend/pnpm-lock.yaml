@@ -109,11 +109,11 @@ importers:
         specifier: ^4.3.0
         version: 4.3.0
       lucide-static:
-        specifier: ^0.563.0
-        version: 0.563.0
+        specifier: ^0.577.0
+        version: 0.577.0
       lucide-vue-next:
-        specifier: ^0.563.0
-        version: 0.563.0(vue@3.5.29(typescript@5.9.3))
+        specifier: ^0.577.0
+        version: 0.577.0(vue@3.5.29(typescript@5.9.3))
       markdown-it:
         specifier: ^14.1.0
         version: 14.1.1
@@ -3649,11 +3649,11 @@ packages:
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
 
-  lucide-static@0.563.0:
-    resolution: {integrity: sha512-O7ZlK+VFfc/G5KYwUb9jO60RlPNKV6Dyu+OgQC/QCiO4FMPIK9qrIIkYHHG6PLgLKvmELmf1eKSAso+D/vAvcg==}
+  lucide-static@0.577.0:
+    resolution: {integrity: sha512-hx39J5Tq4JWF2ALY+5YRg+SxQLpeAmLJDXNcqiBJH/UuVwp43it9fyki/onZO7AVFgG5ZbB+fWwZR9mwGHE2XQ==}
 
-  lucide-vue-next@0.563.0:
-    resolution: {integrity: sha512-zsE/lCKtmaa7bGfhSpN84br1K9YoQ5pCN+2oKWjQQG3Lo6ufUUKBuHSjNFI6RvUevxaajNXb8XwFUKeTXG3sIA==}
+  lucide-vue-next@0.577.0:
+    resolution: {integrity: sha512-py05bAfv9SHVJqscbiOnjcnLlEmOffA58a+7XhZuFxrs6txe1E8VoR1ngWGTYO+9aVKABAz8l3ee3PqiQN9QPA==}
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -8364,9 +8364,9 @@ snapshots:
 
   ltgt@2.2.1: {}
 
-  lucide-static@0.563.0: {}
+  lucide-static@0.577.0: {}
 
-  lucide-vue-next@0.563.0(vue@3.5.29(typescript@5.9.3)):
+  lucide-vue-next@0.577.0(vue@3.5.29(typescript@5.9.3)):
     dependencies:
       vue: 3.5.29(typescript@5.9.3)
 
