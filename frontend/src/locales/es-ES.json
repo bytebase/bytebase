@@ -1072,6 +1072,8 @@
     "approval-flow": {
       "self": "Flujo de aprobación"
     },
+    "force-rollout-hint": "Proceda con el despliegue manual para anular las verificaciones fallidas.",
+    "checks-block-rollout-hint": "Las verificaciones fallidas impiden la creación del despliegue. Corrija los errores para continuar.",
     "risk-level": {
       "self": "Nivel de riesgo",
       "low": "Bajo",

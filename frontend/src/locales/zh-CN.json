@@ -1072,6 +1072,8 @@
     "approval-flow": {
       "self": "审批流"
     },
+    "force-rollout-hint": "手动创建发布以跳过失败的 SQL 检查。",
+    "checks-block-rollout-hint": "SQL 检查失败导致无法创建发布。请修复错误后再继续。",
     "risk-level": {
       "self": "风险等级",
       "low": "低风险",
