@@ -1072,6 +1072,8 @@
     "approval-flow": {
       "self": "承認の流れ"
     },
+    "force-rollout-hint": "手動でロールアウトを作成して、失敗したチェックをオーバーライドしてください。",
+    "checks-block-rollout-hint": "チェックの失敗によりロールアウトを作成できません。エラーを修正してから続行してください。",
     "risk-level": {
       "self": "リスクレベル",
       "low": "低い",

@@ -1072,6 +1072,8 @@
     "approval-flow": {
       "self": "Quy trình phê duyệt"
     },
+    "force-rollout-hint": "Tiến hành triển khai thủ công để bỏ qua các kiểm tra thất bại.",
+    "checks-block-rollout-hint": "Kiểm tra thất bại đang ngăn việc tạo triển khai. Hãy sửa lỗi để tiếp tục.",
     "risk-level": {
       "self": "Mức độ rủi ro",
       "low": "Thấp",
