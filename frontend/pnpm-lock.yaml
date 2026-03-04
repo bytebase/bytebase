@@ -77,7 +77,7 @@ importers:
         version: 0.11.0
       emittery:
         specifier: ^1.2.0
-        version: 1.2.0
+        version: 1.2.1
       events:
         specifier: ^3.3.0
         version: 3.3.0
@@ -2942,8 +2942,8 @@ packages:
   elkjs@0.11.0:
     resolution: {integrity: sha512-u4J8h9mwEDaYMqo0RYJpqNMFDoMK7f+pu4GjcV+N8jIC7TRdORgzkfSjTJemhqONFfH6fBI3wpysgWbhgVWIXw==}
 
-  emittery@1.2.0:
-    resolution: {integrity: sha512-KxdRyyFcS85pH3dnU8Y5yFUm2YJdaHwcBZWrfG8o89ZY9a13/f9itbN+YG3ELbBo9Pg5zvIozstmuV8bX13q6g==}
+  emittery@1.2.1:
+    resolution: {integrity: sha512-sFz64DCRjirhwHLxofFqxYQm6DCp6o0Ix7jwKQvuCHPn4GMRZNuBZyLPu9Ccmk/QSCAMZt6FOUqA8JZCQvA9fw==}
     engines: {node: '>=14.16'}
 
   emoji-regex@8.0.0:
@@ -7655,7 +7655,7 @@ snapshots:
 
   elkjs@0.11.0: {}
 
-  emittery@1.2.0: {}
+  emittery@1.2.1: {}
 
   emoji-regex@8.0.0: {}
 
