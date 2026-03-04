@@ -1015,8 +1015,11 @@
         },
         "approval": {
           "value": {
+            "checking": "確認中",
             "pending": "保留中",
-            "approved": "承認された"
+            "approved": "承認された",
+            "rejected": "却下",
+            "skipped": "スキップ"
           },
           "description": "イシューの承認ステータスで検索する",
           "title": "承認状況"

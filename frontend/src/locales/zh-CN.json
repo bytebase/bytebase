@@ -1015,8 +1015,11 @@
         },
         "approval": {
           "value": {
+            "checking": "检查中",
             "pending": "待审批",
-            "approved": "审批通过"
+            "approved": "审批通过",
+            "rejected": "已拒绝",
+            "skipped": "已跳过"
           },
           "description": "按工单的审批状态搜索",
           "title": "审批状态"

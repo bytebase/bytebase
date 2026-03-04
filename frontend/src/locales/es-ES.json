@@ -1015,8 +1015,11 @@
         },
         "approval": {
           "value": {
+            "checking": "Verificando",
             "pending": "Aprobación pendiente",
-            "approved": "Aprobado"
+            "approved": "Aprobado",
+            "rejected": "Rechazado",
+            "skipped": "Omitido"
           },
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
