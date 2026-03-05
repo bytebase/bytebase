@@ -43,7 +43,7 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.13.1
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/github/gh-ost v1.1.7
-	github.com/go-ego/gse v1.0.0
+	github.com/go-ego/gse v1.0.1
 	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/go-ldap/ldap/v3 v3.4.12
 	github.com/go-sql-driver/mysql v1.9.3
@@ -68,7 +68,7 @@ require (
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/microsoft/go-mssqldb v1.9.8
-	github.com/modelcontextprotocol/go-sdk v1.3.1
+	github.com/modelcontextprotocol/go-sdk v1.4.0
 	github.com/nyaruka/phonenumbers v1.6.10
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/paulmach/orb v0.12.0
