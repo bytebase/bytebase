@@ -1028,6 +1028,16 @@
           "title": "Nhãn vấn đề",
           "description": "Lọc theo nhãn vấn đề"
         },
+        "issue-type": {
+          "title": "Type",
+          "description": "Filter by issue type",
+          "value": {
+            "database-change": "Database Change",
+            "grant-request": "Grant Request",
+            "database-export": "Database Export",
+            "access-grant": "Access Grant"
+          }
+        },
         "table": {
           "title": "Bảng",
           "description": "Nhập giá trị sau đó nhấn Enter"

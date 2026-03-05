@@ -1028,6 +1028,16 @@
           "title": "工单标签",
           "description": "按工单标签过滤"
         },
+        "issue-type": {
+          "title": "类型",
+          "description": "按工单类型过滤",
+          "value": {
+            "database-change": "数据库变更",
+            "grant-request": "权限申请",
+            "database-export": "数据导出",
+            "access-grant": "访问授权"
+          }
+        },
         "table": {
           "title": "表",
           "description": "输入值然后按 Enter"

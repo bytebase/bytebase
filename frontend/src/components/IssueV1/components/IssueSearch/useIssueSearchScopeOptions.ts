@@ -14,6 +14,7 @@ import { isValidProjectName } from "@/types";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
+  Issue_Type,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { type Label } from "@/types/proto-es/v1/project_service_pb";
@@ -175,6 +176,50 @@ export const useIssueSearchScopeOptions = (
             render: () =>
               renderSpan(
                 t("issue.advanced-search.scope.approval.value.skipped")
+              ),
+          },
+        ],
+      },
+      {
+        id: "issue-type",
+        title: t("issue.advanced-search.scope.issue-type.title"),
+        description: t("issue.advanced-search.scope.issue-type.description"),
+        allowMultiple: true,
+        options: [
+          {
+            value: Issue_Type[Issue_Type.DATABASE_CHANGE],
+            keywords: ["database", "change"],
+            render: () =>
+              renderSpan(
+                t(
+                  "issue.advanced-search.scope.issue-type.value.database-change"
+                )
+              ),
+          },
+          {
+            value: Issue_Type[Issue_Type.GRANT_REQUEST],
+            keywords: ["grant", "request"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.issue-type.value.grant-request")
+              ),
+          },
+          {
+            value: Issue_Type[Issue_Type.DATABASE_EXPORT],
+            keywords: ["database", "export"],
+            render: () =>
+              renderSpan(
+                t(
+                  "issue.advanced-search.scope.issue-type.value.database-export"
+                )
+              ),
+          },
+          {
+            value: Issue_Type[Issue_Type.ACCESS_GRANT],
+            keywords: ["access", "grant"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.issue-type.value.access-grant")
               ),
           },
         ],
