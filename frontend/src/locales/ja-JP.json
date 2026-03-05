@@ -2835,11 +2835,12 @@
   "gitops": {
     "self": "GitOps",
     "overview": {
+      "title": "GitOps とは",
       "description": "Bytebase GitOps は、データベーススキーマの変更を CI/CD パイプラインに統合し、Database as Code として管理できます。",
       "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。"
     },
     "checklist": {
-      "title": "チェックリスト",
+      "title": "開始前の確認",
       "external-url": "外部URL",
       "external-url-missing": "外部URLが設定されていません。",
       "configure": "設定",
@@ -2851,12 +2852,12 @@
       "no-identity": "ワークロードアイデンティティが見つかりません。作成して始めましょう。"
     },
     "workflow": {
-      "title": "ワークフローファイル",
+      "title": "ワークフローファイル生成",
       "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
       "file-hint": "リポジトリ内に {filePath} として保存"
     },
     "test-setup": {
-      "title": "セットアップのテスト",
+      "title": "最初の GitOps マイグレーションをテスト",
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{branch} へのプルリクエストを作成します。",
       "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",

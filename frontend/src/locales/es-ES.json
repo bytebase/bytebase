@@ -2835,11 +2835,12 @@
   "gitops": {
     "self": "GitOps",
     "overview": {
+      "title": "Qué es GitOps",
       "description": "Bytebase GitOps le permite gestionar Database as Code integrando los cambios de esquema de base de datos en su pipeline de CI/CD.",
       "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues."
     },
     "checklist": {
-      "title": "Lista de verificación",
+      "title": "Verificaciones antes de comenzar",
       "external-url": "URL externa",
       "external-url-missing": "La URL externa no está configurada.",
       "configure": "Configurar",
@@ -2851,12 +2852,12 @@
       "no-identity": "No se encontró ninguna identidad de carga de trabajo. Cree una para comenzar."
     },
     "workflow": {
-      "title": "Archivo de flujo de trabajo",
+      "title": "Generación de archivo de flujo de trabajo",
       "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
       "file-hint": "Guardar como {filePath} en su repositorio"
     },
     "test-setup": {
-      "title": "Pruebe su configuración",
+      "title": "Pruebe su primera migración GitOps",
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "step-create-branch": "Cree una nueva rama, agregue el archivo anterior y abra una pull request dirigida a {branch}.",
       "step-sql-review": "SQL Review se ejecuta automáticamente en la pull request y publica comentarios de revisión.",
