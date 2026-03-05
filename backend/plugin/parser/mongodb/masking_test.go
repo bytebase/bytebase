@@ -158,13 +158,22 @@ func TestAnalyzeMaskingStatement(t *testing.T) {
 			},
 		},
 		{
-			description: "aggregate with $unwind is unsupported",
+			description: "aggregate with $unwind is shape-preserving",
 			statement:   `db.users.aggregate([{$unwind: "$tags"}])`,
 			want: &MaskingAnalysis{
-				API:              MaskableAPIUnsupportedRead,
-				Operation:        "aggregate",
-				Collection:       "users",
-				UnsupportedStage: "$unwind",
+				API:        MaskableAPIAggregate,
+				Operation:  "aggregate",
+				Collection: "users",
+			},
+		},
+		{
+			description: "aggregate with $match and $unwind",
+			statement:   `db.users.aggregate([{$match: {status: "active"}}, {$unwind: "$tags"}])`,
+			want: &MaskingAnalysis{
+				API:             MaskableAPIAggregate,
+				Operation:       "aggregate",
+				Collection:      "users",
+				PredicateFields: []string{"status"},
 			},
 		},
 		{

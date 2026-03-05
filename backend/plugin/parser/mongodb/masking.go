@@ -361,6 +361,7 @@ var shapePreservingAggregateStages = map[string]bool{
 	"$setWindowFields": true,
 	"$fill":            true,
 	"$redact":          true,
+	"$unwind":          true,
 }
 
 func classifyAggregateForMasking(am mongoparser.IAggregateMethodContext) *MaskingAnalysis {
