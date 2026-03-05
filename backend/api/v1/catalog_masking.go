@@ -175,6 +175,17 @@ func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, sema
 	if objectSchema == nil {
 		return data, nil
 	}
+	// Schema is ARRAY but data is a single element (e.g. field unwound by $unwind).
+	// When there is no array-level semantic type, descend into the item schema so
+	// that item-level masking still applies to the unwound scalar or object.
+	if objectSchema.Type == storepb.ObjectSchema_ARRAY && objectSchema.SemanticType == "" {
+		if _, isArray := data.([]any); !isArray {
+			if itemSchema := objectSchema.GetArrayKind().GetKind(); itemSchema != nil {
+				return walkAndMaskJSONRecursive(data, itemSchema, semanticTypeToMasker)
+			}
+			return data, nil
+		}
+	}
 	switch data := data.(type) {
 	case map[string]any:
 		if objectSchema.SemanticType != "" {
