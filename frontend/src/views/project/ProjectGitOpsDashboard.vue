@@ -16,8 +16,18 @@
       <img
         :src="gitopsWorkflowImage"
         alt="GitOps Workflow"
-        class="w-full max-w-4xl h-[350px] object-contain"
+        class="w-full max-w-4xl object-contain my-2"
       />
+      <!-- Documentation link -->
+      <div>
+        <a
+          href="https://docs.bytebase.com/vcs-integration/overview?source=console"
+          target="_blank"
+          class="text-accent hover:underline"
+        >
+          {{ $t("gitops.documentation") }} &rarr;
+        </a>
+      </div>
     </div>
 
     <!-- Section 2: Checks before we start -->
@@ -29,32 +39,22 @@
       <!-- Check 1: External URL -->
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
-          v-if="hasExternalUrl"
-          class="w-5 h-5 text-success shrink-0 mt-0.5"
+          v-if="bytebaseUrl"
+          class="w-5 h-5 text-success shrink-0"
         />
-        <MinusCircleIcon
+        <XCircleIcon
           v-else
-          class="w-5 h-5 text-warning shrink-0 mt-0.5"
+          class="w-5 h-5 text-warning shrink-0"
         />
+
         <div class="flex flex-col gap-y-1">
-          <span class="text-sm font-medium">{{
-            $t("gitops.checklist.external-url")
-          }}</span>
-          <span v-if="hasExternalUrl" class="text-sm text-control-light">
+          <span class="text-sm font-medium">
+            {{ $t("gitops.checklist.external-url") }}
+          </span>
+          <span v-if="bytebaseUrl" class="text-sm text-control-light">
             {{ bytebaseUrl }}
           </span>
-          <div v-else class="flex items-center gap-x-2">
-            <span class="text-sm text-warning">
-              {{ $t("gitops.checklist.external-url-missing") }}
-            </span>
-            <NButton
-              v-if="hasSettingPermission"
-              size="small"
-              @click="goToGeneralSettings"
-            >
-              {{ $t("gitops.checklist.configure") }}
-            </NButton>
-          </div>
+          <MissingExternalURLAttention class="mt-1" />
         </div>
       </div>
 
@@ -62,11 +62,11 @@
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
           v-if="selectedIdentityEmail"
-          class="w-5 h-5 text-success shrink-0 mt-0.5"
+          class="w-5 h-5 text-success shrink-0"
         />
-        <MinusCircleIcon
+        <XCircleIcon
           v-else
-          class="w-5 h-5 text-warning shrink-0 mt-0.5"
+          class="w-5 h-5 text-warning shrink-0"
         />
         <div class="flex flex-col gap-y-2 flex-1">
           <span class="text-sm font-medium">{{
@@ -82,9 +82,17 @@
               clearable
               class="max-w-md"
             />
-            <NButton @click="showCreateDrawer = true">
-              {{ $t("common.create") }}
-            </NButton>
+            <PermissionGuardWrapper
+              v-slot="slotProps"
+              :project="project"
+              :permissions="[
+                'bb.workloadIdentities.create'
+              ]"
+            >
+              <NButton :disabled="slotProps.disabled" @click="showCreateDrawer = true">
+                {{ $t("common.create") }}
+              </NButton>
+            </PermissionGuardWrapper>
           </div>
           <p
             v-if="identityOptions.length === 0 && !isLoading"
@@ -107,11 +115,11 @@
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
           v-if="selectedDatabaseNames.length > 0"
-          class="w-5 h-5 text-success shrink-0 mt-0.5"
+          class="w-5 h-5 text-success shrink-0"
         />
-        <MinusCircleIcon
+        <XCircleIcon
           v-else
-          class="w-5 h-5 text-warning shrink-0 mt-0.5"
+          class="w-5 h-5 text-warning shrink-0"
         />
         <div class="flex flex-col gap-y-2 flex-1">
           <span class="text-sm font-medium">{{
@@ -146,17 +154,13 @@
         {{ $t("gitops.workflow.description") }}
       </p>
 
-      <!-- Runner type toggle -->
-      <div class="flex items-center gap-x-3">
-        <span class="text-sm font-medium">Runner:</span>
-        <NRadioGroup v-model:value="runnerType" size="small">
-          <NRadioButton value="self-hosted">Self-hosted</NRadioButton>
-          <NRadioButton value="cloud">GitHub / GitLab hosted</NRadioButton>
-        </NRadioGroup>
-      </div>
-
       <NTabs v-model:value="activeTab" type="line" animated>
         <NTabPane name="github-actions" tab="GitHub Actions">
+          <!-- Runner type toggle -->
+          <div class="flex items-center gap-x-2 mt-3">
+            <span class="text-sm">Self-hosted</span>
+            <NSwitch v-model:value="useSelfhostRunner" />
+          </div>
           <!-- sql-review.yml -->
           <div class="flex flex-col gap-y-2 mt-3">
             <div class="flex items-center gap-x-2">
@@ -316,17 +320,6 @@
         {{ $t("gitops.test-setup.naming-convention") }}
       </p>
     </div>
-
-    <!-- Documentation link -->
-    <div>
-      <a
-        href="https://docs.bytebase.com/vcs-integration/overview?source=console"
-        target="_blank"
-        class="text-accent hover:underline"
-      >
-        {{ $t("gitops.documentation") }} &rarr;
-      </a>
-    </div>
   </div>
 
   <CreateWorkloadIdentityDrawer
@@ -342,41 +335,31 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  MinusCircleIcon,
+  XCircleIcon,
 } from "lucide-vue-next";
-import {
-  NButton,
-  NInput,
-  NRadioButton,
-  NRadioGroup,
-  NSelect,
-  NTabPane,
-  NTabs,
-} from "naive-ui";
+import { NButton, NInput, NSelect, NSwitch, NTabPane, NTabs } from "naive-ui";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
+import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import { CopyButton, DatabaseSelect } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { MissingExternalURLAttention } from "@/components/v2/Form";
 import { useActuatorV1Store, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useWorkloadIdentityStore } from "@/store/modules/workloadIdentity";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
 }>();
 
-const router = useRouter();
 const actuatorStore = useActuatorV1Store();
 const workloadIdentityStore = useWorkloadIdentityStore();
 
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
-const { project: _project } = useProjectByName(projectName);
+const { project } = useProjectByName(projectName);
 
 const showCreateDrawer = ref(false);
 const selectedIdentityEmail = ref<string | null>(null);
@@ -385,23 +368,10 @@ const isLoading = ref(false);
 const identityOptions = ref<{ label: string; value: string }[]>([]);
 const identityMap = ref<Map<string, WorkloadIdentity>>(new Map());
 const activeTab = ref("github-actions");
-const runnerType = ref<"self-hosted" | "cloud">("self-hosted");
+const useSelfhostRunner = ref(false);
 const showSqlReviewYaml = ref(false);
 const showReleaseYaml = ref(false);
 const showGitlabCiYaml = ref(false);
-
-const hasExternalUrl = computed(() => {
-  const url = actuatorStore.serverInfo?.externalUrl ?? "";
-  return url.length > 0;
-});
-
-const hasSettingPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.set")
-);
-
-const goToGeneralSettings = () => {
-  router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL });
-};
 
 const selectedIdentity = computed(() => {
   if (!selectedIdentityEmail.value) return undefined;
@@ -484,9 +454,6 @@ watch(selectedConfig, (config) => {
 
 const bytebaseUrl = computed(() => {
   const url = actuatorStore.serverInfo?.externalUrl ?? "";
-  if (!url) {
-    return "{BYTEBASE_URL}";
-  }
   return url.replace(/\/$/, "");
 });
 
@@ -509,7 +476,7 @@ const targetsPlaceholder = computed(() => {
 });
 
 const runsOn = computed(() => {
-  return runnerType.value === "self-hosted" ? "self-hosted" : "ubuntu-latest";
+  return useSelfhostRunner.value ? "self-hosted" : "ubuntu-latest";
 });
 
 const sampleFilePath = "migrations/20240101000000_create_sample_table.sql";

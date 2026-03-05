@@ -2852,8 +2852,6 @@
     "checklist": {
       "title": "Kiểm tra trước khi bắt đầu",
       "external-url": "URL bên ngoài",
-      "external-url-missing": "URL bên ngoài chưa được cấu hình.",
-      "configure": "Cấu hình",
       "workload-identity": "Workload Identity",
       "target-databases": "Cơ sở dữ liệu đích"
     },
