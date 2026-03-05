@@ -111,7 +111,7 @@ const fetchSchemaString = useDebounceFn(async () => {
   try {
     const { metadata } = mocked.value;
     const request = create(GetSchemaStringRequestSchema, {
-      name: props.db.name,
+      name: `${props.db.name}/schemaString`,
       metadata: metadata,
     });
     const response =
