@@ -2862,7 +2862,8 @@
     "workflow": {
       "title": "工作流文件生成",
       "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
-      "file-hint": "保存为仓库中的 {filePath}"
+      "file-hint": "保存为仓库中的 {filePath}",
+      "self-hosted-runner": "自托管 runner"
     },
     "test-setup": {
       "title": "测试您的首次 GitOps 迁移",

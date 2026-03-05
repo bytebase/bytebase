@@ -2862,7 +2862,8 @@
     "workflow": {
       "title": "Tạo tệp workflow",
       "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
-      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn"
+      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn",
+      "self-hosted-runner": "Runner tự lưu trữ"
     },
     "test-setup": {
       "title": "Thử nghiệm migration GitOps đầu tiên",
