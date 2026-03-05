@@ -2856,8 +2856,7 @@
       "target-databases": "Bases de datos de destino"
     },
     "workload-identity": {
-      "select-placeholder": "Seleccionar una identidad de carga de trabajo",
-      "no-identity": "No se encontró ninguna identidad de carga de trabajo. Cree una para comenzar."
+      "select-placeholder": "Seleccionar una identidad de carga de trabajo"
     },
     "workflow": {
       "title": "Generación de archivo de flujo de trabajo",

@@ -61,7 +61,7 @@
       <!-- Check 2: Workload Identity -->
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
-          v-if="selectedIdentityEmail"
+          v-if="selectedIdentityName"
           class="w-5 h-5 text-success shrink-0"
         />
         <XCircleIcon
@@ -73,9 +73,9 @@
             $t("gitops.checklist.workload-identity")
           }}</span>
           <div class="flex items-center gap-x-3">
-            <NSelect
-              v-model:value="selectedIdentityEmail"
-              :options="identityOptions"
+            <WorkloadIdentitySelect
+              v-model:value="selectedIdentityName"
+              :parent="projectName"
               :placeholder="
                 $t('gitops.workload-identity.select-placeholder')
               "
@@ -94,12 +94,6 @@
               </NButton>
             </PermissionGuardWrapper>
           </div>
-          <p
-            v-if="identityOptions.length === 0 && !isLoading"
-            class="text-sm text-control-light"
-          >
-            {{ $t("gitops.workload-identity.no-identity") }}
-          </p>
           <a
             v-if="repoUrl"
             :href="repoUrl"
@@ -337,19 +331,27 @@ import {
   ChevronRightIcon,
   XCircleIcon,
 } from "lucide-vue-next";
-import { NButton, NInput, NSelect, NSwitch, NTabPane, NTabs } from "naive-ui";
-import { computed, onMounted, ref, watch } from "vue";
+import { NButton, NInput, NSwitch, NTabPane, NTabs } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
-import { CopyButton, DatabaseSelect } from "@/components/v2";
+import {
+  CopyButton,
+  DatabaseSelect,
+  WorkloadIdentitySelect,
+} from "@/components/v2";
 import { MissingExternalURLAttention } from "@/components/v2/Form";
-import { useActuatorV1Store, useProjectByName } from "@/store";
+import {
+  extractWorkloadIdentityId,
+  useActuatorV1Store,
+  useProjectByName,
+  useWorkloadIdentityStore,
+  workloadIdentityNamePrefix,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useWorkloadIdentityStore } from "@/store/modules/workloadIdentity";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
-import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 
 const props = defineProps<{
   projectId: string;
@@ -362,11 +364,8 @@ const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const { project } = useProjectByName(projectName);
 
 const showCreateDrawer = ref(false);
-const selectedIdentityEmail = ref<string | null>(null);
+const selectedIdentityName = ref<string | undefined>(undefined);
 const selectedDatabaseNames = ref<string[]>([]);
-const isLoading = ref(false);
-const identityOptions = ref<{ label: string; value: string }[]>([]);
-const identityMap = ref<Map<string, WorkloadIdentity>>(new Map());
 const activeTab = ref("github-actions");
 const useSelfhostRunner = ref(false);
 const showSqlReviewYaml = ref(false);
@@ -374,8 +373,8 @@ const showReleaseYaml = ref(false);
 const showGitlabCiYaml = ref(false);
 
 const selectedIdentity = computed(() => {
-  if (!selectedIdentityEmail.value) return undefined;
-  return identityMap.value.get(selectedIdentityEmail.value);
+  if (!selectedIdentityName.value) return undefined;
+  return workloadIdentityStore.getWorkloadIdentity(selectedIdentityName.value);
 });
 
 const selectedConfig = computed(
@@ -458,10 +457,10 @@ const bytebaseUrl = computed(() => {
 });
 
 const workloadIdentityEmail = computed(() => {
-  if (!selectedIdentityEmail.value) {
+  if (!selectedIdentityName.value) {
     return "{WORKLOAD_IDENTITY_EMAIL}";
   }
-  return selectedIdentityEmail.value;
+  return extractWorkloadIdentityId(selectedIdentityName.value);
 });
 
 const targetsString = computed(() => {
@@ -704,37 +703,7 @@ ${gitlabExchangeScript}
     - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --target-stage=environments/prod --plan=$PLAN`;
 });
 
-const fetchWorkloadIdentities = async () => {
-  isLoading.value = true;
-  try {
-    const response = await workloadIdentityStore.listWorkloadIdentities({
-      parent: projectName.value,
-      pageSize: 100,
-      pageToken: undefined,
-      showDeleted: false,
-    });
-    const map = new Map<string, WorkloadIdentity>();
-    const options: { label: string; value: string }[] = [];
-    for (const wi of response.workloadIdentities) {
-      map.set(wi.email, wi);
-      options.push({
-        label: `${wi.title} (${wi.email})`,
-        value: wi.email,
-      });
-    }
-    identityMap.value = map;
-    identityOptions.value = options;
-  } finally {
-    isLoading.value = false;
-  }
+const handleWorkloadIdentityCreated = (user: User) => {
+  selectedIdentityName.value = `${workloadIdentityNamePrefix}${user.email}`;
 };
-
-const handleWorkloadIdentityCreated = async (user: User) => {
-  await fetchWorkloadIdentities();
-  selectedIdentityEmail.value = user.email;
-};
-
-onMounted(() => {
-  fetchWorkloadIdentities();
-});
 </script>

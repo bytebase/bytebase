@@ -470,7 +470,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("gitops.self"),
           requiredPermissionList: () => [
-            "bb.settings.get",
             "bb.workloadIdentities.list",
             "bb.databases.list",
           ],
