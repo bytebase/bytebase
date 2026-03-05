@@ -1028,6 +1028,16 @@
           "title": "Issue label",
           "description": "Filter by issue label"
         },
+        "issue-type": {
+          "title": "Type",
+          "description": "Filter by issue type",
+          "value": {
+            "database-change": "Database Change",
+            "grant-request": "Grant Request",
+            "database-export": "Database Export",
+            "access-grant": "Access Grant"
+          }
+        },
         "table": {
           "title": "Table",
           "description": "Input the value then press Enter"
