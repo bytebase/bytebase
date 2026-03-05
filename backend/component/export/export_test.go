@@ -30,6 +30,12 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 			want:         "INSERT INTO `table1` (`a`,`b`) VALUES (",
 		},
 		{
+			engine:       storepb.Engine_TIDB,
+			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "cbt_plans"}},
+			columnNames:  []string{"id", "app_code", "locale"},
+			want:         "INSERT INTO `cbt_plans` (`id`,`app_code`,`locale`) VALUES (",
+		},
+		{
 			engine:       storepb.Engine_POSTGRES,
 			resourceList: nil,
 			columnNames:  []string{"a"},
