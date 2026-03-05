@@ -826,6 +826,18 @@ func queryRetry(
 					continue
 				}
 
+				if len(analysis.JoinedCollections) > 0 {
+					var joined []joinedSchema
+					for _, jc := range analysis.JoinedCollections {
+						js, jsErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
+						if jsErr != nil {
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(jsErr, "failed to get object schema for joined collection %q", jc.Collection))
+						}
+						joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
+					}
+					objectSchema = injectJoinedSchemas(objectSchema, joined)
+				}
+
 				for _, row := range result.Rows {
 					if len(row.Values) == 0 {
 						continue

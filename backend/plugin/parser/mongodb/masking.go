@@ -27,6 +27,14 @@ const (
 	MaskableAPIAggregate
 )
 
+// JoinedCollection records a $lookup or $graphLookup join extracted from an aggregate pipeline.
+type JoinedCollection struct {
+	// AsField is the output field name added to each document (the "as" argument).
+	AsField string
+	// Collection is the source collection being joined (the "from" argument).
+	Collection string
+}
+
 // MaskingAnalysis contains MongoDB statement data needed by masking checks.
 type MaskingAnalysis struct {
 	API             MaskableAPI
@@ -36,6 +44,8 @@ type MaskingAnalysis struct {
 	// UnsupportedStage is the first pipeline stage that prevents masking (e.g. "$group").
 	// Only set when API == MaskableAPIUnsupportedRead for aggregate pipelines.
 	UnsupportedStage string
+	// JoinedCollections holds join info extracted from $lookup and $graphLookup stages.
+	JoinedCollections []JoinedCollection
 }
 
 // AnalyzeMaskingStatement analyzes a MongoDB shell statement for masking checks.
@@ -361,10 +371,11 @@ var shapePreservingAggregateStages = map[string]bool{
 	"$setWindowFields": true,
 	"$fill":            true,
 	"$redact":          true,
+	"$unwind":          true,
 }
 
 func classifyAggregateForMasking(am mongoparser.IAggregateMethodContext) *MaskingAnalysis {
-	predicateFields, unsupportedStage := extractAggregatePredicateFields(am.Arguments())
+	predicateFields, joinedCollections, unsupportedStage := extractAggregatePredicateFields(am.Arguments())
 	if unsupportedStage != "" {
 		return &MaskingAnalysis{
 			API:              MaskableAPIUnsupportedRead,
@@ -373,61 +384,143 @@ func classifyAggregateForMasking(am mongoparser.IAggregateMethodContext) *Maskin
 		}
 	}
 	return &MaskingAnalysis{
-		API:             MaskableAPIAggregate,
-		Operation:       "aggregate",
-		PredicateFields: predicateFields,
+		API:               MaskableAPIAggregate,
+		Operation:         "aggregate",
+		PredicateFields:   predicateFields,
+		JoinedCollections: joinedCollections,
 	}
 }
 
-// extractAggregatePredicateFields walks the pipeline and returns predicate fields from $match stages.
-// The second return value is the first unsupported stage name, or "" if all stages are allowed.
-func extractAggregatePredicateFields(args mongoparser.IArgumentsContext) ([]string, string) {
+// extractAggregatePredicateFields walks the pipeline and returns:
+// - predicate fields from $match stages
+// - join info from $lookup/$graphLookup stages
+// - the first unsupported stage name, or "" if all stages are allowed
+func extractAggregatePredicateFields(args mongoparser.IArgumentsContext) ([]string, []JoinedCollection, string) {
 	if args == nil {
-		return nil, ""
+		return nil, nil, ""
 	}
 	allArgs := args.AllArgument()
 	if len(allArgs) == 0 {
-		return nil, ""
+		return nil, nil, ""
 	}
 
 	first := allArgs[0]
 	if first == nil || first.Value() == nil {
-		return nil, ""
+		return nil, nil, ""
 	}
 
 	arr := extractArrayValue(first.Value())
 	if arr == nil {
-		return nil, "unknown"
+		return nil, nil, "unknown"
 	}
 
 	fields := make(map[string]struct{})
+	var joinedCollections []JoinedCollection
 	for _, elem := range arr.AllValue() {
 		doc := extractDocumentValue(elem)
 		if doc == nil {
-			return nil, "unknown"
+			return nil, nil, "unknown"
 		}
 		pairs := doc.AllPair()
 		if len(pairs) == 0 {
 			continue
 		}
 		stageName := extractPairKey(pairs[0].Key())
-		if !shapePreservingAggregateStages[stageName] {
-			return nil, stageName
-		}
-		if stageName == "$match" {
-			stageDoc := extractDocumentValue(pairs[0].Value())
-			if stageDoc != nil {
-				collectPredicateFieldsFromDocument(stageDoc, "", fields)
+		switch {
+		case shapePreservingAggregateStages[stageName]:
+			if stageName == "$match" {
+				stageDoc := extractDocumentValue(pairs[0].Value())
+				if stageDoc != nil {
+					collectPredicateFieldsFromDocument(stageDoc, "", fields)
+				}
 			}
+		case stageName == "$lookup":
+			join, unsupported := extractLookupJoin(pairs[0].Value())
+			if unsupported {
+				return nil, nil, "$lookup"
+			}
+			if join != nil {
+				joinedCollections = append(joinedCollections, *join)
+			}
+		case stageName == "$graphLookup":
+			join := extractGraphLookupJoin(pairs[0].Value())
+			if join != nil {
+				joinedCollections = append(joinedCollections, *join)
+			}
+		default:
+			return nil, nil, stageName
 		}
 	}
 
-	if len(fields) == 0 {
-		return nil, ""
+	var predicateFields []string
+	if len(fields) > 0 {
+		predicateFields = make([]string, 0, len(fields))
+		for field := range fields {
+			predicateFields = append(predicateFields, field)
+		}
 	}
-	result := make([]string, 0, len(fields))
-	for field := range fields {
-		result = append(result, field)
+	return predicateFields, joinedCollections, ""
+}
+
+// extractLookupJoin parses a $lookup stage value and returns the join info.
+// Returns (nil, true) if this is a pipeline-form $lookup (unsupported).
+// Returns (nil, false) if from/as cannot be extracted (treated as passthrough).
+func extractLookupJoin(value mongoparser.IValueContext) (*JoinedCollection, bool) {
+	doc := extractDocumentValue(value)
+	if doc == nil {
+		return nil, false
 	}
-	return result, ""
+	var from, as string
+	for _, pair := range doc.AllPair() {
+		key := extractPairKey(pair.Key())
+		switch key {
+		case "pipeline":
+			// Pipeline form is not supported.
+			return nil, true
+		case "from":
+			from = extractStringLiteralValue(pair.Value())
+		case "as":
+			as = extractStringLiteralValue(pair.Value())
+		default:
+		}
+	}
+	if from == "" || as == "" {
+		return nil, false
+	}
+	return &JoinedCollection{AsField: as, Collection: from}, false
+}
+
+// extractGraphLookupJoin parses a $graphLookup stage value and returns the join info.
+func extractGraphLookupJoin(value mongoparser.IValueContext) *JoinedCollection {
+	doc := extractDocumentValue(value)
+	if doc == nil {
+		return nil
+	}
+	var from, as string
+	for _, pair := range doc.AllPair() {
+		key := extractPairKey(pair.Key())
+		switch key {
+		case "from":
+			from = extractStringLiteralValue(pair.Value())
+		case "as":
+			as = extractStringLiteralValue(pair.Value())
+		default:
+		}
+	}
+	if from == "" || as == "" {
+		return nil
+	}
+	return &JoinedCollection{AsField: as, Collection: from}
+}
+
+// extractStringLiteralValue extracts a plain string value from a Value node.
+func extractStringLiteralValue(value mongoparser.IValueContext) string {
+	if value == nil {
+		return ""
+	}
+	text := value.GetText()
+	if len(text) >= 2 && (text[0] == '"' || text[0] == '\'') {
+		return unquoteMongoString(text)
+	}
+	return ""
 }

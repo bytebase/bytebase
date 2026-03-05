@@ -2856,8 +2856,7 @@
       "target-databases": "Cơ sở dữ liệu đích"
     },
     "workload-identity": {
-      "select-placeholder": "Chọn một workload identity",
-      "no-identity": "Không tìm thấy workload identity. Tạo một cái để bắt đầu."
+      "select-placeholder": "Chọn một workload identity"
     },
     "workflow": {
       "title": "Tạo tệp workflow",

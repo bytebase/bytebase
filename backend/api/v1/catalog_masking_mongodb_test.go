@@ -147,6 +147,86 @@ func mustMongoSchema(t *testing.T, schemaName string) *storepb.ObjectSchema {
 				},
 			},
 		}
+	case "array-level-masked":
+		// tags array is masked at the array level (the whole array, or unwound scalar, is masked).
+		return &storepb.ObjectSchema{
+			Type: storepb.ObjectSchema_OBJECT,
+			Kind: &storepb.ObjectSchema_StructKind_{
+				StructKind: &storepb.ObjectSchema_StructKind{
+					Properties: map[string]*storepb.ObjectSchema{
+						"tags": {
+							Type:         storepb.ObjectSchema_ARRAY,
+							SemanticType: "bb.default",
+							Kind: &storepb.ObjectSchema_ArrayKind_{
+								ArrayKind: &storepb.ObjectSchema_ArrayKind{
+									Kind: &storepb.ObjectSchema{Type: storepb.ObjectSchema_STRING},
+								},
+							},
+						},
+						"count": {Type: storepb.ObjectSchema_NUMBER},
+					},
+				},
+			},
+		}
+	case "array-of-objects":
+		// friends is an array of objects where phone is sensitive.
+		return &storepb.ObjectSchema{
+			Type: storepb.ObjectSchema_OBJECT,
+			Kind: &storepb.ObjectSchema_StructKind_{
+				StructKind: &storepb.ObjectSchema_StructKind{
+					Properties: map[string]*storepb.ObjectSchema{
+						"friends": {
+							Type: storepb.ObjectSchema_ARRAY,
+							Kind: &storepb.ObjectSchema_ArrayKind_{
+								ArrayKind: &storepb.ObjectSchema_ArrayKind{
+									Kind: &storepb.ObjectSchema{
+										Type: storepb.ObjectSchema_OBJECT,
+										Kind: &storepb.ObjectSchema_StructKind_{
+											StructKind: &storepb.ObjectSchema_StructKind{
+												Properties: map[string]*storepb.ObjectSchema{
+													"name":  {Type: storepb.ObjectSchema_STRING},
+													"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	case "lookup-joined":
+		// users collection with an injected "orders" field (array of objects where total is sensitive).
+		return &storepb.ObjectSchema{
+			Type: storepb.ObjectSchema_OBJECT,
+			Kind: &storepb.ObjectSchema_StructKind_{
+				StructKind: &storepb.ObjectSchema_StructKind{
+					Properties: map[string]*storepb.ObjectSchema{
+						"name": {Type: storepb.ObjectSchema_STRING},
+						"orders": {
+							Type: storepb.ObjectSchema_ARRAY,
+							Kind: &storepb.ObjectSchema_ArrayKind_{
+								ArrayKind: &storepb.ObjectSchema_ArrayKind{
+									Kind: &storepb.ObjectSchema{
+										Type: storepb.ObjectSchema_OBJECT,
+										Kind: &storepb.ObjectSchema_StructKind_{
+											StructKind: &storepb.ObjectSchema_StructKind{
+												Properties: map[string]*storepb.ObjectSchema{
+													"total":  {Type: storepb.ObjectSchema_NUMBER, SemanticType: "bb.default"},
+													"status": {Type: storepb.ObjectSchema_STRING},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
 	case "non-object":
 		return &storepb.ObjectSchema{
 			Type: storepb.ObjectSchema_OBJECT,

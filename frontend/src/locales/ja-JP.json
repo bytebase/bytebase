@@ -2856,8 +2856,7 @@
       "target-databases": "ターゲットデータベース"
     },
     "workload-identity": {
-      "select-placeholder": "ワークロードアイデンティティを選択",
-      "no-identity": "ワークロードアイデンティティが見つかりません。作成して始めましょう。"
+      "select-placeholder": "ワークロードアイデンティティを選択"
     },
     "workflow": {
       "title": "ワークフローファイル生成",
