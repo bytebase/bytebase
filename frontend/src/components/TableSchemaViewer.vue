@@ -62,7 +62,7 @@ const resourceName = computed(() => {
 onMounted(async () => {
   nextTick(async () => {
     const request = create(GetSchemaStringRequestSchema, {
-      name: props.database.name,
+      name: `${props.database.name}/schemaString`,
       type: props.type,
       schema: props.schema,
       object: props.object,
