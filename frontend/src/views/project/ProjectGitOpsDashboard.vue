@@ -1,25 +1,25 @@
 <template>
   <div class="w-full px-4 flex flex-col gap-y-6 py-4">
-    <!-- Header -->
-    <div>
-      <h2 class="text-lg font-medium">{{ $t("gitops.self") }}</h2>
-      <p class="textinfolabel mt-1">
+    <!-- Section 1: What is GitOps -->
+    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-4">
+      <h2 class="text-lg font-medium">
+        {{ $t("gitops.overview.title") }}
+      </h2>
+      <p class="textinfolabel">
         {{ $t("gitops.overview.description") }}
       </p>
-      <p class="textinfolabel mt-1">
+      <p class="textinfolabel">
         {{ $t("gitops.overview.description-git") }}
       </p>
+      <img
+        :src="gitopsWorkflowImage"
+        alt="GitOps Workflow"
+        class="w-full max-w-4xl h-[350px] object-contain"
+      />
     </div>
 
-    <!-- Workflow diagram -->
-    <img
-      :src="gitopsWorkflowImage"
-      alt="GitOps Workflow"
-      class="w-full max-w-4xl"
-    />
-
-    <!-- Part 1: Checklist -->
-    <div class="flex flex-col gap-y-1">
+    <!-- Section 2: Checks before we start -->
+    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-1">
       <h2 class="text-lg font-medium mb-2">
         {{ $t("gitops.checklist.title") }}
       </h2>
@@ -135,8 +135,8 @@
       </div>
     </div>
 
-    <!-- Part 2: Workflow File -->
-    <div class="flex flex-col gap-y-3">
+    <!-- Section 3: Workflow file generation -->
+    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-3">
       <h2 class="text-lg font-medium">
         {{ $t("gitops.workflow.title") }}
       </h2>
@@ -247,8 +247,8 @@
       </NTabs>
     </div>
 
-    <!-- Part 3: Test Your Setup -->
-    <div class="flex flex-col gap-y-4">
+    <!-- Section 4: Test your first GitOps migration -->
+    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-4">
       <h2 class="text-lg font-medium">
         {{ $t("gitops.test-setup.title") }}
       </h2>

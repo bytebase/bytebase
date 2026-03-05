@@ -2835,11 +2835,12 @@
   "gitops": {
     "self": "GitOps",
     "overview": {
+      "title": "What is GitOps",
       "description": "Bytebase GitOps lets you manage Database as Code by integrating database schema changes into your CI/CD pipeline.",
       "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts."
     },
     "checklist": {
-      "title": "Checklist",
+      "title": "Checks before we start",
       "external-url": "External URL",
       "external-url-missing": "External URL is not configured.",
       "configure": "Configure",
@@ -2851,12 +2852,12 @@
       "no-identity": "No workload identity found. Create one to get started."
     },
     "workflow": {
-      "title": "Workflow File",
+      "title": "Workflow file generation",
       "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
       "file-hint": "Save as {filePath} in your repository"
     },
     "test-setup": {
-      "title": "Test Your Setup",
+      "title": "Test your first GitOps migration",
       "description": "Verify the workflow is working end-to-end with a sample migration file.",
       "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
       "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
