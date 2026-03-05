@@ -30,7 +30,7 @@ const postgresqlContent: Partial<Record<InfoSection, InfoSnippet>> = {
     learnMoreLinks: [
       {
         title: "Connect Your Instance",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview",
+        url: "https://docs.bytebase.com/get-started/instance?source=console",
       },
     ],
   },
@@ -46,7 +46,7 @@ ALTER USER ${DATASOURCE_ADMIN_USER_NAME} WITH SUPERUSER;`,
     learnMoreLinks: [
       {
         title: "Configure Database User",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#configure-a-database-user",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
       },
     ],
   },
@@ -57,7 +57,7 @@ ALTER USER ${DATASOURCE_ADMIN_USER_NAME} WITH SUPERUSER;`,
     learnMoreLinks: [
       {
         title: "SSL/TLS Connection",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#ssltls-connection",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#ssltls-connection",
       },
     ],
   },
@@ -68,7 +68,7 @@ ALTER USER ${DATASOURCE_ADMIN_USER_NAME} WITH SUPERUSER;`,
     learnMoreLinks: [
       {
         title: "SSH Tunnel",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#ssh-tunnel",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],
   },
@@ -82,7 +82,7 @@ const mysqlContent: Partial<Record<InfoSection, InfoSnippet>> = {
     learnMoreLinks: [
       {
         title: "Connect Your Instance",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview",
+        url: "https://docs.bytebase.com/get-started/instance?source=console",
       },
     ],
   },
@@ -103,7 +103,7 @@ ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
     learnMoreLinks: [
       {
         title: "Configure Database User",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#configure-a-database-user",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
       },
     ],
   },
@@ -114,7 +114,7 @@ ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
     learnMoreLinks: [
       {
         title: "SSL/TLS Connection",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#ssltls-connection",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#ssltls-connection",
       },
     ],
   },
@@ -125,7 +125,7 @@ ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
     learnMoreLinks: [
       {
         title: "SSH Tunnel",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#ssh-tunnel",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],
   },
@@ -139,7 +139,7 @@ const mongodbContent: Partial<Record<InfoSection, InfoSnippet>> = {
     learnMoreLinks: [
       {
         title: "Connect Your Instance",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview",
+        url: "https://docs.bytebase.com/get-started/instance?source=console",
       },
     ],
   },
@@ -162,7 +162,7 @@ db.createUser({
     learnMoreLinks: [
       {
         title: "Configure Database User",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#configure-a-database-user",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
       },
     ],
   },
@@ -173,7 +173,7 @@ db.createUser({
     learnMoreLinks: [
       {
         title: "SSL/TLS Connection",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#ssltls-connection",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#ssltls-connection",
       },
     ],
   },
@@ -184,7 +184,7 @@ db.createUser({
     learnMoreLinks: [
       {
         title: "SSH Tunnel",
-        url: "https://www.bytebase.com/docs/get-started/connect/overview#ssh-tunnel",
+        url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],
   },

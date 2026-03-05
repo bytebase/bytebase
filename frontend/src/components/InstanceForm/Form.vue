@@ -130,7 +130,7 @@
           <!--Do not show external link on create to reduce cognitive load-->
           <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
             <label for="external-link" class="textlabel inline-flex">
-              <span class>
+              <span>
                 {{
                   basicInfo.engine === Engine.SNOWFLAKE
                     ? $t("instance.snowflake-web-console")
