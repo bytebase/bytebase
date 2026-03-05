@@ -21,6 +21,7 @@ export const AllSearchScopeIdList = [
   "table",
   // issue related search scopes.
   "issue-label",
+  "issue-type",
   "taskType",
   "current-approver",
   "approval",

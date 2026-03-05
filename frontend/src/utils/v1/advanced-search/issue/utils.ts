@@ -3,6 +3,7 @@ import type { IssueFilter } from "@/types";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_ApprovalStatus,
+  Issue_Type,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams } from "../common";
@@ -45,6 +46,9 @@ export const buildIssueFilterBySearchParams = (
     ),
     riskLevelList: getValuesFromSearchParams(params, "risk-level").map(
       (risk) => RiskLevel[risk as keyof typeof RiskLevel]
+    ),
+    typeList: getValuesFromSearchParams(params, "issue-type").map(
+      (type) => Issue_Type[type as keyof typeof Issue_Type]
     ),
     labels,
   };

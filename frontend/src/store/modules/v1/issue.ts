@@ -65,8 +65,10 @@ export const buildIssueFilter = (find: IssueFilter): string => {
       `create_time <= "${dayjs(find.createdTsBefore).utc().format()}"`
     );
   }
-  if (find.type) {
-    filter.push(`type == "${Issue_Type[find.type]}"`);
+  if (find.typeList && find.typeList.length > 0) {
+    filter.push(
+      `type in [${find.typeList.map((t) => `"${Issue_Type[t]}"`).join(",")}]`
+    );
   }
   if (find.labels && find.labels.length > 0) {
     filter.push(`labels in [${find.labels.map((l) => `"${l}"`).join(",")}]`);

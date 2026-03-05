@@ -84,6 +84,7 @@ const allowedScopes = computed((): SearchScopeId[] => {
     "current-approver",
     "approval",
     "status",
+    "issue-type",
     "issue-label",
     "project",
     "risk-level",
