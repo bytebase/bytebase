@@ -13,6 +13,7 @@ const instanceRoutes: RouteRecordRaw[] = [
     name: INSTANCE_ROUTE_CREATE,
     meta: {
       title: () => t("instance.new-instance"),
+      requiredPermissionList: () => ["bb.instances.create"],
       getQuickActionList: () => [],
     },
     components: {
