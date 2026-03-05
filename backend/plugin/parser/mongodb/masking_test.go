@@ -138,13 +138,37 @@ func TestAnalyzeMaskingStatement(t *testing.T) {
 			},
 		},
 		{
-			description: "aggregate with $lookup is unsupported",
+			description: "aggregate with $lookup basic form is supported",
 			statement:   `db.users.aggregate([{$lookup: {from: "orders", localField: "_id", foreignField: "userId", as: "orders"}}])`,
+			want: &MaskingAnalysis{
+				API:        MaskableAPIAggregate,
+				Operation:  "aggregate",
+				Collection: "users",
+				JoinedCollections: []JoinedCollection{
+					{AsField: "orders", Collection: "orders"},
+				},
+			},
+		},
+		{
+			description: "aggregate with $lookup pipeline form is unsupported",
+			statement:   `db.users.aggregate([{$lookup: {from: "orders", pipeline: [{$match: {status: "active"}}], as: "orders"}}])`,
 			want: &MaskingAnalysis{
 				API:              MaskableAPIUnsupportedRead,
 				Operation:        "aggregate",
 				Collection:       "users",
 				UnsupportedStage: "$lookup",
+			},
+		},
+		{
+			description: "aggregate with $graphLookup is supported",
+			statement:   `db.users.aggregate([{$graphLookup: {from: "employees", startWith: "$reportsTo", connectFromField: "reportsTo", connectToField: "name", as: "reportingHierarchy"}}])`,
+			want: &MaskingAnalysis{
+				API:        MaskableAPIAggregate,
+				Operation:  "aggregate",
+				Collection: "users",
+				JoinedCollections: []JoinedCollection{
+					{AsField: "reportingHierarchy", Collection: "employees"},
+				},
 			},
 		},
 		{

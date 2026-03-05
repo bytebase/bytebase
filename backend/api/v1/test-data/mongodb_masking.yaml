@@ -39,6 +39,11 @@ maskDocument:
     input: '{"friends":{"name":"Bob","phone":"555-1234"}}'
     want: '{"friends":{"name":"Bob","phone":"******"}}'
 
+  - description: lookup joined array field is masked
+    schema: lookup-joined
+    input: '{"name":"Alice","orders":[{"total":99.9,"status":"shipped"},{"total":5.0,"status":"pending"}]}'
+    want: '{"name":"Alice","orders":[{"total":"******","status":"shipped"},{"total":"******","status":"pending"}]}'
+
 checkBlocked:
   - description: nil analysis allowed
     analysisNil: true
