@@ -1226,7 +1226,7 @@
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'，然后同步数据库",
+      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'。如果使用了 SET ROLE，请将该 schema 的 USAGE 和 CREATE 权限授予对应角色。然后同步数据库",
       "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
       "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
     },
