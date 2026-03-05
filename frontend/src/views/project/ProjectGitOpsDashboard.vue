@@ -5,12 +5,14 @@
       <h2 class="text-lg font-medium">
         {{ $t("gitops.overview.title") }}
       </h2>
-      <p class="textinfolabel">
-        {{ $t("gitops.overview.description") }}
-      </p>
-      <p class="textinfolabel">
-        {{ $t("gitops.overview.description-git") }}
-      </p>
+      <div class="flex flex-col gap-y-1">
+        <p class="textinfolabel">
+          {{ $t("gitops.overview.description") }}
+        </p>
+        <p class="textinfolabel">
+          {{ $t("gitops.overview.description-git") }}
+        </p>
+      </div>
       <img
         :src="gitopsWorkflowImage"
         alt="GitOps Workflow"
