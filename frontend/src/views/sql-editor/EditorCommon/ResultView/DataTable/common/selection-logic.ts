@@ -33,8 +33,8 @@ export type SelectionContext = {
   toggleSelectColumn: (column: number) => void;
   toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
-  copySelected: () => void;
-  copyAll: () => void;
+  copySelectionToClipboard: () => void;
+  copyAllToClipboard: () => void;
 };
 
 export const KEY = Symbol(
@@ -299,14 +299,14 @@ export const provideSelectionContext = ({
       });
   };
 
-  const copyAll = () => {
+  const copyAllToClipboard = () => {
     copy({
       rows: rows.value.map((_, i) => i),
       columns: [],
     });
   };
 
-  const copySelected = () => {
+  const copySelectionToClipboard = () => {
     copy(state.value);
   };
 
@@ -330,7 +330,7 @@ export const provideSelectionContext = ({
     if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      copySelected();
+      copySelectionToClipboard();
     }
   });
 
@@ -341,8 +341,8 @@ export const provideSelectionContext = ({
     toggleSelectColumn,
     toggleSelectCell,
     deselect,
-    copySelected,
-    copyAll,
+    copySelectionToClipboard,
+    copyAllToClipboard,
   };
   provide(KEY, context);
   return context;

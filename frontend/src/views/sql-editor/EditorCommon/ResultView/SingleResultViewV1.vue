@@ -66,7 +66,7 @@
           v-if="!disallowCopyingData && rows.length > 0"
           size="small"
           style="--n-padding: 0 8px"
-          @click="copyAll"
+          @click="copyAllToClipboard"
         >
           <template #icon>
             <CopyIcon class="w-4 h-4" />
@@ -289,7 +289,6 @@ import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { flattenElasticsearchSearchResult } from "@/composables/utils";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
-  pushNotification,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -690,7 +689,7 @@ const getMaskingReason = (columnIndex: number) => {
   return reason;
 };
 
-const { copyAll } = provideSelectionContext({
+const { copyAllToClipboard } = provideSelectionContext({
   columns,
   rows,
   binaryFormatContext,
