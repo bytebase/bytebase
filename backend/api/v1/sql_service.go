@@ -290,11 +290,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-	}
-	if accessGrant != nil {
-		// unset the query limit
-		queryContext.Limit = 0
-		queryContext.SkipMasking = accessGrant.Payload.Unmask
+		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema

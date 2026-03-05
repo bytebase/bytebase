@@ -88,7 +88,7 @@
           <MaxRowCountSelect
             v-model:value="resultRowsLimit"
             :quaternary="true"
-            :maximum="policy.maximumResultRows"
+            :maximum="queryDataPolicy.maximumResultRows"
           />
         </div>
       </div>
@@ -101,7 +101,7 @@ import { orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
 import { NButton, NPopover, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, watch, watchEffect } from "vue";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import {
@@ -109,7 +109,6 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
@@ -132,11 +131,9 @@ const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 
-const { redisCommandOption, resultRowsLimit, project } = storeToRefs(
+const { redisCommandOption, resultRowsLimit, queryDataPolicy } = storeToRefs(
   useSQLEditorStore()
 );
-
-const { policy } = useQueryDataPolicy(project);
 
 const show = computed(() => {
   return tabStore.currentTab?.mode !== "ADMIN";
@@ -168,7 +165,7 @@ const dataSources = computed(() => {
 const dataSourceUnaccessibleReason = (
   dataSource: DataSource
 ): string | undefined => {
-  if (policy.value.allowAdminDataSource) {
+  if (queryDataPolicy.value.allowAdminDataSource) {
     return undefined;
   }
   if (dataSource.type !== DataSourceType.ADMIN) {
@@ -207,10 +204,4 @@ watch(
     immediate: true,
   }
 );
-
-watchEffect(() => {
-  if (resultRowsLimit.value > policy.value.maximumResultRows) {
-    resultRowsLimit.value = policy.value.maximumResultRows;
-  }
-});
 </script>

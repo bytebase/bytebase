@@ -36,7 +36,7 @@
       :tooltip="$t('sql-editor.batch-export.tooltip', { max: MAX_EXPORT })"
       :validate="validateExport"
       :support-password="true"
-      :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
+      :maximum-export-count="queryDataPolicy.maximumResultRows"
       @export="handleExportBtnClick"
     >
       <template #form>
@@ -130,7 +130,6 @@ import {
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
-import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -165,9 +164,7 @@ const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
 const contextMenu = provideResultTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
-const { project } = storeToRefs(useSQLEditorStore());
-
-const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(project);
+const { queryDataPolicy } = storeToRefs(useSQLEditorStore());
 
 const selectedDatabaseNameList = ref<string[]>([]);
 
