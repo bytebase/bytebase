@@ -68,7 +68,7 @@ require (
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/microsoft/go-mssqldb v1.9.8
-	github.com/modelcontextprotocol/go-sdk v1.3.1
+	github.com/modelcontextprotocol/go-sdk v1.4.0
 	github.com/nyaruka/phonenumbers v1.6.10
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/paulmach/orb v0.12.0
