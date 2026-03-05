@@ -1,11 +1,11 @@
 <template>
   <div class="w-full px-4 flex flex-col gap-y-6 py-4">
     <!-- Section 1: What is GitOps -->
-    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-4">
+    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-2">
       <h2 class="text-lg font-medium">
         {{ $t("gitops.overview.title") }}
       </h2>
-      <div class="flex flex-col gap-y-1">
+      <div>
         <p class="textinfolabel">
           {{ $t("gitops.overview.description") }}
         </p>
