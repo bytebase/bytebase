@@ -627,7 +627,7 @@ ${exchangeTokenStep}
 const gitlabExchangeScript = `    - |
       ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
         -H "Content-Type: application/json" \\
-        -d "{\\"token\\":\\"$CI_JOB_JWT_V2\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+        -d "{\\"token\\":\\"$GITLAB_OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
         | jq -r '.accessToken')
       export BYTEBASE_ACCESS_TOKEN=$ACCESS_TOKEN`;
 
