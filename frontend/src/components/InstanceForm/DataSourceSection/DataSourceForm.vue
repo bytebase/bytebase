@@ -1,6 +1,7 @@
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
   <div class="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3">
+    <template v-if="!optionsOnly">
     <template
       v-if="
         basicInfo.engine !== Engine.SPANNER &&
@@ -19,19 +20,21 @@
         "
         class="sm:col-span-3 sm:col-start-1"
       >
-        <NRadioGroup
-          v-model:value="dataSource.authenticationType"
-          class="textlabel"
-          :disabled="!allowEdit"
-        >
-          <NRadio
-            v-for="item in supportedAuthenticationTypes"
-            :key="item.value"
-            :value="item.value"
+        <div class="flex items-center gap-x-2">
+          <NRadioGroup
+            v-model:value="dataSource.authenticationType"
+            class="textlabel"
+            :disabled="!allowEdit"
           >
-            {{ item.label }}
-          </NRadio>
-        </NRadioGroup>
+            <NRadio
+              v-for="item in supportedAuthenticationTypes"
+              :key="item.value"
+              :value="item.value"
+            >
+              {{ item.label }}
+            </NRadio>
+          </NRadioGroup>
+        </div>
       </div>
       <div
         v-else-if="basicInfo.engine === Engine.HIVE"
@@ -48,8 +51,9 @@
         </NRadioGroup>
       </div>
       <CreateDataSourceExample
+        v-if="!isCreating"
         class-name="sm:col-span-3 border-none"
-        :create-instance-flag="isCreating"
+        :create-instance-flag="false"
         :engine="basicInfo.engine"
         :data-source-type="dataSource.type"
         :authentication-type="dataSource.authenticationType"
@@ -934,7 +938,9 @@ MIIEvQ...
         :placeholder="$t('common.database')"
       />
     </div>
+    </template>
 
+    <template v-if="!hideOptions">
     <div v-if="hasExtraParameters" class="sm:col-span-3 sm:col-start-1">
       <div class="flex flex-row items-center justify-between">
         <label class="textlabel block">
@@ -1030,6 +1036,10 @@ MIIEvQ...
           :value="dataSource.useSsl"
           @update:value="handleUseSslChanged"
         />
+        <InfoTrigger
+          v-if="isCreating && infoPanel"
+          @click="openInfoPanel('ssl')"
+        />
       </div>
       <template v-if="dataSource.useSsl">
         <SslCertificateFormV1
@@ -1065,6 +1075,10 @@ MIIEvQ...
         <label for="ssh" class="textlabel block">
           {{ $t("data-source.ssh-connection") }}
         </label>
+        <InfoTrigger
+          v-if="isCreating && infoPanel"
+          @click="openInfoPanel('ssh')"
+        />
       </div>
       <SshConnectionForm
         :value="dataSource"
@@ -1073,6 +1087,7 @@ MIIEvQ...
         @change="handleSSHChange"
       />
     </div>
+    </template>
   </div>
 </template>
 
@@ -1088,7 +1103,7 @@ import {
   NUploadDragger,
   type UploadFileInfo,
 } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, inject, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
@@ -1114,6 +1129,8 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
+import InfoTrigger from "../InfoTrigger.vue";
+import type { InfoSection } from "../info-content";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
 import CredentialSourceForm from "./CredentialSourceForm.vue";
 import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
@@ -1129,9 +1146,17 @@ interface ExtraConnectionParam {
   value: string;
 }
 
-const props = defineProps<{
-  dataSource: EditDataSource;
-}>();
+const props = withDefaults(
+  defineProps<{
+    dataSource: EditDataSource;
+    hideOptions?: boolean;
+    optionsOnly?: boolean;
+  }>(),
+  {
+    hideOptions: false,
+    optionsOnly: false,
+  }
+);
 
 const {
   instance,
@@ -1144,6 +1169,19 @@ const {
   missingFeature,
   hideAdvancedFeatures,
 } = useInstanceFormContext();
+
+const infoPanel = inject<
+  | {
+      open: (section: InfoSection) => void;
+      close: () => void;
+      setEngine: (engine: Engine) => void;
+    }
+  | undefined
+>("infoPanel", undefined);
+
+const openInfoPanel = (section: InfoSection) => {
+  infoPanel?.open(section);
+};
 
 const {
   showDatabase,

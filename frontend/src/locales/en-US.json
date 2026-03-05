@@ -1373,6 +1373,14 @@
     "snowflake-web-console": "Snowflake Web Console",
     "external-link": "External Link",
     "connection-info": "Connection info",
+    "connection-options": "Connection Options",
+    "section": {
+      "basic-info": "Basic Info",
+      "connection": "Connection"
+    },
+    "info-panel": {
+      "no-info": "No additional information available for this engine."
+    },
     "role-arn": "Role ARN",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
     "role-arn-description": "IAM role to assume for cross-account access. Leave empty for same-account access.",
@@ -2322,7 +2330,7 @@
       "assign-license": "Assign License",
       "require-license": "Require instance license",
       "missing-license-attention": "You need to assign license to the instance to enable this feature.",
-      "n-license-remain": "remain {n}",
+      "n-license-remain": "{n} remaining",
       "manage-license": "Manage Instance License",
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit",
