@@ -12,6 +12,6 @@
 import { InfoIcon } from "lucide-vue-next";
 
 defineEmits<{
-  (event: "click"): void;
+  click: [];
 }>();
 </script>

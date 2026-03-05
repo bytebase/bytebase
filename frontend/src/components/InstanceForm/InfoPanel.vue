@@ -42,7 +42,7 @@ defineProps<{
 }>();
 
 defineEmits<{
-  (event: "close"): void;
+  close: [];
 }>();
 </script>
 
