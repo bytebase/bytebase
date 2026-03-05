@@ -508,12 +508,11 @@ jobs:
       - name: Exchange token
         id: bytebase-auth
         run: |
-          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
+          OIDC_TOKEN=$(wget -qO- --header="Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
-          ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
-            -H "Content-Type: application/json" \\
-            -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-            | jq -r '.accessToken')
+          ACCESS_TOKEN=$(wget -qO- --post-data="{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+            --header="Content-Type: application/json" \\
+            "$BYTEBASE_URL/v1/auth:exchangeToken" | jq -r '.accessToken')
           echo "access-token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
       - name: SQL Review
         env:
@@ -530,12 +529,11 @@ jobs:
 const exchangeTokenStep = `      - name: Exchange token
         id: bytebase-auth
         run: |
-          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
+          OIDC_TOKEN=$(wget -qO- --header="Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
-          ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
-            -H "Content-Type: application/json" \\
-            -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-            | jq -r '.accessToken')
+          ACCESS_TOKEN=$(wget -qO- --post-data="{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+            --header="Content-Type: application/json" \\
+            "$BYTEBASE_URL/v1/auth:exchangeToken" | jq -r '.accessToken')
           echo "access-token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT`;
 
 const accessTokenFlag =
@@ -625,10 +623,9 @@ ${exchangeTokenStep}
 });
 
 const gitlabExchangeScript = `    - |
-      ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
-        -H "Content-Type: application/json" \\
-        -d "{\\"token\\":\\"$CI_JOB_JWT_V2\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
-        | jq -r '.accessToken')
+      ACCESS_TOKEN=$(wget -qO- --post-data="{\\"token\\":\\"$GITLAB_OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
+        --header="Content-Type: application/json" \\
+        "$BYTEBASE_URL/v1/auth:exchangeToken" | jq -r '.accessToken')
       export BYTEBASE_ACCESS_TOKEN=$ACCESS_TOKEN`;
 
 const gitlabCiYaml = computed(() => {
