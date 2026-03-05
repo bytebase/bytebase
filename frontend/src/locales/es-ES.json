@@ -2861,7 +2861,8 @@
     "workflow": {
       "title": "Generación de archivo de flujo de trabajo",
       "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
-      "file-hint": "Guardar como {filePath} en su repositorio"
+      "file-hint": "Guardar como {filePath} en su repositorio",
+      "self-hosted-runner": "Runner self-hosted"
     },
     "test-setup": {
       "title": "Pruebe su primera migración GitOps",

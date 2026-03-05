@@ -152,7 +152,9 @@
         <NTabPane name="github-actions" tab="GitHub Actions">
           <!-- Runner type toggle -->
           <div class="flex items-center gap-x-2 mt-3">
-            <span class="text-sm">Self-hosted</span>
+            <span class="text-sm">
+              {{ $t("gitops.workflow.self-hosted-runner") }}
+            </span>
             <NSwitch v-model:value="useSelfhostRunner" />
           </div>
           <!-- sql-review.yml -->

@@ -26,7 +26,7 @@
         <NTooltip :disabled="!reachQueryLimit">
           <template #trigger>
             <div class="flex items-center gap-x-1 whitespace-nowrap text-sm text-gray-500">
-              <InfoIcon v-if="reachQueryLimit" class="w-4" />
+              <InfoIcon v-if="reachQueryLimit" class="w-4 text-yellow-500" />
               {{ resultRowsText }}
             </div>
           </template>
@@ -649,7 +649,8 @@ const rows = computed((): ResultTableRow[] => {
 const reachQueryLimit = computed(() => {
   return (
     currentTab.value?.mode !== "ADMIN" &&
-    rows.value.length === editorStore.resultRowsLimit
+    (rows.value.length === editorStore.resultRowsLimit ||
+      rows.value.length === editorStore.queryDataPolicy.maximumResultRows)
   );
 });
 

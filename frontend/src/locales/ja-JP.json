@@ -2861,7 +2861,8 @@
     "workflow": {
       "title": "ワークフローファイル生成",
       "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
-      "file-hint": "リポジトリ内に {filePath} として保存"
+      "file-hint": "リポジトリ内に {filePath} として保存",
+      "self-hosted-runner": "セルフホスト runner"
     },
     "test-setup": {
       "title": "最初の GitOps マイグレーションをテスト",

@@ -1,8 +1,9 @@
 import { useLocalStorage } from "@vueuse/core";
 import { includes } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useProjectV1Store } from "@/store";
+import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import {
@@ -53,6 +54,16 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     { listenToStorageChanges: false }
   );
 
+  const { policy: queryDataPolicy } = useQueryDataPolicy(
+    storedLastViewedProject
+  );
+
+  watchEffect(() => {
+    if (resultRowsLimit.value > queryDataPolicy.value.maximumResultRows) {
+      resultRowsLimit.value = queryDataPolicy.value.maximumResultRows;
+    }
+  });
+
   const allowViewALLProjects = computed(() => {
     return hasWorkspacePermissionV2("bb.projects.list");
   });
@@ -74,6 +85,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
 
   return {
     resultRowsLimit,
+    queryDataPolicy,
     project: computed(() => storedLastViewedProject.value),
     setProject,
     projectContextReady,
