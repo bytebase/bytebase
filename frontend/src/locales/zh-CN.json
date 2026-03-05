@@ -2852,8 +2852,6 @@
     "checklist": {
       "title": "开始前检查",
       "external-url": "外部访问地址",
-      "external-url-missing": "尚未配置外部访问地址。",
-      "configure": "去配置",
       "workload-identity": "工作负载身份",
       "target-databases": "目标数据库"
     },

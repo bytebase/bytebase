@@ -14,6 +14,7 @@
       <NButton
         v-if="hasWorkspacePermissionV2('bb.settings.setWorkspaceProfile')"
         type="primary"
+        size="small"
         @click="configureSetting"
       >
         {{ $t("common.configure-now") }}

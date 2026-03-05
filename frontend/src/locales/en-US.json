@@ -2852,8 +2852,6 @@
     "checklist": {
       "title": "Checks before we start",
       "external-url": "External URL",
-      "external-url-missing": "External URL is not configured.",
-      "configure": "Configure",
       "workload-identity": "Workload Identity",
       "target-databases": "Target Databases"
     },

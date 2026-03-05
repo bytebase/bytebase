@@ -2852,8 +2852,6 @@
     "checklist": {
       "title": "開始前の確認",
       "external-url": "外部URL",
-      "external-url-missing": "外部URLが設定されていません。",
-      "configure": "設定",
       "workload-identity": "ワークロードアイデンティティ",
       "target-databases": "ターゲットデータベース"
     },
