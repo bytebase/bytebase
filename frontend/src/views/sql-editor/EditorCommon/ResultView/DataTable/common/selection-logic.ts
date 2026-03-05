@@ -33,8 +33,8 @@ export type SelectionContext = {
   toggleSelectColumn: (column: number) => void;
   toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
-  copySelectionToClipboard: () => void;
-  copyAllToClipboard: (withHeaders: boolean) => void;
+  copySelected: () => void;
+  copyAll: (withHeaders: boolean) => void;
 };
 
 export const KEY = Symbol(
@@ -167,12 +167,8 @@ export const provideSelectionContext = ({
       });
     }
 
-    // Fall back to default formatting; null/undefined → empty (per TSV/CSV convention)
-    const plain = extractSQLRowValuePlain(value);
-    if (plain === null || plain === undefined) {
-      return "";
-    }
-    return String(plain);
+    // Fall back to default formatting
+    return String(extractSQLRowValuePlain(value));
   };
 
   const getValues = (state: SelectionState, withHeaders = true) => {
@@ -187,6 +183,7 @@ export const provideSelectionContext = ({
         return "";
       }
 
+      // Get the cell value
       return getFormattedValue({
         value: cell,
         colIndex: state.columns[0],
@@ -195,6 +192,8 @@ export const provideSelectionContext = ({
     }
 
     if (state.rows.length > 0) {
+      const columnNames = ["index", ...columns.value.map((c) => c.name)];
+      // multi-rows selected
       const data: string[] = [];
       for (const rowIndex of state.rows) {
         const queryRow = rows.value[rowIndex].item;
@@ -220,7 +219,6 @@ export const provideSelectionContext = ({
         return "";
       }
       if (withHeaders) {
-        const columnNames = ["index", ...columns.value.map((c) => c.name)];
         return `${columnNames.join("\t")}\n${data.join("\n")}`;
       }
       return data.join("\n");
@@ -304,7 +302,7 @@ export const provideSelectionContext = ({
       });
   };
 
-  const copyAllToClipboard = (withHeaders: boolean) => {
+  const copyAll = (withHeaders: boolean) => {
     copy(
       {
         rows: rows.value.map((_, i) => i),
@@ -314,7 +312,7 @@ export const provideSelectionContext = ({
     );
   };
 
-  const copySelectionToClipboard = () => {
+  const copySelected = () => {
     copy(state.value);
   };
 
@@ -338,7 +336,7 @@ export const provideSelectionContext = ({
     if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      copySelectionToClipboard();
+      copySelected();
     }
   });
 
@@ -349,8 +347,8 @@ export const provideSelectionContext = ({
     toggleSelectColumn,
     toggleSelectCell,
     deselect,
-    copySelectionToClipboard,
-    copyAllToClipboard,
+    copySelected,
+    copyAll,
   };
   provide(KEY, context);
   return context;

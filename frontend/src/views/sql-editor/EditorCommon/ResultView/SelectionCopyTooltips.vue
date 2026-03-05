@@ -25,7 +25,7 @@
         </NButton>
       </template>
       <template #button>
-        <NButton size="tiny" @click="copySelectionToClipboard" type="primary" secondary>
+        <NButton size="tiny" @click="copySelected" type="primary" secondary>
           <template #icon>
             <CopyIcon />
           </template>
@@ -47,7 +47,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useSelectionContext } from "./DataTable/common/selection-logic";
 
-const { state: selectionState, copySelectionToClipboard, deselect } = useSelectionContext();
+const { state: selectionState, copySelected, deselect } = useSelectionContext();
 
 const shouldShow = computed(
   () =>

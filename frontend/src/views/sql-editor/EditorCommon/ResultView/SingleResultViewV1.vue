@@ -295,10 +295,7 @@ import { CopyButton, Drawer, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { flattenElasticsearchSearchResult } from "@/composables/utils";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
-import {
-  useSQLEditorStore,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -696,7 +693,7 @@ const getMaskingReason = (columnIndex: number) => {
   return reason;
 };
 
-const { copyAllToClipboard } = provideSelectionContext({
+const { copyAll } = provideSelectionContext({
   columns,
   rows,
   binaryFormatContext,
@@ -715,7 +712,7 @@ const copyDropdownOptions = computed((): DropdownOption[] => [
 ]);
 
 const handleCopyOptionSelect = (key: string) => {
-  copyAllToClipboard(key === "copy-with-headers");
+  copyAll(key === "copy-with-headers");
 };
 
 const showVisualizeButton = computed((): boolean => {
