@@ -62,17 +62,23 @@
             {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
-        <NButton
-          v-if="!disallowCopyingData && rows.length > 0"
-          size="small"
-          style="--n-padding: 0 8px"
-          @click="copyAllToClipboard"
+        <NDropdown
+          v-if="!disallowCopyingData"
+          trigger="click"
+          :options="copyDropdownOptions"
+          @select="handleCopyOptionSelect"
         >
-          <template #icon>
-            <CopyIcon class="w-4 h-4" />
-          </template>
-          {{ $t("common.copy") }}
-        </NButton>
+          <NButton
+            size="small"
+            :disabled="rows.length === 0"
+            style="--n-padding: 0 8px"
+          >
+            <template #icon>
+              <CopyIcon class="w-4 h-4" />
+            </template>
+            {{ $t("sql-editor.copy-results") }}
+          </NButton>
+        </NDropdown>
         <template v-if="showExport">
           <DataExportButton
             size="small"
@@ -270,7 +276,8 @@ import {
   InfoIcon,
   XIcon,
 } from "lucide-vue-next";
-import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
+import { NButton, NDropdown, NFormItem, NSwitch, NTooltip } from "naive-ui";
+import type { DropdownOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -695,6 +702,21 @@ const { copyAllToClipboard } = provideSelectionContext({
   binaryFormatContext,
   disallowCopyingData: computed(() => props.disallowCopyingData),
 });
+
+const copyDropdownOptions = computed((): DropdownOption[] => [
+  {
+    label: t("sql-editor.copy-results"),
+    key: "copy",
+  },
+  {
+    label: t("sql-editor.copy-with-headers"),
+    key: "copy-with-headers",
+  },
+]);
+
+const handleCopyOptionSelect = (key: string) => {
+  copyAllToClipboard(key === "copy-with-headers");
+};
 
 const showVisualizeButton = computed((): boolean => {
   return (

@@ -34,7 +34,7 @@ export type SelectionContext = {
   toggleSelectCell: (row: number, column: number) => void;
   deselect: () => void;
   copySelectionToClipboard: () => void;
-  copyAllToClipboard: () => void;
+  copyAllToClipboard: (withHeaders: boolean) => void;
 };
 
 export const KEY = Symbol(
@@ -175,7 +175,7 @@ export const provideSelectionContext = ({
     return String(plain);
   };
 
-  const getValues = (state: SelectionState) => {
+  const getValues = (state: SelectionState, withHeaders = true) => {
     if (checkIsSingleCellSelected(state)) {
       // single cell selected
       const row = rows.value[state.rows[0]];
@@ -195,8 +195,6 @@ export const provideSelectionContext = ({
     }
 
     if (state.rows.length > 0) {
-      const columnNames = ["index", ...columns.value.map((c) => c.name)];
-      // multi-rows selected
       const data: string[] = [];
       for (const rowIndex of state.rows) {
         const queryRow = rows.value[rowIndex].item;
@@ -221,7 +219,11 @@ export const provideSelectionContext = ({
       if (data.length === 0) {
         return "";
       }
-      return `${columnNames.join("\t")}\n${data.join("\n")}`;
+      if (withHeaders) {
+        const columnNames = ["index", ...columns.value.map((c) => c.name)];
+        return `${columnNames.join("\t")}\n${data.join("\n")}`;
+      }
+      return data.join("\n");
     }
 
     if (state.columns.length > 0) {
@@ -258,17 +260,20 @@ export const provideSelectionContext = ({
         )
         .join("\n");
 
-      return `${columnNames.join("\t")}\n${value}`;
+      if (withHeaders) {
+        return `${columnNames.join("\t")}\n${value}`;
+      }
+      return value;
     }
 
     return "";
   };
 
-  const copy = (state: SelectionState) => {
+  const copy = (state: SelectionState, withHeaders = true) => {
     if (disabled.value || !isSupported.value || copying.value) {
       return;
     }
-    const values = getValues(state);
+    const values = getValues(state, withHeaders);
     if (!values) {
       return;
     }
@@ -299,11 +304,14 @@ export const provideSelectionContext = ({
       });
   };
 
-  const copyAllToClipboard = () => {
-    copy({
-      rows: rows.value.map((_, i) => i),
-      columns: [],
-    });
+  const copyAllToClipboard = (withHeaders: boolean) => {
+    copy(
+      {
+        rows: rows.value.map((_, i) => i),
+        columns: [],
+      },
+      withHeaders
+    );
   };
 
   const copySelectionToClipboard = () => {
