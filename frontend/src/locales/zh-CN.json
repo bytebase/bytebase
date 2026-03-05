@@ -1226,7 +1226,7 @@
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'，然后同步数据库",
+      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'。如果使用了 SET ROLE，请将该 schema 的 USAGE 和 CREATE 权限授予对应角色。然后同步数据库",
       "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
       "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
     },
@@ -2835,11 +2835,12 @@
   "gitops": {
     "self": "GitOps",
     "overview": {
+      "title": "什么是 GitOps",
       "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
       "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。"
     },
     "checklist": {
-      "title": "检查清单",
+      "title": "开始前检查",
       "external-url": "外部访问地址",
       "external-url-missing": "尚未配置外部访问地址。",
       "configure": "去配置",
@@ -2851,12 +2852,12 @@
       "no-identity": "未找到工作负载身份，请创建一个以开始使用。"
     },
     "workflow": {
-      "title": "工作流文件",
+      "title": "工作流文件生成",
       "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
       "file-hint": "保存为仓库中的 {filePath}"
     },
     "test-setup": {
-      "title": "测试您的配置",
+      "title": "测试您的首次 GitOps 迁移",
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
       "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",

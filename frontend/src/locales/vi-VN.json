@@ -1226,7 +1226,7 @@
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
       "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}",
-      "missing-backup-schema-postgres": "Tạo schema 'bbdataarchive' trong cơ sở dữ liệu '{database}', sau đó đồng bộ cơ sở dữ liệu",
+      "missing-backup-schema-postgres": "Tạo schema 'bbdataarchive' trong cơ sở dữ liệu '{database}'. Nếu sử dụng SET ROLE, hãy cấp quyền USAGE và CREATE trên schema cho role đó. Sau đó đồng bộ cơ sở dữ liệu",
       "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu",
       "missing-backup-database-oracle": "Tạo cơ sở dữ liệu 'BBDATAARCHIVE' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu"
     },
@@ -2835,11 +2835,12 @@
   "gitops": {
     "self": "GitOps",
     "overview": {
+      "title": "GitOps là gì",
       "description": "Bytebase GitOps cho phép bạn quản lý Database as Code bằng cách tích hợp các thay đổi schema cơ sở dữ liệu vào pipeline CI/CD.",
       "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout."
     },
     "checklist": {
-      "title": "Danh sách kiểm tra",
+      "title": "Kiểm tra trước khi bắt đầu",
       "external-url": "URL bên ngoài",
       "external-url-missing": "URL bên ngoài chưa được cấu hình.",
       "configure": "Cấu hình",
@@ -2851,12 +2852,12 @@
       "no-identity": "Không tìm thấy workload identity. Tạo một cái để bắt đầu."
     },
     "workflow": {
-      "title": "Tệp workflow",
+      "title": "Tạo tệp workflow",
       "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
       "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn"
     },
     "test-setup": {
-      "title": "Kiểm tra cấu hình",
+      "title": "Thử nghiệm migration GitOps đầu tiên",
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
       "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
