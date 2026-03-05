@@ -50,7 +50,7 @@ type FindChangelogMessage struct {
 	Limit  *int
 	Offset *int
 
-	// If false, PrevSchema, Schema are truncated
+	// If false, Schema is omitted (empty string).
 	ShowFull       bool
 	HasSyncHistory bool
 }
