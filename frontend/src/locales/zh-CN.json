@@ -2856,8 +2856,7 @@
       "target-databases": "目标数据库"
     },
     "workload-identity": {
-      "select-placeholder": "选择工作负载身份",
-      "no-identity": "未找到工作负载身份，请创建一个以开始使用。"
+      "select-placeholder": "选择工作负载身份"
     },
     "workflow": {
       "title": "工作流文件生成",

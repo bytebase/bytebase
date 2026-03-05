@@ -2856,8 +2856,7 @@
       "target-databases": "Target Databases"
     },
     "workload-identity": {
-      "select-placeholder": "Select a workload identity",
-      "no-identity": "No workload identity found. Create one to get started."
+      "select-placeholder": "Select a workload identity"
     },
     "workflow": {
       "title": "Workflow file generation",
