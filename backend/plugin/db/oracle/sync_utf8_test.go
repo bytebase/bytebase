@@ -1,7 +1,6 @@
 package oracle
 
 import (
-	"strings"
 	"testing"
 	"unicode/utf8"
 
@@ -83,7 +82,7 @@ func TestOracleCommentSanitizedUTF8MarshalSuccess(t *testing.T) {
 
 	require.True(t, utf8.ValidString(sanitized),
 		"sanitized string must be valid UTF-8")
-	require.True(t, strings.Contains(sanitized, "\\xe1"),
+	require.Contains(t, sanitized, "\\xe1",
 		"sanitized string should preserve original bytes as hex")
 
 	metadata := &storepb.DatabaseSchemaMetadata{

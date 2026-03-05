@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -385,7 +386,7 @@ func getTableComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, e
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
-		tableCommentMap[key] = comment
+		tableCommentMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -426,7 +427,7 @@ func getTableColumnComments(txn *sql.Tx, schemaName string) (map[db.ColumnKey]st
 			return nil, err
 		}
 		key := db.ColumnKey{Schema: schemaName, Table: tableName, Column: columnName}
-		columnCommentsMap[key] = comment
+		columnCommentsMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -1370,7 +1371,7 @@ func getViewComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string, er
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: viewName}
-		viewCommentMap[key] = comment
+		viewCommentMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -1420,7 +1421,7 @@ func getSequenceComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: sequenceName}
-		sequenceCommentMap[key] = comment
+		sequenceCommentMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -1471,7 +1472,7 @@ func getFunctionComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: functionName}
-		functionCommentMap[key] = comment
+		functionCommentMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -1529,7 +1530,7 @@ func getMaterializedViewComments(txn *sql.Tx, schemaName string) (map[db.TableKe
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: mvName}
-		materializedViewCommentMap[key] = comment
+		materializedViewCommentMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -1580,7 +1581,7 @@ func getTriggerComments(txn *sql.Tx, schemaName string) (map[db.TableKey]string,
 			return nil, err
 		}
 		key := db.TableKey{Schema: schemaName, Table: triggerName}
-		triggerCommentMap[key] = comment
+		triggerCommentMap[key] = common.SanitizeUTF8String(comment)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
