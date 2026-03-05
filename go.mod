@@ -62,7 +62,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.4
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/labstack/echo-contrib v0.50.0
+	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/lestrrat-go/jwx/v3 v3.0.13
 	github.com/lib/pq v1.11.2
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
