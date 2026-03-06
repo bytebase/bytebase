@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
@@ -110,7 +112,11 @@ func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*base.PathAST, o
 		o, parentSemanticType = getObjectSchemaByPath(o, ast)
 		if parentSemanticType != "" {
 			if m, ok := semanticTypeToMasker[parentSemanticType]; ok {
-				result[key] = getJSONMemberFromRowValue(m.Mask(nil))
+				maskedValue, err := applyMaskerToJSONMember(value, m)
+				if err != nil {
+					return nil, err
+				}
+				result[key] = maskedValue
 				continue
 			}
 		}
@@ -191,7 +197,7 @@ func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, sema
 		if objectSchema.SemanticType != "" {
 			// If the semantic type is found, replace the entire value directly.
 			if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
-				return getJSONMemberFromRowValue(m.Mask(nil)), nil
+				return applyMaskerToJSONMember(data, m)
 			}
 		} else {
 			// Otherwise, recursively walk the object.
@@ -216,7 +222,7 @@ func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, sema
 		if objectSchema.SemanticType != "" {
 			// If the semantic type is found, replace the entire value directly.
 			if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
-				return getJSONMemberFromRowValue(m.Mask(nil)), nil
+				return applyMaskerToJSONMember(data, m)
 			}
 		} else {
 			arrayKind := objectSchema.GetArrayKind()
@@ -252,6 +258,24 @@ func walkAndMaskJSONRecursive(data any, objectSchema *storepb.ObjectSchema, sema
 	return data, nil
 }
 
+func applyMaskerToJSONMember(data any, m masker.Masker) (any, error) {
+	if rowValue, ok := getRowValueFromJSONAtomicMember(data); ok {
+		return getJSONMemberFromRowValue(m.Mask(&masker.MaskData{Data: rowValue})), nil
+	}
+
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal JSON member")
+	}
+	return getJSONMemberFromRowValue(m.Mask(&masker.MaskData{
+		Data: &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(jsonBytes),
+			},
+		},
+	})), nil
+}
+
 func applyMaskerToData(data any, m masker.Masker) (any, error) {
 	switch data := data.(type) {
 	case map[string]any:
@@ -285,7 +309,8 @@ func applyMaskerToData(data any, m masker.Masker) (any, error) {
 
 func getJSONMemberFromRowValue(rowValue *v1pb.RowValue) any {
 	switch rowValue := rowValue.Kind.(type) {
-	// TODO: Handle NULL, VALUE_VALUE, TIMESTAMP_VALUE, TIMESTAMPTZVALUE.
+	case *v1pb.RowValue_NullValue:
+		return nil
 	case *v1pb.RowValue_BoolValue:
 		return rowValue.BoolValue
 	case *v1pb.RowValue_BytesValue:
@@ -327,6 +352,5 @@ func getRowValueFromJSONAtomicMember(data any) (result *v1pb.RowValue, ok bool) 
 			Kind: &v1pb.RowValue_BoolValue{BoolValue: data},
 		}, true
 	}
-	// TODO: Handle NULL.
 	return nil, false
 }
