@@ -753,33 +753,67 @@ func getPlanCheckRunFromPlan(ctx context.Context, s *store.Store, project *store
 }
 
 func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMessage) ([]*v1pb.Plan, error) {
-	v1Plans := make([]*v1pb.Plan, len(plans))
-	for i := range plans {
-		p, err := convertToPlan(ctx, s, plans[i])
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert plan")
+	if len(plans) == 0 {
+		return nil, nil
+	}
+
+	// Batch-fetch issues and plan check runs to avoid N+1 queries.
+	planUIDs := make([]int64, len(plans))
+	for i, p := range plans {
+		planUIDs[i] = int64(p.UID)
+	}
+
+	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{PlanUIDs: &planUIDs})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to batch list issues")
+	}
+	issueByPlanUID := make(map[int64]*store.IssueMessage, len(issues))
+	for _, issue := range issues {
+		if issue.PlanUID != nil {
+			issueByPlanUID[*issue.PlanUID] = issue
 		}
-		v1Plans[i] = p
+	}
+
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanUIDs: &planUIDs})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to batch list plan check runs")
+	}
+	planCheckRunByPlanUID := make(map[int64]*store.PlanCheckRunMessage, len(planCheckRuns))
+	for _, run := range planCheckRuns {
+		planCheckRunByPlanUID[run.PlanUID] = run
+	}
+
+	v1Plans := make([]*v1pb.Plan, len(plans))
+	for i, plan := range plans {
+		planUID := int64(plan.UID)
+		v1Plans[i] = buildV1Plan(plan, issueByPlanUID[planUID], planCheckRunByPlanUID[planUID])
 	}
 	return v1Plans, nil
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
+	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
+	}
+	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %d", plan.UID)
+	}
+	return buildV1Plan(plan, issue, planCheckRun), nil
+}
+
+func buildV1Plan(plan *store.PlanMessage, issue *store.IssueMessage, planCheckRun *store.PlanCheckRunMessage) *v1pb.Plan {
 	p := &v1pb.Plan{
 		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Creator:                 common.FormatUserEmail(plan.Creator),
-		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs), // Use specs field for output
+		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs),
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
 		State:                   convertDeletedToState(plan.Deleted),
 		PlanCheckRunStatusCount: map[string]int32{},
-	}
-
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}
 	if issue != nil {
 		p.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
@@ -787,17 +821,13 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	if plan.Config != nil {
 		p.HasRollout = plan.Config.HasRollout
 	}
-	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %d", plan.UID)
-	}
 	if planCheckRun != nil {
 		p.PlanCheckRunStatusCount[string(planCheckRun.Status)]++
 		for _, result := range planCheckRun.Result.Results {
 			p.PlanCheckRunStatusCount[storepb.Advice_Status_name[int32(result.Status)]]++
 		}
 	}
-	return p, nil
+	return p
 }
 
 func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {

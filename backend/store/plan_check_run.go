@@ -43,6 +43,7 @@ type PlanCheckRunMessage struct {
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
 	PlanUID      *int64
+	PlanUIDs     *[]int64
 	UIDs         *[]int
 	Status       *[]PlanCheckRunStatus
 	ResultStatus *[]storepb.Advice_Status
@@ -84,6 +85,9 @@ FROM plan_check_run
 WHERE TRUE`)
 	if v := find.PlanUID; v != nil {
 		q.Space("AND plan_check_run.plan_id = ?", *v)
+	}
+	if v := find.PlanUIDs; v != nil {
+		q.Space("AND plan_check_run.plan_id = ANY(?)", *v)
 	}
 	if v := find.UIDs; v != nil {
 		q.Space("AND plan_check_run.id = ANY(?)", *v)
