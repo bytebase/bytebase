@@ -40,9 +40,7 @@ describe("flattenNoSQLQueryResult", () => {
       "507f1f77bcf86cd799439011"
     );
     expect(flattened?.rows[0]?.values[1]?.kind.value).toBe("Ada");
-    expect(flattened?.rows[0]?.values[2]?.kind.value).toBe(
-      '{"age":36}'
-    );
+    expect(flattened?.rows[0]?.values[2]?.kind.value).toBe('{"age":36}');
   });
 
   test("returns undefined for non-document result sets", () => {
