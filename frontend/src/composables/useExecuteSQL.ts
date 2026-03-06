@@ -324,10 +324,7 @@ const useExecuteSQL = () => {
       });
 
     const instanceResource = getInstanceResource(database);
-    if (
-      instanceResource.engine === Engine.MONGODB ||
-      instanceResource.engine === Engine.COSMOSDB
-    ) {
+    if (instanceResource.engine === Engine.COSMOSDB) {
       flattenNoSQLResult(resultSet);
     }
 
