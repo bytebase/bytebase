@@ -19,40 +19,37 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
   const providerType = wi.workloadIdentityConfig.providerType;
   switch (providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB: {
-      const match = pattern.match(/^repo:([^/]+)\/(.*)$/);
+      const match = /^repo:([^/]+)\/(.*)$/.exec(pattern);
       if (!match) return;
       const owner = match[1];
       const rest = match[2];
       if (rest === "*") return { owner, repo: "", branch: "" };
-      const repoMatch = rest.match(/^([^:]+):(.*)$/);
+      const repoMatch = /^([^:]+):(.*)$/.exec(rest);
       if (!repoMatch) return;
       const repo = repoMatch[1];
       const refPart = repoMatch[2];
       if (refPart === "*") return { owner, repo, branch: "" };
-      const branchMatch = refPart.match(/^ref:refs\/heads\/(.+)$/);
+      const branchMatch = /^ref:refs\/heads\/(.+)$/.exec(refPart);
       return { owner, repo, branch: branchMatch?.[1] ?? "" };
     }
     case WorkloadIdentityConfig_ProviderType.GITLAB: {
-      const match = pattern.match(/^project_path:([^/]+)\/(.*)$/);
+      const match = /^project_path:([^/]+)\/(.*)$/.exec(pattern);
       if (!match) return;
       const owner = match[1];
       const rest = match[2];
       if (rest === "*") return { owner, repo: "", branch: "" };
-      const projectMatch = rest.match(/^([^:]+):(.*)$/);
+      const projectMatch = /^([^:]+):(.*)$/.exec(rest);
       if (!projectMatch) return;
       const repo = projectMatch[1];
       const refPart = projectMatch[2];
       if (refPart === "*") return { owner, repo, branch: "" };
-      const refTypeMatch = refPart.match(/^ref_type:(branch|tag):ref:(.+)$/);
+      const refTypeMatch = /^ref_type:(branch|tag):ref:(.+)$/.exec(refPart);
       return {
         owner,
         repo,
         branch: refTypeMatch?.[2] ?? "",
         refType: refTypeMatch?.[1] as "branch" | "tag",
       };
-
-      // const refTypeMatch = refPart.match(/^ref_type:(?:branch|tag):ref:(.+)$/);
-      // return { owner, repo, branch: refTypeMatch?.[1] ?? "" };
     }
     default:
       return;
