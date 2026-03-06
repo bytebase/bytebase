@@ -1,14 +1,25 @@
 <template>
   <template v-if="isCreating">
-    <div class="w-full flex justify-between items-center" v-bind="$attrs">
-      <div class="w-full flex justify-end items-center gap-x-2">
+    <div
+      class="w-full py-4 border-t border-block-border flex justify-between bg-white"
+      v-bind="$attrs"
+    >
+      <NButton
+        v-if="allowCancel"
+        :disabled="state.isRequesting || state.isTestingConnection"
+        @click.prevent="cancel"
+      >
+        {{ $t("common.cancel") }}
+      </NButton>
+      <div class="flex items-center gap-x-2">
         <NButton
-          v-if="allowCancel"
-          quaternary
-          :disabled="state.isRequesting || state.isTestingConnection"
-          @click.prevent="cancel"
+          tertiary
+          type="primary"
+          :loading="state.isTestingConnection"
+          :disabled="!allowCreate || state.isRequesting || !allowEdit"
+          @click.prevent="testConnectionForCurrentEditingDS"
         >
-          {{ $t("common.cancel") }}
+          {{ $t("instance.test-connection") }}
         </NButton>
         <NButton
           :disabled="
@@ -35,16 +46,27 @@
       >
         <span> {{ $t("common.cancel") }}</span>
       </NButton>
-      <NButton
-        :disabled="
-          !allowUpdate || state.isRequesting || state.isTestingConnection
-        "
-        :loading="state.isRequesting"
-        type="primary"
-        @click.prevent="doUpdate"
-      >
-        {{ $t("common.confirm-and-update") }}
-      </NButton>
+      <div class="flex items-center gap-x-2">
+        <NButton
+          tertiary
+          type="primary"
+          :loading="state.isTestingConnection"
+          :disabled="!allowUpdate || state.isRequesting || !allowEdit"
+          @click.prevent="testConnectionForCurrentEditingDS"
+        >
+          {{ $t("instance.test-connection") }}
+        </NButton>
+        <NButton
+          :disabled="
+            !allowUpdate || state.isRequesting || state.isTestingConnection
+          "
+          :loading="state.isRequesting"
+          type="primary"
+          @click.prevent="doUpdate"
+        >
+          {{ $t("common.confirm-and-update") }}
+        </NButton>
+      </div>
     </div>
   </template>
 </template>
@@ -107,6 +129,7 @@ const {
   basicInfo,
   labelKVList,
   adminDataSource,
+  editingDataSource,
   readonlyDataSourceList,
   dataSourceEditState,
   hasReadonlyReplicaFeature,
@@ -523,6 +546,12 @@ const doUpdate = async () => {
   } finally {
     state.value.isRequesting = false;
   }
+};
+
+const testConnectionForCurrentEditingDS = () => {
+  const editingDS = editingDataSource.value;
+  if (!editingDS) return;
+  testConnection(editingDS, /* !silent */ false);
 };
 
 const cancel = () => {

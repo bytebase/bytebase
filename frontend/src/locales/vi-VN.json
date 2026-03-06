@@ -1383,6 +1383,14 @@
     "snowflake-web-console": "Bảng điều khiển web Snowflake",
     "external-link": "Liên kết ngoài",
     "connection-info": "Thông tin kết nối",
+    "connection-options": "Tùy chọn kết nối",
+    "section": {
+      "basic-info": "Thông tin cơ bản",
+      "connection": "Kết nối"
+    },
+    "info-panel": {
+      "no-info": "Không có thông tin bổ sung cho engine này."
+    },
     "role-arn": "ARN vai trò",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",

@@ -1383,6 +1383,14 @@
     "snowflake-web-console": "スノーフレークウェブコンソール",
     "external-link": "外部リンク",
     "connection-info": "接続情報",
+    "connection-options": "接続オプション",
+    "section": {
+      "basic-info": "基本情報",
+      "connection": "接続"
+    },
+    "info-panel": {
+      "no-info": "このエンジンの追加情報はありません。"
+    },
     "role-arn": "ロール ARN",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
     "role-arn-description": "クロスアカウントアクセス用の IAM ロール。同一アカウントアクセスの場合は空のままにしてください。",

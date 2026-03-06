@@ -1383,6 +1383,14 @@
     "snowflake-web-console": "Snowflake Web 控制台",
     "external-link": "外部链接",
     "connection-info": "连接信息",
+    "connection-options": "连接选项",
+    "section": {
+      "basic-info": "基本信息",
+      "connection": "连接"
+    },
+    "info-panel": {
+      "no-info": "暂无该引擎的额外信息。"
+    },
     "role-arn": "角色 ARN",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
     "role-arn-description": "用于跨账户访问的 IAM 角色。同账户访问请留空。",
@@ -2332,7 +2340,7 @@
       "assign-license": "分配证书",
       "require-license": "需要实例证书",
       "missing-license-attention": "请给实例分配证书以解锁该功能。",
-      "n-license-remain": "剩余 {n}",
+      "n-license-remain": "剩余 {n} 个",
       "manage-license": "管理证书",
       "used-and-total-license": "已分配 / 总实例证书",
       "used-and-total-user": "活跃/总用户限制",
