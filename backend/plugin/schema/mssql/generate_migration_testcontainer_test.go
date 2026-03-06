@@ -2346,9 +2346,18 @@ GO
 		},
 	}
 
+	// MSSQL Express in CI gets significantly slower when too many schema-heavy
+	// subtests run at once against the same container. Keep bounded parallelism.
+	const maxConcurrentSubtests = 4
+	parallelGate := make(chan struct{}, maxConcurrentSubtests)
+
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			parallelGate <- struct{}{}
+			defer func() {
+				<-parallelGate
+			}()
 
 			// Create test database with unique name
 			testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))

@@ -358,6 +358,10 @@ import {
   WorkloadIdentityConfig_ProviderType,
   WorkloadIdentityConfigSchema,
 } from "@/types/proto-es/v1/user_service_pb";
+import {
+  getWorkloadIdentityProviderText,
+  parseWorkloadIdentitySubjectPattern,
+} from "@/utils";
 
 interface WifState {
   emailPrefix: string;
@@ -436,64 +440,6 @@ const isEditMode = computed(
     props.workloadIdentity.name !== unknownUser().name
 );
 
-// Parse subject pattern and extract owner/repo/branch/refType
-const parseSubjectPattern = (pattern: string) => {
-  const { providerType } = state.wif;
-
-  if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
-    const match = pattern.match(/^repo:([^/]+)\/(.*)$/);
-    if (match) {
-      const owner = match[1];
-      const rest = match[2];
-      if (rest === "*") {
-        return { owner, repo: "", branch: "" };
-      }
-      const repoMatch = rest.match(/^([^:]+):(.*)$/);
-      if (repoMatch) {
-        const repo = repoMatch[1];
-        const refPart = repoMatch[2];
-        if (refPart === "*") {
-          return { owner, repo, branch: "" };
-        }
-        const branchMatch = refPart.match(/^ref:refs\/heads\/(.+)$/);
-        if (branchMatch) {
-          return { owner, repo, branch: branchMatch[1] };
-        }
-      }
-    }
-  }
-
-  if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
-    const match = pattern.match(/^project_path:([^/]+)\/(.*)$/);
-    if (match) {
-      const owner = match[1];
-      const rest = match[2];
-      if (rest === "*") {
-        return { owner, repo: "", branch: "", refType: "all" as const };
-      }
-      const projectMatch = rest.match(/^([^:]+):(.*)$/);
-      if (projectMatch) {
-        const repo = projectMatch[1];
-        const refPart = projectMatch[2];
-        if (refPart === "*") {
-          return { owner, repo, branch: "", refType: "all" as const };
-        }
-        const refTypeMatch = refPart.match(/^ref_type:(branch|tag):ref:(.+)$/);
-        if (refTypeMatch) {
-          return {
-            owner,
-            repo,
-            branch: refTypeMatch[2],
-            refType: refTypeMatch[1] as "branch" | "tag",
-          };
-        }
-      }
-    }
-  }
-
-  return null;
-};
-
 watch(
   () => props.workloadIdentity,
   (wi) => {
@@ -510,7 +456,9 @@ watch(
       state.wif.audience = config.allowedAudiences[0] || "";
       state.wif.subjectPattern = config.subjectPattern;
 
-      const parsed = parseSubjectPattern(config.subjectPattern);
+      const parsed = parseWorkloadIdentitySubjectPattern(
+        state.workloadIdentity
+      );
       if (parsed) {
         state.wif.owner = parsed.owner;
         state.wif.repo = parsed.repo;
@@ -526,16 +474,15 @@ watch(
   }
 );
 
-const platformOptions = [
-  {
-    label: "GitHub Actions",
-    value: WorkloadIdentityConfig_ProviderType.GITHUB,
-  },
-  {
-    label: "GitLab CI",
-    value: WorkloadIdentityConfig_ProviderType.GITLAB,
-  },
-];
+const platformOptions = computed(() => {
+  return [
+    WorkloadIdentityConfig_ProviderType.GITHUB,
+    WorkloadIdentityConfig_ProviderType.GITLAB,
+  ].map((provider) => ({
+    label: getWorkloadIdentityProviderText(provider),
+    value: provider,
+  }));
+});
 
 const platformPresets: Partial<
   Record<
@@ -635,9 +582,11 @@ watch(
 // Watch for subject pattern changes and update fields (reverse binding)
 watch(
   () => state.wif.subjectPattern,
-  (newPattern) => {
+  () => {
     if (isUpdatingFromFields) return;
-    const parsed = parseSubjectPattern(newPattern);
+    const parsed = parseWorkloadIdentitySubjectPattern({
+      workloadIdentityConfig: state.wif,
+    });
     if (parsed) {
       isUpdatingFromPattern = true;
       state.wif.owner = parsed.owner;

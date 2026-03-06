@@ -135,6 +135,9 @@ func TestGetFirstSemanticTypeInPath(t *testing.T) {
 }
 
 func TestWalkAndMaskJSON(t *testing.T) {
+	innerMasker, err := masker.NewInnerOuterMasker(storepb.Algorithm_InnerOuterMask_INNER, 1, 1, "*")
+	require.NoError(t, err)
+
 	type testCase struct {
 		description          string
 		input                string
@@ -320,6 +323,63 @@ func TestWalkAndMaskJSON(t *testing.T) {
 			want: `{"name": "John", "tags": "******"}`,
 		},
 		{
+			description: "tagged field with object value is masked as opaque JSON string for non-full masker",
+			input:       `{"name": "John", "address": {"street": "123 Main St", "city": "NYC"}}`,
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"address": {
+								Type:         storepb.ObjectSchema_OBJECT,
+								SemanticType: "PII",
+								Kind: &storepb.ObjectSchema_StructKind_{
+									StructKind: &storepb.ObjectSchema_StructKind{
+										Properties: map[string]*storepb.ObjectSchema{
+											"street": {Type: storepb.ObjectSchema_STRING},
+											"city":   {Type: storepb.ObjectSchema_STRING},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			semanticTypeToMasker: map[string]masker.Masker{
+				"PII": innerMasker,
+			},
+			want: `{"name": "John", "address": "{***********************************}"}`,
+		},
+		{
+			description: "tagged field with array value is masked as opaque JSON string for non-full masker",
+			input:       `{"name": "John", "tags": ["tag1", "tag2"]}`,
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"tags": {
+								Type:         storepb.ObjectSchema_ARRAY,
+								SemanticType: "PII",
+								Kind: &storepb.ObjectSchema_ArrayKind_{
+									ArrayKind: &storepb.ObjectSchema_ArrayKind{
+										Kind: &storepb.ObjectSchema{
+											Type: storepb.ObjectSchema_STRING,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			semanticTypeToMasker: map[string]masker.Masker{
+				"PII": innerMasker,
+			},
+			want: `{"name": "John", "tags": "[*************]"}`,
+		},
+		{
 			description: "mask following the field paths",
 			input: `{
     "firstName": "John",
@@ -403,6 +463,68 @@ func TestWalkAndMaskJSON(t *testing.T) {
 		require.NoError(t, err, tc.description)
 
 		require.NoError(t, err, tc.description)
+		require.JSONEqf(t, tc.want, string(output), tc.description)
+	}
+}
+
+func TestWalkAndMaskJSONRecursiveSemanticTypeMasksJSONContainerAsString(t *testing.T) {
+	innerMasker, err := masker.NewInnerOuterMasker(storepb.Algorithm_InnerOuterMask_INNER, 1, 1, "*")
+	require.NoError(t, err)
+
+	testCases := []struct {
+		description  string
+		input        string
+		objectSchema *storepb.ObjectSchema
+		want         string
+	}{
+		{
+			description: "root object semantic type is masked as opaque JSON string",
+			input:       `{"street": "123 Main St", "city": "NYC"}`,
+			objectSchema: &storepb.ObjectSchema{
+				Type:         storepb.ObjectSchema_OBJECT,
+				SemanticType: "PII",
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"street": {Type: storepb.ObjectSchema_STRING},
+							"city":   {Type: storepb.ObjectSchema_STRING},
+						},
+					},
+				},
+			},
+			want: `"{***********************************}"`,
+		},
+		{
+			description: "root array semantic type is masked as opaque JSON string",
+			input:       `["tag1", "tag2"]`,
+			objectSchema: &storepb.ObjectSchema{
+				Type:         storepb.ObjectSchema_ARRAY,
+				SemanticType: "PII",
+				Kind: &storepb.ObjectSchema_ArrayKind_{
+					ArrayKind: &storepb.ObjectSchema_ArrayKind{
+						Kind: &storepb.ObjectSchema{
+							Type: storepb.ObjectSchema_STRING,
+						},
+					},
+				},
+			},
+			want: `"[*************]"`,
+		},
+	}
+
+	for _, tc := range testCases {
+		var input any
+		err := json.Unmarshal([]byte(tc.input), &input)
+		require.NoError(t, err, tc.description)
+
+		got, err := walkAndMaskJSONRecursive(input, tc.objectSchema, map[string]masker.Masker{
+			"PII": innerMasker,
+		})
+		require.NoError(t, err, tc.description)
+
+		output, err := json.Marshal(got)
+		require.NoError(t, err, tc.description)
+
 		require.JSONEqf(t, tc.want, string(output), tc.description)
 	}
 }

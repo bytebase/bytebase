@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,6 +9,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestGetSQLStatementPrefix(t *testing.T) {
@@ -28,6 +32,12 @@ func TestGetSQLStatementPrefix(t *testing.T) {
 			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "table1"}},
 			columnNames:  []string{"a", "b"},
 			want:         "INSERT INTO `table1` (`a`,`b`) VALUES (",
+		},
+		{
+			engine:       storepb.Engine_TIDB,
+			resourceList: []base.SchemaResource{{Database: "db1", Schema: "", Table: "cbt_plans"}},
+			columnNames:  []string{"id", "app_code", "locale"},
+			want:         "INSERT INTO `cbt_plans` (`id`,`app_code`,`locale`) VALUES (",
 		},
 		{
 			engine:       storepb.Engine_POSTGRES,
@@ -308,4 +318,69 @@ func TestExportJSON(t *testing.T) {
 		a.NoError(err)
 		a.Equal(test.want, string(got))
 	}
+}
+
+func TestGetResourcesTiDB(t *testing.T) {
+	a := assert.New(t)
+	ctx := context.Background()
+
+	instance := &store.InstanceMessage{
+		ResourceID: "test-tidb-instance",
+		Metadata: &storepb.Instance{
+			Engine: storepb.Engine_TIDB,
+		},
+	}
+
+	getDatabaseMetadataFunc := func(_ context.Context, _ string, _ string) (string, *model.DatabaseMetadata, error) {
+		dbMeta := model.NewDatabaseMetadata(
+			&storepb.DatabaseSchemaMetadata{
+				Name: "",
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "cbt_plans",
+								Columns: []*storepb.ColumnMetadata{
+									{Name: "id", Type: "bigint"},
+								},
+							},
+						},
+					},
+				},
+			},
+			nil,
+			nil,
+			storepb.Engine_TIDB,
+			false,
+		)
+		return "", dbMeta, nil
+	}
+
+	listDatabaseNamesFunc := func(_ context.Context, _ string) ([]string, error) {
+		return nil, nil
+	}
+
+	getLinkedDatabaseMetadataFunc := func(_ context.Context, _, _, _ string) (string, string, *model.DatabaseMetadata, error) {
+		return "", "", nil, nil
+	}
+
+	// With databaseName = "":
+	// - If TiDB hits default case: returns error "database must be specified"
+	// - If TiDB hits MySQL case: calls GetQuerySpan and returns resources
+	resources, err := GetResources(
+		ctx,
+		nil,
+		storepb.Engine_TIDB,
+		"",
+		"SELECT id FROM cbt_plans;",
+		instance,
+		getDatabaseMetadataFunc,
+		listDatabaseNamesFunc,
+		getLinkedDatabaseMetadataFunc,
+	)
+
+	a.NoError(err, "TiDB should not fall through to default case which returns 'database must be specified'")
+	a.Len(resources, 1)
+	a.Equal("cbt_plans", resources[0].Table)
 }

@@ -30,8 +30,8 @@
           :params="executeParams"
           :database="database"
           :result="resultSet.results[0]"
-          :show-export="!effectiveQueryDataPolicy.disableExport"
-          :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
+          :show-export="!queryDataPolicy.disableExport"
+          :maximum-export-count="queryDataPolicy.maximumResultRows"
           @export="handleExportBtnClick"
         />
       </template>
@@ -87,11 +87,11 @@
               :database="database"
               :result="result"
               :show-export="false"
-              :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
+              :maximum-export-count="queryDataPolicy.maximumResultRows"
               @export="handleExportBtnClick"
             />
           </NTabPane>
-          <template v-if="!effectiveQueryDataPolicy.disableExport" #suffix>
+          <template v-if="!queryDataPolicy.disableExport" #suffix>
             <div class="mb-1">
               <DataExportButton
                 size="small"
@@ -104,7 +104,7 @@
                 ]"
                 :view-mode="'DRAWER'"
                 :support-password="true"
-                :maximum-export-count="effectiveQueryDataPolicy.maximumResultRows"
+                :maximum-export-count="queryDataPolicy.maximumResultRows"
                 @export="
                   ($event) =>
                     handleExportBtnClick({
@@ -180,6 +180,7 @@ import {
   NTabs,
   NTooltip,
 } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
@@ -192,11 +193,8 @@ import type {
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL";
-import { useSQLEditorTabStore, useSQLStore } from "@/store";
-import {
-  usePolicyV1Store,
-  useQueryDataPolicy,
-} from "@/store/modules/v1/policy";
+import { useSQLEditorStore, useSQLEditorTabStore, useSQLStore } from "@/store";
+import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import {
   ExportFormat,
@@ -235,10 +233,7 @@ defineEmits<{
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const tabStore = useSQLEditorTabStore();
-
-const { policy: effectiveQueryDataPolicy } = useQueryDataPolicy(
-  computed(() => props.database.project)
-);
+const { queryDataPolicy } = storeToRefs(useSQLEditorStore());
 
 const permissionDeniedError = computed(
   (): PermissionDeniedDetail | undefined => {
@@ -291,7 +286,7 @@ const tabName = (index: number) => {
 };
 
 const disallowCopyingData = computed(() => {
-  if (effectiveQueryDataPolicy.value.disableCopyData) {
+  if (queryDataPolicy.value.disableCopyData) {
     return true;
   }
   // If the database is provided, use its effective environment.

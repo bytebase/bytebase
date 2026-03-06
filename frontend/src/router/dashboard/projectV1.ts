@@ -469,6 +469,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_GITOPS,
         meta: {
           title: () => t("gitops.self"),
+          requiredPermissionList: () => [
+            "bb.workloadIdentities.list",
+            "bb.databases.list",
+          ],
         },
         component: () => import("@/views/project/ProjectGitOpsDashboard.vue"),
         props: true,

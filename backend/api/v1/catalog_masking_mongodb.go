@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/json"
+	"maps"
 
 	"github.com/pkg/errors"
 
@@ -25,6 +26,51 @@ func checkMongoDBRequestBlocked(analysis *mongoparser.MaskingAnalysis) error {
 		return errors.Errorf("MongoDB operation %q on collection %q is not supported for dynamic masking in this release. Supported operations are find() and findOne()", operation+"()", analysis.Collection)
 	}
 	return nil
+}
+
+// injectJoinedSchemas adds array-of-objects schemas for each $lookup/$graphLookup join
+// into the source objectSchema so masking covers the joined field.
+// The as field holds an array of joined documents, so the injected schema is ARRAY{item: joinedSchema}.
+// If the source schema has no StructKind or the joined collection has no schema, the join is skipped silently.
+func injectJoinedSchemas(objectSchema *storepb.ObjectSchema, joins []joinedSchema) *storepb.ObjectSchema {
+	if objectSchema == nil || len(joins) == 0 {
+		return objectSchema
+	}
+	structKind := objectSchema.GetStructKind()
+	if structKind == nil {
+		return objectSchema
+	}
+
+	// Clone properties map so we don't mutate the cached schema.
+	props := make(map[string]*storepb.ObjectSchema, len(structKind.Properties)+len(joins))
+	maps.Copy(props, structKind.Properties)
+	for _, j := range joins {
+		if j.schema == nil {
+			continue
+		}
+		props[j.asField] = &storepb.ObjectSchema{
+			Type: storepb.ObjectSchema_ARRAY,
+			Kind: &storepb.ObjectSchema_ArrayKind_{
+				ArrayKind: &storepb.ObjectSchema_ArrayKind{
+					Kind: j.schema,
+				},
+			},
+		}
+	}
+	return &storepb.ObjectSchema{
+		Type: storepb.ObjectSchema_OBJECT,
+		Kind: &storepb.ObjectSchema_StructKind_{
+			StructKind: &storepb.ObjectSchema_StructKind{
+				Properties: props,
+			},
+		},
+	}
+}
+
+// joinedSchema pairs an as-field name with its resolved ObjectSchema.
+type joinedSchema struct {
+	asField string
+	schema  *storepb.ObjectSchema
 }
 
 func maskMongoDBDocumentString(document string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {

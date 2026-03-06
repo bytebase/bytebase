@@ -9,7 +9,7 @@ RUN go build \
 -o bytebase-action action/*.go
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y jq
+RUN apt-get update && apt-get install -y jq curl
 WORKDIR /
 COPY --from=builder /action-build/bytebase-action /usr/local/bin/bytebase-action
 COPY --from=builder /etc/ssl/certs /etc/ssl/certs

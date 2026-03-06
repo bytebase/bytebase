@@ -28,7 +28,7 @@ func GetResources(
 	getLinkedDatabaseMetadataFunc base.GetLinkedDatabaseMetadataFunc,
 ) ([]base.SchemaResource, error) {
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 		return getResourcesForMySQL(ctx, storeInstance, engine, databaseName, statement, instance, getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)
 	case storepb.Engine_POSTGRES:
 		return getResourcesForPostgres(ctx, storeInstance, engine, databaseName, statement, instance, "public", getDatabaseMetadataFunc, listDatabaseNamesFunc, getLinkedDatabaseMetadataFunc)

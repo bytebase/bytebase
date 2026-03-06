@@ -9,11 +9,24 @@
       @add-readonly-datasource="handleCreateRODataSource"
     />
 
-    <DataSourceForm v-if="editingDataSource" :data-source="editingDataSource" />
+    <DataSourceForm
+      v-if="editingDataSource"
+      :data-source="editingDataSource"
+      :hide-options="hideOptions"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+withDefaults(
+  defineProps<{
+    hideOptions?: boolean;
+  }>(),
+  {
+    hideOptions: false,
+  }
+);
+
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";

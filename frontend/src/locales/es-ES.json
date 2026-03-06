@@ -1383,6 +1383,14 @@
     "snowflake-web-console": "Consola web de Snowflake",
     "external-link": "Enlace externo",
     "connection-info": "Información de conexión",
+    "connection-options": "Opciones de conexión",
+    "section": {
+      "basic-info": "Información básica",
+      "connection": "Conexión"
+    },
+    "info-panel": {
+      "no-info": "No hay información adicional disponible para este motor."
+    },
     "role-arn": "ARN del rol",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
     "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
@@ -2852,19 +2860,18 @@
     "checklist": {
       "title": "Verificaciones antes de comenzar",
       "external-url": "URL externa",
-      "external-url-missing": "La URL externa no está configurada.",
-      "configure": "Configurar",
       "workload-identity": "Identidad de carga de trabajo",
       "target-databases": "Bases de datos de destino"
     },
     "workload-identity": {
-      "select-placeholder": "Seleccionar una identidad de carga de trabajo",
-      "no-identity": "No se encontró ninguna identidad de carga de trabajo. Cree una para comenzar."
+      "select-placeholder": "Seleccionar una identidad de carga de trabajo"
     },
     "workflow": {
       "title": "Generación de archivo de flujo de trabajo",
       "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
-      "file-hint": "Guardar como {filePath} en su repositorio"
+      "file-hint": "Guardar como {filePath} en su repositorio",
+      "self-hosted-runner": "Runner self-hosted",
+      "provider-not-match": "La workload identity seleccionada solo funciona para {provider}."
     },
     "test-setup": {
       "title": "Pruebe su primera migración GitOps",

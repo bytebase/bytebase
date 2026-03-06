@@ -290,11 +290,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-	}
-	if accessGrant != nil {
-		// unset the query limit
-		queryContext.Limit = 0
-		queryContext.SkipMasking = accessGrant.Payload.Unmask
+		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
@@ -828,6 +824,18 @@ func queryRetry(
 				}
 				if objectSchema == nil {
 					continue
+				}
+
+				if len(analysis.JoinedCollections) > 0 {
+					var joined []joinedSchema
+					for _, jc := range analysis.JoinedCollections {
+						js, jsErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
+						if jsErr != nil {
+							return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.Wrapf(jsErr, "failed to get object schema for joined collection %q", jc.Collection))
+						}
+						joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
+					}
+					objectSchema = injectJoinedSchemas(objectSchema, joined)
 				}
 
 				for _, row := range result.Rows {

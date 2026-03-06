@@ -24,6 +24,26 @@ maskDocument:
     input: '"raw-string-result"'
     want: '"raw-string-result"'
 
+  - description: unwind scalar - item-level semantic type masks unwound scalar
+    schema: array
+    input: '{"tags":"alpha","count":2}'
+    want: '{"tags":"******","count":2}'
+
+  - description: unwind scalar - array-level semantic type masks unwound scalar
+    schema: array-level-masked
+    input: '{"tags":"alpha","count":2}'
+    want: '{"tags":"******","count":2}'
+
+  - description: unwind object - item-level semantic type masks unwound object fields
+    schema: array-of-objects
+    input: '{"friends":{"name":"Bob","phone":"555-1234"}}'
+    want: '{"friends":{"name":"Bob","phone":"******"}}'
+
+  - description: lookup joined array field is masked
+    schema: lookup-joined
+    input: '{"name":"Alice","orders":[{"total":99.9,"status":"shipped"},{"total":5.0,"status":"pending"}]}'
+    want: '{"name":"Alice","orders":[{"total":"******","status":"shipped"},{"total":"******","status":"pending"}]}'
+
 checkBlocked:
   - description: nil analysis allowed
     analysisNil: true

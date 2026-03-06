@@ -21,7 +21,7 @@
           <NButton
             type="primary"
             :disabled="slotProps.disabled"
-            @click="showCreateInstanceDrawer"
+            @click="navigateToCreate"
           >
             <template #icon>
               <PlusIcon class="h-4 w-4" />
@@ -52,28 +52,6 @@
       />
     </div>
   </div>
-  <Drawer
-    :auto-focus="true"
-    :close-on-esc="true"
-    :show="state.showCreateDrawer"
-    @close="state.showCreateDrawer = false"
-  >
-    <InstanceForm
-      :hide-advanced-features="false"
-      :drawer="true"
-      @dismiss="state.showCreateDrawer = false"
-    >
-      <DrawerContent
-        :title="$t('quick-action.add-instance')"
-        class="w-212.5 max-w-[100vw]"
-      >
-        <InstanceFormBody />
-        <template #footer>
-          <InstanceFormButtons :on-created="onInstanceCreated" />
-        </template>
-      </DrawerContent>
-    </InstanceForm>
-  </Drawer>
 </template>
 
 <script lang="tsx" setup>
@@ -86,18 +64,9 @@ import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import {
-  InstanceForm,
-  Form as InstanceFormBody,
-  Buttons as InstanceFormButtons,
-} from "@/components/InstanceForm/";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
-import {
-  Drawer,
-  DrawerContent,
-  InstanceOperations,
-  PagedInstanceTable,
-} from "@/components/v2";
+import { InstanceOperations, PagedInstanceTable } from "@/components/v2";
+import { INSTANCE_ROUTE_CREATE } from "@/router/dashboard/instance";
 import {
   useActuatorV1Store,
   useInstanceV1Store,
@@ -119,12 +88,11 @@ import {
 
 interface LocalState {
   params: SearchParams;
-  showCreateDrawer: boolean;
   showFeatureModal: boolean;
   selectedInstance: Set<string>;
 }
 
-const props = defineProps<{
+defineProps<{
   onRowClick?: (instance: Instance) => void;
 }>();
 
@@ -142,18 +110,9 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
-  showCreateDrawer: false,
   showFeatureModal: false,
   selectedInstance: new Set(),
 });
-
-const onInstanceCreated = (instance: Instance) => {
-  if (props.onRowClick) {
-    return props.onRowClick(instance);
-  }
-  router.push(`/${instance.name}`);
-  state.showCreateDrawer = false;
-};
 
 const selectedEnvironment = computed(() => {
   return getValueFromSearchParams(
@@ -198,14 +157,14 @@ const filter = computed(() => ({
   state: selectedState.value,
 }));
 
-const showCreateInstanceDrawer = () => {
+const navigateToCreate = () => {
   if (
     subscriptionStore.instanceCountLimit <= actuatorStore.activatedInstanceCount
   ) {
     state.showFeatureModal = true;
     return;
   }
-  state.showCreateDrawer = true;
+  router.push({ name: INSTANCE_ROUTE_CREATE });
 };
 
 const scopeOptions = computed((): ScopeOption[] => {

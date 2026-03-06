@@ -26,7 +26,7 @@
         <NTooltip :disabled="!reachQueryLimit">
           <template #trigger>
             <div class="flex items-center gap-x-1 whitespace-nowrap text-sm text-gray-500">
-              <InfoIcon v-if="reachQueryLimit" class="w-4" />
+              <InfoIcon v-if="reachQueryLimit" class="w-4 text-yellow-500" />
               {{ resultRowsText }}
             </div>
           </template>
@@ -34,8 +34,8 @@
         </NTooltip>
       </div>
       <div class="flex justify-between items-center shrink-0 gap-x-2">
-        <div v-if="isESSearchResult" class="flex items-center">
-          <NSwitch v-model:value="esTableView" size="small" />
+        <div v-if="supportsTableViewToggle" class="flex items-center">
+          <NSwitch v-model:value="noSQLTableView" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
             {{ $t("sql-editor.table-view") }}
           </span>
@@ -286,7 +286,10 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { CopyButton, Drawer, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { flattenElasticsearchSearchResult } from "@/composables/utils";
+import {
+  flattenElasticsearchSearchResult,
+  flattenNoSQLQueryResult,
+} from "@/composables/utils";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import type {
@@ -309,7 +312,7 @@ import {
   isNullOrUndefined,
   type SearchParams,
 } from "@/utils";
-import { STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW } from "@/utils/storage-keys";
+import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
 import {
   provideSQLResultViewContext,
   type SQLResultViewContext,
@@ -406,23 +409,43 @@ const viewMode = computed((): ViewMode => {
 
 const engine = computed(() => getInstanceResource(props.database).engine);
 
-const esTableView = useLocalStorage(STORAGE_KEY_SQL_EDITOR_ES_TABLE_VIEW, true);
+const noSQLTableView = useLocalStorage(
+  STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
+  true
+);
 
 const flattenedESResult = computed(() => {
   if (engine.value !== Engine.ELASTICSEARCH) return undefined;
   return flattenElasticsearchSearchResult(props.result);
 });
 
-const isESSearchResult = computed(() => flattenedESResult.value !== undefined);
+const flattenedMongoResult = computed(() => {
+  if (engine.value !== Engine.MONGODB) return undefined;
+  return flattenNoSQLQueryResult(props.result);
+});
+
+const flattenedNoSQLResult = computed(() => {
+  if (engine.value === Engine.ELASTICSEARCH) {
+    return flattenedESResult.value;
+  }
+  if (engine.value === Engine.MONGODB) {
+    return flattenedMongoResult.value;
+  }
+  return undefined;
+});
+
+const supportsTableViewToggle = computed(
+  () => flattenedNoSQLResult.value !== undefined
+);
 
 const activeResult = computed(() => {
-  if (isESSearchResult.value && esTableView.value) {
-    return flattenedESResult.value!;
+  if (supportsTableViewToggle.value && noSQLTableView.value) {
+    return flattenedNoSQLResult.value!;
   }
   return props.result;
 });
 
-watch(esTableView, () => {
+watch(noSQLTableView, () => {
   state.sortState = undefined;
   state.searchParams = { query: "", scopes: [] };
   state.searchCandidateActiveIndex = -1;
@@ -649,7 +672,8 @@ const rows = computed((): ResultTableRow[] => {
 const reachQueryLimit = computed(() => {
   return (
     currentTab.value?.mode !== "ADMIN" &&
-    rows.value.length === editorStore.resultRowsLimit
+    (rows.value.length === editorStore.resultRowsLimit ||
+      rows.value.length === editorStore.queryDataPolicy.maximumResultRows)
   );
 });
 
@@ -660,8 +684,8 @@ const resultRowsText = computed(() => {
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
-  // Column indices don't match when showing flattened ES table view.
-  if (isESSearchResult.value && esTableView.value) return false;
+  // Column indices don't match when showing flattened NoSQL table view.
+  if (supportsTableViewToggle.value && noSQLTableView.value) return false;
   const maskingReason = props.result.masked?.[columnIndex];
   // Check if maskingReason exists and has actual content (not empty object)
   return (
@@ -673,8 +697,8 @@ const isSensitiveColumn = (columnIndex: number): boolean => {
 };
 
 const getMaskingReason = (columnIndex: number) => {
-  // Column indices don't match when showing flattened ES table view.
-  if (isESSearchResult.value && esTableView.value) return undefined;
+  // Column indices don't match when showing flattened NoSQL table view.
+  if (supportsTableViewToggle.value && noSQLTableView.value) return undefined;
   if (!props.result.masked || columnIndex >= props.result.masked.length) {
     return undefined;
   }

@@ -46,7 +46,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	var adviceList []*storepb.Advice
-	var setRoles []string
+	var preExecutions []string
 	for _, stmtInfo := range checkCtx.ParsedStatements {
 		if stmtInfo.AST == nil {
 			continue
@@ -60,18 +60,18 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			ctx:        ctx,
-			driver:     checkCtx.Driver,
-			tenantMode: checkCtx.TenantMode,
-			setRoles:   setRoles,
-			tokens:     antlrAST.Tokens,
+			ctx:           ctx,
+			driver:        checkCtx.Driver,
+			tenantMode:    checkCtx.TenantMode,
+			preExecutions: preExecutions,
+			tokens:        antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
-		setRoles = rule.setRoles
+		preExecutions = rule.preExecutions
 	}
 
 	return adviceList, nil
@@ -79,12 +79,12 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 
 type statementDMLDryRunRule struct {
 	BaseRule
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-	setRoles     []string
-	tenantMode   bool
-	tokens       *antlr.CommonTokenStream
+	driver        *sql.DB
+	ctx           context.Context
+	explainCount  int
+	preExecutions []string
+	tenantMode    bool
+	tokens        *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -119,14 +119,7 @@ func (r *statementDMLDryRunRule) handleVariablesetstmt(ctx *parser.Variablesetst
 		return
 	}
 
-	// Check if this is SET ROLE
-	if ctx.SET() != nil && ctx.Set_rest() != nil && ctx.Set_rest().Set_rest_more() != nil {
-		setRestMore := ctx.Set_rest().Set_rest_more()
-		if setRestMore.ROLE() != nil {
-			// Store the SET ROLE statement text
-			r.setRoles = append(r.setRoles, getTextFromTokens(r.tokens, ctx))
-		}
-	}
+	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
 }
 
 func (r *statementDMLDryRunRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
@@ -166,7 +159,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
 		TenantMode:    r.tenantMode,
-		PreExecutions: r.setRoles,
+		PreExecutions: r.preExecutions,
 	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {

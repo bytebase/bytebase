@@ -7,6 +7,7 @@ import ProjectSelect from "./ProjectSelect.vue";
 import RoleSelect from "./RoleSelect.vue";
 import UserSelect from "./UserSelect.vue";
 import AccountSelect from "./AccountSelect.vue";
+import WorkloadIdentitySelect from "./WorkloadIdentitySelect.vue";
 
 export {
   AnnouncementLevelSelect,
@@ -18,4 +19,5 @@ export {
   AccountSelect,
   GroupSelect,
   RoleSelect,
+  WorkloadIdentitySelect,
 };
