@@ -91,6 +91,9 @@ type Context struct {
 
 	// Event-specific data
 	FailedTasks []FailedTaskInfo
+
+	// Environment is the environment resource ID (e.g., "environments/prod").
+	Environment string
 }
 
 // FailedTaskInfo contains information about a failed task.
@@ -140,6 +143,12 @@ func (c *Context) GetMetaList() []Meta {
 				Value: c.Rollout.Title,
 			})
 		}
+		if c.Environment != "" {
+			m = append(m, Meta{
+				Name:  "Environment",
+				Value: c.Environment,
+			})
+		}
 	}
 
 	return m
@@ -176,6 +185,12 @@ func (c *Context) GetMetaListZh() []Meta {
 			m = append(m, Meta{
 				Name:  "发布",
 				Value: c.Rollout.Title,
+			})
+		}
+		if c.Environment != "" {
+			m = append(m, Meta{
+				Name:  "环境",
+				Value: c.Environment,
 			})
 		}
 	}

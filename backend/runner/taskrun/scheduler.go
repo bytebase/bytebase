@@ -150,12 +150,19 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return
 	}
 
+	// Use environment from the first task (all tasks should be in the same environment for a rollout)
+	environment := ""
+	if len(tasks) > 0 {
+		environment = tasks[0].Environment
+	}
+
 	// Send PIPELINE_COMPLETED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Type:    storepb.Activity_PIPELINE_COMPLETED,
 		Project: webhook.NewProject(project),
 		RolloutCompleted: &webhook.EventRolloutCompleted{
-			Rollout: webhook.NewRollout(plan),
+			Rollout:     webhook.NewRollout(plan),
+			Environment: environment,
 		},
 	})
 

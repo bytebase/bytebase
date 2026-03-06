@@ -133,6 +133,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			rollout = e.RolloutFailed.Rollout
 			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
 			webhookCtx.Description = "Rollout failed"
+			webhookCtx.Environment = e.RolloutFailed.Environment
 		}
 
 	case storepb.Activity_PIPELINE_COMPLETED:
@@ -143,6 +144,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			rollout = e.RolloutCompleted.Rollout
 			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
 			webhookCtx.Description = "Rollout completed successfully"
+			webhookCtx.Environment = e.RolloutCompleted.Environment
 		}
 
 	default:
