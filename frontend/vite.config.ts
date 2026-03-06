@@ -49,9 +49,13 @@ export default defineConfig({
       compiler: "vue3",
     }),
     yaml(),
-    CodeInspectorPlugin({
-      bundler: "vite",
-    }),
+    ...(process.env.VITEST
+      ? []
+      : [
+          CodeInspectorPlugin({
+            bundler: "vite",
+          }),
+        ]),
     // Export CSP hashes from @vitejs/plugin-legacy for backend to use
     exportCspHashes(),
   ],

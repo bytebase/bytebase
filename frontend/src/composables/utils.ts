@@ -253,55 +253,82 @@ const convertAnyToRowValue = (
 
 export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
   for (const result of resultSet.results) {
-    const { columns, columnIndexMap } = getNoSQLColumns(result.rows);
-
-    const rows: QueryRow[] = [];
-    const columnTypeNames: string[] = Array.from({
-      length: columns.length,
-    }).map((_) => "TEXT");
-
-    for (const row of result.rows) {
-      if (
-        row.values.length !== 1 ||
-        row.values[0].kind.case !== "stringValue"
-      ) {
-        continue;
-      }
-      // Use lossless-json to preserve precision for large integers (> 2^53-1)
-      const data = losslessParse(
-        row.values[0].kind.value,
-        null,
-        losslessReviver
-      ) as Record<string, unknown>;
-      const values: RowValue[] = Array.from({ length: columns.length }).map(
-        (_) =>
-          createProto(RowValueSchema, {
-            kind: {
-              case: "nullValue",
-              value: NullValue.NULL_VALUE,
-            },
-          })
-      );
-
-      for (const [key, value] of Object.entries(data)) {
-        const index = columnIndexMap.get(key) ?? 0;
-
-        const { value: formatted, type } = convertAnyToRowValue(value, true);
-        values[index] = formatted;
-        columnTypeNames[index] = type;
-      }
-
-      rows.push(
-        createProto(QueryRowSchema, {
-          values: values,
-        })
-      );
+    const flattened = flattenNoSQLQueryResult(result);
+    if (!flattened) {
+      continue;
     }
 
-    result.rows = rows;
-    result.columnNames = columns;
-    result.columnTypeNames = columnTypeNames;
+    result.rows = flattened.rows;
+    result.columnNames = flattened.columnNames;
+    result.columnTypeNames = flattened.columnTypeNames;
   }
+};
+
+export const flattenNoSQLQueryResult = (
+  result: QueryResult
+): QueryResult | undefined => {
+  if (
+    result.columnNames.length !== 1 ||
+    result.columnNames[0] !== "result" ||
+    result.rows.length === 0
+  ) {
+    return undefined;
+  }
+
+  const { columns, columnIndexMap } = getNoSQLColumns(result.rows);
+  if (columns.length === 0) {
+    return undefined;
+  }
+
+  const rows: QueryRow[] = [];
+  const columnTypeNames: string[] = Array.from({ length: columns.length }).map(
+    () => "TEXT"
+  );
+
+  for (const row of result.rows) {
+    if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
+      return undefined;
+    }
+
+    // Use lossless-json to preserve precision for large integers (> 2^53-1)
+    const data = losslessParse(
+      row.values[0].kind.value,
+      null,
+      losslessReviver
+    ) as Record<string, unknown>;
+    const values: RowValue[] = Array.from({ length: columns.length }).map(() =>
+      createProto(RowValueSchema, {
+        kind: {
+          case: "nullValue",
+          value: NullValue.NULL_VALUE,
+        },
+      })
+    );
+
+    for (const [key, value] of Object.entries(data)) {
+      const index = columnIndexMap.get(key) ?? 0;
+      const { value: formatted, type } = convertAnyToRowValue(value, true);
+      values[index] = formatted;
+      columnTypeNames[index] = type;
+    }
+
+    rows.push(
+      createProto(QueryRowSchema, {
+        values,
+      })
+    );
+  }
+
+  return createProto(QueryResultSchema, {
+    columnNames: columns,
+    columnTypeNames,
+    rows,
+    rowsCount: BigInt(rows.length),
+    statement: result.statement,
+    latency: result.latency,
+    error: result.error,
+    masked: result.masked,
+  });
 };
 
 // Parses the hits array from an Elasticsearch _search QueryResult's "hits" column.
