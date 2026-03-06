@@ -1711,10 +1711,19 @@ COMMENT ON TABLE SPECIAL_DATA IS '';
 		},
 	}
 
+	// Oracle Free in CI slows down heavily when too many schema-heavy
+	// subtests execute concurrently against the same container.
+	const maxConcurrentSubtests = 4
+	parallelGate := make(chan struct{}, maxConcurrentSubtests)
+
 	for _, tc := range testCases {
 		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			parallelGate <- struct{}{}
+			defer func() {
+				<-parallelGate
+			}()
 
 			// Create unique Oracle user for this test (Oracle users are schemas)
 			// Use UUID to ensure uniqueness and avoid name collisions
