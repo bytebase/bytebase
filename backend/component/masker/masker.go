@@ -620,7 +620,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 		//nolint
 		f := v.Kind.(*structpb.Value_StructValue)
 		for field, value := range f.StructValue.Fields {
-			kindValue.StructValue.Fields[field] = maskProtoValue(m, value)
+			f.StructValue.Fields[field] = maskProtoValue(m, value)
 		}
 		return v
 	case *structpb.Value_ListValue:
@@ -628,7 +628,7 @@ func maskProtoValue(m Masker, value *structpb.Value) *structpb.Value {
 		//nolint
 		l := v.Kind.(*structpb.Value_ListValue)
 		for i, value := range l.ListValue.Values {
-			kindValue.ListValue.Values[i] = maskProtoValue(m, value)
+			l.ListValue.Values[i] = maskProtoValue(m, value)
 		}
 		return v
 	}
