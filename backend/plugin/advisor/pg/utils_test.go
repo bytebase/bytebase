@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
+	pgparser "github.com/bytebase/parser/postgresql"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/parser/postgresql"
 )
 
 type sessionPreExecutionCollector struct {
