@@ -60,11 +60,11 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			ctx:        ctx,
-			driver:     checkCtx.Driver,
-			tenantMode: checkCtx.TenantMode,
+			ctx:           ctx,
+			driver:        checkCtx.Driver,
+			tenantMode:    checkCtx.TenantMode,
 			preExecutions: preExecutions,
-			tokens:     antlrAST.Tokens,
+			tokens:        antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
 
@@ -79,12 +79,12 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 
 type statementDMLDryRunRule struct {
 	BaseRule
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
+	driver        *sql.DB
+	ctx           context.Context
+	explainCount  int
 	preExecutions []string
-	tenantMode   bool
-	tokens       *antlr.CommonTokenStream
+	tenantMode    bool
+	tokens        *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.

@@ -61,12 +61,12 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			maxRow:     int(numberPayload.Number),
-			driver:     checkCtx.Driver,
-			ctx:        ctx,
-			tokens:     antlrAST.Tokens,
+			maxRow:        int(numberPayload.Number),
+			driver:        checkCtx.Driver,
+			ctx:           ctx,
+			tokens:        antlrAST.Tokens,
 			preExecutions: preExecutions,
-			TenantMode: checkCtx.TenantMode,
+			TenantMode:    checkCtx.TenantMode,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
 
@@ -82,13 +82,13 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 type insertRowLimitRule struct {
 	BaseRule
 
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	tokens       *antlr.CommonTokenStream
-	explainCount int
+	maxRow        int
+	driver        *sql.DB
+	ctx           context.Context
+	tokens        *antlr.CommonTokenStream
+	explainCount  int
 	preExecutions []string
-	TenantMode   bool
+	TenantMode    bool
 }
 
 func (*insertRowLimitRule) Name() string {

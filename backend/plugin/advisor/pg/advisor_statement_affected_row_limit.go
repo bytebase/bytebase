@@ -61,12 +61,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			maxRow:     int(numberPayload.Number),
-			ctx:        ctx,
-			driver:     checkCtx.Driver,
-			tenantMode: checkCtx.TenantMode,
+			maxRow:        int(numberPayload.Number),
+			ctx:           ctx,
+			driver:        checkCtx.Driver,
+			tenantMode:    checkCtx.TenantMode,
 			preExecutions: preExecutions,
-			tokens:     antlrAST.Tokens,
+			tokens:        antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
 
@@ -81,13 +81,13 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 type statementAffectedRowLimitRule struct {
 	BaseRule
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
+	maxRow        int
+	driver        *sql.DB
+	ctx           context.Context
+	explainCount  int
 	preExecutions []string
-	tenantMode   bool
-	tokens       *antlr.CommonTokenStream
+	tenantMode    bool
+	tokens        *antlr.CommonTokenStream
 }
 
 func (*statementAffectedRowLimitRule) Name() string {
