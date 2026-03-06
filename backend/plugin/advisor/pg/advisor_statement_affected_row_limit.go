@@ -5,11 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/antlr4-go/antlr/v4"
-
 	parser "github.com/bytebase/parser/postgresql"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
