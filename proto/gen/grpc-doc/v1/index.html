@@ -1979,6 +1979,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Plan.RolloutStageSummary"><span class="badge">M</span>Plan.RolloutStageSummary</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Plan.RolloutStageSummary.TaskStatusCountEntry"><span class="badge">M</span>Plan.RolloutStageSummary.TaskStatusCountEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Plan.Spec"><span class="badge">M</span>Plan.Spec</a>
                 </li>
               
@@ -22141,6 +22149,22 @@ Keys are:
                   <td><p>Whether the plan has started the rollout. </p></td>
                 </tr>
               
+                <tr>
+                  <td>approval_status</td>
+                  <td><a href="#bytebase.v1.Issue.ApprovalStatus">Issue.ApprovalStatus</a></td>
+                  <td></td>
+                  <td><p>The approval status of the linked issue.
+Unspecified when no linked issue exists. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rollout_stage_summaries</td>
+                  <td><a href="#bytebase.v1.Plan.RolloutStageSummary">Plan.RolloutStageSummary</a></td>
+                  <td>repeated</td>
+                  <td><p>Per-stage rollout status summary.
+Ordered by environment deployment order. Empty when no rollout exists. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22323,6 +22347,70 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
         
       
         <h3 id="bytebase.v1.Plan.PlanCheckRunStatusCountEntry">Plan.PlanCheckRunStatusCountEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.RolloutStageSummary">Plan.RolloutStageSummary</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>stage</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The stage resource name.
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_status_count</td>
+                  <td><a href="#bytebase.v1.Plan.RolloutStageSummary.TaskStatusCountEntry">Plan.RolloutStageSummary.TaskStatusCountEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Task status counts for this stage.
+Keys are Task.Status enum names: NOT_STARTED, PENDING, RUNNING, DONE, FAILED, CANCELED, SKIPPED. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.RolloutStageSummary.TaskStatusCountEntry">Plan.RolloutStageSummary.TaskStatusCountEntry</h3>
         <p></p>
 
         

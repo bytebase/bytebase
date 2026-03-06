@@ -64,6 +64,14 @@ type TaskFind struct {
 	LatestTaskRunStatusList *[]storepb.TaskRun_Status
 }
 
+// TaskStatusCount holds the aggregated count of tasks grouped by plan, environment, and status.
+type TaskStatusCount struct {
+	PlanID      int64
+	Environment string
+	Status      string
+	Count       int32
+}
+
 // GetTaskByID gets a task by ID.
 func (s *Store) GetTaskByID(ctx context.Context, id int) (*TaskMessage, error) {
 	tasks, err := s.ListTasks(ctx, &TaskFind{ID: &id})
@@ -364,6 +372,54 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 		return nil, err
 	}
 	return tasks, nil
+}
+
+// ListTaskStatusCountByPlanIDs returns per-plan, per-environment, per-status task counts.
+func (s *Store) ListTaskStatusCountByPlanIDs(ctx context.Context, planIDs []int64) ([]*TaskStatusCount, error) {
+	if len(planIDs) == 0 {
+		return nil, nil
+	}
+	q := qb.Q().Space(`
+		SELECT
+			task.plan_id,
+			COALESCE(task.environment, ''),
+			COALESCE(latest_task_run.status, ?) AS status,
+			COUNT(*)::int
+		FROM task
+		LEFT JOIN LATERAL (
+			SELECT task_run.status
+			FROM task_run
+			WHERE task_run.task_id = task.id
+			ORDER BY task_run.id DESC
+			LIMIT 1
+		) AS latest_task_run ON TRUE
+		WHERE task.plan_id = ANY(?)
+		GROUP BY task.plan_id, task.environment, latest_task_run.status
+		ORDER BY task.plan_id, task.environment`,
+		storepb.TaskRun_NOT_STARTED.String(), planIDs)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list task status counts")
+	}
+	defer rows.Close()
+
+	var results []*TaskStatusCount
+	for rows.Next() {
+		var r TaskStatusCount
+		if err := rows.Scan(&r.PlanID, &r.Environment, &r.Status, &r.Count); err != nil {
+			return nil, err
+		}
+		results = append(results, &r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 // BatchSkipTasks batch skip tasks.

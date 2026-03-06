@@ -472,6 +472,8 @@
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
+    - [Plan.RolloutStageSummary](#bytebase-v1-Plan-RolloutStageSummary)
+    - [Plan.RolloutStageSummary.TaskStatusCountEntry](#bytebase-v1-Plan-RolloutStageSummary-TaskStatusCountEntry)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
@@ -7787,6 +7789,8 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR - RUNNING |
 | has_rollout | [bool](#bool) |  | Whether the plan has started the rollout. |
+| approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  | The approval status of the linked issue. Unspecified when no linked issue exists. |
+| rollout_stage_summaries | [Plan.RolloutStageSummary](#bytebase-v1-Plan-RolloutStageSummary) | repeated | Per-stage rollout status summary. Ordered by environment deployment order. Empty when no rollout exists. |
 
 
 
@@ -7854,6 +7858,38 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 <a name="bytebase-v1-Plan-PlanCheckRunStatusCountEntry"></a>
 
 ### Plan.PlanCheckRunStatusCountEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-RolloutStageSummary"></a>
+
+### Plan.RolloutStageSummary
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| stage | [string](#string) |  | The stage resource name. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
+| task_status_count | [Plan.RolloutStageSummary.TaskStatusCountEntry](#bytebase-v1-Plan-RolloutStageSummary-TaskStatusCountEntry) | repeated | Task status counts for this stage. Keys are Task.Status enum names: NOT_STARTED, PENDING, RUNNING, DONE, FAILED, CANCELED, SKIPPED. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-RolloutStageSummary-TaskStatusCountEntry"></a>
+
+### Plan.RolloutStageSummary.TaskStatusCountEntry
 
 
 

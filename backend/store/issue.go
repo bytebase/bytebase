@@ -62,6 +62,7 @@ type FindIssueMessage struct {
 	ProjectID       *string
 	ProjectIDs      *[]string
 	PlanUID         *int64
+	PlanUIDs        *[]int64
 	CreatorID       *string
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
@@ -235,6 +236,9 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	}
 	if v := find.PlanUID; v != nil {
 		where.And("issue.plan_id = ?", *v)
+	}
+	if v := find.PlanUIDs; v != nil {
+		where.And("issue.plan_id = ANY(?)", *v)
 	}
 	if v := find.ProjectID; v != nil {
 		where.And("issue.project = ?", *v)

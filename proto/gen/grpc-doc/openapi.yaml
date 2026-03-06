@@ -23010,6 +23010,22 @@ components:
           title: has_rollout
           description: Whether the plan has started the rollout.
           readOnly: true
+        approvalStatus:
+          title: approval_status
+          description: |-
+            The approval status of the linked issue.
+             Unspecified when no linked issue exists.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
+        rolloutStageSummaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Plan.RolloutStageSummary'
+          title: rollout_stage_summaries
+          description: |-
+            Per-stage rollout status summary.
+             Ordered by environment deployment order. Empty when no rollout exists.
+          readOnly: true
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:
@@ -23131,6 +23147,39 @@ components:
           title: value
           format: int32
       title: PlanCheckRunStatusCountEntry
+      additionalProperties: false
+    bytebase.v1.Plan.RolloutStageSummary:
+      type: object
+      properties:
+        stage:
+          type: string
+          title: stage
+          description: |-
+            The stage resource name.
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
+        taskStatusCount:
+          type: object
+          title: task_status_count
+          additionalProperties:
+            type: integer
+            title: value
+            format: int32
+          description: |-
+            Task status counts for this stage.
+             Keys are Task.Status enum names: NOT_STARTED, PENDING, RUNNING, DONE, FAILED, CANCELED, SKIPPED.
+      title: RolloutStageSummary
+      additionalProperties: false
+    bytebase.v1.Plan.RolloutStageSummary.TaskStatusCountEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: integer
+          title: value
+          format: int32
+      title: TaskStatusCountEntry
       additionalProperties: false
     bytebase.v1.Plan.Spec:
       type: object
