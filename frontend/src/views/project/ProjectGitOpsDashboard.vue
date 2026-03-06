@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full px-4 flex flex-col gap-y-6 py-4">
+  <div class="w-full px-4 flex flex-col gap-y-1 py-4">
     <!-- Section 1: What is GitOps -->
-    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-2">
-      <h2 class="text-lg font-medium">
-        {{ $t("gitops.overview.title") }}
-      </h2>
-      <div>
+    <div class="border border-gray-200 rounded p-6 flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-1">
+        <h2 class="text-lg font-medium">
+          {{ $t("gitops.overview.title") }}
+        </h2>
         <p class="textinfolabel">
           {{ $t("gitops.overview.description") }}
         </p>
@@ -30,9 +30,14 @@
       </div>
     </div>
 
+    <span
+      class="mx-auto w-0.5 h-8 bg-block-border"
+      aria-hidden="true"
+    ></span>
+
     <!-- Section 2: Checks before we start -->
-    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-1">
-      <h2 class="text-lg font-medium mb-2">
+    <div class="border border-gray-200 rounded p-6 flex flex-col gap-y-3">
+      <h2 class="text-lg font-medium">
         {{ $t("gitops.checklist.title") }}
       </h2>
 
@@ -47,7 +52,7 @@
           class="w-5 h-5 text-warning shrink-0"
         />
 
-        <div class="flex flex-col gap-y-1">
+        <div class="flex flex-col flex-1 gap-y-1">
           <span class="text-sm font-medium">
             {{ $t("gitops.checklist.external-url") }}
           </span>
@@ -80,7 +85,7 @@
                 $t('gitops.workload-identity.select-placeholder')
               "
               clearable
-              class="max-w-md"
+              class="max-w-lg"
             />
             <PermissionGuardWrapper
               v-slot="slotProps"
@@ -119,7 +124,7 @@
           <span class="text-sm font-medium">{{
             $t("gitops.checklist.target-databases")
           }}</span>
-          <div class="max-w-md">
+          <div class="max-w-lg">
             <DatabaseSelect
               v-model:value="selectedDatabaseNames"
               :project-name="projectName"
@@ -139,129 +144,164 @@
       </div>
     </div>
 
+    <span
+      class="mx-auto w-0.5 h-8 bg-block-border"
+      aria-hidden="true"
+    ></span>
+
     <!-- Section 3: Workflow file generation -->
-    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-3">
-      <h2 class="text-lg font-medium">
-        {{ $t("gitops.workflow.title") }}
-      </h2>
-      <p class="text-sm text-control-light">
-        {{ $t("gitops.workflow.description") }}
-      </p>
+    <div class="border border-gray-200 rounded p-6 flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-1">
+        <h2 class="text-lg font-medium">
+          {{ $t("gitops.workflow.title") }}
+        </h2>
+        <p class="text-sm text-control-light">
+          {{ $t("gitops.workflow.description") }}
+        </p>
+      </div>
 
       <NTabs v-model:value="activeTab" type="line" animated>
-        <NTabPane name="github-actions" tab="GitHub Actions">
+        <NTabPane :name="WorkloadIdentityConfig_ProviderType.GITHUB" tab="GitHub Actions">
+          <BBAttention v-if="selectedConfig && activeTab !== selectedConfig?.providerType" :type="'error'">
+            {{ $t("gitops.workflow.provider-not-match", { provider: getWorkloadIdentityProviderText(selectedConfig.providerType) }) }}
+          </BBAttention>
           <!-- Runner type toggle -->
-          <div class="flex items-center gap-x-2 mt-3">
+          <div class="flex items-center gap-x-2 my-3">
             <span class="text-sm">
               {{ $t("gitops.workflow.self-hosted-runner") }}
             </span>
             <NSwitch v-model:value="useSelfhostRunner" />
           </div>
           <!-- sql-review.yml -->
-          <div class="flex flex-col gap-y-2 mt-3">
-            <div class="flex items-center gap-x-2">
-              <button
-                class="flex items-center gap-x-1 text-sm text-control-light hover:text-control cursor-pointer"
-                @click="showSqlReviewYaml = !showSqlReviewYaml"
-              >
-                <ChevronRightIcon
-                  v-if="!showSqlReviewYaml"
-                  class="w-4 h-4"
-                />
-                <ChevronDownIcon v-else class="w-4 h-4" />
-                {{
-                  $t("gitops.workflow.file-hint", {
-                    filePath: ".github/workflows/sql-review.yml",
-                  })
-                }}
-              </button>
-              <CopyButton :content="githubSqlReviewYaml" />
+          <div class="flex flex-col gap-y-2">
+            <div>
+              <NButton quaternary size="small" @click="showSqlReviewYaml = !showSqlReviewYaml">
+                <template #icon>
+                  <ChevronRightIcon
+                    v-if="!showSqlReviewYaml"
+                    class="w-4 h-4"
+                  />
+                  <ChevronDownIcon v-else class="w-4 h-4" />
+                </template>
+                <i18n-t keypath="gitops.workflow.file-hint">
+                  <template #filePath>
+                    <span class="font-bold mx-1">
+                      .github/workflows/sql-review.yml
+                    </span>
+                  </template>
+                  <template #repository>
+                    <span class="font-bold mx-1">
+                      {{ parsedSubject?.repo }}
+                    </span>
+                  </template>
+                </i18n-t>
+              </NButton>
             </div>
-            <NInput
-              v-show="showSqlReviewYaml"
-              :value="githubSqlReviewYaml"
-              type="textarea"
-              readonly
-              :autosize="{ minRows: 10, maxRows: 30 }"
-              class="font-mono text-sm"
-            />
+            <div v-show="showSqlReviewYaml" class="relative rounded-xs p-4 bg-gray-50">
+              <div class="absolute top-2 right-2 p-2">
+                <CopyButton size="medium" :content="githubSqlReviewYaml" />
+              </div>
+              <NConfigProvider :hljs="hljs">
+                <NCode language="yaml" :code="githubSqlReviewYaml" />
+              </NConfigProvider>
+            </div>
           </div>
           <!-- release.yml -->
           <div class="flex flex-col gap-y-2 mt-4">
-            <div class="flex items-center gap-x-2">
-              <button
-                class="flex items-center gap-x-1 text-sm text-control-light hover:text-control cursor-pointer"
-                @click="showReleaseYaml = !showReleaseYaml"
-              >
-                <ChevronRightIcon
-                  v-if="!showReleaseYaml"
-                  class="w-4 h-4"
-                />
-                <ChevronDownIcon v-else class="w-4 h-4" />
-                {{
-                  $t("gitops.workflow.file-hint", {
-                    filePath: ".github/workflows/release.yml",
-                  })
-                }}
-              </button>
-              <CopyButton :content="githubReleaseYaml" />
+            <div>
+              <NButton quaternary size="small" @click="showReleaseYaml = !showReleaseYaml">
+                <template #icon>
+                  <ChevronRightIcon
+                    v-if="!showReleaseYaml"
+                    class="w-4 h-4"
+                  />
+                  <ChevronDownIcon v-else class="w-4 h-4" />
+                </template>
+                <i18n-t keypath="gitops.workflow.file-hint">
+                  <template #filePath>
+                    <span class="font-bold mx-1">
+                      .github/workflows/release.yml
+                    </span>
+                  </template>
+                  <template #repository>
+                    <span class="font-bold mx-1">
+                      {{ parsedSubject?.repo }}
+                    </span>
+                  </template>
+                </i18n-t>
+              </NButton>
             </div>
-            <NInput
-              v-show="showReleaseYaml"
-              :value="githubReleaseYaml"
-              type="textarea"
-              readonly
-              :autosize="{ minRows: 10, maxRows: 30 }"
-              class="font-mono text-sm"
-            />
+            <div v-show="showReleaseYaml" class="relative rounded-xs p-4 bg-gray-50">
+              <div class="absolute top-2 right-2 p-2">
+                <CopyButton size="medium" :content="githubReleaseYaml" />
+              </div>
+              <NConfigProvider :hljs="hljs">
+                <NCode language="yaml" :code="githubReleaseYaml" />
+              </NConfigProvider>
+            </div>
           </div>
         </NTabPane>
-        <NTabPane name="gitlab-ci" tab="GitLab CI">
-          <div class="flex flex-col gap-y-2 mt-3">
-            <div class="flex items-center gap-x-2">
-              <button
-                class="flex items-center gap-x-1 text-sm text-control-light hover:text-control cursor-pointer"
-                @click="showGitlabCiYaml = !showGitlabCiYaml"
-              >
-                <ChevronRightIcon
-                  v-if="!showGitlabCiYaml"
-                  class="w-4 h-4"
-                />
-                <ChevronDownIcon v-else class="w-4 h-4" />
-                {{
-                  $t("gitops.workflow.file-hint", {
-                    filePath: ".gitlab-ci.yml",
-                  })
-                }}
-              </button>
-              <CopyButton :content="gitlabCiYaml" />
+        <NTabPane :name="WorkloadIdentityConfig_ProviderType.GITLAB" tab="GitLab CI">
+          <div class="flex flex-col gap-y-2">
+            <BBAttention v-if="selectedConfig && activeTab !== selectedConfig?.providerType" :type="'error'">
+              {{ $t("gitops.workflow.provider-not-match", { provider: getWorkloadIdentityProviderText(selectedConfig.providerType) }) }}
+            </BBAttention>
+            <div>
+              <NButton quaternary size="small" @click="showGitlabCiYaml = !showGitlabCiYaml">
+                <template #icon>
+                  <ChevronRightIcon
+                    v-if="!showGitlabCiYaml"
+                    class="w-4 h-4"
+                  />
+                  <ChevronDownIcon v-else class="w-4 h-4" />
+                </template>
+                <i18n-t keypath="gitops.workflow.file-hint">
+                  <template #filePath>
+                    <span class="font-bold mx-1">
+                      .gitlab-ci.yml
+                    </span>
+                  </template>
+                  <template #repository>
+                    <span class="font-bold mx-1">
+                      {{ parsedSubject?.repo }}
+                    </span>
+                  </template>
+                </i18n-t>
+              </NButton>
             </div>
-            <NInput
-              v-show="showGitlabCiYaml"
-              :value="gitlabCiYaml"
-              type="textarea"
-              readonly
-              :autosize="{ minRows: 10, maxRows: 30 }"
-              class="font-mono text-sm"
-            />
+            <div v-show="showGitlabCiYaml" class="relative rounded-xs p-4 bg-gray-50">
+              <div class="absolute top-2 right-2 p-2">
+                <CopyButton size="medium" :content="gitlabCiYaml" />
+              </div>
+              <NConfigProvider :hljs="hljs">
+                <NCode language="yaml" :code="gitlabCiYaml" />
+              </NConfigProvider>
+            </div>
           </div>
         </NTabPane>
       </NTabs>
     </div>
 
+    <span
+      class="mx-auto w-0.5 h-8 bg-block-border"
+      aria-hidden="true"
+    ></span>
+
     <!-- Section 4: Test your first GitOps migration -->
-    <div class="border border-gray-200 rounded-lg p-6 flex flex-col gap-y-4">
-      <h2 class="text-lg font-medium">
-        {{ $t("gitops.test-setup.title") }}
-      </h2>
-      <p class="text-sm text-control-light">
-        {{ $t("gitops.test-setup.description") }}
-      </p>
+    <div class="border border-gray-200 rounded p-6 flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-1">
+        <h2 class="text-lg font-medium">
+          {{ $t("gitops.test-setup.title") }}
+        </h2>
+        <p class="text-sm text-control-light">
+          {{ $t("gitops.test-setup.description") }}
+        </p>
+      </div>
 
       <!-- Sample migration file -->
       <div class="flex flex-col gap-y-2">
         <div class="flex items-center gap-x-2">
-          <span class="text-sm text-control-light">{{ sampleFilePath }}</span>
+          <span class="text-sm text-control-light font-bold">{{ sampleFilePath }}</span>
           <CopyButton :content="sampleSql" />
         </div>
         <NInput
@@ -327,15 +367,25 @@
 </template>
 
 <script lang="ts" setup>
+import hljs from "highlight.js/lib/core";
 import {
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   XCircleIcon,
 } from "lucide-vue-next";
-import { NButton, NInput, NSwitch, NTabPane, NTabs } from "naive-ui";
+import {
+  NButton,
+  NCode,
+  NConfigProvider,
+  NInput,
+  NSwitch,
+  NTabPane,
+  NTabs,
+} from "naive-ui";
 import { computed, ref, watch } from "vue";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
+import { BBAttention } from "@/bbkit";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import {
@@ -354,6 +404,10 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
+import {
+  getWorkloadIdentityProviderText,
+  parseWorkloadIdentitySubjectPattern,
+} from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -368,11 +422,13 @@ const { project } = useProjectByName(projectName);
 const showCreateDrawer = ref(false);
 const selectedIdentityName = ref<string | undefined>(undefined);
 const selectedDatabaseNames = ref<string[]>([]);
-const activeTab = ref("github-actions");
+const activeTab = ref<WorkloadIdentityConfig_ProviderType>(
+  WorkloadIdentityConfig_ProviderType.GITHUB
+);
 const useSelfhostRunner = ref(false);
-const showSqlReviewYaml = ref(false);
-const showReleaseYaml = ref(false);
-const showGitlabCiYaml = ref(false);
+const showSqlReviewYaml = ref(true);
+const showReleaseYaml = ref(true);
+const showGitlabCiYaml = ref(true);
 
 const selectedIdentity = computed(() => {
   if (!selectedIdentityName.value) return undefined;
@@ -383,44 +439,19 @@ const selectedConfig = computed(
   () => selectedIdentity.value?.workloadIdentityConfig
 );
 
-// Parse subject pattern to extract owner/repo/branch.
+watch(
+  () => selectedConfig.value,
+  (config) => {
+    activeTab.value =
+      config?.providerType ?? WorkloadIdentityConfig_ProviderType.GITHUB;
+  }
+);
+
 const parsedSubject = computed(() => {
-  const pattern = selectedConfig.value?.subjectPattern;
-  if (!pattern) return undefined;
-
-  const providerType = selectedConfig.value?.providerType;
-
-  if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
-    const match = pattern.match(/^repo:([^/]+)\/(.*)$/);
-    if (!match) return undefined;
-    const owner = match[1];
-    const rest = match[2];
-    if (rest === "*") return { owner, repo: "", branch: "" };
-    const repoMatch = rest.match(/^([^:]+):(.*)$/);
-    if (!repoMatch) return undefined;
-    const repo = repoMatch[1];
-    const refPart = repoMatch[2];
-    if (refPart === "*") return { owner, repo, branch: "" };
-    const branchMatch = refPart.match(/^ref:refs\/heads\/(.+)$/);
-    return { owner, repo, branch: branchMatch?.[1] ?? "" };
+  if (!selectedIdentity.value) {
+    return;
   }
-
-  if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
-    const match = pattern.match(/^project_path:([^/]+)\/(.*)$/);
-    if (!match) return undefined;
-    const owner = match[1];
-    const rest = match[2];
-    if (rest === "*") return { owner, repo: "", branch: "" };
-    const projectMatch = rest.match(/^([^:]+):(.*)$/);
-    if (!projectMatch) return undefined;
-    const repo = projectMatch[1];
-    const refPart = projectMatch[2];
-    if (refPart === "*") return { owner, repo, branch: "" };
-    const refTypeMatch = refPart.match(/^ref_type:(?:branch|tag):ref:(.+)$/);
-    return { owner, repo, branch: refTypeMatch?.[1] ?? "" };
-  }
-
-  return undefined;
+  return parseWorkloadIdentitySubjectPattern(selectedIdentity.value);
 });
 
 // Build a clickable repository URL from the identity.
@@ -442,16 +473,6 @@ const repoUrl = computed(() => {
 
 // Branch from the identity, fallback to "main".
 const branch = computed(() => parsedSubject.value?.branch || "main");
-
-// Auto-switch tab when identity changes.
-watch(selectedConfig, (config) => {
-  if (!config) return;
-  if (config.providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
-    activeTab.value = "gitlab-ci";
-  } else {
-    activeTab.value = "github-actions";
-  }
-});
 
 const bytebaseUrl = computed(() => {
   const url = actuatorStore.serverInfo?.externalUrl ?? "";

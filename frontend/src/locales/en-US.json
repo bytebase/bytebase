@@ -2861,8 +2861,9 @@
     "workflow": {
       "title": "Workflow file generation",
       "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
-      "file-hint": "Save as {filePath} in your repository",
-      "self-hosted-runner": "Self-hosted runner"
+      "file-hint": "Save as {filePath} in your repository {repository}",
+      "self-hosted-runner": "Self-hosted runner",
+      "provider-not-match": "The selected workload identity only works for {provider}."
     },
     "test-setup": {
       "title": "Test your first GitOps migration",
