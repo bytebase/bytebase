@@ -46,7 +46,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	var adviceList []*storepb.Advice
-	var setRoles []string
+	var preExecutions []string
 	for _, stmtInfo := range checkCtx.ParsedStatements {
 		if stmtInfo.AST == nil {
 			continue
@@ -63,7 +63,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			ctx:        ctx,
 			driver:     checkCtx.Driver,
 			tenantMode: checkCtx.TenantMode,
-			setRoles:   setRoles,
+			preExecutions: preExecutions,
 			tokens:     antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
@@ -71,7 +71,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
-		setRoles = rule.setRoles
+		preExecutions = rule.preExecutions
 	}
 
 	return adviceList, nil
@@ -82,7 +82,7 @@ type statementDMLDryRunRule struct {
 	driver       *sql.DB
 	ctx          context.Context
 	explainCount int
-	setRoles     []string
+	preExecutions []string
 	tenantMode   bool
 	tokens       *antlr.CommonTokenStream
 }
@@ -119,14 +119,7 @@ func (r *statementDMLDryRunRule) handleVariablesetstmt(ctx *parser.Variablesetst
 		return
 	}
 
-	// Check if this is SET ROLE
-	if ctx.SET() != nil && ctx.Set_rest() != nil && ctx.Set_rest().Set_rest_more() != nil {
-		setRestMore := ctx.Set_rest().Set_rest_more()
-		if setRestMore.ROLE() != nil {
-			// Store the SET ROLE statement text
-			r.setRoles = append(r.setRoles, getTextFromTokens(r.tokens, ctx))
-		}
-	}
+	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
 }
 
 func (r *statementDMLDryRunRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
@@ -166,7 +159,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
 		TenantMode:    r.tenantMode,
-		PreExecutions: r.setRoles,
+		PreExecutions: r.preExecutions,
 	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {

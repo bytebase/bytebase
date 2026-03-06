@@ -47,7 +47,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	}
 
 	var adviceList []*storepb.Advice
-	var setRoles []string
+	var preExecutions []string
 	for _, stmtInfo := range checkCtx.ParsedStatements {
 		if stmtInfo.AST == nil {
 			continue
@@ -65,7 +65,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 			driver:     checkCtx.Driver,
 			ctx:        ctx,
 			tokens:     antlrAST.Tokens,
-			setRoles:   setRoles,
+			preExecutions: preExecutions,
 			TenantMode: checkCtx.TenantMode,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine())
@@ -73,7 +73,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
-		setRoles = rule.setRoles
+		preExecutions = rule.preExecutions
 	}
 
 	return adviceList, nil
@@ -87,7 +87,7 @@ type insertRowLimitRule struct {
 	ctx          context.Context
 	tokens       *antlr.CommonTokenStream
 	explainCount int
-	setRoles     []string
+	preExecutions []string
 	TenantMode   bool
 }
 
@@ -120,14 +120,7 @@ func (r *insertRowLimitRule) handleVariablesetstmt(ctx *parser.VariablesetstmtCo
 		return
 	}
 
-	// Track SET ROLE statements
-	if ctx.Set_rest() != nil && ctx.Set_rest().Set_rest_more() != nil {
-		setRestMore := ctx.Set_rest().Set_rest_more()
-		// Check if this is SET ROLE
-		if setRestMore.ROLE() != nil {
-			r.setRoles = append(r.setRoles, ctx.GetText())
-		}
-	}
+	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
 }
 
 func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
@@ -158,7 +151,7 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 
 			res, err := advisor.Query(r.ctx, advisor.QueryContext{
 				TenantMode:    r.TenantMode,
-				PreExecutions: r.setRoles,
+				PreExecutions: r.preExecutions,
 			}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 			if err != nil {
