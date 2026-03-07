@@ -173,7 +173,8 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		storepb.Engine_MSSQL,
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_COCKROACHDB,
-		storepb.Engine_REDSHIFT:
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_MARIADB:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -184,7 +185,6 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
-		storepb.Engine_MARIADB,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
 		storepb.Engine_DORIS,
