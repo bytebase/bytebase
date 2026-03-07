@@ -193,7 +193,8 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 						Type:    storepb.Activity_PIPELINE_FAILED,
 						Project: webhook.NewProject(project),
 						RolloutFailed: &webhook.EventRolloutFailed{
-							Rollout: webhook.NewRollout(plan),
+							Rollout:     webhook.NewRollout(plan),
+							Environment: task.Environment,
 						},
 					})
 				}
