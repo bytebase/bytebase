@@ -19,8 +19,8 @@
       type="text"
       class="edit"
       @blur="confirmEdit"
-      @keyup.enter="(e) => (e.target as HTMLInputElement).blur()"
-      @keyup.esc="cancelEdit"
+      @keydown.enter="onEnter"
+      @keydown.esc="onEsc"
     />
   </div>
 </template>
@@ -101,6 +101,16 @@ const confirmEdit = () => {
   }
 
   state.editing = false;
+};
+
+const onEnter = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
+  (e.target as HTMLInputElement).blur();
+};
+
+const onEsc = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
+  cancelEdit();
 };
 
 const cancelEdit = () => {

@@ -11,7 +11,7 @@
       class="bb-plan-title-input"
       @focus="state.isEditing = true"
       @blur="onBlur"
-      @keyup.enter="onEnter"
+      @keydown.enter="onEnter"
       @update:value="onUpdateValue"
     />
   </div>
@@ -196,7 +196,8 @@ const onBlur = async () => {
   }
 };
 
-const onEnter = (e: Event) => {
+const onEnter = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
   const input = e.target as HTMLInputElement;
   input.blur();
 };
