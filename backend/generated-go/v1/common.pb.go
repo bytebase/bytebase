@@ -129,6 +129,8 @@ const (
 	Engine_TRINO Engine = 24
 	// Apache Cassandra NoSQL database.
 	Engine_CASSANDRA Engine = 25
+	// Milvus vector database.
+	Engine_MILVUS Engine = 26
 )
 
 // Enum value maps for Engine.
@@ -160,6 +162,7 @@ var (
 		23: "COSMOSDB",
 		24: "TRINO",
 		25: "CASSANDRA",
+		26: "MILVUS",
 	}
 	Engine_value = map[string]int32{
 		"ENGINE_UNSPECIFIED": 0,
@@ -188,6 +191,7 @@ var (
 		"COSMOSDB":           23,
 		"TRINO":              24,
 		"CASSANDRA":          25,
+		"MILVUS":             26,
 	}
 )
 

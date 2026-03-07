@@ -59,6 +59,12 @@ export const EngineSchema = /*@__PURE__*/
 export const Engine = /*@__PURE__*/
   tsEnum(EngineSchema);
 
+// Added manually because buf/proto regeneration is unavailable in this environment.
+if (!("MILVUS" in Engine)) {
+  Engine.MILVUS = 26;
+  Engine[26] = "MILVUS";
+}
+
 /**
  * Describes the enum bytebase.v1.VCSType.
  */
@@ -128,4 +134,3 @@ export const StatementTypeSchema = /*@__PURE__*/
  */
 export const StatementType = /*@__PURE__*/
   tsEnum(StatementTypeSchema);
-

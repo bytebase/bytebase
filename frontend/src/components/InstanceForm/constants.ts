@@ -52,6 +52,8 @@ export const defaultPortForEngine = (engine: Engine) => {
       return "";
     case Engine.CASSANDRA:
       return "9042";
+    case Engine.MILVUS:
+      return "19530";
     case Engine.TRINO:
       return "8080";
   }
@@ -98,6 +100,7 @@ export const EngineIconPath: Record<string, string> = {
   [Engine.COSMOSDB]: new URL("@/assets/db/cosmosdb.svg", import.meta.url).href,
   [Engine.CASSANDRA]: new URL("@/assets/db/cassandra.svg", import.meta.url)
     .href,
+  [Engine.MILVUS]: new URL("@/assets/db/milvus.svg", import.meta.url).href,
   [Engine.TRINO]: new URL("@/assets/db/trino.svg", import.meta.url).href,
 };
 
