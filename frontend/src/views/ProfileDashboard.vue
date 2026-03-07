@@ -329,6 +329,7 @@ const passwordRestrictionSetting = computed(
 );
 
 const keyboardHandler = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
   if (state.editing) {
     if (e.code === "Escape") {
       cancelEdit();
