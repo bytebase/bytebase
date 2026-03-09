@@ -46,45 +46,37 @@ END $$;
 
 -- Step 1: Create service_account table
 CREATE TABLE service_account (
-    id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
-    email text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
     service_key_hash text NOT NULL,
     project text REFERENCES project(resource_id)
 );
 
-CREATE UNIQUE INDEX idx_service_account_unique_email ON service_account(email);
 CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
 
-INSERT INTO service_account (id, deleted, created_at, name, email, service_key_hash, project)
-SELECT id, deleted, created_at, name, email, password_hash, project
+INSERT INTO service_account (deleted, created_at, name, email, service_key_hash, project)
+SELECT deleted, created_at, name, email, password_hash, project
 FROM principal WHERE type = 'SERVICE_ACCOUNT';
-
-SELECT setval('service_account_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM service_account), 0), 100) + 1, false);
 
 -- Step 2: Create workload_identity table
 CREATE TABLE workload_identity (
-    id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
-    email text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
     project text REFERENCES project(resource_id),
     -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
     config jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_workload_identity_unique_email ON workload_identity(email);
 CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
 
-INSERT INTO workload_identity (id, deleted, created_at, name, email, project, config)
-SELECT id, deleted, created_at, name, email, project,
+INSERT INTO workload_identity (deleted, created_at, name, email, project, config)
+SELECT deleted, created_at, name, email, project,
        COALESCE(profile->'workloadIdentityConfig', '{}')
 FROM principal WHERE type = 'WORKLOAD_IDENTITY';
-
-SELECT setval('workload_identity_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM workload_identity), 0), 100) + 1, false);
 
 -- Step 3: Drop FK constraints on creator/deleter columns that can reference SA/WI emails.
 -- Keep FKs on oauth2_authorization_code, oauth2_refresh_token, web_refresh_token (END_USER only).

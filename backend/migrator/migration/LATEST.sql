@@ -47,31 +47,27 @@ CREATE UNIQUE INDEX idx_principal_unique_email ON principal(email);
 
 -- service_account
 CREATE TABLE service_account (
-    id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
-    email text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
     service_key_hash text NOT NULL,
     project text REFERENCES project(resource_id)
 );
 
-CREATE UNIQUE INDEX idx_service_account_unique_email ON service_account(email);
 CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
 
 -- workload_identity
 CREATE TABLE workload_identity (
-    id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
-    email text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
     project text REFERENCES project(resource_id),
     -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
     config jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_workload_identity_unique_email ON workload_identity(email);
 CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
 
 -- Setting

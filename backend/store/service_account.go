@@ -12,7 +12,6 @@ import (
 
 // ServiceAccountMessage is the message for a service account.
 type ServiceAccountMessage struct {
-	ID int
 	// Email must be lower case, format: {name}@{project-id}.service.bytebase.com or {name}@service.bytebase.com
 	Email          string
 	Name           string
@@ -24,7 +23,6 @@ type ServiceAccountMessage struct {
 
 // FindServiceAccountMessage is the message for finding service accounts.
 type FindServiceAccountMessage struct {
-	ID          *int
 	Email       *string
 	ShowDeleted bool
 	Limit       *int
@@ -68,9 +66,6 @@ func (s *Store) GetServiceAccountByEmail(ctx context.Context, email string) (*Se
 func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccountMessage) ([]*ServiceAccountMessage, error) {
 	where := qb.Q().Space("TRUE")
 
-	if v := find.ID; v != nil {
-		where.And("id = ?", *v)
-	}
 	if v := find.Email; v != nil {
 		where.And("email = ?", strings.ToLower(*v))
 	}
@@ -90,7 +85,6 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 
 	q := qb.Q().Space(`
 		SELECT
-			id,
 			deleted,
 			email,
 			name,
@@ -124,7 +118,6 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 		var sa ServiceAccountMessage
 		var project sql.NullString
 		if err := rows.Scan(
-			&sa.ID,
 			&sa.MemberDeleted,
 			&sa.Email,
 			&sa.Name,
@@ -157,7 +150,6 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 			project
 		)
 		VALUES (?, ?, ?, ?)
-		RETURNING id
 	`, email, create.Name, create.ServiceKeyHash, create.Project)
 
 	sqlStr, args, err := q.ToSQL()
@@ -165,13 +157,11 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var saID int
-	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&saID); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, sqlStr, args...); err != nil {
 		return nil, err
 	}
 
 	return &ServiceAccountMessage{
-		ID:             saID,
 		Email:          email,
 		Name:           create.Name,
 		ServiceKeyHash: create.ServiceKeyHash,
@@ -196,9 +186,9 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 		return sa, nil
 	}
 
-	sqlStr, args, err := qb.Q().Space(`UPDATE service_account SET ? WHERE id = ?
-		RETURNING id, deleted, email, name, service_key_hash, project`,
-		set, sa.ID).ToSQL()
+	sqlStr, args, err := qb.Q().Space(`UPDATE service_account SET ? WHERE email = ?
+		RETURNING deleted, email, name, service_key_hash, project`,
+		set, sa.Email).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
@@ -206,7 +196,6 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	var updated ServiceAccountMessage
 	var project sql.NullString
 	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
-		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
 		&updated.Name,

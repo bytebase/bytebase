@@ -98,7 +98,7 @@ func TestGetAccountListFilter(t *testing.T) {
 			name:        "unsupported variable",
 			filter:      `title == "ed"`,
 			wantErr:     true,
-			errContains: "unsupport variable",
+			errContains: "unsupported variable",
 		},
 		{
 			name:        "invalid filter syntax",

@@ -15,7 +15,6 @@ import (
 
 // WorkloadIdentityMessage is the message for a workload identity.
 type WorkloadIdentityMessage struct {
-	ID int
 	// Email must be lower case, format: {name}@{project-id}.workload.bytebase.com or {name}@workload.bytebase.com
 	Email         string
 	Name          string
@@ -28,7 +27,6 @@ type WorkloadIdentityMessage struct {
 
 // FindWorkloadIdentityMessage is the message for finding workload identities.
 type FindWorkloadIdentityMessage struct {
-	ID          *int
 	Email       *string
 	ShowDeleted bool
 	Limit       *int
@@ -73,9 +71,6 @@ func (s *Store) GetWorkloadIdentityByEmail(ctx context.Context, email string) (*
 func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadIdentityMessage) ([]*WorkloadIdentityMessage, error) {
 	where := qb.Q().Space("TRUE")
 
-	if v := find.ID; v != nil {
-		where.And("id = ?", *v)
-	}
 	if v := find.Email; v != nil {
 		where.And("email = ?", strings.ToLower(*v))
 	}
@@ -95,7 +90,6 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 
 	q := qb.Q().Space(`
 		SELECT
-			id,
 			deleted,
 			email,
 			name,
@@ -130,7 +124,6 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 		var project sql.NullString
 		var configBytes []byte
 		if err := rows.Scan(
-			&wi.ID,
 			&wi.MemberDeleted,
 			&wi.Email,
 			&wi.Name,
@@ -173,7 +166,6 @@ func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorklo
 			config
 		)
 		VALUES (?, ?, ?, ?)
-		RETURNING id
 	`, email, create.Name, create.Project, configBytes)
 
 	sqlStr, args, err := q.ToSQL()
@@ -181,13 +173,11 @@ func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorklo
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var wiID int
-	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&wiID); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, sqlStr, args...); err != nil {
 		return nil, err
 	}
 
 	return &WorkloadIdentityMessage{
-		ID:      wiID,
 		Email:   email,
 		Name:    create.Name,
 		Project: create.Project,
@@ -216,9 +206,9 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 		return wi, nil
 	}
 
-	sqlStr, args, err := qb.Q().Space(`UPDATE workload_identity SET ? WHERE id = ?
-		RETURNING id, deleted, email, name, project, config`,
-		set, wi.ID).ToSQL()
+	sqlStr, args, err := qb.Q().Space(`UPDATE workload_identity SET ? WHERE email = ?
+		RETURNING deleted, email, name, project, config`,
+		set, wi.Email).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
@@ -227,7 +217,6 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 	var project sql.NullString
 	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
-		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
 		&updated.Name,

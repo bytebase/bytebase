@@ -36,7 +36,6 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 		}
 		// Convert to UserMessage for compatibility with auth layer
 		user := &UserMessage{
-			ID:            sa.ID,
 			Email:         sa.Email,
 			Name:          sa.Name,
 			PasswordHash:  sa.ServiceKeyHash,
@@ -59,7 +58,6 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 		}
 		// Convert to UserMessage for compatibility with auth layer
 		user := &UserMessage{
-			ID:            wi.ID,
 			Email:         wi.Email,
 			Name:          wi.Name,
 			Type:          storepb.PrincipalType_WORKLOAD_IDENTITY,
