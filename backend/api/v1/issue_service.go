@@ -1031,19 +1031,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		slog.Error("failed to batch create issue comments", log.BBError(err))
 	}
 
-	// Create webhooks for each updated issue.
-	for _, issueUID := range issueUIDs {
-		updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &issueUID, ProjectID: &projectID})
-		if err != nil {
-			slog.Error("failed to get updated issue", "issueUID", issueUID, log.BBError(err))
-			continue
-		}
-		if updatedIssue == nil {
-			slog.Error("updated issue not found", "issueUID", issueUID)
-			continue
-		}
-	}
-
 	return connect.NewResponse(&v1pb.BatchUpdateIssuesStatusResponse{}), nil
 }
 
