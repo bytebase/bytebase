@@ -1144,16 +1144,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	_, issueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
+	_, parentIssueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q: %v", req.Msg.Parent, err))
 	}
 
-	_, _, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
+	_, commentIssueUID, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
 	}
-	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID, IssueUID: &issueUID})
+	if parentIssueUID != commentIssueUID {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment %q does not belong to parent %q", req.Msg.IssueComment.Name, req.Msg.Parent))
+	}
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID, IssueUID: &parentIssueUID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}
