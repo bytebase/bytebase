@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -60,11 +61,17 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
 
+	// Sanitize invalid UTF-8 from historical rows (e.g. TiDB/OceanBase schema syncs).
+	h.Schema = strings.ToValidUTF8(h.Schema, "")
+
 	return &h, nil
 }
 
 // UpsertDBSchema upserts a database schema.
 func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName string, metadata *storepb.DatabaseSchemaMetadata, schema string) (int64, error) {
+	// Sanitize schema to prevent storing invalid UTF-8 bytes from external databases.
+	schema = strings.ToValidUTF8(schema, "")
+
 	metadataBytes, err := protojson.Marshal(metadata)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to marshal")
