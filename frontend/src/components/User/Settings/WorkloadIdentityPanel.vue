@@ -93,8 +93,8 @@
         state.editingWorkloadIdentity = undefined;
       }
     "
-    @created="handleWorkloadIdentityUpdated"
-    @updated="handleWorkloadIdentityUpdated"
+    @created="wi => handleWorkloadIdentityUpdated(workloadIdentityToUser(wi))"
+    @updated="wi => handleWorkloadIdentityUpdated(workloadIdentityToUser(wi))"
   />
 </template>
 
@@ -112,15 +112,16 @@ import {
   useWorkloadIdentityStore,
   workloadIdentityToUser,
 } from "@/store/modules/workloadIdentity";
-import { isValidProjectName, unknownUser } from "@/types";
+import { isValidProjectName } from "@/types";
+import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 
 type LocalState = {
   showInactiveList: boolean;
   showCreateDrawer: boolean;
-  editingWorkloadIdentity?: User;
+  editingWorkloadIdentity?: WorkloadIdentity;
 };
 
 const state = reactive<LocalState>({
@@ -203,21 +204,19 @@ const fetchInactiveWorkloadIdentityList = async ({
 const activeWorkloadIdentityCount = computed(() => {
   return actuatorStore.countUser({
     state: State.ACTIVE,
-    userTypes: [UserType.WORKLOAD_IDENTITY],
+    userTypes: [ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY],
   });
 });
 
 const handleCreateWorkloadIdentity = () => {
-  state.editingWorkloadIdentity = {
-    ...unknownUser(),
-    userType: UserType.WORKLOAD_IDENTITY,
-    title: "",
-  };
+  state.editingWorkloadIdentity = undefined;
   state.showCreateDrawer = true;
 };
 
 const handleWorkloadIdentitySelected = (user: User) => {
-  state.editingWorkloadIdentity = user;
+  // Look up the original WorkloadIdentity from the store to get the config
+  const wi = workloadIdentityStore.getWorkloadIdentity(user.email);
+  state.editingWorkloadIdentity = wi;
   state.showCreateDrawer = true;
 };
 

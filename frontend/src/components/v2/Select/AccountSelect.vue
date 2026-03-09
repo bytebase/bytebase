@@ -45,15 +45,16 @@ import {
   workloadIdentityToUser,
 } from "@/store";
 import {
+  AccountType,
   allUsersUser,
-  getUserTypeByEmail,
-  getUserTypeByFullname,
+  getAccountTypeByEmail,
+  getAccountTypeByFullname,
   unknownGroup,
   unknownUser,
 } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_service_pb";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
@@ -162,9 +163,9 @@ const additionalOptions = computedAsync(async () => {
       groupNames.push(fullname);
       continue;
     }
-    const userType = getUserTypeByFullname(fullname);
+    const userType = getAccountTypeByFullname(fullname);
     switch (userType) {
-      case UserType.SERVICE_ACCOUNT:
+      case AccountType.SERVICE_ACCOUNT:
         if (!hasGetServiceAccountPermission.value) {
           continue;
         }
@@ -174,7 +175,7 @@ const additionalOptions = computedAsync(async () => {
         );
         options.push(getUserOption(serviceAccountToUser(sa)));
         break;
-      case UserType.WORKLOAD_IDENTITY:
+      case AccountType.WORKLOAD_IDENTITY:
         if (!hasGetWorkloadIdentityPermission.value) {
           continue;
         }
@@ -247,14 +248,14 @@ const fetchAccounts = async (params: {
   nextPageToken: string;
   options: ResourceSelectOption<AccountResource>[];
 }> => {
-  let userType = getUserTypeByFullname(params.search);
-  if (userType === UserType.USER) {
+  let userType = getAccountTypeByFullname(params.search);
+  if (userType === AccountType.USER) {
     // If the params.search doesn't have the prefix,
     // we will try to guess the type by email suffix.
-    userType = getUserTypeByEmail(params.search);
+    userType = getAccountTypeByEmail(params.search);
   }
   switch (userType) {
-    case UserType.SERVICE_ACCOUNT:
+    case AccountType.SERVICE_ACCOUNT:
       if (!props.includeServiceAccount) {
         return {
           nextPageToken: "",
@@ -287,7 +288,7 @@ const fetchAccounts = async (params: {
         nextPageToken: "",
         options: [getUserOption(serviceAccountToUser(sa))],
       };
-    case UserType.WORKLOAD_IDENTITY:
+    case AccountType.WORKLOAD_IDENTITY:
       if (!props.includeWorkloadIdentity) {
         return {
           nextPageToken: "",

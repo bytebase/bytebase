@@ -14,8 +14,8 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
+import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   STORAGE_KEY_ONBOARDING,
   STORAGE_KEY_RELEASE,
@@ -118,10 +118,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     userTypes,
   }: {
     state: State;
-    userTypes: UserType[];
+    userTypes: ActuatorInfo_AccountStat_Type[];
   }): number => {
-    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
-      if (stat.state === state && userTypes.includes(stat.userType)) {
+    return (serverInfo.value?.accountStats ?? []).reduce((count, stat) => {
+      if (stat.state === state && userTypes.includes(stat.type)) {
         count += stat.count;
       }
       return count;
@@ -132,13 +132,12 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     updates: {
       count: number;
       state: State;
-      userType: UserType;
+      userType: ActuatorInfo_AccountStat_Type;
     }[]
   ) => {
     for (const update of updates) {
-      const item = (serverInfo.value?.userStats ?? []).find(
-        (stat) =>
-          stat.state === update.state && stat.userType === update.userType
+      const item = (serverInfo.value?.accountStats ?? []).find(
+        (stat) => stat.state === update.state && stat.type === update.userType
       );
       if (item) {
         item.count += update.count;
@@ -158,7 +157,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     return (
       countUser({
         state: State.ACTIVE,
-        userTypes: [UserType.USER],
+        userTypes: [ActuatorInfo_AccountStat_Type.USER],
       }) <= 1
     );
   });

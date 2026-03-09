@@ -24,7 +24,6 @@ type FindUserMessage struct {
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
-	UserTypes   *[]storepb.PrincipalType
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -55,12 +54,6 @@ type UserMessage struct {
 	CreatedAt time.Time
 }
 
-type UserStat struct {
-	Type    storepb.PrincipalType
-	Deleted bool
-	Count   int
-}
-
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 	users, err := s.ListUsers(ctx, &FindUserMessage{ID: &id})
@@ -71,67 +64,6 @@ func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
 		return nil, nil
 	}
 	return users[0], nil
-}
-
-// GetPrincipalByEmail gets any principal (user, service account, or workload identity) by email.
-// This is used by the auth layer where the JWT subject can be any principal type.
-// It determines the principal type by the email format and calls the appropriate method.
-func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	// Use the unified cache first for all types
-	if v, ok := s.userEmailCache.Get(email); ok && s.enableCache {
-		return v, nil
-	}
-
-	// Determine principal type by email format and query accordingly
-	if common.IsServiceAccountEmail(email) {
-		sa, err := s.GetServiceAccountByEmail(ctx, email)
-		if err != nil {
-			return nil, err
-		}
-		if sa == nil {
-			return nil, nil
-		}
-		// Convert to UserMessage for compatibility with auth layer
-		user := &UserMessage{
-			ID:            sa.ID,
-			Email:         sa.Email,
-			Name:          sa.Name,
-			PasswordHash:  sa.PasswordHash,
-			Type:          storepb.PrincipalType_SERVICE_ACCOUNT,
-			MemberDeleted: sa.MemberDeleted,
-			MFAConfig:     &storepb.MFAConfig{},
-			Profile:       &storepb.UserProfile{},
-		}
-		s.userEmailCache.Add(user.Email, user)
-		return user, nil
-	}
-
-	if common.IsWorkloadIdentityEmail(email) {
-		wi, err := s.GetWorkloadIdentityByEmail(ctx, email)
-		if err != nil {
-			return nil, err
-		}
-		if wi == nil {
-			return nil, nil
-		}
-		// Convert to UserMessage for compatibility with auth layer
-		user := &UserMessage{
-			ID:            wi.ID,
-			Email:         wi.Email,
-			Name:          wi.Name,
-			Type:          storepb.PrincipalType_WORKLOAD_IDENTITY,
-			MemberDeleted: wi.MemberDeleted,
-			MFAConfig:     &storepb.MFAConfig{},
-			Profile:       &storepb.UserProfile{},
-		}
-		s.userEmailCache.Add(user.Email, user)
-		return user, nil
-	}
-
-	// Default to end user lookup, which loads and caches all principals
-	// (regardless of type) so legacy service accounts/workload identities
-	// with non-standard email formats are also found.
-	return s.GetUserByEmail(ctx, email)
 }
 
 // GetUserByEmail gets the user by email.
@@ -148,142 +80,59 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 	return user, nil
 }
 
-// BatchGetUsersByEmails gets users (of any type) by emails in batch using a single SQL query.
+// BatchGetUsersByEmails gets users (of any type) by emails in batch.
 func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*UserMessage, error) {
 	if len(emails) == 0 {
 		return nil, nil
 	}
 
-	// Normalize emails to lowercase
 	normalizedEmails := make([]string, len(emails))
 	for i, email := range emails {
 		normalizedEmails[i] = strings.ToLower(email)
 	}
 
-	q := qb.Q().Space(`
-		SELECT
-			id,
-			deleted,
-			email,
-			name,
-			type,
-			password_hash,
-			mfa_config,
-			phone,
-			profile,
-			created_at
-		FROM principal
-		WHERE email = ANY(?)
-		ORDER BY created_at ASC
-	`, normalizedEmails)
+	var users []*UserMessage
 
+	q := qb.Q().Space(`
+			SELECT id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
+			FROM principal WHERE email = ANY(?) ORDER BY created_at ASC
+		`, normalizedEmails)
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-
 	rows, err := s.GetDB().QueryContext(ctx, sqlStr, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	var users []*UserMessage
 	for rows.Next() {
 		var user UserMessage
-		var mfaConfigBytes []byte
-		var profileBytes []byte
-		var typeString string
-		if err := rows.Scan(
-			&user.ID,
-			&user.MemberDeleted,
-			&user.Email,
-			&user.Name,
-			&typeString,
-			&user.PasswordHash,
-			&mfaConfigBytes,
-			&user.Phone,
-			&profileBytes,
-			&user.CreatedAt,
-		); err != nil {
+		var mfaConfigBytes, profileBytes []byte
+		if err := rows.Scan(&user.ID, &user.MemberDeleted, &user.Email, &user.Name, &user.PasswordHash, &mfaConfigBytes, &user.Phone, &profileBytes, &user.CreatedAt); err != nil {
 			return nil, err
 		}
-		if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
-			user.Type = storepb.PrincipalType(typeValue)
-		} else {
-			return nil, errors.Errorf("invalid principal type string: %s", typeString)
-		}
-
+		user.Type = storepb.PrincipalType_END_USER
 		mfaConfig := storepb.MFAConfig{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
 			return nil, err
 		}
 		user.MFAConfig = &mfaConfig
-
 		profile := storepb.UserProfile{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(profileBytes, &profile); err != nil {
 			return nil, err
 		}
 		user.Profile = &profile
-
 		users = append(users, &user)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan rows")
 	}
 
-	// Update cache
 	for _, user := range users {
 		s.userEmailCache.Add(user.Email, user)
 	}
-
 	return users, nil
-}
-
-func (s *Store) StatUsers(ctx context.Context) ([]*UserStat, error) {
-	q := qb.Q().Space(`
-		SELECT
-			COUNT(*),
-			type,
-			deleted
-		FROM principal
-		GROUP BY type, deleted
-	`)
-	sql, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var stats []*UserStat
-
-	for rows.Next() {
-		var stat UserStat
-		var typeString string
-		if err := rows.Scan(
-			&stat.Count,
-			&typeString,
-			&stat.Deleted,
-		); err != nil {
-			return nil, err
-		}
-		if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
-			stat.Type = storepb.PrincipalType(typeValue)
-		} else {
-			return nil, errors.Errorf("invalid principal type string: %s", typeString)
-		}
-		stats = append(stats, &stat)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to scan rows")
-	}
-
-	return stats, nil
 }
 
 // ListUsers list users.
@@ -365,13 +214,6 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			where.And("principal.email = ?", strings.ToLower(*v))
 		}
 	}
-	if v := find.UserTypes; v != nil {
-		typeStrings := make([]string, 0, len(*v))
-		for _, t := range *v {
-			typeStrings = append(typeStrings, t.String())
-		}
-		where.And("principal.type = ANY(?)", typeStrings)
-	}
 	if !find.ShowDeleted {
 		where.And("principal.deleted = ?", false)
 	}
@@ -383,7 +225,6 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			principal.deleted,
 			principal.email,
 			principal.name,
-			principal.type,
 			principal.password_hash,
 			principal.mfa_config,
 			principal.phone,
@@ -391,7 +232,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			principal.created_at
 		FROM ?
 		WHERE ?
-		ORDER BY type DESC, created_at ASC
+		ORDER BY created_at ASC
 	`, from, where)
 
 	if v := find.Limit; v != nil {
@@ -416,13 +257,11 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		var userMessage UserMessage
 		var mfaConfigBytes []byte
 		var profileBytes []byte
-		var typeString string
 		if err := rows.Scan(
 			&userMessage.ID,
 			&userMessage.MemberDeleted,
 			&userMessage.Email,
 			&userMessage.Name,
-			&typeString,
 			&userMessage.PasswordHash,
 			&mfaConfigBytes,
 			&userMessage.Phone,
@@ -431,11 +270,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		); err != nil {
 			return nil, err
 		}
-		if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
-			userMessage.Type = storepb.PrincipalType(typeValue)
-		} else {
-			return nil, errors.Errorf("invalid principal type string: %s", typeString)
-		}
+		userMessage.Type = storepb.PrincipalType_END_USER
 
 		mfaConfig := storepb.MFAConfig{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
@@ -462,13 +297,11 @@ func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any
 	var user UserMessage
 	var mfaConfigBytes []byte
 	var profileBytes []byte
-	var typeString string
 	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan( // NOSONAR: query is parameterized via qb.Query
 		&user.ID,
 		&user.MemberDeleted,
 		&user.Email,
 		&user.Name,
-		&typeString,
 		&user.PasswordHash,
 		&mfaConfigBytes,
 		&user.Phone,
@@ -477,12 +310,7 @@ func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any
 	); err != nil {
 		return nil, err
 	}
-
-	if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
-		user.Type = storepb.PrincipalType(typeValue)
-	} else {
-		return nil, errors.Errorf("invalid principal type string: %s", typeString)
-	}
+	user.Type = storepb.PrincipalType_END_USER
 
 	mfaConfig := storepb.MFAConfig{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
@@ -507,12 +335,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		return nil, errors.Errorf("emails must be lower-case when they are passed into store")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	if create.Profile == nil {
 		create.Profile = &storepb.UserProfile{}
 	}
@@ -525,31 +347,20 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		INSERT INTO principal (
 			email,
 			name,
-			type,
 			password_hash,
 			phone,
 			profile
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, created_at
-	`, create.Email, create.Name, create.Type.String(), create.PasswordHash, create.Phone, profileBytes)
+	`, create.Email, create.Name, create.PasswordHash, create.Phone, profileBytes)
 
-	sql, args, err := q.ToSQL()
+	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var userID int
-	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&userID, &create.CreatedAt); err != nil { // NOSONAR: query is parameterized via qb.Query
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	user := &UserMessage{
-		ID:           userID,
 		Email:        create.Email,
 		Name:         create.Name,
 		Type:         create.Type,
@@ -559,6 +370,11 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		Profile:      create.Profile,
 		MFAConfig:    &storepb.MFAConfig{},
 	}
+
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&user.ID, &user.CreatedAt); err != nil {
+		return nil, err
+	}
+
 	s.userEmailCache.Add(user.Email, user)
 	return user, nil
 }
@@ -602,7 +418,7 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	}
 
 	sql, args, err := qb.Q().Space(`UPDATE principal SET ? WHERE id = ?
-		RETURNING id, deleted, email, name, type, password_hash, mfa_config, phone, profile, created_at`,
+		RETURNING id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at`,
 		set, currentUser.ID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -639,13 +455,8 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	defer tx.Rollback()
 
 	// 1. Update Principal table
-	// Because we have ON UPDATE CASCADE on foreign keys (issue.creator, etc.),
-	// this will automatically update the creator field in:
-	// - issue
-	// - issue_comment
-	// - simple table references (plan, pipeline, task_run, etc.)
 	query := qb.Q().Space(`UPDATE principal SET email = ? WHERE id = ?
-		RETURNING id, deleted, email, name, type, password_hash, mfa_config, phone, profile, created_at`,
+		RETURNING id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at`,
 		newEmail, user.ID)
 	sqlStr, args, err := query.ToSQL()
 	if err != nil {
@@ -655,6 +466,25 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	updatedUser, err := scanPrincipalRow(ctx, tx, sqlStr, args)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update principal email")
+	}
+
+	// 1b. Update creator/deleter columns that previously relied on ON UPDATE CASCADE.
+	creatorUpdates := []string{
+		"UPDATE plan SET creator = $1 WHERE creator = $2",
+		"UPDATE task_run SET creator = $1 WHERE creator = $2",
+		"UPDATE issue SET creator = $1 WHERE creator = $2",
+		"UPDATE issue_comment SET creator = $1 WHERE creator = $2",
+		"UPDATE query_history SET creator = $1 WHERE creator = $2",
+		"UPDATE worksheet SET creator = $1 WHERE creator = $2",
+		"UPDATE worksheet_organizer SET principal = $1 WHERE principal = $2",
+		"UPDATE revision SET deleter = $1 WHERE deleter = $2",
+		"UPDATE release SET creator = $1 WHERE creator = $2",
+		"UPDATE access_grant SET creator = $1 WHERE creator = $2",
+	}
+	for _, stmt := range creatorUpdates {
+		if _, err := tx.ExecContext(ctx, stmt, newEmail, user.Email); err != nil {
+			return nil, errors.Wrapf(err, "failed to update creator/deleter references")
+		}
 	}
 
 	// 2. Update GrantRequest in Issue payload

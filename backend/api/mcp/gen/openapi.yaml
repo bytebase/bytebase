@@ -7017,7 +7017,8 @@ components:
               type: string
               title: reason
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 expireTime:
                   title: expire_time
                   description: The expiration time of the access grant.
@@ -7025,7 +7026,8 @@ components:
               title: expire_time
               required:
                 - expireTime
-            - properties:
+            - type: object
+              properties:
                 ttl:
                   title: ttl
                   description: |-
@@ -7130,12 +7132,12 @@ components:
           type: boolean
           title: docker
           description: Whether the Bytebase instance is running in Docker.
-        userStats:
+        accountStats:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.ActuatorInfo.StatUser'
-          title: user_stats
-          description: Statistics about users in the system.
+            $ref: '#/components/schemas/bytebase.v1.ActuatorInfo.AccountStat'
+          title: account_stats
+          description: Statistics about accounts in the system.
         activatedInstanceCount:
           type: integer
           title: activated_instance_count
@@ -7167,25 +7169,33 @@ components:
       description: |-
         System information and configuration for the Bytebase instance.
          Actuator concept is similar to the Spring Boot Actuator.
-    bytebase.v1.ActuatorInfo.StatUser:
+    bytebase.v1.ActuatorInfo.AccountStat:
       type: object
       properties:
-        userType:
-          title: user_type
-          description: The type of user.
-          $ref: '#/components/schemas/bytebase.v1.UserType'
+        type:
+          title: type
+          description: The type of account.
+          $ref: '#/components/schemas/bytebase.v1.ActuatorInfo.AccountStat.Type'
         state:
           title: state
-          description: The state of the user.
+          description: The state of the account.
           $ref: '#/components/schemas/bytebase.v1.State'
         count:
           type: integer
           title: count
           format: int32
-          description: The count of users matching this type and state.
-      title: StatUser
+          description: The count of accounts matching this type and state.
+      title: AccountStat
       additionalProperties: false
-      description: User statistics by type and state.
+      description: Account statistics by type and state.
+    bytebase.v1.ActuatorInfo.AccountStat.Type:
+      type: string
+      title: Type
+      enum:
+        - USER_TYPE_UNSPECIFIED
+        - USER
+        - WORKLOAD_IDENTITY
+        - SERVICE_ACCOUNT
     bytebase.v1.AddDataSourceRequest:
       type: object
       properties:
@@ -7324,28 +7334,32 @@ components:
     bytebase.v1.Algorithm:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             fullMask:
               title: full_mask
               $ref: '#/components/schemas/bytebase.v1.Algorithm.FullMask'
           title: full_mask
           required:
             - fullMask
-        - properties:
+        - type: object
+          properties:
             innerOuterMask:
               title: inner_outer_mask
               $ref: '#/components/schemas/bytebase.v1.Algorithm.InnerOuterMask'
           title: inner_outer_mask
           required:
             - innerOuterMask
-        - properties:
+        - type: object
+          properties:
             md5Mask:
               title: md5_mask
               $ref: '#/components/schemas/bytebase.v1.Algorithm.MD5Mask'
           title: md5_mask
           required:
             - md5Mask
-        - properties:
+        - type: object
+          properties:
             rangeMask:
               title: range_mask
               $ref: '#/components/schemas/bytebase.v1.Algorithm.RangeMask'
@@ -7506,42 +7520,48 @@ components:
               title: type
               $ref: '#/components/schemas/bytebase.v1.WebhookType'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 dingtalk:
                   title: dingtalk
                   $ref: '#/components/schemas/bytebase.v1.AppIMSetting.DingTalk'
               title: dingtalk
               required:
                 - dingtalk
-            - properties:
+            - type: object
+              properties:
                 feishu:
                   title: feishu
                   $ref: '#/components/schemas/bytebase.v1.AppIMSetting.Feishu'
               title: feishu
               required:
                 - feishu
-            - properties:
+            - type: object
+              properties:
                 lark:
                   title: lark
                   $ref: '#/components/schemas/bytebase.v1.AppIMSetting.Lark'
               title: lark
               required:
                 - lark
-            - properties:
+            - type: object
+              properties:
                 slack:
                   title: slack
                   $ref: '#/components/schemas/bytebase.v1.AppIMSetting.Slack'
               title: slack
               required:
                 - slack
-            - properties:
+            - type: object
+              properties:
                 teams:
                   title: teams
                   $ref: '#/components/schemas/bytebase.v1.AppIMSetting.Teams'
               title: teams
               required:
                 - teams
-            - properties:
+            - type: object
+              properties:
                 wecom:
                   title: wecom
                   $ref: '#/components/schemas/bytebase.v1.AppIMSetting.Wecom'
@@ -9235,21 +9255,24 @@ components:
                 Extra connection parameters for the database connection.
                  For PostgreSQL HA, this can be used to set target_session_attrs=read-write
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 awsCredential:
                   title: aws_credential
                   $ref: '#/components/schemas/bytebase.v1.DataSource.AWSCredential'
               title: aws_credential
               required:
                 - awsCredential
-            - properties:
+            - type: object
+              properties:
                 azureCredential:
                   title: azure_credential
                   $ref: '#/components/schemas/bytebase.v1.DataSource.AzureCredential'
               title: azure_credential
               required:
                 - azureCredential
-            - properties:
+            - type: object
+              properties:
                 gcpCredential:
                   title: gcp_credential
                   $ref: '#/components/schemas/bytebase.v1.DataSource.GCPCredential'
@@ -9395,7 +9418,8 @@ components:
               title: vault_ssl_key
               description: Client private key for mutual TLS authentication with Vault.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 appRole:
                   title: app_role
                   description: AppRole authentication configuration.
@@ -9403,7 +9427,8 @@ components:
               title: app_role
               required:
                 - appRole
-            - properties:
+            - type: object
+              properties:
                 token:
                   type: string
                   title: token
@@ -9966,7 +9991,8 @@ components:
                  database: instances/{instance}/databases/{database}
                  changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 changelog:
                   type: string
                   title: changelog
@@ -9977,7 +10003,8 @@ components:
               title: changelog
               required:
                 - changelog
-            - properties:
+            - type: object
+              properties:
                 schema:
                   type: string
                   title: schema
@@ -11149,7 +11176,8 @@ components:
     bytebase.v1.IdentityProviderConfig:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             ldapConfig:
               title: ldap_config
               description: LDAP protocol configuration.
@@ -11157,7 +11185,8 @@ components:
           title: ldap_config
           required:
             - ldapConfig
-        - properties:
+        - type: object
+          properties:
             oauth2Config:
               title: oauth2_config
               description: OAuth2 protocol configuration.
@@ -11165,7 +11194,8 @@ components:
           title: oauth2_config
           required:
             - oauth2Config
-        - properties:
+        - type: object
+          properties:
             oidcConfig:
               title: oidc_config
               description: OIDC protocol configuration.
@@ -11178,7 +11208,8 @@ components:
     bytebase.v1.IdentityProviderContext:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             oauth2Context:
               title: oauth2_context
               description: OAuth2 authentication context.
@@ -11186,7 +11217,8 @@ components:
           title: oauth2_context
           required:
             - oauth2Context
-        - properties:
+        - type: object
+          properties:
             oidcContext:
               title: oidc_context
               description: OpenID Connect authentication context.
@@ -11630,7 +11662,8 @@ components:
               title: creator
               description: 'Format: users/{email}'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 approval:
                   title: approval
                   description: Approval event.
@@ -11638,7 +11671,8 @@ components:
               title: approval
               required:
                 - approval
-            - properties:
+            - type: object
+              properties:
                 issueUpdate:
                   title: issue_update
                   description: Issue update event.
@@ -11646,7 +11680,8 @@ components:
               title: issue_update
               required:
                 - issueUpdate
-            - properties:
+            - type: object
+              properties:
                 planSpecUpdate:
                   title: plan_spec_update
                   description: Plan spec update event.
@@ -13532,7 +13567,8 @@ components:
               title: semantic_type
               description: The semantic type of this object.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 arrayKind:
                   title: array_kind
                   description: Array schema.
@@ -13540,7 +13576,8 @@ components:
               title: array_kind
               required:
                 - arrayKind
-            - properties:
+            - type: object
+              properties:
                 structKind:
                   title: struct_kind
                   description: Struct schema.
@@ -13827,21 +13864,24 @@ components:
               title: id
               description: A UUID4 string that uniquely identifies the Spec.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 changeDatabaseConfig:
                   title: change_database_config
                   $ref: '#/components/schemas/bytebase.v1.Plan.ChangeDatabaseConfig'
               title: change_database_config
               required:
                 - changeDatabaseConfig
-            - properties:
+            - type: object
+              properties:
                 createDatabaseConfig:
                   title: create_database_config
                   $ref: '#/components/schemas/bytebase.v1.Plan.CreateDatabaseConfig'
               title: create_database_config
               required:
                 - createDatabaseConfig
-            - properties:
+            - type: object
+              properties:
                 exportDataConfig:
                   title: export_data_config
                   $ref: '#/components/schemas/bytebase.v1.Plan.ExportDataConfig'
@@ -13901,14 +13941,16 @@ components:
               title: type
               $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.Type'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 sqlReviewReport:
                   title: sql_review_report
                   $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.SqlReviewReport'
               title: sql_review_report
               required:
                 - sqlReviewReport
-            - properties:
+            - type: object
+              properties:
                 sqlSummaryReport:
                   title: sql_summary_report
                   $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.SqlSummaryReport'
@@ -14117,35 +14159,40 @@ components:
               description: The resource type for the policy.
               $ref: '#/components/schemas/bytebase.v1.PolicyResourceType'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 maskingExemptionPolicy:
                   title: masking_exemption_policy
                   $ref: '#/components/schemas/bytebase.v1.MaskingExemptionPolicy'
               title: masking_exemption_policy
               required:
                 - maskingExemptionPolicy
-            - properties:
+            - type: object
+              properties:
                 maskingRulePolicy:
                   title: masking_rule_policy
                   $ref: '#/components/schemas/bytebase.v1.MaskingRulePolicy'
               title: masking_rule_policy
               required:
                 - maskingRulePolicy
-            - properties:
+            - type: object
+              properties:
                 queryDataPolicy:
                   title: query_data_policy
                   $ref: '#/components/schemas/bytebase.v1.QueryDataPolicy'
               title: query_data_policy
               required:
                 - queryDataPolicy
-            - properties:
+            - type: object
+              properties:
                 rolloutPolicy:
                   title: rollout_policy
                   $ref: '#/components/schemas/bytebase.v1.RolloutPolicy'
               title: rollout_policy
               required:
                 - rolloutPolicy
-            - properties:
+            - type: object
+              properties:
                 tagPolicy:
                   title: tag_policy
                   $ref: '#/components/schemas/bytebase.v1.TagPolicy'
@@ -14622,28 +14669,32 @@ components:
               title: masked
               description: Masking reasons for each column (empty for non-masked columns).
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 commandError:
                   title: command_error
                   $ref: '#/components/schemas/bytebase.v1.QueryResult.CommandError'
               title: command_error
               required:
                 - commandError
-            - properties:
+            - type: object
+              properties:
                 permissionDenied:
                   title: permission_denied
                   $ref: '#/components/schemas/bytebase.v1.PermissionDeniedDetail'
               title: permission_denied
               required:
                 - permissionDenied
-            - properties:
+            - type: object
+              properties:
                 postgresError:
                   title: postgres_error
                   $ref: '#/components/schemas/bytebase.v1.QueryResult.PostgresError'
               title: postgres_error
               required:
                 - postgresError
-            - properties:
+            - type: object
+              properties:
                 syntaxError:
                   title: syntax_error
                   $ref: '#/components/schemas/bytebase.v1.QueryResult.SyntaxError'
@@ -15206,14 +15257,16 @@ components:
     bytebase.v1.RowValue:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             boolValue:
               type: boolean
               title: bool_value
           title: bool_value
           required:
             - boolValue
-        - properties:
+        - type: object
+          properties:
             bytesValue:
               type: string
               title: bytes_value
@@ -15221,7 +15274,8 @@ components:
           title: bytes_value
           required:
             - bytesValue
-        - properties:
+        - type: object
+          properties:
             doubleValue:
               type: number
               title: double_value
@@ -15229,7 +15283,8 @@ components:
           title: double_value
           required:
             - doubleValue
-        - properties:
+        - type: object
+          properties:
             floatValue:
               type: number
               title: float_value
@@ -15237,7 +15292,8 @@ components:
           title: float_value
           required:
             - floatValue
-        - properties:
+        - type: object
+          properties:
             int32Value:
               type: integer
               title: int32_value
@@ -15245,7 +15301,8 @@ components:
           title: int32_value
           required:
             - int32Value
-        - properties:
+        - type: object
+          properties:
             int64Value:
               type:
                 - integer
@@ -15255,21 +15312,24 @@ components:
           title: int64_value
           required:
             - int64Value
-        - properties:
+        - type: object
+          properties:
             nullValue:
               title: null_value
               $ref: '#/components/schemas/google.protobuf.NullValue'
           title: null_value
           required:
             - nullValue
-        - properties:
+        - type: object
+          properties:
             stringValue:
               type: string
               title: string_value
           title: string_value
           required:
             - stringValue
-        - properties:
+        - type: object
+          properties:
             timestampTzValue:
               title: timestamp_tz_value
               description: |-
@@ -15279,7 +15339,8 @@ components:
           title: timestamp_tz_value
           required:
             - timestampTzValue
-        - properties:
+        - type: object
+          properties:
             timestampValue:
               title: timestamp_value
               description: |-
@@ -15291,14 +15352,16 @@ components:
           title: timestamp_value
           required:
             - timestampValue
-        - properties:
+        - type: object
+          properties:
             uint32Value:
               type: integer
               title: uint32_value
           title: uint32_value
           required:
             - uint32Value
-        - properties:
+        - type: object
+          properties:
             uint64Value:
               type:
                 - integer
@@ -15308,7 +15371,8 @@ components:
           title: uint64_value
           required:
             - uint64Value
-        - properties:
+        - type: object
+          properties:
             valueValue:
               title: value_value
               description: value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
@@ -15385,7 +15449,8 @@ components:
     bytebase.v1.SASLConfig:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             krbConfig:
               title: krb_config
               description: Kerberos authentication configuration.
@@ -15412,42 +15477,48 @@ components:
               description: The database engine this rule applies to.
               $ref: '#/components/schemas/bytebase.v1.Engine'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 commentConventionPayload:
                   title: comment_convention_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.CommentConventionRulePayload'
               title: comment_convention_payload
               required:
                 - commentConventionPayload
-            - properties:
+            - type: object
+              properties:
                 namingCasePayload:
                   title: naming_case_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.NamingCaseRulePayload'
               title: naming_case_payload
               required:
                 - namingCasePayload
-            - properties:
+            - type: object
+              properties:
                 namingPayload:
                   title: naming_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.NamingRulePayload'
               title: naming_payload
               required:
                 - namingPayload
-            - properties:
+            - type: object
+              properties:
                 numberPayload:
                   title: number_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.NumberRulePayload'
               title: number_payload
               required:
                 - numberPayload
-            - properties:
+            - type: object
+              properties:
                 stringArrayPayload:
                   title: string_array_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.StringArrayRulePayload'
               title: string_array_payload
               required:
                 - stringArrayPayload
-            - properties:
+            - type: object
+              properties:
                 stringPayload:
                   title: string_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.StringRulePayload'
@@ -16299,49 +16370,56 @@ components:
     bytebase.v1.SettingValue:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             ai:
               title: ai
               $ref: '#/components/schemas/bytebase.v1.AISetting'
           title: ai
           required:
             - ai
-        - properties:
+        - type: object
+          properties:
             appIm:
               title: app_im
               $ref: '#/components/schemas/bytebase.v1.AppIMSetting'
           title: app_im
           required:
             - appIm
-        - properties:
+        - type: object
+          properties:
             dataClassification:
               title: data_classification
               $ref: '#/components/schemas/bytebase.v1.DataClassificationSetting'
           title: data_classification
           required:
             - dataClassification
-        - properties:
+        - type: object
+          properties:
             environment:
               title: environment
               $ref: '#/components/schemas/bytebase.v1.EnvironmentSetting'
           title: environment
           required:
             - environment
-        - properties:
+        - type: object
+          properties:
             semanticType:
               title: semantic_type
               $ref: '#/components/schemas/bytebase.v1.SemanticTypeSetting'
           title: semantic_type
           required:
             - semanticType
-        - properties:
+        - type: object
+          properties:
             workspaceApproval:
               title: workspace_approval
               $ref: '#/components/schemas/bytebase.v1.WorkspaceApprovalSetting'
           title: workspace_approval
           required:
             - workspaceApproval
-        - properties:
+        - type: object
+          properties:
             workspaceProfile:
               title: workspace_profile
               $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting'
@@ -16695,7 +16773,8 @@ components:
               title: classification
               description: The data classification level for this table.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 columns:
                   title: columns
                   description: Regular table columns.
@@ -16703,7 +16782,8 @@ components:
               title: columns
               required:
                 - columns
-            - properties:
+            - type: object
+              properties:
                 objectSchema:
                   title: object_schema
                   description: Object schema for JSON/XML columns.
@@ -17003,21 +17083,24 @@ components:
                 The run_time is the scheduled run time of latest task run.
                  If there are no task runs or the task run is not scheduled, it will be empty.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 databaseCreate:
                   title: database_create
                   $ref: '#/components/schemas/bytebase.v1.Task.DatabaseCreate'
               title: database_create
               required:
                 - databaseCreate
-            - properties:
+            - type: object
+              properties:
                 databaseDataExport:
                   title: database_data_export
                   $ref: '#/components/schemas/bytebase.v1.Task.DatabaseDataExport'
               title: database_data_export
               required:
                 - databaseDataExport
-            - properties:
+            - type: object
+              properties:
                 databaseUpdate:
                   title: database_update
                   $ref: '#/components/schemas/bytebase.v1.Task.DatabaseUpdate'
@@ -17051,7 +17134,8 @@ components:
     bytebase.v1.Task.DatabaseUpdate:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             release:
               type: string
               title: release
@@ -17059,7 +17143,8 @@ components:
           title: release
           required:
             - release
-        - properties:
+        - type: object
+          properties:
             sheet:
               type: string
               title: sheet
@@ -17227,7 +17312,8 @@ components:
     bytebase.v1.TaskRun.SchedulerInfo.WaitingCause:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             parallelTasksLimit:
               type: boolean
               title: parallel_tasks_limit
@@ -17580,7 +17666,8 @@ components:
               title: name
               description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 postgres:
                   title: postgres
                   description: PostgreSQL session information.
@@ -17728,14 +17815,16 @@ components:
               description: The identity provider to test connection including uncreated.
               $ref: '#/components/schemas/bytebase.v1.IdentityProvider'
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 oauth2Context:
                   title: oauth2_context
                   $ref: '#/components/schemas/bytebase.v1.OAuth2IdentityProviderTestRequestContext'
               title: oauth2_context
               required:
                 - oauth2Context
-            - properties:
+            - type: object
+              properties:
                 oidcContext:
                   title: oidc_context
                   description: OIDC authentication context for test connection.
@@ -18486,10 +18575,6 @@ components:
           title: title
           maxLength: 200
           description: The display title or full name of the user.
-        userType:
-          title: user_type
-          description: The type of user account.
-          $ref: '#/components/schemas/bytebase.v1.UserType'
         password:
           type: string
           title: password
@@ -18534,10 +18619,6 @@ components:
           description: |-
             The groups for the user.
              Format: groups/{email}
-        workloadIdentityConfig:
-          title: workload_identity_config
-          description: Workload Identity configuration (only for WORKLOAD_IDENTITY type)
-          $ref: '#/components/schemas/bytebase.v1.WorkloadIdentityConfig'
       title: User
       additionalProperties: false
     bytebase.v1.User.Profile:
@@ -18557,14 +18638,6 @@ components:
           description: source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
       title: Profile
       additionalProperties: false
-    bytebase.v1.UserType:
-      type: string
-      title: UserType
-      enum:
-        - USER_TYPE_UNSPECIFIED
-        - USER
-        - WORKLOAD_IDENTITY
-        - SERVICE_ACCOUNT
     bytebase.v1.VCSType:
       type: string
       title: VCSType
@@ -19109,7 +19182,8 @@ components:
     google.api.expr.v1alpha1.Constant:
       type: object
       oneOf:
-        - properties:
+        - type: object
+          properties:
             boolValue:
               type: boolean
               title: bool_value
@@ -19117,7 +19191,8 @@ components:
           title: bool_value
           required:
             - boolValue
-        - properties:
+        - type: object
+          properties:
             bytesValue:
               type: string
               title: bytes_value
@@ -19126,7 +19201,8 @@ components:
           title: bytes_value
           required:
             - bytesValue
-        - properties:
+        - type: object
+          properties:
             doubleValue:
               type: number
               title: double_value
@@ -19135,7 +19211,8 @@ components:
           title: double_value
           required:
             - doubleValue
-        - properties:
+        - type: object
+          properties:
             durationValue:
               title: duration_value
               description: |-
@@ -19147,7 +19224,8 @@ components:
           title: duration_value
           required:
             - durationValue
-        - properties:
+        - type: object
+          properties:
             int64Value:
               type:
                 - integer
@@ -19158,7 +19236,8 @@ components:
           title: int64_value
           required:
             - int64Value
-        - properties:
+        - type: object
+          properties:
             nullValue:
               title: null_value
               description: null value.
@@ -19166,7 +19245,8 @@ components:
           title: null_value
           required:
             - nullValue
-        - properties:
+        - type: object
+          properties:
             stringValue:
               type: string
               title: string_value
@@ -19174,7 +19254,8 @@ components:
           title: string_value
           required:
             - stringValue
-        - properties:
+        - type: object
+          properties:
             timestampValue:
               title: timestamp_value
               description: |-
@@ -19186,7 +19267,8 @@ components:
           title: timestamp_value
           required:
             - timestampValue
-        - properties:
+        - type: object
+          properties:
             uint64Value:
               type:
                 - integer
@@ -19229,7 +19311,8 @@ components:
                  given expression tree. This is used to associate type information and other
                  attributes to a node in the parse tree.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 callExpr:
                   title: call_expr
                   description: A call expression, including calls to predefined functions and operators.
@@ -19237,7 +19320,8 @@ components:
               title: call_expr
               required:
                 - callExpr
-            - properties:
+            - type: object
+              properties:
                 comprehensionExpr:
                   title: comprehension_expr
                   description: A comprehension expression.
@@ -19245,7 +19329,8 @@ components:
               title: comprehension_expr
               required:
                 - comprehensionExpr
-            - properties:
+            - type: object
+              properties:
                 constExpr:
                   title: const_expr
                   description: A literal expression.
@@ -19253,7 +19338,8 @@ components:
               title: const_expr
               required:
                 - constExpr
-            - properties:
+            - type: object
+              properties:
                 identExpr:
                   title: ident_expr
                   description: An identifier expression.
@@ -19261,7 +19347,8 @@ components:
               title: ident_expr
               required:
                 - identExpr
-            - properties:
+            - type: object
+              properties:
                 listExpr:
                   title: list_expr
                   description: A list creation expression.
@@ -19269,7 +19356,8 @@ components:
               title: list_expr
               required:
                 - listExpr
-            - properties:
+            - type: object
+              properties:
                 selectExpr:
                   title: select_expr
                   description: A field selection expression, e.g. `request.auth`.
@@ -19277,7 +19365,8 @@ components:
               title: select_expr
               required:
                 - selectExpr
-            - properties:
+            - type: object
+              properties:
                 structExpr:
                   title: struct_expr
                   description: A map or message creation expression.
@@ -19521,7 +19610,8 @@ components:
               title: optional_entry
               description: Whether the key-value pair is optional.
         - oneOf:
-            - properties:
+            - type: object
+              properties:
                 fieldKey:
                   type: string
                   title: field_key
@@ -19529,7 +19619,8 @@ components:
               title: field_key
               required:
                 - fieldKey
-            - properties:
+            - type: object
+              properties:
                 mapKey:
                   title: map_key
                   description: The key expression for a map creation statement.
@@ -20135,12 +20226,12 @@ tags:
     description: IssueService manages issues for tracking database changes and tasks.
   - name: bytebase.v1.SettingService
     description: SettingService manages workspace-level settings and configurations.
-  - name: bytebase.v1.UserService
-    description: UserService manages user accounts and authentication.
   - name: bytebase.v1.ActuatorService
     description: ActuatorService manages system health and operational information.
   - name: bytebase.v1.AuditLogService
     description: AuditLogService manages audit logs for system activities and API calls.
+  - name: bytebase.v1.UserService
+    description: UserService manages user accounts and authentication.
   - name: bytebase.v1.AuthService
     description: AuthService handles user authentication operations.
   - name: bytebase.v1.CelService

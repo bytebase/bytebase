@@ -12,6 +12,7 @@ import {
   unknownUser,
   userBindingPrefix,
 } from "@/types";
+import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   UpdateUserRequest,
@@ -25,7 +26,6 @@ import {
   ListUsersRequestSchema,
   UndeleteUserRequestSchema,
   UpdateUserRequestSchema,
-  UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
@@ -127,7 +127,7 @@ export const useUserStore = defineStore("user", () => {
       {
         count: 1,
         state: State.ACTIVE,
-        userType: UserType.USER,
+        userType: ActuatorInfo_AccountStat_Type.USER,
       },
     ]);
     return setUser(response);
@@ -184,12 +184,12 @@ export const useUserStore = defineStore("user", () => {
       {
         count: -1,
         state: State.ACTIVE,
-        userType: UserType.USER,
+        userType: ActuatorInfo_AccountStat_Type.USER,
       },
       {
         count: 1,
         state: State.DELETED,
-        userType: UserType.USER,
+        userType: ActuatorInfo_AccountStat_Type.USER,
       },
     ]);
 
@@ -208,12 +208,12 @@ export const useUserStore = defineStore("user", () => {
       {
         count: 1,
         state: State.ACTIVE,
-        userType: UserType.USER,
+        userType: ActuatorInfo_AccountStat_Type.USER,
       },
       {
         count: -1,
         state: State.DELETED,
-        userType: UserType.USER,
+        userType: ActuatorInfo_AccountStat_Type.USER,
       },
     ]);
     return setUser(response);

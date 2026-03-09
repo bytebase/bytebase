@@ -201,7 +201,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	}
 
 	// 4. Get user
-	user, err := s.store.GetEndUserByEmail(ctx, stored.UserEmail)
+	user, err := s.store.GetUserByEmail(ctx, stored.UserEmail)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get user"))
 	}
@@ -369,7 +369,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, err
 	}
 
-	user, err := s.store.GetEndUserByEmail(ctx, email)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list users by email %s", email))
 	}
@@ -633,7 +633,7 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if err != nil {
 		return nil, err
 	}
-	user, err := s.store.GetEndUserByEmail(ctx, userEmail)
+	user, err := s.store.GetUserByEmail(ctx, userEmail)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
 	}
@@ -770,20 +770,23 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		response.Token = token
 	}
 
-	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
-		Profile: &storepb.UserProfile{
-			LastLoginTime:          timestamppb.Now(),
-			LastChangePasswordTime: user.Profile.GetLastChangePasswordTime(),
-		},
-	}); err != nil {
-		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
+	if user.Type == storepb.PrincipalType_END_USER {
+		if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
+			Profile: &storepb.UserProfile{
+				LastLoginTime:          timestamppb.Now(),
+				LastChangePasswordTime: user.Profile.GetLastChangePasswordTime(),
+			},
+		}); err != nil {
+			slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
+		}
+
+		v1User, err := convertToUser(ctx, s.iamManager, user)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+		}
+		response.User = v1User
 	}
 
-	v1User, err := convertToUser(ctx, s.iamManager, user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
-	}
-	response.User = v1User
 	return resp, nil
 }
 
@@ -836,13 +839,6 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))
-	}
-
-	// Update last login time
-	if _, err := s.store.UpdateWorkloadIdentity(ctx, wi, &store.UpdateWorkloadIdentityMessage{
-		LastLoginTime: timestamppb.Now(),
-	}); err != nil {
-		slog.Error("failed to update workload identity profile", log.BBError(err), slog.String("email", wi.Email))
 	}
 
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{

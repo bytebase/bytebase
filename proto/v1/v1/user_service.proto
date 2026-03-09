@@ -247,6 +247,8 @@ message UpdateEmailRequest {
 }
 
 message User {
+  reserved 5, 15;
+
   option (google.api.resource) = {
     type: "bytebase.com/User"
     pattern: "users/{email}"
@@ -264,9 +266,6 @@ message User {
 
   // The display title or full name of the user.
   string title = 4 [(buf.validate.field).string.max_len = 200];
-
-  // The type of user account.
-  UserType user_type = 5;
 
   // The password for authentication. Only used during user creation or password updates.
   string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
@@ -305,37 +304,5 @@ message User {
   // The groups for the user.
   // Format: groups/{email}
   repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Workload Identity configuration (only for WORKLOAD_IDENTITY type)
-  WorkloadIdentityConfig workload_identity_config = 15;
 }
 
-// WorkloadIdentityConfig for API layer
-message WorkloadIdentityConfig {
-  // ProviderType identifies the CI/CD platform.
-  enum ProviderType {
-    PROVIDER_TYPE_UNSPECIFIED = 0;
-    GITHUB = 1;
-    GITLAB = 2;
-  }
-
-  // Platform type (currently only GITHUB is supported)
-  ProviderType provider_type = 1;
-  // OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
-  string issuer_url = 2;
-  // Allowed audiences for token validation
-  repeated string allowed_audiences = 3;
-  // Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
-  string subject_pattern = 4;
-}
-
-enum UserType {
-  // Unspecified user type.
-  USER_TYPE_UNSPECIFIED = 0;
-  // Regular human user account.
-  USER = 1;
-  // External CI/CD workload identity.
-  WORKLOAD_IDENTITY = 2;
-  // Service account for API integrations.
-  SERVICE_ACCOUNT = 3;
-}

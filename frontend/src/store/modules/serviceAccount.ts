@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { serviceAccountServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import {
@@ -15,11 +16,7 @@ import {
   UndeleteServiceAccountRequestSchema,
   UpdateServiceAccountRequestSchema,
 } from "@/types/proto-es/v1/service_account_service_pb";
-import {
-  type User,
-  UserSchema,
-  UserType,
-} from "@/types/proto-es/v1/user_service_pb";
+import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { useActuatorV1Store } from "./v1/actuator";
 import { extractServiceAccountId, serviceAccountNamePrefix } from "./v1/common";
 
@@ -125,7 +122,7 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
       {
         count: 1,
         state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
+        userType: ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT,
       },
     ]);
     return sa;
@@ -161,12 +158,12 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
       {
         count: -1,
         state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
+        userType: ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT,
       },
       {
         count: 1,
         state: State.DELETED,
-        userType: UserType.SERVICE_ACCOUNT,
+        userType: ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT,
       },
     ]);
   };
@@ -182,12 +179,12 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
       {
         count: 1,
         state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
+        userType: ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT,
       },
       {
         count: -1,
         state: State.DELETED,
-        userType: UserType.SERVICE_ACCOUNT,
+        userType: ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT,
       },
     ]);
     return sa;
@@ -210,7 +207,6 @@ export const serviceAccountToUser = (sa: ServiceAccount): User => {
     email: sa.email,
     title: sa.title,
     state: sa.state,
-    userType: UserType.SERVICE_ACCOUNT,
     serviceKey: sa.serviceKey,
   });
 };

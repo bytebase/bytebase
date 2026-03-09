@@ -369,7 +369,6 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 			Email:    "demo@example.com",
 			Password: "1024bytebase",
 			Title:    "demo",
-			UserType: v1pb.UserType_USER,
 		},
 	}))
 	if err != nil && !strings.Contains(err.Error(), "exist") {

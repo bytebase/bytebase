@@ -4,12 +4,9 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { workloadIdentityServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  type User,
-  UserSchema,
-  UserType,
-} from "@/types/proto-es/v1/user_service_pb";
+import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   CreateWorkloadIdentityRequestSchema,
@@ -117,7 +114,7 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
       {
         count: 1,
         state: State.ACTIVE,
-        userType: UserType.WORKLOAD_IDENTITY,
+        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
       },
     ]);
     return wi;
@@ -155,12 +152,12 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
       {
         count: -1,
         state: State.ACTIVE,
-        userType: UserType.WORKLOAD_IDENTITY,
+        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
       },
       {
         count: 1,
         state: State.DELETED,
-        userType: UserType.WORKLOAD_IDENTITY,
+        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
       },
     ]);
   };
@@ -178,12 +175,12 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
       {
         count: 1,
         state: State.ACTIVE,
-        userType: UserType.WORKLOAD_IDENTITY,
+        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
       },
       {
         count: -1,
         state: State.DELETED,
-        userType: UserType.WORKLOAD_IDENTITY,
+        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
       },
     ]);
     return wi;
@@ -206,7 +203,5 @@ export const workloadIdentityToUser = (wi: WorkloadIdentity): User => {
     email: wi.email,
     title: wi.title,
     state: wi.state,
-    userType: UserType.WORKLOAD_IDENTITY,
-    workloadIdentityConfig: wi.workloadIdentityConfig,
   });
 };

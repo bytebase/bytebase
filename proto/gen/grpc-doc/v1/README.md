@@ -122,35 +122,17 @@
   
     - [SettingService](#bytebase-v1-SettingService)
   
-- [v1/user_service.proto](#v1_user_service-proto)
-    - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
-    - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
-    - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
-    - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
-    - [GetUserRequest](#bytebase-v1-GetUserRequest)
-    - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
-    - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
-    - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
-    - [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest)
-    - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
-    - [User](#bytebase-v1-User)
-    - [User.Profile](#bytebase-v1-User-Profile)
-    - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
-  
-    - [UserType](#bytebase-v1-UserType)
-    - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
-  
-    - [UserService](#bytebase-v1-UserService)
-  
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser)
+    - [ActuatorInfo.AccountStat](#bytebase-v1-ActuatorInfo-AccountStat)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
+  
+    - [ActuatorInfo.AccountStat.Type](#bytebase-v1-ActuatorInfo-AccountStat-Type)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -176,6 +158,22 @@
     - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
   
     - [AuditLogService](#bytebase-v1-AuditLogService)
+  
+- [v1/user_service.proto](#v1_user_service-proto)
+    - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
+    - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
+    - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
+    - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
+    - [GetUserRequest](#bytebase-v1-GetUserRequest)
+    - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
+    - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
+    - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
+    - [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest)
+    - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
+    - [User](#bytebase-v1-User)
+    - [User.Profile](#bytebase-v1-User-Profile)
+  
+    - [UserService](#bytebase-v1-UserService)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
@@ -680,6 +678,9 @@
     - [UndeleteWorkloadIdentityRequest](#bytebase-v1-UndeleteWorkloadIdentityRequest)
     - [UpdateWorkloadIdentityRequest](#bytebase-v1-UpdateWorkloadIdentityRequest)
     - [WorkloadIdentity](#bytebase-v1-WorkloadIdentity)
+    - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
+  
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
   
     - [WorkloadIdentityService](#bytebase-v1-WorkloadIdentityService)
   
@@ -2514,299 +2515,6 @@ SettingService manages workspace-level settings and configurations.
 
 
 
-<a name="v1_user_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/user_service.proto
-
-
-
-<a name="bytebase-v1-BatchGetUsersRequest"></a>
-
-### BatchGetUsersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The user names to retrieve. Format: users/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetUsersResponse"></a>
-
-### BatchGetUsersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateUserRequest"></a>
-
-### CreateUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user | [User](#bytebase-v1-User) |  | The user to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteUserRequest"></a>
-
-### DeleteUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to delete. Format: users/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetUserRequest"></a>
-
-### GetUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to retrieve. Format: users/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListUsersRequest"></a>
-
-### ListUsersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 10 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted users if specified. |
-| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
-
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListUsersResponse"></a>
-
-### ListUsersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteUserRequest"></a>
-
-### UndeleteUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted user. Format: users/{email} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateEmailRequest"></a>
-
-### UpdateEmailRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user whose email to update. Format: users/{email} Note: This is the current (old) email address. The new email is specified in the &#39;email&#39; field. |
-| email | [string](#string) |  | The new email address. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateUserRequest"></a>
-
-### UpdateUserRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user | [User](#bytebase-v1-User) |  | The user to update.
-
-The user&#39;s `name` field is used to identify the user to update. Format: users/{email} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
-| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
-| allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
-
-<a name="bytebase-v1-User"></a>
-
-### User
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user. Format: users/{email} |
-| state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
-| email | [string](#string) |  | The email address of the user, used for login and notifications. |
-| title | [string](#string) |  | The display title or full name of the user. |
-| user_type | [UserType](#bytebase-v1-UserType) |  | The type of user account. |
-| password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
-| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
-| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
-| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
-| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. |
-| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
-| profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
-| groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
-| workload_identity_config | [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig) |  | Workload Identity configuration (only for WORKLOAD_IDENTITY type) |
-
-
-
-
-
-
-<a name="bytebase-v1-User-Profile"></a>
-
-### User.Profile
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user successfully logged in. |
-| last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user changed their password. |
-| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
-
-
-
-
-
-
-<a name="bytebase-v1-WorkloadIdentityConfig"></a>
-
-### WorkloadIdentityConfig
-WorkloadIdentityConfig for API layer
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
-| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
-| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
-| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-UserType"></a>
-
-### UserType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| USER_TYPE_UNSPECIFIED | 0 | Unspecified user type. |
-| USER | 1 | Regular human user account. |
-| WORKLOAD_IDENTITY | 2 | External CI/CD workload identity. |
-| SERVICE_ACCOUNT | 3 | Service account for API integrations. |
-
-
-
-<a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
-
-### WorkloadIdentityConfig.ProviderType
-ProviderType identifies the CI/CD platform.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 |  |
-| GITLAB | 2 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-UserService"></a>
-
-### UserService
-UserService manages user accounts and authentication.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
-| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
-| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
-| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
-| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
-| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Note: Email updates are not supported through this API. Use UpdateEmail instead. Permissions required: bb.users.update (or self) |
-| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
-| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
-| UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
-
- 
-
-
-
 <a name="v1_actuator_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2836,7 +2544,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | The unique identifier for the workspace. |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
-| user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated | Statistics about users in the system. |
+| account_stats | [ActuatorInfo.AccountStat](#bytebase-v1-ActuatorInfo-AccountStat) | repeated | Statistics about accounts in the system. |
 | activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
 | total_instance_count | [int32](#int32) |  | The total number of database instances. |
 | enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
@@ -2849,17 +2557,17 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
-<a name="bytebase-v1-ActuatorInfo-StatUser"></a>
+<a name="bytebase-v1-ActuatorInfo-AccountStat"></a>
 
-### ActuatorInfo.StatUser
-User statistics by type and state.
+### ActuatorInfo.AccountStat
+Account statistics by type and state.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| user_type | [UserType](#bytebase-v1-UserType) |  | The type of user. |
-| state | [State](#bytebase-v1-State) |  | The state of the user. |
-| count | [int32](#int32) |  | The count of users matching this type and state. |
+| type | [ActuatorInfo.AccountStat.Type](#bytebase-v1-ActuatorInfo-AccountStat-Type) |  | The type of account. |
+| state | [State](#bytebase-v1-State) |  | The state of the account. |
+| count | [int32](#int32) |  | The count of accounts matching this type and state. |
 
 
 
@@ -2938,6 +2646,20 @@ Request message for setting up sample data.
 
 
  
+
+
+<a name="bytebase-v1-ActuatorInfo-AccountStat-Type"></a>
+
+### ActuatorInfo.AccountStat.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| USER_TYPE_UNSPECIFIED | 0 | Unspecified account type. |
+| USER | 1 | Regular human user account. |
+| WORKLOAD_IDENTITY | 2 | External CI/CD workload identity. |
+| SERVICE_ACCOUNT | 3 | Service account for API integrations. |
+
 
  
 
@@ -3265,6 +2987,252 @@ AuditLogService manages audit logs for system activities and API calls.
 | ----------- | ------------ | ------------- | ------------|
 | SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
 | ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
+
+ 
+
+
+
+<a name="v1_user_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/user_service.proto
+
+
+
+<a name="bytebase-v1-BatchGetUsersRequest"></a>
+
+### BatchGetUsersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The user names to retrieve. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetUsersResponse"></a>
+
+### BatchGetUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateUserRequest"></a>
+
+### CreateUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user | [User](#bytebase-v1-User) |  | The user to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteUserRequest"></a>
+
+### DeleteUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user to delete. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetUserRequest"></a>
+
+### GetUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user to retrieve. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListUsersRequest"></a>
+
+### ListUsersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 10 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted users if specified. |
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-ListUsersResponse"></a>
+
+### ListUsersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteUserRequest"></a>
+
+### UndeleteUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted user. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateEmailRequest"></a>
+
+### UpdateEmailRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user whose email to update. Format: users/{email} Note: This is the current (old) email address. The new email is specified in the &#39;email&#39; field. |
+| email | [string](#string) |  | The new email address. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateUserRequest"></a>
+
+### UpdateUserRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user | [User](#bytebase-v1-User) |  | The user to update.
+
+The user&#39;s `name` field is used to identify the user to update. Format: users/{email} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
+| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
+| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
+| allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+
+<a name="bytebase-v1-User"></a>
+
+### User
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user. Format: users/{email} |
+| state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
+| email | [string](#string) |  | The email address of the user, used for login and notifications. |
+| title | [string](#string) |  | The display title or full name of the user. |
+| password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
+| service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
+| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
+| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
+| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
+| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. |
+| phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
+| profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
+| groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-User-Profile"></a>
+
+### User.Profile
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user successfully logged in. |
+| last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the user changed their password. |
+| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-UserService"></a>
+
+### UserService
+UserService manages user accounts and authentication.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
+| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
+| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
+| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
+| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Note: Email updates are not supported through this API. Use UpdateEmail instead. Permissions required: bb.users.update (or self) |
+| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
+| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
+| UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
 
  
 
@@ -11029,7 +10997,38 @@ WorkloadIdentity represents an external CI/CD workload identity.
 
 
 
+
+<a name="bytebase-v1-WorkloadIdentityConfig"></a>
+
+### WorkloadIdentityConfig
+WorkloadIdentityConfig for API layer
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
+| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
+| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
+| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+
+
+
+
+
  
+
+
+<a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
+
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 |  |
+| GITLAB | 2 |  |
+
 
  
 

@@ -1,0 +1,111 @@
+-- Split principal table into three tables: principal (END_USER only), service_account, workload_identity.
+
+-- Step 0: Fix legacy service account emails that don't match the required format.
+-- Valid formats: {name}@service.bytebase.com  OR  {name}@{project}.service.bytebase.com
+-- This MUST run BEFORE dropping FK constraints so that ON UPDATE CASCADE propagates email
+-- changes to all creator/deleter columns automatically.
+DO $$
+DECLARE
+    rec RECORD;
+    new_email TEXT;
+    base_local TEXT;
+BEGIN
+    FOR rec IN
+        SELECT id, email, project
+        FROM principal
+        WHERE type = 'SERVICE_ACCOUNT'
+          AND email NOT LIKE '%@service.bytebase.com'
+          AND email NOT LIKE '%@%.service.bytebase.com'
+    LOOP
+        base_local := split_part(rec.email, '@', 1);
+        IF rec.project IS NOT NULL THEN
+            new_email := base_local || '@' || rec.project || '.service.bytebase.com';
+        ELSE
+            new_email := base_local || '@service.bytebase.com';
+        END IF;
+        -- Handle potential email collision by appending id
+        IF EXISTS (SELECT 1 FROM principal WHERE email = new_email AND id != rec.id) THEN
+            IF rec.project IS NOT NULL THEN
+                new_email := base_local || '-' || rec.id || '@' || rec.project || '.service.bytebase.com';
+            ELSE
+                new_email := base_local || '-' || rec.id || '@service.bytebase.com';
+            END IF;
+        END IF;
+        -- Update principal email (ON UPDATE CASCADE propagates to creator/deleter columns)
+        UPDATE principal SET email = new_email WHERE id = rec.id;
+        -- Update JSONB references in policies (members use 'serviceAccounts/{email}' format)
+        UPDATE policy
+        SET payload = replace(payload::text, 'serviceAccounts/' || rec.email, 'serviceAccounts/' || new_email)::jsonb
+        WHERE payload::text LIKE '%serviceAccounts/' || rec.email || '%';
+        -- Update user_group member references
+        UPDATE user_group
+        SET payload = replace(payload::text, 'serviceAccounts/' || rec.email, 'serviceAccounts/' || new_email)::jsonb
+        WHERE payload::text LIKE '%serviceAccounts/' || rec.email || '%';
+    END LOOP;
+END $$;
+
+-- Step 1: Create service_account table
+CREATE TABLE service_account (
+    id bigserial PRIMARY KEY,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL,
+    service_key_hash text NOT NULL,
+    project text REFERENCES project(resource_id)
+);
+
+CREATE UNIQUE INDEX idx_service_account_unique_email ON service_account(email);
+CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
+
+INSERT INTO service_account (id, deleted, created_at, name, email, service_key_hash, project)
+SELECT id, deleted, created_at, name, email, password_hash, project
+FROM principal WHERE type = 'SERVICE_ACCOUNT';
+
+SELECT setval('service_account_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM service_account), 0), 100) + 1, false);
+
+-- Step 2: Create workload_identity table
+CREATE TABLE workload_identity (
+    id bigserial PRIMARY KEY,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL,
+    project text REFERENCES project(resource_id),
+    -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
+    config jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_workload_identity_unique_email ON workload_identity(email);
+CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
+
+INSERT INTO workload_identity (id, deleted, created_at, name, email, project, config)
+SELECT id, deleted, created_at, name, email, project,
+       COALESCE(profile->'workloadIdentityConfig', '{}')
+FROM principal WHERE type = 'WORKLOAD_IDENTITY';
+
+SELECT setval('workload_identity_id_seq', GREATEST(COALESCE((SELECT MAX(id) FROM workload_identity), 0), 100) + 1, false);
+
+-- Step 3: Drop FK constraints on creator/deleter columns that can reference SA/WI emails.
+-- Keep FKs on oauth2_authorization_code, oauth2_refresh_token, web_refresh_token (END_USER only).
+ALTER TABLE plan DROP CONSTRAINT IF EXISTS plan_creator_fkey;
+ALTER TABLE task_run DROP CONSTRAINT IF EXISTS task_run_creator_fkey;
+ALTER TABLE issue DROP CONSTRAINT IF EXISTS issue_creator_fkey;
+ALTER TABLE issue_comment DROP CONSTRAINT IF EXISTS issue_comment_creator_fkey;
+ALTER TABLE query_history DROP CONSTRAINT IF EXISTS query_history_creator_fkey;
+ALTER TABLE worksheet DROP CONSTRAINT IF EXISTS worksheet_creator_fkey;
+ALTER TABLE worksheet_organizer DROP CONSTRAINT IF EXISTS worksheet_organizer_principal_fkey;
+ALTER TABLE revision DROP CONSTRAINT IF EXISTS revision_deleter_fkey;
+ALTER TABLE release DROP CONSTRAINT IF EXISTS release_creator_fkey;
+ALTER TABLE access_grant DROP CONSTRAINT IF EXISTS access_grant_creator_fkey;
+
+-- Step 4: Add missing index for plan.creator (queried in plan filter)
+CREATE INDEX idx_plan_creator ON plan(creator);
+
+-- Step 5: Clean up principal table
+DELETE FROM principal WHERE type != 'END_USER';
+ALTER TABLE principal DROP CONSTRAINT IF EXISTS principal_project_type_check;
+ALTER TABLE principal DROP CONSTRAINT IF EXISTS principal_type_check;
+ALTER TABLE principal DROP COLUMN type;
+ALTER TABLE principal DROP COLUMN project;
+DROP INDEX IF EXISTS idx_principal_project;

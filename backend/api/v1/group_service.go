@@ -283,7 +283,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get member email"))
 		}
-		user, err := s.store.GetEndUserByEmail(ctx, email)
+		user, err := s.store.GetUserByEmail(ctx, email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get member %s", member.Member))
 		}

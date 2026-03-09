@@ -399,11 +399,12 @@ import {
   useActuatorV1Store,
   useProjectByName,
   useWorkloadIdentityStore,
-  workloadIdentityNamePrefix,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
+import {
+  type WorkloadIdentity,
+  WorkloadIdentityConfig_ProviderType,
+} from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   getWorkloadIdentityProviderText,
   parseWorkloadIdentitySubjectPattern,
@@ -726,7 +727,7 @@ ${gitlabExchangeScript}
     - bytebase-action rollout --url=$BYTEBASE_URL --access-token=$BYTEBASE_ACCESS_TOKEN --project=$BYTEBASE_PROJECT --target-stage=environments/prod --plan=$PLAN`;
 });
 
-const handleWorkloadIdentityCreated = (user: User) => {
-  selectedIdentityName.value = `${workloadIdentityNamePrefix}${user.email}`;
+const handleWorkloadIdentityCreated = (wi: WorkloadIdentity) => {
+  selectedIdentityName.value = wi.name;
 };
 </script>

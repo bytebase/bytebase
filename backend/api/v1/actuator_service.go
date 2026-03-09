@@ -161,15 +161,15 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		},
 	}
 
-	stats, err := s.store.StatUsers(ctx)
+	stats, err := s.store.StatAccounts(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to stat users"))
 	}
 	for _, stat := range stats {
-		serverInfo.UserStats = append(serverInfo.UserStats, &v1pb.ActuatorInfo_StatUser{
-			State:    convertDeletedToState(stat.Deleted),
-			UserType: convertToV1UserType(stat.Type),
-			Count:    int32(stat.Count),
+		serverInfo.AccountStats = append(serverInfo.AccountStats, &v1pb.ActuatorInfo_AccountStat{
+			State: convertDeletedToState(stat.Deleted),
+			Type:  stat.Type,
+			Count: int32(stat.Count),
 		})
 	}
 

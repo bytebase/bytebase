@@ -91,8 +91,8 @@
         state.editingServiceAccount = undefined;
       }
     "
-    @created="handleServiceAccountUpdated"
-    @updated="handleServiceAccountUpdated"
+    @created="sa => handleServiceAccountUpdated(serviceAccountToUser(sa))"
+    @updated="sa => handleServiceAccountUpdated(serviceAccountToUser(sa))"
   />
 </template>
 
@@ -110,15 +110,16 @@ import {
   serviceAccountToUser,
   useServiceAccountStore,
 } from "@/store/modules/serviceAccount";
-import { isValidProjectName, unknownUser } from "@/types";
+import { isValidProjectName } from "@/types";
+import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 
 type LocalState = {
   showInactiveList: boolean;
   showCreateDrawer: boolean;
-  editingServiceAccount?: User;
+  editingServiceAccount?: ServiceAccount;
 };
 
 const state = reactive<LocalState>({
@@ -201,21 +202,19 @@ const fetchInactiveServiceAccountList = async ({
 const activeServiceAccountCount = computed(() => {
   return actuatorStore.countUser({
     state: State.ACTIVE,
-    userTypes: [UserType.SERVICE_ACCOUNT],
+    userTypes: [ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT],
   });
 });
 
 const handleCreateServiceAccount = () => {
-  state.editingServiceAccount = {
-    ...unknownUser(),
-    userType: UserType.SERVICE_ACCOUNT,
-    title: "",
-  };
+  state.editingServiceAccount = undefined;
   state.showCreateDrawer = true;
 };
 
 const handleServiceAccountSelected = (user: User) => {
-  state.editingServiceAccount = user;
+  state.editingServiceAccount = serviceAccountStore.getServiceAccount(
+    user.email
+  );
   state.showCreateDrawer = true;
 };
 
@@ -235,7 +234,7 @@ const handleServiceAccountRestore = (user: User) => {
 };
 
 const handleServiceAccountArchived = (user: User) => {
-  if (user.state !== State.DELETED) {
+  if (user) {
     return;
   }
   serviceAccountPagedTable.value?.removeCache(user);

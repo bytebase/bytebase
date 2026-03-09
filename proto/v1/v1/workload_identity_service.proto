@@ -12,7 +12,6 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -121,6 +120,25 @@ message WorkloadIdentity {
 
   // The workload identity configuration for OIDC token validation.
   WorkloadIdentityConfig workload_identity_config = 6;
+}
+
+// WorkloadIdentityConfig for API layer
+message WorkloadIdentityConfig {
+  // ProviderType identifies the CI/CD platform.
+  enum ProviderType {
+    PROVIDER_TYPE_UNSPECIFIED = 0;
+    GITHUB = 1;
+    GITLAB = 2;
+  }
+
+  // Platform type (currently only GITHUB is supported)
+  ProviderType provider_type = 1;
+  // OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+  string issuer_url = 2;
+  // Allowed audiences for token validation
+  repeated string allowed_audiences = 3;
+  // Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+  string subject_pattern = 4;
 }
 
 // Request message for creating a workload identity.

@@ -59,7 +59,7 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 		return nil, err
 	}
 
-	user, err := s.store.GetEndUserByEmail(ctx, email)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -137,7 +137,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
 	}
-	filterResult, err := store.GetListUserFilter(request.Msg.Filter)
+	filterResult, err := store.GetAccountListFilter(request.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -158,7 +158,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		}
 	}
 
-	users, err := s.store.ListEndUsers(ctx, find)
+	users, err := s.store.ListUsers(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list user"))
 	}
@@ -215,14 +215,6 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user title must be set"))
 	}
 
-	principalType, err := convertToPrincipalType(request.Msg.User.UserType)
-	if err != nil {
-		return nil, err
-	}
-	if principalType != storepb.PrincipalType_END_USER {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support user only"))
-	}
-
 	if err := s.userCountGuard(ctx); err != nil {
 		return nil, err
 	}
@@ -243,7 +235,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, false); err != nil {
 		return nil, err
 	}
-	existingUser, err := s.store.GetEndUserByEmail(ctx, request.Msg.User.Email)
+	existingUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
@@ -273,7 +265,6 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		Email:        request.Msg.User.Email,
 		Name:         request.Msg.User.Title,
 		Phone:        request.Msg.User.Phone,
-		Type:         principalType,
 		PasswordHash: string(passwordHash),
 		Profile:      &storepb.UserProfile{},
 	}
@@ -346,7 +337,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	if err := validateEndUserEmail(email); err != nil {
 		return nil, err
 	}
-	user, err := s.store.GetEndUserByEmail(ctx, email)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -538,7 +529,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	if err := validateEndUserEmail(email); err != nil {
 		return nil, err
 	}
-	user, err := s.store.GetEndUserByEmail(ctx, email)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -569,18 +560,11 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 }
 
 func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
-	userStat, err := s.store.StatUsers(ctx)
+	count, err := s.store.CountActiveEndUsers(ctx)
 	if err != nil {
 		return 0, connect.NewError(connect.CodeInternal, errors.Errorf("failed to stat users with error: %v", err.Error()))
 	}
-	activeEndUserCount := 0
-	for _, stat := range userStat {
-		if !stat.Deleted && stat.Type == storepb.PrincipalType_END_USER {
-			activeEndUserCount = stat.Count
-			break
-		}
-	}
-	return activeEndUserCount, nil
+	return count, nil
 }
 
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, user *store.UserMessage) (bool, error) {
@@ -634,7 +618,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if err := validateEndUserEmail(email); err != nil {
 		return nil, err
 	}
-	user, err := s.store.GetEndUserByEmail(ctx, email)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -680,7 +664,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetEndUserByEmail(ctx, email)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -702,7 +686,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	}
 
 	// Check if email already exists
-	existedUser, err := s.store.GetEndUserByEmail(ctx, request.Msg.Email)
+	existedUser, err := s.store.GetUserByEmail(ctx, request.Msg.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
@@ -723,31 +707,17 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	return connect.NewResponse(v1User), nil
 }
 
-func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
-	switch userType {
-	case storepb.PrincipalType_END_USER:
-		return v1pb.UserType_USER
-	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		return v1pb.UserType_SERVICE_ACCOUNT
-	case storepb.PrincipalType_WORKLOAD_IDENTITY:
-		return v1pb.UserType_WORKLOAD_IDENTITY
-	default:
-		return v1pb.UserType_USER_TYPE_UNSPECIFIED
-	}
-}
-
 func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
 	groups, err := iamManager.GetUserGroups(ctx, user.Email)
 	if err != nil {
 		return nil, err
 	}
 	convertedUser := &v1pb.User{
-		Name:     common.FormatUserEmail(user.Email),
-		State:    convertDeletedToState(user.MemberDeleted),
-		Email:    user.Email,
-		Phone:    user.Phone,
-		Title:    user.Name,
-		UserType: convertToV1UserType(user.Type),
+		Name:  common.FormatUserEmail(user.Email),
+		State: convertDeletedToState(user.MemberDeleted),
+		Email: user.Email,
+		Phone: user.Phone,
+		Title: user.Name,
 		Profile: &v1pb.User_Profile{
 			LastLoginTime:          user.Profile.LastLoginTime,
 			LastChangePasswordTime: user.Profile.LastChangePasswordTime,
@@ -766,21 +736,6 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 		}
 	}
 	return convertedUser, nil
-}
-
-func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, error) {
-	var t storepb.PrincipalType
-	switch userType {
-	case v1pb.UserType_USER:
-		t = storepb.PrincipalType_END_USER
-	case v1pb.UserType_SERVICE_ACCOUNT:
-		t = storepb.PrincipalType_SERVICE_ACCOUNT
-	case v1pb.UserType_WORKLOAD_IDENTITY:
-		t = storepb.PrincipalType_WORKLOAD_IDENTITY
-	default:
-		return t, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user type %s", userType))
-	}
-	return t, nil
 }
 
 func validateEndUserEmail(email string) error {

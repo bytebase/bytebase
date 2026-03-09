@@ -10,7 +10,6 @@ import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/setting_service.proto";
-import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -124,18 +123,28 @@ message ActuatorInfo {
   // Whether the Bytebase instance is running in Docker.
   bool docker = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // User statistics by type and state.
-  message StatUser {
-    // The type of user.
-    UserType user_type = 1;
-    // The state of the user.
+  // Account statistics by type and state.
+  message AccountStat {
+    enum Type {
+      // Unspecified account type.
+      USER_TYPE_UNSPECIFIED = 0;
+      // Regular human user account.
+      USER = 1;
+      // External CI/CD workload identity.
+      WORKLOAD_IDENTITY = 2;
+      // Service account for API integrations.
+      SERVICE_ACCOUNT = 3;
+    }
+    // The type of account.
+    Type type = 1;
+    // The state of the account.
     State state = 2;
-    // The count of users matching this type and state.
+    // The count of accounts matching this type and state.
     int32 count = 3;
   }
 
-  // Statistics about users in the system.
-  repeated StatUser user_stats = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Statistics about accounts in the system.
+  repeated AccountStat account_stats = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The number of activated database instances.
   int32 activated_instance_count = 20 [(google.api.field_behavior) = OUTPUT_ONLY];

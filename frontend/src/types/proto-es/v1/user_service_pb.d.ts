@@ -2,7 +2,7 @@
 // @generated from file v1/user_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { State } from "./common_pb";
@@ -333,13 +333,6 @@ export declare type User = Message<"bytebase.v1.User"> & {
   title: string;
 
   /**
-   * The type of user account.
-   *
-   * @generated from field: bytebase.v1.UserType user_type = 5;
-   */
-  userType: UserType;
-
-  /**
    * The password for authentication. Only used during user creation or password updates.
    *
    * @generated from field: string password = 6;
@@ -403,13 +396,6 @@ export declare type User = Message<"bytebase.v1.User"> & {
    * @generated from field: repeated string groups = 14;
    */
   groups: string[];
-
-  /**
-   * Workload Identity configuration (only for WORKLOAD_IDENTITY type)
-   *
-   * @generated from field: bytebase.v1.WorkloadIdentityConfig workload_identity_config = 15;
-   */
-  workloadIdentityConfig?: WorkloadIdentityConfig;
 };
 
 /**
@@ -449,112 +435,6 @@ export declare type User_Profile = Message<"bytebase.v1.User.Profile"> & {
  * Use `create(User_ProfileSchema)` to create a new message.
  */
 export declare const User_ProfileSchema: GenMessage<User_Profile>;
-
-/**
- * WorkloadIdentityConfig for API layer
- *
- * @generated from message bytebase.v1.WorkloadIdentityConfig
- */
-export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdentityConfig"> & {
-  /**
-   * Platform type (currently only GITHUB is supported)
-   *
-   * @generated from field: bytebase.v1.WorkloadIdentityConfig.ProviderType provider_type = 1;
-   */
-  providerType: WorkloadIdentityConfig_ProviderType;
-
-  /**
-   * OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
-   *
-   * @generated from field: string issuer_url = 2;
-   */
-  issuerUrl: string;
-
-  /**
-   * Allowed audiences for token validation
-   *
-   * @generated from field: repeated string allowed_audiences = 3;
-   */
-  allowedAudiences: string[];
-
-  /**
-   * Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
-   *
-   * @generated from field: string subject_pattern = 4;
-   */
-  subjectPattern: string;
-};
-
-/**
- * Describes the message bytebase.v1.WorkloadIdentityConfig.
- * Use `create(WorkloadIdentityConfigSchema)` to create a new message.
- */
-export declare const WorkloadIdentityConfigSchema: GenMessage<WorkloadIdentityConfig>;
-
-/**
- * ProviderType identifies the CI/CD platform.
- *
- * @generated from enum bytebase.v1.WorkloadIdentityConfig.ProviderType
- */
-export enum WorkloadIdentityConfig_ProviderType {
-  /**
-   * @generated from enum value: PROVIDER_TYPE_UNSPECIFIED = 0;
-   */
-  PROVIDER_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: GITHUB = 1;
-   */
-  GITHUB = 1,
-
-  /**
-   * @generated from enum value: GITLAB = 2;
-   */
-  GITLAB = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.WorkloadIdentityConfig.ProviderType.
- */
-export declare const WorkloadIdentityConfig_ProviderTypeSchema: GenEnum<WorkloadIdentityConfig_ProviderType>;
-
-/**
- * @generated from enum bytebase.v1.UserType
- */
-export enum UserType {
-  /**
-   * Unspecified user type.
-   *
-   * @generated from enum value: USER_TYPE_UNSPECIFIED = 0;
-   */
-  USER_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Regular human user account.
-   *
-   * @generated from enum value: USER = 1;
-   */
-  USER = 1,
-
-  /**
-   * External CI/CD workload identity.
-   *
-   * @generated from enum value: WORKLOAD_IDENTITY = 2;
-   */
-  WORKLOAD_IDENTITY = 2,
-
-  /**
-   * Service account for API integrations.
-   *
-   * @generated from enum value: SERVICE_ACCOUNT = 3;
-   */
-  SERVICE_ACCOUNT = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.UserType.
- */
-export declare const UserTypeSchema: GenEnum<UserType>;
 
 /**
  * UserService manages user accounts and authentication.

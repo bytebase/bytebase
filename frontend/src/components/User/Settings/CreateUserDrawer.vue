@@ -133,7 +133,6 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   UpdateUserRequestSchema,
   UserSchema,
-  UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import UserPassword from "./UserPassword.vue";
@@ -248,7 +247,6 @@ const createOrUpdateUser = async () => {
 const createUser = async () => {
   const createdUser = await userStore.createUser({
     ...state.user,
-    userType: UserType.USER,
     title: state.user.title || extractUserTitle(state.user.email),
     password: state.user.password,
   });

@@ -458,7 +458,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user email from %q", request.Issue.GrantRequest.User))
 		}
-		grantRequestUser, err := s.store.GetEndUserByEmail(ctx, grantRequestUserEmail)
+		grantRequestUser, err := s.store.GetUserByEmail(ctx, grantRequestUserEmail)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", grantRequestUserEmail))
 		}
