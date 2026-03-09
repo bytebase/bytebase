@@ -109,7 +109,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	// 4. Generate appropriate token
 	token, err := s.generateLoginToken(ctx, loginUser)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access token"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate access token"))
 	}
 
 	// 5. Build response and finalize
