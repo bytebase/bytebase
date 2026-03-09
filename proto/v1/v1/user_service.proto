@@ -305,4 +305,3 @@ message User {
   // Format: groups/{email}
   repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
-
