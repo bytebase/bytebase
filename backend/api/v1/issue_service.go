@@ -1144,16 +1144,16 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	issue, err := s.getIssueMessage(ctx, req.Msg.Parent)
+	_, issueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q: %v", req.Msg.Parent, err))
 	}
 
 	_, _, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
 	}
-	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID, IssueUID: &issueUID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}
@@ -1173,10 +1173,6 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
 	}
-	if issueComment.IssueUID != issue.UID {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
-	}
-
 	update := &store.UpdateIssueCommentMessage{
 		UID: issueCommentUID,
 	}
