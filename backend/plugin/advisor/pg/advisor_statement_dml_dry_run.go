@@ -50,7 +50,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	var adviceList []*storepb.Advice
-	var setRoles []string
+	var preExecutions []string
 	for _, stmtInfo := range stmtInfos {
 		rule := &statementDMLDryRunRule{
 			BaseRule: BaseRule{
@@ -59,7 +59,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			},
 			ctx:                      ctx,
 			driver:                   checkCtx.Driver,
-			setRoles:                 setRoles,
+			preExecutions:            preExecutions,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 			tokens:                   stmtInfo.Tokens,
 		}
@@ -68,7 +68,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
-		setRoles = rule.setRoles
+		preExecutions = rule.preExecutions
 	}
 
 	return adviceList, nil
@@ -79,7 +79,7 @@ type statementDMLDryRunRule struct {
 	driver                   *sql.DB
 	ctx                      context.Context
 	explainCount             int
-	setRoles                 []string
+	preExecutions            []string
 	usePostgresDatabaseOwner bool
 	tokens                   *antlr.CommonTokenStream
 }
@@ -116,14 +116,7 @@ func (r *statementDMLDryRunRule) handleVariablesetstmt(ctx *parser.Variablesetst
 		return
 	}
 
-	// Check if this is SET ROLE
-	if ctx.SET() != nil && ctx.Set_rest() != nil && ctx.Set_rest().Set_rest_more() != nil {
-		setRestMore := ctx.Set_rest().Set_rest_more()
-		if setRestMore.ROLE() != nil {
-			// Store the SET ROLE statement text
-			r.setRoles = append(r.setRoles, getTextFromTokens(r.tokens, ctx))
-		}
-	}
+	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
 }
 
 func (r *statementDMLDryRunRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
@@ -164,7 +157,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
 		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
-		PreExecutions:            r.setRoles,
+		PreExecutions:            r.preExecutions,
 	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {
