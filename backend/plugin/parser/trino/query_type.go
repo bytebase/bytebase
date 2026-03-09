@@ -116,6 +116,11 @@ func (l *queryTypeListener) EnterMerge(_ *parser.MergeContext) {
 	l.result = base.DML
 }
 
+// EnterCall is called when entering a CallContext rule (CALL stored procedure).
+func (l *queryTypeListener) EnterCall(_ *parser.CallContext) {
+	l.result = base.DML
+}
+
 // EnterCreateTable is called when entering a CreateTableContext rule.
 func (l *queryTypeListener) EnterCreateTable(_ *parser.CreateTableContext) {
 	l.result = base.DDL

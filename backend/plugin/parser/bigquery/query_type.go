@@ -39,7 +39,7 @@ func (l *queryTypeListener) getQueryTypeForUnterminatedSQLStatement(u parser.IUn
 		body.Create_schema_statement() != nil, body.Create_external_schema_statement() != nil, body.Create_snapshot_statement() != nil, body.Create_table_function_statement() != nil, body.Create_table_statement() != nil,
 		body.Create_view_statement() != nil, body.Create_entity_statement() != nil, body.Rename_statement() != nil, body.Drop_all_row_access_policies_statement() != nil, body.Drop_statement() != nil, body.Undrop_statement() != nil:
 		return base.DDL
-	case body.Dml_statement() != nil, body.Merge_statement() != nil:
+	case body.Dml_statement() != nil, body.Merge_statement() != nil, body.Call_statement() != nil:
 		return base.DML
 	case body.Explain_statement() != nil:
 		return base.Explain

@@ -66,6 +66,12 @@ func (*queryTypeListener) getQueryTypeForOtherCommand(otherCommand parser.IOther
 		return base.DDL, nil
 	case otherCommand.Set() != nil:
 		return base.Select, nil
+	case otherCommand.Call() != nil:
+		return base.DML, nil
+	case otherCommand.Execute_immediate() != nil:
+		return base.DML, nil
+	case otherCommand.Execute_task() != nil:
+		return base.DML, nil
 	default:
 		return base.QueryTypeUnknown, nil
 	}
