@@ -1144,6 +1144,11 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
+	issue, err := s.getIssueMessage(ctx, req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+
 	_, _, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
@@ -1166,6 +1171,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 				IssueComment: req.Msg.IssueComment,
 			}))
 		}
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
+	}
+	if issueComment.IssueUID != issue.UID {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
 	}
 
