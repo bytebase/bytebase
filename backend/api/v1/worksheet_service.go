@@ -262,6 +262,10 @@ func (s *WorksheetService) UpdateWorksheet(
 				if database == nil {
 					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Worksheet.Database))
 				}
+				// Verify the database belongs to the worksheet's project.
+				if database.ProjectID != worksheet.ProjectID {
+					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", request.Worksheet.Database, worksheet.ProjectID))
+				}
 				worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
 			} else {
 				emptyStr := ""
