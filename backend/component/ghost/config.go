@@ -329,12 +329,12 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	}
 	if v := userFlags.cutoverLockTimeoutSeconds; v != nil {
 		if err := migrationContext.SetCutOverLockTimeoutSeconds(*v); err != nil {
-			return nil, errors.Wrapf(err, "failed to set cutover lock timeout %q", *v)
+			return nil, errors.Wrapf(err, "failed to set cutover lock timeout %d", *v)
 		}
 	}
 	if v := userFlags.exponentialBackoffMaxInterval; v != nil {
 		if err := migrationContext.SetExponentialBackoffMaxInterval(*v); err != nil {
-			return nil, errors.Wrapf(err, "failed to set exponential backoff max interval %q", *v)
+			return nil, errors.Wrapf(err, "failed to set exponential backoff max interval %d", *v)
 		}
 	}
 	if v := userFlags.maxLagMillis; v != nil {

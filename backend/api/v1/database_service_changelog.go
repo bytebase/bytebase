@@ -167,7 +167,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list changelogs"))
 	}
 	if changelog == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelogUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %d not found", changelogUID))
 	}
 
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
