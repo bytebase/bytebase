@@ -363,7 +363,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 	user := &UserMessage{
 		Email:        create.Email,
 		Name:         create.Name,
-		Type:         create.Type,
+		Type:         storepb.PrincipalType_END_USER,
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
 		CreatedAt:    create.CreatedAt,
