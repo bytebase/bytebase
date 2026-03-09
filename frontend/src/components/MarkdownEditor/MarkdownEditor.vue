@@ -233,6 +233,7 @@ onMounted(() => {
 });
 
 const keyboardHandler = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
   if (!contentTextArea.value) {
     return;
   }

@@ -203,7 +203,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		return nil, nil, errs.Errorf("principal %q not exists in the access token", claims.Subject)
 	}
 	if user.MemberDeleted {
-		return nil, nil, errs.Errorf("principal ID %q has been deactivated by administrators", user.ID)
+		return nil, nil, errs.Errorf("principal ID %d has been deactivated by administrators", user.ID)
 	}
 
 	return user, claims, nil

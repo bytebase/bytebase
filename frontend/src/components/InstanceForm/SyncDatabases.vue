@@ -170,6 +170,7 @@ watch(
 );
 
 const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.isComposing) return;
   const inputDatabase = state.inputDatabase.trim();
   if (!inputDatabase) {
     return;

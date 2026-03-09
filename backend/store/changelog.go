@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -50,7 +50,7 @@ type FindChangelogMessage struct {
 	Limit  *int
 	Offset *int
 
-	// If false, PrevSchema, Schema are truncated
+	// If false, Schema is omitted (empty string).
 	ShowFull       bool
 	HasSyncHistory bool
 }
@@ -128,16 +128,15 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 }
 
 func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) ([]*ChangelogMessage, error) {
-	truncateSize := 512
-	if common.IsDev() {
-		truncateSize = 4
-	}
-	shCurField := fmt.Sprintf("LEFT(sh_cur.raw_dump, %d)", truncateSize)
+	// Avoid SQL-level string functions (e.g. LEFT()) on raw_dump — the column may
+	// contain invalid UTF-8 from TiDB/OceanBase schema syncs (SQLSTATE 22021).
+	// BASIC view skips the column entirely; FULL view fetches it and sanitizes in Go.
+	schemaExpr := "''"
 	if find.ShowFull {
-		shCurField = "sh_cur.raw_dump"
+		schemaExpr = "COALESCE(sh_cur.raw_dump, '')"
 	}
 
-	q := qb.Q().Space(fmt.Sprintf(`
+	q := qb.Q().Space(`
 		SELECT
 			changelog.id,
 			changelog.created_at,
@@ -145,7 +144,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.db_name,
 			changelog.status,
 			changelog.sync_history_id,
-			COALESCE(%s, ''),
+			` + schemaExpr + `,
 			changelog.payload,
 			COALESCE(plan.name, '')
 		FROM changelog
@@ -157,9 +156,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		) task_info ON TRUE
 		LEFT JOIN plan ON plan.id = task_info.plan_id
 		WHERE TRUE
-	`,
-		shCurField,
-	))
+	`)
 
 	if v := find.UID; v != nil {
 		q.And("changelog.id = ?", *v)
@@ -226,6 +223,9 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, c.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal")
 		}
+
+		// Sanitize invalid UTF-8 from external database schema dumps (e.g. TiDB/OceanBase with non-UTF-8 Chinese text).
+		c.Schema = strings.ToValidUTF8(c.Schema, "")
 
 		changelogs = append(changelogs, &c)
 	}

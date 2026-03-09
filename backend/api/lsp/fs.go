@@ -51,15 +51,15 @@ func applyContentChanges(uri lsp.DocumentURI, content []byte, changes []lsp.Text
 		}
 		start, err := offsetForPosition(content, change.Range.Start)
 		if err != nil {
-			return nil, errors.Wrapf(err, "received textDocument/didChange for invalid position %q on %q", change.Range.Start, uri)
+			return nil, errors.Wrapf(err, "received textDocument/didChange for invalid position %v on %q", change.Range.Start, uri)
 		}
 
 		end, err := offsetForPosition(content, change.Range.End)
 		if err != nil {
-			return nil, errors.Wrapf(err, "received textDocument/didChange for invalid position %q on %q", change.Range.End, uri)
+			return nil, errors.Wrapf(err, "received textDocument/didChange for invalid position %v on %q", change.Range.End, uri)
 		}
 		if start < 0 || end > len(content) || start > end {
-			return nil, errors.Errorf("received textDocument/didChange for out of range position %q on %q", change.Range, uri)
+			return nil, errors.Errorf("received textDocument/didChange for out of range position %v on %q", change.Range, uri)
 		}
 
 		// Try avoid doing too many allocations, so use bytes.Buffer

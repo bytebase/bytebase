@@ -1031,19 +1031,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		slog.Error("failed to batch create issue comments", log.BBError(err))
 	}
 
-	// Create webhooks for each updated issue.
-	for _, issueUID := range issueUIDs {
-		updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &issueUID, ProjectID: &projectID})
-		if err != nil {
-			slog.Error("failed to get updated issue", "issueUID", issueUID, log.BBError(err))
-			continue
-		}
-		if updatedIssue == nil {
-			slog.Error("updated issue not found", "issueUID", issueUID)
-			continue
-		}
-	}
-
 	return connect.NewResponse(&v1pb.BatchUpdateIssuesStatusResponse{}), nil
 }
 
@@ -1144,11 +1131,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	_, _, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
+	_, parentIssueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q: %v", req.Msg.Parent, err))
+	}
+
+	_, commentIssueUID, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
 	}
-	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
+	if parentIssueUID != commentIssueUID {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment %q does not belong to parent %q", req.Msg.IssueComment.Name, req.Msg.Parent))
+	}
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID, IssueUID: &parentIssueUID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}
@@ -1168,7 +1163,6 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
 	}
-
 	update := &store.UpdateIssueCommentMessage{
 		UID: issueCommentUID,
 	}
