@@ -201,12 +201,13 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 }
 
 // isSequentialTask returns whether the task should be executed sequentially.
+// Only release-based DATABASE_MIGRATE tasks are sequential to ensure ordered
+// schema changes. Non-release migrations can run concurrently on the same database.
 func isSequentialTask(task *store.TaskMessage) bool {
 	//exhaustive:enforce
 	switch task.Type {
 	case storepb.Task_DATABASE_MIGRATE:
-		// All DATABASE_MIGRATE operations (DDL/GHOST) should be sequential
-		return true
+		return task.Payload.GetRelease() != ""
 	case storepb.Task_DATABASE_CREATE,
 		storepb.Task_DATABASE_EXPORT:
 		return false
