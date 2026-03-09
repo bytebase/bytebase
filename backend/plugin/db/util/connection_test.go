@@ -2,6 +2,7 @@
 package util
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -51,7 +52,7 @@ func TestGCPCredentialOption(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error containing %q, got nil", tc.wantErr)
 				}
-				if !contains(err.Error(), tc.wantErr) {
+				if !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("expected error containing %q, got %q", tc.wantErr, err.Error())
 				}
 				return
@@ -62,21 +63,6 @@ func TestGCPCredentialOption(t *testing.T) {
 			if got == nil {
 				t.Fatal("expected non-nil ClientOption")
 			}
-			// Verify the returned option is usable.
-			var _ = got
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && searchString(s, substr)
-}
-
-func searchString(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
