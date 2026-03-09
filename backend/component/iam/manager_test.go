@@ -15,6 +15,7 @@ func TestCheck(t *testing.T) {
 	testUser := &store.UserMessage{
 		ID:    123,
 		Email: "test@example.com",
+		Type:  storepb.PrincipalType_END_USER,
 	}
 
 	rolePermissions := make(map[string]map[permission.Permission]bool)
