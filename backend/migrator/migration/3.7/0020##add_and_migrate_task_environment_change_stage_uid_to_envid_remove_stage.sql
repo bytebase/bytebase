@@ -70,8 +70,10 @@ SET payload = jsonb_set(
     )
 )
 WHERE payload->'taskUpdate' IS NOT NULL
-  AND payload->'taskUpdate'->'tasks' IS NOT NULL
-  AND jsonb_array_length(payload->'taskUpdate'->'tasks') > 0;
+  AND jsonb_typeof(payload->'taskUpdate'->'tasks') = 'array'
+  AND CASE WHEN jsonb_typeof(payload->'taskUpdate'->'tasks') = 'array'
+           THEN jsonb_array_length(payload->'taskUpdate'->'tasks') > 0
+           ELSE false END;
 
 -- Update all issue_comment entries with task references in taskPriorBackup
 UPDATE issue_comment
