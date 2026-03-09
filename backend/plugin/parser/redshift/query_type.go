@@ -199,6 +199,11 @@ func (q *queryTypeListener) getStatementType(stmt parser.IStmtContext) base.Quer
 		return base.DML
 	}
 
+	// CALL stored procedure is DML
+	if stmt.Callstmt() != nil {
+		return base.DML
+	}
+
 	// Default to unknown for any unhandled statement types
 	return base.QueryTypeUnknown
 }

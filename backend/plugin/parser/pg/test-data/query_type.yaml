@@ -559,3 +559,15 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+- description: CALL stored procedure
+  statement: CALL my_procedure(1, 'test');
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []

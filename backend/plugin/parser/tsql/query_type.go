@@ -64,6 +64,10 @@ func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesC
 		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil || clause.Another_statement().Declare_statement() != nil {
 			return base.Select, nil
 		}
+		// EXECUTE stored procedure is DML.
+		if clause.Another_statement().Execute_statement() != nil {
+			return base.DML, nil
+		}
 		return base.QueryTypeUnknown, nil
 	case clause.Cfl_statement() != nil, clause.Dbcc_clause() != nil, clause.Backup_statement() != nil:
 		return base.QueryTypeUnknown, nil
@@ -77,6 +81,6 @@ func (*queryTypeListener) getQueryTypeForBatchLevelStatement(parser.IBatch_level
 }
 
 func (*queryTypeListener) getQueryTypeForExecuteBodyBatch(parser.IExecute_body_batchContext) (base.QueryType, error) {
-	// Call stored procedure or function. Do not detect the type for now.
-	return base.QueryTypeUnknown, nil
+	// Call stored procedure or function.
+	return base.DML, nil
 }
