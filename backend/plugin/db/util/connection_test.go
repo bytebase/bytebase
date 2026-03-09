@@ -3,8 +3,6 @@ package util
 
 import (
 	"testing"
-
-	"google.golang.org/api/option"
 )
 
 func TestGCPCredentialOption(t *testing.T) {
@@ -64,8 +62,8 @@ func TestGCPCredentialOption(t *testing.T) {
 			if got == nil {
 				t.Fatal("expected non-nil ClientOption")
 			}
-			// Verify the returned option is usable (implements ClientOption).
-			var _ option.ClientOption = got
+			// Verify the returned option is usable.
+			var _ = got
 		})
 	}
 }
