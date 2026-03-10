@@ -111,7 +111,7 @@ const columns = computed(
         hide: !props.allowEdit,
         disabled: (rowData: BindingRowData | UserRoleData) => {
           return (
-            rowData.type == "user" ||
+            rowData.type === "user" ||
             props.selectDisabled((rowData as BindingRowData).data)
           );
         },

@@ -394,7 +394,7 @@ const renderLabel = (value: string, index: number) => {
               <div
                 class="w-4 h-4 rounded-sm cursor-pointer relative"
                 style={{ backgroundColor: label.color }}
-              ></div>
+              />
             )}
             onUpdateValue={(color: string) => (label.color = color)}
           />

@@ -284,7 +284,7 @@ const stopReorder = () => {
 
 const orderChanged = computed(() => {
   for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-    if (state.reorderedEnvironmentList[i].id != environmentList.value[i].id) {
+    if (state.reorderedEnvironmentList[i].id !== environmentList.value[i].id) {
       return true;
     }
   }

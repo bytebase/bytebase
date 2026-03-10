@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
@@ -27,29 +27,39 @@
         "noUselessTypeConstraint": "error"
       },
       "correctness": {
+        "noConstantCondition": "error",
         "noEmptyPattern": "error",
+        "noPrecisionLoss": "error",
+        "noSelfAssign": "error",
+        "noUnsafeOptionalChaining": "error",
         "noUnusedVariables": "error",
         "noVueReservedKeys": "error",
         "noVueReservedProps": "error",
-        "noVueSetupPropsReactivityLoss": "error"
+        "noVueSetupPropsReactivityLoss": "error",
+        "useIsNan": "error",
+        "useValidForDirection": "error"
       },
       "nursery": {
         "noForIn": "error",
+        "noVueArrowFuncInWatch": "error",
         "noVueVIfWithVFor": "error",
         "useArraySortCompare": "error",
         "useFind": "error",
+        "useScopedStyles": "error",
         "useSpread": "error",
         "useVueConsistentVBindStyle": "error",
         "useVueConsistentVOnStyle": "error",
         "useVueHyphenatedAttributes": "error",
         "useVueValidTemplateRoot": "error",
         "useVueValidVBind": "error",
+        "useVueValidVCloak": "error",
         "useVueValidVElse": "error",
         "useVueValidVElseIf": "error",
         "useVueValidVHtml": "error",
         "useVueValidVIf": "error",
-        "useVueValidVOnce": "error",
         "useVueValidVOn": "error",
+        "useVueValidVOnce": "error",
+        "useVueValidVPre": "error",
         "useVueValidVText": "error",
         "useVueVForKey": "error"
       },
@@ -58,19 +68,26 @@
         "noNamespace": "error",
         "useArrayLiterals": "error",
         "useAsConstAssertion": "error",
-        "useBlockStatements": "off"
+        "useBlockStatements": "off",
+        "useExportType": "error",
+        "useSelfClosingElements": "error"
       },
       "suspicious": {
+        "noAsyncPromiseExecutor": "error",
         "noConsole": {
           "level": "error",
           "options": { "allow": ["warn", "error", "debug", "assert", "log"] }
         },
         "noDebugger": "error",
         "noDeprecatedImports": "error",
+        "noDoubleEquals": "error",
+        "noDuplicateCase": "error",
         "noExplicitAny": "error",
         "noExtraNonNullAssertion": "error",
+        "noGlobalIsNan": "error",
         "noMisleadingInstantiator": "error",
         "noNonNullAssertedOptionalChain": "error",
+        "noSparseArray": "error",
         "noUnsafeDeclarationMerging": "error",
         "useNamespaceKeyword": "error"
       }
@@ -225,6 +242,7 @@
         "rules": {
           "complexity": { "noArguments": "error" },
           "correctness": {
+            "noUnusedImports": "error",
             "noConstAssign": "off",
             "noGlobalObjectCalls": "off",
             "noInvalidBuiltinInstantiation": "off",

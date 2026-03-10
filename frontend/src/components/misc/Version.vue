@@ -118,7 +118,7 @@ const readableCurrentPlan = computed((): string => {
 
 const version = computed(() => {
   const v = actuatorStore.version;
-  if (v.split(".").length == 3) {
+  if (v.split(".").length === 3) {
     return `v${v}`;
   }
   return v;

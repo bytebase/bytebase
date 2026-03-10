@@ -57,7 +57,7 @@ function findNotification(
   const list = state.notificationByModule.get(filter.module);
   if (list && list.length > 0) {
     if (filter.id) {
-      return list.find((item) => item.id == filter.id);
+      return list.find((item) => item.id === filter.id);
     }
     return list[0];
   }

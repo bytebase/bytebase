@@ -206,7 +206,7 @@ const resolveStringExpr = (
   if (!callExpr)
     throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
   let operator = callExpr.function as StringOperator;
-  if (negative && operator == "contains") {
+  if (negative && operator === "contains") {
     operator = "@not_contains";
   }
   const factor = getFactorName(callExpr.target!);
@@ -227,7 +227,7 @@ const resolveCollectionExpr = (
   if (!callExpr)
     throw new Error(`Expected callExpr but got ${expr.exprKind?.case}`);
   let operator = callExpr.function as CollectionOperator;
-  if (negative && operator == "@in") {
+  if (negative && operator === "@in") {
     operator = "@not_in";
   }
   const [factorExpr, valuesExpr] = callExpr.args;
