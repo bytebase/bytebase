@@ -397,8 +397,6 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	resource := parent
-
 	policyType, err := convertV1PBToStorePBPolicyType(policy.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -419,7 +417,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 
 	create := &store.PolicyMessage{
 		ResourceType:      resourceType,
-		Resource:          resource,
+		Resource:          parent,
 		Payload:           payloadStr,
 		Type:              policyType,
 		InheritFromParent: policy.InheritFromParent,
