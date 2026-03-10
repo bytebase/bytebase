@@ -14,6 +14,7 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
 } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import { groupBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -151,7 +152,7 @@ export function useApprovalStep(
     await groupStore.batchGetOrFetchGroups(groupNames);
   });
 
-  // Get candidates for this approval step
+  // Get candidates for this approval step (only regular users, not service accounts or workload identities)
   const candidateEmails = computed(() => {
     const candidates: string[] = [];
     for (const role of stepRoles.value) {
@@ -159,7 +160,11 @@ export function useApprovalStep(
         project.value.name
       );
       const memberMap = memberMapToRolesInProjectIAM(policy, role);
-      candidates.push(...memberMap.keys());
+      for (const fullname of memberMap.keys()) {
+        if (fullname.startsWith(userNamePrefix)) {
+          candidates.push(fullname);
+        }
+      }
     }
     return uniq(candidates);
   });
