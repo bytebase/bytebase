@@ -8,6 +8,7 @@
   >
     <NButton
       quaternary
+      :size="isMdOrAbove?'medium':'small'"
       :class="
         orderBy
           ? 'text-accent! hover:text-accent'
@@ -18,7 +19,7 @@
       <template #icon>
         <ArrowUpDownIcon class="w-4 h-4" />
       </template>
-      {{ $t("issue.sort.sort") }}
+      <span v-if="isMdOrAbove">{{ $t("issue.sort.sort") }}</span>
     </NButton>
   </NDropdown>
 </template>
@@ -29,6 +30,7 @@ import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useWideScreen } from "@/composables/useWideScreen";
 
 const props = defineProps<{
   orderBy: string;
@@ -39,6 +41,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const isMdOrAbove = useWideScreen();
 const showDropdown = ref(false);
 
 const checkIcon = (value: string) => {

@@ -1,9 +1,8 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <!-- Advanced Search Bar - Always Visible -->
-    <div class="flex flex-row items-center gap-x-2">
+    <div class="flex items-center md:gap-2">
       <AdvancedSearch
-        class="flex-1"
+        class="flex-1 min-w-0"
         :params="params"
         :scope-options="scopeOptions"
         :default-params="defaultParams"
@@ -11,7 +10,6 @@
       />
       <TimeRange
         v-if="components.includes('time-range')"
-        v-model:show="showTimeRange"
         :params="params"
         v-bind="componentProps?.['time-range']"
         @update:params="$emit('update:params', $event)"
@@ -24,21 +22,16 @@
       <slot name="searchbox-suffix" />
     </div>
 
-    <slot name="default" />
-
-    <!-- Preset Buttons -->
     <PresetButtons
       v-if="components.includes('presets') && !componentProps?.presets?.hidden"
       :params="params"
       @update:params="$emit('update:params', $event)"
     />
-
-    <slot name="primary" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import TimeRange from "@/components/AdvancedSearch/TimeRange.vue";
 import type { SearchParams, SearchScopeId } from "@/utils";
@@ -53,7 +46,6 @@ const props = withDefaults(
   defineProps<{
     params: SearchParams;
     overrideScopeIdList?: SearchScopeId[];
-    autofocus?: boolean;
     components?: SearchComponent[];
     componentProps?: Partial<Record<SearchComponent, Record<string, unknown>>>;
     defaultParams?: SearchParams;
@@ -72,8 +64,6 @@ defineEmits<{
   (event: "update:params", params: SearchParams): void;
   (event: "update:orderBy", value: string): void;
 }>();
-
-const showTimeRange = ref(false);
 
 const allowedScopes = computed((): SearchScopeId[] => {
   if (props.overrideScopeIdList && props.overrideScopeIdList.length > 0) {

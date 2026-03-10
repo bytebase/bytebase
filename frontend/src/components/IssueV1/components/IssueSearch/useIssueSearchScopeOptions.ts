@@ -286,20 +286,7 @@ export const useIssueSearchScopeOptions = (
     return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
   });
 
-  // filteredScopeOptions will filter search options by chosen scope.
-  // For example, if users select a specific project, we should only allow them select instances related with this project.
-  const filteredScopeOptions = computed((): ScopeOption[] => {
-    const clone = fullScopeOptions.value.map((scope) => ({
-      ...scope,
-      options: scope.options?.map((option) => ({
-        ...option,
-      })),
-    }));
-
-    return clone;
-  });
-
-  return filteredScopeOptions;
+  return fullScopeOptions;
 };
 
 const renderSpan = (content: string) => {
