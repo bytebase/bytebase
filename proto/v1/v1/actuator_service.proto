@@ -8,7 +8,6 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
 import "v1/setting_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
