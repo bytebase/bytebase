@@ -302,15 +302,15 @@
       <div class="flex flex-col gap-y-2">
         <div class="flex items-center gap-x-2">
           <span class="text-sm text-control-light font-bold">{{ sampleFilePath }}</span>
-          <CopyButton :content="sampleSql" />
         </div>
-        <NInput
-          :value="sampleSql"
-          type="textarea"
-          readonly
-          :autosize="{ minRows: 5, maxRows: 15 }"
-          class="font-mono text-sm"
-        />
+        <div class="relative rounded-xs p-4 bg-gray-50">
+          <div class="absolute top-2 right-2 p-2">
+            <CopyButton size="medium" :content="sampleSql" />
+          </div>
+          <NConfigProvider :hljs="hljs">
+            <NCode language="sql" :code="sampleSql" />
+          </NConfigProvider>
+        </div>
       </div>
 
       <!-- Step-by-step instructions -->
@@ -378,7 +378,6 @@ import {
   NButton,
   NCode,
   NConfigProvider,
-  NInput,
   NSwitch,
   NTabPane,
   NTabs,

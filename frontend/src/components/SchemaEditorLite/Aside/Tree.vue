@@ -96,7 +96,7 @@
 <script lang="ts" setup>
 import { refDebounced, useElementSize } from "@vueuse/core";
 import { MD5 } from "crypto-js";
-import { cloneDeep, debounce, escape, head } from "lodash-es";
+import { cloneDeep, debounce, head } from "lodash-es";
 import { CopyIcon, MoreHorizontalIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
 import { NDropdown, NPerformantEllipsis, NTree } from "naive-ui";
@@ -559,10 +559,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     },
     () => [
       h("span", {
-        innerHTML: getHighlightHTMLByKeyWords(
-          escape(label),
-          escape(searchPattern.value)
-        ),
+        innerHTML: getHighlightHTMLByKeyWords(label, searchPattern.value),
       }),
     ]
   );

@@ -18,7 +18,6 @@
 
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
-import { escape } from "lodash-es";
 import { computed, h } from "vue";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
@@ -73,10 +72,6 @@ const optionName = computed(() => {
   const name = option.value?.label ?? "";
   const keyword = (props.keyword ?? "").trim();
 
-  return getHighlightHTMLByRegExp(
-    escape(name),
-    escape(keyword),
-    false /* !caseSensitive */
-  );
+  return getHighlightHTMLByRegExp(name, keyword, false /* !caseSensitive */);
 });
 </script>
