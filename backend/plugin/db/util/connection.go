@@ -3,6 +3,7 @@ package util
 
 import (
 	"context"
+	"encoding/json"
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/pkg/errors"
+	"google.golang.org/api/option"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -45,6 +47,36 @@ func GetGCPConnectionConfig(ctx context.Context, connCfg db.ConnectionConfig) (*
 		)
 	}
 	return cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
+}
+
+// GCPCredentialOption returns the appropriate option.ClientOption for the given
+// GCP credential JSON, supporting both service account keys and external account
+// (Workload Identity Federation) configurations.
+//
+// SECURITY NOTE: ExternalAccount and ImpersonatedServiceAccount credential types
+// do not validate the credential configuration. Malicious URLs in the config could
+// pose a security risk. See https://cloud.google.com/docs/authentication/external/externally-sourced-credentials.
+func GCPCredentialOption(credJSON []byte) (option.ClientOption, error) {
+	var cred struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(credJSON, &cred); err != nil {
+		return nil, errors.Wrap(err, "failed to parse GCP credential JSON")
+	}
+	switch cred.Type {
+	case "service_account":
+		return option.WithAuthCredentialsJSON(option.ServiceAccount, credJSON), nil
+	case "external_account":
+		return option.WithAuthCredentialsJSON(option.ExternalAccount, credJSON), nil
+	case "impersonated_service_account":
+		return option.WithAuthCredentialsJSON(option.ImpersonatedServiceAccount, credJSON), nil
+	case "authorized_user":
+		return option.WithAuthCredentialsJSON(option.AuthorizedUser, credJSON), nil
+	case "":
+		return nil, errors.Errorf("GCP credential JSON missing \"type\" field")
+	default:
+		return nil, errors.Errorf("unsupported GCP credential type: %q", cred.Type)
+	}
 }
 
 func GetAzureConnectionConfig(connCfg db.ConnectionConfig) (azcore.TokenCredential, error) {

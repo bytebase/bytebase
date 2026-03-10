@@ -71,7 +71,11 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 
 	var o []option.ClientOption
 	if gcpCredential := config.DataSource.GetGcpCredential(); gcpCredential != nil {
-		o = append(o, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(gcpCredential.Content)))
+		credOption, err := util.GCPCredentialOption([]byte(gcpCredential.Content))
+		if err != nil {
+			return nil, err
+		}
+		o = append(o, credOption)
 	}
 	if config.ConnectionContext.DatabaseName != "" {
 		d.databaseName = config.ConnectionContext.DatabaseName
