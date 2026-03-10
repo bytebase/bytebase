@@ -138,6 +138,7 @@ import type { Factor } from "@/plugins/cel";
 import {
   featureToRef,
   pushNotification,
+  useActuatorV1Store,
   usePolicyV1Store,
   useSettingV1Store,
 } from "@/store";
@@ -195,6 +196,7 @@ const state = reactive<LocalState>({
 });
 
 const policyStore = usePolicyV1Store();
+const actuatorStore = useActuatorV1Store();
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.updateMaskingRulePolicy");
 });
@@ -207,7 +209,7 @@ layout.mainContainerRef = useBodyLayoutContext().mainContainerRef;
 
 const updateList = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: "",
+    parentPath: actuatorStore.workspaceResourceName,
     policyType: PolicyType.MASKING_RULE,
   });
   if (!policy) {
@@ -354,7 +356,7 @@ const onPolicyUpsert = async () => {
   };
 
   await policyStore.upsertPolicy({
-    parentPath: "",
+    parentPath: actuatorStore.workspaceResourceName,
     policy: patch,
   });
 };

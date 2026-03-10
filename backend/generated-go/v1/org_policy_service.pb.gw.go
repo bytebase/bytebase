@@ -230,15 +230,24 @@ func local_request_OrgPolicyService_GetPolicy_4(ctx context.Context, marshaler r
 	return msg, metadata, err
 }
 
-var filter_OrgPolicyService_ListPolicies_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+var filter_OrgPolicyService_ListPolicies_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_OrgPolicyService_ListPolicies_0(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq ListPoliciesRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -254,7 +263,16 @@ func local_request_OrgPolicyService_ListPolicies_0(ctx context.Context, marshale
 	var (
 		protoReq ListPoliciesRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -477,18 +495,27 @@ func local_request_OrgPolicyService_ListPolicies_4(ctx context.Context, marshale
 	return msg, metadata, err
 }
 
-var filter_OrgPolicyService_CreatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+var filter_OrgPolicyService_CreatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 
 func request_OrgPolicyService_CreatePolicy_0(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq CreatePolicyRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -504,9 +531,18 @@ func local_request_OrgPolicyService_CreatePolicy_0(ctx context.Context, marshale
 	var (
 		protoReq CreatePolicyRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -1366,7 +1402,7 @@ func RegisterOrgPolicyServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/GetPolicy", runtime.WithHTTPPathPattern("/v1/{name=policies/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/GetPolicy", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*/policies/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1466,7 +1502,7 @@ func RegisterOrgPolicyServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/ListPolicies", runtime.WithHTTPPathPattern("/v1/policies"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/ListPolicies", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/policies"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1566,7 +1602,7 @@ func RegisterOrgPolicyServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/CreatePolicy", runtime.WithHTTPPathPattern("/v1/policies"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/CreatePolicy", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/policies"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1666,7 +1702,7 @@ func RegisterOrgPolicyServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/UpdatePolicy", runtime.WithHTTPPathPattern("/v1/{policy.name=policies/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/UpdatePolicy", runtime.WithHTTPPathPattern("/v1/{policy.name=workspaces/*/policies/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1766,7 +1802,7 @@ func RegisterOrgPolicyServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/DeletePolicy", runtime.WithHTTPPathPattern("/v1/{name=policies/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/DeletePolicy", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*/policies/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1904,7 +1940,7 @@ func RegisterOrgPolicyServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/GetPolicy", runtime.WithHTTPPathPattern("/v1/{name=policies/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/GetPolicy", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*/policies/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1989,7 +2025,7 @@ func RegisterOrgPolicyServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/ListPolicies", runtime.WithHTTPPathPattern("/v1/policies"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/ListPolicies", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/policies"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2074,7 +2110,7 @@ func RegisterOrgPolicyServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/CreatePolicy", runtime.WithHTTPPathPattern("/v1/policies"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/CreatePolicy", runtime.WithHTTPPathPattern("/v1/{parent=workspaces/*}/policies"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2159,7 +2195,7 @@ func RegisterOrgPolicyServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/UpdatePolicy", runtime.WithHTTPPathPattern("/v1/{policy.name=policies/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/UpdatePolicy", runtime.WithHTTPPathPattern("/v1/{policy.name=workspaces/*/policies/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2244,7 +2280,7 @@ func RegisterOrgPolicyServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/DeletePolicy", runtime.WithHTTPPathPattern("/v1/{name=policies/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.OrgPolicyService/DeletePolicy", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*/policies/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2329,27 +2365,27 @@ func RegisterOrgPolicyServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 }
 
 var (
-	pattern_OrgPolicyService_GetPolicy_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "policies", "name"}, ""))
+	pattern_OrgPolicyService_GetPolicy_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "workspaces", "policies", "name"}, ""))
 	pattern_OrgPolicyService_GetPolicy_1    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "policies", "name"}, ""))
 	pattern_OrgPolicyService_GetPolicy_2    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "environments", "policies", "name"}, ""))
 	pattern_OrgPolicyService_GetPolicy_3    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "policies", "name"}, ""))
 	pattern_OrgPolicyService_GetPolicy_4    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "policies", "name"}, ""))
-	pattern_OrgPolicyService_ListPolicies_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "policies"}, ""))
+	pattern_OrgPolicyService_ListPolicies_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "workspaces", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_ListPolicies_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_ListPolicies_2 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "environments", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_ListPolicies_3 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_ListPolicies_4 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "policies"}, ""))
-	pattern_OrgPolicyService_CreatePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "policies"}, ""))
+	pattern_OrgPolicyService_CreatePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "workspaces", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_CreatePolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_CreatePolicy_2 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "environments", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_CreatePolicy_3 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "instances", "parent", "policies"}, ""))
 	pattern_OrgPolicyService_CreatePolicy_4 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "policies"}, ""))
-	pattern_OrgPolicyService_UpdatePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "policies", "policy.name"}, ""))
+	pattern_OrgPolicyService_UpdatePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "workspaces", "policies", "policy.name"}, ""))
 	pattern_OrgPolicyService_UpdatePolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "policies", "policy.name"}, ""))
 	pattern_OrgPolicyService_UpdatePolicy_2 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "environments", "policies", "policy.name"}, ""))
 	pattern_OrgPolicyService_UpdatePolicy_3 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "policies", "policy.name"}, ""))
 	pattern_OrgPolicyService_UpdatePolicy_4 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "policies", "policy.name"}, ""))
-	pattern_OrgPolicyService_DeletePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "policies", "name"}, ""))
+	pattern_OrgPolicyService_DeletePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "workspaces", "policies", "name"}, ""))
 	pattern_OrgPolicyService_DeletePolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "policies", "name"}, ""))
 	pattern_OrgPolicyService_DeletePolicy_2 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "environments", "policies", "name"}, ""))
 	pattern_OrgPolicyService_DeletePolicy_3 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "policies", "name"}, ""))

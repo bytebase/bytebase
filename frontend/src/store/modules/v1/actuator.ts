@@ -19,6 +19,7 @@ import {
   STORAGE_KEY_RELEASE,
   semverCompare,
 } from "@/utils";
+import { workspaceNamePrefix } from "./common";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://docs.bytebase.com/get-started/self-host/external-url";
@@ -79,6 +80,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const isDocker = computed(() => serverInfo.value?.docker || false);
 
   const isSaaSMode = computed(() => serverInfo.value?.saas || false);
+
+  const workspaceResourceName = computed(
+    () => `${workspaceNamePrefix}${serverInfo.value?.workspaceId ?? ""}`
+  );
 
   const needAdminSetup = computed(
     () => serverInfo.value?.needAdminSetup || false
@@ -245,6 +250,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     isDemo,
     isDocker,
     isSaaSMode,
+    workspaceResourceName,
     needAdminSetup,
     needConfigureExternalUrl,
     hasNewRelease,

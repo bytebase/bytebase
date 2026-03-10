@@ -32,15 +32,29 @@ func generateEtag(t time.Time) string {
 	return fmt.Sprintf("%d", t.UnixMilli())
 }
 
+// GetWorkspaceResourceName returns the workspace resource name "workspaces/{id}".
+func (s *Store) GetWorkspaceResourceName(ctx context.Context) (string, error) {
+	systemSetting, err := s.GetSystemSetting(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get system setting")
+	}
+	return common.FormatWorkspace(systemSetting.WorkspaceId), nil
+}
+
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
+	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
+	if err != nil {
+		return nil, err
+	}
 	resourceType := storepb.Policy_WORKSPACE
 	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
+		Resource:     &workspaceResource,
 	})
 	if err != nil {
 		return nil, err
 	}
-	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, ""), policy)
+	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, workspaceResource), policy)
 	return policy, nil
 }
 
@@ -51,6 +65,11 @@ type PatchIamPolicyMessage struct {
 
 // PatchWorkspaceIamPolicy will set or remove the member for the workspace role.
 func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPolicyMessage) (*IamPolicyMessage, error) {
+	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, err
@@ -92,6 +111,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 
 	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
 		ResourceType:      storepb.Policy_WORKSPACE,
+		Resource:          workspaceResource,
 		Payload:           string(policyPayload),
 		Type:              storepb.Policy_IAM,
 		InheritFromParent: false,
@@ -102,7 +122,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	}
 
 	// Invalidate IAM policy cache after mutation.
-	s.iamPolicyCache.Remove(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, ""))
+	s.iamPolicyCache.Remove(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, workspaceResource))
 
 	return s.GetWorkspaceIamPolicy(ctx)
 }
@@ -123,7 +143,11 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*Iam
 
 // GetWorkspaceIamPolicySnapshot returns the workspace IAM policy with snapshot reads (with cache).
 func (s *Store) GetWorkspaceIamPolicySnapshot(ctx context.Context) (*IamPolicyMessage, error) {
-	key := getIamPolicyCacheKey(storepb.Policy_WORKSPACE, "")
+	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
+	if err != nil {
+		return nil, err
+	}
+	key := getIamPolicyCacheKey(storepb.Policy_WORKSPACE, workspaceResource)
 	if v, ok := s.iamPolicyCache.Get(key); ok {
 		return v, nil
 	}
@@ -225,7 +249,11 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 }
 
 func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, projectFullName string) (*EffectiveQueryDataPolicy, error) {
-	workspacePolicy, err := s.getQueryDataPolicy(ctx, "")
+	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
+	if err != nil {
+		return nil, err
+	}
+	workspacePolicy, err := s.getQueryDataPolicy(ctx, workspaceResource)
 	if err != nil {
 		return nil, err
 	}
@@ -364,9 +392,16 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType stor
 
 // GetMaskingRulePolicy will get the masking rule policy.
 func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRulePolicy, error) {
+	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resourceType := storepb.Policy_WORKSPACE
 	pType := storepb.Policy_MASKING_RULE
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
-		Type: &pType,
+		ResourceType: &resourceType,
+		Resource:     &workspaceResource,
+		Type:         &pType,
 	})
 	if err != nil {
 		return nil, err

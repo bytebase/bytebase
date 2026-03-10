@@ -18939,7 +18939,7 @@ Permissions required: bb.identityProviders.update</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource where this instance will be created.
-Workspace resource name: &#34;&#34;.
+Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
 Database resource name: instances/instance-id/databases/database-name. </p></td>
@@ -18982,7 +18982,7 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                   <td></td>
                   <td><p>The policy&#39;s `name` field is used to identify the instance to update.
 Format: {resource name}/policies/{policy type}
-Workspace resource name: &#34;&#34;.
+Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
 Database resource name: instances/instance-id/databases/database-name. </p></td>
@@ -19257,7 +19257,7 @@ resource.instance_id == &#34;sample-instance&#34; &amp;&amp; (resource.database_
                   <td></td>
                   <td><p>The name of the policy.
 Format: {resource name}/policies/{policy type}
-Workspace resource name: &#34;&#34;.
+Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
 Database resource name: instances/instance-id/databases/database-name. </p></td>
@@ -19492,7 +19492,7 @@ for example, the environment resource can have the sql review config tag, like &
 
 The policy&#39;s `name` field is used to identify the instance to update.
 Format: {resource name}/policies/{policy type}
-Workspace resource name: &#34;&#34;.
+Workspace resource name: workspaces/{workspace-id}.
 Environment resource name: environments/environment-id.
 Instance resource name: instances/instance-id.
 Database resource name: instances/instance-id/databases/database-name. </p></td>
@@ -19679,7 +19679,7 @@ Permissions required: bb.policies.delete</p></td>
               <tr>
                 <td>GetPolicy</td>
                 <td>GET</td>
-                <td>/v1/{name=policies/*}</td>
+                <td>/v1/{name=workspaces/*/policies/*}</td>
                 <td></td>
               </tr>
               
@@ -19717,7 +19717,7 @@ Permissions required: bb.policies.delete</p></td>
               <tr>
                 <td>ListPolicies</td>
                 <td>GET</td>
-                <td>/v1/policies</td>
+                <td>/v1/{parent=workspaces/*}/policies</td>
                 <td></td>
               </tr>
               
@@ -19755,7 +19755,7 @@ Permissions required: bb.policies.delete</p></td>
               <tr>
                 <td>CreatePolicy</td>
                 <td>POST</td>
-                <td>/v1/policies</td>
+                <td>/v1/{parent=workspaces/*}/policies</td>
                 <td>policy</td>
               </tr>
               
@@ -19793,7 +19793,7 @@ Permissions required: bb.policies.delete</p></td>
               <tr>
                 <td>UpdatePolicy</td>
                 <td>PATCH</td>
-                <td>/v1/{policy.name=policies/*}</td>
+                <td>/v1/{policy.name=workspaces/*/policies/*}</td>
                 <td>policy</td>
               </tr>
               
@@ -19831,7 +19831,7 @@ Permissions required: bb.policies.delete</p></td>
               <tr>
                 <td>DeletePolicy</td>
                 <td>DELETE</td>
-                <td>/v1/{name=policies/*}</td>
+                <td>/v1/{name=workspaces/*/policies/*}</td>
                 <td></td>
               </tr>
               

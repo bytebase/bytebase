@@ -358,7 +358,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if err != nil {
 		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if resource == nil && resourceType != storepb.Policy_WORKSPACE {
+	if resource == nil {
 		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("resource for %s must be specific", resourceType))
 	}
 

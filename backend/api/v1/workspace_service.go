@@ -73,9 +73,14 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal iam policy"))
 	}
+	workspaceResource, err := s.store.GetWorkspaceResourceName(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace resource name"))
+	}
 	payloadStr := string(payloadBytes)
 	patch := &store.UpdatePolicyMessage{
 		ResourceType: storepb.Policy_WORKSPACE,
+		Resource:     workspaceResource,
 		Type:         storepb.Policy_IAM,
 		Payload:      &payloadStr,
 	}

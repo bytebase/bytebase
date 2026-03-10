@@ -249,7 +249,7 @@ export const getReviewConfigId = (name: string) => {
 
 // The name of the policy.
 // Format: {resource name}/policies/{policy type}
-// Workspace resource name: "".
+// Workspace resource name: workspaces/{workspace-id}.
 // Environment resource name: environments/environment-id.
 // Instance resource name: instances/instance-id.
 // Database resource name: instances/instance-id/databases/database-name.

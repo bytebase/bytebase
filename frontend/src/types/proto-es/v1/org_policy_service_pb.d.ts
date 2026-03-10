@@ -18,7 +18,7 @@ export declare const file_v1_org_policy_service: GenFile;
 export declare type CreatePolicyRequest = Message<"bytebase.v1.CreatePolicyRequest"> & {
   /**
    * The parent resource where this instance will be created.
-   * Workspace resource name: "".
+   * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
@@ -57,7 +57,7 @@ export declare type UpdatePolicyRequest = Message<"bytebase.v1.UpdatePolicyReque
    *
    * The policy's `name` field is used to identify the instance to update.
    * Format: {resource name}/policies/{policy type}
-   * Workspace resource name: "".
+   * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
@@ -95,7 +95,7 @@ export declare type DeletePolicyRequest = Message<"bytebase.v1.DeletePolicyReque
   /**
    * The policy's `name` field is used to identify the instance to update.
    * Format: {resource name}/policies/{policy type}
-   * Workspace resource name: "".
+   * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
@@ -188,7 +188,7 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   /**
    * The name of the policy.
    * Format: {resource name}/policies/{policy type}
-   * Workspace resource name: "".
+   * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
    * Instance resource name: instances/instance-id.
    * Database resource name: instances/instance-id/databases/database-name.
