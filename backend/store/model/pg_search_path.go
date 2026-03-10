@@ -68,14 +68,13 @@ func parsePGSearchPathItem(token string) (PGSearchPathItem, bool) {
 		return PGSearchPathItem{}, false
 	}
 
-	schema := token
+	schema := strings.ToLower(token)
 	switch {
 	case len(token) >= 2 && token[0] == '"' && token[len(token)-1] == '"':
 		schema = strings.ReplaceAll(token[1:len(token)-1], `""`, `"`)
 	case len(token) >= 2 && token[0] == '\'' && token[len(token)-1] == '\'':
 		schema = strings.ReplaceAll(token[1:len(token)-1], `''`, `'`)
 	default:
-		schema = strings.ToLower(token)
 	}
 
 	if schema == "$user" {
@@ -111,6 +110,7 @@ func splitPGSearchPath(searchPath string) []string {
 		case searchPath[i] == ',':
 			parts = append(parts, searchPath[start:i])
 			start = i + 1
+		default:
 		}
 	}
 	parts = append(parts, searchPath[start:])

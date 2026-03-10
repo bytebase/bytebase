@@ -208,6 +208,7 @@ func (l *pgCatalogListener) EnterVariableresetstmt(ctx *parser.Variableresetstmt
 		l.session.searchPath = nil
 	case strings.EqualFold(name, "role"):
 		l.session.currentUser = l.session.sessionUser
+	default:
 	}
 }
 
