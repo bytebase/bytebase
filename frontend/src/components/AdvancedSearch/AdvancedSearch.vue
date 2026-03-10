@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="w-full relative">
+  <div ref="containerRef" class="w-full min-w-0 relative">
     <NInput
       ref="inputRef"
       v-bind="$attrs"
@@ -16,7 +16,7 @@
         >
           <div class="flex items-center gap-x-2">
             <FilterIcon class="w-4 h-4 text-control-placeholder" />
-            <span class="textinfolabel">
+            <span v-if="isMdOrAbove" class="textinfolabel">
               {{ $t("issue.advanced-search.filter") }}
             </span>
           </div>
@@ -89,6 +89,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useWideScreen } from "@/composables/useWideScreen";
 import { useCurrentUserV1 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
@@ -150,6 +151,7 @@ interface LocalState {
 
 const router = useRouter();
 const me = useCurrentUserV1();
+const isMdOrAbove = useWideScreen();
 
 const cachedQuery = useDynamicLocalStorage<string>(
   computed(() =>

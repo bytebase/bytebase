@@ -18,7 +18,7 @@
         <div
           id="bb-layout-main"
           ref="mainContainerRef"
-          class="md:min-w-0 flex-1 overflow-y-auto"
+          class="min-w-0 flex-1 overflow-y-auto"
         >
           <!-- Start main area-->
           <router-view name="content" />

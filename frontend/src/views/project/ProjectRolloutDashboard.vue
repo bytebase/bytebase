@@ -10,8 +10,9 @@
             class="flex-1"
             :scope-options="scopeOptions"
           />
-          <UpdatedTimeRange
+          <TimeRange
             :params="state.params"
+            scope="updated"
             @update:params="state.params = $event"
           />
         </div>
@@ -38,9 +39,8 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import AdvancedSearch from "@/components/AdvancedSearch";
+import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
-import UpdatedTimeRange from "@/components/AdvancedSearch/UpdatedTimeRange.vue";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { RolloutDataTable } from "@/components/RolloutV1";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
