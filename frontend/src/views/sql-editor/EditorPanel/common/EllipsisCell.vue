@@ -19,7 +19,6 @@
 </template>
 
 <script setup lang="ts">
-import { escape } from "lodash-es";
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { getHighlightHTMLByRegExp, type VueClass } from "@/utils";
@@ -38,13 +37,9 @@ const props = defineProps<{
 
 const html = computed(() => {
   const { content, keyword } = props;
-  const kw = (keyword ?? "").trim();
-  if (!kw) {
-    return escape(content);
-  }
   return getHighlightHTMLByRegExp(
-    escape(content),
-    escape(kw),
+    content,
+    (keyword ?? "").trim(),
     false /* !caseSensitive */
   );
 });
@@ -52,13 +47,9 @@ const html = computed(() => {
 const tooltipHTML = computed(() => {
   const { keyword, tooltip } = props;
   if (typeof tooltip === "string") {
-    const kw = (keyword ?? "").trim();
-    if (!kw) {
-      return escape(tooltip);
-    }
     return getHighlightHTMLByRegExp(
-      escape(tooltip),
-      escape(kw),
+      tooltip,
+      (keyword ?? "").trim(),
       false /* !caseSensitive */
     );
   }

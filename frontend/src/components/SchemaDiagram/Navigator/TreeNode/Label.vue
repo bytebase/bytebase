@@ -13,7 +13,6 @@
 </template>
 
 <script lang="ts" setup>
-import { escape } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { getHighlightHTMLByKeyWords } from "@/utils";
@@ -40,6 +39,6 @@ const text = computed(() => {
 });
 
 const html = computed(() => {
-  return getHighlightHTMLByKeyWords(escape(text.value), escape(props.keyword));
+  return getHighlightHTMLByKeyWords(text.value, props.keyword);
 });
 </script>

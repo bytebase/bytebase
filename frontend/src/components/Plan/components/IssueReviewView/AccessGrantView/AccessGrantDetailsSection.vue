@@ -41,12 +41,12 @@
         >
           {{ $t("sql-editor.unmask-warning") }}
         </BBAttention>
-        <div
-          class="max-h-[10em] overflow-auto border rounded-sm p-2 font-mono text-sm whitespace-pre-wrap"
-        >
-          {{ accessGrant.query }}
+        <div class="max-h-[30em] overflow-auto rounded-xs p-4 bg-gray-50">
+          <NConfigProvider :hljs="hljs">
+            <NCode language="sql" :code="accessGrant.query" />
+          </NConfigProvider>
         </div>
-        <NCheckbox :checked="accessGrant.unmask" :readonly="true">
+        <NCheckbox :checked="accessGrant.unmask" :disabled="true">
           <span class="text-base">
             {{ $t("sql-editor.access-type-unmask") }}
           </span>
@@ -80,7 +80,9 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import hljs from "highlight.js/lib/core";
+import { NCheckbox, NCode,
+  NConfigProvider, } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { BBAttention, BBSpin } from "@/bbkit";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";

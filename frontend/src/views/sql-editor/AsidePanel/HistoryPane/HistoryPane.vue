@@ -67,7 +67,6 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import dayjs from "dayjs";
-import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -140,9 +139,7 @@ watch(
 );
 
 const getFormattedStatement = (statement: string) => {
-  return state.search
-    ? getHighlightHTMLByKeyWords(escape(statement), escape(state.search))
-    : escape(statement);
+  return getHighlightHTMLByKeyWords(statement, state.search);
 };
 
 const titleOfQueryHistory = (history: QueryHistory) => {

@@ -52,7 +52,6 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
-import { escape } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { twMerge } from "tailwind-merge";
@@ -205,13 +204,9 @@ const html = computed(() => {
   if (!kw) {
     kw = props.keyword.trim();
   }
-  if (!kw) {
-    return escape(value);
-  }
-
   return getHighlightHTMLByRegExp(
     value,
-    escape(kw),
+    kw,
     false /* !caseSensitive */
   );
 });

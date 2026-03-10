@@ -5,7 +5,6 @@
 </template>
 
 <script lang="ts" setup>
-import { escape } from "lodash-es";
 import { computed } from "vue";
 import { getHighlightHTMLByRegExp } from "@/utils";
 
@@ -16,8 +15,8 @@ const props = defineProps<{
 
 const html = computed(() => {
   return getHighlightHTMLByRegExp(
-    escape(props.text),
-    escape(props.keyword?.trim() ?? ""),
+    props.text,
+    props.keyword?.trim() ?? "",
     false /* !caseSensitive */
   );
 });
