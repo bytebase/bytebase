@@ -637,4 +637,4 @@ VALUES (
 -- Initialize workspace IAM policy
 -- Grant workspace member role to allUsers
 INSERT INTO policy (resource_type, resource, type, payload, inherit_from_parent, enforce)
-VALUES ('WORKSPACE', '', 'IAM', '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);
+VALUES ('WORKSPACE', 'workspaces/' || (SELECT value->>'workspaceId' FROM setting WHERE name = 'SYSTEM'), 'IAM', '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);

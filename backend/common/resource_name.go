@@ -640,7 +640,11 @@ func FormatSpec(projectID string, planUID int64, specID string) string {
 
 func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resource, *string, error) {
 	if requestName == "" {
-		return storepb.Policy_WORKSPACE, nil, nil
+		return storepb.Policy_RESOURCE_UNSPECIFIED, nil, connect.NewError(connect.CodeInvalidArgument, errors.New("policy parent resource name must not be empty"))
+	}
+
+	if strings.HasPrefix(requestName, WorkspacePrefix) {
+		return storepb.Policy_WORKSPACE, &requestName, nil
 	}
 
 	if strings.HasPrefix(requestName, ProjectNamePrefix) {

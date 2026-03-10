@@ -19,7 +19,7 @@ service OrgPolicyService {
   // Permissions required: bb.policies.get
   rpc GetPolicy(GetPolicyRequest) returns (Policy) {
     option (google.api.http) = {
-      get: "/v1/{name=policies/*}"
+      get: "/v1/{name=workspaces/*/policies/*}"
 
       additional_bindings: {get: "/v1/{name=projects/*/policies/*}"}
       additional_bindings: {get: "/v1/{name=environments/*/policies/*}"}
@@ -35,7 +35,7 @@ service OrgPolicyService {
   // Permissions required: bb.policies.list
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
     option (google.api.http) = {
-      get: "/v1/policies"
+      get: "/v1/{parent=workspaces/*}/policies"
 
       additional_bindings: {get: "/v1/{parent=projects/*}/policies"}
       additional_bindings: {get: "/v1/{parent=environments/*}/policies"}
@@ -51,7 +51,7 @@ service OrgPolicyService {
   // Permissions required: bb.policies.create
   rpc CreatePolicy(CreatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
-      post: "/v1/policies"
+      post: "/v1/{parent=workspaces/*}/policies"
       body: "policy"
 
       additional_bindings: {
@@ -81,7 +81,7 @@ service OrgPolicyService {
   // Permissions required: bb.policies.update
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
     option (google.api.http) = {
-      patch: "/v1/{policy.name=policies/*}"
+      patch: "/v1/{policy.name=workspaces/*/policies/*}"
       body: "policy"
 
       additional_bindings: {
@@ -111,7 +111,7 @@ service OrgPolicyService {
   // Permissions required: bb.policies.delete
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/v1/{name=policies/*}"
+      delete: "/v1/{name=workspaces/*/policies/*}"
 
       additional_bindings: {delete: "/v1/{name=projects/*/policies/*}"}
       additional_bindings: {delete: "/v1/{name=environments/*/policies/*}"}
@@ -127,7 +127,7 @@ service OrgPolicyService {
 
 message CreatePolicyRequest {
   // The parent resource where this instance will be created.
-  // Workspace resource name: "".
+  // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.
@@ -148,7 +148,7 @@ message UpdatePolicyRequest {
   //
   // The policy's `name` field is used to identify the instance to update.
   // Format: {resource name}/policies/{policy type}
-  // Workspace resource name: "".
+  // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.
@@ -165,7 +165,7 @@ message UpdatePolicyRequest {
 message DeletePolicyRequest {
   // The policy's `name` field is used to identify the instance to update.
   // Format: {resource name}/policies/{policy type}
-  // Workspace resource name: "".
+  // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.
@@ -207,7 +207,7 @@ message ListPoliciesResponse {
 message Policy {
   option (google.api.resource) = {
     type: "bytebase.com/Policy"
-    pattern: "policies/{policy}"
+    pattern: "workspaces/{workspace}/policies/{policy}"
     pattern: "projects/{project}/policies/{policy}"
     pattern: "environments/{environment}/policies/{policy}"
     pattern: "instances/{instance}/policies/{policy}"
@@ -216,7 +216,7 @@ message Policy {
 
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
-  // Workspace resource name: "".
+  // Workspace resource name: workspaces/{workspace-id}.
   // Environment resource name: environments/environment-id.
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.

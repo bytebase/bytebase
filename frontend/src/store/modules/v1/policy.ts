@@ -21,6 +21,7 @@ import {
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { useActuatorV1Store } from "./actuator";
 import { useCurrentUserV1 } from "./auth";
 
 interface PolicyState {
@@ -231,13 +232,14 @@ export const usePolicyByParentAndType = (
 
 export const useQueryDataPolicy = (project: MaybeRef<string>) => {
   const store = usePolicyV1Store();
+  const actuatorStore = useActuatorV1Store();
   const ready = ref(false);
 
   watchEffect(() => {
     Promise.all([
       // Fetch workspace-level DATA_QUERY policies
       store.getOrFetchPolicyByParentAndType({
-        parentPath: "",
+        parentPath: actuatorStore.workspaceResourceName,
         policyType: PolicyType.DATA_QUERY,
       }),
       // Fetch project-level DATA_QUERY policies
@@ -250,7 +252,7 @@ export const useQueryDataPolicy = (project: MaybeRef<string>) => {
 
   const policy = computed(() => {
     const workspacePolicy = formatQueryDataPolicy(
-      store.getQueryDataPolicyByParent("")
+      store.getQueryDataPolicyByParent(actuatorStore.workspaceResourceName)
     );
     const projectPolicy = formatQueryDataPolicy(
       store.getQueryDataPolicyByParent(unref(project))

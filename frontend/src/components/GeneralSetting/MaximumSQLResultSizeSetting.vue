@@ -103,6 +103,7 @@ import {
   usePolicyV1Store,
   useProjectV1Store,
   useSettingV1Store,
+  workspaceNamePrefix,
 } from "@/store";
 import {
   PolicyResourceType,
@@ -123,7 +124,9 @@ const policyV1Store = usePolicyV1Store();
 const settingV1Store = useSettingV1Store();
 const projectStore = useProjectV1Store();
 
-const isWorkspace = computed(() => props.resource === "");
+const isWorkspace = computed(() =>
+  props.resource.startsWith(workspaceNamePrefix)
+);
 const project = computed(() =>
   isWorkspace.value ? undefined : projectStore.getProjectByName(props.resource)
 );
@@ -165,7 +168,9 @@ const updateChange = async () => {
       parentPath: props.resource,
       policy: {
         type: PolicyType.DATA_QUERY,
-        resourceType: PolicyResourceType.WORKSPACE,
+        resourceType: isWorkspace.value
+          ? PolicyResourceType.WORKSPACE
+          : PolicyResourceType.PROJECT,
         policy: {
           case: "queryDataPolicy",
           value: create(QueryDataPolicySchema, {

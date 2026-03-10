@@ -11,7 +11,7 @@
     <div class="flex-1 lg:px-4 flex flex-col gap-y-6">
       <QueryDataPolicySetting
         ref="queryDataPolicySettingRef"
-        resource=""
+        :resource="actuatorStore.workspaceResourceName"
       />
     </div>
   </div>
@@ -19,7 +19,10 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
+import { useActuatorV1Store } from "@/store";
 import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
+
+const actuatorStore = useActuatorV1Store();
 
 const props = defineProps<{
   title: string;

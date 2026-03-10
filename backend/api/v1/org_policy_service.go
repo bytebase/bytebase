@@ -358,7 +358,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if err != nil {
 		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if resource == nil && resourceType != storepb.Policy_WORKSPACE {
+	if resource == nil {
 		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("resource for %s must be specific", resourceType))
 	}
 
@@ -397,6 +397,8 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	resource := parent
+
 	policyType, err := convertV1PBToStorePBPolicyType(policy.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -417,7 +419,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 
 	create := &store.PolicyMessage{
 		ResourceType:      resourceType,
-		Resource:          parent,
+		Resource:          resource,
 		Payload:           payloadStr,
 		Type:              policyType,
 		InheritFromParent: policy.InheritFromParent,
