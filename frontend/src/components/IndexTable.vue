@@ -84,7 +84,7 @@ const sectionList = computed(() => {
   const sections: { title: string; list: IndexMetadata[] }[] = [];
 
   for (const index of props.indexList) {
-    const item = sections.find((item) => item.title == index.name);
+    const item = sections.find((item) => item.title === index.name);
     if (item) {
       item.list.push(index);
     } else {

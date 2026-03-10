@@ -305,7 +305,7 @@ const renderColorPicker = () => {
           style={{
             backgroundColor: state.value.environment.color || "#4f46e5",
           }}
-        ></div>
+        />
       )}
       onComplete={(color: string) => {
         if (color.toUpperCase() === "#FFFFFF") {

@@ -476,7 +476,7 @@ const createWebhook = () => {
     const createdWebhook = updatedProject.webhooks.find((wh) => {
       return (
         wh.title === webhook.title &&
-        wh.type == webhook.type &&
+        wh.type === webhook.type &&
         wh.url === webhook.url
       );
     });

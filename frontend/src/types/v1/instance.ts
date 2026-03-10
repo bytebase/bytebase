@@ -119,8 +119,8 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
 
 export function isPostgresFamily(type: Engine): boolean {
   return (
-    type == Engine.POSTGRES ||
-    type == Engine.REDSHIFT ||
-    type == Engine.COCKROACHDB
+    type === Engine.POSTGRES ||
+    type === Engine.REDSHIFT ||
+    type === Engine.COCKROACHDB
   );
 }
