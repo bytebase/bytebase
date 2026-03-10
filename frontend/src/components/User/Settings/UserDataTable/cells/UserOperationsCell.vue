@@ -24,7 +24,7 @@
       v-if="allowViewUser"
       @click="(e) => $emit('user-selected', user, e)"
     >
-      <PencilIcon v-if="user.userType === UserType.WORKLOAD_IDENTITY || user.userType ===  UserType.SERVICE_ACCOUNT" />
+      <PencilIcon v-if="accountType === AccountType.WORKLOAD_IDENTITY || accountType === AccountType.SERVICE_ACCOUNT" />
       <EyeIcon v-else />
     </MiniActionButton>
 
@@ -63,8 +63,9 @@ import {
   useWorkloadIdentityStore,
   workloadIdentityToUser,
 } from "@/store";
+import { AccountType, getAccountTypeByEmail } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -82,11 +83,13 @@ const workloadIdentityStore = useWorkloadIdentityStore();
 const { t } = useI18n();
 const me = useCurrentUserV1();
 
+const accountType = computed(() => getAccountTypeByEmail(props.user.email));
+
 const allowView = computed(() => {
-  switch (props.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
+  switch (accountType.value) {
+    case AccountType.SERVICE_ACCOUNT:
       return hasWorkspacePermissionV2("bb.serviceAccounts.get");
-    case UserType.WORKLOAD_IDENTITY:
+    case AccountType.WORKLOAD_IDENTITY:
       return hasWorkspacePermissionV2("bb.workloadIdentities.get");
     default:
       return hasWorkspacePermissionV2("bb.users.get");
@@ -94,10 +97,10 @@ const allowView = computed(() => {
 });
 
 const allowDelete = computed(() => {
-  switch (props.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
+  switch (accountType.value) {
+    case AccountType.SERVICE_ACCOUNT:
       return hasWorkspacePermissionV2("bb.serviceAccounts.delete");
-    case UserType.WORKLOAD_IDENTITY:
+    case AccountType.WORKLOAD_IDENTITY:
       return hasWorkspacePermissionV2("bb.workloadIdentities.delete");
     default:
       return hasWorkspacePermissionV2("bb.users.delete");
@@ -105,10 +108,10 @@ const allowDelete = computed(() => {
 });
 
 const allowUndelete = computed(() => {
-  switch (props.user.userType) {
-    case UserType.SERVICE_ACCOUNT:
+  switch (accountType.value) {
+    case AccountType.SERVICE_ACCOUNT:
       return hasWorkspacePermissionV2("bb.serviceAccounts.undelete");
-    case UserType.WORKLOAD_IDENTITY:
+    case AccountType.WORKLOAD_IDENTITY:
       return hasWorkspacePermissionV2("bb.workloadIdentities.undelete");
     default:
       return hasWorkspacePermissionV2("bb.users.undelete");
@@ -137,12 +140,12 @@ const allowReactiveUser = computed(() => {
 
 const archiveUser = async (user: User): Promise<User> => {
   const fullname = getUserFullNameByType(user);
-  switch (user.userType) {
-    case UserType.SERVICE_ACCOUNT: {
+  switch (getAccountTypeByEmail(user.email)) {
+    case AccountType.SERVICE_ACCOUNT: {
       await serviceAccountStore.deleteServiceAccount(fullname);
       break;
     }
-    case UserType.WORKLOAD_IDENTITY: {
+    case AccountType.WORKLOAD_IDENTITY: {
       await workloadIdentityStore.deleteWorkloadIdentity(fullname);
       break;
     }
@@ -158,12 +161,12 @@ const archiveUser = async (user: User): Promise<User> => {
 
 const restoreUser = async (user: User): Promise<User> => {
   const fullname = getUserFullNameByType(user);
-  switch (user.userType) {
-    case UserType.SERVICE_ACCOUNT: {
+  switch (getAccountTypeByEmail(user.email)) {
+    case AccountType.SERVICE_ACCOUNT: {
       const sa = await serviceAccountStore.undeleteServiceAccount(fullname);
       return serviceAccountToUser(sa);
     }
-    case UserType.WORKLOAD_IDENTITY: {
+    case AccountType.WORKLOAD_IDENTITY: {
       const wi = await workloadIdentityStore.undeleteWorkloadIdentity(fullname);
       return workloadIdentityToUser(wi);
     }

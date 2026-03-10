@@ -15,12 +15,7 @@ import {
   UndeleteServiceAccountRequestSchema,
   UpdateServiceAccountRequestSchema,
 } from "@/types/proto-es/v1/service_account_service_pb";
-import {
-  type User,
-  UserSchema,
-  UserType,
-} from "@/types/proto-es/v1/user_service_pb";
-import { useActuatorV1Store } from "./v1/actuator";
+import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { extractServiceAccountId, serviceAccountNamePrefix } from "./v1/common";
 
 export interface AccountFilter {
@@ -46,7 +41,6 @@ export const ensureServiceAccountFullName = (identifier: string) => {
 };
 
 export const useServiceAccountStore = defineStore("serviceAccount", () => {
-  const actuatorStore = useActuatorV1Store();
   const cacheByName = ref<Map<string, ServiceAccount>>(new Map());
 
   const listServiceAccounts = async ({
@@ -121,13 +115,6 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.createServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-    ]);
     return sa;
   };
 
@@ -157,18 +144,6 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     if (sa) {
       sa.state = State.DELETED;
     }
-    actuatorStore.updateUserStat([
-      {
-        count: -1,
-        state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-      {
-        count: 1,
-        state: State.DELETED,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-    ]);
   };
 
   const undeleteServiceAccount = async (name: string) => {
@@ -178,18 +153,6 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     const sa =
       await serviceAccountServiceClientConnect.undeleteServiceAccount(request);
     cacheByName.value.set(sa.name, sa);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-      {
-        count: -1,
-        state: State.DELETED,
-        userType: UserType.SERVICE_ACCOUNT,
-      },
-    ]);
     return sa;
   };
 
@@ -210,7 +173,6 @@ export const serviceAccountToUser = (sa: ServiceAccount): User => {
     email: sa.email,
     title: sa.title,
     state: sa.state,
-    userType: UserType.SERVICE_ACCOUNT,
     serviceKey: sa.serviceKey,
   });
 };

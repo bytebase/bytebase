@@ -6,8 +6,6 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import type { Message } from "@bufbuild/protobuf";
 import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { UserType } from "./user_service_pb";
-import type { State } from "./common_pb";
 
 /**
  * Describes the file v1/actuator_service.proto.
@@ -221,11 +219,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   docker: boolean;
 
   /**
-   * Statistics about users in the system.
+   * The number of activated users.
    *
-   * @generated from field: repeated bytebase.v1.ActuatorInfo.StatUser user_stats = 19;
+   * @generated from field: int32 activated_user_count = 19;
    */
-  userStats: ActuatorInfo_StatUser[];
+  activatedUserCount: number;
 
   /**
    * The number of activated database instances.
@@ -273,40 +271,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
  * Use `create(ActuatorInfoSchema)` to create a new message.
  */
 export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
-
-/**
- * User statistics by type and state.
- *
- * @generated from message bytebase.v1.ActuatorInfo.StatUser
- */
-export declare type ActuatorInfo_StatUser = Message<"bytebase.v1.ActuatorInfo.StatUser"> & {
-  /**
-   * The type of user.
-   *
-   * @generated from field: bytebase.v1.UserType user_type = 1;
-   */
-  userType: UserType;
-
-  /**
-   * The state of the user.
-   *
-   * @generated from field: bytebase.v1.State state = 2;
-   */
-  state: State;
-
-  /**
-   * The count of users matching this type and state.
-   *
-   * @generated from field: int32 count = 3;
-   */
-  count: number;
-};
-
-/**
- * Describes the message bytebase.v1.ActuatorInfo.StatUser.
- * Use `create(ActuatorInfo_StatUserSchema)` to create a new message.
- */
-export declare const ActuatorInfo_StatUserSchema: GenMessage<ActuatorInfo_StatUser>;
 
 /**
  * ActuatorService manages system health and operational information.

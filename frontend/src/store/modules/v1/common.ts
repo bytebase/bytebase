@@ -1,6 +1,7 @@
 import { UNKNOWN_ID } from "@/types/const";
 import type { ResourceId } from "@/types/id";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 
 export const workspaceNamePrefix = "workspaces/";
 export const userNamePrefix = "users/";
@@ -31,10 +32,10 @@ export const serviceAccountNamePrefix = "serviceAccounts/";
 export const workloadIdentityNamePrefix = "workloadIdentities/";
 
 export const getUserFullNameByType = (user: User): string => {
-  switch (user.userType) {
-    case UserType.SERVICE_ACCOUNT:
+  switch (getAccountTypeByEmail(user.email)) {
+    case AccountType.SERVICE_ACCOUNT:
       return `${serviceAccountNamePrefix}${user.email}`;
-    case UserType.WORKLOAD_IDENTITY:
+    case AccountType.WORKLOAD_IDENTITY:
       return `${workloadIdentityNamePrefix}${user.email}`;
     default:
       return `${userNamePrefix}${user.email}`;

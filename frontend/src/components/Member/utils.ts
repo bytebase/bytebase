@@ -22,11 +22,7 @@ import {
 } from "@/types";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import {
-  type User,
-  UserSchema,
-  UserType,
-} from "@/types/proto-es/v1/user_service_pb";
+import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { convertMemberToFullname } from "@/utils";
 import type { GroupBinding, MemberBinding } from "./types";
 
@@ -84,7 +80,6 @@ const getMemberBinding = (
           title: email,
           name: fullname,
           email: email,
-          userType: UserType.USER,
         });
       }
     }

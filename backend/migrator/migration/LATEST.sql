@@ -33,7 +33,6 @@ CREATE TABLE principal (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
-    type text NOT NULL CHECK (type IN ('END_USER', 'SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY')),
     name text NOT NULL,
     email text NOT NULL,
     password_hash text NOT NULL,
@@ -41,18 +40,35 @@ CREATE TABLE principal (
     -- Stored as MFAConfig (proto/store/store/user.proto)
     mfa_config jsonb NOT NULL DEFAULT '{}',
     -- Stored as UserProfile (proto/store/store/user.proto)
-    profile jsonb NOT NULL DEFAULT '{}',
-    -- project references the owning project for SERVICE_ACCOUNT and WORKLOAD_IDENTITY.
-    -- NULL for END_USER/SYSTEM_BOT, and for workspace-level SERVICE_ACCOUNT/WORKLOAD_IDENTITY.
-    project text REFERENCES project(resource_id),
-    CONSTRAINT principal_project_type_check CHECK (
-        (type = 'END_USER' AND project IS NULL) OR
-        (type IN ('SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY'))
-    )
+    profile jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_principal_unique_email ON principal(email);
-CREATE INDEX idx_principal_project ON principal(project) WHERE project IS NOT NULL;
+
+-- service_account
+CREATE TABLE service_account (
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
+    service_key_hash text NOT NULL,
+    project text REFERENCES project(resource_id)
+);
+
+CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
+
+-- workload_identity
+CREATE TABLE workload_identity (
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
+    project text REFERENCES project(resource_id),
+    -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
+    config jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
 
 -- Setting
 CREATE TABLE setting (
@@ -187,7 +203,7 @@ CREATE TABLE sheet_blob (
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -198,6 +214,7 @@ CREATE TABLE plan (
 );
 
 CREATE INDEX idx_plan_project ON plan(project);
+CREATE INDEX idx_plan_creator ON plan(creator);
 CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
@@ -247,7 +264,7 @@ ALTER SEQUENCE task_id_seq RESTART WITH 101;
 -- task run table stores the task run
 CREATE TABLE task_run (
     id serial PRIMARY KEY,
-    creator text REFERENCES principal(email) ON UPDATE CASCADE ON DELETE SET NULL,
+    creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     task_id integer NOT NULL REFERENCES task(id),
@@ -300,7 +317,7 @@ ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 -- issue
 CREATE TABLE issue (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -357,7 +374,7 @@ ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
     id bigserial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     issue_id integer NOT NULL REFERENCES issue(id),
@@ -371,7 +388,7 @@ ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
 CREATE TABLE query_history (
     id bigserial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     project_id text NOT NULL, -- the project resource id
     database text NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
@@ -390,7 +407,7 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -412,7 +429,7 @@ ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 CREATE TABLE worksheet_organizer (
     id serial PRIMARY KEY,
     worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
-    principal text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    principal text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -470,7 +487,7 @@ CREATE TABLE revision (
     instance text NOT NULL,
     db_name text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    deleter text REFERENCES principal(email) ON UPDATE CASCADE,
+    deleter text,
     deleted_at timestamptz,
     version text NOT NULL,
     -- Stored as RevisionPayload (proto/store/store/revision.proto)
@@ -520,7 +537,7 @@ CREATE TABLE release (
     deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
     release_id text NOT NULL DEFAULT '',
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     train text NOT NULL DEFAULT '',
     iteration integer NOT NULL DEFAULT 0,
@@ -578,7 +595,7 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 CREATE TABLE access_grant (
     id text PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    creator text NOT NULL,
     status text NOT NULL DEFAULT 'PENDING',
     expire_time timestamptz,
     -- Stored as AccessGrantPayload (proto/store/store/access_grant.proto)

@@ -225,9 +225,6 @@ func (x *User) Equal(y *User) bool {
 	if x.Title != y.Title {
 		return false
 	}
-	if x.UserType != y.UserType {
-		return false
-	}
 	if x.Password != y.Password {
 		return false
 	}
@@ -264,36 +261,6 @@ func (x *User) Equal(y *User) bool {
 		if x.Groups[i] != y.Groups[i] {
 			return false
 		}
-	}
-	if !x.WorkloadIdentityConfig.Equal(y.WorkloadIdentityConfig) {
-		return false
-	}
-	return true
-}
-
-func (x *WorkloadIdentityConfig) Equal(y *WorkloadIdentityConfig) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.ProviderType != y.ProviderType {
-		return false
-	}
-	if x.IssuerUrl != y.IssuerUrl {
-		return false
-	}
-	if len(x.AllowedAudiences) != len(y.AllowedAudiences) {
-		return false
-	}
-	for i := 0; i < len(x.AllowedAudiences); i++ {
-		if x.AllowedAudiences[i] != y.AllowedAudiences[i] {
-			return false
-		}
-	}
-	if x.SubjectPattern != y.SubjectPattern {
-		return false
 	}
 	return true
 }

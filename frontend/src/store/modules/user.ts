@@ -25,7 +25,6 @@ import {
   ListUsersRequestSchema,
   UndeleteUserRequestSchema,
   UpdateUserRequestSchema,
-  UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
 import { useActuatorV1Store } from "./v1/actuator";
@@ -123,13 +122,7 @@ export const useUserStore = defineStore("user", () => {
       user: user,
     });
     const response = await userServiceClientConnect.createUser(request);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.USER,
-      },
-    ]);
+    actuatorStore.updateUserStat(1);
     return setUser(response);
   };
 
@@ -180,18 +173,7 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     await userServiceClientConnect.deleteUser(request);
-    actuatorStore.updateUserStat([
-      {
-        count: -1,
-        state: State.ACTIVE,
-        userType: UserType.USER,
-      },
-      {
-        count: 1,
-        state: State.DELETED,
-        userType: UserType.USER,
-      },
-    ]);
+    actuatorStore.updateUserStat(-1);
 
     const user = userMapByName.value.get(name);
     if (user) {
@@ -204,18 +186,7 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     const response = await userServiceClientConnect.undeleteUser(request);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: UserType.USER,
-      },
-      {
-        count: -1,
-        state: State.DELETED,
-        userType: UserType.USER,
-      },
-    ]);
+    actuatorStore.updateUserStat(1);
     return setUser(response);
   };
 

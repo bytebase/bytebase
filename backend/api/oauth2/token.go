@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"encoding/base64"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -211,7 +212,7 @@ func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage
 	// Generate access token (JWT)
 	accessToken, err := auth.GenerateOAuth2AccessToken(userEmail, client.ClientID, s.secret, accessTokenExpiry)
 	if err != nil {
-		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate access token")
+		return oauth2Error(c, http.StatusInternalServerError, "server_error", fmt.Sprintf("failed to generate access token with error: %v", err))
 	}
 
 	now := time.Now()

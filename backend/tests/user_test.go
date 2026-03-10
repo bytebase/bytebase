@@ -28,7 +28,6 @@ func TestDeleteUser(t *testing.T) {
 	memberResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Title:    "member",
-			UserType: v1pb.UserType_USER,
 			Email:    "member@bytebase.com",
 			Password: "1024bytebase",
 		},
@@ -158,7 +157,6 @@ func TestUpdateUserEmail(t *testing.T) {
 	userResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Title:    "temp-user",
-			UserType: v1pb.UserType_USER,
 			Email:    originalEmail,
 			Password: "1024bytebase",
 		},

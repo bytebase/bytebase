@@ -24,7 +24,6 @@ import {
   Issue_Approver_Status,
   RequestIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   displayRoleTitle,
   ensureUserFullName,
@@ -203,15 +202,15 @@ export function useApprovalStep(
     const users = await userStore.batchGetOrFetchUsers(
       filteredCandidateEmails.value.map(ensureUserFullName)
     );
-    return (
-      users.filter((user) => {
+    return users
+      .filter((user) => {
         return user && user.state === State.ACTIVE;
-      }) as UserType[]
-    ).sort((a, b) => {
-      if (a.email === currentUserEmail.value) return -1;
-      if (b.email === currentUserEmail.value) return 1;
-      return a.title.localeCompare(b.title);
-    });
+      })
+      .sort((a, b) => {
+        if (a.email === currentUserEmail.value) return -1;
+        if (b.email === currentUserEmail.value) return 1;
+        return a.title.localeCompare(b.title);
+      });
   }, []);
 
   return {

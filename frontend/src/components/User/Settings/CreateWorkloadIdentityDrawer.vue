@@ -343,21 +343,19 @@ import {
   useProjectV1Store,
   useWorkloadIdentityStore,
   useWorkspaceV1Store,
-  workloadIdentityToUser,
 } from "@/store";
 import {
   getWorkloadIdentityNameInBinding,
   getWorkloadIdentitySuffix,
-  unknownUser,
 } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
+import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
-  UserSchema,
   WorkloadIdentityConfig_ProviderType,
   WorkloadIdentityConfigSchema,
-} from "@/types/proto-es/v1/user_service_pb";
+  WorkloadIdentitySchema,
+} from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   getWorkloadIdentityProviderText,
   parseWorkloadIdentitySubjectPattern,
@@ -378,20 +376,20 @@ interface WifState {
 
 interface LocalState {
   isRequesting: boolean;
-  workloadIdentity: User;
+  workloadIdentity: WorkloadIdentity;
   roles: string[];
   wif: WifState;
 }
 
 const props = defineProps<{
-  workloadIdentity?: User;
+  workloadIdentity?: WorkloadIdentity;
   project?: string;
 }>();
 
 const emit = defineEmits<{
   (event: "close"): void;
-  (event: "created", user: User): void;
-  (event: "updated", user: User): void;
+  (event: "created", wi: WorkloadIdentity): void;
+  (event: "updated", wi: WorkloadIdentity): void;
 }>();
 
 const { t } = useI18n();
@@ -402,7 +400,7 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 
 const state = reactive<LocalState>({
   isRequesting: false,
-  workloadIdentity: unknownUser(),
+  workloadIdentity: create(WorkloadIdentitySchema),
   roles: props.project ? [] : [PresetRoleType.WORKSPACE_MEMBER],
   wif: {
     emailPrefix: "",
@@ -435,9 +433,7 @@ const emailSuffix = computed(() =>
 );
 
 const isEditMode = computed(
-  () =>
-    !!props.workloadIdentity &&
-    props.workloadIdentity.name !== unknownUser().name
+  () => !!props.workloadIdentity && !!props.workloadIdentity.email
 );
 
 watch(
@@ -446,7 +442,11 @@ watch(
     if (!wi) {
       return;
     }
-    state.workloadIdentity = cloneDeep(create(UserSchema, wi));
+    state.workloadIdentity = create(WorkloadIdentitySchema, {
+      email: wi.email,
+      title: wi.title,
+      state: wi.state,
+    });
 
     const config = wi.workloadIdentityConfig;
     if (config) {
@@ -456,9 +456,7 @@ watch(
       state.wif.audience = config.allowedAudiences[0] || "";
       state.wif.subjectPattern = config.subjectPattern;
 
-      const parsed = parseWorkloadIdentitySubjectPattern(
-        state.workloadIdentity
-      );
+      const parsed = parseWorkloadIdentitySubjectPattern(wi);
       if (parsed) {
         state.wif.owner = parsed.owner;
         state.wif.repo = parsed.repo;
@@ -682,25 +680,24 @@ const createWorkloadIdentity = async () => {
     },
     parent.value
   );
-  const createdUser = workloadIdentityToUser(wi);
 
   if (state.roles.length > 0) {
     if (projectEntity.value) {
       await updateProjectIamPolicyForMember(
         projectEntity.value.name,
-        getWorkloadIdentityNameInBinding(createdUser.email),
+        getWorkloadIdentityNameInBinding(wi.email),
         state.roles
       );
     } else {
       await workspaceStore.patchIamPolicy([
         {
-          member: getWorkloadIdentityNameInBinding(createdUser.email),
+          member: getWorkloadIdentityNameInBinding(wi.email),
           roles: state.roles,
         },
       ]);
     }
   }
-  emit("created", createdUser);
+  emit("created", wi);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -720,8 +717,6 @@ const updateWorkloadIdentity = async () => {
     updateMask.push("title");
   }
 
-  let updatedUser: User = wi;
-
   const updated = await workloadIdentityStore.updateWorkloadIdentity(
     {
       name: ensureWorkloadIdentityFullName(wi.email),
@@ -737,8 +732,7 @@ const updateWorkloadIdentity = async () => {
       paths: [...updateMask, "workload_identity_config"],
     })
   );
-  updatedUser = workloadIdentityToUser(updated);
-  emit("updated", updatedUser);
+  emit("updated", updated);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

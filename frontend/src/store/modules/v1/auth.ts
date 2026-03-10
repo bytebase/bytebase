@@ -25,7 +25,6 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   CreateUserRequestSchema,
   UserSchema,
-  UserType,
 } from "@/types/proto-es/v1/user_service_pb";
 import { storageKeyResetPassword } from "@/utils";
 import { extractUserEmail } from "./common";
@@ -156,7 +155,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
       email: request.email,
       title: request.name,
       password: request.password,
-      userType: UserType.USER,
     });
     const createRequest = create(CreateUserRequestSchema, {
       user: user,

@@ -103,7 +103,7 @@
             </dd>
           </div>
 
-          <div v-if="user.userType === UserType.USER" class="sm:col-span-1">
+          <div v-if="getAccountTypeByEmail(user.email) === AccountType.USER" class="sm:col-span-1">
             <dt class="text-sm font-medium text-control-light">
               {{ $t("settings.profile.phone") }}
             </dt>
@@ -259,18 +259,16 @@ import {
   useWorkspaceV1Store,
 } from "@/store";
 import {
+  AccountType,
   ALL_USERS_USER_EMAIL,
-  getUserTypeByEmail,
+  getAccountTypeByEmail,
   isValidUserName,
   unknownUser,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import {
-  UpdateUserRequestSchema,
-  UserType,
-} from "@/types/proto-es/v1/user_service_pb";
+import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import {
   displayRoleTitle,
   hasWorkspacePermissionV2,
@@ -312,8 +310,8 @@ const state = reactive<LocalState>({
 
 onBeforeMount(() => {
   if (props.principalEmail) {
-    const userType = getUserTypeByEmail(props.principalEmail);
-    if (userType !== UserType.USER) {
+    const userType = getAccountTypeByEmail(props.principalEmail);
+    if (userType !== AccountType.USER) {
       router.replace({
         name: WORKSPACE_ROUTE_404,
       });
@@ -393,7 +391,7 @@ const allowGet = computed(
 const allowEdit = computed(() => {
   if (
     user.value.email === ALL_USERS_USER_EMAIL ||
-    user.value.userType !== UserType.USER
+    getAccountTypeByEmail(user.value.email) !== AccountType.USER
   ) {
     return false;
   }

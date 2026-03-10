@@ -91,12 +91,11 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash service key"))
 	}
 
-	// Create the service account with password hash
 	createdSA, err := s.store.CreateServiceAccount(ctx, &store.CreateServiceAccountMessage{
-		Email:        email,
-		Name:         sa.Title,
-		PasswordHash: string(passwordHash),
-		Project:      projectID,
+		Email:          email,
+		Name:           sa.Title,
+		ServiceKeyHash: string(passwordHash),
+		Project:        projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create service account"))
@@ -239,7 +238,7 @@ func (s *ServiceAccountService) UpdateServiceAccount(ctx context.Context, reques
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash service key"))
 			}
 			passwordHashStr := string(passwordHash)
-			patch.PasswordHash = &passwordHashStr
+			patch.ServiceKeyHash = &passwordHashStr
 		default:
 			// Ignore unknown fields
 		}

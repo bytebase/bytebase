@@ -492,10 +492,9 @@ func redactUser(r *v1pb.User) *v1pb.User {
 		return nil
 	}
 	return &v1pb.User{
-		Name:     r.Name,
-		Email:    r.Email,
-		Title:    r.Title,
-		UserType: r.UserType,
+		Name:  r.Name,
+		Email: r.Email,
+		Title: r.Title,
 	}
 }
 

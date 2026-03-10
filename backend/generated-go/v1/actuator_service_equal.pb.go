@@ -75,25 +75,6 @@ func (x *Restriction) Equal(y *Restriction) bool {
 	return true
 }
 
-func (x *ActuatorInfo_StatUser) Equal(y *ActuatorInfo_StatUser) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.UserType != y.UserType {
-		return false
-	}
-	if x.State != y.State {
-		return false
-	}
-	if x.Count != y.Count {
-		return false
-	}
-	return true
-}
-
 func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x == y {
 		return true
@@ -145,13 +126,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.Docker != y.Docker {
 		return false
 	}
-	if len(x.UserStats) != len(y.UserStats) {
+	if x.ActivatedUserCount != y.ActivatedUserCount {
 		return false
-	}
-	for i := 0; i < len(x.UserStats); i++ {
-		if !x.UserStats[i].Equal(y.UserStats[i]) {
-			return false
-		}
 	}
 	if x.ActivatedInstanceCount != y.ActivatedInstanceCount {
 		return false

@@ -46,10 +46,10 @@ import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 
 const props = defineProps<{
-  users: UserType[];
+  users: User[];
 }>();
 
 const { t } = useI18n();

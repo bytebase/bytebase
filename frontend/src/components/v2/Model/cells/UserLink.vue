@@ -20,8 +20,7 @@
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { getUserTypeByEmail } from "@/types";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
+import { AccountType, getAccountTypeByEmail } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = withDefaults(
@@ -37,7 +36,7 @@ const props = withDefaults(
 );
 
 const isEndUser = computed(
-  () => getUserTypeByEmail(props.email) === UserType.USER
+  () => getAccountTypeByEmail(props.email) === AccountType.USER
 );
 
 const isLink = computed(

@@ -26,6 +26,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ProviderType identifies the CI/CD platform.
+type WorkloadIdentityConfig_ProviderType int32
+
+const (
+	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
+	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
+	WorkloadIdentityConfig_GITLAB                    WorkloadIdentityConfig_ProviderType = 2
+)
+
+// Enum value maps for WorkloadIdentityConfig_ProviderType.
+var (
+	WorkloadIdentityConfig_ProviderType_name = map[int32]string{
+		0: "PROVIDER_TYPE_UNSPECIFIED",
+		1: "GITHUB",
+		2: "GITLAB",
+	}
+	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
+		"PROVIDER_TYPE_UNSPECIFIED": 0,
+		"GITHUB":                    1,
+		"GITLAB":                    2,
+	}
+)
+
+func (x WorkloadIdentityConfig_ProviderType) Enum() *WorkloadIdentityConfig_ProviderType {
+	p := new(WorkloadIdentityConfig_ProviderType)
+	*p = x
+	return p
+}
+
+func (x WorkloadIdentityConfig_ProviderType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkloadIdentityConfig_ProviderType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_workload_identity_service_proto_enumTypes[0].Descriptor()
+}
+
+func (WorkloadIdentityConfig_ProviderType) Type() protoreflect.EnumType {
+	return &file_v1_workload_identity_service_proto_enumTypes[0]
+}
+
+func (x WorkloadIdentityConfig_ProviderType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig_ProviderType.Descriptor instead.
+func (WorkloadIdentityConfig_ProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{1, 0}
+}
+
 // WorkloadIdentity represents an external CI/CD workload identity.
 type WorkloadIdentity struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -120,6 +170,79 @@ func (x *WorkloadIdentity) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
 	return nil
 }
 
+// WorkloadIdentityConfig for API layer
+type WorkloadIdentityConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Platform type (currently only GITHUB is supported)
+	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.v1.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
+	// OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
+	// Allowed audiences for token validation
+	AllowedAudiences []string `protobuf:"bytes,3,rep,name=allowed_audiences,json=allowedAudiences,proto3" json:"allowed_audiences,omitempty"`
+	// Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+	SubjectPattern string `protobuf:"bytes,4,opt,name=subject_pattern,json=subjectPattern,proto3" json:"subject_pattern,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *WorkloadIdentityConfig) Reset() {
+	*x = WorkloadIdentityConfig{}
+	mi := &file_v1_workload_identity_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkloadIdentityConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkloadIdentityConfig) ProtoMessage() {}
+
+func (x *WorkloadIdentityConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_workload_identity_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig.ProtoReflect.Descriptor instead.
+func (*WorkloadIdentityConfig) Descriptor() ([]byte, []int) {
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *WorkloadIdentityConfig) GetProviderType() WorkloadIdentityConfig_ProviderType {
+	if x != nil {
+		return x.ProviderType
+	}
+	return WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED
+}
+
+func (x *WorkloadIdentityConfig) GetIssuerUrl() string {
+	if x != nil {
+		return x.IssuerUrl
+	}
+	return ""
+}
+
+func (x *WorkloadIdentityConfig) GetAllowedAudiences() []string {
+	if x != nil {
+		return x.AllowedAudiences
+	}
+	return nil
+}
+
+func (x *WorkloadIdentityConfig) GetSubjectPattern() string {
+	if x != nil {
+		return x.SubjectPattern
+	}
+	return ""
+}
+
 // Request message for creating a workload identity.
 type CreateWorkloadIdentityRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -138,7 +261,7 @@ type CreateWorkloadIdentityRequest struct {
 
 func (x *CreateWorkloadIdentityRequest) Reset() {
 	*x = CreateWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[1]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +273,7 @@ func (x *CreateWorkloadIdentityRequest) String() string {
 func (*CreateWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *CreateWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[1]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +286,7 @@ func (x *CreateWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*CreateWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{1}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreateWorkloadIdentityRequest) GetParent() string {
@@ -199,7 +322,7 @@ type GetWorkloadIdentityRequest struct {
 
 func (x *GetWorkloadIdentityRequest) Reset() {
 	*x = GetWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[2]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -211,7 +334,7 @@ func (x *GetWorkloadIdentityRequest) String() string {
 func (*GetWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *GetWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[2]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -224,7 +347,7 @@ func (x *GetWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*GetWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetWorkloadIdentityRequest) GetName() string {
@@ -274,7 +397,7 @@ type ListWorkloadIdentitiesRequest struct {
 
 func (x *ListWorkloadIdentitiesRequest) Reset() {
 	*x = ListWorkloadIdentitiesRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -286,7 +409,7 @@ func (x *ListWorkloadIdentitiesRequest) String() string {
 func (*ListWorkloadIdentitiesRequest) ProtoMessage() {}
 
 func (x *ListWorkloadIdentitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[3]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +422,7 @@ func (x *ListWorkloadIdentitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkloadIdentitiesRequest.ProtoReflect.Descriptor instead.
 func (*ListWorkloadIdentitiesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListWorkloadIdentitiesRequest) GetParent() string {
@@ -351,7 +474,7 @@ type ListWorkloadIdentitiesResponse struct {
 
 func (x *ListWorkloadIdentitiesResponse) Reset() {
 	*x = ListWorkloadIdentitiesResponse{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -363,7 +486,7 @@ func (x *ListWorkloadIdentitiesResponse) String() string {
 func (*ListWorkloadIdentitiesResponse) ProtoMessage() {}
 
 func (x *ListWorkloadIdentitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[4]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -376,7 +499,7 @@ func (x *ListWorkloadIdentitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkloadIdentitiesResponse.ProtoReflect.Descriptor instead.
 func (*ListWorkloadIdentitiesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListWorkloadIdentitiesResponse) GetWorkloadIdentities() []*WorkloadIdentity {
@@ -410,7 +533,7 @@ type UpdateWorkloadIdentityRequest struct {
 
 func (x *UpdateWorkloadIdentityRequest) Reset() {
 	*x = UpdateWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -422,7 +545,7 @@ func (x *UpdateWorkloadIdentityRequest) String() string {
 func (*UpdateWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *UpdateWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[5]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -435,7 +558,7 @@ func (x *UpdateWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateWorkloadIdentityRequest) GetWorkloadIdentity() *WorkloadIdentity {
@@ -464,7 +587,7 @@ type DeleteWorkloadIdentityRequest struct {
 
 func (x *DeleteWorkloadIdentityRequest) Reset() {
 	*x = DeleteWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -476,7 +599,7 @@ func (x *DeleteWorkloadIdentityRequest) String() string {
 func (*DeleteWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *DeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[6]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +612,7 @@ func (x *DeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*DeleteWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteWorkloadIdentityRequest) GetName() string {
@@ -511,7 +634,7 @@ type UndeleteWorkloadIdentityRequest struct {
 
 func (x *UndeleteWorkloadIdentityRequest) Reset() {
 	*x = UndeleteWorkloadIdentityRequest{}
-	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -523,7 +646,7 @@ func (x *UndeleteWorkloadIdentityRequest) String() string {
 func (*UndeleteWorkloadIdentityRequest) ProtoMessage() {}
 
 func (x *UndeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workload_identity_service_proto_msgTypes[7]
+	mi := &file_v1_workload_identity_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -536,7 +659,7 @@ func (x *UndeleteWorkloadIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UndeleteWorkloadIdentityRequest.ProtoReflect.Descriptor instead.
 func (*UndeleteWorkloadIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_workload_identity_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UndeleteWorkloadIdentityRequest) GetName() string {
@@ -550,7 +673,7 @@ var File_v1_workload_identity_service_proto protoreflect.FileDescriptor
 
 const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\n" +
-	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/user_service.proto\"\xf1\x02\n" +
+	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xf1\x02\n" +
 	"\x10WorkloadIdentity\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -559,7 +682,19 @@ const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12]\n" +
 	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig:>\xeaA;\n" +
-	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xda\x01\n" +
+	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xab\x02\n" +
+	"\x16WorkloadIdentityConfig\x12U\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
+	"\n" +
+	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
+	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"E\n" +
+	"\fProviderType\x12\x1d\n" +
+	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06GITHUB\x10\x01\x12\n" +
+	"\n" +
+	"\x06GITLAB\x10\x02\"\xda\x01\n" +
 	"\x1dCreateWorkloadIdentityRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x125\n" +
@@ -610,47 +745,50 @@ func file_v1_workload_identity_service_proto_rawDescGZIP() []byte {
 	return file_v1_workload_identity_service_proto_rawDescData
 }
 
-var file_v1_workload_identity_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_workload_identity_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_workload_identity_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_v1_workload_identity_service_proto_goTypes = []any{
-	(*WorkloadIdentity)(nil),                // 0: bytebase.v1.WorkloadIdentity
-	(*CreateWorkloadIdentityRequest)(nil),   // 1: bytebase.v1.CreateWorkloadIdentityRequest
-	(*GetWorkloadIdentityRequest)(nil),      // 2: bytebase.v1.GetWorkloadIdentityRequest
-	(*ListWorkloadIdentitiesRequest)(nil),   // 3: bytebase.v1.ListWorkloadIdentitiesRequest
-	(*ListWorkloadIdentitiesResponse)(nil),  // 4: bytebase.v1.ListWorkloadIdentitiesResponse
-	(*UpdateWorkloadIdentityRequest)(nil),   // 5: bytebase.v1.UpdateWorkloadIdentityRequest
-	(*DeleteWorkloadIdentityRequest)(nil),   // 6: bytebase.v1.DeleteWorkloadIdentityRequest
-	(*UndeleteWorkloadIdentityRequest)(nil), // 7: bytebase.v1.UndeleteWorkloadIdentityRequest
-	(State)(0),                              // 8: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),           // 9: google.protobuf.Timestamp
-	(*WorkloadIdentityConfig)(nil),          // 10: bytebase.v1.WorkloadIdentityConfig
-	(*fieldmaskpb.FieldMask)(nil),           // 11: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),                   // 12: google.protobuf.Empty
+	(WorkloadIdentityConfig_ProviderType)(0), // 0: bytebase.v1.WorkloadIdentityConfig.ProviderType
+	(*WorkloadIdentity)(nil),                 // 1: bytebase.v1.WorkloadIdentity
+	(*WorkloadIdentityConfig)(nil),           // 2: bytebase.v1.WorkloadIdentityConfig
+	(*CreateWorkloadIdentityRequest)(nil),    // 3: bytebase.v1.CreateWorkloadIdentityRequest
+	(*GetWorkloadIdentityRequest)(nil),       // 4: bytebase.v1.GetWorkloadIdentityRequest
+	(*ListWorkloadIdentitiesRequest)(nil),    // 5: bytebase.v1.ListWorkloadIdentitiesRequest
+	(*ListWorkloadIdentitiesResponse)(nil),   // 6: bytebase.v1.ListWorkloadIdentitiesResponse
+	(*UpdateWorkloadIdentityRequest)(nil),    // 7: bytebase.v1.UpdateWorkloadIdentityRequest
+	(*DeleteWorkloadIdentityRequest)(nil),    // 8: bytebase.v1.DeleteWorkloadIdentityRequest
+	(*UndeleteWorkloadIdentityRequest)(nil),  // 9: bytebase.v1.UndeleteWorkloadIdentityRequest
+	(State)(0),                               // 10: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),            // 11: google.protobuf.Timestamp
+	(*fieldmaskpb.FieldMask)(nil),            // 12: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),                    // 13: google.protobuf.Empty
 }
 var file_v1_workload_identity_service_proto_depIdxs = []int32{
-	8,  // 0: bytebase.v1.WorkloadIdentity.state:type_name -> bytebase.v1.State
-	9,  // 1: bytebase.v1.WorkloadIdentity.create_time:type_name -> google.protobuf.Timestamp
-	10, // 2: bytebase.v1.WorkloadIdentity.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
-	0,  // 3: bytebase.v1.CreateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
-	0,  // 4: bytebase.v1.ListWorkloadIdentitiesResponse.workload_identities:type_name -> bytebase.v1.WorkloadIdentity
-	0,  // 5: bytebase.v1.UpdateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
-	11, // 6: bytebase.v1.UpdateWorkloadIdentityRequest.update_mask:type_name -> google.protobuf.FieldMask
-	1,  // 7: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:input_type -> bytebase.v1.CreateWorkloadIdentityRequest
-	2,  // 8: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:input_type -> bytebase.v1.GetWorkloadIdentityRequest
-	3,  // 9: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:input_type -> bytebase.v1.ListWorkloadIdentitiesRequest
-	5,  // 10: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:input_type -> bytebase.v1.UpdateWorkloadIdentityRequest
-	6,  // 11: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:input_type -> bytebase.v1.DeleteWorkloadIdentityRequest
-	7,  // 12: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:input_type -> bytebase.v1.UndeleteWorkloadIdentityRequest
-	0,  // 13: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	0,  // 14: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	4,  // 15: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:output_type -> bytebase.v1.ListWorkloadIdentitiesResponse
-	0,  // 16: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	12, // 17: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:output_type -> google.protobuf.Empty
-	0,  // 18: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
-	13, // [13:19] is the sub-list for method output_type
-	7,  // [7:13] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	10, // 0: bytebase.v1.WorkloadIdentity.state:type_name -> bytebase.v1.State
+	11, // 1: bytebase.v1.WorkloadIdentity.create_time:type_name -> google.protobuf.Timestamp
+	2,  // 2: bytebase.v1.WorkloadIdentity.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
+	0,  // 3: bytebase.v1.WorkloadIdentityConfig.provider_type:type_name -> bytebase.v1.WorkloadIdentityConfig.ProviderType
+	1,  // 4: bytebase.v1.CreateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
+	1,  // 5: bytebase.v1.ListWorkloadIdentitiesResponse.workload_identities:type_name -> bytebase.v1.WorkloadIdentity
+	1,  // 6: bytebase.v1.UpdateWorkloadIdentityRequest.workload_identity:type_name -> bytebase.v1.WorkloadIdentity
+	12, // 7: bytebase.v1.UpdateWorkloadIdentityRequest.update_mask:type_name -> google.protobuf.FieldMask
+	3,  // 8: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:input_type -> bytebase.v1.CreateWorkloadIdentityRequest
+	4,  // 9: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:input_type -> bytebase.v1.GetWorkloadIdentityRequest
+	5,  // 10: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:input_type -> bytebase.v1.ListWorkloadIdentitiesRequest
+	7,  // 11: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:input_type -> bytebase.v1.UpdateWorkloadIdentityRequest
+	8,  // 12: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:input_type -> bytebase.v1.DeleteWorkloadIdentityRequest
+	9,  // 13: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:input_type -> bytebase.v1.UndeleteWorkloadIdentityRequest
+	1,  // 14: bytebase.v1.WorkloadIdentityService.CreateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	1,  // 15: bytebase.v1.WorkloadIdentityService.GetWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	6,  // 16: bytebase.v1.WorkloadIdentityService.ListWorkloadIdentities:output_type -> bytebase.v1.ListWorkloadIdentitiesResponse
+	1,  // 17: bytebase.v1.WorkloadIdentityService.UpdateWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	13, // 18: bytebase.v1.WorkloadIdentityService.DeleteWorkloadIdentity:output_type -> google.protobuf.Empty
+	1,  // 19: bytebase.v1.WorkloadIdentityService.UndeleteWorkloadIdentity:output_type -> bytebase.v1.WorkloadIdentity
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_workload_identity_service_proto_init() }
@@ -660,19 +798,19 @@ func file_v1_workload_identity_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_user_service_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_workload_identity_service_proto_rawDesc), len(file_v1_workload_identity_service_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   8,
+			NumEnums:      1,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_v1_workload_identity_service_proto_goTypes,
 		DependencyIndexes: file_v1_workload_identity_service_proto_depIdxs,
+		EnumInfos:         file_v1_workload_identity_service_proto_enumTypes,
 		MessageInfos:      file_v1_workload_identity_service_proto_msgTypes,
 	}.Build()
 	File_v1_workload_identity_service_proto = out.File

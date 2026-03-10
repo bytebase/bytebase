@@ -4,9 +4,6 @@
       <div class="flex items-center gap-x-2">
         <p class="text-lg font-medium leading-7 text-main">
           <span>{{ $t("settings.members.workload-identities") }}</span>
-          <span v-if="showCount" class="ml-1 font-normal text-control-light">
-            ({{ activeWorkloadIdentityCount }})
-          </span>
         </p>
       </div>
 
@@ -93,8 +90,8 @@
         state.editingWorkloadIdentity = undefined;
       }
     "
-    @created="handleWorkloadIdentityUpdated"
-    @updated="handleWorkloadIdentityUpdated"
+    @created="wi => handleWorkloadIdentityUpdated(workloadIdentityToUser(wi))"
+    @updated="wi => handleWorkloadIdentityUpdated(workloadIdentityToUser(wi))"
   />
 </template>
 
@@ -107,20 +104,20 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useActuatorV1Store, useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import {
   useWorkloadIdentityStore,
   workloadIdentityToUser,
 } from "@/store/modules/workloadIdentity";
-import { isValidProjectName, unknownUser } from "@/types";
+import { isValidProjectName } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 
 type LocalState = {
   showInactiveList: boolean;
   showCreateDrawer: boolean;
-  editingWorkloadIdentity?: User;
+  editingWorkloadIdentity?: WorkloadIdentity;
 };
 
 const state = reactive<LocalState>({
@@ -129,7 +126,6 @@ const state = reactive<LocalState>({
 });
 
 const workloadIdentityStore = useWorkloadIdentityStore();
-const actuatorStore = useActuatorV1Store();
 const workloadIdentityPagedTable =
   ref<ComponentExposed<typeof PagedTable<User>>>();
 const deletedWorkloadIdentityPagedTable =
@@ -141,8 +137,6 @@ const project = computed(() =>
     ? currentProject.value
     : undefined
 );
-
-const showCount = computed(() => !project.value);
 
 const sessionKey = computed(
   () =>
@@ -200,24 +194,15 @@ const fetchInactiveWorkloadIdentityList = async ({
   return { list: users, nextPageToken: response.nextPageToken };
 };
 
-const activeWorkloadIdentityCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [UserType.WORKLOAD_IDENTITY],
-  });
-});
-
 const handleCreateWorkloadIdentity = () => {
-  state.editingWorkloadIdentity = {
-    ...unknownUser(),
-    userType: UserType.WORKLOAD_IDENTITY,
-    title: "",
-  };
+  state.editingWorkloadIdentity = undefined;
   state.showCreateDrawer = true;
 };
 
 const handleWorkloadIdentitySelected = (user: User) => {
-  state.editingWorkloadIdentity = user;
+  // Look up the original WorkloadIdentity from the store to get the config
+  const wi = workloadIdentityStore.getWorkloadIdentity(user.email);
+  state.editingWorkloadIdentity = wi;
   state.showCreateDrawer = true;
 };
 

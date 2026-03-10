@@ -110,7 +110,7 @@
                 type="primary"
                 class="capitalize"
                 :disabled="slotProps.disabled"
-                @click="() => handleCreateUser(UserType.USER)"
+                @click="handleCreateUser"
               >
                 <template #icon>
                   <PlusIcon class="h-5 w-5" />
@@ -292,7 +292,7 @@ import { unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
@@ -443,20 +443,13 @@ onMounted(async () => {
 });
 
 const activeUserCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [UserType.USER],
-  });
+  return actuatorStore.activeUserCount;
 });
 
 const remainingUserCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionV1Store.userCountLimit -
-      actuatorStore.countUser({
-        state: State.ACTIVE,
-        userTypes: [UserType.USER],
-      })
+    subscriptionV1Store.userCountLimit - actuatorStore.activeUserCount
   );
 });
 
@@ -501,10 +494,9 @@ const handleGroupRemoved = (group: Group) => {
   groupPagedTable.value?.removeCache(group);
 };
 
-const handleCreateUser = (userType: UserType) => {
+const handleCreateUser = () => {
   state.editingUser = {
     ...unknownUser(),
-    userType,
     title: "",
   };
   state.showCreateUserDrawer = true;

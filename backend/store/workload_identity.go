@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -16,7 +15,6 @@ import (
 
 // WorkloadIdentityMessage is the message for a workload identity.
 type WorkloadIdentityMessage struct {
-	ID int
 	// Email must be lower case, format: {name}@{project-id}.workload.bytebase.com or {name}@workload.bytebase.com
 	Email         string
 	Name          string
@@ -25,13 +23,10 @@ type WorkloadIdentityMessage struct {
 	Project *string
 	// Config is the workload identity configuration.
 	Config *storepb.WorkloadIdentityConfig
-	// LastLoginTime is the last login time of the workload identity.
-	LastLoginTime *timestamppb.Timestamp
 }
 
 // FindWorkloadIdentityMessage is the message for finding workload identities.
 type FindWorkloadIdentityMessage struct {
-	ID          *int
 	Email       *string
 	ShowDeleted bool
 	Limit       *int
@@ -55,10 +50,9 @@ type CreateWorkloadIdentityMessage struct {
 
 // UpdateWorkloadIdentityMessage is the message to update a workload identity.
 type UpdateWorkloadIdentityMessage struct {
-	Name          *string
-	Delete        *bool
-	Config        *storepb.WorkloadIdentityConfig
-	LastLoginTime *timestamppb.Timestamp
+	Name   *string
+	Delete *bool
+	Config *storepb.WorkloadIdentityConfig
 }
 
 // GetWorkloadIdentityByEmail gets a workload identity by email.
@@ -75,11 +69,8 @@ func (s *Store) GetWorkloadIdentityByEmail(ctx context.Context, email string) (*
 
 // ListWorkloadIdentities lists workload identities.
 func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadIdentityMessage) ([]*WorkloadIdentityMessage, error) {
-	where := qb.Q().Space("type = ?", storepb.PrincipalType_WORKLOAD_IDENTITY.String())
+	where := qb.Q().Space("TRUE")
 
-	if v := find.ID; v != nil {
-		where.And("id = ?", *v)
-	}
 	if v := find.Email; v != nil {
 		where.And("email = ?", strings.ToLower(*v))
 	}
@@ -99,13 +90,12 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 
 	q := qb.Q().Space(`
 		SELECT
-			id,
 			deleted,
 			email,
 			name,
 			project,
-			profile
-		FROM principal
+			config
+		FROM workload_identity
 		WHERE ?
 		ORDER BY created_at ASC
 	`, where)
@@ -132,27 +122,24 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 	for rows.Next() {
 		var wi WorkloadIdentityMessage
 		var project sql.NullString
-		var profileBytes []byte
+		var configBytes []byte
 		if err := rows.Scan(
-			&wi.ID,
 			&wi.MemberDeleted,
 			&wi.Email,
 			&wi.Name,
 			&project,
-			&profileBytes,
+			&configBytes,
 		); err != nil {
 			return nil, err
 		}
 		if project.Valid {
 			wi.Project = &project.String
 		}
-		// Parse profile to extract workload identity config
-		var profile storepb.UserProfile
-		if err := common.ProtojsonUnmarshaler.Unmarshal(profileBytes, &profile); err != nil {
+		var config storepb.WorkloadIdentityConfig
+		if err := common.ProtojsonUnmarshaler.Unmarshal(configBytes, &config); err != nil {
 			return nil, err
 		}
-		wi.Config = profile.WorkloadIdentityConfig
-		wi.LastLoginTime = profile.LastLoginTime
+		wi.Config = &config
 		wis = append(wis, &wi)
 	}
 	if err := rows.Err(); err != nil {
@@ -166,40 +153,31 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorkloadIdentityMessage) (*WorkloadIdentityMessage, error) {
 	email := strings.ToLower(create.Email)
 
-	profile := &storepb.UserProfile{
-		WorkloadIdentityConfig: create.Config,
-	}
-	profileBytes, err := protojson.Marshal(profile)
+	configBytes, err := protojson.Marshal(create.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO principal (
+		INSERT INTO workload_identity (
 			email,
 			name,
-			type,
-			password_hash,
-			phone,
-			profile,
-			project
+			project,
+			config
 		)
-		VALUES (?, ?, ?, '', '', ?, ?)
-		RETURNING id
-	`, email, create.Name, storepb.PrincipalType_WORKLOAD_IDENTITY.String(), profileBytes, create.Project)
+		VALUES (?, ?, ?, ?)
+	`, email, create.Name, create.Project, configBytes)
 
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var wiID int
-	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&wiID); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, sqlStr, args...); err != nil {
 		return nil, err
 	}
 
 	return &WorkloadIdentityMessage{
-		ID:      wiID,
 		Email:   email,
 		Name:    create.Name,
 		Project: create.Project,
@@ -216,63 +194,46 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 	if v := patch.Name; v != nil {
 		set.Comma("name = ?", *v)
 	}
-	// Config update requires updating the profile JSON
-	updateConfig := patch.Config != nil
-	updateLastLoginTime := patch.LastLoginTime != nil
-	if updateConfig || updateLastLoginTime {
-		profile := &storepb.UserProfile{
-			WorkloadIdentityConfig: wi.Config,
-			LastLoginTime:          wi.LastLoginTime,
-		}
-		if updateConfig {
-			profile.WorkloadIdentityConfig = patch.Config
-		}
-		if updateLastLoginTime {
-			profile.LastLoginTime = patch.LastLoginTime
-		}
-		profileBytes, err := protojson.Marshal(profile)
+	if v := patch.Config; v != nil {
+		configBytes, err := protojson.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		set.Comma("profile = ?", profileBytes)
+		set.Comma("config = ?", configBytes)
 	}
 
 	if set.Len() == 0 {
 		return wi, nil
 	}
 
-	sqlStr, args, err := qb.Q().Space(`UPDATE principal SET ? WHERE id = ?
-		RETURNING id, deleted, email, name, project, profile`,
-		set, wi.ID).ToSQL()
+	sqlStr, args, err := qb.Q().Space(`UPDATE workload_identity SET ? WHERE email = ?
+		RETURNING deleted, email, name, project, config`,
+		set, wi.Email).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	var updated WorkloadIdentityMessage
 	var project sql.NullString
-	var profileBytes []byte
+	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
-		&updated.ID,
 		&updated.MemberDeleted,
 		&updated.Email,
 		&updated.Name,
 		&project,
-		&profileBytes,
+		&configBytes,
 	); err != nil {
 		return nil, err
 	}
 	if project.Valid {
 		updated.Project = &project.String
 	}
-	// Parse profile to extract workload identity config
-	var profile storepb.UserProfile
-	if err := common.ProtojsonUnmarshaler.Unmarshal(profileBytes, &profile); err != nil {
+	var config storepb.WorkloadIdentityConfig
+	if err := common.ProtojsonUnmarshaler.Unmarshal(configBytes, &config); err != nil {
 		return nil, err
 	}
-	updated.Config = profile.WorkloadIdentityConfig
-	updated.LastLoginTime = profile.LastLoginTime
+	updated.Config = &config
 
-	// Also update the unified cache if this WI is in there
 	s.userEmailCache.Remove(wi.Email)
 
 	return &updated, nil

@@ -18,7 +18,7 @@
               :keyword="keyword"
               :title="user.title"
               :email="user.email"
-              :link="link && user.userType === UserType.USER"
+              :link="link && getAccountTypeByEmail(user.email) === AccountType.USER"
             />
           </div>
           <slot name="suffix">
@@ -53,7 +53,7 @@
         </slot>
       </div>
       <div
-        v-if="!isDeleted && user.userType === UserType.SERVICE_ACCOUNT && allowEdit && hasPermission"
+        v-if="!isDeleted && getAccountTypeByEmail(user.email) === AccountType.SERVICE_ACCOUNT && allowEdit && hasPermission"
         class="ml-3 text-xs"
       >
         <CopyButton
@@ -91,8 +91,9 @@ import YouTag from "@/components/misc/YouTag.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton, HighlightLabelText } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
+import { AccountType, getAccountTypeByEmail } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import UserLink from "./UserLink.vue";
 

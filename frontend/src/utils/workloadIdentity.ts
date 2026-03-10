@@ -1,4 +1,4 @@
-import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/user_service_pb";
+import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 
 // Parse subject pattern and extract owner/repo/branch/refType
 export const parseWorkloadIdentitySubjectPattern = (wi: {

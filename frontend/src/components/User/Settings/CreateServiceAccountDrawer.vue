@@ -100,7 +100,6 @@ import {
   ensureServiceAccountFullName,
   getProjectName,
   pushNotification,
-  serviceAccountToUser,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useServiceAccountStore,
@@ -109,28 +108,27 @@ import {
 import {
   getServiceAccountNameInBinding,
   getServiceAccountSuffix,
-  unknownUser,
 } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
+import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_service_pb";
 
 interface LocalState {
   isRequesting: boolean;
-  serviceAccount: User;
+  serviceAccount: ServiceAccount;
   roles: string[];
 }
 
 const props = defineProps<{
-  serviceAccount?: User;
+  serviceAccount?: ServiceAccount;
   project?: string;
 }>();
 
 const emit = defineEmits<{
   (event: "close"): void;
-  (event: "created", user: User): void;
-  (event: "updated", user: User): void;
+  (event: "created", sa: ServiceAccount): void;
+  (event: "updated", sa: ServiceAccount): void;
 }>();
 
 const { t } = useI18n();
@@ -141,7 +139,7 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 
 const state = reactive<LocalState>({
   isRequesting: false,
-  serviceAccount: unknownUser(),
+  serviceAccount: create(ServiceAccountSchema),
   roles: props.project ? [] : [PresetRoleType.WORKSPACE_MEMBER],
 });
 
@@ -162,8 +160,7 @@ const emailSuffix = computed(() =>
 );
 
 const isEditMode = computed(
-  () =>
-    !!props.serviceAccount && props.serviceAccount.name !== unknownUser().name
+  () => !!props.serviceAccount && !!props.serviceAccount.email
 );
 
 watch(
@@ -172,7 +169,7 @@ watch(
     if (!sa) {
       return;
     }
-    state.serviceAccount = cloneDeep(create(UserSchema, sa));
+    state.serviceAccount = cloneDeep(create(ServiceAccountSchema, sa));
   },
   {
     immediate: true,
@@ -258,25 +255,24 @@ const createServiceAccount = async () => {
     },
     parent.value
   );
-  const createdUser = serviceAccountToUser(sa);
 
   if (state.roles.length > 0) {
     if (projectEntity.value) {
       await updateProjectIamPolicyForMember(
         projectEntity.value.name,
-        getServiceAccountNameInBinding(createdUser.email),
+        getServiceAccountNameInBinding(sa.email),
         state.roles
       );
     } else {
       await workspaceStore.patchIamPolicy([
         {
-          member: getServiceAccountNameInBinding(createdUser.email),
+          member: getServiceAccountNameInBinding(sa.email),
           roles: state.roles,
         },
       ]);
     }
   }
-  emit("created", createdUser);
+  emit("created", sa);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -296,10 +292,10 @@ const updateServiceAccount = async () => {
     updateMask.push("title");
   }
 
-  let updatedUser: User = sa;
+  let updatedSa: ServiceAccount = sa;
 
   if (updateMask.length > 0) {
-    const updated = await serviceAccountStore.updateServiceAccount(
+    updatedSa = await serviceAccountStore.updateServiceAccount(
       {
         name: ensureServiceAccountFullName(sa.email),
         title: state.serviceAccount.title,
@@ -308,10 +304,9 @@ const updateServiceAccount = async () => {
         paths: [...updateMask],
       })
     );
-    updatedUser = serviceAccountToUser(updated);
   }
 
-  emit("updated", updatedUser);
+  emit("updated", updatedSa);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",

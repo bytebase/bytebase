@@ -8,7 +8,16 @@ import {
 import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { User } from "../proto-es/v1/user_service_pb";
-import { UserSchema, UserType } from "../proto-es/v1/user_service_pb";
+import { UserSchema } from "../proto-es/v1/user_service_pb";
+
+// Local AccountType enum for UI routing/display. AccountType was removed from the
+// User proto message because it is now implied by the resource table, but the
+// frontend still needs to distinguish account types for UI purposes.
+export enum AccountType {
+  USER = 1,
+  WORKLOAD_IDENTITY = 2,
+  SERVICE_ACCOUNT = 3,
+}
 
 export const UNKNOWN_USER_NAME = `users/${UNKNOWN_ID}`;
 
@@ -16,7 +25,6 @@ export const unknownUser = (name: string = ""): User => {
   const user = create(UserSchema, {
     name: UNKNOWN_USER_NAME,
     state: State.ACTIVE,
-    userType: UserType.USER,
     title: t("common.unknown"),
   });
   if (name) {
@@ -36,7 +44,6 @@ export const allUsersUser = (): User => {
     state: State.ACTIVE,
     title: t("settings.members.all-users"),
     email: ALL_USERS_USER_EMAIL,
-    userType: UserType.USER,
   });
 };
 
@@ -92,26 +99,22 @@ export const isValidUserName = (name: string) => {
   );
 };
 
-export const getUserTypeByEmail = (email: string): UserType => {
-  if (email.endsWith(serviceAccountSuffix)) {
-    return UserType.SERVICE_ACCOUNT;
-  }
-  if (email.endsWith(workloadIdentitySuffix)) {
-    return UserType.WORKLOAD_IDENTITY;
-  }
-  return UserType.USER;
-};
-
-// getUserTypeByFullname determines the user type by the fullname prefix.
-// This is more reliable than checking email suffix, as it works for
-// legacy service accounts/workload identities with non-standard email formats.
-// Supported formats: serviceAccounts/{email}, workloadIdentities/{email}, users/{email}
-export const getUserTypeByFullname = (fullname: string): UserType => {
+export const getAccountTypeByFullname = (fullname: string): AccountType => {
   if (fullname.startsWith(serviceAccountNamePrefix)) {
-    return UserType.SERVICE_ACCOUNT;
+    return AccountType.SERVICE_ACCOUNT;
   }
   if (fullname.startsWith(workloadIdentityNamePrefix)) {
-    return UserType.WORKLOAD_IDENTITY;
+    return AccountType.WORKLOAD_IDENTITY;
   }
-  return UserType.USER;
+  return AccountType.USER;
+};
+
+export const getAccountTypeByEmail = (email: string): AccountType => {
+  if (email.endsWith(serviceAccountSuffix)) {
+    return AccountType.SERVICE_ACCOUNT;
+  }
+  if (email.endsWith(workloadIdentitySuffix)) {
+    return AccountType.WORKLOAD_IDENTITY;
+  }
+  return AccountType.USER;
 };

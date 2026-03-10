@@ -14,8 +14,8 @@
 import { computedAsync } from "@vueuse/core";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { useUserStore } from "@/store";
+import { AccountType, getAccountTypeByEmail } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 
 const props = defineProps<{
   // candidate in users/{email} format.
@@ -31,7 +31,10 @@ const candidateUser = computedAsync(async () => {
   if (!user) {
     return;
   }
-  if (user.userType !== UserType.USER || user.state !== State.ACTIVE) {
+  if (
+    getAccountTypeByEmail(user.email) !== AccountType.USER ||
+    user.state !== State.ACTIVE
+  ) {
     return;
   }
   return user;

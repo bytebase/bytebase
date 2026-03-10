@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetListUserFilter(t *testing.T) {
+func TestGetAccountListFilter(t *testing.T) {
 	tests := []struct {
 		name        string
 		filter      string
@@ -26,42 +26,42 @@ func TestGetListUserFilter(t *testing.T) {
 		{
 			name:     "name filter",
 			filter:   `name == "ed"`,
-			wantSQL:  "(principal.name = $1)",
+			wantSQL:  "(name = $1)",
 			wantArgs: []any{"ed"},
 			wantErr:  false,
 		},
 		{
 			name:     "email filter",
 			filter:   `email == "test@example.com"`,
-			wantSQL:  "(principal.email = $1)",
+			wantSQL:  "(email = $1)",
 			wantArgs: []any{"test@example.com"},
 			wantErr:  false,
 		},
 		{
 			name:     "name matches",
 			filter:   `name.matches("ED")`,
-			wantSQL:  "(LOWER(principal.name) LIKE $1)",
+			wantSQL:  "(LOWER(name) LIKE $1)",
 			wantArgs: []any{"%ed%"},
 			wantErr:  false,
 		},
 		{
 			name:     "email matches",
 			filter:   `email.matches("test")`,
-			wantSQL:  "(LOWER(principal.email) LIKE $1)",
+			wantSQL:  "(LOWER(email) LIKE $1)",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
 		{
 			name:     "state filter - STATE_ACTIVE",
 			filter:   `state == "STATE_ACTIVE"`,
-			wantSQL:  "(principal.deleted = $1)",
+			wantSQL:  "(deleted = $1)",
 			wantArgs: []any{false},
 			wantErr:  false,
 		},
 		{
 			name:     "state filter - STATE_DELETED",
 			filter:   `state == "STATE_DELETED"`,
-			wantSQL:  "(principal.deleted = $1)",
+			wantSQL:  "(deleted = $1)",
 			wantArgs: []any{true},
 			wantErr:  false,
 		},
@@ -76,21 +76,21 @@ func TestGetListUserFilter(t *testing.T) {
 		{
 			name:     "AND condition",
 			filter:   `name == "ed" && email == "ed@test.com"`,
-			wantSQL:  "((principal.name = $1 AND principal.email = $2))",
+			wantSQL:  "((name = $1 AND email = $2))",
 			wantArgs: []any{"ed", "ed@test.com"},
 			wantErr:  false,
 		},
 		{
 			name:     "OR condition",
 			filter:   `name == "ed" || name == "alice"`,
-			wantSQL:  "((principal.name = $1 OR principal.name = $2))",
+			wantSQL:  "((name = $1 OR name = $2))",
 			wantArgs: []any{"ed", "alice"},
 			wantErr:  false,
 		},
 		{
 			name:     "complex nested condition",
 			filter:   `(name == "ed" || name == "alice")`,
-			wantSQL:  "((principal.name = $1 OR principal.name = $2))",
+			wantSQL:  "((name = $1 OR name = $2))",
 			wantArgs: []any{"ed", "alice"},
 			wantErr:  false,
 		},
@@ -98,7 +98,7 @@ func TestGetListUserFilter(t *testing.T) {
 			name:        "unsupported variable",
 			filter:      `title == "ed"`,
 			wantErr:     true,
-			errContains: "unsupport variable",
+			errContains: "unsupported variable",
 		},
 		{
 			name:        "invalid filter syntax",
@@ -116,7 +116,7 @@ func TestGetListUserFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := GetListUserFilter(tt.filter)
+			result, err := GetAccountListFilter(tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -2,11 +2,10 @@
 // @generated from file v1/workload_identity_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { State } from "./common_pb";
 import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { WorkloadIdentityConfig } from "./user_service_pb";
 
 /**
  * Describes the file v1/workload_identity_service.proto.
@@ -70,6 +69,74 @@ export declare type WorkloadIdentity = Message<"bytebase.v1.WorkloadIdentity"> &
  * Use `create(WorkloadIdentitySchema)` to create a new message.
  */
 export declare const WorkloadIdentitySchema: GenMessage<WorkloadIdentity>;
+
+/**
+ * WorkloadIdentityConfig for API layer
+ *
+ * @generated from message bytebase.v1.WorkloadIdentityConfig
+ */
+export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdentityConfig"> & {
+  /**
+   * Platform type (currently only GITHUB is supported)
+   *
+   * @generated from field: bytebase.v1.WorkloadIdentityConfig.ProviderType provider_type = 1;
+   */
+  providerType: WorkloadIdentityConfig_ProviderType;
+
+  /**
+   * OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+   *
+   * @generated from field: string issuer_url = 2;
+   */
+  issuerUrl: string;
+
+  /**
+   * Allowed audiences for token validation
+   *
+   * @generated from field: repeated string allowed_audiences = 3;
+   */
+  allowedAudiences: string[];
+
+  /**
+   * Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+   *
+   * @generated from field: string subject_pattern = 4;
+   */
+  subjectPattern: string;
+};
+
+/**
+ * Describes the message bytebase.v1.WorkloadIdentityConfig.
+ * Use `create(WorkloadIdentityConfigSchema)` to create a new message.
+ */
+export declare const WorkloadIdentityConfigSchema: GenMessage<WorkloadIdentityConfig>;
+
+/**
+ * ProviderType identifies the CI/CD platform.
+ *
+ * @generated from enum bytebase.v1.WorkloadIdentityConfig.ProviderType
+ */
+export enum WorkloadIdentityConfig_ProviderType {
+  /**
+   * @generated from enum value: PROVIDER_TYPE_UNSPECIFIED = 0;
+   */
+  PROVIDER_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: GITHUB = 1;
+   */
+  GITHUB = 1,
+
+  /**
+   * @generated from enum value: GITLAB = 2;
+   */
+  GITLAB = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.WorkloadIdentityConfig.ProviderType.
+ */
+export declare const WorkloadIdentityConfig_ProviderTypeSchema: GenEnum<WorkloadIdentityConfig_ProviderType>;
 
 /**
  * Request message for creating a workload identity.

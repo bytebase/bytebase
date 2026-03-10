@@ -937,7 +937,6 @@ func TestSelfApprovalBlocked(t *testing.T) {
 			Email:    approverEmail,
 			Password: approverPassword,
 			Title:    "Approver",
-			UserType: v1pb.UserType_USER,
 		},
 	}))
 	a.NoError(err)

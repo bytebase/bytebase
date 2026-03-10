@@ -4,9 +4,6 @@
       <div class="flex items-center gap-x-2">
         <p class="text-lg font-medium leading-7 text-main">
           <span>{{ $t("settings.members.service-accounts") }}</span>
-          <span v-if="showCount" class="ml-1 font-normal text-control-light">
-            ({{ activeServiceAccountCount }})
-          </span>
         </p>
       </div>
 
@@ -91,8 +88,8 @@
         state.editingServiceAccount = undefined;
       }
     "
-    @created="handleServiceAccountUpdated"
-    @updated="handleServiceAccountUpdated"
+    @created="sa => handleServiceAccountUpdated(serviceAccountToUser(sa))"
+    @updated="sa => handleServiceAccountUpdated(serviceAccountToUser(sa))"
   />
 </template>
 
@@ -105,20 +102,20 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import CreateServiceAccountDrawer from "@/components/User/Settings/CreateServiceAccountDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useActuatorV1Store, useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import {
   serviceAccountToUser,
   useServiceAccountStore,
 } from "@/store/modules/serviceAccount";
-import { isValidProjectName, unknownUser } from "@/types";
+import { isValidProjectName } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 
 type LocalState = {
   showInactiveList: boolean;
   showCreateDrawer: boolean;
-  editingServiceAccount?: User;
+  editingServiceAccount?: ServiceAccount;
 };
 
 const state = reactive<LocalState>({
@@ -127,7 +124,6 @@ const state = reactive<LocalState>({
 });
 
 const serviceAccountStore = useServiceAccountStore();
-const actuatorStore = useActuatorV1Store();
 const serviceAccountPagedTable =
   ref<ComponentExposed<typeof PagedTable<User>>>();
 const deletedServiceAccountPagedTable =
@@ -139,8 +135,6 @@ const project = computed(() =>
     ? currentProject.value
     : undefined
 );
-
-const showCount = computed(() => !project.value);
 
 const sessionKey = computed(
   () =>
@@ -198,24 +192,15 @@ const fetchInactiveServiceAccountList = async ({
   return { list: users, nextPageToken: response.nextPageToken };
 };
 
-const activeServiceAccountCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [UserType.SERVICE_ACCOUNT],
-  });
-});
-
 const handleCreateServiceAccount = () => {
-  state.editingServiceAccount = {
-    ...unknownUser(),
-    userType: UserType.SERVICE_ACCOUNT,
-    title: "",
-  };
+  state.editingServiceAccount = undefined;
   state.showCreateDrawer = true;
 };
 
 const handleServiceAccountSelected = (user: User) => {
-  state.editingServiceAccount = user;
+  state.editingServiceAccount = serviceAccountStore.getServiceAccount(
+    user.email
+  );
   state.showCreateDrawer = true;
 };
 
@@ -235,7 +220,7 @@ const handleServiceAccountRestore = (user: User) => {
 };
 
 const handleServiceAccountArchived = (user: User) => {
-  if (user.state !== State.DELETED) {
+  if (user) {
     return;
   }
   serviceAccountPagedTable.value?.removeCache(user);
