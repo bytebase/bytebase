@@ -169,6 +169,11 @@ func (l *queryTypeListener) EnterSupportedOtherStatementAlias(_ *parser.Supporte
 	l.result = base.DDL
 }
 
+// EnterCallProcedure is called for CALL stored procedure statements.
+func (l *queryTypeListener) EnterCallProcedure(_ *parser.CallProcedureContext) {
+	l.result = base.DML
+}
+
 // EnterSupportedStatsStatementAlias is called for stats statements.
 func (l *queryTypeListener) EnterSupportedStatsStatementAlias(_ *parser.SupportedStatsStatementAliasContext) {
 	l.result = base.DDL
