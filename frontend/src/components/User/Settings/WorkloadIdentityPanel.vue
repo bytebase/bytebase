@@ -4,9 +4,6 @@
       <div class="flex items-center gap-x-2">
         <p class="text-lg font-medium leading-7 text-main">
           <span>{{ $t("settings.members.workload-identities") }}</span>
-          <span v-if="showCount" class="ml-1 font-normal text-control-light">
-            ({{ activeWorkloadIdentityCount }})
-          </span>
         </p>
       </div>
 
@@ -113,7 +110,6 @@ import {
   workloadIdentityToUser,
 } from "@/store/modules/workloadIdentity";
 import { isValidProjectName } from "@/types";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -130,7 +126,6 @@ const state = reactive<LocalState>({
 });
 
 const workloadIdentityStore = useWorkloadIdentityStore();
-const actuatorStore = useActuatorV1Store();
 const workloadIdentityPagedTable =
   ref<ComponentExposed<typeof PagedTable<User>>>();
 const deletedWorkloadIdentityPagedTable =
@@ -142,8 +137,6 @@ const project = computed(() =>
     ? currentProject.value
     : undefined
 );
-
-const showCount = computed(() => !project.value);
 
 const sessionKey = computed(
   () =>
@@ -200,13 +193,6 @@ const fetchInactiveWorkloadIdentityList = async ({
   const users: User[] = response.workloadIdentities.map(workloadIdentityToUser);
   return { list: users, nextPageToken: response.nextPageToken };
 };
-
-const activeWorkloadIdentityCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY],
-  });
-});
 
 const handleCreateWorkloadIdentity = () => {
   state.editingWorkloadIdentity = undefined;

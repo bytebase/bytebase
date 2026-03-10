@@ -4,7 +4,6 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { workloadIdentityServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
@@ -18,7 +17,6 @@ import {
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { type AccountFilter, getAccountListFilter } from "./serviceAccount";
-import { useActuatorV1Store } from "./v1/actuator";
 import {
   extractWorkloadIdentityId,
   workloadIdentityNamePrefix,
@@ -30,7 +28,6 @@ export const ensureWorkloadIdentityFullName = (identifier: string) => {
 };
 
 export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
-  const actuatorStore = useActuatorV1Store();
   const cacheByName = ref<Map<string, WorkloadIdentity>>(new Map());
 
   const listWorkloadIdentities = async ({
@@ -110,13 +107,6 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         request
       );
     cacheByName.value.set(wi.name, wi);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
-      },
-    ]);
     return wi;
   };
 
@@ -148,18 +138,6 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     if (wi) {
       wi.state = State.DELETED;
     }
-    actuatorStore.updateUserStat([
-      {
-        count: -1,
-        state: State.ACTIVE,
-        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
-      },
-      {
-        count: 1,
-        state: State.DELETED,
-        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
-      },
-    ]);
   };
 
   const undeleteWorkloadIdentity = async (name: string) => {
@@ -171,18 +149,6 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
         request
       );
     cacheByName.value.set(wi.name, wi);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
-      },
-      {
-        count: -1,
-        state: State.DELETED,
-        userType: ActuatorInfo_AccountStat_Type.WORKLOAD_IDENTITY,
-      },
-    ]);
     return wi;
   };
 

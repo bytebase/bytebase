@@ -4,9 +4,6 @@
       <div class="flex items-center gap-x-2">
         <p class="text-lg font-medium leading-7 text-main">
           <span>{{ $t("settings.members.service-accounts") }}</span>
-          <span v-if="showCount" class="ml-1 font-normal text-control-light">
-            ({{ activeServiceAccountCount }})
-          </span>
         </p>
       </div>
 
@@ -111,7 +108,6 @@ import {
   useServiceAccountStore,
 } from "@/store/modules/serviceAccount";
 import { isValidProjectName } from "@/types";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -128,7 +124,6 @@ const state = reactive<LocalState>({
 });
 
 const serviceAccountStore = useServiceAccountStore();
-const actuatorStore = useActuatorV1Store();
 const serviceAccountPagedTable =
   ref<ComponentExposed<typeof PagedTable<User>>>();
 const deletedServiceAccountPagedTable =
@@ -140,8 +135,6 @@ const project = computed(() =>
     ? currentProject.value
     : undefined
 );
-
-const showCount = computed(() => !project.value);
 
 const sessionKey = computed(
   () =>
@@ -198,13 +191,6 @@ const fetchInactiveServiceAccountList = async ({
   const users: User[] = response.serviceAccounts.map(serviceAccountToUser);
   return { list: users, nextPageToken: response.nextPageToken };
 };
-
-const activeServiceAccountCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [ActuatorInfo_AccountStat_Type.SERVICE_ACCOUNT],
-  });
-});
 
 const handleCreateServiceAccount = () => {
   state.editingServiceAccount = undefined;
