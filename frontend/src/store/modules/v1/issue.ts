@@ -22,7 +22,7 @@ import {
   memberMapToRolesInProjectIAM,
 } from "@/utils";
 import { useUserStore } from "../user";
-import { projectNamePrefix } from "./common";
+import { projectNamePrefix, userNamePrefix } from "./common";
 import { useProjectV1Store } from "./project";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
@@ -138,7 +138,9 @@ export const candidatesOfApprovalStepV1 = (issue: Issue, role: string) => {
     const projectIamPolicyStore = useProjectIamPolicyStore();
     const iamPolicy = projectIamPolicyStore.getProjectIamPolicy(project.name);
     const memberMap = memberMapToRolesInProjectIAM(iamPolicy, role);
-    return [...memberMap.keys()];
+    return [...memberMap.keys()].filter((name) =>
+      name.startsWith(userNamePrefix)
+    );
   };
   const candidates = role ? candidatesForRoles(role) : [];
 
