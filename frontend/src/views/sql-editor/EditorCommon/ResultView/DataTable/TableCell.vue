@@ -204,11 +204,7 @@ const html = computed(() => {
   if (!kw) {
     kw = props.keyword.trim();
   }
-  return getHighlightHTMLByRegExp(
-    value,
-    kw,
-    false /* !caseSensitive */
-  );
+  return getHighlightHTMLByRegExp(value, kw, false /* !caseSensitive */);
 });
 
 const handleClick = (e: MouseEvent) => {

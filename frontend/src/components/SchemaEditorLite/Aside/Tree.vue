@@ -559,10 +559,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     },
     () => [
       h("span", {
-        innerHTML: getHighlightHTMLByKeyWords(
-          label,
-          searchPattern.value
-        ),
+        innerHTML: getHighlightHTMLByKeyWords(label, searchPattern.value),
       }),
     ]
   );

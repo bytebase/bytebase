@@ -81,8 +81,7 @@
 
 <script lang="ts" setup>
 import hljs from "highlight.js/lib/core";
-import { NCheckbox, NCode,
-  NConfigProvider, } from "naive-ui";
+import { NCheckbox, NCode, NConfigProvider } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { BBAttention, BBSpin } from "@/bbkit";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";

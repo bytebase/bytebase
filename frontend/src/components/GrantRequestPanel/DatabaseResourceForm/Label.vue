@@ -72,10 +72,6 @@ const optionName = computed(() => {
   const name = option.value?.label ?? "";
   const keyword = (props.keyword ?? "").trim();
 
-  return getHighlightHTMLByRegExp(
-    name,
-    keyword,
-    false /* !caseSensitive */
-  );
+  return getHighlightHTMLByRegExp(name, keyword, false /* !caseSensitive */);
 });
 </script>
