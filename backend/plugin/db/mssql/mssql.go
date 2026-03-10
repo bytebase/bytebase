@@ -348,17 +348,27 @@ func execute(ctx context.Context, txn *sql.Tx, statement string) (int64, error) 
 	return rowsAffected, nil
 }
 
+func formatMSSQLError(e gomssqldb.Error) string {
+	b := new(strings.Builder)
+	if len(e.ProcName) > 0 {
+		fmt.Fprintf(b, "Msg %d, Level %d, State %d, Server %s, Procedure %s, Line %d\n", e.Number, e.Class, e.State, e.ServerName, e.ProcName, e.LineNo)
+	} else {
+		fmt.Fprintf(b, "Msg %d, Level %d, State %d, Server %s, Line %d\n", e.Number, e.Class, e.State, e.ServerName, e.LineNo)
+	}
+	b.WriteString(e.Message)
+	return b.String()
+}
+
 func unpackGoMSSQLDBError(err gomssqldb.Error) error {
 	if len(err.All) == 0 || len(err.All) == 1 {
-		return errors.Errorf("%s", err.Message)
+		return errors.Errorf("%s", formatMSSQLError(err))
 	}
 	var msgs []string
 	for _, e := range err.All {
-		cerr := unpackGoMSSQLDBError(e)
-		if cerr == nil {
+		if e.Message == "" {
 			continue
 		}
-		msgs = append(msgs, cerr.Error())
+		msgs = append(msgs, formatMSSQLError(e))
 	}
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
