@@ -289,7 +289,6 @@ import {
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import { unknownUser } from "@/types";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -444,20 +443,13 @@ onMounted(async () => {
 });
 
 const activeUserCount = computed(() => {
-  return actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [ActuatorInfo_AccountStat_Type.USER],
-  });
+  return actuatorStore.activeUserCount;
 });
 
 const remainingUserCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionV1Store.userCountLimit -
-      actuatorStore.countUser({
-        state: State.ACTIVE,
-        userTypes: [ActuatorInfo_AccountStat_Type.USER],
-      })
+    subscriptionV1Store.userCountLimit - actuatorStore.activeUserCount
   );
 });
 

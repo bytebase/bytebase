@@ -7132,12 +7132,11 @@ components:
           type: boolean
           title: docker
           description: Whether the Bytebase instance is running in Docker.
-        accountStats:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ActuatorInfo.AccountStat'
-          title: account_stats
-          description: Statistics about accounts in the system.
+        activatedUserCount:
+          type: integer
+          title: activated_user_count
+          format: int32
+          description: The number of activated users.
         activatedInstanceCount:
           type: integer
           title: activated_instance_count
@@ -7169,33 +7168,6 @@ components:
       description: |-
         System information and configuration for the Bytebase instance.
          Actuator concept is similar to the Spring Boot Actuator.
-    bytebase.v1.ActuatorInfo.AccountStat:
-      type: object
-      properties:
-        type:
-          title: type
-          description: The type of account.
-          $ref: '#/components/schemas/bytebase.v1.ActuatorInfo.AccountStat.Type'
-        state:
-          title: state
-          description: The state of the account.
-          $ref: '#/components/schemas/bytebase.v1.State'
-        count:
-          type: integer
-          title: count
-          format: int32
-          description: The count of accounts matching this type and state.
-      title: AccountStat
-      additionalProperties: false
-      description: Account statistics by type and state.
-    bytebase.v1.ActuatorInfo.AccountStat.Type:
-      type: string
-      title: Type
-      enum:
-        - USER_TYPE_UNSPECIFIED
-        - USER
-        - WORKLOAD_IDENTITY
-        - SERVICE_ACCOUNT
     bytebase.v1.AddDataSourceRequest:
       type: object
       properties:

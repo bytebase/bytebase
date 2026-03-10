@@ -14,8 +14,6 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
 import {
   STORAGE_KEY_ONBOARDING,
   STORAGE_KEY_RELEASE,
@@ -113,36 +111,19 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const replicaCount = computed(() => serverInfo.value?.replicaCount ?? 1);
 
-  const countUser = ({
-    state,
-    userTypes,
-  }: {
-    state: State;
-    userTypes: ActuatorInfo_AccountStat_Type[];
-  }): number => {
-    return (serverInfo.value?.accountStats ?? []).reduce((count, stat) => {
-      if (stat.state === state && userTypes.includes(stat.type)) {
-        count += stat.count;
-      }
-      return count;
-    }, 0);
-  };
+  const activeUserCount = computed(
+    () => serverInfo.value?.activatedUserCount ?? 0
+  );
 
-  const updateUserStat = (
-    updates: {
-      count: number;
-      state: State;
-      userType: ActuatorInfo_AccountStat_Type;
-    }[]
-  ) => {
-    for (const update of updates) {
-      const item = (serverInfo.value?.accountStats ?? []).find(
-        (stat) => stat.state === update.state && stat.type === update.userType
-      );
-      if (item) {
-        item.count += update.count;
-      }
+  const updateUserStat = (count: number) => {
+    if (!serverInfo.value) {
+      return;
     }
+    serverInfo.value.activatedUserCount += count;
+    serverInfo.value.activatedUserCount = Math.max(
+      0,
+      serverInfo.value.activatedUserCount
+    );
   };
 
   const quickStartEnabled = computed(() => {
@@ -154,12 +135,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     }
 
     // Hide quickstart if there are more than 1 active users.
-    return (
-      countUser({
-        state: State.ACTIVE,
-        userTypes: [ActuatorInfo_AccountStat_Type.USER],
-      }) <= 1
-    );
+    return activeUserCount.value <= 1;
   });
 
   const setLogo = (logo: string) => {
@@ -277,7 +253,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     replicaCount,
     quickStartEnabled,
     // Actions
-    countUser,
+    activeUserCount,
     updateUserStat,
     setLogo,
     setServerInfo,

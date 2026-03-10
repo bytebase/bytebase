@@ -2,11 +2,10 @@
 // @generated from file v1/actuator_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { State } from "./common_pb";
 
 /**
  * Describes the file v1/actuator_service.proto.
@@ -220,11 +219,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   docker: boolean;
 
   /**
-   * Statistics about accounts in the system.
+   * The number of activated users.
    *
-   * @generated from field: repeated bytebase.v1.ActuatorInfo.AccountStat account_stats = 19;
+   * @generated from field: int32 activated_user_count = 19;
    */
-  accountStats: ActuatorInfo_AccountStat[];
+  activatedUserCount: number;
 
   /**
    * The number of activated database instances.
@@ -272,78 +271,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
  * Use `create(ActuatorInfoSchema)` to create a new message.
  */
 export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
-
-/**
- * Account statistics by type and state.
- *
- * @generated from message bytebase.v1.ActuatorInfo.AccountStat
- */
-export declare type ActuatorInfo_AccountStat = Message<"bytebase.v1.ActuatorInfo.AccountStat"> & {
-  /**
-   * The type of account.
-   *
-   * @generated from field: bytebase.v1.ActuatorInfo.AccountStat.Type type = 1;
-   */
-  type: ActuatorInfo_AccountStat_Type;
-
-  /**
-   * The state of the account.
-   *
-   * @generated from field: bytebase.v1.State state = 2;
-   */
-  state: State;
-
-  /**
-   * The count of accounts matching this type and state.
-   *
-   * @generated from field: int32 count = 3;
-   */
-  count: number;
-};
-
-/**
- * Describes the message bytebase.v1.ActuatorInfo.AccountStat.
- * Use `create(ActuatorInfo_AccountStatSchema)` to create a new message.
- */
-export declare const ActuatorInfo_AccountStatSchema: GenMessage<ActuatorInfo_AccountStat>;
-
-/**
- * @generated from enum bytebase.v1.ActuatorInfo.AccountStat.Type
- */
-export enum ActuatorInfo_AccountStat_Type {
-  /**
-   * Unspecified account type.
-   *
-   * @generated from enum value: USER_TYPE_UNSPECIFIED = 0;
-   */
-  USER_TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Regular human user account.
-   *
-   * @generated from enum value: USER = 1;
-   */
-  USER = 1,
-
-  /**
-   * External CI/CD workload identity.
-   *
-   * @generated from enum value: WORKLOAD_IDENTITY = 2;
-   */
-  WORKLOAD_IDENTITY = 2,
-
-  /**
-   * Service account for API integrations.
-   *
-   * @generated from enum value: SERVICE_ACCOUNT = 3;
-   */
-  SERVICE_ACCOUNT = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.ActuatorInfo.AccountStat.Type.
- */
-export declare const ActuatorInfo_AccountStat_TypeSchema: GenEnum<ActuatorInfo_AccountStat_Type>;
 
 /**
  * ActuatorService manages system health and operational information.

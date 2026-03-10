@@ -102,7 +102,7 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import CreateServiceAccountDrawer from "@/components/User/Settings/CreateServiceAccountDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useActuatorV1Store, useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import {
   serviceAccountToUser,
   useServiceAccountStore,

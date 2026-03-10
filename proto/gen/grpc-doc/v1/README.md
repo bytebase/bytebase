@@ -124,15 +124,12 @@
   
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [ActuatorInfo.AccountStat](#bytebase-v1-ActuatorInfo-AccountStat)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
-  
-    - [ActuatorInfo.AccountStat.Type](#bytebase-v1-ActuatorInfo-AccountStat-Type)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -2544,30 +2541,13 @@ Actuator concept is similar to the Spring Boot Actuator.
 | workspace_id | [string](#string) |  | The unique identifier for the workspace. |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
-| account_stats | [ActuatorInfo.AccountStat](#bytebase-v1-ActuatorInfo-AccountStat) | repeated | Statistics about accounts in the system. |
+| activated_user_count | [int32](#int32) |  | The number of activated users. |
 | activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
 | total_instance_count | [int32](#int32) |  | The total number of database instances. |
 | enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
 | external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
 | replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
 | restriction | [Restriction](#bytebase-v1-Restriction) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ActuatorInfo-AccountStat"></a>
-
-### ActuatorInfo.AccountStat
-Account statistics by type and state.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ActuatorInfo.AccountStat.Type](#bytebase-v1-ActuatorInfo-AccountStat-Type) |  | The type of account. |
-| state | [State](#bytebase-v1-State) |  | The state of the account. |
-| count | [int32](#int32) |  | The count of accounts matching this type and state. |
 
 
 
@@ -2646,20 +2626,6 @@ Request message for setting up sample data.
 
 
  
-
-
-<a name="bytebase-v1-ActuatorInfo-AccountStat-Type"></a>
-
-### ActuatorInfo.AccountStat.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| USER_TYPE_UNSPECIFIED | 0 | Unspecified account type. |
-| USER | 1 | Regular human user account. |
-| WORKLOAD_IDENTITY | 2 | External CI/CD workload identity. |
-| SERVICE_ACCOUNT | 3 | Service account for API integrations. |
-
 
  
 

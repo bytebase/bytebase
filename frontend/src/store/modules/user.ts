@@ -12,7 +12,6 @@ import {
   unknownUser,
   userBindingPrefix,
 } from "@/types";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   UpdateUserRequest,
@@ -123,13 +122,7 @@ export const useUserStore = defineStore("user", () => {
       user: user,
     });
     const response = await userServiceClientConnect.createUser(request);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: ActuatorInfo_AccountStat_Type.USER,
-      },
-    ]);
+    actuatorStore.updateUserStat(1);
     return setUser(response);
   };
 
@@ -180,18 +173,7 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     await userServiceClientConnect.deleteUser(request);
-    actuatorStore.updateUserStat([
-      {
-        count: -1,
-        state: State.ACTIVE,
-        userType: ActuatorInfo_AccountStat_Type.USER,
-      },
-      {
-        count: 1,
-        state: State.DELETED,
-        userType: ActuatorInfo_AccountStat_Type.USER,
-      },
-    ]);
+    actuatorStore.updateUserStat(-1);
 
     const user = userMapByName.value.get(name);
     if (user) {
@@ -204,18 +186,7 @@ export const useUserStore = defineStore("user", () => {
       name,
     });
     const response = await userServiceClientConnect.undeleteUser(request);
-    actuatorStore.updateUserStat([
-      {
-        count: 1,
-        state: State.ACTIVE,
-        userType: ActuatorInfo_AccountStat_Type.USER,
-      },
-      {
-        count: -1,
-        state: State.DELETED,
-        userType: ActuatorInfo_AccountStat_Type.USER,
-      },
-    ]);
+    actuatorStore.updateUserStat(1);
     return setUser(response);
   };
 

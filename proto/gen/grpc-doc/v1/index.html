@@ -642,10 +642,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ActuatorInfo.AccountStat"><span class="badge">M</span>ActuatorInfo.AccountStat</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.DeleteCacheRequest"><span class="badge">M</span>DeleteCacheRequest</a>
                 </li>
               
@@ -669,10 +665,6 @@
                   <a href="#bytebase.v1.SetupSampleRequest"><span class="badge">M</span>SetupSampleRequest</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.ActuatorInfo.AccountStat.Type"><span class="badge">E</span>ActuatorInfo.AccountStat.Type</a>
-                </li>
               
               
               
@@ -7840,10 +7832,10 @@ Permissions required: bb.settings.set</p></td>
                 </tr>
               
                 <tr>
-                  <td>account_stats</td>
-                  <td><a href="#bytebase.v1.ActuatorInfo.AccountStat">ActuatorInfo.AccountStat</a></td>
-                  <td>repeated</td>
-                  <td><p>Statistics about accounts in the system. </p></td>
+                  <td>activated_user_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of activated users. </p></td>
                 </tr>
               
                 <tr>
@@ -7886,44 +7878,6 @@ Permissions required: bb.settings.set</p></td>
                   <td><a href="#bytebase.v1.Restriction">Restriction</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ActuatorInfo.AccountStat">ActuatorInfo.AccountStat</h3>
-        <p>Account statistics by type and state.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ActuatorInfo.AccountStat.Type">ActuatorInfo.AccountStat.Type</a></td>
-                  <td></td>
-                  <td><p>The type of account. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>state</td>
-                  <td><a href="#bytebase.v1.State">State</a></td>
-                  <td></td>
-                  <td><p>The state of the account. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>count</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The count of accounts matching this type and state. </p></td>
                 </tr>
               
             </tbody>
@@ -8024,41 +7978,6 @@ Permissions required: bb.settings.set</p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.ActuatorInfo.AccountStat.Type">ActuatorInfo.AccountStat.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>USER_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified account type.</p></td>
-              </tr>
-            
-              <tr>
-                <td>USER</td>
-                <td>1</td>
-                <td><p>Regular human user account.</p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKLOAD_IDENTITY</td>
-                <td>2</td>
-                <td><p>External CI/CD workload identity.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SERVICE_ACCOUNT</td>
-                <td>3</td>
-                <td><p>Service account for API integrations.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

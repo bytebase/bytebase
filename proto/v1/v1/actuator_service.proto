@@ -123,28 +123,8 @@ message ActuatorInfo {
   // Whether the Bytebase instance is running in Docker.
   bool docker = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Account statistics by type and state.
-  message AccountStat {
-    enum Type {
-      // Unspecified account type.
-      USER_TYPE_UNSPECIFIED = 0;
-      // Regular human user account.
-      USER = 1;
-      // External CI/CD workload identity.
-      WORKLOAD_IDENTITY = 2;
-      // Service account for API integrations.
-      SERVICE_ACCOUNT = 3;
-    }
-    // The type of account.
-    Type type = 1;
-    // The state of the account.
-    State state = 2;
-    // The count of accounts matching this type and state.
-    int32 count = 3;
-  }
-
-  // Statistics about accounts in the system.
-  repeated AccountStat account_stats = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The number of activated users.
+  int32 activated_user_count = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The number of activated database instances.
   int32 activated_instance_count = 20 [(google.api.field_behavior) = OUTPUT_ONLY];

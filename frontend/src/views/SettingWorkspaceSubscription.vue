@@ -162,8 +162,6 @@ import {
   useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { ActuatorInfo_AccountStat_Type } from "@/types/proto-es/v1/actuator_service_pb";
-import { State } from "@/types/proto-es/v1/common_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -189,12 +187,7 @@ const disabled = computed((): boolean => {
   return state.loading || !state.license;
 });
 
-const activeUserCountWithoutBot = computed(() =>
-  actuatorStore.countUser({
-    state: State.ACTIVE,
-    userTypes: [ActuatorInfo_AccountStat_Type.USER],
-  })
-);
+const activeUserCountWithoutBot = computed(() => actuatorStore.activeUserCount);
 
 const userLimit = computed((): string => {
   if (subscriptionStore.userCountLimit === Number.MAX_VALUE) {
