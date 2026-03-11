@@ -21,7 +21,7 @@
       <!-- Documentation link -->
       <div>
         <a
-          href="https://docs.bytebase.com/vcs-integration/overview?source=console"
+          href="https://docs.bytebase.com/gitops/overview?source=console"
           target="_blank"
           class="text-accent hover:underline"
         >
@@ -124,18 +124,22 @@
           <span class="text-sm font-medium">{{
             $t("gitops.checklist.target-databases")
           }}</span>
-          <NRadioGroup
-            :value="targetTab"
-            size="small"
-            @update:value="handleTargetTabChange"
-          >
-            <NRadio value="GROUP">
+          <NButtonGroup size="small">
+            <NButton
+              :type="targetTab === 'GROUP' ? 'primary' : 'default'"
+              :secondary="targetTab === 'GROUP'"
+              @click="handleTargetTabChange('GROUP')"
+            >
               {{ $t("common.database-group") }}
-            </NRadio>
-            <NRadio value="DATABASE">
+            </NButton>
+            <NButton
+              :type="targetTab === 'DATABASE' ? 'primary' : 'default'"
+              :secondary="targetTab === 'DATABASE'"
+              @click="handleTargetTabChange('DATABASE')"
+            >
               {{ $t("common.databases") }}
-            </NRadio>
-          </NRadioGroup>
+            </NButton>
+          </NButtonGroup>
           <div class="max-w-lg">
             <template v-if="targetTab === 'GROUP'">
               <NSelect
@@ -429,10 +433,9 @@ import {
 } from "lucide-vue-next";
 import {
   NButton,
+  NButtonGroup,
   NCode,
   NConfigProvider,
-  NRadio,
-  NRadioGroup,
   NSelect,
   NSwitch,
   NTabPane,
