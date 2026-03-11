@@ -62,7 +62,7 @@ func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRun
 			payload
 		FROM task_run_log
 		WHERE task_run_log.task_run_id = ?
-		ORDER BY id
+		ORDER BY created_at
 	`, taskRunUID)
 
 	sql, args, err := q.ToSQL()

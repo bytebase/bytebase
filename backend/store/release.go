@@ -95,7 +95,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 			?,
 			?,
 			?
-		) RETURNING id, created_at
+		) RETURNING created_at
 	`, creator, release.ProjectID, p, releaseID, release.Train, nextIteration, release.Category)
 
 	query, args, err := q.ToSQL()
@@ -104,8 +104,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	}
 
 	var createdTime time.Time
-	var id int64 // Still needed for RETURNING clause
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&id, &createdTime); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
 	}
 
@@ -164,7 +163,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		q.And("deleted = ?", false)
 	}
 
-	q.Space("ORDER BY release.id DESC")
+	q.Space("ORDER BY release.created_at DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
