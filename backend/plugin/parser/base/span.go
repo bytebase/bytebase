@@ -63,9 +63,14 @@ type QuerySpan struct {
 	// PredicateColumns are the source columns contributing to the span.
 	// PredicateColumns here are the source columns for the where conditions.
 	PredicateColumns SourceColumnSet
-	// PredicatePaths is predicateColumns used by Cosmos DB only, to store the path of the field, all the
-	// paths should begin with the container name.
-	PredicatePaths            map[string]*PathAST
+	// PredicatePaths stores the paths of fields used in query predicates for document databases
+	// (CosmosDB, MongoDB, Elasticsearch). For CosmosDB, paths begin with the container name.
+	// For MongoDB and Elasticsearch, paths are dot-delimited field names (e.g. "contact.phone").
+	PredicatePaths map[string]*PathAST
+	// MongoDBAnalysis caches the masking analysis for MongoDB statements, populated by GetQuerySpan.
+	MongoDBAnalysis *MongoDBAnalysis
+	// ElasticsearchAnalysis caches the masking analysis for Elasticsearch statements, populated by GetQuerySpan.
+	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
 }
@@ -412,6 +417,10 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		}
 		return 0
 	})
+	for k := range s.PredicatePaths {
+		y.PredicatePaths = append(y.PredicatePaths, k)
+	}
+	slices.Sort(y.PredicatePaths)
 	return y
 }
 
@@ -420,6 +429,7 @@ type YamlQuerySpan struct {
 	Results          []YamlQuerySpanResult
 	SourceColumns    []ColumnResource
 	PredicateColumns []ColumnResource
+	PredicatePaths   []string
 }
 
 type YamlQuerySpanResult struct {

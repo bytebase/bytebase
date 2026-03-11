@@ -9,7 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	esparser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -416,14 +416,14 @@ func maskElasticsearchMSearchSingleResponse(respMap map[string]any, sortFields [
 
 // checkElasticsearchRequestBlocked returns an error if the request must be blocked
 // because masking policies exist on the target index.
-func checkElasticsearchRequestBlocked(analysis *esparser.RequestAnalysis) error {
-	if analysis.API == esparser.APIBlocked {
+func checkElasticsearchRequestBlocked(analysis *parserbase.ElasticsearchAnalysis) error {
+	if analysis.API == parserbase.ElasticsearchAPIBlocked {
 		return errors.New("this Elasticsearch API is not supported when data masking is configured on the target index")
 	}
 	if len(analysis.BlockedFeatures) > 0 {
 		names := make([]string, 0, len(analysis.BlockedFeatures))
 		for _, f := range analysis.BlockedFeatures {
-			names = append(names, esparser.BlockedFeatureNames[f])
+			names = append(names, parserbase.ElasticsearchBlockedFeatureNames[f])
 		}
 		return errors.Errorf("the following features are not supported when data masking is configured: %s", strings.Join(names, ", "))
 	}

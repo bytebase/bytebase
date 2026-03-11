@@ -1089,6 +1089,10 @@
     },
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
+      "open-cannot-reopen": "Open issues cannot be reopened",
+      "done-cannot-reopen": "Done issues cannot be reopened",
+      "done-cannot-close": "Done issues cannot be closed",
+      "canceled-cannot-close": "Canceled issues cannot be closed",
       "reopen": "Reopen",
       "reopened": "reopened",
       "action-n-issues": "{action} {n} issue | {action} {n} issues",

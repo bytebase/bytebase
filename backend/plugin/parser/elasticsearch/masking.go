@@ -4,74 +4,39 @@ import (
 	"encoding/json"
 	"slices"
 	"strings"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// MaskableAPI categorizes ES endpoints for masking decisions.
-type MaskableAPI int
-
-const (
-	// APIUnsupported means the endpoint is not relevant to masking (no user data).
-	APIUnsupported MaskableAPI = iota
-	// APIMaskSearch covers _search and _msearch.
-	APIMaskSearch
-	// APIMaskGetDoc covers GET /<index>/_doc/<id>.
-	APIMaskGetDoc
-	// APIMaskGetSource covers GET /<index>/_source/<id>.
-	APIMaskGetSource
-	// APIMaskMGet covers _mget.
-	APIMaskMGet
-	// APIMaskExplain covers _explain.
-	APIMaskExplain
-	// APIBlocked means the endpoint must be rejected when masking is active.
-	APIBlocked
+// Type aliases so that internal code and external consumers (e.g. catalog_masking_elasticsearch.go)
+// can continue using the short names. The canonical definitions live in the base package.
+type (
+	MaskableAPI     = base.ElasticsearchMaskableAPI
+	BlockedFeature  = base.ElasticsearchBlockedFeature
+	RequestAnalysis = base.ElasticsearchAnalysis
 )
 
-// BlockedFeature identifies a feature in the request body that must be blocked.
-type BlockedFeature int
+const (
+	APIUnsupported   = base.ElasticsearchAPIUnsupported
+	APIMaskSearch    = base.ElasticsearchAPIMaskSearch
+	APIMaskGetDoc    = base.ElasticsearchAPIMaskGetDoc
+	APIMaskGetSource = base.ElasticsearchAPIMaskGetSource
+	APIMaskMGet      = base.ElasticsearchAPIMaskMGet
+	APIMaskExplain   = base.ElasticsearchAPIMaskExplain
+	APIBlocked       = base.ElasticsearchAPIBlocked
+)
 
 const (
-	BlockedFeatureAggs BlockedFeature = iota
-	BlockedFeatureSuggest
-	BlockedFeatureScriptFields
-	BlockedFeatureRuntimeMappings
-	BlockedFeatureStoredFields
-	BlockedFeatureDocvalueFields
+	BlockedFeatureAggs            = base.ElasticsearchBlockedFeatureAggs
+	BlockedFeatureSuggest         = base.ElasticsearchBlockedFeatureSuggest
+	BlockedFeatureScriptFields    = base.ElasticsearchBlockedFeatureScriptFields
+	BlockedFeatureRuntimeMappings = base.ElasticsearchBlockedFeatureRuntimeMappings
+	BlockedFeatureStoredFields    = base.ElasticsearchBlockedFeatureStoredFields
+	BlockedFeatureDocvalueFields  = base.ElasticsearchBlockedFeatureDocvalueFields
 )
 
 // BlockedFeatureNames maps BlockedFeature to human-readable names for error messages.
-var BlockedFeatureNames = map[BlockedFeature]string{
-	BlockedFeatureAggs:            "aggregations",
-	BlockedFeatureSuggest:         "suggest",
-	BlockedFeatureScriptFields:    "script_fields",
-	BlockedFeatureRuntimeMappings: "runtime_mappings",
-	BlockedFeatureStoredFields:    "stored_fields",
-	BlockedFeatureDocvalueFields:  "docvalue_fields",
-}
-
-// RequestAnalysis is the result of analyzing an ES REST request for masking.
-type RequestAnalysis struct {
-	// API is the classification of the endpoint.
-	API MaskableAPI
-	// Index is the target index name extracted from the URL (empty if not applicable).
-	Index string
-	// BlockedFeatures lists features found in the request body that must be blocked.
-	BlockedFeatures []BlockedFeature
-	// SourceFields is the list of fields requested via _source filtering (nil = all fields).
-	// An empty slice means _source is disabled.
-	SourceFields []string
-	// SourceDisabled is true when _source: false is set.
-	SourceDisabled bool
-	// RequestedFields is the list of fields requested via the "fields" parameter.
-	RequestedFields []string
-	// HighlightFields is the list of fields requested via "highlight.fields".
-	HighlightFields []string
-	// SortFields is the list of field paths used in "sort".
-	SortFields []string
-	// HasInnerHits is true if the query contains inner_hits.
-	HasInnerHits bool
-	// PredicateFields is the list of field paths used in query predicates.
-	PredicateFields []string
-}
+var BlockedFeatureNames = base.ElasticsearchBlockedFeatureNames
 
 // blockedEndpoints lists URL patterns that must be rejected when masking is active.
 // These overlap with read patterns but cannot be safely masked.
