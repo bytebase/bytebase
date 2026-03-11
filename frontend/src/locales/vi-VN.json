@@ -2868,9 +2868,9 @@
       "external-url": "URL bên ngoài",
       "workload-identity": "Workload Identity",
       "target-databases": "Cơ sở dữ liệu đích",
-      "database-group-recommendation": "For databases sharing similar schemas, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
-      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
-      "wif-notice-suffix": "to set up GitOps using a service account."
+      "database-group-recommendation": "Đối với các cơ sở dữ liệu có schema tương tự, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
+      "wif-notice-text": "Workload Identity Federation hiện chỉ hỗ trợ GitHub và GitLab. Đối với các VCS khác, vui lòng tham khảo hướng dẫn cho",
+      "wif-notice-suffix": "để thiết lập GitOps bằng tài khoản dịch vụ."
     },
     "workload-identity": {
       "select-placeholder": "Chọn một workload identity"
