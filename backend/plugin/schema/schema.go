@@ -26,6 +26,7 @@ var (
 	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
 	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 	walkThroughs                    = make(map[storepb.Engine]walkThrough)
+	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
 )
 
 type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
@@ -41,6 +42,12 @@ type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema, previousSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
+type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
+
+// WalkThroughContext carries optional session state into schema walk-through implementations.
+type WalkThroughContext struct {
+	SessionUser string
+}
 
 type GetDefinitionContext struct {
 	SkipBackupSchema bool
@@ -278,7 +285,23 @@ func RegisterWalkThrough(engine storepb.Engine, f walkThrough) {
 	walkThroughs[engine] = f
 }
 
+func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithContext) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := walkThroughsWithContext[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	walkThroughsWithContext[engine] = f
+}
+
 func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
+	return WalkThroughWithContext(engine, WalkThroughContext{}, d, ast)
+}
+
+func WalkThroughWithContext(engine storepb.Engine, ctx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
+	if f, ok := walkThroughsWithContext[engine]; ok {
+		return f(ctx, d, ast)
+	}
 	f, ok := walkThroughs[engine]
 	if !ok {
 		return nil
