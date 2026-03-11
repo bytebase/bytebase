@@ -2868,7 +2868,7 @@
       "external-url": "External URL",
       "workload-identity": "Workload Identity",
       "target-databases": "Target Databases",
-      "database-group-recommendation": "Use a database group to dynamically match databases by conditions such as environment or instance.",
+      "database-group-recommendation": "For databases sharing similar schemas, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
       "wif-notice": "Workload Identity Federation is currently supported for GitHub and GitLab only. For {bitbucket} and {azure}, please refer to the tutorials for configuring with service account."
     },
     "workload-identity": {
