@@ -2867,7 +2867,10 @@
       "title": "Verificaciones antes de comenzar",
       "external-url": "URL externa",
       "workload-identity": "Identidad de carga de trabajo",
-      "target-databases": "Bases de datos de destino"
+      "target-databases": "Bases de datos de destino",
+      "database-group-recommendation": "For databases sharing similar schemas, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
+      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
+      "wif-notice-suffix": "to set up GitOps using a service account."
     },
     "workload-identity": {
       "select-placeholder": "Seleccionar una identidad de carga de trabajo"

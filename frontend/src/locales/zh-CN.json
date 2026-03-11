@@ -2867,7 +2867,10 @@
       "title": "开始前检查",
       "external-url": "外部访问地址",
       "workload-identity": "工作负载身份",
-      "target-databases": "目标数据库"
+      "target-databases": "目标数据库",
+      "database-group-recommendation": "For databases sharing similar schemas, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
+      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
+      "wif-notice-suffix": "to set up GitOps using a service account."
     },
     "workload-identity": {
       "select-placeholder": "选择工作负载身份"
