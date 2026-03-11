@@ -1,7 +1,6 @@
 -- idp stores generic identity provider.
 CREATE TABLE idp (
-  id serial PRIMARY KEY,
-  resource_id text NOT NULL,
+  resource_id text NOT NULL PRIMARY KEY,
   name text NOT NULL,
   domain text NOT NULL,
   type text NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
@@ -10,23 +9,14 @@ CREATE TABLE idp (
   config jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
-
-ALTER SEQUENCE idp_id_seq RESTART WITH 101;
-
 -- Project (created before principal for foreign key reference)
 CREATE TABLE project (
-    id serial PRIMARY KEY,
+    resource_id text NOT NULL PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     name text NOT NULL,
-    resource_id text NOT NULL,
     -- Stored as Project (proto/store/store/project.proto)
     setting jsonb NOT NULL DEFAULT '{}'
 );
-
-CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
-
-ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- principal
 CREATE TABLE principal (
@@ -72,23 +62,17 @@ CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE p
 
 -- Setting
 CREATE TABLE setting (
-    id serial PRIMARY KEY,
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
     -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
-    name text NOT NULL,
+    name text NOT NULL PRIMARY KEY,
     -- Stored as JSON marshalled by protojson.Marshal (camelCase keys)
     value jsonb NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
-
-ALTER SEQUENCE setting_id_seq RESTART WITH 101;
-
 -- Role
 CREATE TABLE role (
-    id bigserial PRIMARY KEY,
-    resource_id text NOT NULL,
+    resource_id text NOT NULL PRIMARY KEY,
     name text NOT NULL,
     description text NOT NULL,
     -- Stored as RolePermissions (proto/store/store/role.proto)
@@ -97,14 +81,9 @@ CREATE TABLE role (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_role_unique_resource_id on role (resource_id);
-
-ALTER SEQUENCE role_id_seq RESTART WITH 101;
-
 -- Policy
 -- policy stores the policies for each resources.
 CREATE TABLE policy (
-    id serial PRIMARY KEY,
     enforce boolean NOT NULL DEFAULT TRUE,
     updated_at timestamptz NOT NULL DEFAULT now(),
     -- resource_type: WORKSPACE, ENVIRONMENT, PROJECT
@@ -123,12 +102,9 @@ CREATE TABLE policy (
     -- IAM: IamPolicy
     -- TAG: TagPolicy
     payload jsonb NOT NULL DEFAULT '{}',
-    inherit_from_parent boolean NOT NULL DEFAULT TRUE
+    inherit_from_parent boolean NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (resource_type, resource, type)
 );
-
-CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_type ON policy(resource_type, resource, type);
-
-ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 
 -- Project Hook
 CREATE TABLE project_webhook (
@@ -144,42 +120,32 @@ ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 
 -- Instance
 CREATE TABLE instance (
-    id serial PRIMARY KEY,
+    resource_id text NOT NULL PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     environment text,
-    resource_id text NOT NULL,
     -- Stored as Instance (proto/store/store/instance.proto)
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
-
 CREATE INDEX idx_instance_metadata_engine ON instance((metadata->>'engine'));
-
-ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
 CREATE TABLE db (
-    id serial PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    project text NOT NULL REFERENCES project(resource_id),
     instance text NOT NULL REFERENCES instance(resource_id),
     name text NOT NULL,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    project text NOT NULL REFERENCES project(resource_id),
     environment text,
     -- Stored as DatabaseMetadata (proto/store/store/database.proto)
-    metadata jsonb NOT NULL DEFAULT '{}'
+    metadata jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (instance, name)
 );
 
 CREATE INDEX idx_db_project ON db(project);
 
-CREATE UNIQUE INDEX idx_db_unique_instance_name ON db(instance, name);
-
-ALTER SEQUENCE db_id_seq RESTART WITH 101;
-
 -- db_schema stores the database schema metadata for a particular database.
 CREATE TABLE db_schema (
-    id serial PRIMARY KEY,
     instance text NOT NULL,
     db_name text NOT NULL,
     -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
@@ -187,12 +153,9 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (instance, db_name),
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
-
-CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance, db_name);
-
-ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 
 CREATE TABLE sheet_blob (
 	sha256 bytea NOT NULL PRIMARY KEY,
@@ -301,16 +264,12 @@ CREATE TABLE replica_heartbeat (
 );
 
 CREATE TABLE task_run_log (
-    id bigserial PRIMARY KEY,
     task_run_id integer NOT NULL REFERENCES task_run(id),
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as TaskRunLog (proto/store/store/task_run_log.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (task_run_id, created_at)
 );
-
-CREATE INDEX idx_task_run_log_task_run_id ON task_run_log(task_run_id);
-
-ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 
 -- Pipeline related END
 -----------------------
@@ -440,19 +399,15 @@ CREATE INDEX idx_worksheet_organizer_principal ON worksheet_organizer(principal)
 CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
 
 CREATE TABLE db_group (
-    id bigserial PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
     resource_id text NOT NULL,
     name text NOT NULL DEFAULT '',
     -- Stored as google.type.Expr (from Google Common Expression Language)
     expression jsonb NOT NULL DEFAULT '{}',
     -- Stored as DatabaseGroupPayload (proto/store/store/db_group.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, resource_id)
 );
-
-CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id ON db_group(project, resource_id);
-
-ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 
 CREATE TABLE export_archive (
   id serial PRIMARY KEY,
@@ -533,23 +488,20 @@ ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 CREATE INDEX idx_changelog_instance_db_name ON changelog (instance, db_name);
 
 CREATE TABLE release (
-    id bigserial PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
+    train text NOT NULL DEFAULT '',
+    iteration integer NOT NULL DEFAULT 0,
+    deleted boolean NOT NULL DEFAULT FALSE,
     release_id text NOT NULL DEFAULT '',
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    train text NOT NULL DEFAULT '',
-    iteration integer NOT NULL DEFAULT 0,
     category text NOT NULL DEFAULT '',
     -- Stored as ReleasePayload (proto/store/store/release.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, train, iteration)
 );
 
-ALTER SEQUENCE release_id_seq RESTART WITH 101;
-
 CREATE INDEX idx_release_project ON release(project);
-CREATE UNIQUE INDEX idx_release_project_train_iteration ON release(project, train, iteration);
 CREATE INDEX idx_release_project_release_id ON release(project, release_id);
 CREATE INDEX idx_release_category ON release(project, category);
 
@@ -607,9 +559,7 @@ CREATE TABLE access_grant (
 CREATE INDEX idx_access_grant_project_creator_expire_time ON access_grant(project, creator, expire_time);
 
 -- Default project.
-INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
-
-ALTER SEQUENCE project_id_seq RESTART WITH 101;
+INSERT INTO project (name, resource_id) VALUES ('Default', 'default');
 
 -- Initialize settings with static values
 INSERT INTO setting (name, value) VALUES ('APP_IM', '{}'::jsonb);

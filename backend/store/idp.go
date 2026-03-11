@@ -119,7 +119,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		q.And("resource_id = ?", *v)
 	}
 
-	q.Space("ORDER BY id ASC")
+	q.Space("ORDER BY resource_id ASC")
 
 	query, args, err := q.ToSQL()
 	if err != nil {

@@ -243,8 +243,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 		)
 		VALUES (?, ?, ?, ?)
 		ON CONFLICT (instance, name) DO UPDATE SET
-			deleted = EXCLUDED.deleted
-		RETURNING id`,
+			deleted = EXCLUDED.deleted`,
 		create.InstanceID,
 		create.ProjectID,
 		create.DatabaseName,
@@ -256,8 +255,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var databaseUID int
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -292,8 +290,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			project = EXCLUDED.project,
 			environment = EXCLUDED.environment,
 			name = EXCLUDED.name,
-			metadata = EXCLUDED.metadata
-		RETURNING id`,
+			metadata = EXCLUDED.metadata`,
 		create.InstanceID,
 		create.ProjectID,
 		environment,
@@ -307,8 +304,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var databaseUID int
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -357,15 +353,14 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, errors.New("no fields to update")
 	}
 
-	q := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ? RETURNING id", set, patch.InstanceID, patch.DatabaseName)
+	q := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ?", set, patch.InstanceID, patch.DatabaseName)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var databaseUID int
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&databaseUID); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
