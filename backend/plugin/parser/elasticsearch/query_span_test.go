@@ -57,6 +57,46 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
+func TestGetQuerySpanPredicatePaths(t *testing.T) {
+	tests := []struct {
+		description    string
+		statement      string
+		predicatePaths map[string]bool
+	}{
+		{
+			description: "search with match predicate",
+			statement:   "GET /users/_search\n{\"query\":{\"match\":{\"email\":\"alice\"}}}",
+			predicatePaths: map[string]bool{
+				"email": true,
+			},
+		},
+		{
+			description: "search with nested bool query",
+			statement:   "GET /users/_search\n{\"query\":{\"bool\":{\"must\":[{\"term\":{\"status\":\"active\"}},{\"range\":{\"age\":{\"gte\":18}}}]}}}",
+			predicatePaths: map[string]bool{
+				"status": true,
+				"age":    true,
+			},
+		},
+		{
+			description: "get doc returns no predicates",
+			statement:   "GET /users/_doc/123",
+			predicatePaths: map[string]bool{},
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range tests {
+		span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.statement}, "", "", false)
+		a.NoError(err, tc.description)
+		a.Equal(len(tc.predicatePaths), len(span.PredicatePaths), tc.description)
+		for path := range tc.predicatePaths {
+			_, ok := span.PredicatePaths[path]
+			a.True(ok, "%s: missing path %q", tc.description, path)
+		}
+	}
+}
+
 func TestGetQuerySpan_Error(t *testing.T) {
 	// MongoDB style query, definitely not ElasticSearch
 	stmt := "db.users.find({})"
