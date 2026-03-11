@@ -18,7 +18,7 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 // WorkloadIdentityService manages workload identities for external CI/CD integrations.
 service WorkloadIdentityService {
   // Creates a new workload identity.
-  // For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
+  // For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.create on workspace.
   // For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
   rpc CreateWorkloadIdentity(CreateWorkloadIdentityRequest) returns (WorkloadIdentity) {
     option (google.api.http) = {
@@ -45,7 +45,7 @@ service WorkloadIdentityService {
   }
 
   // Lists workload identities.
-  // For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
+  // For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.list on workspace.
   // For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
   rpc ListWorkloadIdentities(ListWorkloadIdentitiesRequest) returns (ListWorkloadIdentitiesResponse) {
     option (google.api.http) = {
@@ -144,7 +144,7 @@ message WorkloadIdentityConfig {
 // Request message for creating a workload identity.
 message CreateWorkloadIdentityRequest {
   // The parent resource where this workload identity will be created.
-  // Format: projects/{project} for project-level, workspaces/- for workspace-level.
+  // Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
   string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Project"}];
 
   // The ID to use for the workload identity, which will become the final component
@@ -169,7 +169,7 @@ message GetWorkloadIdentityRequest {
 // Request message for listing workload identities.
 message ListWorkloadIdentitiesRequest {
   // The parent resource.
-  // Format: projects/{project} for project-level, workspaces/- for workspace-level.
+  // Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
   string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Project"}];
 
   // The maximum number of workload identities to return. The service may return fewer than

@@ -1048,6 +1048,9 @@
         "engine": {
           "title": "エンジン",
           "description": "エンジンでフィルタリング"
+        },
+        "state": {
+          "description": "状態でフィルタ"
         }
       }
     },
@@ -1251,7 +1254,6 @@
       "last-refresh": "最終更新: {time}"
     },
     "state": {
-      "description": "ステータスでプランをフィルタリング",
       "close-confirm": "このプランを閉じてもよろしいですか?",
       "reopen-confirm": "このプランを再開してもよろしいですか?"
     },

@@ -50,14 +50,14 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
     showDeleted,
     filter,
   }: {
-    parent?: string;
+    parent: string;
     pageSize: number;
     pageToken: string | undefined;
     showDeleted: boolean;
     filter?: AccountFilter;
   }) => {
     const request = create(ListServiceAccountsRequestSchema, {
-      parent: parent ?? "workspaces/-",
+      parent,
       pageSize,
       pageToken,
       showDeleted,
@@ -102,10 +102,10 @@ export const useServiceAccountStore = defineStore("serviceAccount", () => {
   const createServiceAccount = async (
     serviceAccountId: string,
     serviceAccount: Partial<ServiceAccount>,
-    parent?: string
+    parent: string
   ) => {
     const request = create(CreateServiceAccountRequestSchema, {
-      parent: parent ?? "workspaces/-",
+      parent,
       serviceAccountId,
       serviceAccount: create(
         ServiceAccountSchema,

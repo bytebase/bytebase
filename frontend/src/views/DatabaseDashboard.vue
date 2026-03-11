@@ -40,7 +40,7 @@
         mode="ALL"
         :bordered="false"
         :filter="filter"
-        :parent="'workspaces/-'"
+        :parent="actuatorStore.workspaceResourceName"
         :footer-class="'mx-4'"
         :custom-click="!!onClickDatabase"
         v-model:selected-database-names="state.selectedDatabaseNameList"
@@ -71,7 +71,11 @@ import {
   DatabaseOperations,
   PagedDatabaseTable,
 } from "@/components/v2/Model/DatabaseV1Table";
-import { useDatabaseV1Store, useUIStateStore } from "@/store";
+import {
+  useActuatorV1Store,
+  useDatabaseV1Store,
+  useUIStateStore,
+} from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
@@ -101,6 +105,7 @@ defineProps<{
 
 const uiStateStore = useUIStateStore();
 const databaseStore = useDatabaseV1Store();
+const actuatorStore = useActuatorV1Store();
 const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const defaultSearchParams = () => {

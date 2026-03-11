@@ -517,6 +517,14 @@ func GetNameParentTokens(name string, tokenPrefixes ...string) ([]string, error)
 	return tokens, nil
 }
 
+func GetWorkspaceID(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, WorkspacePrefix)
+	if err != nil {
+		return "", err
+	}
+	return tokens[0], nil
+}
+
 func FormatWorkspace(id string) string {
 	return fmt.Sprintf("%s%s", WorkspacePrefix, id)
 }

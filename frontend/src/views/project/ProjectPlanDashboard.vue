@@ -217,7 +217,7 @@ const scopeOptions = computed((): ScopeOption[] => {
   const stateOption: ScopeOption = {
     id: "state",
     title: t("common.state"),
-    description: t("plan.state.description"),
+    description: t("issue.advanced-search.scope.state.description"),
     options: [
       {
         value: "ACTIVE",

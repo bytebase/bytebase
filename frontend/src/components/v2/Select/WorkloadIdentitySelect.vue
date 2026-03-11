@@ -43,7 +43,7 @@ const props = defineProps<{
   disabled?: boolean;
   size?: SelectSize;
   value?: string | string[] | undefined; // workloadIdentity fullname
-  parent?: string; // e.g. "projects/{project}" for project-scoped identities
+  parent: string; // e.g. "projects/{project}" for project-scoped identities
   filter?: (wi: WorkloadIdentity) => boolean;
 }>();
 

@@ -1048,6 +1048,9 @@
         "engine": {
           "title": "Engine",
           "description": "Filter by engines"
+        },
+        "state": {
+          "description": "Filter by state"
         }
       }
     },
@@ -1251,7 +1254,6 @@
       "last-refresh": "Last refresh: {time}"
     },
     "state": {
-      "description": "Filter plans by their state",
       "close-confirm": "Are you sure to close this plan?",
       "reopen-confirm": "Are you sure to reopen this plan?"
     },

@@ -1048,6 +1048,9 @@
         "engine": {
           "title": "引擎",
           "description": "按引擎过滤"
+        },
+        "state": {
+          "description": "按状态过滤"
         }
       }
     },
@@ -1251,7 +1254,6 @@
       "last-refresh": "上次刷新：{time}"
     },
     "state": {
-      "description": "按状态过滤",
       "close-confirm": "确定关闭该变更计划？",
       "reopen-confirm": "确定重新开启该变更计划？"
     },

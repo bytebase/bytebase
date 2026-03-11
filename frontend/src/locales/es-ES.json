@@ -1048,6 +1048,9 @@
         "engine": {
           "title": "Motor",
           "description": "Filtrar por motores"
+        },
+        "state": {
+          "description": "Filtrar por estado"
         }
       }
     },
@@ -1251,7 +1254,6 @@
       "last-refresh": "Última actualización: {time}"
     },
     "state": {
-      "description": "Filtrar planes por estado",
       "close-confirm": "¿Estás seguro de que deseas cerrar este plan?",
       "reopen-confirm": "¿Estás seguro de que deseas reabrir este plan?"
     },

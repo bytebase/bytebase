@@ -118,7 +118,10 @@ func SQLReviewCheck(
 	}
 
 	if checkContext.FinalMetadata != nil {
-		if advice := schema.WalkThrough(checkContext.DBType, checkContext.FinalMetadata, asts); advice != nil {
+		walkThroughContext := schema.WalkThroughContext{
+			SessionUser: checkContext.SessionUser,
+		}
+		if advice := schema.WalkThroughWithContext(checkContext.DBType, walkThroughContext, checkContext.FinalMetadata, asts); advice != nil {
 			for _, rule := range ruleList {
 				if rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
 					if status, err := NewStatusBySQLReviewRuleLevel(rule.Level); err == nil {

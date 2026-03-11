@@ -60,7 +60,8 @@ type Context struct {
 	TenantMode bool
 
 	// SQL review level fields.
-	DBType storepb.Engine
+	DBType      storepb.Engine
+	SessionUser string
 
 	// Snowflake specific fields (duplicates CurrentDatabase, kept for compatibility).
 	// CurrentDatabase string

@@ -124,7 +124,7 @@ func (x *ServiceAccount) GetCreateTime() *timestamppb.Timestamp {
 type CreateServiceAccountRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this service account will be created.
-	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The ID to use for the service account, which will become the final component
 	// of the service account's email in the format: {service_account_id}@service.bytebase.com
@@ -238,7 +238,7 @@ func (x *GetServiceAccountRequest) GetName() string {
 type ListServiceAccountsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource.
-	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of service accounts to return. The service may return fewer than
 	// this value.

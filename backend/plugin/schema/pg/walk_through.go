@@ -21,11 +21,16 @@ const (
 )
 
 func init() {
-	schema.RegisterWalkThrough(storepb.Engine_POSTGRES, WalkThrough)
+	schema.RegisterWalkThroughWithContext(storepb.Engine_POSTGRES, WalkThroughWithContext)
 }
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
+	return WalkThroughWithContext(schema.WalkThroughContext{}, d, ast)
+}
+
+// WalkThroughWithContext walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
+func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	// Extract ANTLRAST from AST
 	var antlrASTList []*base.ANTLRAST
 	for _, unifiedAST := range ast {
@@ -48,6 +53,11 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	listener := &pgCatalogListener{
 		BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
 		databaseState:                d,
+		session: pgSessionState{
+			sessionUser:       ctx.SessionUser,
+			currentUser:       ctx.SessionUser,
+			defaultSearchPath: d.GetConfiguredSearchPath(),
+		},
 	}
 
 	// Walk through all parse results
@@ -80,8 +90,240 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 type pgCatalogListener struct {
 	*parser.BasePostgreSQLParserListener
 	databaseState *model.DatabaseMetadata
+	session       pgSessionState
 	advice        *storepb.Advice
 	currentLine   int
+}
+
+type pgSessionState struct {
+	sessionUser       string
+	currentUser       string
+	defaultSearchPath []model.PGSearchPathItem
+	searchPath        []model.PGSearchPathItem
+}
+
+func (s *pgSessionState) configuredSearchPath() []model.PGSearchPathItem {
+	if s.searchPath != nil {
+		return s.searchPath
+	}
+	return s.defaultSearchPath
+}
+
+func (s *pgSessionState) resolvedSearchPath() []string {
+	return model.ResolvePGSearchPath(s.configuredSearchPath(), s.currentUser, nil)
+}
+
+func (s *pgSessionState) effectiveSearchPath(db *model.DatabaseMetadata) []string {
+	return model.ResolvePGSearchPath(s.configuredSearchPath(), s.currentUser, func(name string) bool {
+		return db.GetSchemaMetadata(name) != nil
+	})
+}
+
+func (l *pgCatalogListener) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
+		return
+	}
+
+	setRest := ctx.Set_rest()
+	if setRest == nil {
+		return
+	}
+	setRestMore := setRest.Set_rest_more()
+	if setRestMore == nil {
+		return
+	}
+
+	if setRestMore.ROLE() != nil && setRestMore.Nonreservedword_or_sconst() != nil {
+		roleName, reset := normalizePGRoleName(setRestMore.Nonreservedword_or_sconst().GetText())
+		if reset {
+			l.session.currentUser = l.session.sessionUser
+			return
+		}
+		l.session.currentUser = roleName
+		return
+	}
+
+	genericSet := setRestMore.Generic_set()
+	if genericSet == nil {
+		return
+	}
+	varName := genericSet.Var_name()
+	if varName == nil || len(varName.AllColid()) != 1 {
+		return
+	}
+	name := pgparser.NormalizePostgreSQLColid(varName.Colid(0))
+	if !strings.EqualFold(name, "search_path") {
+		return
+	}
+
+	varList := genericSet.Var_list()
+	if varList == nil {
+		return
+	}
+	values := varList.AllVar_value()
+	if len(values) == 0 {
+		return
+	}
+	if len(values) == 1 && strings.EqualFold(strings.TrimSpace(values[0].GetText()), "default") {
+		l.session.searchPath = nil
+		return
+	}
+
+	parts := make([]string, 0, len(values))
+	for _, value := range values {
+		parts = append(parts, value.GetText())
+	}
+	l.session.searchPath = model.ParsePGConfiguredSearchPath(strings.Join(parts, ", "))
+}
+
+func (l *pgCatalogListener) EnterVariableresetstmt(ctx *parser.VariableresetstmtContext) {
+	if !isTopLevel(ctx.GetParent()) || l.advice != nil {
+		return
+	}
+
+	resetRest := ctx.Reset_rest()
+	if resetRest == nil {
+		return
+	}
+	if resetRest.SESSION() != nil && resetRest.AUTHORIZATION() != nil {
+		l.session.currentUser = l.session.sessionUser
+		return
+	}
+	genericReset := resetRest.Generic_reset()
+	if genericReset == nil {
+		return
+	}
+	if genericReset.ALL() != nil {
+		l.session.currentUser = l.session.sessionUser
+		l.session.searchPath = nil
+		return
+	}
+	varName := genericReset.Var_name()
+	if varName == nil || len(varName.AllColid()) != 1 {
+		return
+	}
+	name := pgparser.NormalizePostgreSQLColid(varName.Colid(0))
+	switch {
+	case strings.EqualFold(name, "search_path"):
+		l.session.searchPath = nil
+	case strings.EqualFold(name, "role"):
+		l.session.currentUser = l.session.sessionUser
+	default:
+	}
+}
+
+func normalizePGRoleName(roleName string) (string, bool) {
+	roleName = strings.TrimSpace(roleName)
+	if roleName == "" {
+		return "", true
+	}
+	trimmed := strings.Trim(roleName, `"'`)
+	if strings.EqualFold(trimmed, "none") || strings.EqualFold(trimmed, "default") {
+		return "", true
+	}
+	return trimmed, false
+}
+
+func (l *pgCatalogListener) lookupSearchPath() []string {
+	searchPath := l.session.effectiveSearchPath(l.databaseState)
+	if len(searchPath) == 0 {
+		return []string{PublicSchemaName}
+	}
+	return searchPath
+}
+
+func (l *pgCatalogListener) resolveSchemaForCreate(explicitSchemaName string, line int) (*model.SchemaMetadata, *storepb.Advice) {
+	if explicitSchemaName != "" {
+		return getOrCreatePublicSchema(l.databaseState, explicitSchemaName, line)
+	}
+	for _, schemaName := range l.session.resolvedSearchPath() {
+		schema := l.databaseState.GetSchemaMetadata(schemaName)
+		if schema != nil {
+			return schema, nil
+		}
+		if schemaName == PublicSchemaName {
+			return l.databaseState.CreateSchema(PublicSchemaName), nil
+		}
+	}
+	return getOrCreatePublicSchema(l.databaseState, PublicSchemaName, line)
+}
+
+func (l *pgCatalogListener) findTable(schemaName string, tableName string) (*model.SchemaMetadata, *model.TableMetadata) {
+	if schemaName != "" {
+		schema := l.databaseState.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			return nil, nil
+		}
+		return schema, schema.GetTable(tableName)
+	}
+	resolvedSchemaName, table := l.databaseState.SearchTable(l.lookupSearchPath(), tableName)
+	if table == nil {
+		return nil, nil
+	}
+	return l.databaseState.GetSchemaMetadata(resolvedSchemaName), table
+}
+
+func (l *pgCatalogListener) findTableOrMaterializedView(schemaName string, relationName string) (*model.SchemaMetadata, *model.TableMetadata, *storepb.MaterializedViewMetadata) {
+	if schemaName != "" {
+		schema := l.databaseState.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			return nil, nil, nil
+		}
+		return schema, schema.GetTable(relationName), schema.GetMaterializedView(relationName)
+	}
+	searchPath := l.lookupSearchPath()
+	if resolvedSchemaName, table := l.databaseState.SearchTable(searchPath, relationName); table != nil {
+		return l.databaseState.GetSchemaMetadata(resolvedSchemaName), table, nil
+	}
+	if resolvedSchemaName, matView := l.databaseState.SearchMaterializedView(searchPath, relationName); matView != nil {
+		return l.databaseState.GetSchemaMetadata(resolvedSchemaName), nil, matView
+	}
+	return nil, nil, nil
+}
+
+func (l *pgCatalogListener) findView(schemaName string, viewName string) (*model.SchemaMetadata, *storepb.ViewMetadata) {
+	if schemaName != "" {
+		schema := l.databaseState.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			return nil, nil
+		}
+		return schema, schema.GetView(viewName)
+	}
+	resolvedSchemaName, view := l.databaseState.SearchView(l.lookupSearchPath(), viewName)
+	if view == nil {
+		return nil, nil
+	}
+	return l.databaseState.GetSchemaMetadata(resolvedSchemaName), view
+}
+
+func (l *pgCatalogListener) findMaterializedView(schemaName string, viewName string) (*model.SchemaMetadata, *storepb.MaterializedViewMetadata) {
+	if schemaName != "" {
+		schema := l.databaseState.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			return nil, nil
+		}
+		return schema, schema.GetMaterializedView(viewName)
+	}
+	resolvedSchemaName, view := l.databaseState.SearchMaterializedView(l.lookupSearchPath(), viewName)
+	if view == nil {
+		return nil, nil
+	}
+	return l.databaseState.GetSchemaMetadata(resolvedSchemaName), view
+}
+
+func (l *pgCatalogListener) findIndex(schemaName string, indexName string) (*model.SchemaMetadata, *model.IndexMetadata) {
+	if schemaName != "" {
+		schema := l.databaseState.GetSchemaMetadata(schemaName)
+		if schema == nil {
+			return nil, nil
+		}
+		return schema, schema.GetIndex(indexName)
+	}
+	resolvedSchemaName, index := l.databaseState.SearchIndex(l.lookupSearchPath(), indexName)
+	if index == nil {
+		return nil, nil
+	}
+	return l.databaseState.GetSchemaMetadata(resolvedSchemaName), index
 }
 
 // ========================================
@@ -118,7 +360,7 @@ func (l *pgCatalogListener) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		return
 	}
 	// Get or create schema
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
+	schema, err := l.resolveSchemaForCreate(schemaName, l.currentLine)
 	if err != nil {
 		l.advice = err
 		return
@@ -459,14 +701,8 @@ func (l *pgCatalogListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	}
 	relationName := extractTableName(relationExpr.Qualified_name())
 	schemaName := extractSchemaName(relationExpr.Qualified_name())
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
-		l.advice = err
-		return
-	}
 	// Try to find the relation as a table first, then as a materialized view
-	table := schema.GetTable(relationName)
-	matView := schema.GetMaterializedView(relationName)
+	schema, table, matView := l.findTableOrMaterializedView(schemaName, relationName)
 	if table == nil && matView == nil {
 		l.advice = &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
@@ -652,17 +888,12 @@ func (l *pgCatalogListener) EnterAltertablestmt(ctx *parser.AltertablestmtContex
 		return
 	}
 	// Get schema and table
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
-		l.advice = err
-		return
-	}
-	table := schema.GetTable(tableName)
+	schema, table, matView := l.findTableOrMaterializedView(schemaName, tableName)
 	if table == nil {
 		// Check if it's a materialized view - PostgreSQL allows some ALTER TABLE
 		// commands on materialized views (e.g., OWNER TO). Skip processing for
 		// materialized views since we don't track these changes in metadata.
-		if schema.GetMaterializedView(tableName) != nil {
+		if matView != nil {
 			return
 		}
 		l.advice = &storepb.Advice{
@@ -1318,14 +1549,7 @@ func (l *pgCatalogListener) dropTable(anyName parser.IAny_nameContext, ifExists 
 		schemaName = parts[0]
 		tableName = parts[1]
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
-		if ifExists {
-			return nil
-		}
-		return err
-	}
-	table := schema.GetTable(tableName)
+	schema, table := l.findTable(schemaName, tableName)
 	if table == nil {
 		if ifExists {
 			return nil
@@ -1381,12 +1605,21 @@ func (l *pgCatalogListener) dropView(anyName parser.IAny_nameContext, ifExists b
 	default:
 		return nil
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
-		return err
+	schema, view := l.findView(schemaName, viewName)
+	if view == nil {
+		if !ifExists {
+			return &storepb.Advice{
+				Status:        storepb.Advice_ERROR,
+				Code:          code.ViewNotExists.Int32(),
+				Title:         fmt.Sprintf("View %q does not exist", viewName),
+				Content:       fmt.Sprintf("View %q does not exist", viewName),
+				StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+			}
+		}
+		return nil
 	}
 	// Try to drop the view
-	if dropErr := schema.DropView(viewName); dropErr != nil {
+	if dropErr := schema.DropView(view.Name); dropErr != nil {
 		if !ifExists {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -1414,15 +1647,21 @@ func (l *pgCatalogListener) dropMaterializedView(anyName parser.IAny_nameContext
 	default:
 		return nil
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
+	schema, view := l.findMaterializedView(schemaName, viewName)
+	if view == nil {
 		if ifExists {
 			return nil
 		}
-		return err
+		return &storepb.Advice{
+			Status:        storepb.Advice_ERROR,
+			Code:          code.ViewNotExists.Int32(),
+			Title:         fmt.Sprintf("Materialized view %q does not exist", viewName),
+			Content:       fmt.Sprintf("Materialized view %q does not exist", viewName),
+			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
+		}
 	}
 	// Try to drop the materialized view
-	if dropErr := schema.DropMaterializedView(viewName); dropErr != nil {
+	if dropErr := schema.DropMaterializedView(view.Name); dropErr != nil {
 		if !ifExists {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -1448,24 +1687,20 @@ func (l *pgCatalogListener) dropIndex(anyName parser.IAny_nameContext, ifExists 
 		schemaName = parts[0]
 		indexName = parts[1]
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
-		if ifExists {
-			return nil
-		}
-		return err
-	}
-	// Get the index - it could be on a table or materialized view
-	index := schema.GetIndex(indexName)
+	schema, index := l.findIndex(schemaName, indexName)
 	if index == nil {
 		if ifExists {
 			return nil
 		}
+		indexTitle := fmt.Sprintf("Index %q does not exist", indexName)
+		if schema != nil {
+			indexTitle = fmt.Sprintf("Index %q does not exist in schema %q", indexName, schema.GetProto().Name)
+		}
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.IndexNotExists.Int32(),
-			Title:         fmt.Sprintf("Index %q does not exist in schema %q", indexName, schema.GetProto().Name),
-			Content:       fmt.Sprintf("Index %q does not exist in schema %q", indexName, schema.GetProto().Name),
+			Title:         indexTitle,
+			Content:       indexTitle,
 			StartPosition: &storepb.Position{Line: int32(l.currentLine)},
 		}
 	}
@@ -1577,18 +1812,18 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 			indexName := extractTableName(ctx.Qualified_name())
 			schemaName := extractSchemaName(ctx.Qualified_name())
 			newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-			schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-			if err != nil {
-				l.advice = err
+			schema, index := l.findIndex(schemaName, indexName)
+			if index == nil {
+				// Index not found, silently ignore (PostgreSQL behavior)
 				return
 			}
 			// Find the index across all tables
-			foundTable, _, err := getIndexFromSchema(schema, indexName)
+			foundTable, _, err := getIndexFromSchema(schema, index.GetProto().Name)
 			if err != nil {
 				// Index not found, silently ignore (PostgreSQL behavior)
 				return
 			}
-			if err := l.renameConstraint(schema, foundTable, indexName, newName, l.currentLine); err != nil {
+			if err := l.renameConstraint(schema, foundTable, index.GetProto().Name, newName, l.currentLine); err != nil {
 				l.advice = err
 			}
 		}
@@ -1601,14 +1836,9 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		viewName := extractTableName(ctx.Qualified_name())
 		schemaName := extractSchemaName(ctx.Qualified_name())
 		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-		schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-		if err != nil {
-			l.advice = err
-			return
-		}
-		// Check if it's a view
-		if schema.GetView(viewName) != nil {
-			if err := schema.RenameView(viewName, newName); err != nil {
+		schema, view := l.findView(schemaName, viewName)
+		if view != nil {
+			if err := schema.RenameView(view.Name, newName); err != nil {
 				l.advice = &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
 					Code:          code.ViewNotExists.Int32(),
@@ -1626,11 +1856,7 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
 		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
-	if err != nil {
-		l.advice = err
-		return
-	}
+	schema, table := l.findTable(schemaName, tableName)
 	// Check if this is column rename
 	if ctx.Opt_column() != nil {
 		// RENAME COLUMN: ALTER TABLE table RENAME COLUMN oldname TO newname
@@ -1639,7 +1865,6 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		if len(allNames) >= 2 && tableName != "" {
 			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
-			table := schema.GetTable(tableName)
 			if table == nil {
 				l.advice = &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -1663,7 +1888,6 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 		if len(allNames) >= 2 {
 			oldName := pgparser.NormalizePostgreSQLName(allNames[0])
 			newName := pgparser.NormalizePostgreSQLName(allNames[1])
-			table := schema.GetTable(tableName)
 			if table == nil {
 				l.advice = &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -1683,7 +1907,6 @@ func (l *pgCatalogListener) EnterRenamestmt(ctx *parser.RenamestmtContext) {
 	// Otherwise it's table rename: ALTER TABLE oldname RENAME TO newname
 	if tableName != "" && ctx.AllName() != nil && len(ctx.AllName()) > 0 {
 		newName := pgparser.NormalizePostgreSQLName(ctx.AllName()[0])
-		table := schema.GetTable(tableName)
 		if table == nil {
 			l.advice = &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -1728,14 +1951,14 @@ func (l *pgCatalogListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
 		}
 		return
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
+	schema, err := l.resolveSchemaForCreate(schemaName, l.currentLine)
 	if err != nil {
 		l.advice = err
 		return
 	}
 	// Check if view already exists - silently ignore duplicates
 	// This matches the legacy behavior in the old DatabaseState implementation
-	if schema.GetView(viewName) != nil {
+	if existingView := schema.GetView(viewName); existingView != nil {
 		return
 	}
 	// Get the view definition (the SELECT statement)
@@ -1785,7 +2008,7 @@ func (l *pgCatalogListener) EnterCreatematviewstmt(ctx *parser.Creatematviewstmt
 		}
 		return
 	}
-	schema, err := getOrCreatePublicSchema(l.databaseState, schemaName, l.currentLine)
+	schema, err := l.resolveSchemaForCreate(schemaName, l.currentLine)
 	if err != nil {
 		l.advice = err
 		return

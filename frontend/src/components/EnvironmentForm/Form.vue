@@ -161,6 +161,7 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import {
   hasFeature,
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
@@ -264,7 +265,7 @@ const fetchDatabases = async () => {
   try {
     const resp = await databaseStore.fetchDatabases({
       pageSize: 1,
-      parent: "workspaces/-",
+      parent: useActuatorV1Store().workspaceResourceName,
       filter: {
         environment: environment.value.name,
       },
