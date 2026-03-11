@@ -1050,7 +1050,7 @@
           "description": "按引擎过滤"
         },
         "state": {
-          "description": "按状态筛选"
+          "description": "按状态过滤"
         }
       }
     },
