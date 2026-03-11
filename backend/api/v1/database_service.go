@@ -725,19 +725,19 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 
 func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {
 	if strings.Contains(request.Name, common.ChangelogPrefix) {
-		instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(request.Name)
+		instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(request.Name)
 		if err != nil {
 			return nil, err
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			UID: &changelogUID,
+			ResourceID: &changelogID,
 		})
 		if err != nil {
 			return nil, err
 		}
 		if changelog == nil {
-			return nil, errors.Errorf("changelog %d not found", changelogUID)
+			return nil, errors.Errorf("changelog %q not found", changelogID)
 		}
 
 		// Use SyncHistoryUID to get historical metadata
@@ -805,19 +805,19 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 
 	// If the change history id is set, use the schema of the change history as the target.
 	if changeHistoryID != "" {
-		instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(changeHistoryID)
+		instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(changeHistoryID)
 		if err != nil {
 			return nil, err
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			UID: &changelogUID,
+			ResourceID: &changelogID,
 		})
 		if err != nil {
 			return nil, err
 		}
 		if changelog == nil {
-			return nil, errors.Errorf("changelog %d not found", changelogUID)
+			return nil, errors.Errorf("changelog %q not found", changelogID)
 		}
 
 		// Use SyncHistoryUID to get historical metadata
@@ -907,7 +907,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	var instanceID string
 
 	if strings.Contains(request.Name, common.ChangelogPrefix) {
-		insID, _, _, err := common.GetInstanceDatabaseChangelogUID(request.Name)
+		insID, _, _, err := common.GetInstanceDatabaseChangelogID(request.Name)
 		if err != nil {
 			return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}

@@ -251,7 +251,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
-			Name:              fmt.Sprintf("%s/%s%d", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ID),
+			Name:              fmt.Sprintf("%s/%s%s", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ResourceID),
 			Type:              convertToV1WebhookType(webhook.Payload.GetType()),
 			Title:             webhook.Payload.GetTitle(),
 			Url:               webhook.Payload.GetUrl(),

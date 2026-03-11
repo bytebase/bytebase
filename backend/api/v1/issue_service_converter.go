@@ -296,7 +296,7 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		Comment:    ic.Payload.Comment,
 		CreateTime: timestamppb.New(ic.CreatedAt),
 		UpdateTime: timestamppb.New(ic.UpdatedAt),
-		Name:       fmt.Sprintf("%s/%s%d", issueName, common.IssueCommentNamePrefix, ic.UID),
+		Name:       fmt.Sprintf("%s/%s%s", issueName, common.IssueCommentNamePrefix, ic.ResourceID),
 		Creator:    common.FormatUserEmail(ic.CreatorEmail),
 	}
 

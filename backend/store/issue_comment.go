@@ -13,7 +13,7 @@ import (
 )
 
 type IssueCommentMessage struct {
-	UID          int
+	ResourceID   string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	IssueUID     int
@@ -22,15 +22,15 @@ type IssueCommentMessage struct {
 }
 
 type FindIssueCommentMessage struct {
-	UID      *int
-	IssueUID *int
+	ResourceID *string
+	IssueUID   *int
 
 	Limit  *int
 	Offset *int
 }
 
 type UpdateIssueCommentMessage struct {
-	UID int
+	ResourceID string
 
 	Comment *string
 }
@@ -52,7 +52,7 @@ func (s *Store) GetIssueComment(ctx context.Context, find *FindIssueCommentMessa
 func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMessage) ([]*IssueCommentMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
+			resource_id,
 			creator,
 			created_at,
 			updated_at,
@@ -63,14 +63,14 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		WHERE TRUE
 	`)
 
-	if v := find.UID; v != nil {
-		q.And("id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
 	}
 	if v := find.IssueUID; v != nil {
 		q.And("issue_id = ?", *v)
 	}
 
-	q.Space("ORDER BY id ASC")
+	q.Space("ORDER BY created_at ASC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -96,7 +96,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		}
 		var p []byte
 		if err := rows.Scan(
-			&ic.UID,
+			&ic.ResourceID,
 			&ic.CreatorEmail,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
@@ -146,14 +146,14 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 
 	// For single comment, use RETURNING to get the created comment details.
 	if len(creates) == 1 {
-		q.Space("RETURNING id, created_at, updated_at")
+		q.Space("RETURNING resource_id, created_at, updated_at")
 		query, args, err := q.ToSQL()
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to build sql")
 		}
 
 		create := creates[0]
-		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ResourceID, &create.CreatedAt, &create.UpdatedAt); err != nil {
 			return nil, errors.Wrapf(err, "failed to insert")
 		}
 		create.CreatorEmail = creator
@@ -180,7 +180,7 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 		q.Join(", ", "payload = payload || jsonb_build_object('comment',?::TEXT)", *v)
 	}
 
-	q.Space("WHERE id = ?", patch.UID)
+	q.Space("WHERE resource_id = ?", patch.ResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

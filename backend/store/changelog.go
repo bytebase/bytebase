@@ -31,15 +31,15 @@ type ChangelogMessage struct {
 	Status         ChangelogStatus
 
 	// output only
-	UID       int64
-	CreatedAt time.Time
+	ResourceID string
+	CreatedAt  time.Time
 
 	Schema    string
 	PlanTitle string
 }
 
 type FindChangelogMessage struct {
-	UID          *int64
+	ResourceID   *string
 	InstanceID   *string
 	DatabaseName *string
 
@@ -56,17 +56,17 @@ type FindChangelogMessage struct {
 }
 
 type UpdateChangelogMessage struct {
-	UID int64
+	ResourceID string
 
 	SyncHistoryUID *int64
 	Status         *ChangelogStatus
 	DumpVersion    *int32
 }
 
-func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (int64, error) {
+func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (string, error) {
 	p, err := protojson.Marshal(create.Payload)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to marshal")
+		return "", errors.Wrapf(err, "failed to marshal")
 	}
 
 	q := qb.Q().Space(`
@@ -83,20 +83,20 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 			?,
 			?
 		)
-		RETURNING id
+		RETURNING resource_id
 	`, create.InstanceID, create.DatabaseName, create.Status, create.SyncHistoryUID, p)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to build sql")
+		return "", errors.Wrapf(err, "failed to build sql")
 	}
 
-	var id int64
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
-		return 0, errors.Wrapf(err, "failed to insert")
+	var resourceID string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&resourceID); err != nil {
+		return "", errors.Wrapf(err, "failed to insert")
 	}
 
-	return id, nil
+	return resourceID, nil
 }
 
 func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMessage) error {
@@ -115,7 +115,7 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 		return errors.Errorf("update nothing")
 	}
 
-	query, args, err := qb.Q().Space("UPDATE changelog SET ? WHERE id = ?", set, update.UID).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE changelog SET ? WHERE resource_id = ?", set, update.ResourceID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
@@ -138,7 +138,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 
 	q := qb.Q().Space(`
 		SELECT
-			changelog.id,
+			changelog.resource_id,
 			changelog.created_at,
 			changelog.instance,
 			changelog.db_name,
@@ -158,8 +158,8 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		WHERE TRUE
 	`)
 
-	if v := find.UID; v != nil {
-		q.And("changelog.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("changelog.resource_id = ?", *v)
 	}
 	if v := find.InstanceID; v != nil {
 		q.And("changelog.instance = ?", *v)
@@ -180,7 +180,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		q.And("changelog.created_at >= ?", *v)
 	}
 
-	q.Space("ORDER BY changelog.id DESC")
+	q.Space("ORDER BY changelog.created_at DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -207,7 +207,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		var payload []byte
 
 		if err := rows.Scan(
-			&c.UID,
+			&c.ResourceID,
 			&c.CreatedAt,
 			&c.InstanceID,
 			&c.DatabaseName,

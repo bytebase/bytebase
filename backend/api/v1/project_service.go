@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -774,10 +773,6 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	webhookIDInt, err := strconv.Atoi(webhookID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid webhook id %q", webhookID))
-	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -797,8 +792,8 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 	}
 
 	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
-		ProjectID: &project.ResourceID,
-		ID:        &webhookIDInt,
+		ProjectID:  &project.ResourceID,
+		ResourceID: &webhookID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -851,7 +846,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		Payload: updatedPayload,
 	}
 
-	if _, err := s.store.UpdateProjectWebhook(ctx, project.ResourceID, webhook.ID, update); err != nil {
+	if _, err := s.store.UpdateProjectWebhook(ctx, project.ResourceID, webhook.ResourceID, update); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -870,10 +865,6 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	webhookIDInt, err := strconv.Atoi(webhookID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid webhook id %q", webhookID))
-	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -889,8 +880,8 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 	}
 
 	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
-		ProjectID: &project.ResourceID,
-		ID:        &webhookIDInt,
+		ProjectID:  &project.ResourceID,
+		ResourceID: &webhookID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -899,7 +890,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
 	}
 
-	if err := s.store.DeleteProjectWebhook(ctx, project.ResourceID, webhook.ID); err != nil {
+	if err := s.store.DeleteProjectWebhook(ctx, project.ResourceID, webhook.ResourceID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -969,7 +960,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 			Title:       fmt.Sprintf("Test webhook %q", webhook.Payload.GetTitle()),
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Payload.GetTitle()),
 			Description: "This is a test",
-			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", externalURL, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
+			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", externalURL, project.ResourceID, fmt.Sprintf("%s-%s", slug.Make(webhook.Payload.GetTitle()), webhook.ResourceID)),
 			ActorID:     userMessage.ID,
 			ActorName:   userMessage.Name,
 			ActorEmail:  userMessage.Email,

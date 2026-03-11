@@ -97,9 +97,9 @@ func (s *RevisionService) GetRevision(
 	req *connect.Request[v1pb.GetRevisionRequest],
 ) (*connect.Response[v1pb.Revision], error) {
 	request := req.Msg
-	instanceID, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
+	instanceID, databaseName, revisionID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision ID from %v", request.Name))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
@@ -113,7 +113,7 @@ func (s *RevisionService) GetRevision(
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database not found"))
 	}
 
-	revision, err := s.store.GetRevision(ctx, revisionUID, instanceID, databaseName)
+	revision, err := s.store.GetRevision(ctx, revisionID, instanceID, databaseName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get revision %v", request.Name))
 	}
@@ -271,7 +271,7 @@ func (s *RevisionService) DeleteRevision(
 	req *connect.Request[v1pb.DeleteRevisionRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	request := req.Msg
-	instanceID, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
+	instanceID, databaseName, revisionID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %v", request.Name))
 	}
@@ -279,7 +279,7 @@ func (s *RevisionService) DeleteRevision(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	if err := s.store.DeleteRevision(ctx, revisionUID, instanceID, databaseName, user.Email); err != nil {
+	if err := s.store.DeleteRevision(ctx, revisionID, instanceID, databaseName, user.Email); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", request.Name))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -297,7 +297,7 @@ func convertToRevisions(parent string, projectID string, revisions []*store.Revi
 func convertToRevision(parent string, projectID string, revision *store.RevisionMessage) *v1pb.Revision {
 	taskRunName := revision.Payload.TaskRun
 	r := &v1pb.Revision{
-		Name:        fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
+		Name:        fmt.Sprintf("%s/%s%s", parent, common.RevisionNamePrefix, revision.ResourceID),
 		Release:     revision.Payload.Release,
 		CreateTime:  timestamppb.New(revision.CreatedAt),
 		Sheet:       common.FormatSheet(projectID, revision.Payload.SheetSha256),
