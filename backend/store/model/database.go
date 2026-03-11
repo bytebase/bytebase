@@ -22,7 +22,7 @@ type DatabaseMetadata struct {
 	isDetailCaseSensitive bool
 
 	// Metadata fields (formerly in DatabaseMetadata)
-	searchPath     []string
+	searchPath     []PGSearchPathItem
 	internal       map[string]*SchemaMetadata
 	linkedDatabase map[string]*storepb.LinkedDatabaseMetadata
 }
@@ -97,7 +97,7 @@ func NewDatabaseMetadata(
 		config:                config,
 		isObjectCaseSensitive: isObjectCaseSensitive,
 		isDetailCaseSensitive: isDetailCaseSensitive,
-		searchPath:            normalizeSearchPath(metadata.SearchPath),
+		searchPath:            ParsePGConfiguredSearchPath(metadata.SearchPath),
 		internal:              make(map[string]*SchemaMetadata),
 		linkedDatabase:        make(map[string]*storepb.LinkedDatabaseMetadata),
 	}
@@ -201,8 +201,20 @@ func (d *DatabaseMetadata) GetConfig() *storepb.DatabaseConfig {
 	return d.config
 }
 
+func (d *DatabaseMetadata) GetConfiguredSearchPath() []PGSearchPathItem {
+	return slices.Clone(d.searchPath)
+}
+
 func (d *DatabaseMetadata) GetSearchPath() []string {
-	return d.searchPath
+	return ResolvePGSearchPath(d.searchPath, "", nil)
+}
+
+func (d *DatabaseMetadata) GetSearchPathForCurrentUser(currentUser string) []string {
+	return ResolvePGSearchPath(d.searchPath, currentUser, d.hasSchema)
+}
+
+func (d *DatabaseMetadata) hasSchema(name string) bool {
+	return d.GetSchemaMetadata(name) != nil
 }
 
 func (d *DatabaseMetadata) GetSchemaMetadata(name string) *SchemaMetadata {

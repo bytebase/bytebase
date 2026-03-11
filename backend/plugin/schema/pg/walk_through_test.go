@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -218,5 +219,137 @@ func TestWalkThroughANTLR(t *testing.T) {
 			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff)
+	}
+}
+
+func TestWalkThroughSearchPathState(t *testing.T) {
+	tests := []struct {
+		name       string
+		searchPath string
+		session    schema.WalkThroughContext
+		sql        string
+		assert     func(*testing.T, *model.DatabaseMetadata)
+	}{
+		{
+			name:       "session user expands $user on initial resolution",
+			searchPath: `"$user", public`,
+			session:    schema.WalkThroughContext{SessionUser: "alice"},
+			sql:        `CREATE TABLE session_target (id int);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.NotNil(t, state.GetSchemaMetadata("alice").GetTable("session_target"))
+				require.Nil(t, state.GetSchemaMetadata("public").GetTable("session_target"))
+			},
+		},
+		{
+			name:       "set role recomputes $user target schema",
+			searchPath: `"$user", public`,
+			session:    schema.WalkThroughContext{SessionUser: "alice"},
+			sql:        `SET ROLE bob; CREATE TABLE role_target (id int);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.NotNil(t, state.GetSchemaMetadata("bob").GetTable("role_target"))
+				require.Nil(t, state.GetSchemaMetadata("alice").GetTable("role_target"))
+			},
+		},
+		{
+			name:       "set search_path changes unqualified create target",
+			searchPath: `public`,
+			sql:        `SET search_path TO app, public; CREATE TABLE path_target (id int);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.NotNil(t, state.GetSchemaMetadata("app").GetTable("path_target"))
+				require.Nil(t, state.GetSchemaMetadata("public").GetTable("path_target"))
+			},
+		},
+		{
+			name:       "ordered lookup picks first matching schema",
+			searchPath: `public`,
+			sql:        `SET search_path TO app, public; CREATE INDEX idx_dup_id ON dup(id);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.NotNil(t, state.GetSchemaMetadata("app").GetTable("dup").GetIndex("idx_dup_id"))
+				require.Nil(t, state.GetSchemaMetadata("public").GetTable("dup").GetIndex("idx_dup_id"))
+			},
+		},
+		{
+			name:       "set search_path to default restores configured path",
+			searchPath: `public, app`,
+			sql:        `SET search_path TO app; SET search_path TO DEFAULT; CREATE TABLE default_target (id int);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.NotNil(t, state.GetSchemaMetadata("public").GetTable("default_target"))
+				require.Nil(t, state.GetSchemaMetadata("app").GetTable("default_target"))
+			},
+		},
+		{
+			name:       "explicit schema still wins over current path",
+			searchPath: `public`,
+			sql:        `SET search_path TO app; CREATE TABLE public.explicit_target (id int);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.NotNil(t, state.GetSchemaMetadata("public").GetTable("explicit_target"))
+				require.Nil(t, state.GetSchemaMetadata("app").GetTable("explicit_target"))
+			},
+		},
+		{
+			name:       "missing first path entry is skipped rather than auto-created",
+			searchPath: `missing_schema, public`,
+			sql:        `CREATE TABLE skipped_missing (id int);`,
+			assert: func(t *testing.T, state *model.DatabaseMetadata) {
+				t.Helper()
+				require.Nil(t, state.GetSchemaMetadata("missing_schema"))
+				require.NotNil(t, state.GetSchemaMetadata("public").GetTable("skipped_missing"))
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			state := newSearchPathTestState(test.searchPath)
+			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.sql)
+			require.NoError(t, err)
+			advice := WalkThroughWithContext(test.session, state, base.ExtractASTs(stmts))
+			require.Nil(t, advice)
+			test.assert(t, state)
+		})
+	}
+}
+
+func newSearchPathTestState(searchPath string) *model.DatabaseMetadata {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name:       "postgres",
+		SearchPath: searchPath,
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "alice"},
+			{Name: "bob"},
+			{
+				Name: "app",
+				Tables: []*storepb.TableMetadata{
+					newSearchPathTestTable("dup"),
+				},
+			},
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					newSearchPathTestTable("dup"),
+				},
+			},
+		},
+	}
+	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+}
+
+func newSearchPathTestTable(name string) *storepb.TableMetadata {
+	return &storepb.TableMetadata{
+		Name: name,
+		Columns: []*storepb.ColumnMetadata{
+			{
+				Name:     "id",
+				Type:     "int",
+				Nullable: false,
+				Position: 1,
+			},
+		},
 	}
 }
