@@ -746,6 +746,17 @@ func queryRetry(
 			}
 
 			for i, result := range results {
+				if i < len(spans) {
+					if errMsg, err := checkSensitivePredicates(ctx, stores, database, spans[i]); err != nil {
+						return nil, nil, duration, connect.NewError(connect.CodeInternal, err)
+					} else if errMsg != "" {
+						result.Error = errMsg
+						result.Rows = nil
+						result.RowsCount = 0
+						continue
+					}
+				}
+
 				var analysis *parserbase.MongoDBAnalysis
 				if i < len(spans) {
 					analysis = spans[i].MongoDBAnalysis
@@ -800,6 +811,17 @@ func queryRetry(
 			}
 		} else if instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
 			for i, result := range results {
+				if i < len(spans) {
+					if errMsg, err := checkSensitivePredicates(ctx, stores, database, spans[i]); err != nil {
+						return nil, nil, duration, connect.NewError(connect.CodeInternal, err)
+					} else if errMsg != "" {
+						result.Error = errMsg
+						result.Rows = nil
+						result.RowsCount = 0
+						continue
+					}
+				}
+
 				var analysis *parserbase.ElasticsearchAnalysis
 				if i < len(spans) {
 					analysis = spans[i].ElasticsearchAnalysis

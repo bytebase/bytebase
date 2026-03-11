@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -15,7 +16,8 @@ import (
 )
 
 // preExecuteMaskingCheck runs engine-specific pre-execution checks that block
-// queries using sensitive fields in predicates or unsupported APIs.
+// queries with unsupported APIs. Sensitive predicate checks are handled
+// post-execution on a per-statement basis by checkSensitivePredicates.
 func preExecuteMaskingCheck(
 	ctx context.Context,
 	stores *store.Store,
@@ -59,14 +61,6 @@ func preExecuteMaskingCheckMongoDB(
 		if err := checkMongoDBRequestBlocked(analysis); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, err)
 		}
-
-		for pathStr := range span.PredicatePaths {
-			semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
-			if semanticType != "" {
-				return connect.NewError(connect.CodeInvalidArgument,
-					errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
-			}
-		}
 	}
 	return nil
 }
@@ -99,15 +93,50 @@ func preExecuteMaskingCheckElasticsearch(
 		if err := checkElasticsearchRequestBlocked(analysis); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		for pathStr := range span.PredicatePaths {
-			semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
-			if semanticType != "" {
-				return connect.NewError(connect.CodeInvalidArgument,
-					errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
-			}
-		}
 	}
 	return nil
+}
+
+// checkSensitivePredicates checks whether a span uses sensitive fields in
+// predicates. Returns an error message if so, or "" if clean. This is used
+// post-execution to blank individual statement results (matching SQL/CosmosDB
+// behavior) rather than blocking the entire request.
+func checkSensitivePredicates(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	span *parserbase.QuerySpan,
+) (string, error) {
+	if len(span.PredicatePaths) == 0 {
+		return "", nil
+	}
+
+	var objectSchema *storepb.ObjectSchema
+	var err error
+
+	if analysis := span.MongoDBAnalysis; analysis != nil && analysis.Collection != "" {
+		objectSchema, err = getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
+		}
+	} else if analysis := span.ElasticsearchAnalysis; analysis != nil && analysis.Index != "" {
+		objectSchema, err = getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get object schema for index %q", analysis.Index)
+		}
+	}
+
+	if objectSchema == nil {
+		return "", nil
+	}
+
+	for pathStr := range span.PredicatePaths {
+		semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
+		if semanticType != "" {
+			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType), nil
+		}
+	}
+	return "", nil
 }
 
 func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.ObjectSchema) string {
