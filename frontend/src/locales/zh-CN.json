@@ -2868,7 +2868,7 @@
       "external-url": "外部访问地址",
       "workload-identity": "工作负载身份",
       "target-databases": "目标数据库",
-      "database-group-recommendation": "对于具有相似 Schema 的数据库，数据库组可以让您在一次变更中同时迁移它们。只需定义一次组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
+      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
       "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
       "wif-notice-suffix": "以使用服务账号配置 GitOps。"
     },

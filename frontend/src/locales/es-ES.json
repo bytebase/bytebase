@@ -2868,7 +2868,7 @@
       "external-url": "URL externa",
       "workload-identity": "Identidad de carga de trabajo",
       "target-databases": "Bases de datos de destino",
-      "database-group-recommendation": "Para bases de datos con esquemas similares, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
+      "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
       "wif-notice-text": "Workload Identity Federation actualmente solo es compatible con GitHub y GitLab. Para otros VCS, consulte los tutoriales de",
       "wif-notice-suffix": "para configurar GitOps con una cuenta de servicio."
     },
