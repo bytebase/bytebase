@@ -9,6 +9,57 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+func TestGetQuerySpanPredicatePaths(t *testing.T) {
+	tests := []struct {
+		description    string
+		statement      string
+		predicatePaths map[string]bool
+	}{
+		{
+			description: "find with single predicate field",
+			statement:   `db.users.find({email: "alice@example.com"})`,
+			predicatePaths: map[string]bool{
+				"email": true,
+			},
+		},
+		{
+			description: "findOne with nested dot path",
+			statement:   `db["users"].findOne({"contact.phone": "123"})`,
+			predicatePaths: map[string]bool{
+				"contact.phone": true,
+			},
+		},
+		{
+			description: "aggregate with $match predicate",
+			statement:   `db.users.aggregate([{$match: {name: "alice"}}])`,
+			predicatePaths: map[string]bool{
+				"name": true,
+			},
+		},
+		{
+			description:    "find with no predicate",
+			statement:      `db.users.find()`,
+			predicatePaths: map[string]bool{},
+		},
+		{
+			description:    "non-read operation returns no paths",
+			statement:      `db.users.insertOne({name: "bob"})`,
+			predicatePaths: map[string]bool{},
+		},
+	}
+
+	a := require.New(t)
+	for _, tc := range tests {
+		span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{}, base.Statement{Text: tc.statement}, "", "", false)
+		a.NoError(err, tc.description)
+		a.Equal(len(tc.predicatePaths), len(span.PredicatePaths), tc.description)
+		for path := range tc.predicatePaths {
+			_, ok := span.PredicatePaths[path]
+			a.True(ok, "%s: missing path %q", tc.description, path)
+		}
+	}
+}
+
 func TestGetQuerySpan(t *testing.T) {
 	tests := []struct {
 		description string
