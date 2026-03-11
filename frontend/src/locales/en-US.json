@@ -2869,7 +2869,8 @@
       "workload-identity": "Workload Identity",
       "target-databases": "Target Databases",
       "database-group-recommendation": "For databases sharing similar schemas, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
-      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For service account setup, refer to the tutorials for"
+      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
+      "wif-notice-suffix": "to set up GitOps using a service account."
     },
     "workload-identity": {
       "select-placeholder": "Select a workload identity"

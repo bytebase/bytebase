@@ -54,7 +54,8 @@
             href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
             target="_blank"
             class="text-accent hover:underline"
-          >Azure DevOps</a>.
+          >Azure DevOps</a>
+          {{ $t("gitops.checklist.wif-notice-suffix") }}
         </span>
       </BBAttention>
 
