@@ -33,7 +33,7 @@
 
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
-import { NCheckbox, NSpin, NEmpty } from "naive-ui";
+import { NCheckbox, NEmpty, NSpin } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { extractIssueUID } from "@/utils";
