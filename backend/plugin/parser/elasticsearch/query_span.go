@@ -48,6 +48,8 @@ func GetQuerySpan(
 	span := &base.QuerySpan{Type: queryType}
 
 	analysis := AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
+	span.ElasticsearchAnalysis = analysis
+
 	if len(analysis.PredicateFields) > 0 {
 		span.PredicatePaths = make(map[string]*base.PathAST, len(analysis.PredicateFields))
 		for _, field := range analysis.PredicateFields {

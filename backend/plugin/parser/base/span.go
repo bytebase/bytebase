@@ -66,7 +66,11 @@ type QuerySpan struct {
 	// PredicatePaths stores the paths of fields used in query predicates for document databases
 	// (CosmosDB, MongoDB, Elasticsearch). For CosmosDB, paths begin with the container name.
 	// For MongoDB and Elasticsearch, paths are dot-delimited field names (e.g. "contact.phone").
-	PredicatePaths            map[string]*PathAST
+	PredicatePaths map[string]*PathAST
+	// MongoDBAnalysis caches the masking analysis for MongoDB statements, populated by GetQuerySpan.
+	MongoDBAnalysis *MongoDBAnalysis
+	// ElasticsearchAnalysis caches the masking analysis for Elasticsearch statements, populated by GetQuerySpan.
+	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
 }

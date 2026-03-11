@@ -1,23 +1,151 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
-func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectSchema) string {
+// preExecuteMaskingCheck runs engine-specific pre-execution checks that block
+// queries with unsupported APIs. Sensitive predicate checks are handled
+// post-execution on a per-statement basis by checkSensitivePredicates.
+func preExecuteMaskingCheck(
+	ctx context.Context,
+	stores *store.Store,
+	engine storepb.Engine,
+	database *store.DatabaseMessage,
+	spans []*parserbase.QuerySpan,
+) error {
+	switch engine {
+	case storepb.Engine_MONGODB:
+		return preExecuteMaskingCheckMongoDB(ctx, stores, database, spans)
+	case storepb.Engine_ELASTICSEARCH:
+		return preExecuteMaskingCheckElasticsearch(ctx, stores, database, spans)
+	default:
+		return nil
+	}
+}
+
+func preExecuteMaskingCheckMongoDB(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	spans []*parserbase.QuerySpan,
+) error {
+	for _, span := range spans {
+		if span.MongoDBAnalysis == nil {
+			continue
+		}
+		analysis := span.MongoDBAnalysis
+		if analysis.Collection == "" {
+			continue
+		}
+
+		objectSchema, err := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection))
+		}
+		if objectSchema == nil {
+			continue
+		}
+
+		if err := checkMongoDBRequestBlocked(analysis); err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
+	return nil
+}
+
+func preExecuteMaskingCheckElasticsearch(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	spans []*parserbase.QuerySpan,
+) error {
+	for _, span := range spans {
+		if span.ElasticsearchAnalysis == nil {
+			continue
+		}
+		analysis := span.ElasticsearchAnalysis
+		if analysis.API == parserbase.ElasticsearchAPIUnsupported {
+			continue
+		}
+		indexName := analysis.Index
+		if indexName == "" {
+			continue
+		}
+		objectSchema, err := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
+		}
+		if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
+			continue
+		}
+		if err := checkElasticsearchRequestBlocked(analysis); err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
+	return nil
+}
+
+// checkSensitivePredicates checks whether a span uses sensitive fields in
+// predicates. Returns an error message if so, or "" if clean. This is used
+// post-execution to blank individual statement results (matching SQL/CosmosDB
+// behavior) rather than blocking the entire request.
+func checkSensitivePredicates(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	span *parserbase.QuerySpan,
+) (string, error) {
+	if len(span.PredicatePaths) == 0 {
+		return "", nil
+	}
+
+	var objectSchema *storepb.ObjectSchema
+	var err error
+
+	if analysis := span.MongoDBAnalysis; analysis != nil && analysis.Collection != "" {
+		objectSchema, err = getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
+		}
+	} else if analysis := span.ElasticsearchAnalysis; analysis != nil && analysis.Index != "" {
+		objectSchema, err = getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to get object schema for index %q", analysis.Index)
+		}
+	}
+
+	if objectSchema == nil {
+		return "", nil
+	}
+
+	for pathStr := range span.PredicatePaths {
+		semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
+		if semanticType != "" {
+			return fmt.Sprintf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType), nil
+		}
+	}
+	return "", nil
+}
+
+func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.ObjectSchema) string {
 	if ast == nil || ast.Root == nil || objectSchema == nil {
 		return ""
 	}
 
 	// Skip the first node because it always represents the container.
-	astWoutContainer := base.NewPathAST(ast.Root.GetNext())
+	astWoutContainer := parserbase.NewPathAST(ast.Root.GetNext())
 	if astWoutContainer == nil || astWoutContainer.Root == nil {
 		return ""
 	}
@@ -34,7 +162,7 @@ func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectS
 		}
 
 		switch node := node.(type) {
-		case *base.ItemSelector:
+		case *parserbase.ItemSelector:
 			if os.Type != storepb.ObjectSchema_OBJECT {
 				return ""
 			}
@@ -48,7 +176,7 @@ func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectS
 			if !valid {
 				return ""
 			}
-		case *base.ArraySelector:
+		case *parserbase.ArraySelector:
 			if os.Type != storepb.ObjectSchema_OBJECT {
 				return ""
 			}
@@ -82,30 +210,30 @@ func getFirstSemanticTypeInPath(ast *base.PathAST, objectSchema *storepb.ObjectS
 	return ""
 }
 
-func maskCosmosDB(span *base.QuerySpan, data map[string]any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
+func maskCosmosDB(span *parserbase.QuerySpan, data map[string]any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
 	if len(span.Results) != 1 {
 		return nil, errors.Errorf("expected 1 result, but got %d", len(span.Results))
 	}
 	return walkAndMaskJSON(data, span.Results[0].SourceFieldPaths, objectSchema, semanticTypeToMasker)
 }
 
-func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*base.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
+func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
 	result := make(map[string]any)
 	for key, value := range data {
 		o := objectSchema
-		var ast *base.PathAST
+		var ast *parserbase.PathAST
 		if fieldPaths != nil {
 			// Relocate the object schema cursor to the path position.
 			// Skip the first node because it always represents the container.
 			if path, ok := fieldPaths[key]; ok {
 				if path != nil && path.Root != nil {
-					astWoutContainer := base.NewPathAST(path.Root.GetNext())
+					astWoutContainer := parserbase.NewPathAST(path.Root.GetNext())
 					ast = astWoutContainer
 				}
 			}
 		}
 		if ast == nil || ast.Root == nil {
-			ast = base.NewPathAST(base.NewItemSelector(key))
+			ast = parserbase.NewPathAST(parserbase.NewItemSelector(key))
 		}
 
 		var parentSemanticType string
@@ -130,7 +258,7 @@ func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*base.PathAST, o
 	return result, nil
 }
 
-func getObjectSchemaByPath(objectSchema *storepb.ObjectSchema, path *base.PathAST) (*storepb.ObjectSchema, string) {
+func getObjectSchemaByPath(objectSchema *storepb.ObjectSchema, path *parserbase.PathAST) (*storepb.ObjectSchema, string) {
 	outer := objectSchema
 	outerSemanticType := outer.SemanticType
 	if outerSemanticType != "" {
