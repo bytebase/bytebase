@@ -15,6 +15,7 @@
           })
         }}
       </div>
+      <ErrorList :errors="closeErrors" :bullets="'always'" />
     </template>
   </TooltipButton>
 
@@ -32,6 +33,7 @@
           })
         }}
       </div>
+      <ErrorList :errors="reopenErrors" :bullets="'always'" />
     </template>
   </TooltipButton>
 
@@ -47,9 +49,12 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { TooltipButton } from "@/components/v2";
 import { refreshIssueList } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { BatchIssueStatusActionPanel } from "./Panel";
 import type { IssueStatusAction } from "./Panel/issueStatusAction";
 import {
@@ -89,6 +94,40 @@ const isActionApplicableForAllIssues = (action: IssueStatusAction): boolean => {
     return actions.includes(action);
   });
 };
+
+const { t } = useI18n();
+
+const issueStatuses = computed(() => {
+  const statuses = new Set<IssueStatus>();
+  for (const issue of props.issueList) {
+    statuses.add(issue.status);
+  }
+  return statuses;
+});
+
+const closeErrors = computed(() => {
+  const errors: string[] = [];
+  const statuses = issueStatuses.value;
+  if (statuses.has(IssueStatus.DONE)) {
+    errors.push(t("issue.batch-transition.done-cannot-close"));
+  }
+  if (statuses.has(IssueStatus.CANCELED)) {
+    errors.push(t("issue.batch-transition.canceled-cannot-close"));
+  }
+  return errors;
+});
+
+const reopenErrors = computed(() => {
+  const errors: string[] = [];
+  const statuses = issueStatuses.value;
+  if (statuses.has(IssueStatus.OPEN)) {
+    errors.push(t("issue.batch-transition.open-cannot-reopen"));
+  }
+  if (statuses.has(IssueStatus.DONE)) {
+    errors.push(t("issue.batch-transition.done-cannot-reopen"));
+  }
+  return errors;
+});
 
 const handleUpdated = () => {
   state.isRequesting = false;

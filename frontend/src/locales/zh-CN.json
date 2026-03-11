@@ -1089,6 +1089,10 @@
     },
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
+      "open-cannot-reopen": "打开中的工单无法重开",
+      "done-cannot-reopen": "已完成的工单无法重开",
+      "done-cannot-close": "已完成的工单无法关闭",
+      "canceled-cannot-close": "已取消的工单无法关闭",
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
