@@ -305,23 +305,31 @@
           </div>
         </NTabPane>
         <NTabPane name="BITBUCKET" tab="Bitbucket Pipelines">
-          <div class="flex flex-col items-center justify-center py-8 text-control-light">
-            <span class="text-sm">
-              {{ $t("gitops.workflow.examples-coming-soon", { provider: "Bitbucket" }) }}
-            </span>
-            <p class="text-xs mt-1">
+          <div class="flex flex-col items-center justify-center py-8 text-control-light gap-y-2">
+            <p class="text-sm">
               {{ $t("gitops.workflow.wif-not-available", { provider: "Bitbucket" }) }}
             </p>
+            <a
+              href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
+              target="_blank"
+              class="text-accent hover:underline text-sm"
+            >
+              {{ $t("gitops.workflow.view-tutorial", { provider: "Bitbucket" }) }} &rarr;
+            </a>
           </div>
         </NTabPane>
         <NTabPane name="AZURE_DEVOPS" tab="Azure DevOps">
-          <div class="flex flex-col items-center justify-center py-8 text-control-light">
-            <span class="text-sm">
-              {{ $t("gitops.workflow.examples-coming-soon", { provider: "Azure DevOps" }) }}
-            </span>
-            <p class="text-xs mt-1">
+          <div class="flex flex-col items-center justify-center py-8 text-control-light gap-y-2">
+            <p class="text-sm">
               {{ $t("gitops.workflow.wif-not-available", { provider: "Azure DevOps" }) }}
             </p>
+            <a
+              href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
+              target="_blank"
+              class="text-accent hover:underline text-sm"
+            >
+              {{ $t("gitops.workflow.view-tutorial", { provider: "Azure DevOps" }) }} &rarr;
+            </a>
           </div>
         </NTabPane>
       </NTabs>
