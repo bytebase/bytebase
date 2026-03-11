@@ -41,6 +41,26 @@
         {{ $t("gitops.checklist.title") }}
       </h2>
 
+      <!-- WIF notice for Bitbucket / Azure DevOps -->
+      <BBAttention :type="'info'" :closable="false">
+        <i18n-t keypath="gitops.checklist.wif-notice">
+          <template #bitbucket>
+            <a
+              href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
+              target="_blank"
+              class="text-accent hover:underline"
+            >Bitbucket</a>
+          </template>
+          <template #azure>
+            <a
+              href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
+              target="_blank"
+              class="text-accent hover:underline"
+            >Azure DevOps</a>
+          </template>
+        </i18n-t>
+      </BBAttention>
+
       <!-- Check 1: External URL -->
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
@@ -189,7 +209,7 @@
         </p>
       </div>
 
-      <NTabs v-model:value="activeTab" type="line" animated>
+      <NTabs v-model:value="activeTab" type="line" animated class="gitops-vcs-tabs">
         <NTabPane :name="WorkloadIdentityConfig_ProviderType.GITHUB" tab="GitHub Actions">
           <BBAttention v-if="selectedConfig && activeTab !== selectedConfig?.providerType" :type="'error'">
             {{ $t("gitops.workflow.provider-not-match", { provider: getWorkloadIdentityProviderText(selectedConfig.providerType) }) }}
@@ -306,34 +326,6 @@
                 <NCode language="yaml" :code="gitlabCiYaml" />
               </NConfigProvider>
             </div>
-          </div>
-        </NTabPane>
-        <NTabPane name="BITBUCKET" tab="Bitbucket Pipelines">
-          <div class="flex flex-col items-center justify-center py-8 text-control-light gap-y-2">
-            <p class="text-sm">
-              {{ $t("gitops.workflow.wif-not-available", { provider: "Bitbucket" }) }}
-            </p>
-            <a
-              href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
-              target="_blank"
-              class="text-accent hover:underline text-sm"
-            >
-              {{ $t("gitops.workflow.view-tutorial", { provider: "Bitbucket" }) }} &rarr;
-            </a>
-          </div>
-        </NTabPane>
-        <NTabPane name="AZURE_DEVOPS" tab="Azure DevOps">
-          <div class="flex flex-col items-center justify-center py-8 text-control-light gap-y-2">
-            <p class="text-sm">
-              {{ $t("gitops.workflow.wif-not-available", { provider: "Azure DevOps" }) }}
-            </p>
-            <a
-              href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
-              target="_blank"
-              class="text-accent hover:underline text-sm"
-            >
-              {{ $t("gitops.workflow.view-tutorial", { provider: "Azure DevOps" }) }} &rarr;
-            </a>
           </div>
         </NTabPane>
       </NTabs>
@@ -484,7 +476,7 @@ const selectedIdentityName = ref<string | undefined>(undefined);
 const selectedDatabaseNames = ref<string[]>([]);
 const selectedDatabaseGroupName = ref<string | undefined>(undefined);
 const targetTab = ref<"GROUP" | "DATABASE">("GROUP");
-const activeTab = ref<WorkloadIdentityConfig_ProviderType | string>(
+const activeTab = ref<WorkloadIdentityConfig_ProviderType>(
   WorkloadIdentityConfig_ProviderType.GITHUB
 );
 const useSelfhostRunner = ref(false);
@@ -819,3 +811,10 @@ const handleWorkloadIdentityCreated = (wi: WorkloadIdentity) => {
   selectedIdentityName.value = wi.name;
 };
 </script>
+
+<style scoped>
+.gitops-vcs-tabs :deep(.n-tabs-tab) {
+  width: 140px;
+  justify-content: center;
+}
+</style>

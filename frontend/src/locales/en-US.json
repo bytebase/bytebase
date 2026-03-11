@@ -2868,7 +2868,8 @@
       "external-url": "External URL",
       "workload-identity": "Workload Identity",
       "target-databases": "Target Databases",
-      "database-group-recommendation": "Use a database group to dynamically match databases by conditions such as environment or instance."
+      "database-group-recommendation": "Use a database group to dynamically match databases by conditions such as environment or instance.",
+      "wif-notice": "Workload Identity Federation is currently supported for GitHub and GitLab only. For {bitbucket} and {azure}, please refer to the tutorials for configuring with service account."
     },
     "workload-identity": {
       "select-placeholder": "Select a workload identity"
@@ -2878,9 +2879,7 @@
       "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
       "file-hint": "Save as {filePath} in your repository {repository}",
       "self-hosted-runner": "Self-hosted runner",
-      "provider-not-match": "The selected workload identity only works for {provider}.",
-      "wif-not-available": "Workflow generation is not available for {provider} because Workload Identity Federation is not yet supported. Use token-based authentication instead.",
-      "view-tutorial": "View {provider} tutorial"
+      "provider-not-match": "The selected workload identity only works for {provider}."
     },
     "test-setup": {
       "title": "Test your first GitOps migration",
