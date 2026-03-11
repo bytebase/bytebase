@@ -32,8 +32,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	esparser "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
-	mongoparser "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -592,9 +590,12 @@ func queryRetry(
 	// Pre-execution check for MongoDB: enforce Milestone 1 supported APIs and reject
 	// sensitive predicates before sending the query to the server.
 	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
-		for i, stmt := range statements {
-			analysis, analyzeErr := mongoparser.AnalyzeMaskingStatement(stmt.Text)
-			if analyzeErr != nil || analysis == nil || analysis.Collection == "" {
+		for i := range statements {
+			if i >= len(spans) || spans[i].MongoDBAnalysis == nil {
+				continue
+			}
+			analysis := spans[i].MongoDBAnalysis
+			if analysis.Collection == "" {
 				continue
 			}
 
@@ -610,13 +611,11 @@ func queryRetry(
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
 			}
 
-			if i < len(spans) {
-				for pathStr := range spans[i].PredicatePaths {
-					semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
-					if semanticType != "" {
-						return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
-							errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
-					}
+			for pathStr := range spans[i].PredicatePaths {
+				semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
+				if semanticType != "" {
+					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
 				}
 			}
 		}
@@ -625,14 +624,12 @@ func queryRetry(
 	// Pre-execution check for Elasticsearch: reject blocked APIs and predicate violations
 	// before sending the query to the server.
 	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
-		for i, stmt := range statements {
-			parsed, parseErr := esparser.ParseElasticsearchREST(stmt.Text)
-			if parseErr != nil || len(parsed.Requests) == 0 {
+		for i := range statements {
+			if i >= len(spans) || spans[i].ElasticsearchAnalysis == nil {
 				continue
 			}
-			req := parsed.Requests[0]
-			analysis := esparser.AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
-			if analysis.API == esparser.APIUnsupported {
+			analysis := spans[i].ElasticsearchAnalysis
+			if analysis.API == parserbase.ElasticsearchAPIUnsupported {
 				continue
 			}
 			indexName := analysis.Index
@@ -649,13 +646,11 @@ func queryRetry(
 			if err := checkElasticsearchRequestBlocked(analysis); err != nil {
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			if i < len(spans) {
-				for pathStr := range spans[i].PredicatePaths {
-					semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
-					if semanticType != "" {
-						return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
-							errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
-					}
+			for pathStr := range spans[i].PredicatePaths {
+				semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
+				if semanticType != "" {
+					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
 				}
 			}
 		}
@@ -813,12 +808,15 @@ func queryRetry(
 				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
 
-			for _, result := range results {
-				analysis, analyzeErr := mongoparser.AnalyzeMaskingStatement(result.Statement)
-				if analyzeErr != nil || analysis == nil || analysis.Collection == "" {
+			for i, result := range results {
+				var analysis *parserbase.MongoDBAnalysis
+				if i < len(spans) {
+					analysis = spans[i].MongoDBAnalysis
+				}
+				if analysis == nil || analysis.Collection == "" {
 					continue
 				}
-				if analysis.API != mongoparser.MaskableAPIFind && analysis.API != mongoparser.MaskableAPIFindOne && analysis.API != mongoparser.MaskableAPIAggregate {
+				if analysis.API != parserbase.MongoDBMaskableAPIFind && analysis.API != parserbase.MongoDBMaskableAPIFindOne && analysis.API != parserbase.MongoDBMaskableAPIAggregate {
 					continue
 				}
 
@@ -864,15 +862,16 @@ func queryRetry(
 				}
 			}
 		} else if instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
-			for _, result := range results {
-				parsed, err := esparser.ParseElasticsearchREST(result.Statement)
-				if err != nil || len(parsed.Requests) == 0 {
+			for i, result := range results {
+				var analysis *parserbase.ElasticsearchAnalysis
+				if i < len(spans) {
+					analysis = spans[i].ElasticsearchAnalysis
+				}
+				if analysis == nil {
 					continue
 				}
-				req := parsed.Requests[0]
-				analysis := esparser.AnalyzeRequest(req.Method, req.URL, strings.Join(req.Data, "\n"))
 
-				if analysis.API == esparser.APIUnsupported || analysis.API == esparser.APIBlocked {
+				if analysis.API == parserbase.ElasticsearchAPIUnsupported || analysis.API == parserbase.ElasticsearchAPIBlocked {
 					continue
 				}
 
@@ -908,7 +907,7 @@ func queryRetry(
 						var maskErr error
 
 						switch analysis.API {
-						case esparser.APIMaskSearch:
+						case parserbase.ElasticsearchAPIMaskSearch:
 							switch colName {
 							case "hits":
 								maskedValue, maskErr = maskElasticsearchHitsColumn(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
@@ -917,15 +916,15 @@ func queryRetry(
 							default:
 								continue
 							}
-						case esparser.APIMaskGetDoc, esparser.APIMaskExplain:
+						case parserbase.ElasticsearchAPIMaskGetDoc, parserbase.ElasticsearchAPIMaskExplain:
 							if colName == "_source" {
 								maskedValue, maskErr = maskElasticsearchDocSource(value, objectSchema, semanticTypeToMaskerMap)
 							} else {
 								continue
 							}
-						case esparser.APIMaskGetSource:
+						case parserbase.ElasticsearchAPIMaskGetSource:
 							maskedValue, maskErr = maskElasticsearchGetSourceColumn(colName, value, objectSchema, semanticTypeToMaskerMap)
-						case esparser.APIMaskMGet:
+						case parserbase.ElasticsearchAPIMaskMGet:
 							if colName == "docs" {
 								maskedValue, maskErr = maskElasticsearchMGetSource(value, objectSchema, semanticTypeToMaskerMap)
 							} else {

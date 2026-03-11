@@ -8,14 +8,14 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	mongoparser "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func checkMongoDBRequestBlocked(analysis *mongoparser.MaskingAnalysis) error {
+func checkMongoDBRequestBlocked(analysis *parserbase.MongoDBAnalysis) error {
 	if analysis == nil {
 		return nil
 	}
-	if analysis.API == mongoparser.MaskableAPIUnsupportedRead {
+	if analysis.API == parserbase.MongoDBMaskableAPIUnsupportedRead {
 		operation := analysis.Operation
 		if operation == "" {
 			operation = "unknown"

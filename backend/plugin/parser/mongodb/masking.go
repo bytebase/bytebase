@@ -6,47 +6,27 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	mongoparser "github.com/bytebase/parser/mongodb"
 	"github.com/pkg/errors"
 
-	mongoparser "github.com/bytebase/parser/mongodb"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// MaskableAPI categorizes MongoDB collection reads for masking behavior.
-type MaskableAPI int
+// Type aliases so that internal code and external consumers (e.g. catalog_masking_mongodb.go)
+// can continue using the short names. The canonical definitions live in the base package.
+type (
+	MaskableAPI      = base.MongoDBMaskableAPI
+	JoinedCollection = base.MongoDBJoinedCollection
+	MaskingAnalysis  = base.MongoDBAnalysis
+)
 
 const (
-	// MaskableAPIUnsupported means the statement is not relevant for MongoDB masking.
-	MaskableAPIUnsupported MaskableAPI = iota
-	// MaskableAPIFind means db.<collection>.find(...).
-	MaskableAPIFind
-	// MaskableAPIFindOne means db.<collection>.findOne(...).
-	MaskableAPIFindOne
-	// MaskableAPIUnsupportedRead means a read API that is blocked in Milestone 1.
-	MaskableAPIUnsupportedRead
-	// MaskableAPIAggregate means db.<collection>.aggregate(...) with only shape-preserving stages.
-	MaskableAPIAggregate
+	MaskableAPIUnsupported     = base.MongoDBMaskableAPIUnsupported
+	MaskableAPIFind            = base.MongoDBMaskableAPIFind
+	MaskableAPIFindOne         = base.MongoDBMaskableAPIFindOne
+	MaskableAPIUnsupportedRead = base.MongoDBMaskableAPIUnsupportedRead
+	MaskableAPIAggregate       = base.MongoDBMaskableAPIAggregate
 )
-
-// JoinedCollection records a $lookup or $graphLookup join extracted from an aggregate pipeline.
-type JoinedCollection struct {
-	// AsField is the output field name added to each document (the "as" argument).
-	AsField string
-	// Collection is the source collection being joined (the "from" argument).
-	Collection string
-}
-
-// MaskingAnalysis contains MongoDB statement data needed by masking checks.
-type MaskingAnalysis struct {
-	API             MaskableAPI
-	Operation       string
-	Collection      string
-	PredicateFields []string
-	// UnsupportedStage is the first pipeline stage that prevents masking (e.g. "$group").
-	// Only set when API == MaskableAPIUnsupportedRead for aggregate pipelines.
-	UnsupportedStage string
-	// JoinedCollections holds join info extracted from $lookup and $graphLookup stages.
-	JoinedCollections []JoinedCollection
-}
 
 // AnalyzeMaskingStatement analyzes a MongoDB shell statement for masking checks.
 // It returns nil,nil for statements that are not relevant to masking flow.

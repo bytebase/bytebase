@@ -29,6 +29,8 @@ func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.State
 		return span, nil
 	}
 
+	span.MongoDBAnalysis = analysis
+
 	if len(analysis.PredicateFields) > 0 {
 		span.PredicatePaths = make(map[string]*base.PathAST, len(analysis.PredicateFields))
 		for _, field := range analysis.PredicateFields {
