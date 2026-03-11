@@ -21,7 +21,7 @@
       <!-- Documentation link -->
       <div>
         <a
-          href="https://docs.bytebase.com/vcs-integration/overview?source=console"
+          href="https://docs.bytebase.com/gitops/overview?source=console"
           target="_blank"
           class="text-accent hover:underline"
         >
@@ -40,6 +40,24 @@
       <h2 class="text-lg font-medium">
         {{ $t("gitops.checklist.title") }}
       </h2>
+
+      <!-- WIF notice for Bitbucket / Azure DevOps -->
+      <BBAttention :type="'info'" :closable="false">
+        <span>{{ $t("gitops.checklist.wif-notice-text") }}
+          <a
+            href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
+            target="_blank"
+            class="text-accent hover:underline"
+          >Bitbucket</a>
+          /
+          <a
+            href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
+            target="_blank"
+            class="text-accent hover:underline"
+          >Azure DevOps</a>
+          {{ $t("gitops.checklist.wif-notice-suffix") }}
+        </span>
+      </BBAttention>
 
       <!-- Check 1: External URL -->
       <div class="flex items-start gap-x-3 py-3">
@@ -113,7 +131,7 @@
       <!-- Check 3: Target Databases -->
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
-          v-if="selectedDatabaseNames.length > 0"
+          v-if="hasTargetSelected"
           class="w-5 h-5 text-success shrink-0"
         />
         <XCircleIcon
@@ -124,8 +142,37 @@
           <span class="text-sm font-medium">{{
             $t("gitops.checklist.target-databases")
           }}</span>
+          <NButtonGroup size="small">
+            <NButton
+              :type="targetTab === 'GROUP' ? 'primary' : 'default'"
+              :secondary="targetTab === 'GROUP'"
+              @click="handleTargetTabChange('GROUP')"
+            >
+              {{ $t("common.database-group") }}
+            </NButton>
+            <NButton
+              :type="targetTab === 'DATABASE' ? 'primary' : 'default'"
+              :secondary="targetTab === 'DATABASE'"
+              @click="handleTargetTabChange('DATABASE')"
+            >
+              {{ $t("common.databases") }}
+            </NButton>
+          </NButtonGroup>
           <div class="max-w-lg">
+            <template v-if="targetTab === 'GROUP'">
+              <NSelect
+                :value="selectedDatabaseGroupName"
+                :options="dbGroupOptions"
+                :placeholder="$t('database-group.select')"
+                clearable
+                @update:value="selectedDatabaseGroupName = $event"
+              />
+              <p class="text-xs text-control-light mt-1">
+                {{ $t("gitops.checklist.database-group-recommendation") }}
+              </p>
+            </template>
             <DatabaseSelect
+              v-else
               v-model:value="selectedDatabaseNames"
               :project-name="projectName"
               :multiple="true"
@@ -160,7 +207,7 @@
         </p>
       </div>
 
-      <NTabs v-model:value="activeTab" type="line" animated>
+      <NTabs v-model:value="activeTab" type="line" animated class="gitops-vcs-tabs">
         <NTabPane :name="WorkloadIdentityConfig_ProviderType.GITHUB" tab="GitHub Actions">
           <BBAttention v-if="selectedConfig && activeTab !== selectedConfig?.providerType" :type="'error'">
             {{ $t("gitops.workflow.provider-not-match", { provider: getWorkloadIdentityProviderText(selectedConfig.providerType) }) }}
@@ -376,8 +423,10 @@ import {
 } from "lucide-vue-next";
 import {
   NButton,
+  NButtonGroup,
   NCode,
   NConfigProvider,
+  NSelect,
   NSwitch,
   NTabPane,
   NTabs,
@@ -396,6 +445,7 @@ import { MissingExternalURLAttention } from "@/components/v2/Form";
 import {
   extractWorkloadIdentityId,
   useActuatorV1Store,
+  useDBGroupListByProject,
   useProjectByName,
   useWorkloadIdentityStore,
 } from "@/store";
@@ -422,6 +472,8 @@ const { project } = useProjectByName(projectName);
 const showCreateDrawer = ref(false);
 const selectedIdentityName = ref<string | undefined>(undefined);
 const selectedDatabaseNames = ref<string[]>([]);
+const selectedDatabaseGroupName = ref<string | undefined>(undefined);
+const targetTab = ref<"GROUP" | "DATABASE">("GROUP");
 const activeTab = ref<WorkloadIdentityConfig_ProviderType>(
   WorkloadIdentityConfig_ProviderType.GITHUB
 );
@@ -429,6 +481,30 @@ const useSelfhostRunner = ref(false);
 const showSqlReviewYaml = ref(true);
 const showReleaseYaml = ref(true);
 const showGitlabCiYaml = ref(true);
+
+const { dbGroupList } = useDBGroupListByProject(projectName);
+
+const dbGroupOptions = computed(() => {
+  return dbGroupList.value.map((group) => ({
+    label: group.title || group.name,
+    value: group.name,
+  }));
+});
+
+const handleTargetTabChange = (tab: string) => {
+  targetTab.value = tab as "GROUP" | "DATABASE";
+  if (tab === "GROUP") {
+    selectedDatabaseNames.value = [];
+  } else {
+    selectedDatabaseGroupName.value = undefined;
+  }
+};
+
+const hasTargetSelected = computed(() => {
+  return targetTab.value === "GROUP"
+    ? !!selectedDatabaseGroupName.value
+    : selectedDatabaseNames.value.length > 0;
+});
 
 const selectedIdentity = computed(() => {
   if (!selectedIdentityName.value) return undefined;
@@ -487,6 +563,9 @@ const workloadIdentityEmail = computed(() => {
 });
 
 const targetsString = computed(() => {
+  if (targetTab.value === "GROUP" && selectedDatabaseGroupName.value) {
+    return selectedDatabaseGroupName.value;
+  }
   if (selectedDatabaseNames.value.length === 0) {
     return "";
   }
@@ -730,3 +809,10 @@ const handleWorkloadIdentityCreated = (wi: WorkloadIdentity) => {
   selectedIdentityName.value = wi.name;
 };
 </script>
+
+<style scoped>
+.gitops-vcs-tabs :deep(.n-tabs-tab) {
+  width: 140px;
+  justify-content: center;
+}
+</style>

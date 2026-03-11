@@ -2867,7 +2867,10 @@
       "title": "開始前の確認",
       "external-url": "外部URL",
       "workload-identity": "ワークロードアイデンティティ",
-      "target-databases": "ターゲットデータベース"
+      "target-databases": "ターゲットデータベース",
+      "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
+      "wif-notice-text": "Workload Identity Federation は現在 GitHub と GitLab のみサポートしています。他の VCS については、チュートリアルを参照してください：",
+      "wif-notice-suffix": "サービスアカウントを使用して GitOps を設定できます。"
     },
     "workload-identity": {
       "select-placeholder": "ワークロードアイデンティティを選択"
