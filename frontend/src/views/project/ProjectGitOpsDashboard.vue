@@ -113,7 +113,7 @@
       <!-- Check 3: Target Databases -->
       <div class="flex items-start gap-x-3 py-3">
         <CheckIcon
-          v-if="selectedDatabaseNames.length > 0"
+          v-if="hasTargetSelected"
           class="w-5 h-5 text-success shrink-0"
         />
         <XCircleIcon
@@ -124,13 +124,40 @@
           <span class="text-sm font-medium">{{
             $t("gitops.checklist.target-databases")
           }}</span>
-          <div class="max-w-lg">
-            <DatabaseSelect
-              v-model:value="selectedDatabaseNames"
-              :project-name="projectName"
-              :multiple="true"
-            />
-          </div>
+          <NTabs
+            v-model:value="targetTab"
+            type="line"
+            size="small"
+            class="max-w-lg"
+            @update:value="handleTargetTabChange"
+          >
+            <NTabPane name="GROUP" :tab="$t('common.database-group')">
+              <p class="text-xs text-control-light mb-2">
+                {{ $t("gitops.checklist.database-group-recommendation") }}
+              </p>
+              <DatabaseGroupDataTable
+                :database-group-list="dbGroupList"
+                :show-selection="true"
+                :single-selection="true"
+                :show-external-link="true"
+                :selected-database-group-names="
+                  selectedDatabaseGroupName
+                    ? [selectedDatabaseGroupName]
+                    : []
+                "
+                @update:selected-database-group-names="
+                  selectedDatabaseGroupName = head($event)
+                "
+              />
+            </NTabPane>
+            <NTabPane name="DATABASE" :tab="$t('common.databases')">
+              <DatabaseSelect
+                v-model:value="selectedDatabaseNames"
+                :project-name="projectName"
+                :multiple="true"
+              />
+            </NTabPane>
+          </NTabs>
           <p
             v-if="targetsString"
             class="text-sm text-control-light"
@@ -279,6 +306,26 @@
             </div>
           </div>
         </NTabPane>
+        <NTabPane name="BITBUCKET" :disabled="true">
+          <template #tab>
+            <div class="flex flex-col items-start">
+              <span>Bitbucket Pipelines</span>
+              <span class="text-xs text-control-light font-normal">
+                {{ $t("gitops.workflow.examples-coming-soon", { provider: "Bitbucket" }) }}
+              </span>
+            </div>
+          </template>
+        </NTabPane>
+        <NTabPane name="AZURE_DEVOPS" :disabled="true">
+          <template #tab>
+            <div class="flex flex-col items-start">
+              <span>Azure DevOps Pipelines</span>
+              <span class="text-xs text-control-light font-normal">
+                {{ $t("gitops.workflow.examples-coming-soon", { provider: "Azure DevOps" }) }}
+              </span>
+            </div>
+          </template>
+        </NTabPane>
       </NTabs>
     </div>
 
@@ -368,6 +415,7 @@
 
 <script lang="ts" setup>
 import hljs from "highlight.js/lib/core";
+import { head } from "lodash-es";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -385,6 +433,7 @@ import {
 import { computed, ref, watch } from "vue";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { BBAttention } from "@/bbkit";
+import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import {
@@ -396,6 +445,7 @@ import { MissingExternalURLAttention } from "@/components/v2/Form";
 import {
   extractWorkloadIdentityId,
   useActuatorV1Store,
+  useDBGroupListByProject,
   useProjectByName,
   useWorkloadIdentityStore,
 } from "@/store";
@@ -422,6 +472,8 @@ const { project } = useProjectByName(projectName);
 const showCreateDrawer = ref(false);
 const selectedIdentityName = ref<string | undefined>(undefined);
 const selectedDatabaseNames = ref<string[]>([]);
+const selectedDatabaseGroupName = ref<string | undefined>(undefined);
+const targetTab = ref<"GROUP" | "DATABASE">("GROUP");
 const activeTab = ref<WorkloadIdentityConfig_ProviderType>(
   WorkloadIdentityConfig_ProviderType.GITHUB
 );
@@ -429,6 +481,22 @@ const useSelfhostRunner = ref(false);
 const showSqlReviewYaml = ref(true);
 const showReleaseYaml = ref(true);
 const showGitlabCiYaml = ref(true);
+
+const { dbGroupList } = useDBGroupListByProject(projectName);
+
+const handleTargetTabChange = (tab: "GROUP" | "DATABASE") => {
+  if (tab === "GROUP") {
+    selectedDatabaseNames.value = [];
+  } else {
+    selectedDatabaseGroupName.value = undefined;
+  }
+};
+
+const hasTargetSelected = computed(() => {
+  return targetTab.value === "GROUP"
+    ? !!selectedDatabaseGroupName.value
+    : selectedDatabaseNames.value.length > 0;
+});
 
 const selectedIdentity = computed(() => {
   if (!selectedIdentityName.value) return undefined;
@@ -487,6 +555,9 @@ const workloadIdentityEmail = computed(() => {
 });
 
 const targetsString = computed(() => {
+  if (targetTab.value === "GROUP" && selectedDatabaseGroupName.value) {
+    return selectedDatabaseGroupName.value;
+  }
   if (selectedDatabaseNames.value.length === 0) {
     return "";
   }
