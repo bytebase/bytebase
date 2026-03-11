@@ -2879,6 +2879,7 @@
       "file-hint": "Save as {filePath} in your repository {repository}",
       "self-hosted-runner": "Self-hosted runner",
       "provider-not-match": "The selected workload identity only works for {provider}.",
+      "wif-not-available": "Workload Identity Federation is not yet available for {provider}. Use token-based authentication instead.",
       "examples-coming-soon": "CI/CD examples for {provider} are coming soon."
     },
     "test-setup": {

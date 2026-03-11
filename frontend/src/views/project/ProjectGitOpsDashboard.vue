@@ -124,40 +124,38 @@
           <span class="text-sm font-medium">{{
             $t("gitops.checklist.target-databases")
           }}</span>
-          <NTabs
-            v-model:value="targetTab"
-            type="line"
+          <NRadioGroup
+            :value="targetTab"
             size="small"
-            class="max-w-lg"
             @update:value="handleTargetTabChange"
           >
-            <NTabPane name="GROUP" :tab="$t('common.database-group')">
-              <p class="text-xs text-control-light mb-2">
+            <NRadio value="GROUP">
+              {{ $t("common.database-group") }}
+            </NRadio>
+            <NRadio value="DATABASE">
+              {{ $t("common.databases") }}
+            </NRadio>
+          </NRadioGroup>
+          <div class="max-w-lg">
+            <template v-if="targetTab === 'GROUP'">
+              <NSelect
+                :value="selectedDatabaseGroupName"
+                :options="dbGroupOptions"
+                :placeholder="$t('database-group.select')"
+                clearable
+                @update:value="selectedDatabaseGroupName = $event"
+              />
+              <p class="text-xs text-control-light mt-1">
                 {{ $t("gitops.checklist.database-group-recommendation") }}
               </p>
-              <DatabaseGroupDataTable
-                :database-group-list="dbGroupList"
-                :show-selection="true"
-                :single-selection="true"
-                :show-external-link="true"
-                :selected-database-group-names="
-                  selectedDatabaseGroupName
-                    ? [selectedDatabaseGroupName]
-                    : []
-                "
-                @update:selected-database-group-names="
-                  selectedDatabaseGroupName = head($event)
-                "
-              />
-            </NTabPane>
-            <NTabPane name="DATABASE" :tab="$t('common.databases')">
-              <DatabaseSelect
-                v-model:value="selectedDatabaseNames"
-                :project-name="projectName"
-                :multiple="true"
-              />
-            </NTabPane>
-          </NTabs>
+            </template>
+            <DatabaseSelect
+              v-else
+              v-model:value="selectedDatabaseNames"
+              :project-name="projectName"
+              :multiple="true"
+            />
+          </div>
           <p
             v-if="targetsString"
             class="text-sm text-control-light"
@@ -306,25 +304,25 @@
             </div>
           </div>
         </NTabPane>
-        <NTabPane name="BITBUCKET" :disabled="true">
-          <template #tab>
-            <div class="flex flex-col items-start">
-              <span>Bitbucket Pipelines</span>
-              <span class="text-xs text-control-light font-normal">
-                {{ $t("gitops.workflow.examples-coming-soon", { provider: "Bitbucket" }) }}
-              </span>
-            </div>
-          </template>
+        <NTabPane name="BITBUCKET" tab="Bitbucket Pipelines">
+          <div class="flex flex-col items-center justify-center py-8 text-control-light">
+            <span class="text-sm">
+              {{ $t("gitops.workflow.examples-coming-soon", { provider: "Bitbucket" }) }}
+            </span>
+            <p class="text-xs mt-1">
+              {{ $t("gitops.workflow.wif-not-available", { provider: "Bitbucket" }) }}
+            </p>
+          </div>
         </NTabPane>
-        <NTabPane name="AZURE_DEVOPS" :disabled="true">
-          <template #tab>
-            <div class="flex flex-col items-start">
-              <span>Azure DevOps Pipelines</span>
-              <span class="text-xs text-control-light font-normal">
-                {{ $t("gitops.workflow.examples-coming-soon", { provider: "Azure DevOps" }) }}
-              </span>
-            </div>
-          </template>
+        <NTabPane name="AZURE_DEVOPS" tab="Azure DevOps">
+          <div class="flex flex-col items-center justify-center py-8 text-control-light">
+            <span class="text-sm">
+              {{ $t("gitops.workflow.examples-coming-soon", { provider: "Azure DevOps" }) }}
+            </span>
+            <p class="text-xs mt-1">
+              {{ $t("gitops.workflow.wif-not-available", { provider: "Azure DevOps" }) }}
+            </p>
+          </div>
         </NTabPane>
       </NTabs>
     </div>
@@ -415,7 +413,6 @@
 
 <script lang="ts" setup>
 import hljs from "highlight.js/lib/core";
-import { head } from "lodash-es";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -426,6 +423,9 @@ import {
   NButton,
   NCode,
   NConfigProvider,
+  NRadio,
+  NRadioGroup,
+  NSelect,
   NSwitch,
   NTabPane,
   NTabs,
@@ -433,7 +433,6 @@ import {
 import { computed, ref, watch } from "vue";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { BBAttention } from "@/bbkit";
-import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import {
@@ -474,7 +473,7 @@ const selectedIdentityName = ref<string | undefined>(undefined);
 const selectedDatabaseNames = ref<string[]>([]);
 const selectedDatabaseGroupName = ref<string | undefined>(undefined);
 const targetTab = ref<"GROUP" | "DATABASE">("GROUP");
-const activeTab = ref<WorkloadIdentityConfig_ProviderType>(
+const activeTab = ref<WorkloadIdentityConfig_ProviderType | string>(
   WorkloadIdentityConfig_ProviderType.GITHUB
 );
 const useSelfhostRunner = ref(false);
@@ -484,7 +483,15 @@ const showGitlabCiYaml = ref(true);
 
 const { dbGroupList } = useDBGroupListByProject(projectName);
 
-const handleTargetTabChange = (tab: "GROUP" | "DATABASE") => {
+const dbGroupOptions = computed(() => {
+  return dbGroupList.value.map((group) => ({
+    label: group.title || group.name,
+    value: group.name,
+  }));
+});
+
+const handleTargetTabChange = (tab: string) => {
+  targetTab.value = tab as "GROUP" | "DATABASE";
   if (tab === "GROUP") {
     selectedDatabaseNames.value = [];
   } else {
