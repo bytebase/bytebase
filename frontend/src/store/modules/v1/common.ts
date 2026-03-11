@@ -177,7 +177,7 @@ export const getInstanceAndDatabaseId = (name: string): string[] => {
     databaseNamePrefix,
   ]);
 
-  if (tokens.length != 2) {
+  if (tokens.length !== 2) {
     return ["", ""];
   }
 

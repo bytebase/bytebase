@@ -77,7 +77,7 @@ const props = withDefaults(
 );
 
 const initials = computed(() => {
-  if (props.username == "?") {
+  if (props.username === "?") {
     return "?";
   }
 

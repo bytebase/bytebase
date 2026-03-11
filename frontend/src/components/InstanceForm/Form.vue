@@ -1,25 +1,74 @@
 <template>
   <div class="flex flex-col gap-y-6 pb-2">
-    <InstanceEngineRadioGrid
-      v-if="isCreating"
-      :engine="basicInfo.engine"
-      :engine-list="supportedEngineV1List()"
-      class="w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2"
-      @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
-    >
-      <template #suffix="{ engine }">
-        <NTag
-          v-if="isEngineBeta(engine as Engine)"
-          round
-          size="small"
-          type="info"
+    <div class="w-full flex flex-col gap-y-6">
+      <div
+        v-if="isCreating"
+        class="rounded-lg border border-block-border bg-white"
+      >
+        <button
+          type="button"
+          class="w-full flex items-center justify-between gap-x-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+          @click="toggleEngineSelector"
         >
-          Beta
-        </NTag>
-      </template>
-    </InstanceEngineRadioGrid>
+          <div class="min-w-0">
+            <p
+              class="text-[11px] font-medium uppercase tracking-[0.14em] text-control-light"
+            >
+              {{ $t("database.engine") }}
+            </p>
+            <div class="mt-1 flex items-center gap-x-1.5">
+              <RichEngineName
+                :engine="basicInfo.engine"
+                class="text-sm font-medium text-main"
+              />
+              <NTag
+                v-if="isEngineBeta(basicInfo.engine)"
+                round
+                size="small"
+                type="info"
+              >
+                Beta
+              </NTag>
+            </div>
+          </div>
+          <div class="shrink-0 flex items-center gap-x-2 text-control-light">
+            <span class="text-sm">{{ $t("common.edit") }}</span>
+            <ChevronDownIcon
+              v-if="!isEngineSelectorCollapsed"
+              class="w-4 h-4"
+            />
+            <ChevronRightIcon v-else class="w-4 h-4" />
+          </div>
+        </button>
 
-    <div class="max-w-212.5 flex flex-col gap-y-6">
+        <Transition name="engine-selector">
+          <div
+            v-show="!isEngineSelectorCollapsed"
+            class="border-t border-block-border px-4 py-4"
+          >
+            <InstanceEngineRadioGrid
+              :engine="basicInfo.engine"
+              :engine-list="supportedEngineV1List()"
+              class="w-full grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2"
+              @update:engine="
+                (newEngine: Engine) => handleSelectInstanceEngine(newEngine)
+              "
+            >
+              <template #suffix="{ engine }">
+                <NTag
+                  v-if="isEngineBeta(engine as Engine)"
+                  round
+                  size="small"
+                  type="info"
+                >
+                  Beta
+                </NTag>
+              </template>
+            </InstanceEngineRadioGrid>
+          </div>
+        </Transition>
+      </div>
+
       <!-- Basic Info Card -->
       <div class="border border-block-border rounded-lg p-5">
         <h3 class="text-base font-medium text-main">
@@ -39,7 +88,7 @@
             <NInput
               v-model:value="basicInfo.title"
               required
-              class="mt-1 w-full"
+              class="mt-1 w-full max-w-[40rem]"
               :disabled="!allowEdit"
               :maxlength="200"
             />
@@ -98,7 +147,7 @@
               {{ $t("common.environment") }}
             </label>
             <EnvironmentSelect
-              class="mt-1 w-full"
+              class="mt-1 w-full max-w-[40rem]"
               required="true"
               :value="
                 isValidEnvironmentName(
@@ -515,7 +564,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
-import { TrashIcon } from "lucide-vue-next";
+import { ChevronDownIcon, ChevronRightIcon, TrashIcon } from "lucide-vue-next";
 import {
   NButton,
   NCheckbox,
@@ -535,6 +584,7 @@ import {
   InstanceEngineRadioGrid,
   InstanceV1EngineIcon,
   MiniActionButton,
+  RichEngineName,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
@@ -623,6 +673,7 @@ const instanceV1Store = useInstanceV1Store();
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const scanIntervalInputRef = ref<InstanceType<typeof ScanIntervalInput>>();
+const isEngineSelectorCollapsed = ref(false);
 
 const availableLicenseCount = computed(() => {
   return Math.max(
@@ -731,6 +782,15 @@ const changeInstanceEngine = (engine: Engine) => {
   basicInfo.value.engine = engine;
 };
 
+const handleSelectInstanceEngine = (engine: Engine) => {
+  changeInstanceEngine(engine);
+  isEngineSelectorCollapsed.value = true;
+};
+
+const toggleEngineSelector = () => {
+  isEngineSelectorCollapsed.value = !isEngineSelectorCollapsed.value;
+};
+
 const handleChangeSyncDatabases = (databases: string[]) => {
   basicInfo.value.syncDatabases = [...databases];
 };
@@ -825,8 +885,23 @@ const handleSelectEnvironment = (name: string | undefined) => {
 </script>
 
 <style lang="postcss" scoped>
-.instance-engine-button :deep(.n-button__content) {
-  width: 100%;
-  justify-content: flex-start;
+.engine-selector-enter-active,
+.engine-selector-leave-active {
+  overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.engine-selector-enter-from,
+.engine-selector-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+}
+
+.engine-selector-enter-to,
+.engine-selector-leave-from {
+  max-height: 32rem;
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>

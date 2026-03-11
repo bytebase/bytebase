@@ -55,7 +55,7 @@ const columns = computed(
         width: 200,
         resizable: true,
         render: (review: SQLReviewPolicy) => {
-          return <div innerHTML={highlight(review.name)}></div>;
+          return <div innerHTML={highlight(review.name)} />;
         },
       },
       {

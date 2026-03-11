@@ -151,7 +151,7 @@ const scopeOptions = computed((): ScopeOption[] => {
       title: t("audit-log.advanced-search.scope.level.title"),
       description: t("audit-log.advanced-search.scope.level.description"),
       options: Object.keys(AuditLog_Severity)
-        .filter((v) => isNaN(Number(v)))
+        .filter((v) => Number.isNaN(Number(v)))
         .map((severity) => {
           return {
             value: severity,

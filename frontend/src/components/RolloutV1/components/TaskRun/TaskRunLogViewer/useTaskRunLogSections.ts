@@ -135,7 +135,7 @@ export const useTaskRunLogSections = (
     if (cmd.response?.error) return cmd.response.error;
 
     const statement =
-      cmd.statement ??
+      cmd.statement ||
       (cmd.range
         ? extractStatementFromRange(
             cmd.range,

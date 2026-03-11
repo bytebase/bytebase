@@ -78,7 +78,7 @@ export const useFolderByView = (
       [...localCache.value].filter(
         (value) =>
           !(
-            value == path ||
+            value === path ||
             isSubFolder({ parent: path, path: value, dig: true })
           )
       )

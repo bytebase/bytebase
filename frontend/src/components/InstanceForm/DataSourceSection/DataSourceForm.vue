@@ -213,7 +213,7 @@
       thus we make it REQUIRED here.-->
           <NInput
             v-model:value="dataSource.username"
-            class="mt-2 w-full"
+            class="mt-2 w-full max-w-[48rem]"
             :disabled="!allowEdit"
             :placeholder="
               basicInfo.engine === Engine.CLICKHOUSE ? $t('common.default') : ''
@@ -337,7 +337,7 @@
               <NInput
                 type="password"
                 show-password-on="click"
-                class="w-full"
+                class="w-full max-w-[48rem]"
                 :input-props="{ autocomplete: 'off' }"
                 :placeholder="
                   dataSource.useEmptyPassword
@@ -1365,7 +1365,7 @@ const secretNameLabel = computed(() => {
 });
 
 const secretKeyLabel = computed(() => {
-  if (state.passwordType == DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
+  if (state.passwordType === DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
     return t("instance.external-secret-vault.vault-secret-key");
   }
   return t("instance.external-secret.key-name");

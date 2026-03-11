@@ -781,7 +781,7 @@ const handleDrop = async ({ node, dragNode }: TreeDropInfo) => {
   if (!oldParentNode) {
     return;
   }
-  if (oldParentNode.key == parentNode.key) {
+  if (oldParentNode.key === parentNode.key) {
     // parent folder not change
     return;
   }
