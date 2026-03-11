@@ -587,72 +587,9 @@ func queryRetry(
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
 
-	// Pre-execution check for MongoDB: enforce Milestone 1 supported APIs and reject
-	// sensitive predicates before sending the query to the server.
-	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
-		for i := range statements {
-			if i >= len(spans) || spans[i].MongoDBAnalysis == nil {
-				continue
-			}
-			analysis := spans[i].MongoDBAnalysis
-			if analysis.Collection == "" {
-				continue
-			}
-
-			objectSchema, schemaErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
-			if schemaErr != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.Wrapf(schemaErr, "failed to get object schema for collection %q", analysis.Collection))
-			}
-			if objectSchema == nil {
-				continue
-			}
-
-			if err := checkMongoDBRequestBlocked(analysis); err != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
-			}
-
-			for pathStr := range spans[i].PredicatePaths {
-				semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
-				if semanticType != "" {
-					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
-						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
-				}
-			}
-		}
-	}
-
-	// Pre-execution check for Elasticsearch: reject blocked APIs and predicate violations
-	// before sending the query to the server.
-	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
-		for i := range statements {
-			if i >= len(spans) || spans[i].ElasticsearchAnalysis == nil {
-				continue
-			}
-			analysis := spans[i].ElasticsearchAnalysis
-			if analysis.API == parserbase.ElasticsearchAPIUnsupported {
-				continue
-			}
-			indexName := analysis.Index
-			if indexName == "" {
-				continue
-			}
-			objectSchema, schemaErr := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
-			if schemaErr != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.Wrapf(schemaErr, "failed to get object schema for index %q", indexName))
-			}
-			if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
-				continue
-			}
-			if err := checkElasticsearchRequestBlocked(analysis); err != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
-			}
-			for pathStr := range spans[i].PredicatePaths {
-				semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
-				if semanticType != "" {
-					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
-						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
-				}
-			}
+	if maskingEnabled {
+		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
+			return nil, nil, time.Duration(0), err
 		}
 	}
 
