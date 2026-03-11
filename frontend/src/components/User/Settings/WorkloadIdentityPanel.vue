@@ -104,7 +104,7 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useCurrentProjectV1, useActuatorV1Store } from "@/store";
+import { useActuatorV1Store, useCurrentProjectV1 } from "@/store";
 import {
   useWorkloadIdentityStore,
   workloadIdentityToUser,
@@ -148,7 +148,9 @@ const deletedSessionKey = computed(
     `bb.paged-workload-identity-table${project.value ? `.${project.value.name}` : ""}.deleted`
 );
 
-const parent = computed(() => project.value?.name ?? useActuatorV1Store().workspaceResourceName);
+const parent = computed(
+  () => project.value?.name ?? useActuatorV1Store().workspaceResourceName
+);
 
 const allowEdit = computed(() => {
   if (!project.value) {

@@ -161,10 +161,10 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import {
   hasFeature,
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useActuatorV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidEnvironmentName } from "@/types";

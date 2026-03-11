@@ -339,11 +339,11 @@ import {
   ensureWorkloadIdentityFullName,
   getProjectName,
   pushNotification,
+  useActuatorV1Store,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useWorkloadIdentityStore,
   useWorkspaceV1Store,
-  useActuatorV1Store
 } from "@/store";
 import {
   getWorkloadIdentityNameInBinding,

@@ -392,7 +392,10 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
         options = getClassificationLevelOptions();
         break;
       case CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME: {
-        map.set(factor, getDatabaseIdOptionConfig(actuatorStore.workspaceResourceName));
+        map.set(
+          factor,
+          getDatabaseIdOptionConfig(actuatorStore.workspaceResourceName)
+        );
         return map;
       }
     }
