@@ -109,12 +109,14 @@ CREATE TABLE policy (
 -- Project Hook
 CREATE TABLE project_webhook (
     id serial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     project text NOT NULL REFERENCES project(resource_id),
     -- Stored as ProjectWebhook (proto/store/store/project_webhook.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_project_webhook_project ON project_webhook(project);
+CREATE UNIQUE INDEX idx_project_webhook_unique_resource_id ON project_webhook(resource_id);
 
 ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 
@@ -165,6 +167,7 @@ CREATE TABLE sheet_blob (
 -- plan table stores the plan for a project
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -179,6 +182,7 @@ CREATE TABLE plan (
 CREATE INDEX idx_plan_project ON plan(project);
 CREATE INDEX idx_plan_creator ON plan(creator);
 CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
+CREATE UNIQUE INDEX idx_plan_unique_resource_id ON plan(resource_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
@@ -211,6 +215,7 @@ CREATE TABLE plan_webhook_delivery (
 -- task table stores the task for a plan
 CREATE TABLE task (
     id serial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     plan_id bigint NOT NULL REFERENCES plan(id),
     instance text NOT NULL REFERENCES instance(resource_id),
     environment text,
@@ -221,12 +226,14 @@ CREATE TABLE task (
 );
 
 CREATE INDEX idx_task_plan_id_environment ON task(plan_id, environment);
+CREATE UNIQUE INDEX idx_task_unique_resource_id ON task(resource_id);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
 -- task run table stores the task run
 CREATE TABLE task_run (
     id serial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -244,6 +251,7 @@ CREATE TABLE task_run (
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
+CREATE UNIQUE INDEX idx_task_run_unique_resource_id ON task_run(resource_id);
 
 CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 
@@ -276,6 +284,7 @@ CREATE TABLE task_run_log (
 -- issue
 CREATE TABLE issue (
     id serial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -299,6 +308,7 @@ CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(plan_id);
 CREATE INDEX idx_issue_creator ON issue(creator);
 
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
+CREATE UNIQUE INDEX idx_issue_unique_resource_id ON issue(resource_id);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
@@ -333,6 +343,7 @@ ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
     id bigserial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -342,6 +353,7 @@ CREATE TABLE issue_comment (
 );
 
 CREATE INDEX idx_issue_comment_issue_id ON issue_comment(issue_id);
+CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
 
 ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
@@ -366,6 +378,7 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id serial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -381,6 +394,7 @@ CREATE TABLE worksheet (
 );
 
 CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
+CREATE UNIQUE INDEX idx_worksheet_unique_resource_id ON worksheet(resource_id);
 
 ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 
@@ -439,6 +453,7 @@ CREATE TABLE review_config (
 
 CREATE TABLE revision (
     id bigserial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     instance text NOT NULL,
     db_name text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -449,6 +464,8 @@ CREATE TABLE revision (
     payload jsonb NOT NULL DEFAULT '{}',
     CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
+
+CREATE UNIQUE INDEX idx_revision_unique_resource_id ON revision(resource_id);
 
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
@@ -473,6 +490,7 @@ CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (insta
 
 CREATE TABLE changelog (
     id bigserial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
     db_name text NOT NULL,
@@ -482,6 +500,8 @@ CREATE TABLE changelog (
     payload jsonb NOT NULL DEFAULT '{}',
     CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
+
+CREATE UNIQUE INDEX idx_changelog_unique_resource_id ON changelog(resource_id);
 
 ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 

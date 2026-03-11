@@ -1136,14 +1136,14 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q: %v", req.Msg.Parent, err))
 	}
 
-	_, commentIssueUID, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(req.Msg.IssueComment.Name)
+	_, commentIssueUID, issueCommentID, err := common.GetProjectIDIssueUIDIssueCommentID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
 	}
 	if parentIssueUID != commentIssueUID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment %q does not belong to parent %q", req.Msg.IssueComment.Name, req.Msg.Parent))
 	}
-	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID, IssueUID: &parentIssueUID})
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ResourceID: &issueCommentID, IssueUID: &parentIssueUID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}
@@ -1164,7 +1164,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
 	}
 	update := &store.UpdateIssueCommentMessage{
-		UID: issueCommentUID,
+		ResourceID: issueCommentID,
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -1181,7 +1181,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update the issue comment with error: %v", err.Error()))
 	}
-	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
+	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ResourceID: &issueCommentID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}

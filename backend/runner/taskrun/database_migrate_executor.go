@@ -236,7 +236,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}
 
 	// Begin migration - create pending changelog
-	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:     database.InstanceID,
 		DatabaseName:   database.DatabaseName,
 		Status:         store.ChangelogStatusPending,
@@ -255,7 +255,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
-		UID: changelogUID,
+		ResourceID: changelogID,
 	}
 	if needDump {
 		opts.LogDatabaseSyncStart()
@@ -353,7 +353,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	}()
 
 	// Begin migration - create pending changelog
-	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:     database.InstanceID,
 		DatabaseName:   database.DatabaseName,
 		Status:         store.ChangelogStatusPending,
@@ -410,7 +410,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
-		UID: changelogUID,
+		ResourceID: changelogID,
 	}
 	opts.LogDatabaseSyncStart()
 	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
@@ -460,7 +460,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
 
 	// Create pending changelog for the entire release
-	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:     database.InstanceID,
 		DatabaseName:   database.DatabaseName,
 		Status:         store.ChangelogStatusPending,
@@ -563,7 +563,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 	// Update changelog after all files are processed
 	update := &store.UpdateChangelogMessage{
-		UID: changelogUID,
+		ResourceID: changelogID,
 	}
 	opts.LogDatabaseSyncStart()
 	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
@@ -673,7 +673,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	opts.LogComputeDiffEnd("")
 
 	// Begin migration - create pending changelog
-	changelogUID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
 		InstanceID:     database.InstanceID,
 		DatabaseName:   database.DatabaseName,
 		Status:         store.ChangelogStatusPending,
@@ -694,7 +694,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
-		UID: changelogUID,
+		ResourceID: changelogID,
 	}
 	opts.LogDatabaseSyncStart()
 	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)

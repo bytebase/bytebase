@@ -150,13 +150,13 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 }
 
 func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request[v1pb.GetChangelogRequest]) (*connect.Response[v1pb.Changelog], error) {
-	instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(req.Msg.Name)
+	instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindChangelogMessage{
-		UID: &changelogUID,
+		ResourceID: &changelogID,
 	}
 	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true
@@ -167,7 +167,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list changelogs"))
 	}
 	if changelog == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %d not found", changelogUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelogID))
 	}
 
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
@@ -197,7 +197,7 @@ func (s *DatabaseService) convertToChangelogs(_ context.Context, d *store.Databa
 
 func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) *v1pb.Changelog {
 	cl := &v1pb.Changelog{
-		Name:       common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
+		Name:       common.FormatChangelog(d.InstanceID, d.DatabaseName, c.ResourceID),
 		CreateTime: timestamppb.New(c.CreatedAt),
 		Status:     convertToChangelogStatus(c.Status),
 		Schema:     "",

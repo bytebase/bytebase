@@ -145,31 +145,23 @@ func GetInstanceDatabaseID(name string) (string, string, error) {
 	return tokens[0], tokens[1], nil
 }
 
-// GetInstanceDatabaseRevisionID returns the instance ID, database ID, and revision UID from a resource name.
-func GetInstanceDatabaseRevisionID(name string) (string, string, int64, error) {
+// GetInstanceDatabaseRevisionID returns the instance ID, database ID, and revision ID from a resource name.
+func GetInstanceDatabaseRevisionID(name string) (string, string, string, error) {
 	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, RevisionNamePrefix)
 	if err != nil {
-		return "", "", 0, err
+		return "", "", "", err
 	}
-	revisionUID, err := strconv.ParseInt(tokens[2], 10, 64)
-	if err != nil {
-		return "", "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[2])
-	}
-	return tokens[0], tokens[1], revisionUID, nil
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
-// GetInstanceDatabaseChangelogUID returns the instance ID, database ID, and changelog UID from a resource name.
-func GetInstanceDatabaseChangelogUID(name string) (string, string, int64, error) {
+// GetInstanceDatabaseChangelogID returns the instance ID, database ID, and changelog ID from a resource name.
+func GetInstanceDatabaseChangelogID(name string) (string, string, string, error) {
 	// the name should be instances/{instance-id}/databases/{database-id}/changelogs/{changelog-id}
 	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, ChangelogPrefix)
 	if err != nil {
-		return "", "", 0, err
+		return "", "", "", err
 	}
-	changelogUID, err := strconv.ParseInt(tokens[2], 10, 64)
-	if err != nil {
-		return "", "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[2])
-	}
-	return tokens[0], tokens[1], changelogUID, nil
+	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // GetUserEmail returns the user email from a resource name.
@@ -212,21 +204,17 @@ func GetProjectIDIssueUID(name string) (string, int, error) {
 	return tokens[0], issueUID, nil
 }
 
-// GetProjectIDIssueUIDIssueCommentUID returns the project ID, issue UID and issue comment UID from the issue comment name.
-func GetProjectIDIssueUIDIssueCommentUID(name string) (string, int, int, error) {
+// GetProjectIDIssueUIDIssueCommentID returns the project ID, issue UID and issue comment ID from the issue comment name.
+func GetProjectIDIssueUIDIssueCommentID(name string) (string, int, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, IssueCommentNamePrefix)
 	if err != nil {
-		return "", 0, 0, err
+		return "", 0, "", err
 	}
 	issueUID, err := strconv.Atoi(tokens[1])
 	if err != nil {
-		return "", 0, 0, errors.Errorf("invalid issue ID %q", tokens[1])
+		return "", 0, "", errors.Errorf("invalid issue ID %q", tokens[1])
 	}
-	issueCommentUID, err := strconv.Atoi(tokens[2])
-	if err != nil {
-		return "", 0, 0, errors.Errorf("invalid issue comment ID %q", tokens[2])
-	}
-	return tokens[0], issueUID, issueCommentUID, nil
+	return tokens[0], issueUID, tokens[2], nil
 }
 
 // GetProjectIDPlanID returns the project ID and plan ID from a resource name.
@@ -624,12 +612,12 @@ func FormatReleaseFile(release string, fileID string) string {
 	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, fileID)
 }
 
-func FormatRevision(instanceID, databaseID string, revisionUID int64) string {
-	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), RevisionNamePrefix, revisionUID)
+func FormatRevision(instanceID, databaseID string, revisionID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatDatabase(instanceID, databaseID), RevisionNamePrefix, revisionID)
 }
 
-func FormatChangelog(instanceID, databaseID string, changelogUID int64) string {
-	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), ChangelogPrefix, changelogUID)
+func FormatChangelog(instanceID, databaseID string, changelogID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatDatabase(instanceID, databaseID), ChangelogPrefix, changelogID)
 }
 
 func FormatPlan(projectID string, planUID int64) string {

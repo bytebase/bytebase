@@ -19,14 +19,14 @@ type RevisionMessage struct {
 	Payload      *storepb.RevisionPayload
 
 	// output only
-	UID       int64
-	CreatedAt time.Time
-	Deleter   *string
-	DeletedAt *time.Time
+	ResourceID string
+	CreatedAt  time.Time
+	Deleter    *string
+	DeletedAt  *time.Time
 }
 
 type FindRevisionMessage struct {
-	UID          *int64
+	ResourceID   *string
 	InstanceID   *string
 	DatabaseName *string
 	Type         *storepb.SchemaChangeType
@@ -45,7 +45,7 @@ type FindRevisionMessage struct {
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
+			resource_id,
 			instance,
 			db_name,
 			created_at,
@@ -57,8 +57,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		WHERE TRUE
 	`)
 
-	if v := find.UID; v != nil {
-		q.And("id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
 	}
 	if v := find.InstanceID; v != nil {
 		q.And("instance = ?", *v)
@@ -104,7 +104,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		}
 		var p []byte
 		if err := rows.Scan(
-			&r.UID,
+			&r.ResourceID,
 			&r.InstanceID,
 			&r.DatabaseName,
 			&r.CreatedAt,
@@ -130,9 +130,9 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	return revisions, nil
 }
 
-func (s *Store) GetRevision(ctx context.Context, uid int64, instanceID, databaseName string) (*RevisionMessage, error) {
+func (s *Store) GetRevision(ctx context.Context, resourceID, instanceID, databaseName string) (*RevisionMessage, error) {
 	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{
-		UID:          &uid,
+		ResourceID:   &resourceID,
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 		ShowDeleted:  true,
@@ -141,10 +141,10 @@ func (s *Store) GetRevision(ctx context.Context, uid int64, instanceID, database
 		return nil, err
 	}
 	if len(revisions) == 0 {
-		return nil, errors.Errorf("revision not found: %d", uid)
+		return nil, errors.Errorf("revision not found: %s", resourceID)
 	}
 	if len(revisions) > 1 {
-		return nil, errors.Errorf("found multiple revisions for uid: %d", uid)
+		return nil, errors.Errorf("found multiple revisions for resource_id: %s", resourceID)
 	}
 	return revisions[0], nil
 }
@@ -162,7 +162,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 			$3,
 			$4
 		)
-		RETURNING id, created_at
+		RETURNING resource_id, created_at
 	`
 
 	p, err := protojson.Marshal(revision.Payload)
@@ -170,28 +170,25 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	var id int64
 	if err := s.GetDB().QueryRowContext(ctx, query,
 		revision.InstanceID,
 		revision.DatabaseName,
 		revision.Version,
 		p,
-	).Scan(&id, &revision.CreatedAt); err != nil {
+	).Scan(&revision.ResourceID, &revision.CreatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to query and scan")
 	}
-
-	revision.UID = id
 
 	return revision, nil
 }
 
-func (s *Store) DeleteRevision(ctx context.Context, uid int64, instanceID, databaseName string, deleter string) error {
+func (s *Store) DeleteRevision(ctx context.Context, resourceID, instanceID, databaseName string, deleter string) error {
 	query :=
 		`UPDATE revision
 		SET deleter = $1, deleted_at = now()
-		WHERE id = $2 AND instance = $3 AND db_name = $4`
+		WHERE resource_id = $2 AND instance = $3 AND db_name = $4`
 
-	if _, err := s.GetDB().ExecContext(ctx, query, deleter, uid, instanceID, databaseName); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, deleter, resourceID, instanceID, databaseName); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 

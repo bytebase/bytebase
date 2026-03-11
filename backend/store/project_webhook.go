@@ -16,10 +16,10 @@ import (
 type ProjectWebhookMessage struct {
 	// Output only fields.
 	//
-	// ID is the unique identifier of the project webhook.
-	ID        int
-	ProjectID string
-	Payload   *storepb.ProjectWebhook
+	// ResourceID is the unique identifier of the project webhook.
+	ResourceID string
+	ProjectID  string
+	Payload    *storepb.ProjectWebhook
 }
 
 // UpdateProjectWebhookMessage is the message for updating project webhooks.
@@ -30,7 +30,7 @@ type UpdateProjectWebhookMessage struct {
 // FindProjectWebhookMessage is the message for finding project webhooks,
 // if all fields are nil, it will list all project webhooks.
 type FindProjectWebhookMessage struct {
-	ID         *int
+	ResourceID *string
 	ProjectID  *string
 	ProjectIDs []string
 	URL        *string
@@ -59,7 +59,7 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, projectID string, crea
 			payload
 		)
 		VALUES (?, ?)
-		RETURNING id
+		RETURNING resource_id
 	`, projectID, payload)
 
 	query, args, err := q.ToSQL()
@@ -68,7 +68,7 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, projectID string, crea
 	}
 
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&projectWebhook.ID,
+		&projectWebhook.ResourceID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -84,15 +84,15 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, projectID string, crea
 func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhookMessage) ([]*ProjectWebhookMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
+			resource_id,
 			project,
 			payload
 		FROM project_webhook
 		WHERE TRUE
 	`)
 
-	if v := find.ID; v != nil {
-		q.And("id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
 		q.And("project = ?", *v)
@@ -123,7 +123,7 @@ func (s *Store) ListProjectWebhooks(ctx context.Context, find *FindProjectWebhoo
 		var payload []byte
 
 		if err := rows.Scan(
-			&projectWebhook.ID,
+			&projectWebhook.ResourceID,
 			&projectWebhook.ProjectID,
 			&payload,
 		); err != nil {
@@ -171,7 +171,7 @@ func (s *Store) GetProjectWebhook(ctx context.Context, find *FindProjectWebhookM
 }
 
 // UpdateProjectWebhook updates an instance of ProjectWebhook.
-func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID string, projectWebhookID int, update *UpdateProjectWebhookMessage) (*ProjectWebhookMessage, error) {
+func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID string, webhookResourceID string, update *UpdateProjectWebhookMessage) (*ProjectWebhookMessage, error) {
 	var payload []byte
 	if update.Payload != nil {
 		p, err := protojson.Marshal(update.Payload)
@@ -184,9 +184,9 @@ func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID stri
 	q := qb.Q().Space(`
 		UPDATE project_webhook
 		SET payload = ?
-		WHERE id = ?
-		RETURNING id, project, payload
-	`, payload, projectWebhookID)
+		WHERE resource_id = ?
+		RETURNING resource_id, project, payload
+	`, payload, webhookResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -199,12 +199,12 @@ func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID stri
 	var returnedPayload []byte
 	// Execute update query with RETURNING.
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&projectWebhook.ID,
+		&projectWebhook.ResourceID,
 		&projectWebhook.ProjectID,
 		&returnedPayload,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project hook ID not found: %d", projectWebhookID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project hook not found: %s", webhookResourceID)}
 		}
 		return nil, err
 	}
@@ -217,9 +217,9 @@ func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID stri
 	return &projectWebhook, nil
 }
 
-// DeleteProjectWebhook deletes an existing projectWebhook by projectUID and url.
-func (s *Store) DeleteProjectWebhook(ctx context.Context, projectResourceID string, projectWebhookUID int) error {
-	q := qb.Q().Space("DELETE FROM project_webhook WHERE id = ?", projectWebhookUID)
+// DeleteProjectWebhook deletes an existing projectWebhook by resource ID.
+func (s *Store) DeleteProjectWebhook(ctx context.Context, projectResourceID string, webhookResourceID string) error {
+	q := qb.Q().Space("DELETE FROM project_webhook WHERE resource_id = ?", webhookResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
