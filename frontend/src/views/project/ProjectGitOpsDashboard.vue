@@ -43,22 +43,19 @@
 
       <!-- WIF notice for Bitbucket / Azure DevOps -->
       <BBAttention :type="'info'" :closable="false">
-        <i18n-t keypath="gitops.checklist.wif-notice">
-          <template #bitbucket>
-            <a
-              href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
-              target="_blank"
-              class="text-accent hover:underline"
-            >Bitbucket</a>
-          </template>
-          <template #azure>
-            <a
-              href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
-              target="_blank"
-              class="text-accent hover:underline"
-            >Azure DevOps</a>
-          </template>
-        </i18n-t>
+        <span>{{ $t("gitops.checklist.wif-notice-text") }}
+          <a
+            href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
+            target="_blank"
+            class="text-accent hover:underline"
+          >Bitbucket</a>
+          /
+          <a
+            href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
+            target="_blank"
+            class="text-accent hover:underline"
+          >Azure DevOps</a>.
+        </span>
       </BBAttention>
 
       <!-- Check 1: External URL -->
