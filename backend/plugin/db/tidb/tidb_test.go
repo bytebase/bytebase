@@ -29,6 +29,29 @@ func TestParseVersion(t *testing.T) {
 	}
 }
 
+func TestTiDBVersionAtLeast(t *testing.T) {
+	tests := []struct {
+		version   string
+		threshold string
+		want      bool
+	}{
+		{version: "v7.1.1", threshold: "7.4.0", want: false},
+		{version: "v7.2.0", threshold: "7.4.0", want: false},
+		{version: "v7.3.0", threshold: "7.4.0", want: false},
+		{version: "v7.4.0", threshold: "7.4.0", want: true},
+		{version: "v7.5.2", threshold: "7.4.0", want: true},
+		{version: "v8.0.0", threshold: "7.4.0", want: true},
+		{version: "v8.5.0", threshold: "7.4.0", want: true},
+	}
+
+	a := require.New(t)
+	for _, tc := range tests {
+		got, err := tidbVersionAtLeast(tc.version, tc.threshold)
+		a.NoError(err)
+		a.Equal(tc.want, got, "version=%s threshold=%s", tc.version, tc.threshold)
+	}
+}
+
 func TestIsNonTransactionStatement(t *testing.T) {
 	tests := []struct {
 		stmt string
