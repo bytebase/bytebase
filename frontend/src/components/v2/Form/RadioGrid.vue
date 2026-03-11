@@ -11,7 +11,7 @@
       v-bind="buttonProps ? buttonProps(option.value, index) : undefined"
       @click="$emit('update:value', option.value)"
     >
-      <div class="flex flex-row items-center gap-x-2">
+      <div class="flex flex-row items-center gap-x-2 min-w-0">
         <NRadio
           :checked="value === option.value"
           :disabled="disabled"

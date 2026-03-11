@@ -5,11 +5,11 @@
     @update:value="$emit('update:engine', $event as Engine)"
   >
     <template #item="{ option }">
-      <div class="flex flex-row items-center gap-x-1">
+      <div class="flex flex-row items-center gap-x-1 min-w-0" :title="option.label">
         <RichEngineName
           :engine="option.value as Engine"
           tag="p"
-          class="text-center text-sm text-main!"
+          class="text-center text-sm text-main! min-w-0 truncate"
         />
         <slot name="suffix" :engine="option.value" />
       </div>
