@@ -79,8 +79,8 @@ func TestGetQuerySpanPredicatePaths(t *testing.T) {
 			},
 		},
 		{
-			description: "get doc returns no predicates",
-			statement:   "GET /users/_doc/123",
+			description:    "get doc returns no predicates",
+			statement:      "GET /users/_doc/123",
 			predicatePaths: map[string]bool{},
 		},
 	}

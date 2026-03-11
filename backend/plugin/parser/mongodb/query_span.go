@@ -22,7 +22,10 @@ func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.State
 	}
 
 	analysis, err := AnalyzeMaskingStatement(stmt.Text)
-	if err != nil || analysis == nil {
+	if err != nil {
+		return span, err
+	}
+	if analysis == nil {
 		return span, nil
 	}
 

@@ -592,7 +592,7 @@ func queryRetry(
 	// Pre-execution check for MongoDB: enforce Milestone 1 supported APIs and reject
 	// sensitive predicates before sending the query to the server.
 	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_MONGODB {
-		for _, stmt := range statements {
+		for i, stmt := range statements {
 			analysis, analyzeErr := mongoparser.AnalyzeMaskingStatement(stmt.Text)
 			if analyzeErr != nil || analysis == nil || analysis.Collection == "" {
 				continue
@@ -610,11 +610,13 @@ func queryRetry(
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
 			}
 
-			for _, field := range analysis.PredicateFields {
-				semanticType := lookupSemanticTypeByDotPath(field, objectSchema)
-				if semanticType != "" {
-					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
-						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", field, semanticType))
+			if i < len(spans) {
+				for pathStr := range spans[i].PredicatePaths {
+					semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
+					if semanticType != "" {
+						return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+							errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
+					}
 				}
 			}
 		}
@@ -623,7 +625,7 @@ func queryRetry(
 	// Pre-execution check for Elasticsearch: reject blocked APIs and predicate violations
 	// before sending the query to the server.
 	if maskingEnabled && instance.Metadata.GetEngine() == storepb.Engine_ELASTICSEARCH {
-		for _, stmt := range statements {
+		for i, stmt := range statements {
 			parsed, parseErr := esparser.ParseElasticsearchREST(stmt.Text)
 			if parseErr != nil || len(parsed.Requests) == 0 {
 				continue
@@ -647,11 +649,13 @@ func queryRetry(
 			if err := checkElasticsearchRequestBlocked(analysis); err != nil {
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			for _, field := range analysis.PredicateFields {
-				semanticType := lookupSemanticTypeByDotPath(field, objectSchema)
-				if semanticType != "" {
-					return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
-						errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", field, semanticType))
+			if i < len(spans) {
+				for pathStr := range spans[i].PredicatePaths {
+					semanticType := lookupSemanticTypeByDotPath(pathStr, objectSchema)
+					if semanticType != "" {
+						return nil, nil, time.Duration(0), connect.NewError(connect.CodeInvalidArgument,
+							errors.Errorf("using field %q tagged by semantic type %q in query predicate is not allowed", pathStr, semanticType))
+					}
 				}
 			}
 		}
