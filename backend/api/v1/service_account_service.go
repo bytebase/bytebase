@@ -46,10 +46,10 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		}
 		projectID = &pid
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
-		// workspace-level service account: parent = "workspaces/-"
+		// workspace-level service account: parent = "workspaces/{id}"
 		// projectID remains nil
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/-", parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
 	}
 
 	serviceAccountID := request.Msg.ServiceAccountId
@@ -140,12 +140,12 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 		}
 		projectID = &pid
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
-		// workspace-level list: parent = "workspaces/-"
+		// workspace-level list: parent = "workspaces/{id}"
 		// use empty string to filter workspace-level SAs
 		emptyProjectID := ""
 		projectID = &emptyProjectID
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/-", parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{

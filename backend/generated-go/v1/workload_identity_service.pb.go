@@ -247,7 +247,7 @@ func (x *WorkloadIdentityConfig) GetSubjectPattern() string {
 type CreateWorkloadIdentityRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource where this workload identity will be created.
-	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The ID to use for the workload identity, which will become the final component
 	// of the workload identity's email in the format: {workload_identity_id}@workload.bytebase.com
@@ -361,7 +361,7 @@ func (x *GetWorkloadIdentityRequest) GetName() string {
 type ListWorkloadIdentitiesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent resource.
-	// Format: projects/{project} for project-level, workspaces/- for workspace-level.
+	// Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of workload identities to return. The service may return fewer than
 	// this value.

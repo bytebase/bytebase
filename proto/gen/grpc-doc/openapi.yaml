@@ -11091,7 +11091,7 @@ paths:
       summary: ListServiceAccounts
       description: |-
         Lists service accounts.
-         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.serviceAccounts.list on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
       operationId: ServiceAccountService_ListServiceAccounts
       parameters:
@@ -11189,7 +11189,7 @@ paths:
       summary: CreateServiceAccount
       description: |-
         Creates a new service account.
-         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.serviceAccounts.create on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
       operationId: ServiceAccountService_CreateServiceAccount
       parameters:
@@ -11638,7 +11638,7 @@ paths:
       summary: ListWorkloadIdentities
       description: |-
         Lists workload identities.
-         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.list on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
       operationId: WorkloadIdentityService_ListWorkloadIdentities
       parameters:
@@ -11736,7 +11736,7 @@ paths:
       summary: CreateWorkloadIdentity
       description: |-
         Creates a new workload identity.
-         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.create on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
       operationId: WorkloadIdentityService_CreateWorkloadIdentity
       parameters:
@@ -15489,7 +15489,7 @@ paths:
       summary: ListServiceAccounts
       description: |-
         Lists service accounts.
-         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.serviceAccounts.list on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.
       operationId: ServiceAccountService_ListServiceAccounts2
       parameters:
@@ -15587,7 +15587,7 @@ paths:
       summary: CreateServiceAccount
       description: |-
         Creates a new service account.
-         For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.serviceAccounts.create on workspace.
          For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.
       operationId: ServiceAccountService_CreateServiceAccount2
       parameters:
@@ -15633,7 +15633,7 @@ paths:
       summary: ListWorkloadIdentities
       description: |-
         Lists workload identities.
-         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.list on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.
       operationId: WorkloadIdentityService_ListWorkloadIdentities2
       parameters:
@@ -15731,7 +15731,7 @@ paths:
       summary: CreateWorkloadIdentity
       description: |-
         Creates a new workload identity.
-         For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
+         For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.create on workspace.
          For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.
       operationId: WorkloadIdentityService_CreateWorkloadIdentity2
       parameters:
@@ -18077,7 +18077,7 @@ components:
           title: parent
           description: |-
             The parent resource where this service account will be created.
-             Format: projects/{project} for project-level, workspaces/- for workspace-level.
+             Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
         serviceAccountId:
           type: string
           title: service_account_id
@@ -18132,7 +18132,7 @@ components:
           title: parent
           description: |-
             The parent resource where this workload identity will be created.
-             Format: projects/{project} for project-level, workspaces/- for workspace-level.
+             Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
         workloadIdentityId:
           type: string
           title: workload_identity_id
@@ -21391,7 +21391,7 @@ components:
           title: parent
           description: |-
             - projects/{project}: list databases in a project, require "bb.projects.get" permission.
-             - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+             - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
              - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
         pageSize:
           type: integer
@@ -22271,7 +22271,7 @@ components:
           title: parent
           description: |-
             The parent resource.
-             Format: projects/{project} for project-level, workspaces/- for workspace-level.
+             Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
         pageSize:
           type: integer
           title: page_size
@@ -22448,7 +22448,7 @@ components:
           title: parent
           description: |-
             The parent resource.
-             Format: projects/{project} for project-level, workspaces/- for workspace-level.
+             Format: projects/{project} for project-level, workspaces/{id} for workspace-level.
         pageSize:
           type: integer
           title: page_size

@@ -37,14 +37,14 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
     showDeleted,
     filter,
   }: {
-    parent?: string;
+    parent: string;
     pageSize: number;
     pageToken: string | undefined;
     showDeleted: boolean;
     filter?: AccountFilter;
   }) => {
     const request = create(ListWorkloadIdentitiesRequestSchema, {
-      parent: parent ?? "workspaces/-",
+      parent,
       pageSize,
       pageToken,
       showDeleted,
@@ -92,10 +92,10 @@ export const useWorkloadIdentityStore = defineStore("workloadIdentity", () => {
   const createWorkloadIdentity = async (
     workloadIdentityId: string,
     workloadIdentity: Partial<WorkloadIdentity>,
-    parent?: string
+    parent: string
   ) => {
     const request = create(CreateWorkloadIdentityRequestSchema, {
-      parent: parent ?? "workspaces/-",
+      parent,
       workloadIdentityId,
       workloadIdentity: create(
         WorkloadIdentitySchema,

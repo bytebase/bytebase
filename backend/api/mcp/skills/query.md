@@ -24,7 +24,7 @@ Run SQL queries against databases managed by Bytebase.
 2. **List databases** (if needed):
    ```
    call_api(operationId="DatabaseService/ListDatabases", body={
-     "parent": "workspaces/-",
+     "parent": "workspaces/{id}",
      "filter": "name.matches(\"db_name\")"
    })
    ```

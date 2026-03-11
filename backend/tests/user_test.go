@@ -47,8 +47,11 @@ func TestDeleteUser(t *testing.T) {
 	a.Error(err)
 	a.ErrorContains(err, expectErrorMsg)
 
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &connect.Request[v1pb.GetActuatorInfoRequest]{})
+	a.NoError(err)
+
 	serviceAccountResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
-		Parent:           "workspaces/-",
+		Parent:           fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
 		ServiceAccountId: "bot",
 		ServiceAccount: &v1pb.ServiceAccount{
 			Title: "bot",

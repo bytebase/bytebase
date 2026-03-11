@@ -343,6 +343,7 @@ import {
   useProjectV1Store,
   useWorkloadIdentityStore,
   useWorkspaceV1Store,
+  useActuatorV1Store
 } from "@/store";
 import {
   getWorkloadIdentityNameInBinding,
@@ -425,7 +426,7 @@ const parent = computed(() => {
   if (props.project) {
     return props.project;
   }
-  return "workspaces/-";
+  return useActuatorV1Store().workspaceResourceName;
 });
 
 const emailSuffix = computed(() =>

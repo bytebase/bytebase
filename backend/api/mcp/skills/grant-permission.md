@@ -56,7 +56,7 @@ search_api(operationId="WorkspaceService/GetIamPolicy")
 ```
 ```
 call_api(operationId="WorkspaceService/GetIamPolicy", body={
-  "resource": "workspaces/-"
+  "resource": "workspaces/{id}"
 })
 ```
 
@@ -82,7 +82,7 @@ search_api(operationId="WorkspaceService/SetIamPolicy")
 ```
 ```
 call_api(operationId="WorkspaceService/SetIamPolicy", body={
-  "resource": "workspaces/-",
+  "resource": "workspaces/{id}",
   "etag": "{etag-from-get}",
   "policy": {
     "bindings": [

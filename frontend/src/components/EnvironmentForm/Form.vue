@@ -164,6 +164,7 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
+  useActuatorV1Store,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { isValidEnvironmentName } from "@/types";
@@ -264,7 +265,7 @@ const fetchDatabases = async () => {
   try {
     const resp = await databaseStore.fetchDatabases({
       pageSize: 1,
-      parent: "workspaces/-",
+      parent: useActuatorV1Store().workspaceResourceName,
       filter: {
         environment: environment.value.name,
       },
