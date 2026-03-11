@@ -1048,6 +1048,9 @@
         "engine": {
           "title": "Engine",
           "description": "Lọc theo engine"
+        },
+        "state": {
+          "description": "Lọc theo trạng thái"
         }
       }
     },
@@ -1251,7 +1254,6 @@
       "last-refresh": "Làm mới lần cuối: {time}"
     },
     "state": {
-      "description": "Lọc các kế hoạch theo trạng thái của chúng",
       "close-confirm": "Bạn có chắc chắn muốn đóng kế hoạch này không?",
       "reopen-confirm": "Bạn có chắc chắn muốn mở lại kế hoạch này không?"
     },
