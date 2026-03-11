@@ -339,6 +339,7 @@ import {
   ensureWorkloadIdentityFullName,
   getProjectName,
   pushNotification,
+  useActuatorV1Store,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useWorkloadIdentityStore,
@@ -425,7 +426,7 @@ const parent = computed(() => {
   if (props.project) {
     return props.project;
   }
-  return "workspaces/-";
+  return useActuatorV1Store().workspaceResourceName;
 });
 
 const emailSuffix = computed(() =>

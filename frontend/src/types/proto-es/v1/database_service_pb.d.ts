@@ -84,7 +84,7 @@ export declare const BatchGetDatabasesResponseSchema: GenMessage<BatchGetDatabas
 export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesRequest"> & {
   /**
    * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
-   * - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+   * - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
    * - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
    *
    * @generated from field: string parent = 1;

@@ -13,6 +13,7 @@ import {
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils";
+import { useActuatorV1Store } from "./actuator";
 import { composePolicyBindings } from "./projectIamPolicy";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
@@ -66,7 +67,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
 
   const fetchIamPolicy = async () => {
     const request = create(GetIamPolicyRequestSchema, {
-      resource: "workspaces/-",
+      resource: useActuatorV1Store().workspaceResourceName,
     });
     const policy = await workspaceServiceClientConnect.getIamPolicy(request);
     await composePolicyBindings(policy.bindings);
@@ -131,7 +132,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     }
 
     const request = create(SetIamPolicyRequestSchema, {
-      resource: "workspaces/-",
+      resource: useActuatorV1Store().workspaceResourceName,
       policy: workspacePolicy,
       etag: workspacePolicy.etag,
     });

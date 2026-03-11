@@ -47,8 +47,11 @@ func TestDeleteUser(t *testing.T) {
 	a.Error(err)
 	a.ErrorContains(err, expectErrorMsg)
 
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &connect.Request[v1pb.GetActuatorInfoRequest]{})
+	a.NoError(err)
+
 	serviceAccountResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
-		Parent:           "workspaces/-",
+		Parent:           fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
 		ServiceAccountId: "bot",
 		ServiceAccount: &v1pb.ServiceAccount{
 			Title: "bot",
@@ -57,7 +60,9 @@ func TestDeleteUser(t *testing.T) {
 	a.NoError(err)
 	serviceAccount := serviceAccountResp.Msg
 
-	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{}))
+	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
+	}))
 	a.NoError(err)
 	policy := policyResp.Msg
 
@@ -69,8 +74,9 @@ func TestDeleteUser(t *testing.T) {
 		}
 	}
 	updatedPolicyResp, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Etag:   policy.Etag,
-		Policy: policy,
+		Etag:     policy.Etag,
+		Policy:   policy,
+		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
 	}))
 	a.NoError(err)
 	updatedPolicy := updatedPolicyResp.Msg
@@ -94,8 +100,9 @@ func TestDeleteUser(t *testing.T) {
 		}
 	}
 	newPolicyResp, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Etag:   updatedPolicy.Etag,
-		Policy: updatedPolicy,
+		Etag:     updatedPolicy.Etag,
+		Policy:   updatedPolicy,
+		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
 	}))
 	a.NoError(err)
 	newPolicy := newPolicyResp.Msg
@@ -121,8 +128,9 @@ func TestDeleteUser(t *testing.T) {
 		}
 	}
 	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Etag:   newPolicy.Etag,
-		Policy: newPolicy,
+		Etag:     newPolicy.Etag,
+		Policy:   newPolicy,
+		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
 	}))
 	a.NoError(err)
 

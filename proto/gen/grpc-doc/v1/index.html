@@ -15305,7 +15305,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
-- workspaces/-: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
+- workspaces/{id}: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
 - instances/{instances}: list databases in a instance, require &#34;bb.instances.get&#34; permission </p></td>
                 </tr>
               
@@ -29203,7 +29203,7 @@ Permissions required: bb.taskRuns.list</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource where this service account will be created.
-Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/{id} for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -29294,7 +29294,7 @@ Format: serviceAccounts/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource.
-Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/{id} for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -29525,7 +29525,7 @@ Supported fields: title, service_key (triggers key rotation) </p></td>
                 <td><a href="#bytebase.v1.CreateServiceAccountRequest">CreateServiceAccountRequest</a></td>
                 <td><a href="#bytebase.v1.ServiceAccount">ServiceAccount</a></td>
                 <td><p>Creates a new service account.
-For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.create on workspace.
+For workspace-level: parent is workspaces/{id}, permission bb.serviceAccounts.create on workspace.
 For project-level: parent is projects/{project}, permission bb.serviceAccounts.create on project.</p></td>
               </tr>
             
@@ -29542,7 +29542,7 @@ Permissions required: bb.serviceAccounts.get</p></td>
                 <td><a href="#bytebase.v1.ListServiceAccountsRequest">ListServiceAccountsRequest</a></td>
                 <td><a href="#bytebase.v1.ListServiceAccountsResponse">ListServiceAccountsResponse</a></td>
                 <td><p>Lists service accounts.
-For workspace-level: parent is workspaces/-, permission bb.serviceAccounts.list on workspace.
+For workspace-level: parent is workspaces/{id}, permission bb.serviceAccounts.list on workspace.
 For project-level: parent is projects/{project}, permission bb.serviceAccounts.list on project.</p></td>
               </tr>
             
@@ -30697,7 +30697,7 @@ Permissions required: bb.settings.set</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource where this workload identity will be created.
-Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/{id} for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -30788,7 +30788,7 @@ Format: workloadIdentities/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent resource.
-Format: projects/{project} for project-level, workspaces/- for workspace-level. </p></td>
+Format: projects/{project} for project-level, workspaces/{id} for workspace-level. </p></td>
                 </tr>
               
                 <tr>
@@ -31093,7 +31093,7 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                 <td><a href="#bytebase.v1.CreateWorkloadIdentityRequest">CreateWorkloadIdentityRequest</a></td>
                 <td><a href="#bytebase.v1.WorkloadIdentity">WorkloadIdentity</a></td>
                 <td><p>Creates a new workload identity.
-For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.create on workspace.
+For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.create on workspace.
 For project-level: parent is projects/{project}, permission bb.workloadIdentities.create on project.</p></td>
               </tr>
             
@@ -31110,7 +31110,7 @@ Permissions required: bb.workloadIdentities.get</p></td>
                 <td><a href="#bytebase.v1.ListWorkloadIdentitiesRequest">ListWorkloadIdentitiesRequest</a></td>
                 <td><a href="#bytebase.v1.ListWorkloadIdentitiesResponse">ListWorkloadIdentitiesResponse</a></td>
                 <td><p>Lists workload identities.
-For workspace-level: parent is workspaces/-, permission bb.workloadIdentities.list on workspace.
+For workspace-level: parent is workspaces/{id}, permission bb.workloadIdentities.list on workspace.
 For project-level: parent is projects/{project}, permission bb.workloadIdentities.list on project.</p></td>
               </tr>
             

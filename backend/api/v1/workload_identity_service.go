@@ -45,10 +45,10 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		}
 		projectID = &pid
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
-		// workspace-level workload identity: parent = "workspaces/-"
+		// workspace-level workload identity: parent = "workspaces/{id}"
 		// projectID remains nil
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/-", parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
 	}
 
 	workloadIdentityID := request.Msg.WorkloadIdentityId
@@ -129,12 +129,12 @@ func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, re
 		}
 		projectID = &pid
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
-		// workspace-level list: parent = "workspaces/-"
+		// workspace-level list: parent = "workspaces/{id}"
 		// use empty string to filter workspace-level WIs
 		emptyProjectID := ""
 		projectID = &emptyProjectID
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/-", parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{

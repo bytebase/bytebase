@@ -770,7 +770,7 @@ func (x *BatchGetDatabasesResponse) GetDatabases() []*Database {
 type ListDatabasesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// - projects/{project}: list databases in a project, require "bb.projects.get" permission.
-	// - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+	// - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
 	// - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of databases to return. The service may return fewer
