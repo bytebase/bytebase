@@ -296,7 +296,7 @@ const providerDefault = computed(() => {
         apiKey: "",
         apiKeyDoc: "https://platform.openai.com/account/api-keys",
         endpoint: "https://api.openai.com/v1/chat/completions",
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
       };
     case AISetting_Provider.AZURE_OPENAI:
       return {
@@ -311,14 +311,14 @@ const providerDefault = computed(() => {
         apiKey: "",
         apiKeyDoc: "https://ai.google.dev/gemini-api/docs",
         endpoint: "https://generativelanguage.googleapis.com/v1beta",
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
       };
     case AISetting_Provider.CLAUDE:
       return {
         apiKey: "",
         apiKeyDoc: "https://docs.anthropic.com/en/api/getting-started",
         endpoint: "https://api.anthropic.com/v1/messages",
-        model: "claude-3-opus-20240229",
+        model: "claude-sonnet-4-20250514",
       };
     default:
       return {
