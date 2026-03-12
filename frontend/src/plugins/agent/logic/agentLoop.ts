@@ -1,13 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { aiServiceClientConnect } from "@/connect";
+import type {
+  AIChatMessage,
+  AIChatToolDefinition,
+} from "@/types/proto-es/v1/ai_service_pb";
 import {
   AIChatMessageRole,
   AIChatMessageSchema,
   AIChatToolDefinitionSchema,
-} from "@/types/proto-es/v1/ai_service_pb";
-import type {
-  AIChatMessage,
-  AIChatToolDefinition,
 } from "@/types/proto-es/v1/ai_service_pb";
 import type { Message, ToolCall, ToolDefinition, ToolExecutor } from "./types";
 
@@ -100,8 +100,7 @@ export async function runAgentLoop(
           const args = JSON.parse(tc.arguments) as Record<string, unknown>;
           result = await executeTool(tc.name, args);
         } catch (err) {
-          const error =
-            err instanceof Error ? err : new Error(String(err));
+          const error = err instanceof Error ? err : new Error(String(err));
           callbacks?.onError?.(error);
           result = `Error: ${error.message}`;
         }

@@ -74,6 +74,8 @@
     <Quickstart />
   </div>
 
+  <AgentWindow />
+
   <ReleaseRemindModal
     v-if="state.showReleaseModal && route.name !== WORKSPACE_ROOT_MODULE"
     @cancel="state.showReleaseModal = false"
@@ -87,6 +89,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
+import { AgentWindow } from "@/plugins/agent";
 import { t } from "@/plugins/i18n";
 import environmentV1Routes from "@/router/dashboard/environmentV1";
 import instanceRoutes from "@/router/dashboard/instance";

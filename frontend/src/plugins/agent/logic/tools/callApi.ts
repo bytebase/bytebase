@@ -14,18 +14,15 @@ export async function callApi(args: {
 
   try {
     // All Bytebase APIs use Connect protocol: POST with JSON body.
-    const response = await fetch(
-      `${window.location.origin}${operation.path}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Connect-Protocol-Version": "1",
-        },
-        credentials: "include",
-        body: JSON.stringify(args.body ?? {}),
-      }
-    );
+    const response = await fetch(`${window.location.origin}${operation.path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Connect-Protocol-Version": "1",
+      },
+      credentials: "include",
+      body: JSON.stringify(args.body ?? {}),
+    });
 
     const data = await response.json();
 

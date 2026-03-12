@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useAgentStore } from "../store/agent";
 import ToolCallCard from "./ToolCallCard.vue";
 

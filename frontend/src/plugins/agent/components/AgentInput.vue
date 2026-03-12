@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { useAgentStore } from "../store/agent";
+import { useRoute, useRouter } from "vue-router";
 import { runAgentLoop } from "../logic/agentLoop";
-import { getToolDefinitions, createToolExecutor } from "../logic/tools";
 import { buildSystemPrompt } from "../logic/prompt";
+import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import type { Message } from "../logic/types";
+import { useAgentStore } from "../store/agent";
 
 const router = useRouter();
 const route = useRoute();
@@ -46,8 +46,7 @@ async function send() {
           // The agent loop calls onToolCall for each tool call in an assistant
           // turn. All tool calls from the same turn arrive before any
           // onToolResult. We batch them into one assistant message.
-          const lastMsg =
-            agentStore.messages[agentStore.messages.length - 1];
+          const lastMsg = agentStore.messages[agentStore.messages.length - 1];
           if (
             lastMsg?.role === "assistant" &&
             lastMsg.toolCalls &&
