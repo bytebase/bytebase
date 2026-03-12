@@ -85,11 +85,13 @@ type EventIssueSentBack struct {
 }
 
 type EventRolloutFailed struct {
-	Rollout *Rollout
+	Rollout     *Rollout
+	Environment string
 }
 
 type EventRolloutCompleted struct {
-	Rollout *Rollout
+	Rollout     *Rollout
+	Environment string
 }
 
 type User struct {
