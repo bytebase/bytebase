@@ -103,8 +103,8 @@
               >
                 {{ getTaskRunCreator(taskRun).title }}
               </router-link>
-              <span v-if="getTaskRunCreator(taskRun)">·</span>
               <NTooltip v-if="getTaskRunDuration(taskRun)">
+                <span>·</span>
                 <template #trigger>
                   <span>{{ getTaskRunDuration(taskRun) }}</span>
                 </template>
