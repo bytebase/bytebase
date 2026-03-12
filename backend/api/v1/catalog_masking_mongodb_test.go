@@ -268,7 +268,7 @@ func TestMaskMongoDBDocumentString(t *testing.T) {
 	for _, tc := range td.MaskDocument {
 		t.Run(tc.Description, func(t *testing.T) {
 			schema := mustMongoSchema(t, tc.Schema)
-			got, err := maskMongoDBDocumentString(tc.Input, schema, maskers)
+			got, err := maskDocumentString(tc.Input, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, got)
 		})

@@ -146,7 +146,7 @@ func TestMaskElasticsearchDocSource(t *testing.T) {
 
 	for _, tc := range td.MaskDocSource {
 		t.Run(tc.Description, func(t *testing.T) {
-			result, err := maskElasticsearchDocSource(tc.Input, schema, maskers)
+			result, err := maskDocumentString(tc.Input, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
 		})
@@ -283,8 +283,10 @@ func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			got, err := maskElasticsearchSourceObject(tc.input, tc.schema, maskers)
+			masked, err := walkAndMaskJSONRecursive(tc.input, tc.schema, maskers)
 			require.NoError(t, err)
+			got, ok := masked.(map[string]any)
+			require.True(t, ok)
 			require.Equal(t, tc.want, got)
 		})
 	}
