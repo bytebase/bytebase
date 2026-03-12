@@ -24,11 +24,20 @@
             <IssueStatusIcon class="shrink-0" :issue-status="issue.status" />
           </div>
           <a
+            v-if="issue.title"
             :href="issueUrl"
             class="font-medium text-main text-base truncate hover:underline"
             @click.stop
             v-html="highlightedTitle"
           ></a>
+          <a
+            v-else
+            :href="issueUrl"
+            class="font-medium text-base truncate hover:underline italic text-gray-400"
+            @click.stop
+          >
+            {{ $t("common.untitled") }}
+          </a>
           <RiskLevelIcon :risk-level="issue.riskLevel" class="shrink-0" />
           <span
             v-for="label in labels"
