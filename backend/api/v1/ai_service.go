@@ -61,10 +61,10 @@ type chatOpenAIRequest struct {
 }
 
 type chatOpenAIMessage struct {
-	Role       string              `json:"role"`
-	Content    *string             `json:"content"`
-	ToolCalls  []chatOpenAIToolUse `json:"tool_calls,omitempty"`
-	ToolCallID string              `json:"tool_call_id,omitempty"`
+	Role       string             `json:"role"`
+	Content    *string            `json:"content"`
+	ToolCalls  []json.RawMessage  `json:"tool_calls,omitempty"`
+	ToolCallID string             `json:"tool_call_id,omitempty"`
 }
 
 type chatOpenAITool struct {
@@ -79,26 +79,33 @@ type chatOpenAIFunction struct {
 }
 
 type chatOpenAIToolUse struct {
-	ID               string                    `json:"id"`
-	Type             string                    `json:"type"`
-	Function         chatOpenAIFunctionCallRef `json:"function"`
-	ThoughtSignature string                    `json:"thought_signature,omitempty"`
+	ID       string                    `json:"id"`
+	Type     string                    `json:"type"`
+	Function chatOpenAIFunctionCallRef `json:"function"`
 }
 
 type chatOpenAIFunctionCallRef struct {
-	Name             string `json:"name"`
-	Arguments        string `json:"arguments"`
-	ThoughtSignature string `json:"thought_signature,omitempty"`
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 type chatOpenAIResponse struct {
 	Choices []struct {
 		Message struct {
-			Role      string              `json:"role"`
-			Content   *string             `json:"content"`
-			ToolCalls []chatOpenAIToolUse `json:"tool_calls"`
+			Role      string             `json:"role"`
+			Content   *string            `json:"content"`
+			ToolCalls []json.RawMessage  `json:"tool_calls"`
 		} `json:"message"`
 	} `json:"choices"`
+}
+
+// chatOpenAIToolCallParsed extracts the fields we need from a raw tool call JSON.
+type chatOpenAIToolCallParsed struct {
+	ID       string `json:"id"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
 }
 
 func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
@@ -117,18 +124,22 @@ func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, 
 			msg.ToolCallID = *m.ToolCallId
 		}
 		for _, tc := range m.ToolCalls {
-			toolUse := chatOpenAIToolUse{
-				ID:   tc.Id,
-				Type: "function",
-				Function: chatOpenAIFunctionCallRef{
-					Name:      tc.Name,
-					Arguments: tc.Arguments,
-				},
-			}
 			if tc.Metadata != nil && *tc.Metadata != "" {
-				toolUse.ThoughtSignature = *tc.Metadata
+				// Replay the raw tool call JSON exactly as received from the provider.
+				// This preserves provider-specific fields like Gemini's thought_signature.
+				msg.ToolCalls = append(msg.ToolCalls, json.RawMessage(*tc.Metadata))
+			} else {
+				// Construct a standard OpenAI tool call.
+				raw, _ := json.Marshal(chatOpenAIToolUse{
+					ID:   tc.Id,
+					Type: "function",
+					Function: chatOpenAIFunctionCallRef{
+						Name:      tc.Name,
+						Arguments: tc.Arguments,
+					},
+				})
+				msg.ToolCalls = append(msg.ToolCalls, json.RawMessage(raw))
 			}
-			msg.ToolCalls = append(msg.ToolCalls, toolUse)
 		}
 		payload.Messages = append(payload.Messages, msg)
 	}
@@ -178,19 +189,19 @@ func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, 
 	if len(resp.Choices) > 0 {
 		msg := resp.Choices[0].Message
 		result.Content = msg.Content
-		for _, tc := range msg.ToolCalls {
+		for _, rawTC := range msg.ToolCalls {
+			var parsed chatOpenAIToolCallParsed
+			if err := json.Unmarshal(rawTC, &parsed); err != nil {
+				return nil, errors.Errorf("failed to parse tool call: %s", err)
+			}
+			// Store the entire raw JSON as metadata so we can replay it exactly,
+			// preserving any provider-specific fields (e.g., Gemini thought_signature).
+			rawStr := string(rawTC)
 			toolCall := &v1pb.AIChatToolCall{
-				Id:        tc.ID,
-				Name:      tc.Function.Name,
-				Arguments: tc.Function.Arguments,
-			}
-			// Capture thought_signature from Gemini's OpenAI-compatible endpoint.
-			sig := tc.ThoughtSignature
-			if sig == "" {
-				sig = tc.Function.ThoughtSignature
-			}
-			if sig != "" {
-				toolCall.Metadata = &sig
+				Id:        parsed.ID,
+				Name:      parsed.Function.Name,
+				Arguments: parsed.Function.Arguments,
+				Metadata:  &rawStr,
 			}
 			result.ToolCalls = append(result.ToolCalls, toolCall)
 		}
