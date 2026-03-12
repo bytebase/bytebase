@@ -1,24 +1,28 @@
 <template>
-  <NDataTable
-    key="instance-table"
-    size="small"
-    :columns="columnList"
-    :data="instanceList"
-    :striped="true"
-    :bordered="bordered"
-    :loading="loading"
-    :row-key="(data: Instance) => data.name"
-    :checked-row-keys="selectedInstanceNames"
-    :row-props="rowProps"
-    :paginate-single-page="false"
-    @update:checked-row-keys="
-      (val) => $emit('update:selected-instance-names', val as string[])
-    "
-    @update:sorter="$emit('update:sorters', $event)"
-  />
+  <div ref="tableRef">
+    <NDataTable
+      key="instance-table"
+      size="small"
+      :columns="columnList"
+      :data="instanceList"
+      :striped="true"
+      :bordered="bordered"
+      :loading="loading"
+      :scroll-x="scrollX"
+      :row-key="(data: Instance) => data.name"
+      :checked-row-keys="selectedInstanceNames"
+      :row-props="rowProps"
+      :paginate-single-page="false"
+      @update:checked-row-keys="
+        (val) => $emit('update:selected-instance-names', val as string[])
+      "
+      @update:sorter="$emit('update:sorters', $event)"
+    />
+  </div>
 </template>
 
 <script setup lang="tsx">
+import { useElementSize } from "@vueuse/core";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -30,7 +34,7 @@ import {
   NButton,
   NDataTable,
 } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import EllipsisText from "@/components/EllipsisText.vue";
@@ -40,7 +44,12 @@ import { LabelsCell } from "@/components/v2/Model/cells";
 import { useEnvironmentV1Store } from "@/store";
 import { NULL_ENVIRONMENT_NAME } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { hostPortOfDataSource, hostPortOfInstanceV1, urlfy } from "@/utils";
+import {
+  hostPortOfDataSource,
+  hostPortOfInstanceV1,
+  TailwindBreakpoints,
+  urlfy,
+} from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
 import { mapSorterStatus } from "../../utils";
 
@@ -89,6 +98,11 @@ defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const environmentStore = useEnvironmentV1Store();
+const tableRef = ref<HTMLDivElement>();
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(
+  () => tableWidth.value > TailwindBreakpoints.md
+);
 const state = reactive<LocalState>({
   dataSourceToggle: new Set(),
   processing: false,
@@ -123,6 +137,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     key: "title",
     title: t("common.name"),
     resizable: true,
+    minWidth: 200,
     render: (instance) => {
       return <InstanceV1Name instance={instance} link={false} />;
     },
@@ -135,7 +150,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     ellipsis: {
       tooltip: true,
     },
-    minWidth: 300,
+    minWidth: 200,
     render: (instance) => (
       <EnvironmentV1Name
         environment={environmentStore.getEnvironmentByName(
@@ -199,7 +214,8 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     key: "labels",
     title: t("common.labels"),
     resizable: true,
-    width: 300,
+    minWidth: 240,
+    hide: !showExtendedColumns.value,
     render: (instance) => (
       <LabelsCell labels={instance.labels} showCount={3} placeholder="-" />
     ),
@@ -239,6 +255,17 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     ACTIONS,
   ].filter((column) => !column.hide);
   return mapSorterStatus(columns, props.sorters);
+});
+
+const scrollX = computed(() => {
+  return columnList.value.reduce((sum, col) => {
+    return (
+      sum +
+      ((col as { width?: number; minWidth?: number }).width ??
+        (col as { minWidth?: number }).minWidth ??
+        100)
+    );
+  }, 0);
 });
 
 const handleDataSourceToggle = (e: MouseEvent, instance: Instance) => {
