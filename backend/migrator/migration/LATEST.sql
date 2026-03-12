@@ -400,13 +400,11 @@ ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 
 -- worksheet_organizer table stores the sheet status for a principal.
 CREATE TABLE worksheet_organizer (
-    id serial PRIMARY KEY,
     worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
     principal text NOT NULL,
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (worksheet_id, principal)
 );
-
-CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal ON worksheet_organizer(worksheet_id, principal);
 
 CREATE INDEX idx_worksheet_organizer_principal ON worksheet_organizer(principal);
 

@@ -285,8 +285,6 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 
 // WorksheetOrganizerMessage is the store message for worksheet organizer.
 type WorksheetOrganizerMessage struct {
-	UID int
-
 	// Related fields
 	WorksheetUID int
 	Principal    string
@@ -296,7 +294,6 @@ type WorksheetOrganizerMessage struct {
 func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID int, principal string) (*WorksheetOrganizerMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
 			payload
 		FROM worksheet_organizer
 		WHERE worksheet_id = ? AND principal = ?
@@ -314,7 +311,6 @@ func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID int, pri
 	}
 	var payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&worksheetOrganizer.UID,
 		&payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -347,7 +343,6 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 		ON CONFLICT(worksheet_id, principal) DO UPDATE SET
 			payload = EXCLUDED.payload
 		RETURNING
-			id,
 			worksheet_id,
 			principal,
 			payload
@@ -361,7 +356,6 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	var worksheetOrganizer WorksheetOrganizerMessage
 	var payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&worksheetOrganizer.UID,
 		&worksheetOrganizer.WorksheetUID,
 		&worksheetOrganizer.Principal,
 		&payload,
