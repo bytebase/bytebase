@@ -17,7 +17,7 @@ message AccessGrant {
 
 message AccessGrantPayload {
   // The issue associated with the access grant.
-  int64 issue_id = 1;
+  string issue_id = 1;
 
   // The target databases for this access grant.
   // Format: instances/{instance}/databases/{database}

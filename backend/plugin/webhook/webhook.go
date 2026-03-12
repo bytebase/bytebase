@@ -43,7 +43,7 @@ const (
 
 // Issue object of issue.
 type Issue struct {
-	ID          int
+	ID          string
 	Name        string
 	Status      string
 	Type        string
@@ -57,7 +57,7 @@ type Creator struct {
 }
 
 type Rollout struct {
-	UID   int
+	ID    string
 	Title string
 }
 

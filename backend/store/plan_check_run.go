@@ -34,7 +34,7 @@ type PlanCheckRunMessage struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	PlanUID int64
+	PlanResourceID string
 
 	Status PlanCheckRunStatus
 	Result *storepb.PlanCheckRunResult
@@ -42,11 +42,11 @@ type PlanCheckRunMessage struct {
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
-	PlanUID      *int64
-	PlanUIDs     *[]int64
-	UIDs         *[]int
-	Status       *[]PlanCheckRunStatus
-	ResultStatus *[]storepb.Advice_Status
+	PlanResourceID  *string
+	PlanResourceIDs *[]string
+	UIDs            *[]int
+	Status          *[]PlanCheckRunStatus
+	ResultStatus    *[]storepb.Advice_Status
 }
 
 // CreatePlanCheckRun creates or replaces the plan check run for a plan.
@@ -65,7 +65,7 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 			result = EXCLUDED.result,
 			updated_at = now()
 	`
-	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanResourceID, PlanCheckRunStatusAvailable, result); err != nil {
 		return errors.Wrapf(err, "failed to upsert plan check run")
 	}
 	return nil
@@ -83,10 +83,10 @@ SELECT
 	plan_check_run.result
 FROM plan_check_run
 WHERE TRUE`)
-	if v := find.PlanUID; v != nil {
+	if v := find.PlanResourceID; v != nil {
 		q.Space("AND plan_check_run.plan_id = ?", *v)
 	}
-	if v := find.PlanUIDs; v != nil {
+	if v := find.PlanResourceIDs; v != nil {
 		q.Space("AND plan_check_run.plan_id = ANY(?)", *v)
 	}
 	if v := find.UIDs; v != nil {
@@ -102,7 +102,7 @@ WHERE TRUE`)
 		}
 		q.Space("AND EXISTS (SELECT 1 FROM jsonb_array_elements(plan_check_run.result->'results') AS elem WHERE elem->>'status' = ANY(?))", statusStrings)
 	}
-	q.Space("ORDER BY plan_check_run.id ASC")
+	q.Space("ORDER BY plan_check_run.created_at ASC")
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -123,7 +123,7 @@ WHERE TRUE`)
 			&planCheckRun.UID,
 			&planCheckRun.CreatedAt,
 			&planCheckRun.UpdatedAt,
-			&planCheckRun.PlanUID,
+			&planCheckRun.PlanResourceID,
 			&planCheckRun.Status,
 			&result,
 		); err != nil {
@@ -143,8 +143,8 @@ WHERE TRUE`)
 }
 
 // GetPlanCheckRun returns the plan check run for a plan.
-func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckRunMessage, error) {
-	runs, err := s.ListPlanCheckRuns(ctx, &FindPlanCheckRunMessage{PlanUID: &planUID})
+func (s *Store) GetPlanCheckRun(ctx context.Context, planID string) (*PlanCheckRunMessage, error) {
+	runs, err := s.ListPlanCheckRuns(ctx, &FindPlanCheckRunMessage{PlanResourceID: &planID})
 	if err != nil {
 		return nil, err
 	}
@@ -197,8 +197,8 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs [
 
 // ClaimedPlanCheckRun represents a plan check run that was atomically claimed.
 type ClaimedPlanCheckRun struct {
-	UID     int
-	PlanUID int64
+	UID            int
+	PlanResourceID string
 }
 
 // FailStalePlanCheckRuns marks RUNNING plan check runs as FAILED if they have been running
@@ -255,7 +255,7 @@ func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlan
 	var claimed []*ClaimedPlanCheckRun
 	for rows.Next() {
 		var c ClaimedPlanCheckRun
-		if err := rows.Scan(&c.UID, &c.PlanUID); err != nil {
+		if err := rows.Scan(&c.UID, &c.PlanResourceID); err != nil {
 			return nil, err
 		}
 		claimed = append(claimed, &c)

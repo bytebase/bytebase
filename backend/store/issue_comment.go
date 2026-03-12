@@ -13,17 +13,17 @@ import (
 )
 
 type IssueCommentMessage struct {
-	ResourceID   string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	IssueUID     int
-	Payload      *storepb.IssueCommentPayload
-	CreatorEmail string
+	ResourceID      string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	IssueResourceID string
+	Payload         *storepb.IssueCommentPayload
+	CreatorEmail    string
 }
 
 type FindIssueCommentMessage struct {
-	ResourceID *string
-	IssueUID   *int
+	ResourceID      *string
+	IssueResourceID *string
 
 	Limit  *int
 	Offset *int
@@ -66,7 +66,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
 	}
-	if v := find.IssueUID; v != nil {
+	if v := find.IssueResourceID; v != nil {
 		q.And("issue_id = ?", *v)
 	}
 
@@ -100,7 +100,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			&ic.CreatorEmail,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
-			&ic.IssueUID,
+			&ic.IssueResourceID,
 			&p,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
@@ -127,21 +127,21 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	}
 
 	// Prepare all payloads.
-	issueIDs := make([]int, 0, len(creates))
+	issueIDs := make([]string, 0, len(creates))
 	payloads := make([][]byte, 0, len(creates))
 	for _, create := range creates {
 		payload, err := protojson.Marshal(create.Payload)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
-		issueIDs = append(issueIDs, create.IssueUID)
+		issueIDs = append(issueIDs, create.IssueResourceID)
 		payloads = append(payloads, payload)
 	}
 
 	// Use UNNEST to insert all comments in one query.
 	q := qb.Q().Space(`
 		INSERT INTO issue_comment (creator, issue_id, payload)
-		SELECT ?, unnest(?::INT[]), unnest(?::JSONB[])
+		SELECT ?, unnest(?::TEXT[]), unnest(?::JSONB[])
 	`, creator, issueIDs, payloads)
 
 	// For single comment, use RETURNING to get the created comment details.

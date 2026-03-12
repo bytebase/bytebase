@@ -22,7 +22,7 @@ func NewIssue(i *store.IssueMessage) *Issue {
 		return nil
 	}
 	return &Issue{
-		UID:          i.UID,
+		ID:           i.ResourceID,
 		Status:       i.Status.String(),
 		Type:         i.Type.String(),
 		Title:        i.Title,
@@ -41,13 +41,13 @@ func NewProject(p *store.ProjectMessage) *Project {
 
 func NewRollout(r *store.PlanMessage) *Rollout {
 	return &Rollout{
-		UID:   int(r.UID),
+		ID:    r.ResourceID,
 		Title: r.Name,
 	}
 }
 
 type Issue struct {
-	UID          int
+	ID           string
 	Status       string
 	Type         string
 	Title        string
@@ -62,7 +62,7 @@ type Project struct {
 }
 
 type Rollout struct {
-	UID   int
+	ID    string
 	Title string
 }
 

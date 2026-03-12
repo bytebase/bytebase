@@ -7,7 +7,7 @@ import (
 
 // ResetPlanWebhookDelivery deletes the webhook delivery record for a plan.
 // Called when user clicks BatchRunTasks to enable new notifications on retry.
-func (s *Store) ResetPlanWebhookDelivery(ctx context.Context, planID int64) error {
+func (s *Store) ResetPlanWebhookDelivery(ctx context.Context, planID string) error {
 	query := `DELETE FROM plan_webhook_delivery WHERE plan_id = $1`
 	_, err := s.GetDB().ExecContext(ctx, query, planID)
 	return err
@@ -16,7 +16,7 @@ func (s *Store) ResetPlanWebhookDelivery(ctx context.Context, planID int64) erro
 // ClaimPipelineFailureNotification attempts to claim the right to send PIPELINE_FAILED webhook.
 // Returns true if claimed (should send), false if already sent or claimed by another replica.
 // HA-safe: PRIMARY KEY constraint prevents duplicate sends across replicas.
-func (s *Store) ClaimPipelineFailureNotification(ctx context.Context, planID int64) (bool, error) {
+func (s *Store) ClaimPipelineFailureNotification(ctx context.Context, planID string) (bool, error) {
 	query := `
 		INSERT INTO plan_webhook_delivery (plan_id, event_type)
 		VALUES ($1, 'PIPELINE_FAILED')
@@ -24,7 +24,7 @@ func (s *Store) ClaimPipelineFailureNotification(ctx context.Context, planID int
 		RETURNING plan_id
 	`
 
-	var id int64
+	var id string
 	err := s.GetDB().QueryRowContext(ctx, query, planID).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil // Already exists
@@ -35,7 +35,7 @@ func (s *Store) ClaimPipelineFailureNotification(ctx context.Context, planID int
 // ClaimPipelineCompletionNotification attempts to claim the right to send PIPELINE_COMPLETED webhook.
 // Returns true if claimed (should send), false if already sent or claimed by another replica.
 // HA-safe: PRIMARY KEY constraint prevents duplicate sends across replicas.
-func (s *Store) ClaimPipelineCompletionNotification(ctx context.Context, planID int64) (bool, error) {
+func (s *Store) ClaimPipelineCompletionNotification(ctx context.Context, planID string) (bool, error) {
 	query := `
 		INSERT INTO plan_webhook_delivery (plan_id, event_type)
 		VALUES ($1, 'PIPELINE_COMPLETED')
@@ -43,7 +43,7 @@ func (s *Store) ClaimPipelineCompletionNotification(ctx context.Context, planID 
 		RETURNING plan_id
 	`
 
-	var id int64
+	var id string
 	err := s.GetDB().QueryRowContext(ctx, query, planID).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil // Already exists

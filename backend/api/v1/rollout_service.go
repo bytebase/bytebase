@@ -71,21 +71,21 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 
 	// getRolloutWithTasks inlined
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %s not found in project %s", planID, projectID))
 	}
 	// Check if the plan has a rollout
 	if plan.Config == nil || !plan.Config.HasRollout {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %s not found in project %s", planID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanResourceID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get tasks"))
 	}
@@ -159,23 +159,23 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	}
 
 	// Batch load all tasks for all plans to avoid N+1 queries
-	planIDs := make([]int64, len(plans))
+	planIDs := make([]string, len(plans))
 	for i, plan := range plans {
-		planIDs[i] = plan.UID
+		planIDs[i] = plan.ResourceID
 	}
 	var allTasks []*store.TaskMessage
 	if len(planIDs) > 0 {
 		var err error
-		allTasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanIDs: &planIDs})
+		allTasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanResourceIDs: &planIDs})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list tasks"))
 		}
 	}
 
 	// Group tasks by plan ID
-	tasksByPlanID := make(map[int64][]*store.TaskMessage)
+	tasksByPlanID := make(map[string][]*store.TaskMessage)
 	for _, task := range allTasks {
-		tasksByPlanID[task.PlanID] = append(tasksByPlanID[task.PlanID], task)
+		tasksByPlanID[task.PlanResourceID] = append(tasksByPlanID[task.PlanResourceID], task)
 	}
 
 	// Get environment order once for all rollouts.
@@ -191,7 +191,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	// Convert plans and their tasks to rollouts
 	rollouts := []*v1pb.Rollout{}
 	for _, plan := range plans {
-		tasks := tasksByPlanID[plan.UID]
+		tasks := tasksByPlanID[plan.ResourceID]
 		rollout, err := convertToRollout(project, plan, tasks, environmentOrderMap)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to rollout"))
@@ -237,12 +237,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &projectID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ResourceID: &planID, ProjectID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %s not found in project %s", planID, projectID))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -252,8 +252,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 
 	// Fetch issue associated with this plan (if any)
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectID:      &projectID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
@@ -287,7 +287,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	tasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	tasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanResourceID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get tasks"))
 	}
@@ -332,19 +332,19 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get rollout"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %s not found in project %s", planID, projectID))
 	}
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		PlanUID:     &planID,
-		Environment: maybeStageID,
-		TaskUID:     maybeTaskID,
+		PlanResourceID: &planID,
+		Environment:    maybeStageID,
+		TaskResourceID: maybeTaskID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
@@ -378,7 +378,7 @@ func CreateRolloutAndPendingTasks(
 	}
 
 	// Create rollout tasks
-	tasks, err = s.CreateTasks(ctx, plan.UID, tasks)
+	tasks, err = s.CreateTasks(ctx, plan.ResourceID, tasks)
 	if err != nil {
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}
@@ -387,8 +387,8 @@ func CreateRolloutAndPendingTasks(
 	config := proto.CloneOf(plan.Config)
 	config.HasRollout = true
 	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:    plan.UID,
-		Config: config,
+		ResourceID: plan.ResourceID,
+		Config:     config,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to update plan hasRollout")
@@ -397,13 +397,13 @@ func CreateRolloutAndPendingTasks(
 	// Update issue status to DONE when rollout is created
 	if issue != nil {
 		newStatus := storepb.Issue_DONE
-		updatedIssue, err := s.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+		updatedIssue, err := s.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{Status: &newStatus})
 		if err != nil {
 			return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 		}
 
 		if _, err := s.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
+			IssueResourceID: issue.ResourceID,
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_IssueUpdate_{
 					IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
@@ -453,12 +453,12 @@ func CreateRolloutAndPendingTasks(
 
 		if policy.Automatic {
 			create := &store.TaskRunMessage{
-				TaskUID: task.ID,
+				TaskResourceID: task.ResourceID,
 			}
 
 			// System-generated task run for auto-rollout
 			if err := s.CreatePendingTaskRuns(ctx, "", create); err != nil {
-				return errors.Wrapf(err, "failed to create pending task runs for task %d", task.ID)
+				return errors.Wrapf(err, "failed to create pending task runs for task %s", task.ResourceID)
 			}
 		}
 	}
@@ -468,31 +468,31 @@ func CreateRolloutAndPendingTasks(
 // GetTaskRun gets a task run.
 func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1pb.GetTaskRunRequest]) (*connect.Response[v1pb.TaskRun], error) {
 	request := req.Msg
-	projectID, planID, _, _, taskRunUID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Name)
+	projectID, planID, _, _, taskRunResourceID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get rollout"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %s not found in project %s", planID, projectID))
 	}
 
 	taskRun, err := s.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
-		UID:     &taskRunUID,
-		PlanUID: &planID,
+		ResourceID:     &taskRunResourceID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get task run"))
 	}
 	if taskRun == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in rollout %d", taskRunUID, planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %s not found in rollout %s", taskRunResourceID, planID))
 	}
 
 	taskRunV1, err := convertToTaskRun(ctx, s.store, taskRun)
@@ -504,34 +504,34 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 
 func (s *RolloutService) GetTaskRunLog(ctx context.Context, req *connect.Request[v1pb.GetTaskRunLogRequest]) (*connect.Response[v1pb.TaskRunLog], error) {
 	request := req.Msg
-	projectID, planID, _, _, taskRunUID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Parent)
+	projectID, planID, _, _, taskRunResourceID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run uid"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run id"))
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %s not found in project %s", planID, projectID))
 	}
 
 	taskRun, err := s.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
-		UID:     &taskRunUID,
-		PlanUID: &planID,
+		ResourceID:     &taskRunResourceID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get task run"))
 	}
 	if taskRun == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in plan %d", taskRunUID, planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %s not found in plan %s", taskRunResourceID, planID))
 	}
 
-	logs, err := s.store.ListTaskRunLogs(ctx, taskRunUID)
+	logs, err := s.store.ListTaskRunLogs(ctx, taskRunResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to list task run logs"))
 	}
@@ -540,28 +540,28 @@ func (s *RolloutService) GetTaskRunLog(ctx context.Context, req *connect.Request
 
 func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Request[v1pb.GetTaskRunSessionRequest]) (*connect.Response[v1pb.TaskRunSession], error) {
 	request := req.Msg
-	projectID, planID, _, taskUID, taskRunUID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Parent)
+	projectID, planID, _, taskResourceID, taskRunResourceID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run uid"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run id"))
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %s not found in project %s", planID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{ID: &taskUID, PlanID: &planID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{ResourceID: &taskResourceID, PlanResourceID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get task"))
 	}
 	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %d not found in plan %d", taskUID, planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %s not found in plan %s", taskResourceID, planID))
 	}
 	task := tasks[0]
 
@@ -576,7 +576,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	}
 	defer driver.Close(ctx)
 
-	appName := fmt.Sprintf("bytebase-taskrun-%d", taskRunUID)
+	appName := fmt.Sprintf("bytebase-taskrun-%s", taskRunResourceID)
 	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), appName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get session"))
@@ -709,8 +709,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find plan for rollout"))
@@ -726,16 +726,16 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectID:      &projectID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
 	}
 
 	// Parse requested task IDs and group by their environment
-	taskEnvironments := map[string][]int{}
-	taskIDsToRunMap := map[int]bool{}
+	taskEnvironments := map[string][]string{}
+	taskIDsToRunMap := map[string]bool{}
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
 		if err != nil {
@@ -757,7 +757,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	// Get all tasks in the same environment
-	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID, Environment: &environmentToRun})
+	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanResourceID: &planID, Environment: &environmentToRun})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list tasks"))
 	}
@@ -791,12 +791,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 
 	var taskRunCreates []*store.TaskRunMessage
 	for _, task := range stageToRunTasks {
-		if !taskIDsToRunMap[task.ID] {
+		if !taskIDsToRunMap[task.ResourceID] {
 			continue
 		}
 
 		create := &store.TaskRunMessage{
-			TaskUID: task.ID,
+			TaskResourceID: task.ResourceID,
 		}
 		if request.GetRunTime() != nil {
 			t := request.GetRunTime().AsTime()
@@ -810,7 +810,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		taskRunCreates = append(taskRunCreates, create)
 	}
 	slices.SortFunc(taskRunCreates, func(a, b *store.TaskRunMessage) int {
-		return a.TaskUID - b.TaskUID
+		return strings.Compare(a.TaskResourceID, b.TaskResourceID)
 	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
@@ -841,8 +841,8 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find plan for rollout"))
@@ -852,28 +852,28 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectID:      &projectID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanResourceID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list tasks"))
 	}
 
-	taskByID := make(map[int]*store.TaskMessage)
+	taskByID := make(map[string]*store.TaskMessage)
 	for _, task := range tasks {
-		taskByID[task.ID] = task
+		taskByID[task.ResourceID] = task
 	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
-	var taskUIDs []int
+	var taskResourceIDs []string
 	environmentSet := map[string]struct{}{}
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
@@ -884,7 +884,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		if !ok {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %v not found in the rollout", taskID))
 		}
-		taskUIDs = append(taskUIDs, taskID)
+		taskResourceIDs = append(taskResourceIDs, taskID)
 		environmentSet[taskMsg.Environment] = struct{}{}
 	}
 
@@ -898,7 +898,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		}
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, taskResourceIDs, request.Reason); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 	}
 
@@ -931,8 +931,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find plan for rollout"))
@@ -942,8 +942,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectID:      &projectID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
@@ -973,7 +973,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to cancel tasks"))
 	}
 
-	var taskRunIDs []int
+	var taskRunIDs []string
 	for _, taskRun := range request.TaskRuns {
 		_, _, _, _, taskRunID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
@@ -983,7 +983,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		UIDs: &taskRunIDs,
+		ResourceIDs: &taskRunIDs,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
@@ -995,17 +995,17 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		case storepb.TaskRun_AVAILABLE:
 		case storepb.TaskRun_RUNNING:
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("taskRun %v is not pending, available or running", taskRun.ID))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("taskRun %v is not pending, available or running", taskRun.ResourceID))
 		}
 	}
 
 	for _, taskRun := range taskRuns {
 		if taskRun.Status == storepb.TaskRun_RUNNING {
-			if cancelFunc, ok := s.bus.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
+			if cancelFunc, ok := s.bus.RunningTaskRunsCancelFunc.Load(taskRun.ResourceID); ok {
 				cancelFunc.(context.CancelFunc)()
 			}
 			// Broadcast cancel signal to all replicas for HA.
-			if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_TASK_RUN, int32(taskRun.ID)); err != nil {
+			if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_TASK_RUN, taskRun.ResourceID); err != nil {
 				slog.Warn("failed to send cancel signal", log.BBError(err))
 			}
 		}
@@ -1022,52 +1022,52 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 
 func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connect.Request[v1pb.PreviewTaskRunRollbackRequest]) (*connect.Response[v1pb.PreviewTaskRunRollbackResponse], error) {
 	request := req.Msg
-	projectID, planID, _, taskUID, taskRunUID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Name)
+	projectID, planID, _, taskResourceID, taskRunResourceID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(request.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run uid"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run id"))
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %s not found in project %s", planID, projectID))
 	}
 
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		UID:     &taskRunUID,
-		PlanUID: &planID,
+		ResourceID:     &taskRunResourceID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
 	}
 	if len(taskRuns) == 0 {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %v not found", taskRunUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %s not found", taskRunResourceID))
 	}
 	if len(taskRuns) > 1 {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("found multiple task runs with the same uid %v", taskRunUID))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("found multiple task runs with the same resource id %v", taskRunResourceID))
 	}
 
 	taskRun := taskRuns[0]
 
 	if taskRun.Status != storepb.TaskRun_DONE {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v is not done", taskRun.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v is not done", taskRun.ResourceID))
 	}
 
 	if taskRun.ResultProto == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no result", taskRun.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no result", taskRun.ResourceID))
 	}
 
 	if !taskRun.ResultProto.HasPriorBackup {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no rollback", taskRun.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no rollback", taskRun.ResourceID))
 	}
 
 	// Get backup detail from task run logs.
-	logs, err := s.store.ListTaskRunLogs(ctx, taskRunUID)
+	logs, err := s.store.ListTaskRunLogs(ctx, taskRunResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task run logs"))
 	}
@@ -1079,15 +1079,15 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 		}
 	}
 	if backupDetail == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no backup detail in logs", taskRun.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no backup detail in logs", taskRun.ResourceID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{ID: &taskUID, PlanID: &planID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{ResourceID: &taskResourceID, PlanResourceID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get task"))
 	}
 	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %d not found in plan %d", taskUID, planID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task %s not found in plan %s", taskResourceID, planID))
 	}
 	task := tasks[0]
 
@@ -1098,7 +1098,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 
 	sheetSha256 := task.Payload.GetSheetSha256()
 	if sheetSha256 == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task %v has no sheet", task.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task %v has no sheet", task.ResourceID))
 	}
 	sheet, err := s.store.GetSheetFull(ctx, sheetSha256)
 	if err != nil {

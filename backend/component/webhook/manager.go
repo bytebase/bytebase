@@ -85,7 +85,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.IssueCreated != nil {
 			actor = e.IssueCreated.Creator
 			issue = e.IssueCreated.Issue
-			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
+			link = fmt.Sprintf("%s/projects/%s/issues/%s", externalURL, e.Project.ResourceID, issue.ID)
 			webhookCtx.Description = fmt.Sprintf("%s created issue %s", actor.Name, issue.Title)
 		}
 
@@ -96,7 +96,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.ApprovalRequested != nil {
 			actor = e.ApprovalRequested.Creator
 			issue = e.ApprovalRequested.Issue
-			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
+			link = fmt.Sprintf("%s/projects/%s/issues/%s", externalURL, e.Project.ResourceID, issue.ID)
 			mentionUsers = make([]*store.UserMessage, 0, len(e.ApprovalRequested.Approvers))
 			for _, user := range e.ApprovalRequested.Approvers {
 				mentionUsers = append(mentionUsers, &store.UserMessage{
@@ -114,7 +114,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.SentBack != nil {
 			actor = e.SentBack.Approver
 			issue = e.SentBack.Issue
-			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
+			link = fmt.Sprintf("%s/projects/%s/issues/%s", externalURL, e.Project.ResourceID, issue.ID)
 			webhookCtx.Description = fmt.Sprintf("%s sent back the issue: %s", e.SentBack.Approver.Name, e.SentBack.Reason)
 			mentionUsers = []*store.UserMessage{
 				{
@@ -131,7 +131,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		titleZh = "发布失败"
 		if e.RolloutFailed != nil {
 			rollout = e.RolloutFailed.Rollout
-			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
+			link = fmt.Sprintf("%s/projects/%s/plans/%s/rollout", externalURL, e.Project.ResourceID, rollout.ID)
 			webhookCtx.Description = "Rollout failed"
 		}
 
@@ -141,7 +141,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		titleZh = "发布完成"
 		if e.RolloutCompleted != nil {
 			rollout = e.RolloutCompleted.Rollout
-			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
+			link = fmt.Sprintf("%s/projects/%s/plans/%s/rollout", externalURL, e.Project.ResourceID, rollout.ID)
 			webhookCtx.Description = "Rollout completed successfully"
 		}
 
@@ -189,7 +189,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			creatorName = creatorUser.Name
 		}
 		webhookCtx.Issue = &webhook.Issue{
-			ID:          issue.UID,
+			ID:          issue.ID,
 			Name:        issue.Title,
 			Status:      issue.Status,
 			Type:        issue.Type,
@@ -204,7 +204,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	// Set rollout information if available
 	if rollout != nil {
 		webhookCtx.Rollout = &webhook.Rollout{
-			UID:   rollout.UID,
+			ID:    rollout.ID,
 			Title: rollout.Title,
 		}
 	}

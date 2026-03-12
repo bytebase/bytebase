@@ -966,7 +966,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 			ActorEmail:  userMessage.Email,
 			CreatedTS:   time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
-				ID:          1,
+				ID:          "test-issue-1",
 				Name:        "Test issue",
 				Status:      "OPEN",
 				Type:        "bb.issue.database.create",

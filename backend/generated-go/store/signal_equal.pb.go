@@ -13,7 +13,7 @@ func (x *Signal) Equal(y *Signal) bool {
 	if x.Type != y.Type {
 		return false
 	}
-	if x.Uid != y.Uid {
+	if x.Id != y.Id {
 		return false
 	}
 	return true

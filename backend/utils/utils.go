@@ -123,7 +123,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		if condition == nil {
 			condition = &expr.Expr{}
 		}
-		condition.Description = fmt.Sprintf("#%d", issue.UID)
+		condition.Description = fmt.Sprintf("#%s", issue.ResourceID)
 		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
 			Role:      grantRequest.Role,
 			Members:   []string{memberName},

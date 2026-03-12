@@ -35,8 +35,8 @@ message TaskRunResult {
   // Error message for failed task runs. Empty for successful or canceled runs.
   string detail = 1;
 
-  // UID of the export archive generated for export tasks.
-  int32 export_archive_uid = 5;
+  // ID of the export archive generated for export tasks.
+  string export_archive_id = 5;
 
   // Indicates whether a prior backup was created for this task run.
   // When true, the task run can be rolled back using the backup tables.

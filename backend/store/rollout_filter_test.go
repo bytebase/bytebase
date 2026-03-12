@@ -9,7 +9,7 @@ import (
 
 func TestGetListRolloutFilter(t *testing.T) {
 	// The subquery used for update_time filtering
-	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
+	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.resource_id WHERE task.plan_id = plan.resource_id), plan.created_at)`
 
 	tests := []struct {
 		name        string
@@ -29,7 +29,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 		{
 			name:     "task_type in filter",
 			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)))",
+			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.resource_id AND task.type = ANY($1)))",
 			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_EXPORT"}},
 			wantErr:  false,
 		},
@@ -66,7 +66,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 		{
 			name:    "AND condition with task_type and update_time",
 			filter:  `task_type in ["DATABASE_MIGRATE"] && update_time >= "2024-01-01T00:00:00Z"`,
-			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)) AND " + updatedAtSubquery + " >= $2))",
+			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.resource_id AND task.type = ANY($1)) AND " + updatedAtSubquery + " >= $2))",
 			wantArgs: []any{[]string{"DATABASE_MIGRATE"}, func() time.Time {
 				ts, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
 				return ts

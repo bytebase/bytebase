@@ -31,19 +31,19 @@ func init() {
 
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
-	ProjectID    string
-	CreatorEmail string
-	Title        string
-	Status       storepb.Issue_Status
-	Type         storepb.Issue_Type
-	Description  string
-	Payload      *storepb.Issue
-	PlanUID      *int64
+	ProjectID      string
+	CreatorEmail   string
+	Title          string
+	Status         storepb.Issue_Status
+	Type           storepb.Issue_Type
+	Description    string
+	Payload        *storepb.Issue
+	PlanResourceID *string
 
 	// The following fields are output only and not used for create().
-	UID       int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ResourceID string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -58,11 +58,11 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID             *int
+	ResourceID      *string
 	ProjectID       *string
 	ProjectIDs      *[]string
-	PlanUID         *int64
-	PlanUIDs        *[]int64
+	PlanResourceID  *string
+	PlanResourceIDs *[]string
 	CreatorID       *string
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
@@ -144,10 +144,10 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 			ts_vector
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id`,
+		RETURNING resource_id`,
 		create.CreatorEmail,
 		create.ProjectID,
-		create.PlanUID,
+		create.PlanResourceID,
 		create.Title,
 		create.Status.String(),
 		create.Type.String(),
@@ -161,16 +161,16 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ResourceID); err != nil {
 		return nil, err
 	}
 
-	return s.GetIssue(ctx, &FindIssueMessage{UID: &create.UID})
+	return s.GetIssue(ctx, &FindIssueMessage{ResourceID: &create.ResourceID})
 }
 
 // UpdateIssue updates an issue.
-func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
-	oldIssue, err := s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
+func (s *Store) UpdateIssue(ctx context.Context, resourceID string, patch *UpdateIssueMessage) (*IssueMessage, error) {
+	oldIssue, err := s.GetIssue(ctx, &FindIssueMessage{ResourceID: &resourceID})
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 		set.Comma("ts_vector = ?", tsVector)
 	}
 
-	q := qb.Q().Space("UPDATE issue SET ? WHERE id = ?", set, uid)
+	q := qb.Q().Space("UPDATE issue SET ? WHERE resource_id = ?", set, resourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -222,22 +222,22 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 		return nil, err
 	}
 
-	return s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
+	return s.GetIssue(ctx, &FindIssueMessage{ResourceID: &resourceID})
 }
 
 // ListIssues returns the list of issues by find query.
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
-	orderByClause := "ORDER BY issue.id DESC"
+	orderByClause := "ORDER BY issue.created_at DESC"
 	from := qb.Q().Space("issue")
 	where := qb.Q()
 
-	if v := find.UID; v != nil {
-		where.And("issue.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		where.And("issue.resource_id = ?", *v)
 	}
-	if v := find.PlanUID; v != nil {
+	if v := find.PlanResourceID; v != nil {
 		where.And("issue.plan_id = ?", *v)
 	}
-	if v := find.PlanUIDs; v != nil {
+	if v := find.PlanResourceIDs; v != nil {
 		where.And("issue.plan_id = ANY(?)", *v)
 	}
 	if v := find.ProjectID; v != nil {
@@ -267,7 +267,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
 			from.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
 			searchCondition.Or("issue.ts_vector @@ query")
-			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.created_at DESC"
 		}
 		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
 		where.And("(?)", searchCondition)
@@ -290,18 +290,18 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("payload->>'riskLevel' = ANY(?)", riskLevelStrings)
 	}
 
-	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.id DESC" {
+	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.created_at DESC" {
 		parts := make([]string, 0, len(find.OrderByKeys)+1)
 		for _, v := range find.OrderByKeys {
 			parts = append(parts, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 		}
-		parts = append(parts, "issue.id DESC")
+		parts = append(parts, "issue.created_at DESC")
 		orderByClause = fmt.Sprintf("ORDER BY %s", strings.Join(parts, ", "))
 	}
 
 	q := qb.Q().Space(`
 		SELECT
-			issue.id,
+			issue.resource_id,
 			issue.creator,
 			issue.created_at,
 			issue.updated_at,
@@ -346,12 +346,12 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		var statusString string
 		var typeString string
 		if err := rows.Scan(
-			&issue.UID,
+			&issue.ResourceID,
 			&issue.CreatorEmail,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
 			&issue.ProjectID,
-			&issue.PlanUID,
+			&issue.PlanResourceID,
 			&issue.Title,
 			&statusString,
 			&typeString,
@@ -383,8 +383,8 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 }
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
-// Returns a map of issueUID -> old status for the updated issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, issueUIDs []int, newStatus storepb.Issue_Status) (map[int]storepb.Issue_Status, error) {
+// Returns a map of issueResourceID -> old status for the updated issues.
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, issueIDs []string, newStatus storepb.Issue_Status) (map[string]storepb.Issue_Status, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -392,7 +392,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	defer tx.Rollback()
 
 	// Fetch current issues to validate project membership and get old statuses.
-	fetchQuery := qb.Q().Space("SELECT id, status FROM issue WHERE id = ANY(?) AND project = ?", issueUIDs, projectID)
+	fetchQuery := qb.Q().Space("SELECT resource_id, status FROM issue WHERE resource_id = ANY(?) AND project = ?", issueIDs, projectID)
 	fetchSQL, fetchArgs, err := fetchQuery.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build fetch sql")
@@ -404,9 +404,9 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	}
 	defer rows.Close()
 
-	oldStatuses := make(map[int]storepb.Issue_Status)
+	oldStatuses := make(map[string]storepb.Issue_Status)
 	for rows.Next() {
-		var issueID int
+		var issueID string
 		var statusString string
 		if err := rows.Scan(&issueID, &statusString); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan issue")
@@ -419,7 +419,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 
 		// Prevent changing status from DONE to other statuses.
 		if issueStatus == storepb.Issue_DONE && newStatus != storepb.Issue_DONE {
-			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot change status from DONE to %s for issue %d", newStatus.String(), issueID)}
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot change status from DONE to %s for issue %s", newStatus.String(), issueID)}
 		}
 
 		oldStatuses[issueID] = issueStatus
@@ -429,12 +429,12 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	}
 
 	// Validate that all requested issues were found in the project.
-	if len(oldStatuses) != len(issueUIDs) {
-		return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("expected %d issues in project %s, found %d", len(issueUIDs), projectID, len(oldStatuses))}
+	if len(oldStatuses) != len(issueIDs) {
+		return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("expected %d issues in project %s, found %d", len(issueIDs), projectID, len(oldStatuses))}
 	}
 
 	// Update the statuses.
-	updateQuery := qb.Q().Space("UPDATE issue SET status = ? WHERE id = ANY(?) AND project = ?", newStatus.String(), issueUIDs, projectID)
+	updateQuery := qb.Q().Space("UPDATE issue SET status = ? WHERE resource_id = ANY(?) AND project = ?", newStatus.String(), issueIDs, projectID)
 	updateSQL, updateArgs, err := updateQuery.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build update sql")

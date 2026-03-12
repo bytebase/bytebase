@@ -199,7 +199,7 @@ func (s *RevisionService) createRevisions(
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", revision.TaskRun))
 			}
-			taskRun, err := s.store.GetTaskRunByUID(ctx, taskRunID)
+			taskRun, err := s.store.GetTaskRunByResourceID(ctx, taskRunID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun"))
 			}
@@ -207,9 +207,9 @@ func (s *RevisionService) createRevisions(
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
 			}
 			if taskRun.ProjectID != projectID ||
-				taskRun.PlanUID != planID ||
+				taskRun.PlanResourceID != planID ||
 				taskRun.Environment != formatEnvironmentFromStageID(stageID) ||
-				taskRun.TaskUID != taskID {
+				taskRun.TaskResourceID != taskID {
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
 			}
 		}

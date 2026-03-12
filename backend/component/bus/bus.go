@@ -9,7 +9,7 @@ import (
 type Bus struct {
 	// ApprovalCheckChan signals when an issue needs approval template finding.
 	// Triggered by plan check completion, issue creation (if checks already done).
-	ApprovalCheckChan chan int64 // issue UID
+	ApprovalCheckChan chan string // issue ID
 
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
@@ -23,18 +23,18 @@ type Bus struct {
 	TaskRunTickleChan chan int
 
 	// RolloutCreationChan is the channel for automatic rollout creation.
-	RolloutCreationChan chan int64
+	RolloutCreationChan chan string
 
 	// PlanCompletionCheckChan signals when a plan might be complete (for PIPELINE_COMPLETED webhook).
-	PlanCompletionCheckChan chan int64
+	PlanCompletionCheckChan chan string
 }
 
 func New() (*Bus, error) {
 	return &Bus{
-		ApprovalCheckChan:       make(chan int64, 1000),
+		ApprovalCheckChan:       make(chan string, 1000),
 		PlanCheckTickleChan:     make(chan int, 1000),
 		TaskRunTickleChan:       make(chan int, 1000),
-		RolloutCreationChan:     make(chan int64, 100),
-		PlanCompletionCheckChan: make(chan int64, 1000),
+		RolloutCreationChan:     make(chan string, 100),
+		PlanCompletionCheckChan: make(chan string, 1000),
 	}, nil
 }

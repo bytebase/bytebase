@@ -357,7 +357,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| issue_id | [int64](#int64) |  | The issue associated with the access grant. |
+| issue_id | [string](#string) |  | The issue associated with the access grant. |
 | targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} |
 | query | [string](#string) |  | The query permission granted. |
 | unmask | [bool](#bool) |  | Whether the grant allows unmasking sensitive data. |
@@ -4633,7 +4633,7 @@ Signal represents a notification payload sent via PostgreSQL NOTIFY for HA coord
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [Signal.Type](#bytebase-store-Signal-Type) |  |  |
-| uid | [int32](#int32) |  |  |
+| id | [string](#string) |  |  |
 
 
 
@@ -4787,7 +4787,7 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Error message for failed task runs. Empty for successful or canceled runs. |
-| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
+| export_archive_id | [string](#string) |  | ID of the export archive generated for export tasks. |
 | has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, the task run can be rolled back using the backup tables. Backup details are available in the task run logs (PRIOR_BACKUP log entries). |
 
 

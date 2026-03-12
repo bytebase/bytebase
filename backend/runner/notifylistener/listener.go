@@ -90,11 +90,11 @@ func (l *Listener) handleNotification(payload string) {
 
 	switch signal.Type {
 	case storepb.Signal_CANCEL_PLAN_CHECK_RUN:
-		if cancel, ok := l.bus.RunningPlanCheckRunsCancelFunc.Load(int(signal.Uid)); ok {
+		if cancel, ok := l.bus.RunningPlanCheckRunsCancelFunc.Load(signal.Id); ok {
 			cancel.(context.CancelFunc)()
 		}
 	case storepb.Signal_CANCEL_TASK_RUN:
-		if cancel, ok := l.bus.RunningTaskRunsCancelFunc.Load(int(signal.Uid)); ok {
+		if cancel, ok := l.bus.RunningTaskRunsCancelFunc.Load(signal.Id); ok {
 			cancel.(context.CancelFunc)()
 		}
 	default:

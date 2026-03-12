@@ -14,5 +14,5 @@ message Signal {
   }
 
   Type type = 1;
-  int32 uid = 2;
+  string id = 2;
 }

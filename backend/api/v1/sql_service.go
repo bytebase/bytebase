@@ -1153,7 +1153,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
 	// Try to parse as rollout name first (more specific), then fallback to stage name
-	var planID int64
+	var planID string
 	var projectID string
 	var err error
 	projectID, planID, err = common.GetProjectIDPlanIDFromRolloutName(requestName)
@@ -1166,22 +1166,22 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
-		UID:       &planID,
+		ProjectID:  &projectID,
+		ResourceID: &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %s not found in project %s", planID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &plan.UID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanResourceID: &plan.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
 	}
 	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", plan.UID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %s has no task", plan.ResourceID))
 	}
 
 	// Get password from the plan spec
@@ -1203,8 +1203,8 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		}
 
 		taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-			TaskUID: &task.ID,
-			Status:  &targetTaskRunStatus,
+			TaskResourceID: &task.ResourceID,
+			Status:         &targetTaskRunStatus,
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))
@@ -1213,11 +1213,11 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %v has no task run", requestName))
 		}
 		taskRun := taskRuns[0]
-		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
-		if exportArchiveUID == 0 {
+		exportArchiveID := taskRun.ResultProto.ExportArchiveId
+		if exportArchiveID == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
 		}
-		exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+		exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{ResourceID: &exportArchiveID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
 		}

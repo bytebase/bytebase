@@ -160,8 +160,8 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 		connConfig.TLSConfig = tlscfg
 	}
 	appName := "bytebase"
-	if config.ConnectionContext.TaskRunUID != nil {
-		appName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)
+	if config.ConnectionContext.TaskRunResourceID != nil {
+		appName = fmt.Sprintf("bytebase-taskrun-%s", *config.ConnectionContext.TaskRunResourceID)
 	}
 	connConfig.RuntimeParams["application_name"] = appName
 	if config.ConnectionContext.ReadOnly {

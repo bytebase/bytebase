@@ -15,15 +15,15 @@ import (
 
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
-	TaskUID      int
-	Environment  string // Refer to the task's environment.
-	PlanUID      int64
-	Status       storepb.TaskRun_Status
-	ResultProto  *storepb.TaskRunResult
-	PayloadProto *storepb.TaskRunPayload
+	TaskResourceID string
+	Environment    string // Refer to the task's environment.
+	PlanResourceID string
+	Status         storepb.TaskRun_Status
+	ResultProto    *storepb.TaskRunResult
+	PayloadProto   *storepb.TaskRunPayload
 
 	// Output only.
-	ID           int
+	ResourceID   string
 	CreatorEmail string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -34,17 +34,17 @@ type TaskRunMessage struct {
 
 // FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
-	UID         *int
-	UIDs        *[]int
-	TaskUID     *int
-	Environment *string
-	PlanUID     *int64
-	Status      *[]storepb.TaskRun_Status
+	ResourceID     *string
+	ResourceIDs    *[]string
+	TaskResourceID *string
+	Environment    *string
+	PlanResourceID *string
+	Status         *[]storepb.TaskRun_Status
 }
 
 // TaskRunStatusPatch is the API message for patching a task run.
 type TaskRunStatusPatch struct {
-	ID int
+	ResourceID string
 
 	// Standard fields
 	Updater string
@@ -58,7 +58,7 @@ type TaskRunStatusPatch struct {
 func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			task_run.id,
+			task_run.resource_id,
 			task_run.creator,
 			task_run.created_at,
 			task_run.updated_at,
@@ -72,25 +72,25 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task.environment,
 			project.resource_id
 		FROM task_run
-		LEFT JOIN task ON task.id = task_run.task_id
-		LEFT JOIN plan ON plan.id = task.plan_id
+		LEFT JOIN task ON task.resource_id = task_run.task_id
+		LEFT JOIN plan ON plan.resource_id = task.plan_id
 		LEFT JOIN project ON project.resource_id = plan.project
 		WHERE TRUE
 	`)
 
-	if v := find.UID; v != nil {
-		q.And("task_run.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("task_run.resource_id = ?", *v)
 	}
-	if v := find.UIDs; v != nil {
-		q.And("task_run.id = ANY(?)", *v)
+	if v := find.ResourceIDs; v != nil {
+		q.And("task_run.resource_id = ANY(?)", *v)
 	}
-	if v := find.TaskUID; v != nil {
+	if v := find.TaskResourceID; v != nil {
 		q.And("task_run.task_id = ?", *v)
 	}
 	if v := find.Environment; v != nil {
 		q.And("task.environment = ?", *v)
 	}
-	if v := find.PlanUID; v != nil {
+	if v := find.PlanResourceID; v != nil {
 		q.And("task.plan_id = ?", *v)
 	}
 	if v := find.Status; v != nil {
@@ -101,7 +101,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		q.And("task_run.status = ANY(?)", statusStrings)
 	}
 
-	q.Space("ORDER BY task_run.id ASC")
+	q.Space("ORDER BY task_run.created_at ASC")
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -122,17 +122,17 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		var statusString string
 		var resultJSON, payloadJSON string
 		if err := rows.Scan(
-			&taskRun.ID,
+			&taskRun.ResourceID,
 			&creatorEmail,
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
-			&taskRun.TaskUID,
+			&taskRun.TaskResourceID,
 			&statusString,
 			&startedAt,
 			&runAt,
 			&resultJSON,
 			&payloadJSON,
-			&taskRun.PlanUID,
+			&taskRun.PlanResourceID,
 			&taskRun.Environment,
 			&taskRun.ProjectID,
 		); err != nil {
@@ -187,9 +187,9 @@ func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*Ta
 	return taskRuns[0], nil
 }
 
-// GetTaskRunByUID gets a task run by uid.
-func (s *Store) GetTaskRunByUID(ctx context.Context, uid int) (*TaskRunMessage, error) {
-	return s.GetTaskRunV1(ctx, &FindTaskRunMessage{UID: &uid})
+// GetTaskRunByResourceID gets a task run by resource ID.
+func (s *Store) GetTaskRunByResourceID(ctx context.Context, resourceID string) (*TaskRunMessage, error) {
+	return s.GetTaskRunV1(ctx, &FindTaskRunMessage{ResourceID: &resourceID})
 }
 
 // UpdateTaskRunStatus updates task run status.
@@ -206,15 +206,15 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	}
 
 	// Get the plan ID for cache invalidation
-	q := qb.Q().Space("SELECT plan_id FROM task WHERE id = ?", taskRun.TaskUID)
+	q := qb.Q().Space("SELECT plan_id FROM task WHERE resource_id = ?", taskRun.TaskResourceID)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var planID int64
+	var planID string
 	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&planID); err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan ID for task %d", taskRun.TaskUID)
+		return nil, errors.Wrapf(err, "failed to get plan ID for task %s", taskRun.TaskResourceID)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -223,25 +223,25 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	return taskRun, nil
 }
 
-// ClaimedTaskRun represents a claimed task run with its task UID.
+// ClaimedTaskRun represents a claimed task run with its task resource ID.
 type ClaimedTaskRun struct {
-	TaskRunUID int
-	TaskUID    int
+	TaskRunResourceID string
+	TaskResourceID    string
 }
 
 // ClaimAvailableTaskRuns atomically claims all AVAILABLE task runs by updating them to RUNNING
-// and returns the claimed task run and task UIDs. This combines list + claim into a single atomic operation.
+// and returns the claimed task run and task resource IDs. This combines list + claim into a single atomic operation.
 // Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different tasks.
 func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([]*ClaimedTaskRun, error) {
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET status = ?, updated_at = now(), replica_id = ?
-		WHERE id IN (
-			SELECT task_run.id FROM task_run
+		WHERE resource_id IN (
+			SELECT task_run.resource_id FROM task_run
 			WHERE task_run.status = ?
 			FOR UPDATE SKIP LOCKED
 		)
-		RETURNING id, task_id
+		RETURNING resource_id, task_id
 	`, storepb.TaskRun_RUNNING.String(), replicaID, storepb.TaskRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
@@ -258,7 +258,7 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 	var claimed []*ClaimedTaskRun
 	for rows.Next() {
 		var c ClaimedTaskRun
-		if err := rows.Scan(&c.TaskRunUID, &c.TaskUID); err != nil {
+		if err := rows.Scan(&c.TaskRunResourceID, &c.TaskResourceID); err != nil {
 			return nil, err
 		}
 		claimed = append(claimed, &c)
@@ -269,13 +269,13 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 	return claimed, nil
 }
 
-func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
+func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID string) error {
 	// Get the pipeline ID for cache invalidation
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET started_at = now(), updated_at = now()
-		WHERE id = ?
-		RETURNING (SELECT plan_id FROM task WHERE task.id = task_run.task_id)
+		WHERE resource_id = ?
+		RETURNING (SELECT plan_id FROM task WHERE task.resource_id = task_run.task_id)
 	`, taskRunID)
 
 	query, args, err := q.ToSQL()
@@ -283,7 +283,7 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	var planID int64
+	var planID string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&planID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
@@ -300,10 +300,10 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		return nil
 	}
 
-	var taskUIDs []int
+	var taskUIDs []string
 	var runAts []*time.Time
 	for _, create := range creates {
-		taskUIDs = append(taskUIDs, create.TaskUID)
+		taskUIDs = append(taskUIDs, create.TaskResourceID)
 		runAts = append(runAts, create.RunAt)
 	}
 
@@ -350,7 +350,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			?
 		FROM (
 			SELECT
-				unnest(CAST(? AS INTEGER[])) AS task_id,
+				unnest(CAST(? AS TEXT[])) AS task_id,
 				unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
 		) tasks
 		WHERE NOT EXISTS (
@@ -393,8 +393,8 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	}
 
 	q := qb.Q().Space("UPDATE task_run SET ?", set).
-		Space("WHERE id = ?", patch.ID).
-		Space("RETURNING id, creator, created_at, updated_at, task_id, status, result")
+		Space("WHERE resource_id = ?", patch.ResourceID).
+		Space("RETURNING resource_id, creator, created_at, updated_at, task_id, status, result")
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -406,16 +406,16 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	var statusString string
 	var resultJSON string
 	if err := txn.QueryRowContext(ctx, query, args...).Scan(
-		&taskRun.ID,
+		&taskRun.ResourceID,
 		&creatorEmail,
 		&taskRun.CreatedAt,
 		&taskRun.UpdatedAt,
-		&taskRun.TaskUID,
+		&taskRun.TaskResourceID,
 		&statusString,
 		&resultJSON,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
+			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %s", patch.ResourceID)}
 		}
 		return nil, err
 	}
@@ -436,14 +436,14 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 }
 
 // BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
-func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error {
+func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []string) error {
 	if len(taskRunIDs) == 0 {
 		return nil
 	}
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET status = ?, updated_at = now()
-		WHERE id = ANY(?)
+		WHERE resource_id = ANY(?)
 	`, storepb.TaskRun_CANCELED.String(), taskRunIDs)
 
 	query, args, err := q.ToSQL()
@@ -490,7 +490,7 @@ func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.D
 }
 
 // UpdateTaskRunPayload updates the payload column for a task run.
-func (s *Store) UpdateTaskRunPayload(ctx context.Context, taskRunID int, payload *storepb.TaskRunPayload) error {
+func (s *Store) UpdateTaskRunPayload(ctx context.Context, taskRunID string, payload *storepb.TaskRunPayload) error {
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal task run payload")
@@ -503,7 +503,7 @@ func (s *Store) UpdateTaskRunPayload(ctx context.Context, taskRunID int, payload
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET payload = ?, updated_at = now()
-		WHERE id = ?
+		WHERE resource_id = ?
 	`, payloadStr, taskRunID)
 
 	query, args, err := q.ToSQL()

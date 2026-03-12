@@ -52,14 +52,14 @@ type DatabaseMigrateExecutor struct {
 }
 
 // RunOnce will run the database migration task executor once.
-func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunResourceID string) (*storepb.TaskRunResult, error) {
 	// Fetch instance, database, and project (common to all migration types)
 	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get instance")
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found for task %v", task.ID)
+		return nil, errors.Errorf("instance not found for task %v", task.ResourceID)
 	}
 
 	database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
@@ -67,7 +67,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Wrap(err, "failed to get database")
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found for task %v", task.ID)
+		return nil, errors.Errorf("database not found for task %v", task.ResourceID)
 	}
 
 	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
@@ -103,9 +103,9 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		// Switch based on release type
 		switch release.Payload.Type {
 		case storepb.SchemaChangeType_VERSIONED:
-			return exec.runVersionedRelease(ctx, driverCtx, task, taskRunUID, release, instance, database, project)
+			return exec.runVersionedRelease(ctx, driverCtx, task, taskRunResourceID, release, instance, database, project)
 		case storepb.SchemaChangeType_DECLARATIVE:
-			return exec.runDeclarativeRelease(ctx, driverCtx, task, taskRunUID, release, instance, database, project)
+			return exec.runDeclarativeRelease(ctx, driverCtx, task, taskRunResourceID, release, instance, database, project)
 		default:
 			return nil, errors.Errorf("unsupported release type %q", release.Payload.Type)
 		}
@@ -121,9 +121,9 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 	}
 
 	if ghost.IsGhostEnabled(sheet.Statement) {
-		return exec.runGhostMigration(ctx, driverCtx, task, taskRunUID, sheet, instance, database, project)
+		return exec.runGhostMigration(ctx, driverCtx, task, taskRunResourceID, sheet, instance, database, project)
 	}
-	return exec.runStandardMigration(ctx, driverCtx, task, taskRunUID, sheet, instance, database, project)
+	return exec.runStandardMigration(ctx, driverCtx, task, taskRunResourceID, sheet, instance, database, project)
 }
 
 // ensureBaselineChangelog creates a baseline changelog if this is the first migration for the database.
@@ -163,21 +163,21 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 	return nil
 }
 
-func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunResourceID string, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
 	// so this works correctly for mixed DDL+DML statements.
 	var priorBackupDetail *storepb.PriorBackupDetail
 	if task.Payload.GetEnablePriorBackup() {
 		// Check if this specific task run wants to skip backup.
-		taskRun, err := exec.store.GetTaskRunByUID(ctx, taskRunUID)
+		taskRun, err := exec.store.GetTaskRunByResourceID(ctx, taskRunResourceID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get task run")
 		}
 		skipBackup := taskRun.PayloadProto.GetSkipPriorBackup()
 
 		if !skipBackup {
-			exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+			exec.store.CreateTaskRunLogS(ctx, taskRunResourceID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 				Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
 				PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
 			})
@@ -187,7 +187,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 				var backupErr error
 				priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, sheet.Statement, task.Payload, task, instance, database)
 				if backupErr != nil {
-					exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+					exec.store.CreateTaskRunLogS(ctx, taskRunResourceID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 						Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
 						PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
 							Error: backupErr.Error(),
@@ -197,7 +197,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 					return nil, backupErr
 				}
 
-				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+				exec.store.CreateTaskRunLogS(ctx, taskRunResourceID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
 					PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
 						PriorBackupDetail: priorBackupDetail,
@@ -211,8 +211,8 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-		TaskRunUID: &taskRunUID,
+		TenantMode:        project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunResourceID: &taskRunResourceID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -232,7 +232,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunResourceID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Begin migration - create pending changelog
@@ -242,7 +242,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanResourceID, task.Environment, task.ResourceID, taskRunResourceID),
 			GitCommit: exec.profile.GitCommit,
 		},
 	})
@@ -288,7 +288,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunResourceID string, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Parse ghost flags from sheet directive
 	flags, err := ghost.ParseGhostDirective(sheet.Statement)
 	if err != nil {
@@ -300,8 +300,8 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-		TaskRunUID: &taskRunUID,
+		TenantMode:        project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunResourceID: &taskRunResourceID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -321,7 +321,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunResourceID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Prepare gh-ost migration context before beginning migration
@@ -341,7 +341,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
+	migrationContext, err := ghost.NewMigrationContext(ctx, task.ResourceID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
@@ -359,7 +359,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanResourceID, task.Environment, task.ResourceID, taskRunResourceID),
 			GitCommit: exec.profile.GitCommit,
 		},
 	})
@@ -439,7 +439,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	return &storepb.TaskRunResult{}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunResourceID string, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Get existing revisions for this database
 	revisions, err := exec.store.ListRevisions(ctx, &store.FindRevisionMessage{
 		InstanceID:   &task.InstanceID,
@@ -457,7 +457,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		}
 	}
 
-	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID)
+	taskRunName := common.FormatTaskRun(database.ProjectID, task.PlanResourceID, task.Environment, task.ResourceID, taskRunResourceID)
 
 	// Create pending changelog for the entire release
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
@@ -480,13 +480,13 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunResourceID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Get database driver once for all files
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-		TaskRunUID: &taskRunUID,
+		TenantMode:        project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunResourceID: &taskRunResourceID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -519,7 +519,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			slog.String("file", file.Path))
 
 		// Log release file execution
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+		exec.store.CreateTaskRunLogS(ctx, taskRunResourceID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 			Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
 			ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
 				Version:  file.Version,
@@ -603,7 +603,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	return &storepb.TaskRunResult{}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunResourceID string, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Declarative releases should have exactly one file
 	if len(release.Payload.Files) == 0 {
 		return nil, errors.Errorf("no files found in declarative release")
@@ -629,7 +629,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		slog.String("file", file.Path))
 
 	// Log release file execution
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+	exec.store.CreateTaskRunLogS(ctx, taskRunResourceID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_RELEASE_FILE_EXECUTE,
 		ReleaseFileExecute: &storepb.TaskRunLog_ReleaseFileExecute{
 			Version: file.Version,
@@ -639,8 +639,8 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-		TaskRunUID: &taskRunUID,
+		TenantMode:        project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunResourceID: &taskRunResourceID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -660,7 +660,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
+		return exec.store.CreateTaskRunLog(ctx, taskRunResourceID, t.UTC(), exec.profile.ReplicaID, e)
 	}
 
 	// Compute SDL diff before beginning migration
@@ -679,7 +679,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		Status:         store.ChangelogStatusPending,
 		SyncHistoryUID: nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanResourceID, task.Environment, task.ResourceID, taskRunResourceID),
 			GitCommit: exec.profile.GitCommit,
 		},
 	})
@@ -819,7 +819,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	priorBackupDetail := &storepb.PriorBackupDetail{}
-	bbSource := fmt.Sprintf("task %d", task.ID)
+	bbSource := fmt.Sprintf("task %s", task.ResourceID)
 	for _, statement := range statements {
 		backupStatement := statement.Statement
 		if prependStatements != "" {

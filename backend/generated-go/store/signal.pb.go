@@ -75,7 +75,7 @@ func (Signal_Type) EnumDescriptor() ([]byte, []int) {
 type Signal struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          Signal_Type            `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.Signal_Type" json:"type,omitempty"`
-	Uid           int32                  `protobuf:"varint,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -117,21 +117,21 @@ func (x *Signal) GetType() Signal_Type {
 	return Signal_TYPE_UNSPECIFIED
 }
 
-func (x *Signal) GetUid() int32 {
+func (x *Signal) GetId() string {
 	if x != nil {
-		return x.Uid
+		return x.Id
 	}
-	return 0
+	return ""
 }
 
 var File_store_signal_proto protoreflect.FileDescriptor
 
 const file_store_signal_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/signal.proto\x12\x0ebytebase.store\"\x99\x01\n" +
+	"\x12store/signal.proto\x12\x0ebytebase.store\"\x97\x01\n" +
 	"\x06Signal\x12/\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.Signal.TypeR\x04type\x12\x10\n" +
-	"\x03uid\x18\x02 \x01(\x05R\x03uid\"L\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.Signal.TypeR\x04type\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\"L\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15CANCEL_PLAN_CHECK_RUN\x10\x01\x12\x13\n" +

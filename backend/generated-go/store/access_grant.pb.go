@@ -113,7 +113,7 @@ func (*AccessGrant) Descriptor() ([]byte, []int) {
 type AccessGrantPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The issue associated with the access grant.
-	IssueId int64 `protobuf:"varint,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	IssueId string `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
 	// The target databases for this access grant.
 	// Format: instances/{instance}/databases/{database}
 	Targets []string `protobuf:"bytes,2,rep,name=targets,proto3" json:"targets,omitempty"`
@@ -160,11 +160,11 @@ func (*AccessGrantPayload) Descriptor() ([]byte, []int) {
 	return file_store_access_grant_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *AccessGrantPayload) GetIssueId() int64 {
+func (x *AccessGrantPayload) GetIssueId() string {
 	if x != nil {
 		return x.IssueId
 	}
-	return 0
+	return ""
 }
 
 func (x *AccessGrantPayload) GetTargets() []string {
@@ -215,7 +215,7 @@ const file_store_access_grant_proto_rawDesc = "" +
 	"\x06ACTIVE\x10\x02\x12\v\n" +
 	"\aREVOKED\x10\x03\"\xd9\x01\n" +
 	"\x12AccessGrantPayload\x12\x19\n" +
-	"\bissue_id\x18\x01 \x01(\x03R\aissueId\x12\x18\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\x12\x18\n" +
 	"\atargets\x18\x02 \x03(\tR\atargets\x12\x14\n" +
 	"\x05query\x18\x03 \x01(\tR\x05query\x12\x16\n" +
 	"\x06unmask\x18\x04 \x01(\bR\x06unmask\x12\x16\n" +

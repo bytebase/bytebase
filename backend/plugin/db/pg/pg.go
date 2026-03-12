@@ -77,8 +77,8 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		return nil, err
 	}
 	appName := "bytebase"
-	if config.ConnectionContext.TaskRunUID != nil {
-		appName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)
+	if config.ConnectionContext.TaskRunResourceID != nil {
+		appName = fmt.Sprintf("bytebase-taskrun-%s", *config.ConnectionContext.TaskRunResourceID)
 	}
 	pgxConnConfig.RuntimeParams["application_name"] = appName
 	if config.ConnectionContext.ReadOnly {

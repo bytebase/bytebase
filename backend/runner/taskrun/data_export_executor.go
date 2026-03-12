@@ -45,14 +45,14 @@ type DataExportExecutor struct {
 }
 
 // RunOnce will run the data export task executor once.
-func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (*storepb.TaskRunResult, error) {
-	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
+func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ string) (*storepb.TaskRunResult, error) {
+	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PlanResourceID: &task.PlanResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue")
 	}
 
 	// Get plan to retrieve export format from spec
-	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{ResourceID: &task.PlanResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan")
 	}
@@ -96,10 +96,10 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	creatorUser, err := exec.store.GetPrincipalByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
+		return nil, errors.Wrapf(err, "failed to get creator user for issue %s", issue.ResourceID)
 	}
 	if creatorUser == nil {
-		return nil, errors.Errorf("creator user not found for issue %d", issue.UID)
+		return nil, errors.Errorf("creator user not found for issue %s", issue.ResourceID)
 	}
 
 	// Execute the export without masking.
@@ -126,7 +126,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	return &storepb.TaskRunResult{
-		ExportArchiveUid: int32(exportArchive.UID),
+		ExportArchiveId: exportArchive.ResourceID,
 	}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"strconv"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -55,14 +56,14 @@ func (s *PlanService) GetPlan(ctx context.Context, request *connect.Request[v1pb
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &planID,
-		ProjectID: &projectID,
+		ResourceID: &planID,
+		ProjectID:  &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %s not found in project %s", planID, projectID))
 	}
 	convertedPlan, err := convertToPlan(ctx, s.store, plan)
 	if err != nil {
@@ -236,7 +237,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
-	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: &projectID, UID: &planID})
+	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: &projectID, ResourceID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan %q: %v", req.Plan.Name, err))
 	}
@@ -280,7 +281,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	planUpdate := &store.UpdatePlanMessage{
-		UID: oldPlan.UID,
+		ResourceID: oldPlan.ResourceID,
 	}
 
 	var planCheckRunsTrigger bool
@@ -321,13 +322,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			planCheckRunsTrigger = true
 
 			// Evict approvals if issue exists to request re-approval.
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
+			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanResourceID: &oldPlan.ResourceID})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
 			if issue != nil {
 				// Reset approval finding status
-				updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+				updatedIssue, err := s.store.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{
 					PayloadUpsert: &storepb.Issue{
 						Approval: &storepb.IssuePayloadApproval{
 							ApprovalFindingDone: false,
@@ -344,7 +345,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
 					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
 						slog.Error("failed to find approval template after plan update",
-							slog.Int("issue_uid", updatedIssue.UID),
+							slog.String("issue_id", updatedIssue.ResourceID),
 							slog.String("issue_title", updatedIssue.Title),
 							log.BBError(err))
 						// Continue anyway - non-fatal error
@@ -385,20 +386,20 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 // GetPlanCheckRun gets the plan check run for the plan.
 func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Request[v1pb.GetPlanCheckRunRequest]) (*connect.Response[v1pb.PlanCheckRun], error) {
 	req := request.Msg
-	projectID, planUID, err := common.GetProjectIDPlanIDFromPlanCheckRun(req.Name)
+	projectID, planResourceID, err := common.GetProjectIDPlanIDFromPlanCheckRun(req.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planUID)
+	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run"))
 	}
 	if planCheckRun == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %s", planResourceID))
 	}
 
-	converted := convertToPlanCheckRun(projectID, planUID, planCheckRun)
+	converted := convertToPlanCheckRun(projectID, planResourceID, planCheckRun)
 	return connect.NewResponse(converted), nil
 }
 
@@ -419,8 +420,8 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &planID,
-		ProjectID: &projectID,
+		ResourceID: &planID,
+		ProjectID:  &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
@@ -468,7 +469,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 // CancelPlanCheckRun cancels the plan check run for a plan.
 func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.Request[v1pb.CancelPlanCheckRunRequest]) (*connect.Response[v1pb.CancelPlanCheckRunResponse], error) {
 	req := request.Msg
-	projectID, planUID, err := common.GetProjectIDPlanIDFromPlanCheckRun(req.Name)
+	projectID, planResourceID, err := common.GetProjectIDPlanIDFromPlanCheckRun(req.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -483,12 +484,12 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planUID)
+	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run"))
 	}
 	if planCheckRun == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %s", planResourceID))
 	}
 
 	if planCheckRun.Status != store.PlanCheckRunStatusRunning && planCheckRun.Status != store.PlanCheckRunStatusAvailable {
@@ -501,7 +502,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 	}
 
 	// Broadcast cancel signal to all replicas for HA.
-	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, int32(planCheckRun.UID)); err != nil {
+	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, strconv.Itoa(planCheckRun.UID)); err != nil {
 		slog.Warn("failed to send cancel signal", log.BBError(err))
 	}
 
@@ -747,8 +748,8 @@ func getPlanCheckRunFromPlan(ctx context.Context, s *store.Store, project *store
 	}
 
 	return &store.PlanCheckRunMessage{
-		PlanUID: plan.UID,
-		Status:  store.PlanCheckRunStatusRunning,
+		PlanResourceID: plan.ResourceID,
+		Status:         store.PlanCheckRunStatusRunning,
 	}, nil
 }
 
@@ -758,54 +759,53 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 	}
 
 	// Batch-fetch issues and plan check runs to avoid N+1 queries.
-	planUIDs := make([]int64, len(plans))
+	planResourceIDs := make([]string, len(plans))
 	for i, p := range plans {
-		planUIDs[i] = int64(p.UID)
+		planResourceIDs[i] = p.ResourceID
 	}
 
-	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{PlanUIDs: &planUIDs})
+	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{PlanResourceIDs: &planResourceIDs})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list issues")
 	}
-	issueByPlanUID := make(map[int64]*store.IssueMessage, len(issues))
+	issueByPlanResourceID := make(map[string]*store.IssueMessage, len(issues))
 	for _, issue := range issues {
-		if issue.PlanUID != nil {
-			issueByPlanUID[*issue.PlanUID] = issue
+		if issue.PlanResourceID != nil {
+			issueByPlanResourceID[*issue.PlanResourceID] = issue
 		}
 	}
 
-	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanUIDs: &planUIDs})
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanResourceIDs: &planResourceIDs})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list plan check runs")
 	}
-	planCheckRunByPlanUID := make(map[int64]*store.PlanCheckRunMessage, len(planCheckRuns))
+	planCheckRunByPlanResourceID := make(map[string]*store.PlanCheckRunMessage, len(planCheckRuns))
 	for _, run := range planCheckRuns {
-		planCheckRunByPlanUID[run.PlanUID] = run
+		planCheckRunByPlanResourceID[run.PlanResourceID] = run
 	}
 
 	v1Plans := make([]*v1pb.Plan, len(plans))
 	for i, plan := range plans {
-		planUID := int64(plan.UID)
-		v1Plans[i] = buildV1Plan(plan, issueByPlanUID[planUID], planCheckRunByPlanUID[planUID])
+		v1Plans[i] = buildV1Plan(plan, issueByPlanResourceID[plan.ResourceID], planCheckRunByPlanResourceID[plan.ResourceID])
 	}
 	return v1Plans, nil
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
+	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanResourceID: &plan.ResourceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
+		return nil, errors.Wrapf(err, "failed to get issue by plan uid %s", plan.ResourceID)
 	}
-	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
+	planCheckRun, err := s.GetPlanCheckRun(ctx, plan.ResourceID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %d", plan.UID)
+		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %s", plan.ResourceID)
 	}
 	return buildV1Plan(plan, issue, planCheckRun), nil
 }
 
 func buildV1Plan(plan *store.PlanMessage, issue *store.IssueMessage, planCheckRun *store.PlanCheckRunMessage) *v1pb.Plan {
 	p := &v1pb.Plan{
-		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
+		Name:                    common.FormatPlan(plan.ProjectID, plan.ResourceID),
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Creator:                 common.FormatUserEmail(plan.Creator),
@@ -816,7 +816,7 @@ func buildV1Plan(plan *store.PlanMessage, issue *store.IssueMessage, planCheckRu
 		PlanCheckRunStatusCount: map[string]int32{},
 	}
 	if issue != nil {
-		p.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
+		p.Issue = common.FormatIssue(issue.ProjectID, issue.ResourceID)
 	}
 	if plan.Config != nil {
 		p.HasRollout = plan.Config.HasRollout
@@ -842,9 +842,9 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	}
 }
 
-func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
+func convertToPlanCheckRun(projectID string, planResourceID string, run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
 	return &v1pb.PlanCheckRun{
-		Name:       common.FormatPlanCheckRun(projectID, planUID),
+		Name:       common.FormatPlanCheckRun(projectID, planResourceID),
 		Status:     convertToPlanCheckRunStatus(run.Status),
 		Results:    convertToPlanCheckRunResults(run.Result.GetResults()),
 		Error:      run.Result.Error,

@@ -51,15 +51,15 @@ func postCreateIssue(
 
 		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
 			slog.Error("failed to find approval template",
-				slog.Int("issue_uid", issue.UID),
+				slog.String("issue_id", issue.ResourceID),
 				slog.String("issue_title", issue.Title),
 				log.BBError(err))
 		}
 
 		// Refresh issue to get updated approval payload.
-		uid := issue.UID
+		resourceID := issue.ResourceID
 		var err error
-		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{ResourceID: &resourceID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to refresh issue")
 		}
@@ -81,7 +81,7 @@ func postCreateIssue(
 			return nil, errors.Wrapf(err, "failed to complete grant request")
 		}
 	case storepb.Issue_DATABASE_CHANGE:
-		b.ApprovalCheckChan <- int64(issue.UID)
+		b.ApprovalCheckChan <- issue.ResourceID
 	default:
 	}
 
@@ -95,7 +95,7 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 	switch issue.Type {
 	case storepb.Issue_ACCESS_GRANT:
 		if issue.Payload.AccessGrantId == "" {
-			return nil, errors.Errorf("invalid access grant id for issue %d", issue.UID)
+			return nil, errors.Errorf("invalid access grant id for issue %s", issue.ResourceID)
 		}
 		accessGrantName := common.FormatAccessGrant(issue.ProjectID, issue.Payload.AccessGrantId)
 		if _, err := activateAccessGrant(ctx, stores, accessGrantName, true /* refresh expire time */); err != nil {
@@ -110,13 +110,13 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 	}
 
 	newStatus := storepb.Issue_DONE
-	updatedIssue, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+	updatedIssue, err := stores.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{Status: &newStatus})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
 	if _, err := stores.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
+		IssueResourceID: issue.ResourceID,
 		Payload: &storepb.IssueCommentPayload{
 			Event: &storepb.IssueCommentPayload_IssueUpdate_{
 				IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{

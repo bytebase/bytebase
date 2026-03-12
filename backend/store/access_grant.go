@@ -365,11 +365,11 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("issue value must be a string")
 					}
-					_, issueUID, err := common.GetProjectIDIssueUID(issueStr)
+					_, issueID, err := common.GetProjectIDIssueID(issueStr)
 					if err != nil {
 						return nil, errors.Wrapf(err, "invalid issue name %q", issueStr)
 					}
-					return qb.Q().Space("(access_grant.payload->>'issueId')::bigint = ?", issueUID), nil
+					return qb.Q().Space("access_grant.payload->>'issueId' = ?", issueID), nil
 				case "target":
 					targetStr, ok := value.(string)
 					if !ok {

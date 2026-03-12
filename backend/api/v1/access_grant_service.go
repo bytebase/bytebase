@@ -228,7 +228,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 
 	// Step 3: Update access grant payload with the issue ID.
-	grant.Payload.IssueId = int64(issue.UID)
+	grant.Payload.IssueId = issue.ResourceID
 	grant, err = s.store.UpdateAccessGrant(ctx, grant.ID, &store.UpdateAccessGrantMessage{
 		Payload: grant.Payload,
 	})
@@ -426,8 +426,8 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 		ag.Targets = p.Targets
 		ag.Query = p.Query
 		ag.Unmask = p.Unmask
-		if p.IssueId != 0 {
-			ag.Issue = common.FormatIssue(msg.ProjectID, int(p.IssueId))
+		if p.IssueId != "" {
+			ag.Issue = common.FormatIssue(msg.ProjectID, p.IssueId)
 		}
 		if ag.Expiration == nil && p.RequestedDuration != nil {
 			ag.Expiration = &v1pb.AccessGrant_Ttl{

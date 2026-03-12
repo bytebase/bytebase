@@ -26,16 +26,16 @@ type PlanMessage struct {
 	Description string
 	Config      *storepb.PlanConfig
 	// output only
-	UID       int64
-	Creator   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Deleted   bool
+	ResourceID string
+	Creator    string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Deleted    bool
 }
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID        *int64
+	ResourceID *string
 	ProjectID  *string
 	ProjectIDs *[]string
 
@@ -49,7 +49,7 @@ type FindPlanMessage struct {
 
 // UpdatePlanMessage is the message to update a plan.
 type UpdatePlanMessage struct {
-	UID         int64
+	ResourceID  string
 	Name        *string
 	Description *string
 	// Config replaces the entire plan config.
@@ -75,7 +75,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 			config
 		) VALUES (
 			?, ?, ?, ?, ?
-		) RETURNING id, created_at, updated_at
+		) RETURNING resource_id, created_at, updated_at
 	`, creator, plan.ProjectID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
@@ -83,12 +83,12 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
 
-	var id int64
+	var id string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id, &plan.CreatedAt, &plan.UpdatedAt); err != nil {
 		return nil, errors.Wrap(err, "failed to insert plan")
 	}
 
-	plan.UID = id
+	plan.ResourceID = id
 	plan.Creator = creator
 	return plan, nil
 }
@@ -112,7 +112,7 @@ func (s *Store) GetPlan(ctx context.Context, find *FindPlanMessage) (*PlanMessag
 func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			plan.id,
+			plan.resource_id,
 			plan.creator,
 			plan.created_at,
 			plan.updated_at,
@@ -122,15 +122,15 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config,
 			plan.deleted
 		FROM plan
-		LEFT JOIN issue on plan.id = issue.plan_id
+		LEFT JOIN issue on plan.resource_id = issue.plan_id
 		WHERE TRUE
 	`)
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
 	}
-	if v := find.UID; v != nil {
-		q.And("plan.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("plan.resource_id = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
 		q.And("plan.project = ?", *v)
@@ -150,7 +150,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		}
 	}
 
-	q.Space("ORDER BY id DESC")
+	q.Space("ORDER BY plan.created_at DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -176,7 +176,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		}
 		var config []byte
 		if err := rows.Scan(
-			&plan.UID,
+			&plan.ResourceID,
 			&plan.Creator,
 			&plan.CreatedAt,
 			&plan.UpdatedAt,
@@ -226,8 +226,8 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		args = append(args, config)
 	}
 
-	args = append(args, patch.UID)
-	q := qb.Q().Space(fmt.Sprintf("UPDATE plan SET %s WHERE id = ? RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted", strings.Join(set, ", ")), args...)
+	args = append(args, patch.ResourceID)
+	q := qb.Q().Space(fmt.Sprintf("UPDATE plan SET %s WHERE resource_id = ? RETURNING resource_id, creator, created_at, updated_at, project, name, description, config, deleted", strings.Join(set, ", ")), args...)
 
 	query, finalArgs, err := q.ToSQL()
 	if err != nil {
@@ -239,7 +239,7 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 	}
 	var config []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, finalArgs...).Scan(
-		&plan.UID,
+		&plan.ResourceID,
 		&plan.Creator,
 		&plan.CreatedAt,
 		&plan.UpdatedAt,
@@ -314,9 +314,9 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return nil, errors.Errorf(`"has_issue" should be bool`)
 					}
 					if !hasIssue {
-						return qb.Q().Space("issue.id IS NULL"), nil
+						return qb.Q().Space("issue.resource_id IS NULL"), nil
 					}
-					return qb.Q().Space("issue.id IS NOT NULL"), nil
+					return qb.Q().Space("issue.resource_id IS NOT NULL"), nil
 				case "title":
 					return qb.Q().Space("plan.name = ?", value), nil
 				case "spec_type":

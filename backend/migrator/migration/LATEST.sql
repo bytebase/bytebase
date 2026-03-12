@@ -190,7 +190,7 @@ CREATE TABLE plan_check_run (
     id serial PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    plan_id bigint NOT NULL REFERENCES plan(id),
+    plan_id text NOT NULL REFERENCES plan(resource_id),
     status text NOT NULL CHECK (status IN ('AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
     result jsonb NOT NULL DEFAULT '{}'
@@ -206,7 +206,7 @@ ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 -- One row per plan at any time - mutually exclusive events.
 -- Row is deleted when user clicks BatchRunTasks to reset notification state.
 CREATE TABLE plan_webhook_delivery (
-    plan_id BIGINT PRIMARY KEY REFERENCES plan(id),
+    plan_id TEXT PRIMARY KEY REFERENCES plan(resource_id),
     -- Event type: 'PIPELINE_FAILED' or 'PIPELINE_COMPLETED'
     event_type TEXT NOT NULL,
     delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -216,7 +216,8 @@ CREATE TABLE plan_webhook_delivery (
 CREATE TABLE task (
     id serial PRIMARY KEY,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    plan_id bigint NOT NULL REFERENCES plan(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    plan_id text NOT NULL REFERENCES plan(resource_id),
     instance text NOT NULL REFERENCES instance(resource_id),
     environment text,
     db_name text,
@@ -237,7 +238,7 @@ CREATE TABLE task_run (
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    task_id integer NOT NULL REFERENCES task(id),
+    task_id text NOT NULL REFERENCES task(resource_id),
     attempt integer NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
@@ -272,7 +273,7 @@ CREATE TABLE replica_heartbeat (
 );
 
 CREATE TABLE task_run_log (
-    task_run_id integer NOT NULL REFERENCES task_run(id),
+    task_run_id text NOT NULL REFERENCES task_run(resource_id),
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as TaskRunLog (proto/store/store/task_run_log.proto)
     payload jsonb NOT NULL DEFAULT '{}',
@@ -289,7 +290,7 @@ CREATE TABLE issue (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
-    plan_id bigint REFERENCES plan(id),
+    plan_id text REFERENCES plan(resource_id),
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
@@ -324,12 +325,14 @@ ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
 CREATE TABLE audit_log (
     id bigserial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as AuditLog (proto/store/store/audit_log.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
+CREATE UNIQUE INDEX idx_audit_log_unique_resource_id ON audit_log(resource_id);
 
 CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
 
@@ -347,7 +350,7 @@ CREATE TABLE issue_comment (
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    issue_id integer NOT NULL REFERENCES issue(id),
+    issue_id text NOT NULL REFERENCES issue(resource_id),
     -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -359,6 +362,7 @@ ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
 CREATE TABLE query_history (
     id bigserial PRIMARY KEY,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     project_id text NOT NULL, -- the project resource id
@@ -372,6 +376,7 @@ CREATE TABLE query_history (
 );
 
 CREATE INDEX idx_query_history_creator_created_at_project_id ON query_history(creator, created_at, project_id DESC);
+CREATE UNIQUE INDEX idx_query_history_unique_resource_id ON query_history(resource_id);
 
 ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
@@ -401,7 +406,7 @@ ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 -- worksheet_organizer table stores the sheet status for a principal.
 CREATE TABLE worksheet_organizer (
     id serial PRIMARY KEY,
-    worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
+    worksheet_id text NOT NULL REFERENCES worksheet(resource_id) ON DELETE CASCADE,
     principal text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -425,11 +430,14 @@ CREATE TABLE db_group (
 
 CREATE TABLE export_archive (
   id serial PRIMARY KEY,
+  resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
   created_at timestamptz NOT NULL DEFAULT now(),
   bytes bytea,
   -- Stored as ExportArchivePayload (proto/store/store/export_archive.proto)
   payload jsonb NOT NULL DEFAULT '{}'
 );
+
+CREATE UNIQUE INDEX uk_export_archive_resource_id ON export_archive(resource_id);
 
 CREATE TABLE user_group (
   id text PRIMARY KEY DEFAULT gen_random_uuid()::text,

@@ -28,8 +28,8 @@ const (
 // QueryHistoryMessage is the API message for query history.
 type QueryHistoryMessage struct {
 	// Output only fields
-	UID       int
-	CreatedAt time.Time
+	ResourceID string
+	CreatedAt  time.Time
 
 	// Related fields
 	Creator string
@@ -77,7 +77,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		)
 		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING
-			id,
+			resource_id,
 			created_at
 	`,
 		create.Creator,
@@ -94,7 +94,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 	}
 
 	if err := s.GetDB().QueryRowContext(ctx, sql, args...).Scan(
-		&create.UID,
+		&create.ResourceID,
 		&create.CreatedAt,
 	); err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMessage) ([]*QueryHistoryMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			query_history.id,
+			query_history.resource_id,
 			query_history.creator,
 			query_history.created_at,
 			query_history.project_id,
@@ -137,7 +137,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		q.And("query_history.type = ?", *v)
 	}
 
-	q.Space("ORDER BY id DESC")
+	q.Space("ORDER BY created_at DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -161,7 +161,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		queryHistory := &QueryHistoryMessage{}
 		var payloadStr string
 		if err := rows.Scan(
-			&queryHistory.UID,
+			&queryHistory.ResourceID,
 			&queryHistory.Creator,
 			&queryHistory.CreatedAt,
 			&queryHistory.ProjectID,

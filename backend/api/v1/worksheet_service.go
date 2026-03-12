@@ -105,17 +105,14 @@ func (s *WorksheetService) GetWorksheet(
 	req *connect.Request[v1pb.GetWorksheetRequest],
 ) (*connect.Response[v1pb.Worksheet], error) {
 	request := req.Msg
-	worksheetUID, err := common.GetWorksheetUID(request.Name)
+	worksheetID, err := common.GetWorksheetID(request.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if worksheetUID <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
-	}
 
 	find := &store.FindWorkSheetMessage{
-		UID:      &worksheetUID,
-		LoadFull: true,
+		ResourceID: &worksheetID,
+		LoadFull:   true,
 	}
 	worksheet, err := s.findWorksheet(ctx, find)
 	if err != nil {
@@ -200,12 +197,9 @@ func (s *WorksheetService) UpdateWorksheet(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("worksheet name cannot be empty"))
 	}
 
-	worksheetUID, err := common.GetWorksheetUID(request.Worksheet.Name)
+	worksheetID, err := common.GetWorksheetID(request.Worksheet.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	if worksheetUID <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -213,7 +207,7 @@ func (s *WorksheetService) UpdateWorksheet(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
-		UID: &worksheetUID,
+		ResourceID: &worksheetID,
 	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
@@ -230,7 +224,7 @@ func (s *WorksheetService) UpdateWorksheet(
 	}
 
 	worksheetPatch := &store.PatchWorkSheetMessage{
-		UID: worksheet.UID,
+		ResourceID: worksheet.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -281,7 +275,7 @@ func (s *WorksheetService) UpdateWorksheet(
 	}
 
 	worksheet, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
-		UID: &worksheetUID,
+		ResourceID: &worksheetID,
 	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
@@ -299,7 +293,7 @@ func (s *WorksheetService) DeleteWorksheet(
 	req *connect.Request[v1pb.DeleteWorksheetRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	request := req.Msg
-	worksheetUID, err := common.GetWorksheetUID(request.Name)
+	worksheetID, err := common.GetWorksheetID(request.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -309,13 +303,13 @@ func (s *WorksheetService) DeleteWorksheet(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
-		UID: &worksheetUID,
+		ResourceID: &worksheetID,
 	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
 	if worksheet == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("worksheet with id %d not found", worksheetUID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("worksheet with id %s not found", worksheetID))
 	}
 	ok, err = s.canWriteWorksheet(ctx, worksheet)
 	if err != nil {
@@ -325,7 +319,7 @@ func (s *WorksheetService) DeleteWorksheet(
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot write worksheet %s", worksheet.Title))
 	}
 
-	if err := s.store.DeleteWorkSheet(ctx, worksheetUID); err != nil {
+	if err := s.store.DeleteWorkSheet(ctx, worksheetID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete worksheet: %v", err))
 	}
 
@@ -338,16 +332,12 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 	req *connect.Request[v1pb.UpdateWorksheetOrganizerRequest],
 ) (*connect.Response[v1pb.WorksheetOrganizer], error) {
 	request := req.Msg
-	worksheetUID, err := common.GetWorksheetUID(request.Organizer.Worksheet)
+	worksheetID, err := common.GetWorksheetID(request.Organizer.Worksheet)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if worksheetUID <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid worksheet id %d, must be positive integer", worksheetUID))
-	}
-
 	worksheet, err := s.findWorksheet(ctx, &store.FindWorkSheetMessage{
-		UID: &worksheetUID,
+		ResourceID: &worksheetID,
 	})
 	if err != nil {
 		return nil, err
@@ -365,7 +355,7 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheetOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, worksheetUID, user.Email)
+	worksheetOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, worksheetID, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found worksheet organizer with error: %v", err))
 	}
@@ -530,7 +520,7 @@ func convertToAPIWorksheetMessage(worksheet *store.WorkSheetMessage) *v1pb.Works
 		// Keep VISIBILITY_UNSPECIFIED
 	}
 	return &v1pb.Worksheet{
-		Name:        fmt.Sprintf("%s%d", common.WorksheetIDPrefix, worksheet.UID),
+		Name:        fmt.Sprintf("%s%s", common.WorksheetIDPrefix, worksheet.ResourceID),
 		Project:     common.FormatProject(worksheet.ProjectID),
 		Database:    databaseParent,
 		Title:       worksheet.Title,

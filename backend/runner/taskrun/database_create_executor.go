@@ -33,7 +33,7 @@ type DatabaseCreateExecutor struct {
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ string) (*storepb.TaskRunResult, error) {
 	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet: %s", task.Payload.GetSheetSha256())
@@ -57,12 +57,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
 	}
 
-	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{ResourceID: &task.PlanResourceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
+		return nil, errors.Wrapf(err, "failed to get plan %v", task.PlanResourceID)
 	}
 	if plan == nil {
-		return nil, errors.Errorf("plan %v not found", task.PlanID)
+		return nil, errors.Errorf("plan %v not found", task.PlanResourceID)
 	}
 
 	// For create database plans, there is always exactly one spec

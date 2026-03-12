@@ -48,12 +48,12 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case issueUID := <-r.bus.ApprovalCheckChan:
+		case issueResourceID := <-r.bus.ApprovalCheckChan:
 			if err := r.licenseService.CheckReplicaLimit(ctx); err != nil {
 				slog.Warn("Approval runner skipped due to HA license restriction", log.BBError(err))
 				continue
 			}
-			r.processIssue(ctx, issueUID)
+			r.processIssue(ctx, issueResourceID)
 		case <-ctx.Done():
 			return
 		}
@@ -77,13 +77,12 @@ func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webh
 	return nil
 }
 
-func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
+func (r *Runner) processIssue(ctx context.Context, issueID string) {
 	// Get fresh issue from database
-	uid := int(issueUID)
-	issue, err := r.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+	issue, err := r.store.GetIssue(ctx, &store.FindIssueMessage{ResourceID: &issueID})
 	if err != nil {
 		slog.Error("failed to get issue for approval check",
-			slog.Int64("issue_uid", issueUID), log.BBError(err))
+			slog.String("issue_id", issueID), log.BBError(err))
 		return
 	}
 	if issue == nil {
@@ -98,7 +97,7 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 
 	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
 		slog.Error("failed to find approval template",
-			slog.Int64("issue_uid", issueUID),
+			slog.String("issue_id", issueID),
 			slog.String("issue_title", issue.Title),
 			log.BBError(err))
 		// Don't persist error - user can rerun plan check to retry
@@ -108,12 +107,12 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 	// After approval finding is done, check if the issue is now approved
 	// (e.g., skip approval case where no template is required).
 	// If approved, trigger rollout creation.
-	if issue.PlanUID != nil {
+	if issue.PlanResourceID != nil {
 		// Re-fetch issue to get updated approval state
-		issue, err = r.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+		issue, err = r.store.GetIssue(ctx, &store.FindIssueMessage{ResourceID: &issueID})
 		if err != nil {
 			slog.Error("failed to re-fetch issue after approval finding",
-				slog.Int64("issue_uid", issueUID), log.BBError(err))
+				slog.String("issue_id", issueID), log.BBError(err))
 			return
 		}
 		if issue == nil {
@@ -123,11 +122,11 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 		approved, err := utils.CheckIssueApproved(issue)
 		if err != nil {
 			slog.Error("failed to check if issue is approved",
-				slog.Int64("issue_uid", issueUID), log.BBError(err))
+				slog.String("issue_id", issueID), log.BBError(err))
 			return
 		}
 		if approved {
-			r.bus.RolloutCreationChan <- *issue.PlanUID
+			r.bus.RolloutCreationChan <- *issue.PlanResourceID
 		}
 	}
 }
@@ -209,7 +208,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	}
 	payload.RiskLevel = riskLevel
 
-	if _, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+	if _, err := stores.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval:  payload.Approval,
 			RiskLevel: riskLevel,
@@ -503,20 +502,20 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 // buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
 // This includes DDL and DML operations.
 func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
-	if issue.PlanUID == nil {
-		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+	if issue.PlanResourceID == nil {
+		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.ResourceID)
 	}
-	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ResourceID: issue.PlanResourceID})
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanResourceID)
 	}
 	if plan == nil {
-		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return nil, false, errors.Errorf("plan %v not found", *issue.PlanResourceID)
 	}
 
-	planCheckRun, err := stores.GetPlanCheckRun(ctx, plan.UID)
+	planCheckRun, err := stores.GetPlanCheckRun(ctx, plan.ResourceID)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
+		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.ResourceID)
 	}
 
 	type Key struct {
@@ -627,15 +626,15 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 
 // buildCELVariablesForDataExport builds CEL variables for DATABASE_EXPORT issues.
 func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
-	if issue.PlanUID == nil {
-		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
+	if issue.PlanResourceID == nil {
+		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.ResourceID)
 	}
-	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ResourceID: issue.PlanResourceID})
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanResourceID)
 	}
 	if plan == nil {
-		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+		return nil, false, errors.Errorf("plan %v not found", *issue.PlanResourceID)
 	}
 
 	// Unfold database groups and get all targets (only EXPORT_DATA targets)
@@ -853,15 +852,15 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	case storepb.Issue_GRANT_REQUEST:
 		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE, nil
 	case storepb.Issue_DATABASE_CHANGE:
-		if issue.PlanUID == nil {
-			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("expected plan UID in issue %v", issue.UID)
+		if issue.PlanResourceID == nil {
+			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("expected plan UID in issue %v", issue.ResourceID)
 		}
-		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ResourceID: issue.PlanResourceID})
 		if err != nil {
-			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
+			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Wrapf(err, "failed to get plan %v", *issue.PlanResourceID)
 		}
 		if plan == nil {
-			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("plan %v not found", *issue.PlanUID)
+			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("plan %v not found", *issue.PlanResourceID)
 		}
 		return getApprovalSourceFromPlan(plan.Config), nil
 	case storepb.Issue_DATABASE_EXPORT:

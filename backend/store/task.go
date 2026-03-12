@@ -16,13 +16,14 @@ import (
 
 // TaskMessage is the message for tasks.
 type TaskMessage struct {
-	ID int
+	ResourceID string
+	CreatedAt  time.Time
 
 	// Related fields
-	PlanID       int64
-	InstanceID   string
-	Environment  string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
-	DatabaseName *string
+	PlanResourceID string
+	InstanceID     string
+	Environment    string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
+	DatabaseName   *string
 
 	// Domain specific fields
 	Type    storepb.Task_Type
@@ -48,15 +49,15 @@ func (t *TaskMessage) GetDatabaseName() string {
 
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
-	ID  *int
-	IDs *[]int
+	ResourceID  *string
+	ResourceIDs *[]string
 
 	// Related fields
-	PlanID       *int64
-	PlanIDs      *[]int64
-	Environment  *string
-	InstanceID   *string
-	DatabaseName *string
+	PlanResourceID  *string
+	PlanResourceIDs *[]string
+	Environment     *string
+	InstanceID      *string
+	DatabaseName    *string
 
 	// Domain specific fields
 	TypeList *[]storepb.Task_Type
@@ -65,40 +66,40 @@ type TaskFind struct {
 }
 
 // GetTaskByID gets a task by ID.
-func (s *Store) GetTaskByID(ctx context.Context, id int) (*TaskMessage, error) {
-	tasks, err := s.ListTasks(ctx, &TaskFind{ID: &id})
+func (s *Store) GetTaskByID(ctx context.Context, id string) (*TaskMessage, error) {
+	tasks, err := s.ListTasks(ctx, &TaskFind{ResourceID: &id})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get Task with ID %d", id)
+		return nil, errors.Wrapf(err, "failed to get Task with ID %s", id)
 	}
 	if len(tasks) == 0 {
 		return nil, nil
 	} else if len(tasks) > 1 {
-		return nil, errors.Errorf("found %v tasks with id %v", len(tasks), id)
+		return nil, errors.Errorf("found %v tasks with id %s", len(tasks), id)
 	}
 	return tasks[0], nil
 }
 
 // Get a blocking task in the pipeline.
 // A task is blocked by a task with a smaller schema version within the same pipeline.
-func (s *Store) FindBlockingTaskByVersion(ctx context.Context, planUID int64, instanceID, databaseName string, version string) (*int, error) {
+func (s *Store) FindBlockingTaskByVersion(ctx context.Context, planID string, instanceID, databaseName string, version string) (*string, error) {
 	myVersion, err := model.NewVersion(version)
 	if err != nil {
 		return nil, err
 	}
 	q := qb.Q().Space(`
 		SELECT
-			task.id,
+			task.resource_id,
 			task.payload->>'schemaVersion'
 		FROM task
-		LEFT JOIN plan ON plan.id = task.plan_id
-		LEFT JOIN issue ON issue.plan_id = plan.id
+		LEFT JOIN plan ON plan.resource_id = task.plan_id
+		LEFT JOIN issue ON issue.plan_id = plan.resource_id
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(
 				(SELECT
 					task_run.status
 				FROM task_run
-				WHERE task_run.task_id = task.id
-				ORDER BY task_run.id DESC
+				WHERE task_run.task_id = task.resource_id
+				ORDER BY task_run.created_at DESC
 				LIMIT 1
 			), 'NOT_STARTED'
 			) AS status
@@ -108,7 +109,7 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, planUID int64, in
 		AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
 		AND latest_task_run.status != 'DONE'
 		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
-		ORDER BY task.id ASC`, planUID, instanceID, databaseName)
+		ORDER BY task.created_at ASC`, planID, instanceID, databaseName)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -119,7 +120,7 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, planUID int64, in
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var id int
+		var id string
 		var v string
 		if err := rows.Scan(&id, &v); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
@@ -141,7 +142,7 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, planUID int64, in
 // createTasksTx creates tasks in a transaction.
 func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	var (
-		planIDs      []int64
+		planIDs      []string
 		instances    []string
 		databases    []*string
 		environments []string
@@ -156,7 +157,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
-		planIDs = append(planIDs, create.PlanID)
+		planIDs = append(planIDs, create.PlanResourceID)
 		instances = append(instances, create.InstanceID)
 		databases = append(databases, create.DatabaseName)
 		types = append(types, create.Type.String())
@@ -173,13 +174,13 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 			type,
 			payload
 		) SELECT
-			unnest(CAST(? AS BIGINT[])),
+			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS JSONB[]))
-		RETURNING id, plan_id, instance, db_name, environment, type, payload`,
+		RETURNING resource_id, created_at, plan_id, instance, db_name, environment, type, payload`,
 		planIDs,
 		instances,
 		databases,
@@ -203,8 +204,9 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 		var payload []byte
 		var typeString string
 		if err := rows.Scan(
-			&task.ID,
-			&task.PlanID,
+			&task.ResourceID,
+			&task.CreatedAt,
+			&task.PlanResourceID,
 			&task.InstanceID,
 			&task.DatabaseName,
 			&task.Environment,
@@ -235,7 +237,8 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*TaskMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			task.id,
+			task.resource_id,
+			task.created_at,
 			task.plan_id,
 			task.instance,
 			task.db_name,
@@ -252,21 +255,21 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 				task_run.updated_at,
 				task_run.run_at
 			FROM task_run
-			WHERE task_run.task_id = task.id
-			ORDER BY task_run.id DESC
+			WHERE task_run.task_id = task.resource_id
+			ORDER BY task_run.created_at DESC
 			LIMIT 1
 		) AS latest_task_run ON TRUE
 		WHERE TRUE`, storepb.TaskRun_NOT_STARTED.String())
-	if v := find.ID; v != nil {
-		q.Space("AND task.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.Space("AND task.resource_id = ?", *v)
 	}
-	if v := find.IDs; v != nil {
-		q.Space("AND task.id = ANY(?)", *v)
+	if v := find.ResourceIDs; v != nil {
+		q.Space("AND task.resource_id = ANY(?)", *v)
 	}
-	if v := find.PlanID; v != nil {
+	if v := find.PlanResourceID; v != nil {
 		q.Space("AND task.plan_id = ?", *v)
 	}
-	if v := find.PlanIDs; v != nil {
+	if v := find.PlanResourceIDs; v != nil {
 		q.Space("AND task.plan_id = ANY(?)", *v)
 	}
 	if v := find.Environment; v != nil {
@@ -292,7 +295,7 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 		}
 		q.Space("AND task.type = ANY(?)", typeStrings)
 	}
-	q.Space("ORDER BY task.id ASC")
+	q.Space("ORDER BY task.created_at ASC")
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -311,8 +314,9 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 		var latestTaskRunStatusString string
 		var typeString string
 		if err := rows.Scan(
-			&task.ID,
-			&task.PlanID,
+			&task.ResourceID,
+			&task.CreatedAt,
+			&task.PlanResourceID,
 			&task.InstanceID,
 			&task.DatabaseName,
 			&task.Environment,
@@ -367,11 +371,11 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 }
 
 // BatchSkipTasks batch skip tasks.
-func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string) error {
+func (s *Store) BatchSkipTasks(ctx context.Context, taskIDs []string, comment string) error {
 	q := qb.Q().Space(`
 		UPDATE task
 		SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)
-		WHERE id = ANY(?)`, true, comment, taskUIDs)
+		WHERE resource_id = ANY(?)`, true, comment, taskIDs)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
@@ -385,7 +389,7 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 }
 
 // CreateTasks creates tasks for a plan.
-func (s *Store) CreateTasks(ctx context.Context, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
+func (s *Store) CreateTasks(ctx context.Context, planID string, tasks []*TaskMessage) ([]*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
@@ -394,7 +398,7 @@ func (s *Store) CreateTasks(ctx context.Context, planUID int64, tasks []*TaskMes
 
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksImpl(ctx, tx, &TaskFind{
-		PlanID: &planUID,
+		PlanResourceID: &planID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list existing tasks")
@@ -432,7 +436,7 @@ func (s *Store) CreateTasks(ctx context.Context, planUID int64, tasks []*TaskMes
 		if _, ok := createdTasks[k]; ok {
 			continue
 		}
-		taskCreate.PlanID = planUID
+		taskCreate.PlanResourceID = planID
 		taskCreateList = append(taskCreateList, taskCreate)
 	}
 

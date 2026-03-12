@@ -2,6 +2,7 @@ package ghost
 
 import (
 	"context"
+	"hash/fnv"
 	"log/slog"
 	"os"
 	"strconv"
@@ -203,7 +204,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID string, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
 	password, err := secretcomp.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
@@ -243,7 +244,9 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	// On the source and each replica, you must set the server_id system variable to establish a unique replication ID. For each server, you should pick a unique positive integer in the range from 1 to 2^32 − 1, and each ID must be different from every other ID in use by any other source or replica in the replication topology. Example: server-id=3.
 	// https://dev.mysql.com/doc/refman/5.7/en/replication-options-source.html
 	// Here we use serverID = offset + task.ID to avoid potential conflicts.
-	migrationContext.ReplicaServerId = serverIDOffset + uint(taskID)
+	h := fnv.New32a()
+	h.Write([]byte(taskID))
+	migrationContext.ReplicaServerId = serverIDOffset + uint(h.Sum32())
 	// set defaults
 	if err := migrationContext.SetConnectionConfig(""); err != nil {
 		return nil, err

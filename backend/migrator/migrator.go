@@ -262,12 +262,12 @@ func migrate3_13_21(ctx context.Context, conn *sql.Conn) error {
 		return errors.Wrap(err, "failed to build user ID to email map")
 	}
 
-	var lastID int64
 	totalUpdated := 0
 	batchCount := 0
+	offset := 0
 
 	for {
-		rowsUpdated, maxID, done, err := migrateAuditLogBatch(ctx, conn, userMap, lastID, batchSize)
+		rowsUpdated, done, err := migrateAuditLogBatch(ctx, conn, userMap, offset, batchSize)
 		if err != nil {
 			return err
 		}
@@ -277,7 +277,7 @@ func migrate3_13_21(ctx context.Context, conn *sql.Conn) error {
 
 		totalUpdated += rowsUpdated
 		batchCount++
-		lastID = maxID
+		offset += batchSize
 
 		// Log progress every 10 batches (100k rows)
 		if batchCount%10 == 0 {
@@ -290,25 +290,24 @@ func migrate3_13_21(ctx context.Context, conn *sql.Conn) error {
 }
 
 // migrateAuditLogBatch processes a single batch of audit_log updates.
-func migrateAuditLogBatch(ctx context.Context, conn *sql.Conn, userMap map[int]string, lastID int64, batchSize int) (rowsUpdated int, maxID int64, done bool, err error) {
+func migrateAuditLogBatch(ctx context.Context, conn *sql.Conn, userMap map[int]string, offset, batchSize int) (rowsUpdated int, done bool, err error) {
 	txn, err := conn.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, 0, false, errors.Wrap(err, "failed to begin transaction")
+		return 0, false, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer txn.Rollback()
 
 	// Get batch of rows to update
 	rows, err := txn.QueryContext(ctx, `
-		SELECT id, payload->>'user' AS user_ref
+		SELECT resource_id, payload->>'user' AS user_ref
 		FROM audit_log
-		WHERE id > $1
-		  AND payload->>'user' LIKE 'users/%'
+		WHERE payload->>'user' LIKE 'users/%'
 		  AND payload->>'user' NOT LIKE 'users/%@%'
-		ORDER BY id
-		LIMIT $2
-	`, lastID, batchSize)
+		ORDER BY created_at
+		LIMIT $1 OFFSET $2
+	`, batchSize, offset)
 	if err != nil {
-		return 0, 0, false, errors.Wrap(err, "failed to query batch")
+		return 0, false, errors.Wrap(err, "failed to query batch")
 	}
 	defer rows.Close()
 
@@ -318,49 +317,47 @@ func migrateAuditLogBatch(ctx context.Context, conn *sql.Conn, userMap map[int]s
 	argPos := 1
 
 	for rows.Next() {
-		var id int64
+		var resourceID string
 		var userRef string
-		if err := rows.Scan(&id, &userRef); err != nil {
-			return 0, 0, false, errors.Wrap(err, "failed to scan row")
+		if err := rows.Scan(&resourceID, &userRef); err != nil {
+			return 0, false, errors.Wrap(err, "failed to scan row")
 		}
 
 		newUserRef := convertUserIDToEmail(userRef, userMap)
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d::bigint, $%d::text)", argPos, argPos+1))
-		valueArgs = append(valueArgs, id, newUserRef)
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d::text, $%d::text)", argPos, argPos+1))
+		valueArgs = append(valueArgs, resourceID, newUserRef)
 		argPos += 2
-		maxID = id
 	}
 	if err := rows.Err(); err != nil {
-		return 0, 0, false, errors.Wrap(err, "failed to iterate rows")
+		return 0, false, errors.Wrap(err, "failed to iterate rows")
 	}
 
 	// If no rows, we're done
 	if len(valueStrings) == 0 {
-		return 0, 0, true, nil
+		return 0, true, nil
 	}
 
-	// Execute bulk update: UPDATE audit_log SET ... FROM (VALUES ...) AS v(id, new_user) WHERE audit_log.id = v.id
 	// NOSONAR(go:S2077) only parameterized placeholders ($N) in Sprintf; actual data passed via valueArgs
 	updateSQL := fmt.Sprintf(`
 		UPDATE audit_log
 		SET payload = jsonb_set(payload, '{user}', to_jsonb(v.new_user))
-		FROM (VALUES %s) AS v(id, new_user)
-		WHERE audit_log.id = v.id
+		FROM (VALUES %s) AS v(resource_id, new_user)
+		WHERE audit_log.resource_id = v.resource_id
 	`, strings.Join(valueStrings, ", "))
 
 	result, err := txn.ExecContext(ctx, updateSQL, valueArgs...)
 	if err != nil {
-		return 0, 0, false, errors.Wrap(err, "failed to execute batch update")
+		return 0, false, errors.Wrap(err, "failed to execute batch update")
 	}
 
 	rowsAffected, _ := result.RowsAffected()
 
 	// Commit this batch
 	if err := txn.Commit(); err != nil {
-		return 0, 0, false, errors.Wrap(err, "failed to commit batch")
+		return 0, false, errors.Wrap(err, "failed to commit batch")
 	}
 
-	return int(rowsAffected), maxID, false, nil
+	return int(rowsAffected), false, nil
 }
 
 // buildUserIDToEmailMap creates a lookup map from user ID to email format.

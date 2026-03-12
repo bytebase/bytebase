@@ -19,13 +19,13 @@ type TaskRunLog struct {
 	Payload *storepb.TaskRunLog
 }
 
-func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) {
-	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, replicaID, e); err != nil {
+func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunID string, t time.Time, replicaID string, e *storepb.TaskRunLog) {
+	if err := s.CreateTaskRunLog(ctx, taskRunID, t, replicaID, e); err != nil {
 		slog.Error("failed to create task run log", log.BBError(err))
 	}
 }
 
-func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) error {
+func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunID string, t time.Time, replicaID string, e *storepb.TaskRunLog) error {
 	e.ReplicaId = replicaID
 	p, err := protojson.Marshal(e)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 			?,
 			?
 		)
-	`, taskRunUID, t, p)
+	`, taskRunID, t, p)
 
 	sql, args, err := q.ToSQL()
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 	return nil
 }
 
-func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRunLog, error) {
+func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunID string) ([]*TaskRunLog, error) {
 	q := qb.Q().Space(`
 		SELECT
 			created_at,
@@ -63,7 +63,7 @@ func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRun
 		FROM task_run_log
 		WHERE task_run_log.task_run_id = ?
 		ORDER BY created_at
-	`, taskRunUID)
+	`, taskRunID)
 
 	sql, args, err := q.ToSQL()
 	if err != nil {

@@ -41,14 +41,14 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "has_issue filter - true",
 			filter:   `has_issue == true`,
-			wantSQL:  "(issue.id IS NOT NULL)",
+			wantSQL:  "(issue.resource_id IS NOT NULL)",
 			wantArgs: []any{},
 			wantErr:  false,
 		},
 		{
 			name:     "has_issue filter - false",
 			filter:   `has_issue == false`,
-			wantSQL:  "(issue.id IS NULL)",
+			wantSQL:  "(issue.resource_id IS NULL)",
 			wantArgs: []any{},
 			wantErr:  false,
 		},
@@ -124,7 +124,7 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "AND condition with has_rollout and has_issue",
 			filter:   `has_rollout == true && has_issue == true`,
-			wantSQL:  "((plan.config->>'hasRollout' = $1 AND issue.id IS NOT NULL))",
+			wantSQL:  "((plan.config->>'hasRollout' = $1 AND issue.resource_id IS NOT NULL))",
 			wantArgs: []any{"true"},
 			wantErr:  false,
 		},

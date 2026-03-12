@@ -57,8 +57,8 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 	}
 
 	for _, c := range claimed {
-		if err := s.executeTaskRun(ctx, c.TaskRunUID, c.TaskUID); err != nil {
-			slog.Error("failed to execute task run", slog.Int("id", c.TaskRunUID), log.BBError(err))
+		if err := s.executeTaskRun(ctx, c.TaskRunResourceID, c.TaskResourceID); err != nil {
+			slog.Error("failed to execute task run", slog.String("id", c.TaskRunResourceID), log.BBError(err))
 		}
 	}
 
@@ -66,26 +66,26 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 }
 
 // executeTaskRun executes a task run that is already in RUNNING status.
-func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int) error {
-	task, err := s.store.GetTaskByID(ctx, taskUID)
+func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunResourceID, taskResourceID string) error {
+	task, err := s.store.GetTaskByID(ctx, taskResourceID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
 	if task == nil {
-		return errors.Errorf("task %v not found", taskUID)
+		return errors.Errorf("task %v not found", taskResourceID)
 	}
 
 	// Validate task freshness before execution.
 	if err := s.validateTaskFreshness(ctx, task); err != nil {
 		slog.Warn("task run blocked by drift validation",
-			slog.Int("id", task.ID),
+			slog.String("id", task.ResourceID),
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRunUID,
-			Updater: "",
-			Status:  storepb.TaskRun_FAILED,
+			ResourceID: taskRunResourceID,
+			Updater:    "",
+			Status:     storepb.TaskRun_FAILED,
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
 			},
@@ -102,15 +102,15 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int)
 	}
 
 	// Update started_at
-	if err := s.store.UpdateTaskRunStartAt(ctx, taskRunUID); err != nil {
+	if err := s.store.UpdateTaskRunStartAt(ctx, taskRunResourceID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
-	go s.runTaskRunOnce(ctx, taskRunUID, task, executor)
+	go s.runTaskRunOnce(ctx, taskRunResourceID, task, executor)
 	return nil
 }
 
-func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *store.TaskMessage, executor Executor) {
+func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunResourceID string, task *store.TaskMessage, executor Executor) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -121,30 +121,30 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		}
 	}()
 	defer func() {
-		s.bus.RunningTaskRunsCancelFunc.Delete(taskRunUID)
+		s.bus.RunningTaskRunsCancelFunc.Delete(taskRunResourceID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	s.bus.RunningTaskRunsCancelFunc.Store(taskRunUID, cancel)
+	s.bus.RunningTaskRunsCancelFunc.Store(taskRunResourceID, cancel)
 
-	result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
+	result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunResourceID)
 
 	if err != nil && errors.Is(err, context.Canceled) {
 		slog.Warn("task run is canceled",
-			slog.Int("id", task.ID),
+			slog.String("id", task.ResourceID),
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:          taskRunUID,
+			ResourceID:  taskRunResourceID,
 			Updater:     "",
 			Status:      storepb.TaskRun_CANCELED,
 			ResultProto: &storepb.TaskRunResult{},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",
-				slog.Int("id", task.ID),
+				slog.String("id", task.ResourceID),
 				log.BBError(err),
 			)
 			return
@@ -154,33 +154,33 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 
 	if err != nil {
 		slog.Warn("task run failed",
-			slog.Int("id", task.ID),
+			slog.String("id", task.ResourceID),
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRunUID,
-			Updater: "",
-			Status:  storepb.TaskRun_FAILED,
+			ResourceID: taskRunResourceID,
+			Updater:    "",
+			Status:     storepb.TaskRun_FAILED,
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
 			},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as FAILED",
-				slog.Int("id", task.ID),
+				slog.String("id", task.ResourceID),
 				log.BBError(err),
 			)
 			return
 		}
 
 		// Immediately try to send PIPELINE_FAILED webhook (HA-safe atomic claim)
-		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.PlanID)
+		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.PlanResourceID)
 		if err != nil {
 			slog.Error("failed to claim pipeline failure notification", log.BBError(err))
 		} else if claimed {
 			// Get plan and project for webhook
-			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ResourceID: &task.PlanResourceID})
 			if err != nil || plan == nil {
 				slog.Error("failed to get plan for failure webhook", log.BBError(err))
 			} else {
@@ -204,21 +204,21 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 
 	// Success case
 	taskRunStatusPatch := &store.TaskRunStatusPatch{
-		ID:          taskRunUID,
+		ResourceID:  taskRunResourceID,
 		Updater:     "",
 		Status:      storepb.TaskRun_DONE,
 		ResultProto: result,
 	}
 	if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 		slog.Error("Failed to mark task as DONE",
-			slog.Int("id", task.ID),
+			slog.String("id", task.ResourceID),
 			log.BBError(err),
 		)
 		return
 	}
 
 	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-	s.bus.PlanCompletionCheckChan <- task.PlanID
+	s.bus.PlanCompletionCheckChan <- task.PlanResourceID
 }
 
 // validateTaskFreshness checks for state drift between task creation and execution time.
@@ -241,12 +241,12 @@ func (s *Scheduler) validateTaskFreshness(ctx context.Context, task *store.TaskM
 		return errors.Errorf("target database %q on instance %q has been deleted", task.GetDatabaseName(), task.InstanceID)
 	}
 
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ResourceID: &task.PlanResourceID})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get plan for drift validation")
 	}
 	if plan == nil {
-		return errors.Errorf("plan %d not found", task.PlanID)
+		return errors.Errorf("plan %s not found", task.PlanResourceID)
 	}
 
 	return checkTaskDrift(task, database, plan)

@@ -416,7 +416,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
-	var planUID *int64
+	var planResourceID *string
 	var grantRequest *storepb.GrantRequest
 	var title, description string
 
@@ -486,14 +486,14 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
 
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ResourceID: &planID, ProjectID: &project.ResourceID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 		}
 		if plan == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %s not found in project %s", planID, project.ResourceID))
 		}
-		planUID = &plan.UID
+		planResourceID = &plan.ResourceID
 
 		// Use plan's title and description as defaults if not provided by request
 		title = request.Issue.Title
@@ -516,13 +516,13 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 
 	// Build the issue message (common structure)
 	issue := &store.IssueMessage{
-		ProjectID:    project.ResourceID,
-		CreatorEmail: userEmail,
-		PlanUID:      planUID,
-		Title:        title,
-		Status:       storepb.Issue_OPEN,
-		Type:         issueType,
-		Description:  description,
+		ProjectID:      project.ResourceID,
+		CreatorEmail:   userEmail,
+		PlanResourceID: planResourceID,
+		Title:          title,
+		Status:         storepb.Issue_OPEN,
+		Type:           issueType,
+		Description:    description,
 		Payload: &storepb.Issue{
 			GrantRequest: grantRequest,
 			Approval: &storepb.IssuePayloadApproval{
@@ -595,7 +595,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the approval is approved"))
 	}
 
-	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+	issue, err = s.store.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
@@ -605,7 +605,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	}
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
+		IssueResourceID: issue.ResourceID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
@@ -635,8 +635,8 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	// Auto-create rollout if this approval completes the approval flow
 	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
-		if issue.PlanUID != nil {
-			s.bus.RolloutCreationChan <- *issue.PlanUID
+		if issue.PlanResourceID != nil {
+			s.bus.RolloutCreationChan <- *issue.PlanResourceID
 		}
 	}
 
@@ -696,7 +696,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		Principal: common.FormatUserEmail(user.Email),
 	})
 
-	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+	issue, err = s.store.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
@@ -706,7 +706,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	}
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
+		IssueResourceID: issue.ResourceID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
@@ -799,7 +799,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 	payload.Approval.Approvers = updatedApprovers
 
-	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+	issue, err = s.store.UpdateIssue(ctx, issue.ResourceID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
@@ -811,7 +811,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
+		IssueResourceID: issue.ResourceID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
@@ -890,7 +890,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			patch.Title = &req.Msg.Issue.Title
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
+				IssueResourceID: issue.ResourceID,
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
 						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
@@ -905,7 +905,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			patch.Description = &req.Msg.Issue.Description
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
+				IssueResourceID: issue.ResourceID,
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
 						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
@@ -927,7 +927,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			}
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
+				IssueResourceID: issue.ResourceID,
 				Payload: &storepb.IssueCommentPayload{
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
 						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
@@ -941,13 +941,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
-	issue, err = s.store.UpdateIssue(ctx, issue.UID, patch)
+	issue, err = s.store.UpdateIssue(ctx, issue.ResourceID, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
-		slog.Warn("failed to create issue comments", "issue id", issue.UID, log.BBError(err))
+		slog.Warn("failed to create issue comments", "issue id", issue.ResourceID, log.BBError(err))
 	}
 
 	issueV1, err := s.convertToIssue(issue)
@@ -975,9 +975,9 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 
 	// Parse issue names and validate all issues belong to the same project.
 	var projectID string
-	issueUIDs := make([]int, 0, len(req.Msg.Issues))
+	issueResourceIDs := make([]string, 0, len(req.Msg.Issues))
 	for i, issueName := range req.Msg.Issues {
-		issueProjectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+		issueProjectID, issueResourceID, err := common.GetProjectIDIssueID(issueName)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid issue name %q: %v", issueName, err))
 		}
@@ -989,7 +989,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("all issues must belong to the same project, found %q and %q", projectID, issueProjectID))
 		}
 
-		issueUIDs = append(issueUIDs, issueUID)
+		issueResourceIDs = append(issueResourceIDs, issueResourceID)
 	}
 
 	// Get project early for webhooks.
@@ -1002,7 +1002,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 	}
 
 	// Batch update issue statuses. This validates project membership, DONE status, and returns old statuses.
-	oldIssueStatuses, err := s.store.BatchUpdateIssueStatuses(ctx, projectID, issueUIDs, newStatus)
+	oldIssueStatuses, err := s.store.BatchUpdateIssueStatuses(ctx, projectID, issueResourceIDs, newStatus)
 	if err != nil {
 		if common.ErrorCode(err) == common.Invalid {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
@@ -1011,11 +1011,11 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 	}
 
 	// Batch create issue comments.
-	issueComments := make([]*store.IssueCommentMessage, 0, len(issueUIDs))
-	for _, issueUID := range issueUIDs {
-		oldStatus := oldIssueStatuses[issueUID]
+	issueComments := make([]*store.IssueCommentMessage, 0, len(issueResourceIDs))
+	for _, issueResourceID := range issueResourceIDs {
+		oldStatus := oldIssueStatuses[issueResourceID]
 		issueComments = append(issueComments, &store.IssueCommentMessage{
-			IssueUID: issueUID,
+			IssueResourceID: issueResourceID,
 			Payload: &storepb.IssueCommentPayload{
 				Comment: req.Msg.Reason,
 				Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -1038,13 +1038,13 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	if req.Msg.PageSize < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("page size must be non-negative: %d", req.Msg.PageSize))
 	}
-	projectID, issueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
+	projectID, issueID, err := common.GetProjectIDIssueID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		UID:       &issueUID,
-		ProjectID: &projectID,
+		ResourceID: &issueID,
+		ProjectID:  &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue, err: %v", err))
@@ -1064,9 +1064,9 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	limitPlusOne := offset.limit + 1
 
 	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{
-		IssueUID: &issue.UID,
-		Limit:    &limitPlusOne,
-		Offset:   &offset.offset,
+		IssueResourceID: &issue.ResourceID,
+		Limit:           &limitPlusOne,
+		Offset:          &offset.offset,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list issue comments, err: %v", err))
@@ -1108,7 +1108,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	}
 
 	ic, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
+		IssueResourceID: issue.ResourceID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.IssueComment.Comment,
 		},
@@ -1131,19 +1131,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	_, parentIssueUID, err := common.GetProjectIDIssueUID(req.Msg.Parent)
+	_, parentIssueUID, err := common.GetProjectIDIssueID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q: %v", req.Msg.Parent, err))
 	}
 
-	_, commentIssueUID, issueCommentID, err := common.GetProjectIDIssueUIDIssueCommentID(req.Msg.IssueComment.Name)
+	_, commentIssueUID, issueCommentID, err := common.GetProjectIDIssueIDIssueCommentID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
 	}
 	if parentIssueUID != commentIssueUID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment %q does not belong to parent %q", req.Msg.IssueComment.Name, req.Msg.Parent))
 	}
-	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ResourceID: &issueCommentID, IssueUID: &parentIssueUID})
+	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ResourceID: &issueCommentID, IssueResourceID: &parentIssueUID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
 	}
@@ -1190,19 +1190,19 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 }
 
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
-	projectID, issueUID, err := common.GetProjectIDIssueUID(name)
+	projectID, issueID, err := common.GetProjectIDIssueID(name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		UID:       &issueUID,
-		ProjectID: &projectID,
+		ResourceID: &issueID,
+		ProjectID:  &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get issue"))
 	}
 	if issue == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %s not found in project %s", issueID, projectID))
 	}
 	return issue, nil
 }

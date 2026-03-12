@@ -30,7 +30,7 @@ func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.Issu
 			if v := issueFilter.ApprovalStatus; v != nil && v1Issue.ApprovalStatus != *v {
 				continue
 			}
-			projectID, _, err := common.GetProjectIDIssueUID(v1Issue.Name)
+			projectID, _, err := common.GetProjectIDIssueID(v1Issue.Name)
 			if err != nil {
 				slog.Error("failed to parse the issue name", log.BBError(err), slog.String("issue", v1Issue.Name))
 				continue
@@ -85,7 +85,7 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 	convertedGrantRequest := convertToGrantRequest(issuePayload.GrantRequest)
 
 	issueV1 := &v1pb.Issue{
-		Name:         common.FormatIssue(issue.ProjectID, issue.UID),
+		Name:         common.FormatIssue(issue.ProjectID, issue.ResourceID),
 		Title:        issue.Title,
 		Description:  issue.Description,
 		Type:         convertToIssueType(issue.Type),
@@ -101,8 +101,8 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		issueV1.AccessGrant = common.FormatAccessGrant(issue.ProjectID, issuePayload.AccessGrantId)
 	}
 
-	if issue.PlanUID != nil {
-		issueV1.Plan = common.FormatPlan(issue.ProjectID, *issue.PlanUID)
+	if issue.PlanResourceID != nil {
+		issueV1.Plan = common.FormatPlan(issue.ProjectID, *issue.PlanResourceID)
 	}
 
 	approval := issuePayload.GetApproval()
@@ -306,7 +306,7 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 	case *storepb.IssueCommentPayload_IssueUpdate_:
 		r.Event = convertToIssueCommentEventIssueUpdate(e)
 	case *storepb.IssueCommentPayload_PlanSpecUpdate_:
-		projectID, _, _ := common.GetProjectIDIssueUID(issueName)
+		projectID, _, _ := common.GetProjectIDIssueID(issueName)
 		r.Event = convertToIssueCommentEventPlanSpecUpdate(projectID, e)
 	default:
 	}

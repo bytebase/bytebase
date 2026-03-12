@@ -103,8 +103,8 @@ type ConnectionContext struct {
 	ReadOnly bool
 	// MessageBuffer is used for logging messages from the database server.
 	MessageBuffer []*v1pb.QueryResult_Message
-	// TaskRunUID is set when executing a task run, used to set application_name for connection identification.
-	TaskRunUID *int
+	// TaskRunResourceID is set when executing a task run, used to set application_name for connection identification.
+	TaskRunResourceID *string
 }
 
 // AppendMessage appends a message to the message buffer.

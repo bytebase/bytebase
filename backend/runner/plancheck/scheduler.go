@@ -86,18 +86,18 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 	}
 
 	for _, c := range claimed {
-		go s.runPlanCheckRun(ctx, c.UID, c.PlanUID)
+		go s.runPlanCheckRun(ctx, c.UID, c.PlanResourceID)
 	}
 }
 
-func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planUID int64) {
+func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planID string) {
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 	s.bus.RunningPlanCheckRunsCancelFunc.Store(uid, cancel)
 	defer s.bus.RunningPlanCheckRunsCancelFunc.Delete(uid)
 
 	// Fetch plan to derive check targets at runtime
-	plan, err := s.store.GetPlan(ctxWithCancel, &store.FindPlanMessage{UID: &planUID})
+	plan, err := s.store.GetPlan(ctxWithCancel, &store.FindPlanMessage{ResourceID: &planID})
 	if err != nil {
 		s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		return
@@ -147,11 +147,11 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, uid int, planUID int64)
 			s.markPlanCheckRunFailed(ctxWithCancel, uid, err.Error())
 		}
 	} else {
-		s.markPlanCheckRunDone(ctxWithCancel, uid, planUID, results)
+		s.markPlanCheckRunDone(ctxWithCancel, uid, planID, results)
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, uid int, planUID int64, results []*storepb.PlanCheckRunResult_Result) {
+func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, uid int, planID string, results []*storepb.PlanCheckRunResult_Result) {
 	result := &storepb.PlanCheckRunResult{
 		Results: results,
 	}
@@ -166,16 +166,16 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, uid int, planUID i
 
 	// Trigger approval finding after plan checks complete.
 	// The approval runner will trigger rollout creation after it finishes.
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planUID})
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanResourceID: &planID})
 	if err != nil {
 		slog.Error("failed to get issue for approval check after plan check",
-			slog.Int("plan_id", int(planUID)),
+			slog.String("plan_id", planID),
 			log.BBError(err))
 		return
 	}
-	if issue != nil && issue.PlanUID != nil {
+	if issue != nil && issue.PlanResourceID != nil {
 		// Trigger approval finding.
-		s.bus.ApprovalCheckChan <- int64(issue.UID)
+		s.bus.ApprovalCheckChan <- issue.ResourceID
 	}
 }
 

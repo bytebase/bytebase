@@ -546,8 +546,8 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 	q = qb.Q().Space(`
 		DELETE FROM task_run_log
 		WHERE task_run_id IN (
-			SELECT tr.id FROM task_run tr
-			JOIN task t ON tr.task_id = t.id
+			SELECT tr.resource_id FROM task_run tr
+			JOIN task t ON tr.task_id = t.resource_id
 			WHERE t.instance = ?
 		)
 	`, resourceID)
@@ -563,7 +563,7 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 	q = qb.Q().Space(`
 		DELETE FROM task_run
 		WHERE task_id IN (
-			SELECT id FROM task WHERE instance = ?
+			SELECT resource_id FROM task WHERE instance = ?
 		)
 	`, resourceID)
 	query, args, err = q.ToSQL()
