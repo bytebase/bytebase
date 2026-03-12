@@ -1411,7 +1411,8 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	FROM pg_trigger as pt
 		LEFT JOIN pg_class as pc ON pc.oid = pt.tgrelid
 		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
-	WHERE pn.nspname NOT IN (%s) AND pt.tgisinternal = false;`
+	WHERE pn.nspname NOT IN (%s) AND pt.tgisinternal = false
+	ORDER BY pn.nspname, pc.relname, pt.tgname;`
 	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
 	if err != nil {
 		return nil, err
