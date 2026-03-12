@@ -1,433 +1,435 @@
-// Static registry of common Bytebase API operations for keyword search.
-// All Bytebase APIs use Connect protocol: POST to /bytebase.v1.ServiceName/MethodName
+// Multi-mode search for Bytebase API endpoints.
+// Ported from backend/api/mcp/openapi_index.go and tool_search.go.
 
-interface ApiOperation {
-  id: string;
-  path: string;
-  description: string;
+import {
+  type EndpointInfo,
+  endpoints,
+  type PropertyInfo,
+  type SchemaInfo,
+  schemas,
+} from "./gen/openapi-index";
+
+export interface SearchApiArgs {
+  operationId?: string;
+  schema?: string;
+  query?: string;
+  service?: string;
+  limit?: number;
 }
 
-const API_OPERATIONS: ApiOperation[] = [
-  // Project
-  {
-    id: "bytebase.v1.ProjectService.ListProjects",
-    path: "/bytebase.v1.ProjectService/ListProjects",
-    description: "List all projects",
-  },
-  {
-    id: "bytebase.v1.ProjectService.GetProject",
-    path: "/bytebase.v1.ProjectService/GetProject",
-    description: "Get a project by name",
-  },
-  {
-    id: "bytebase.v1.ProjectService.CreateProject",
-    path: "/bytebase.v1.ProjectService/CreateProject",
-    description: "Create a new project",
-  },
-  {
-    id: "bytebase.v1.ProjectService.DeleteProject",
-    path: "/bytebase.v1.ProjectService/DeleteProject",
-    description: "Delete a project",
-  },
-  {
-    id: "bytebase.v1.ProjectService.SearchProjects",
-    path: "/bytebase.v1.ProjectService/SearchProjects",
-    description: "Search projects with filters",
-  },
-  {
-    id: "bytebase.v1.ProjectService.GetIamPolicy",
-    path: "/bytebase.v1.ProjectService/GetIamPolicy",
-    description: "Get project IAM policy (roles and members)",
-  },
+const TYPE_DESCRIPTIONS: Record<string, string> = {
+  "google.protobuf.Timestamp": 'ISO 8601 format, e.g. "2024-01-15T01:30:15Z"',
+  "google.protobuf.Duration": 'e.g. "3.5s" or "1h30m"',
+  "google.protobuf.FieldMask": 'e.g. "title,engine"',
+  "google.protobuf.Empty": "empty message",
+  "google.protobuf.Any": "any JSON value",
+  "google.protobuf.Struct": "JSON object",
+  "google.protobuf.Value": "any JSON value",
+};
 
-  // Instance
-  {
-    id: "bytebase.v1.InstanceService.ListInstances",
-    path: "/bytebase.v1.InstanceService/ListInstances",
-    description: "List all database instances",
-  },
-  {
-    id: "bytebase.v1.InstanceService.GetInstance",
-    path: "/bytebase.v1.InstanceService/GetInstance",
-    description: "Get a database instance",
-  },
-  {
-    id: "bytebase.v1.InstanceService.CreateInstance",
-    path: "/bytebase.v1.InstanceService/CreateInstance",
-    description: "Create a new database instance",
-  },
-  {
-    id: "bytebase.v1.InstanceService.UpdateInstance",
-    path: "/bytebase.v1.InstanceService/UpdateInstance",
-    description: "Update a database instance",
-  },
-  {
-    id: "bytebase.v1.InstanceService.DeleteInstance",
-    path: "/bytebase.v1.InstanceService/DeleteInstance",
-    description: "Delete a database instance",
-  },
-  {
-    id: "bytebase.v1.InstanceService.SyncInstance",
-    path: "/bytebase.v1.InstanceService/SyncInstance",
-    description: "Sync instance metadata and databases",
-  },
+const STOP_WORDS = new Set([
+  "the",
+  "a",
+  "an",
+  "and",
+  "or",
+  "is",
+  "are",
+  "was",
+  "were",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "of",
+  "with",
+  "by",
+  "from",
+  "service",
+  "request",
+  "response",
+]);
 
-  // Database
-  {
-    id: "bytebase.v1.DatabaseService.ListDatabases",
-    path: "/bytebase.v1.DatabaseService/ListDatabases",
-    description: "List databases in an instance",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.GetDatabase",
-    path: "/bytebase.v1.DatabaseService/GetDatabase",
-    description: "Get a database by name",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.UpdateDatabase",
-    path: "/bytebase.v1.DatabaseService/UpdateDatabase",
-    description: "Update database properties",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.GetDatabaseMetadata",
-    path: "/bytebase.v1.DatabaseService/GetDatabaseMetadata",
-    description: "Get database metadata (tables, columns, indexes)",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.GetDatabaseSchema",
-    path: "/bytebase.v1.DatabaseService/GetDatabaseSchema",
-    description: "Get database schema as SQL",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.DiffSchema",
-    path: "/bytebase.v1.DatabaseService/DiffSchema",
-    description: "Diff two database schemas",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.ListChangelogs",
-    path: "/bytebase.v1.DatabaseService/ListChangelogs",
-    description: "List database change history",
-  },
-  {
-    id: "bytebase.v1.DatabaseService.SyncDatabase",
-    path: "/bytebase.v1.DatabaseService/SyncDatabase",
-    description: "Sync database metadata",
-  },
-
-  // Issue
-  {
-    id: "bytebase.v1.IssueService.ListIssues",
-    path: "/bytebase.v1.IssueService/ListIssues",
-    description: "List issues in a project",
-  },
-  {
-    id: "bytebase.v1.IssueService.GetIssue",
-    path: "/bytebase.v1.IssueService/GetIssue",
-    description: "Get an issue by name",
-  },
-  {
-    id: "bytebase.v1.IssueService.CreateIssue",
-    path: "/bytebase.v1.IssueService/CreateIssue",
-    description: "Create a new issue (database change request)",
-  },
-  {
-    id: "bytebase.v1.IssueService.UpdateIssue",
-    path: "/bytebase.v1.IssueService/UpdateIssue",
-    description: "Update an issue",
-  },
-  {
-    id: "bytebase.v1.IssueService.SearchIssues",
-    path: "/bytebase.v1.IssueService/SearchIssues",
-    description: "Search issues with filters",
-  },
-  {
-    id: "bytebase.v1.IssueService.ApproveIssue",
-    path: "/bytebase.v1.IssueService/ApproveIssue",
-    description: "Approve an issue",
-  },
-  {
-    id: "bytebase.v1.IssueService.RejectIssue",
-    path: "/bytebase.v1.IssueService/RejectIssue",
-    description: "Reject an issue",
-  },
-  {
-    id: "bytebase.v1.IssueService.ListIssueComments",
-    path: "/bytebase.v1.IssueService/ListIssueComments",
-    description: "List comments on an issue",
-  },
-  {
-    id: "bytebase.v1.IssueService.CreateIssueComment",
-    path: "/bytebase.v1.IssueService/CreateIssueComment",
-    description: "Add a comment to an issue",
-  },
-
-  // Plan
-  {
-    id: "bytebase.v1.PlanService.ListPlans",
-    path: "/bytebase.v1.PlanService/ListPlans",
-    description: "List plans in a project",
-  },
-  {
-    id: "bytebase.v1.PlanService.GetPlan",
-    path: "/bytebase.v1.PlanService/GetPlan",
-    description: "Get a plan by name",
-  },
-  {
-    id: "bytebase.v1.PlanService.CreatePlan",
-    path: "/bytebase.v1.PlanService/CreatePlan",
-    description: "Create a deployment plan",
-  },
-  {
-    id: "bytebase.v1.PlanService.UpdatePlan",
-    path: "/bytebase.v1.PlanService/UpdatePlan",
-    description: "Update a deployment plan",
-  },
-
-  // Rollout
-  {
-    id: "bytebase.v1.RolloutService.GetRollout",
-    path: "/bytebase.v1.RolloutService/GetRollout",
-    description: "Get a rollout by name",
-  },
-  {
-    id: "bytebase.v1.RolloutService.ListRollouts",
-    path: "/bytebase.v1.RolloutService/ListRollouts",
-    description: "List rollouts in a project",
-  },
-  {
-    id: "bytebase.v1.RolloutService.ListTaskRuns",
-    path: "/bytebase.v1.RolloutService/ListTaskRuns",
-    description: "List task runs in a rollout",
-  },
-
-  // SQL
-  {
-    id: "bytebase.v1.SQLService.Query",
-    path: "/bytebase.v1.SQLService/Query",
-    description: "Execute a SQL query against a database",
-  },
-  {
-    id: "bytebase.v1.SQLService.Export",
-    path: "/bytebase.v1.SQLService/Export",
-    description: "Export query results",
-  },
-  {
-    id: "bytebase.v1.SQLService.SearchQueryHistories",
-    path: "/bytebase.v1.SQLService/SearchQueryHistories",
-    description: "Search SQL query history",
-  },
-
-  // Sheet
-  {
-    id: "bytebase.v1.SheetService.CreateSheet",
-    path: "/bytebase.v1.SheetService/CreateSheet",
-    description: "Create a SQL sheet",
-  },
-  {
-    id: "bytebase.v1.SheetService.GetSheet",
-    path: "/bytebase.v1.SheetService/GetSheet",
-    description: "Get a SQL sheet by name",
-  },
-
-  // User
-  {
-    id: "bytebase.v1.UserService.ListUsers",
-    path: "/bytebase.v1.UserService/ListUsers",
-    description: "List all users",
-  },
-  {
-    id: "bytebase.v1.UserService.GetUser",
-    path: "/bytebase.v1.UserService/GetUser",
-    description: "Get a user by name",
-  },
-  {
-    id: "bytebase.v1.UserService.GetCurrentUser",
-    path: "/bytebase.v1.UserService/GetCurrentUser",
-    description: "Get the currently authenticated user",
-  },
-  {
-    id: "bytebase.v1.UserService.CreateUser",
-    path: "/bytebase.v1.UserService/CreateUser",
-    description: "Create a new user",
-  },
-  {
-    id: "bytebase.v1.UserService.UpdateUser",
-    path: "/bytebase.v1.UserService/UpdateUser",
-    description: "Update a user",
-  },
-
-  // Setting
-  {
-    id: "bytebase.v1.SettingService.ListSettings",
-    path: "/bytebase.v1.SettingService/ListSettings",
-    description: "List workspace settings",
-  },
-  {
-    id: "bytebase.v1.SettingService.GetSetting",
-    path: "/bytebase.v1.SettingService/GetSetting",
-    description: "Get a workspace setting by name",
-  },
-  {
-    id: "bytebase.v1.SettingService.UpdateSetting",
-    path: "/bytebase.v1.SettingService/UpdateSetting",
-    description: "Update a workspace setting",
-  },
-
-  // Policy
-  {
-    id: "bytebase.v1.OrgPolicyService.ListPolicies",
-    path: "/bytebase.v1.OrgPolicyService/ListPolicies",
-    description: "List policies for a resource",
-  },
-  {
-    id: "bytebase.v1.OrgPolicyService.GetPolicy",
-    path: "/bytebase.v1.OrgPolicyService/GetPolicy",
-    description: "Get a policy by name",
-  },
-  {
-    id: "bytebase.v1.OrgPolicyService.CreatePolicy",
-    path: "/bytebase.v1.OrgPolicyService/CreatePolicy",
-    description: "Create a policy",
-  },
-  {
-    id: "bytebase.v1.OrgPolicyService.UpdatePolicy",
-    path: "/bytebase.v1.OrgPolicyService/UpdatePolicy",
-    description: "Update a policy",
-  },
-
-  // Worksheet
-  {
-    id: "bytebase.v1.WorksheetService.CreateWorksheet",
-    path: "/bytebase.v1.WorksheetService/CreateWorksheet",
-    description: "Create a worksheet (saved SQL)",
-  },
-  {
-    id: "bytebase.v1.WorksheetService.GetWorksheet",
-    path: "/bytebase.v1.WorksheetService/GetWorksheet",
-    description: "Get a worksheet",
-  },
-  {
-    id: "bytebase.v1.WorksheetService.SearchWorksheets",
-    path: "/bytebase.v1.WorksheetService/SearchWorksheets",
-    description: "Search worksheets",
-  },
-  {
-    id: "bytebase.v1.WorksheetService.UpdateWorksheet",
-    path: "/bytebase.v1.WorksheetService/UpdateWorksheet",
-    description: "Update a worksheet",
-  },
-  {
-    id: "bytebase.v1.WorksheetService.DeleteWorksheet",
-    path: "/bytebase.v1.WorksheetService/DeleteWorksheet",
-    description: "Delete a worksheet",
-  },
-
-  // Database Group
-  {
-    id: "bytebase.v1.DatabaseGroupService.ListDatabaseGroups",
-    path: "/bytebase.v1.DatabaseGroupService/ListDatabaseGroups",
-    description: "List database groups in a project",
-  },
-  {
-    id: "bytebase.v1.DatabaseGroupService.GetDatabaseGroup",
-    path: "/bytebase.v1.DatabaseGroupService/GetDatabaseGroup",
-    description: "Get a database group",
-  },
-
-  // Workspace IAM
-  {
-    id: "bytebase.v1.WorkspaceService.GetIamPolicy",
-    path: "/bytebase.v1.WorkspaceService/GetIamPolicy",
-    description: "Get workspace IAM policy",
-  },
-  {
-    id: "bytebase.v1.WorkspaceService.SetIamPolicy",
-    path: "/bytebase.v1.WorkspaceService/SetIamPolicy",
-    description: "Set workspace IAM policy",
-  },
-
-  // Audit Log
-  {
-    id: "bytebase.v1.AuditLogService.SearchAuditLogs",
-    path: "/bytebase.v1.AuditLogService/SearchAuditLogs",
-    description: "Search audit logs",
-  },
-
-  // Access Grant
-  {
-    id: "bytebase.v1.AccessGrantService.ListAccessGrants",
-    path: "/bytebase.v1.AccessGrantService/ListAccessGrants",
-    description: "List access grants in a project",
-  },
-  {
-    id: "bytebase.v1.AccessGrantService.CreateAccessGrant",
-    path: "/bytebase.v1.AccessGrantService/CreateAccessGrant",
-    description: "Create an access grant (request database permission)",
-  },
-
-  // Subscription
-  {
-    id: "bytebase.v1.SubscriptionService.GetSubscription",
-    path: "/bytebase.v1.SubscriptionService/GetSubscription",
-    description: "Get workspace subscription and license info",
-  },
-
-  // Actuator
-  {
-    id: "bytebase.v1.ActuatorService.GetActuatorInfo",
-    path: "/bytebase.v1.ActuatorService/GetActuatorInfo",
-    description: "Get server version and system info",
-  },
-
-  // Instance Role
-  {
-    id: "bytebase.v1.InstanceRoleService.ListInstanceRoles",
-    path: "/bytebase.v1.InstanceRoleService/ListInstanceRoles",
-    description: "List database roles in an instance",
-  },
-
-  // Group
-  {
-    id: "bytebase.v1.GroupService.ListGroups",
-    path: "/bytebase.v1.GroupService/ListGroups",
-    description: "List user groups",
-  },
-  {
-    id: "bytebase.v1.GroupService.GetGroup",
-    path: "/bytebase.v1.GroupService/GetGroup",
-    description: "Get a user group",
-  },
-  {
-    id: "bytebase.v1.GroupService.CreateGroup",
-    path: "/bytebase.v1.GroupService/CreateGroup",
-    description: "Create a user group",
-  },
+const PRIMARY_CRUD_PREFIXES = [
+  "List",
+  "Get",
+  "Create",
+  "Update",
+  "Delete",
+  "Search",
+  "Query",
+  "Execute",
 ];
 
-export function getApiOperations(): ApiOperation[] {
-  return API_OPERATIONS;
+// Split camelCase/PascalCase into words.
+// "SQLService" -> ["SQL", "Service"], "ListDatabases" -> ["List", "Databases"]
+function splitCamelCase(s: string): string[] {
+  const words: string[] = [];
+  let current = "";
+
+  for (const ch of s) {
+    if (ch >= "A" && ch <= "Z") {
+      if (current.length > 0) {
+        words.push(current);
+        current = "";
+      }
+      current += ch;
+    } else if ((ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9")) {
+      current += ch;
+    } else if (current.length > 0) {
+      words.push(current);
+      current = "";
+    }
+  }
+  if (current.length > 0) {
+    words.push(current);
+  }
+  return words;
 }
 
-export async function searchApi(args: { query: string }): Promise<string> {
-  const query = args.query.toLowerCase();
-  const tokens = query.split(/\s+/).filter(Boolean);
+// Extract searchable keywords from text fragments.
+function extractKeywords(...texts: string[]): string[] {
+  const kws = new Set<string>();
 
-  const scored = API_OPERATIONS.map((op) => {
-    let score = 0;
-    const haystack = `${op.description} ${op.id} ${op.path}`.toLowerCase();
-    for (const token of tokens) {
-      if (haystack.includes(token)) {
-        score += 1;
+  for (const text of texts) {
+    // Split camelCase
+    for (const word of splitCamelCase(text)) {
+      const lower = word.toLowerCase();
+      if (lower.length >= 2 && !STOP_WORDS.has(lower)) {
+        kws.add(lower);
       }
     }
-    return { op, score };
-  });
+    // Split by non-alphanumeric
+    for (const word of text.split(/[^a-zA-Z0-9]+/)) {
+      const lower = word.toLowerCase();
+      if (lower.length >= 2 && !STOP_WORDS.has(lower)) {
+        kws.add(lower);
+      }
+    }
+  }
+  return Array.from(kws);
+}
 
-  const matches = scored
-    .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
-    .map((s) => s.op);
+function isPrimaryCRUD(method: string): boolean {
+  return PRIMARY_CRUD_PREFIXES.some((op) => method.startsWith(op));
+}
 
-  return JSON.stringify(matches);
+// Singleton index built at import time.
+class OpenAPIIndex {
+  readonly byOperation: Map<string, EndpointInfo>;
+  readonly byService: Map<string, EndpointInfo[]>;
+  readonly keywords: Map<string, EndpointInfo[]>;
+  readonly services: string[];
+
+  constructor() {
+    this.byOperation = new Map();
+    this.byService = new Map();
+    this.keywords = new Map();
+
+    const serviceSet = new Set<string>();
+
+    for (const ep of endpoints) {
+      this.byOperation.set(ep.operationId, ep);
+
+      const list = this.byService.get(ep.service);
+      if (list) {
+        list.push(ep);
+      } else {
+        this.byService.set(ep.service, [ep]);
+      }
+      serviceSet.add(ep.service);
+
+      // Index keywords
+      const kws = extractKeywords(ep.service, ep.method, ep.summary);
+      for (const kw of kws) {
+        const kwList = this.keywords.get(kw);
+        if (kwList) {
+          kwList.push(ep);
+        } else {
+          this.keywords.set(kw, [ep]);
+        }
+      }
+    }
+
+    this.services = Array.from(serviceSet).sort();
+  }
+
+  // Resolve operationId, supporting short format "SQLService/Query".
+  getEndpoint(operationId: string): EndpointInfo | undefined {
+    const ep = this.byOperation.get(operationId);
+    if (ep) return ep;
+
+    // Short format: Service/Method -> bytebase.v1.Service.Method
+    const parts = operationId.split("/");
+    if (parts.length === 2) {
+      const fullId = `bytebase.v1.${parts[0]}.${parts[1]}`;
+      return this.byOperation.get(fullId);
+    }
+    return undefined;
+  }
+
+  getServiceEndpoints(service: string): EndpointInfo[] {
+    return this.byService.get(service) ?? [];
+  }
+
+  // Keyword search with scoring, matching Go's Search().
+  search(query: string): EndpointInfo[] {
+    const queryKeywords = extractKeywords(query);
+    if (queryKeywords.length === 0) return [];
+
+    const scores = new Map<EndpointInfo, number>();
+
+    // Keyword matches
+    for (const kw of queryKeywords) {
+      const hits = this.keywords.get(kw);
+      if (hits) {
+        for (const ep of hits) {
+          scores.set(ep, (scores.get(ep) ?? 0) + 1);
+        }
+      }
+    }
+
+    // Substring matching on fields
+    const queryLower = query.toLowerCase();
+    for (const ep of endpoints) {
+      const methodLower = ep.method.toLowerCase();
+      const serviceLower = ep.service.toLowerCase();
+      let matched = false;
+
+      if (methodLower === queryLower) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 10);
+        matched = true;
+      } else if (methodLower.includes(queryLower)) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 5);
+        matched = true;
+      }
+
+      if (serviceLower.includes(queryLower)) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 4);
+        matched = true;
+      }
+
+      if (ep.operationId.toLowerCase().includes(queryLower)) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 3);
+        matched = true;
+      }
+
+      if (ep.summary.toLowerCase().includes(queryLower)) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 2);
+        matched = true;
+      }
+
+      // CRUD boost only if already matched
+      if (matched && isPrimaryCRUD(ep.method)) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 2);
+      }
+    }
+
+    // Sort descending by score
+    return Array.from(scores.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([ep]) => ep);
+  }
+
+  searchInService(query: string, service: string): EndpointInfo[] {
+    return this.search(query).filter((ep) => ep.service === service);
+  }
+}
+
+const index = new OpenAPIIndex();
+
+// Resolve operationId to HTTP path (used by callApi).
+export function getEndpointPath(operationId: string): string | undefined {
+  return index.getEndpoint(operationId)?.path;
+}
+
+// --- Formatting helpers (matching Go tool_search.go) ---
+
+function getLimit(limit: number | undefined): number {
+  if (!limit || limit <= 0) return 5;
+  if (limit > 50) return 50;
+  return limit;
+}
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max) + "...";
+}
+
+function formatProperty(prop: PropertyInfo): string {
+  const required = prop.required ? " (required)" : "";
+
+  let desc = "";
+  const shortDesc = TYPE_DESCRIPTIONS[prop.type];
+  if (shortDesc) {
+    desc = ` // ${shortDesc}`;
+  } else if (prop.description) {
+    const clean = prop.description.replace(/[\n\r]/g, " ");
+    desc = ` // ${truncate(clean, 97)}`;
+  }
+
+  return `  "${prop.name}": ${prop.type}${required}${desc}`;
+}
+
+function formatServiceList(): string {
+  const lines: string[] = [];
+  lines.push("## Available Services\n");
+  lines.push(
+    'Use `search_api(service="ServiceName")` to list endpoints in a service.\n'
+  );
+
+  for (const svc of index.services) {
+    const eps = index.getServiceEndpoints(svc);
+    lines.push(`- **${svc}** (${eps.length} endpoints)`);
+  }
+
+  lines.push(`\nTotal: ${index.services.length} services`);
+  return lines.join("\n");
+}
+
+function formatEndpoints(eps: EndpointInfo[], limit: number): string {
+  const lines: string[] = [];
+
+  if (limit > 0 && eps.length > limit) {
+    lines.push(`Showing ${limit} of ${eps.length} results:\n`);
+    eps = eps.slice(0, limit);
+  } else {
+    lines.push(`Found ${eps.length} endpoints:\n`);
+  }
+
+  for (let i = 0; i < eps.length; i++) {
+    const ep = eps[i];
+    lines.push(`### ${i + 1}. ${ep.service}/${ep.method}`);
+    lines.push(ep.summary);
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+function getSchemaProps(schemaRef: string): PropertyInfo[] | undefined {
+  // Extract name from ref: "#/components/schemas/bytebase.v1.QueryRequest"
+  const parts = schemaRef.split("/");
+  const name = parts[parts.length - 1];
+  const info = schemas[name];
+  if (!info) return undefined;
+  return info.properties;
+}
+
+function formatEndpointDetail(operationId: string): string {
+  const ep = index.getEndpoint(operationId);
+  if (!ep) {
+    return `Unknown operationId: ${operationId}\n\nUse search_api(query="...") to find valid operations.`;
+  }
+
+  const lines: string[] = [];
+  lines.push(`## ${ep.service}/${ep.method}\n`);
+  lines.push(`${ep.summary}\n`);
+
+  // Request schema
+  if (ep.requestSchemaRef) {
+    const props = getSchemaProps(ep.requestSchemaRef);
+    if (props && props.length > 0) {
+      lines.push("### Request Body");
+      lines.push("```json");
+      lines.push("{");
+      for (const prop of props) {
+        lines.push(formatProperty(prop));
+      }
+      lines.push("}");
+      lines.push("```\n");
+    }
+  }
+
+  // Response schema
+  if (ep.responseSchemaRef) {
+    const props = getSchemaProps(ep.responseSchemaRef);
+    if (props && props.length > 0) {
+      lines.push("### Response Body");
+      lines.push("```json");
+      lines.push("{");
+      for (const prop of props) {
+        lines.push(formatProperty(prop));
+      }
+      lines.push("}");
+      lines.push("```");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function formatSchemaDetail(schemaName: string): string {
+  // Try exact, then with prefix
+  let info: SchemaInfo | undefined = schemas[schemaName];
+  let displayName = schemaName;
+  if (!info && !schemaName.startsWith("bytebase.v1.")) {
+    const fullName = "bytebase.v1." + schemaName;
+    info = schemas[fullName];
+    displayName = fullName;
+  }
+  if (!info) {
+    return `Unknown schema: ${schemaName}\n\nUse search_api(operationId="...") to see schemas in request/response bodies.`;
+  }
+  if (!displayName.startsWith("bytebase.v1.")) {
+    displayName = "bytebase.v1." + displayName;
+  }
+
+  const lines: string[] = [];
+  lines.push(`## ${displayName}\n`);
+
+  if (info.type === "enum" && info.values) {
+    lines.push(`**Enum values:** ${info.values.join(", ")}`);
+    return lines.join("\n");
+  }
+
+  if (info.properties) {
+    for (const prop of info.properties) {
+      lines.push(formatProperty(prop));
+    }
+  }
+
+  return lines.join("\n");
+}
+
+// --- Main search_api handler ---
+
+export async function searchApi(args: SearchApiArgs): Promise<string> {
+  const { operationId, schema, query, service, limit } = args;
+
+  if (operationId) {
+    return formatEndpointDetail(operationId);
+  }
+
+  if (schema) {
+    return formatSchemaDetail(schema);
+  }
+
+  if (!query && !service) {
+    return formatServiceList();
+  }
+
+  if (service && query) {
+    const eps = index.searchInService(query, service);
+    if (eps.length === 0) {
+      return `No endpoints found for query "${query}" in service ${service}\n\nTry:\n- Different keywords\n- Browsing the service with search_api(service="${service}")`;
+    }
+    return formatEndpoints(eps, getLimit(limit));
+  }
+
+  if (service) {
+    const eps = index.getServiceEndpoints(service);
+    if (eps.length === 0) {
+      return `No endpoints found for service: ${service}\n\nAvailable services:\n${formatServiceList()}`;
+    }
+    return formatEndpoints(eps, 0); // no limit for service browse
+  }
+
+  // Query-only search
+  const eps = index.search(query!);
+  if (eps.length === 0) {
+    return `No endpoints found for query: "${query}"\n\nTry:\n- Different keywords\n- Listing services with search_api() (no parameters)\n- Browsing a service with search_api(service="ServiceName")`;
+  }
+  return formatEndpoints(eps, getLimit(limit));
 }

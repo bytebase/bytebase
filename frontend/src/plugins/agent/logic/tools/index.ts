@@ -1,7 +1,7 @@
 import type { Router } from "vue-router";
 import type { ToolDefinition, ToolExecutor } from "../types";
-import { searchApi } from "./searchApi";
-import { callApi } from "./callApi";
+import { searchApi, type SearchApiArgs } from "./searchApi";
+import { callApi, type CallApiArgs } from "./callApi";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool } from "./pageState";
 
@@ -9,38 +9,77 @@ export function getToolDefinitions(): ToolDefinition[] {
   return [
     {
       name: "search_api",
-      description:
-        "Search for available Bytebase API endpoints by keyword. Returns matching operations with their IDs, paths, and descriptions.",
+      description: `Discover Bytebase API endpoints. **Always call before call_api - never guess schemas.**
+
+| Mode | Parameters | Result |
+|------|------------|--------|
+| List | (none) | All services |
+| Browse | service="SQLService" | All endpoints in service |
+| Search | query="database" | Matching endpoints |
+| Filter | service+query | Search within service |
+| Details | operationId="SQLService/Query" | Request/response schema |
+| Schema | schema="Instance" | Message type definition |
+
+**Workflow:** search_api() → search_api(operationId="...") → call_api(...)`,
       parametersSchema: {
         type: "object",
         properties: {
+          operationId: {
+            type: "string",
+            description:
+              'Get detailed schema for a specific endpoint. Supports short format: "SQLService/Query"',
+          },
+          schema: {
+            type: "string",
+            description:
+              'Get the definition of a message type. Examples: "Instance", "Engine", "bytebase.v1.Instance"',
+          },
           query: {
             type: "string",
             description:
-              "Search query (e.g., 'list projects', 'create database')",
+              'Free-text search for API endpoints. Examples: "create database", "execute sql"',
+          },
+          service: {
+            type: "string",
+            description:
+              'Filter to a specific service. Examples: "SQLService", "DatabaseService"',
+          },
+          limit: {
+            type: "number",
+            description:
+              "Maximum number of results to return (default: 5, max: 50)",
           },
         },
-        required: ["query"],
       },
     },
     {
       name: "call_api",
-      description:
-        "Execute a Bytebase API endpoint. Use search_api first to find the operation_id. All APIs use Connect protocol (POST with JSON body).",
+      description: `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| operationId | Yes | e.g., "SQLService/Query" |
+| body | No | JSON request body |
+
+**Resource names:** projects/my-project, instances/prod/databases/main
+
+**Example:**
+call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db", "statement": "SELECT 1"})`,
       parametersSchema: {
         type: "object",
         properties: {
-          operation_id: {
+          operationId: {
             type: "string",
-            description: "The operation ID from search_api results",
+            description:
+              'The operation ID from search_api results. Supports short format: "SQLService/Query"',
           },
           body: {
             type: "object",
             description:
-              "Request body fields. For Get/List operations, include resource name or parent. For mutations, include the full request payload.",
+              "JSON request body. Structure depends on the endpoint — use search_api with operationId to see the expected format.",
           },
         },
-        required: ["operation_id"],
+        required: ["operationId"],
       },
     },
     {
@@ -80,11 +119,9 @@ export function createToolExecutor(router: Router): ToolExecutor {
   ): Promise<string> => {
     switch (name) {
       case "search_api":
-        return searchApi(args as { query: string });
+        return searchApi(args as SearchApiArgs);
       case "call_api":
-        return callApi(
-          args as { operation_id: string; body?: Record<string, unknown> }
-        );
+        return callApi(args as unknown as CallApiArgs);
       case "navigate":
         return navigateTool(args as { path: string });
       case "get_page_state":
