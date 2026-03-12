@@ -55,7 +55,7 @@
     "rejected": "Đã từ chối",
     "under-review": "Đang xem xét",
     "approve": "Phê duyệt",
-    "done": "Hoàn tất",
+    "approved": "Đã phê duyệt",
     "create": "Tạo",
     "run": "Chạy",
     "retry": "Thử lại",
@@ -955,7 +955,7 @@
       "changed-labels": "đã thay đổi nhãn",
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "reopened-issue": "đã mở lại vấn đề",
-      "resolved-issue": "đã hoàn tất vấn đề",
+      "resolved-issue": "đã phê duyệt vấn đề",
       "canceled-issue": "đã đóng vấn đề"
     }
   },
@@ -1090,8 +1090,8 @@
     "batch-transition": {
       "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",
       "open-cannot-reopen": "Open issues cannot be reopened",
-      "done-cannot-reopen": "Done issues cannot be reopened",
-      "done-cannot-close": "Done issues cannot be closed",
+      "done-cannot-reopen": "Vấn đề đã phê duyệt không thể mở lại",
+      "done-cannot-close": "Vấn đề đã phê duyệt không thể đóng",
       "canceled-cannot-close": "Canceled issues cannot be closed",
       "reopen": "Mở lại",
       "reopened": "đã mở lại",
@@ -1138,7 +1138,7 @@
     "error": {
       "statement-cannot-be-modified": "Không thể sửa đổi câu lệnh sau khi vấn đề được tạo"
     },
-    "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Hoàn tất\" nhưng một số tác vụ của nó không được thực hiện thành công.",
+    "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Đã phê duyệt\" nhưng một số tác vụ của nó không được thực hiện thành công.",
     "data-export": {
       "options": "Tùy chọn",
       "limits": "Giới hạn",

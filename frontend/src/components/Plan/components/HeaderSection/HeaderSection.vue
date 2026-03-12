@@ -17,7 +17,7 @@
         <template #icon>
           <CheckCircle2Icon class="w-4 h-4" />
         </template>
-        {{ $t("common.done") }}
+        {{ $t("common.approved") }}
       </NTag>
       <TitleInput />
       <div class="flex flex-row items-center justify-end">

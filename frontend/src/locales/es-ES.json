@@ -55,7 +55,7 @@
     "rejected": "Rechazado",
     "under-review": "En revisión",
     "approve": "Aprobar",
-    "done": "Hecho",
+    "approved": "Aprobado",
     "create": "Crear",
     "run": "Ejecutar",
     "retry": "Reintentar",
@@ -955,7 +955,7 @@
       "changed-labels": "etiquetas cambiadas",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "reopened-issue": "incidencia reabierta",
-      "resolved-issue": "completó la incidencia",
+      "resolved-issue": "aprobó la incidencia",
       "canceled-issue": "cerró la incidencia"
     }
   },
@@ -1090,8 +1090,8 @@
     "batch-transition": {
       "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {operation}",
       "open-cannot-reopen": "Open issues cannot be reopened",
-      "done-cannot-reopen": "Done issues cannot be reopened",
-      "done-cannot-close": "Done issues cannot be closed",
+      "done-cannot-reopen": "Los problemas aprobados no se pueden reabrir",
+      "done-cannot-close": "Los problemas aprobados no se pueden cerrar",
       "canceled-cannot-close": "Canceled issues cannot be closed",
       "reopen": "Reabrir",
       "reopened": "reabierto",
@@ -1138,7 +1138,7 @@
     "error": {
       "statement-cannot-be-modified": "La declaración no se puede modificar una vez creado el problema"
     },
-    "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
+    "unfinished-resolved-issue-tips": "Este problema está marcado como \"Aprobado\", pero algunas de sus tareas no se ejecutan correctamente.",
     "data-export": {
       "options": "Opciones de exportación",
       "limits": "Límites",

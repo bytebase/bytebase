@@ -10,7 +10,7 @@
       v-show="showSuccessBanner"
       class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center shrink-0"
     >
-      {{ $t("common.done") }}
+      {{ $t("common.approved") }}
     </div>
   </div>
 </template>
