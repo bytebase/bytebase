@@ -79,14 +79,16 @@ type chatOpenAIFunction struct {
 }
 
 type chatOpenAIToolUse struct {
-	ID       string                    `json:"id"`
-	Type     string                    `json:"type"`
-	Function chatOpenAIFunctionCallRef `json:"function"`
+	ID               string                    `json:"id"`
+	Type             string                    `json:"type"`
+	Function         chatOpenAIFunctionCallRef `json:"function"`
+	ThoughtSignature string                    `json:"thought_signature,omitempty"`
 }
 
 type chatOpenAIFunctionCallRef struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
+	Name             string `json:"name"`
+	Arguments        string `json:"arguments"`
+	ThoughtSignature string `json:"thought_signature,omitempty"`
 }
 
 type chatOpenAIResponse struct {
@@ -115,14 +117,18 @@ func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, 
 			msg.ToolCallID = *m.ToolCallId
 		}
 		for _, tc := range m.ToolCalls {
-			msg.ToolCalls = append(msg.ToolCalls, chatOpenAIToolUse{
+			toolUse := chatOpenAIToolUse{
 				ID:   tc.Id,
 				Type: "function",
 				Function: chatOpenAIFunctionCallRef{
 					Name:      tc.Name,
 					Arguments: tc.Arguments,
 				},
-			})
+			}
+			if tc.Metadata != nil && *tc.Metadata != "" {
+				toolUse.ThoughtSignature = *tc.Metadata
+			}
+			msg.ToolCalls = append(msg.ToolCalls, toolUse)
 		}
 		payload.Messages = append(payload.Messages, msg)
 	}
@@ -173,11 +179,20 @@ func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, 
 		msg := resp.Choices[0].Message
 		result.Content = msg.Content
 		for _, tc := range msg.ToolCalls {
-			result.ToolCalls = append(result.ToolCalls, &v1pb.AIChatToolCall{
+			toolCall := &v1pb.AIChatToolCall{
 				Id:        tc.ID,
 				Name:      tc.Function.Name,
 				Arguments: tc.Function.Arguments,
-			})
+			}
+			// Capture thought_signature from Gemini's OpenAI-compatible endpoint.
+			sig := tc.ThoughtSignature
+			if sig == "" {
+				sig = tc.Function.ThoughtSignature
+			}
+			if sig != "" {
+				toolCall.Metadata = &sig
+			}
+			result.ToolCalls = append(result.ToolCalls, toolCall)
 		}
 	}
 	return connect.NewResponse(result), nil
