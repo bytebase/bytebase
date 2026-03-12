@@ -1198,8 +1198,12 @@ const openInfoPanel = (section: InfoSection) => {
 const hasAuthenticationInfo = computed(() =>
   hasInfoContent(basicInfo.value.engine, "authentication")
 );
-const hasSslInfo = computed(() => hasInfoContent(basicInfo.value.engine, "ssl"));
-const hasSshInfo = computed(() => hasInfoContent(basicInfo.value.engine, "ssh"));
+const hasSslInfo = computed(() =>
+  hasInfoContent(basicInfo.value.engine, "ssl")
+);
+const hasSshInfo = computed(() =>
+  hasInfoContent(basicInfo.value.engine, "ssh")
+);
 
 const {
   showDatabase,
