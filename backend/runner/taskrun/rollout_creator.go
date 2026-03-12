@@ -32,14 +32,14 @@ func NewRolloutCreator(store *store.Store, bus *bus.Bus, webhookManager *webhook
 }
 
 // Run starts the rollout creator listening to the channel.
-func (rc *RolloutCreator) Run(ctx context.Context, wg *sync.WaitGroup, rolloutCreationChan chan int64) {
+func (rc *RolloutCreator) Run(ctx context.Context, wg *sync.WaitGroup, rolloutCreationChan chan bus.PlanRef) {
 	defer wg.Done()
 	slog.Debug("Rollout creator started")
 
 	for {
 		select {
-		case planID := <-rolloutCreationChan:
-			rc.tryCreateRollout(ctx, planID)
+		case ref := <-rolloutCreationChan:
+			rc.tryCreateRollout(ctx, ref)
 		case <-ctx.Done():
 			slog.Debug("Rollout creator stopped")
 			return
@@ -48,8 +48,9 @@ func (rc *RolloutCreator) Run(ctx context.Context, wg *sync.WaitGroup, rolloutCr
 }
 
 // tryCreateRollout attempts to create a rollout for the given plan.
-func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
-	plan, err := rc.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef) {
+	planID := ref.PlanID
+	plan, err := rc.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: ref.ProjectID, UID: &planID})
 	if err != nil {
 		slog.Error("failed to get plan for rollout creation",
 			slog.Int("plan_id", int(planID)),
@@ -128,7 +129,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 	}
 
 	// Check plan check status (must have no errors)
-	planCheckRun, err := rc.store.GetPlanCheckRun(ctx, planID)
+	planCheckRun, err := rc.store.GetPlanCheckRun(ctx, plan.ProjectID, planID)
 	if err != nil {
 		slog.Error("failed to get plan check run for rollout creation",
 			slog.Int("plan_id", int(planID)),

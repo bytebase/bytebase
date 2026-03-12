@@ -57,7 +57,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
 	}
 
-	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
 	}

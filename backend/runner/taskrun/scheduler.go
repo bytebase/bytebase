@@ -93,8 +93,8 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case planID := <-s.bus.PlanCompletionCheckChan:
-			s.checkPlanCompletion(ctx, planID)
+		case ref := <-s.bus.PlanCompletionCheckChan:
+			s.checkPlanCompletion(ctx, ref)
 		}
 	}
 }
@@ -103,9 +103,16 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 // If so, sends PIPELINE_COMPLETED webhook and auto-resolves issues for deferred rollout plans.
 // Deferred rollout plans (exportDataConfig, createDatabaseConfig) auto-resolve when tasks complete.
 // Called when tasks are marked DONE/SKIPPED, or when tasks are skipped/canceled via API.
-func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
+func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
+	planID := ref.PlanID
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: ref.ProjectID, UID: &planID})
+	if err != nil || plan == nil {
+		slog.Error("failed to get plan for completion check", log.BBError(err))
+		return
+	}
+
 	// Get all tasks for this plan
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{ProjectID: ref.ProjectID, PlanID: &planID})
 	if err != nil {
 		slog.Error("failed to list tasks for plan completion check", log.BBError(err))
 		return
@@ -128,20 +135,13 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 	}
 
 	// All tasks complete and successful - try to claim completion notification
-	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, planID)
+	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, ref.ProjectID, planID)
 	if err != nil {
 		slog.Error("failed to claim pipeline completion notification", log.BBError(err))
 		return
 	}
 	if !claimed {
 		return // Already sent
-	}
-
-	// Get plan and project for webhook
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
-	if err != nil || plan == nil {
-		slog.Error("failed to get plan for completion webhook", log.BBError(err))
-		return
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})

@@ -199,7 +199,7 @@ func (s *RevisionService) createRevisions(
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", revision.TaskRun))
 			}
-			taskRun, err := s.store.GetTaskRunByUID(ctx, taskRunID)
+			taskRun, err := s.store.GetTaskRunByUID(ctx, projectID, taskRunID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun"))
 			}

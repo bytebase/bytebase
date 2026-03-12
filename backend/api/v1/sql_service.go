@@ -1166,7 +1166,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		ProjectID: &projectID,
+		ProjectID: projectID,
 		UID:       &planID,
 	})
 	if err != nil {
@@ -1176,7 +1176,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &plan.UID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, PlanID: &plan.UID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
 	}
@@ -1203,8 +1203,9 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		}
 
 		taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-			TaskUID: &task.ID,
-			Status:  &targetTaskRunStatus,
+			ProjectID: projectID,
+			TaskUID:   &task.ID,
+			Status:    &targetTaskRunStatus,
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))

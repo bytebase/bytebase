@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -57,7 +58,7 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 	}
 
 	for _, c := range claimed {
-		if err := s.executeTaskRun(ctx, c.TaskRunUID, c.TaskUID); err != nil {
+		if err := s.executeTaskRun(ctx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
 			slog.Error("failed to execute task run", slog.Int("id", c.TaskRunUID), log.BBError(err))
 		}
 	}
@@ -66,8 +67,8 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 }
 
 // executeTaskRun executes a task run that is already in RUNNING status.
-func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int) error {
-	task, err := s.store.GetTaskByID(ctx, taskUID)
+func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRunUID, taskUID int) error {
+	task, err := s.store.GetTaskByID(ctx, projectID, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
@@ -83,9 +84,10 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int)
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRunUID,
-			Updater: "",
-			Status:  storepb.TaskRun_FAILED,
+			ID:        taskRunUID,
+			ProjectID: task.ProjectID,
+			Updater:   "",
+			Status:    storepb.TaskRun_FAILED,
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
 			},
@@ -102,7 +104,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, taskRunUID, taskUID int)
 	}
 
 	// Update started_at
-	if err := s.store.UpdateTaskRunStartAt(ctx, taskRunUID); err != nil {
+	if err := s.store.UpdateTaskRunStartAt(ctx, task.ProjectID, taskRunUID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
@@ -120,13 +122,14 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			slog.Error("Task scheduler V2 runTaskRunOnce PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
+	taskRunRef := bus.TaskRunRef{ProjectID: task.ProjectID, ID: taskRunUID}
 	defer func() {
-		s.bus.RunningTaskRunsCancelFunc.Delete(taskRunUID)
+		s.bus.RunningTaskRunsCancelFunc.Delete(taskRunRef)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	s.bus.RunningTaskRunsCancelFunc.Store(taskRunUID, cancel)
+	s.bus.RunningTaskRunsCancelFunc.Store(taskRunRef, cancel)
 
 	result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
 
@@ -138,6 +141,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:          taskRunUID,
+			ProjectID:   task.ProjectID,
 			Updater:     "",
 			Status:      storepb.TaskRun_CANCELED,
 			ResultProto: &storepb.TaskRunResult{},
@@ -159,9 +163,10 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:      taskRunUID,
-			Updater: "",
-			Status:  storepb.TaskRun_FAILED,
+			ID:        taskRunUID,
+			ProjectID: task.ProjectID,
+			Updater:   "",
+			Status:    storepb.TaskRun_FAILED,
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
 			},
@@ -175,12 +180,12 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		}
 
 		// Immediately try to send PIPELINE_FAILED webhook (HA-safe atomic claim)
-		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.PlanID)
+		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.ProjectID, task.PlanID)
 		if err != nil {
 			slog.Error("failed to claim pipeline failure notification", log.BBError(err))
 		} else if claimed {
 			// Get plan and project for webhook
-			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
 			if err != nil || plan == nil {
 				slog.Error("failed to get plan for failure webhook", log.BBError(err))
 			} else {
@@ -206,6 +211,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 	// Success case
 	taskRunStatusPatch := &store.TaskRunStatusPatch{
 		ID:          taskRunUID,
+		ProjectID:   task.ProjectID,
 		Updater:     "",
 		Status:      storepb.TaskRun_DONE,
 		ResultProto: result,
@@ -219,7 +225,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 	}
 
 	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-	s.bus.PlanCompletionCheckChan <- task.PlanID
+	s.bus.PlanCompletionCheckChan <- bus.PlanRef{ProjectID: task.ProjectID, PlanID: task.PlanID}
 }
 
 // validateTaskFreshness checks for state drift between task creation and execution time.
@@ -242,7 +248,7 @@ func (s *Scheduler) validateTaskFreshness(ctx context.Context, task *store.TaskM
 		return errors.Errorf("target database %q on instance %q has been deleted", task.GetDatabaseName(), task.InstanceID)
 	}
 
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get plan for drift validation")
 	}

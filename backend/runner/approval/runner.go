@@ -127,7 +127,7 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 			return
 		}
 		if approved {
-			r.bus.RolloutCreationChan <- *issue.PlanUID
+			r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
 		}
 	}
 }
@@ -506,7 +506,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
-	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
@@ -514,7 +514,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	planCheckRun, err := stores.GetPlanCheckRun(ctx, plan.UID)
+	planCheckRun, err := stores.GetPlanCheckRun(ctx, issue.ProjectID, plan.UID)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
@@ -630,7 +630,7 @@ func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, is
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
 	}
-	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 	}
@@ -856,7 +856,7 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 		if issue.PlanUID == nil {
 			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("expected plan UID in issue %v", issue.UID)
 		}
-		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
 		if err != nil {
 			return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Wrapf(err, "failed to get plan %v", *issue.PlanUID)
 		}

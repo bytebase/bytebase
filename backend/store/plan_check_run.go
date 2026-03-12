@@ -34,7 +34,8 @@ type PlanCheckRunMessage struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	PlanUID int64
+	ProjectID string
+	PlanUID   int64
 
 	Status PlanCheckRunStatus
 	Result *storepb.PlanCheckRunResult
@@ -42,6 +43,7 @@ type PlanCheckRunMessage struct {
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
+	ProjectID    string
 	PlanUID      *int64
 	PlanUIDs     *[]int64
 	UIDs         *[]int
@@ -58,14 +60,14 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 	}
 
 	query := `
-		INSERT INTO plan_check_run (plan_id, status, result)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (plan_id) DO UPDATE SET
+		INSERT INTO plan_check_run (project, plan_id, status, result)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (project, plan_id) DO UPDATE SET
 			status = EXCLUDED.status,
 			result = EXCLUDED.result,
 			updated_at = now()
 	`
-	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
 		return errors.Wrapf(err, "failed to upsert plan check run")
 	}
 	return nil
@@ -74,15 +76,16 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 // ListPlanCheckRuns returns a list of plan check runs based on find.
 func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMessage) ([]*PlanCheckRunMessage, error) {
 	q := qb.Q().Space(`
-SELECT
-	plan_check_run.id,
-	plan_check_run.created_at,
-	plan_check_run.updated_at,
-	plan_check_run.plan_id,
-	plan_check_run.status,
-	plan_check_run.result
-FROM plan_check_run
-WHERE TRUE`)
+		SELECT
+			plan_check_run.id,
+			plan_check_run.created_at,
+			plan_check_run.updated_at,
+			plan_check_run.project,
+			plan_check_run.plan_id,
+			plan_check_run.status,
+			plan_check_run.result
+		FROM plan_check_run
+		WHERE plan_check_run.project = ?`, find.ProjectID)
 	if v := find.PlanUID; v != nil {
 		q.Space("AND plan_check_run.plan_id = ?", *v)
 	}
@@ -123,6 +126,7 @@ WHERE TRUE`)
 			&planCheckRun.UID,
 			&planCheckRun.CreatedAt,
 			&planCheckRun.UpdatedAt,
+			&planCheckRun.ProjectID,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
 			&result,
@@ -143,8 +147,8 @@ WHERE TRUE`)
 }
 
 // GetPlanCheckRun returns the plan check run for a plan.
-func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckRunMessage, error) {
-	runs, err := s.ListPlanCheckRuns(ctx, &FindPlanCheckRunMessage{PlanUID: &planUID})
+func (s *Store) GetPlanCheckRun(ctx context.Context, projectID string, planUID int64) (*PlanCheckRunMessage, error) {
+	runs, err := s.ListPlanCheckRuns(ctx, &FindPlanCheckRunMessage{ProjectID: projectID, PlanUID: &planUID})
 	if err != nil {
 		return nil, err
 	}
@@ -155,18 +159,18 @@ func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckR
 }
 
 // UpdatePlanCheckRun updates a plan check run.
-func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
+func (s *Store) UpdatePlanCheckRun(ctx context.Context, projectID string, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
 	resultBytes, err := protojson.Marshal(result)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result %v", result)
 	}
 	q := qb.Q().Space(`
-    UPDATE plan_check_run
-    SET
-		updated_at = ?,
-		status = ?,
-		result = ?
-	WHERE id = ?`, time.Now(), status, resultBytes, uid)
+		UPDATE plan_check_run
+		SET
+			updated_at = ?,
+			status = ?,
+			result = ?
+		WHERE id = ? AND project = ?`, time.Now(), status, resultBytes, uid, projectID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
@@ -178,13 +182,13 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatu
 }
 
 // BatchCancelPlanCheckRuns updates the status of planCheckRuns to CANCELED.
-func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int) error {
+func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, projectID string, planCheckRunUIDs []int) error {
 	q := qb.Q().Space(`
 		UPDATE plan_check_run
 		SET
 			status = ?,
 			updated_at = ?
-		WHERE id = ANY(?)`, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs)
+		WHERE id = ANY(?) AND project = ?`, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs, projectID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
@@ -197,8 +201,9 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs [
 
 // ClaimedPlanCheckRun represents a plan check run that was atomically claimed.
 type ClaimedPlanCheckRun struct {
-	UID     int
-	PlanUID int64
+	UID       int
+	ProjectID string
+	PlanUID   int64
 }
 
 // FailStalePlanCheckRuns marks RUNNING plan check runs as FAILED if they have been running
@@ -238,7 +243,7 @@ func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlan
 			WHERE status = ?
 			FOR UPDATE SKIP LOCKED
 		)
-		RETURNING id, plan_id
+		RETURNING id, project, plan_id
 	`, PlanCheckRunStatusRunning, PlanCheckRunStatusAvailable)
 
 	query, args, err := q.ToSQL()
@@ -255,7 +260,7 @@ func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlan
 	var claimed []*ClaimedPlanCheckRun
 	for rows.Next() {
 		var c ClaimedPlanCheckRun
-		if err := rows.Scan(&c.UID, &c.PlanUID); err != nil {
+		if err := rows.Scan(&c.UID, &c.ProjectID, &c.PlanUID); err != nil {
 			return nil, err
 		}
 		claimed = append(claimed, &c)
