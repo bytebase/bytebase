@@ -48,7 +48,7 @@
             <InstanceEngineRadioGrid
               :engine="basicInfo.engine"
               :engine-list="supportedEngineV1List()"
-              class="w-full grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2"
+              class="w-full grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2"
               @update:engine="
                 (newEngine: Engine) => handleSelectInstanceEngine(newEngine)
               "
