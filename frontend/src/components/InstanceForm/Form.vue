@@ -614,7 +614,6 @@ import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
 import { LabelListEditor } from "@/components/Label";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   EnvironmentSelect,
   InstanceEngineRadioGrid,
@@ -623,6 +622,7 @@ import {
   RichEngineName,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -725,7 +725,9 @@ const isEngineSelectorCollapsed = ref(false);
 const isConnectionOptionsCollapsed = ref(true);
 
 const showConnectionOptionsCard = computed(() => {
-  return basicInfo.value.engine !== Engine.DYNAMODB && !!editingDataSource.value;
+  return (
+    basicInfo.value.engine !== Engine.DYNAMODB && !!editingDataSource.value
+  );
 });
 
 const hasConfiguredConnectionOptions = computed(() => {
@@ -902,7 +904,11 @@ const toggleConnectionOptions = () => {
 };
 
 const allowTestConnection = computed(() => {
-  if (!allowEdit.value || state.value.isRequesting || state.value.isTestingConnection) {
+  if (
+    !allowEdit.value ||
+    state.value.isRequesting ||
+    state.value.isTestingConnection
+  ) {
     return false;
   }
 
