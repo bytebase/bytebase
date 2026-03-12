@@ -85,7 +85,7 @@ const stringifyIssueStatus = (issueStatus: IssueStatus): string => {
   if (issueStatus === IssueStatus.OPEN) {
     return t("issue.table.open");
   } else if (issueStatus === IssueStatus.DONE) {
-    return t("common.done");
+    return t("common.approved");
   } else if (issueStatus === IssueStatus.CANCELED) {
     return t("common.closed");
   }
