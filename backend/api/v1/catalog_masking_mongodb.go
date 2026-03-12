@@ -1,15 +1,99 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
 	"maps"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store"
 )
+
+// mongoDBMasker implements documentMasker for MongoDB.
+type mongoDBMasker struct{}
+
+func (*mongoDBMasker) maskResults(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	spans []*parserbase.QuerySpan,
+	results []*v1pb.QueryResult,
+	semanticTypeToMaskerMap map[string]masker.Masker,
+	_ db.QueryContext,
+) error {
+	for i, result := range results {
+		if i < len(spans) {
+			if errMsg, err := checkSensitivePredicates(ctx, stores, database, spans[i]); err != nil {
+				return connect.NewError(connect.CodeInternal, err)
+			} else if errMsg != "" {
+				result.Error = errMsg
+				result.Rows = nil
+				result.RowsCount = 0
+				continue
+			}
+		}
+
+		var analysis *parserbase.MongoDBAnalysis
+		if i < len(spans) {
+			analysis = spans[i].MongoDBAnalysis
+		}
+		if analysis == nil || analysis.Collection == "" {
+			continue
+		}
+		if analysis.API != parserbase.MongoDBMaskableAPIFind && analysis.API != parserbase.MongoDBMaskableAPIFindOne && analysis.API != parserbase.MongoDBMaskableAPIAggregate {
+			continue
+		}
+
+		objectSchema, err := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection))
+		}
+		if objectSchema == nil {
+			continue
+		}
+
+		if len(analysis.JoinedCollections) > 0 {
+			var joined []joinedSchema
+			for _, jc := range analysis.JoinedCollections {
+				js, jsErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
+				if jsErr != nil {
+					return connect.NewError(connect.CodeInternal, errors.Wrapf(jsErr, "failed to get object schema for joined collection %q", jc.Collection))
+				}
+				joined = append(joined, joinedSchema{asField: jc.AsField, schema: js})
+			}
+			objectSchema = injectJoinedSchemas(objectSchema, joined)
+		}
+
+		for _, row := range result.Rows {
+			if len(row.Values) == 0 {
+				continue
+			}
+			value := row.Values[0].GetStringValue()
+			if value == "" {
+				continue
+			}
+
+			maskedValue, maskErr := maskMongoDBDocumentString(value, objectSchema, semanticTypeToMaskerMap)
+			if maskErr != nil {
+				return connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask MongoDB response"))
+			}
+
+			row.Values[0] = &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: maskedValue,
+				},
+			}
+		}
+	}
+	return nil
+}
 
 func checkMongoDBRequestBlocked(analysis *parserbase.MongoDBAnalysis) error {
 	if analysis == nil {

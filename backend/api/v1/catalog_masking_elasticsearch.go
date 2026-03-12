@@ -5,13 +5,119 @@ import (
 	"encoding/json"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// elasticsearchMasker implements documentMasker for Elasticsearch.
+type elasticsearchMasker struct{}
+
+func (*elasticsearchMasker) maskResults(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	spans []*parserbase.QuerySpan,
+	results []*v1pb.QueryResult,
+	semanticTypeToMaskerMap map[string]masker.Masker,
+	_ db.QueryContext,
+) error {
+	for i, result := range results {
+		if i < len(spans) {
+			if errMsg, err := checkSensitivePredicates(ctx, stores, database, spans[i]); err != nil {
+				return connect.NewError(connect.CodeInternal, err)
+			} else if errMsg != "" {
+				result.Error = errMsg
+				result.Rows = nil
+				result.RowsCount = 0
+				continue
+			}
+		}
+
+		var analysis *parserbase.ElasticsearchAnalysis
+		if i < len(spans) {
+			analysis = spans[i].ElasticsearchAnalysis
+		}
+		if analysis == nil {
+			continue
+		}
+		if analysis.API == parserbase.ElasticsearchAPIUnsupported || analysis.API == parserbase.ElasticsearchAPIBlocked {
+			continue
+		}
+
+		indexName := analysis.Index
+		if indexName == "" {
+			continue
+		}
+		objectSchema, err := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
+		}
+		if objectSchema == nil || !objectSchemaHasSemanticTypes(objectSchema) {
+			continue
+		}
+
+		for _, row := range result.Rows {
+			for colIdx, colName := range result.ColumnNames {
+				if colIdx >= len(row.Values) {
+					break
+				}
+				value := row.Values[colIdx].GetStringValue()
+				if value == "" {
+					continue
+				}
+
+				var maskedValue string
+				var maskErr error
+
+				switch analysis.API {
+				case parserbase.ElasticsearchAPIMaskSearch:
+					switch colName {
+					case "hits":
+						maskedValue, maskErr = maskElasticsearchHitsColumn(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
+					case "responses":
+						maskedValue, maskErr = maskElasticsearchMSearchResponses(value, analysis.SortFields, objectSchema, semanticTypeToMaskerMap)
+					default:
+						continue
+					}
+				case parserbase.ElasticsearchAPIMaskGetDoc, parserbase.ElasticsearchAPIMaskExplain:
+					if colName == "_source" {
+						maskedValue, maskErr = maskElasticsearchDocSource(value, objectSchema, semanticTypeToMaskerMap)
+					} else {
+						continue
+					}
+				case parserbase.ElasticsearchAPIMaskGetSource:
+					maskedValue, maskErr = maskElasticsearchGetSourceColumn(colName, value, objectSchema, semanticTypeToMaskerMap)
+				case parserbase.ElasticsearchAPIMaskMGet:
+					if colName == "docs" {
+						maskedValue, maskErr = maskElasticsearchMGetSource(value, objectSchema, semanticTypeToMaskerMap)
+					} else {
+						continue
+					}
+				default:
+					continue
+				}
+
+				if maskErr != nil {
+					return connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask ES response"))
+				}
+
+				row.Values[colIdx] = &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: maskedValue,
+					},
+				}
+			}
+		}
+	}
+	return nil
+}
 
 // lookupSemanticTypeByDotPath splits a dot-delimited field path and walks the ObjectSchema
 // to find the semantic type at the leaf.

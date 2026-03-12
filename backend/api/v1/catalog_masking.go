@@ -11,9 +11,39 @@ import (
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// documentMasker masks query results for document-oriented databases
+// (CosmosDB, MongoDB, Elasticsearch) that require per-engine masking logic.
+type documentMasker interface {
+	maskResults(
+		ctx context.Context,
+		stores *store.Store,
+		database *store.DatabaseMessage,
+		spans []*parserbase.QuerySpan,
+		results []*v1pb.QueryResult,
+		semanticTypeToMaskerMap map[string]masker.Masker,
+		queryContext db.QueryContext,
+	) error
+}
+
+// getDocumentMasker returns the appropriate documentMasker for the given engine,
+// or nil if the engine does not use document-based masking.
+func getDocumentMasker(engine storepb.Engine) documentMasker {
+	switch engine {
+	case storepb.Engine_COSMOSDB:
+		return &cosmosDBMasker{}
+	case storepb.Engine_MONGODB:
+		return &mongoDBMasker{}
+	case storepb.Engine_ELASTICSEARCH:
+		return &elasticsearchMasker{}
+	default:
+		return nil
+	}
+}
 
 // preExecuteMaskingCheck runs engine-specific pre-execution checks that block
 // queries with unsupported APIs. Sensitive predicate checks are handled
@@ -208,6 +238,70 @@ func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.O
 	}
 
 	return ""
+}
+
+// cosmosDBMasker implements documentMasker for CosmosDB.
+type cosmosDBMasker struct{}
+
+func (*cosmosDBMasker) maskResults(
+	ctx context.Context,
+	stores *store.Store,
+	database *store.DatabaseMessage,
+	spans []*parserbase.QuerySpan,
+	results []*v1pb.QueryResult,
+	semanticTypeToMaskerMap map[string]masker.Masker,
+	queryContext db.QueryContext,
+) error {
+	if len(spans) != 1 {
+		return connect.NewError(connect.CodeInternal, errors.New("expected one span for CosmosDB"))
+	}
+	objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+	}
+	for pathStr, predicatePath := range spans[0].PredicatePaths {
+		semanticType := getFirstSemanticTypeInPath(predicatePath, objectSchema)
+		if semanticType != "" {
+			for _, result := range results {
+				result.Error = fmt.Sprintf("using path %q tagged by semantic type %q in WHERE clause is not allowed", pathStr, semanticType)
+				result.Rows = nil
+				result.RowsCount = 0
+			}
+			return nil
+		}
+	}
+	if objectSchema == nil {
+		return nil
+	}
+	for _, result := range results {
+		for _, row := range result.Rows {
+			if len(row.Values) != 1 {
+				continue
+			}
+			value := row.Values[0].GetStringValue()
+			if value == "" {
+				continue
+			}
+			doc := make(map[string]any)
+			if err := json.Unmarshal([]byte(value), &doc); err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal document: %v", err))
+			}
+			maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to mask document: %v", err))
+			}
+			maskedValue, err := json.Marshal(maskedDoc)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal masked document: %v", err))
+			}
+			row.Values[0] = &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: string(maskedValue),
+				},
+			}
+		}
+	}
+	return nil
 }
 
 func maskCosmosDB(span *parserbase.QuerySpan, data map[string]any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
