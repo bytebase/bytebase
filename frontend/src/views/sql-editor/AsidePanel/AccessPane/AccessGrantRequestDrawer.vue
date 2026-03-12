@@ -82,7 +82,6 @@
             v-model:value="form.reason"
             type="textarea"
             :rows="3"
-            :placeholder="$t('common.optional')"
           />
         </div>
       </div>
