@@ -87,7 +87,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const actuatorStore = useActuatorV1Store();
 
 const MIN_DOCKED_MAIN_WIDTH = 700;
-const DOCKED_INFO_RAIL_WIDTH = 320;
+const DOCKED_INFO_RAIL_WIDTH = 500;
 const DOCKED_INFO_RAIL_GAP = 16;
 const MIN_DOCKED_LAYOUT_WIDTH =
   MIN_DOCKED_MAIN_WIDTH + DOCKED_INFO_RAIL_WIDTH + DOCKED_INFO_RAIL_GAP;

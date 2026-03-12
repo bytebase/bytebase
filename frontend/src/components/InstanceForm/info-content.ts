@@ -207,3 +207,6 @@ export const getInfoContent = (
 ): InfoSnippet | undefined => {
   return engineContentMap[engine]?.[section];
 };
+
+export const hasInfoContent = (engine: Engine, section: InfoSection): boolean =>
+  !!getInfoContent(engine, section);

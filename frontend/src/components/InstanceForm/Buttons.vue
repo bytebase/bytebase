@@ -13,15 +13,6 @@
       </NButton>
       <div class="flex items-center gap-x-2">
         <NButton
-          tertiary
-          type="primary"
-          :loading="state.isTestingConnection"
-          :disabled="!allowCreate || state.isRequesting || !allowEdit"
-          @click.prevent="testConnectionForCurrentEditingDS"
-        >
-          {{ $t("instance.test-connection") }}
-        </NButton>
-        <NButton
           :disabled="
             !allowCreate || state.isRequesting || state.isTestingConnection
           "
@@ -228,6 +219,7 @@ const tryCreate = async () => {
   if (testResult.success) {
     doCreate();
   } else {
+    maybeOpenConnectionOptions(editingDS);
     const confirmed = await confirmContinueWithConnectionFailure(
       testResult.message
     );
@@ -285,6 +277,28 @@ const checkRODataSourceFeature = (instance: Instance) => {
   };
   // Need to check all RO data sources
   return readonlyDataSourceList.value.every(checkOne);
+};
+
+const hasConfiguredConnectionOptions = (ds: EditDataSource): boolean => {
+  const hasExtraParameters =
+    Object.keys(ds.extraConnectionParameters ?? {}).length > 0;
+  const hasSslConfig = !!(ds.useSsl || ds.sslCa || ds.sslCert || ds.sslKey);
+  const hasSshConfig = !!(
+    ds.sshHost ||
+    ds.sshPort ||
+    ds.sshUser ||
+    ds.sshPassword ||
+    ds.sshPrivateKey
+  );
+
+  return hasExtraParameters || hasSslConfig || hasSshConfig;
+};
+
+const maybeOpenConnectionOptions = (ds: EditDataSource) => {
+  if (!hasConfiguredConnectionOptions(ds)) {
+    return;
+  }
+  void events.emit("show-connection-options");
 };
 
 // We will also create the database * denoting all databases
@@ -434,6 +448,7 @@ const doUpdate = async () => {
     }
     const testResult = await testConnection(editState, /* silent */ true);
     if (!testResult.success) {
+      maybeOpenConnectionOptions(editState);
       const continueAnyway = await confirmContinueWithConnectionFailure(
         testResult.message
       );
@@ -479,6 +494,7 @@ const doUpdate = async () => {
       if (editing.pendingCreate) {
         const testResult = await testConnection(editing, /* silent */ true);
         if (!testResult.success) {
+          maybeOpenConnectionOptions(editing);
           const continueAnyway = await confirmContinueWithConnectionFailure(
             testResult.message
           );
@@ -548,10 +564,13 @@ const doUpdate = async () => {
   }
 };
 
-const testConnectionForCurrentEditingDS = () => {
+const testConnectionForCurrentEditingDS = async () => {
   const editingDS = editingDataSource.value;
   if (!editingDS) return;
-  testConnection(editingDS, /* !silent */ false);
+  const testResult = await testConnection(editingDS, /* !silent */ false);
+  if (!testResult.success) {
+    maybeOpenConnectionOptions(editingDS);
+  }
 };
 
 const cancel = () => {

@@ -205,8 +205,12 @@
           "
           class="sm:col-span-3 sm:col-start-1"
         >
-          <label for="username" class="textlabel block">
+          <label for="username" class="textlabel flex items-center gap-x-1">
             {{ $t("common.username") }}
+            <InfoTrigger
+              v-if="isCreating && infoPanel && hasAuthenticationInfo"
+              @click="openInfoPanel('authentication')"
+            />
           </label>
           <!-- For mysql, username can be empty indicating anonymous user.
       But it's a very bad practice to use anonymous user for admin operation,
@@ -941,152 +945,157 @@ MIIEvQ...
     </template>
 
     <template v-if="!hideOptions">
-    <div v-if="hasExtraParameters" class="sm:col-span-3 sm:col-start-1">
-      <div class="flex flex-row items-center justify-between">
-        <label class="textlabel block">
-          {{ $t("data-source.extra-params.self") }}
-        </label>
-      </div>
-      <div class="textinfolabel text-sm mt-1 mb-2">
-        {{ $t("data-source.extra-params.description") }}
-      </div>
-
-      <!-- Add parameter form -->
       <div
-        v-if="allowEdit"
-        class="flex mt-2 mb-2 gap-x-2 bg-gray-50 p-3 rounded-md"
+        v-if="
+          showSSL &&
+          dataSource.authenticationType ===
+            DataSource_AuthenticationType.PASSWORD
+        "
+        class="sm:col-span-3 sm:col-start-1"
       >
-        <NInput
-          v-model:value="newParam.key"
-          class="w-full"
-          :placeholder="$t('instance.parameter-name-placeholder')"
-        />
-        <NInput
-          v-model:value="newParam.value"
-          class="w-full"
-          :placeholder="$t('instance.parameter-value-placeholder')"
-        />
-        <NButton
-          type="primary"
-          ghost
-          size="small"
-          :disabled="!newParam.key.trim()"
-          @click="addNewParameter"
+        <div
+          for="ssl"
+          class="flex items-center justify-start gap-x-2 textlabel"
         >
-          Add
-        </NButton>
+          {{ $t("data-source.ssl-connection") }}
+          <Switch
+            :text="true"
+            :value="dataSource.useSsl"
+            @update:value="handleUseSslChanged"
+          />
+          <InfoTrigger
+            v-if="isCreating && infoPanel && hasSslInfo"
+            @click="openInfoPanel('ssl')"
+          />
+        </div>
+        <template v-if="dataSource.useSsl">
+          <SslCertificateFormV1
+            v-if="dataSource.pendingCreate || dataSource.updateSsl"
+            class="pt-1!"
+            v-model:verify="dataSource.verifyTlsCertificate"
+            v-model:ca="dataSource.sslCa"
+            v-model:cert="dataSource.sslCert"
+            v-model:private-key="dataSource.sslKey"
+            :engine-type="basicInfo.engine"
+            :disabled="!allowEdit"
+          />
+          <NButton
+            v-else
+            class="mt-2!"
+            :disabled="!allowEdit"
+            @click.prevent="handleEditSSL"
+          >
+            {{ $t("common.edit") }} - {{ $t("common.write-only") }}
+          </NButton>
+        </template>
       </div>
 
-      <!-- Existing parameters -->
       <div
-        v-for="(param, index) in extraConnectionParamsList"
-        :key="param.key"
-        class="flex mt-2 gap-x-2"
+        v-if="
+          !hideAdvancedFeatures &&
+          showSSH &&
+          dataSource.authenticationType ===
+            DataSource_AuthenticationType.PASSWORD
+        "
+        class="sm:col-span-3 sm:col-start-1"
       >
-        <NInput
-          class="w-full"
-          :value="param.key"
+        <div class="flex flex-row items-center gap-x-1">
+          <label for="ssh" class="textlabel block">
+            {{ $t("data-source.ssh-connection") }}
+          </label>
+          <InfoTrigger
+            v-if="isCreating && infoPanel && hasSshInfo"
+            @click="openInfoPanel('ssh')"
+          />
+        </div>
+        <SshConnectionForm
+          :value="dataSource"
+          :instance="instance"
           :disabled="!allowEdit"
-          placeholder="Parameter name"
-          @update:value="(v) => updateExtraConnectionParamKey(index, v)"
+          @change="handleSSHChange"
         />
-        <NInput
-          class="w-full"
-          :value="param.value"
-          :disabled="!allowEdit"
-          placeholder="Parameter value"
-          @update:value="(v) => updateExtraConnectionParamValue(index, v)"
-        />
-        <NButton
+      </div>
+
+      <div v-if="hasExtraParameters" class="sm:col-span-3 sm:col-start-1">
+        <div class="flex flex-row items-center justify-between">
+          <label class="textlabel block">
+            {{ $t("data-source.extra-params.self") }}
+          </label>
+        </div>
+        <div class="textinfolabel text-sm mt-1 mb-2">
+          {{ $t("data-source.extra-params.description") }}
+        </div>
+
+        <!-- Add parameter form -->
+        <div
           v-if="allowEdit"
-          type="error"
-          secondary
-          size="small"
-          @click="removeExtraConnectionParam(index)"
-          title="Remove parameter"
+          class="flex mt-2 mb-2 gap-x-2 bg-gray-50 p-3 rounded-md"
         >
-          Remove
-        </NButton>
-      </div>
+          <NInput
+            v-model:value="newParam.key"
+            class="w-full"
+            :placeholder="$t('instance.parameter-name-placeholder')"
+          />
+          <NInput
+            v-model:value="newParam.value"
+            class="w-full"
+            :placeholder="$t('instance.parameter-value-placeholder')"
+          />
+          <NButton
+            type="primary"
+            ghost
+            size="small"
+            :disabled="!newParam.key.trim()"
+            @click="addNewParameter"
+          >
+            Add
+          </NButton>
+        </div>
 
-      <!-- Show a message when there are no parameters -->
-      <div
-        v-if="extraConnectionParamsList.length === 0"
-        class="textinfolabel text-sm italic"
-      >
-        {{
-          allowEdit
-            ? $t("instance.no-params-yet-add-above")
-            : $t("instance.no-extra-params-configured")
-        }}
-      </div>
-    </div>
-
-    <div
-      v-if="
-        showSSL &&
-        dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
-      "
-      class="sm:col-span-3 sm:col-start-1"
-    >
-      <div for="ssl" class="flex items-center justify-start gap-x-2 textlabel">
-        {{ $t("data-source.ssl-connection") }}
-        <Switch
-          :text="true"
-          :value="dataSource.useSsl"
-          @update:value="handleUseSslChanged"
-        />
-        <InfoTrigger
-          v-if="isCreating && infoPanel"
-          @click="openInfoPanel('ssl')"
-        />
-      </div>
-      <template v-if="dataSource.useSsl">
-        <SslCertificateFormV1
-          v-if="dataSource.pendingCreate || dataSource.updateSsl"
-          class="pt-1!"
-          v-model:verify="dataSource.verifyTlsCertificate"
-          v-model:ca="dataSource.sslCa"
-          v-model:cert="dataSource.sslCert"
-          v-model:private-key="dataSource.sslKey"
-          :engine-type="basicInfo.engine"
-          :disabled="!allowEdit"
-        />
-        <NButton
-          v-else
-          class="mt-2!"
-          :disabled="!allowEdit"
-          @click.prevent="handleEditSSL"
+        <!-- Existing parameters -->
+        <div
+          v-for="(param, index) in extraConnectionParamsList"
+          :key="param.key"
+          class="flex mt-2 gap-x-2"
         >
-          {{ $t("common.edit") }} - {{ $t("common.write-only") }}
-        </NButton>
-      </template>
-    </div>
+          <NInput
+            class="w-full"
+            :value="param.key"
+            :disabled="!allowEdit"
+            placeholder="Parameter name"
+            @update:value="(v) => updateExtraConnectionParamKey(index, v)"
+          />
+          <NInput
+            class="w-full"
+            :value="param.value"
+            :disabled="!allowEdit"
+            placeholder="Parameter value"
+            @update:value="(v) => updateExtraConnectionParamValue(index, v)"
+          />
+          <NButton
+            v-if="allowEdit"
+            type="error"
+            secondary
+            size="small"
+            @click="removeExtraConnectionParam(index)"
+            title="Remove parameter"
+          >
+            Remove
+          </NButton>
+        </div>
 
-    <div
-      v-if="
-        !hideAdvancedFeatures &&
-        showSSH &&
-        dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
-      "
-      class="sm:col-span-3 sm:col-start-1"
-    >
-      <div class="flex flex-row items-center gap-x-1">
-        <label for="ssh" class="textlabel block">
-          {{ $t("data-source.ssh-connection") }}
-        </label>
-        <InfoTrigger
-          v-if="isCreating && infoPanel"
-          @click="openInfoPanel('ssh')"
-        />
+        <!-- Show a message when there are no parameters -->
+        <div
+          v-if="extraConnectionParamsList.length === 0"
+          class="textinfolabel text-sm italic"
+        >
+          {{
+            allowEdit
+              ? $t("instance.no-params-yet-add-above")
+              : $t("instance.no-extra-params-configured")
+          }}
+        </div>
       </div>
-      <SshConnectionForm
-        :value="dataSource"
-        :instance="instance"
-        :disabled="!allowEdit"
-        @change="handleSSHChange"
-      />
-    </div>
     </template>
   </div>
 </template>
@@ -1130,7 +1139,7 @@ import { onlyAllowNumber } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
 import InfoTrigger from "../InfoTrigger.vue";
-import type { InfoSection } from "../info-content";
+import { hasInfoContent, type InfoSection } from "../info-content";
 import CreateDataSourceExample from "./CreateDataSourceExample.vue";
 import CredentialSourceForm from "./CredentialSourceForm.vue";
 import OracleSIDAndServiceNameInput from "./OracleSIDAndServiceNameInput.vue";
@@ -1180,8 +1189,17 @@ const infoPanel = inject<
 >("infoPanel", undefined);
 
 const openInfoPanel = (section: InfoSection) => {
+  if (!hasInfoContent(basicInfo.value.engine, section)) {
+    return;
+  }
   infoPanel?.open(section);
 };
+
+const hasAuthenticationInfo = computed(() =>
+  hasInfoContent(basicInfo.value.engine, "authentication")
+);
+const hasSslInfo = computed(() => hasInfoContent(basicInfo.value.engine, "ssl"));
+const hasSshInfo = computed(() => hasInfoContent(basicInfo.value.engine, "ssh"));
 
 const {
   showDatabase,

@@ -61,6 +61,7 @@ export const provideInstanceFormContext = (baseContext: {
   const { t } = useI18n();
   const events = new Emittery<{
     dismiss: undefined;
+    "show-connection-options": undefined;
   }>();
   const { instance } = baseContext;
   const state = ref<LocalState>({

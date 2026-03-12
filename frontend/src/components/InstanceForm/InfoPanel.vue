@@ -7,7 +7,7 @@
         @click.self="$emit('close')"
       >
         <div
-          class="w-80 bg-white border-l border-block-border shadow-lg flex flex-col h-full"
+          class="w-[500px] bg-white border-l border-block-border shadow-lg flex flex-col h-full"
         >
           <div
             class="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-block-border bg-white"
