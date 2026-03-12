@@ -31,8 +31,7 @@
               </NTag>
             </div>
           </div>
-          <div class="shrink-0 flex items-center gap-x-2 text-control-light">
-            <span class="text-sm">{{ $t("common.edit") }}</span>
+          <div class="shrink-0 text-control-light">
             <ChevronDownIcon
               v-if="!isEngineSelectorCollapsed"
               class="w-4 h-4"
