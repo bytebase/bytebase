@@ -56,6 +56,7 @@
     "under-review": "审批中",
     "approve": "批准",
     "done": "完成",
+    "approved": "已批准",
     "create": "创建",
     "run": "运行",
     "retry": "重试",
@@ -955,7 +956,7 @@
       "changed-labels": "改变标签",
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "reopened-issue": "重开工单",
-      "resolved-issue": "完成工单",
+      "resolved-issue": "批准工单",
       "canceled-issue": "关闭工单"
     }
   },
@@ -1090,8 +1091,8 @@
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
       "open-cannot-reopen": "打开中的工单无法重开",
-      "done-cannot-reopen": "已完成的工单无法重开",
-      "done-cannot-close": "已完成的工单无法关闭",
+      "done-cannot-reopen": "已批准的工单无法重开",
+      "done-cannot-close": "已批准的工单无法关闭",
       "canceled-cannot-close": "已取消的工单无法关闭",
       "reopen": "重开",
       "reopened": "重开",
@@ -1138,7 +1139,7 @@
     "error": {
       "statement-cannot-be-modified": "工单创建后，语句将无法修改"
     },
-    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
+    "unfinished-resolved-issue-tips": "该工单被标记为「已批准」，但其中部分任务并未成功执行。",
     "data-export": {
       "options": "配置项",
       "limits": "限制",

@@ -56,6 +56,7 @@
     "under-review": "レビュー中",
     "approve": "承認する",
     "done": "仕上げる",
+    "approved": "承認済み",
     "create": "作成する",
     "run": "実行",
     "retry": "リトライ",
@@ -955,7 +956,7 @@
       "changed-labels": "ラベルを変更しました",
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "reopened-issue": "イシューを再開する",
-      "resolved-issue": "イシューを完了する",
+      "resolved-issue": "イシューを承認した",
       "canceled-issue": "イシューを閉じた"
     }
   },
@@ -1090,8 +1091,8 @@
     "batch-transition": {
       "not-allowed-tips": "選択したイシューの一部を {operation} にすることはできません",
       "open-cannot-reopen": "Open issues cannot be reopened",
-      "done-cannot-reopen": "Done issues cannot be reopened",
-      "done-cannot-close": "Done issues cannot be closed",
+      "done-cannot-reopen": "承認済みのイシューは再オープンできません",
+      "done-cannot-close": "承認済みのイシューはクローズできません",
       "canceled-cannot-close": "Canceled issues cannot be closed",
       "reopen": "再開",
       "reopened": "再開",
@@ -1138,7 +1139,7 @@
     "error": {
       "statement-cannot-be-modified": "イシューの作成後にステートメントを変更することはできません"
     },
-    "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
+    "unfinished-resolved-issue-tips": "イシューは「承認済み」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "data-export": {
       "options": "設定項目",
       "limits": "制限",
