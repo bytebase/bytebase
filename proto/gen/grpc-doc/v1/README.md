@@ -2727,6 +2727,7 @@ A tool call made by the AI.
 | id | [string](#string) |  | The unique ID of this tool call. |
 | name | [string](#string) |  | The name of the tool to call. |
 | arguments | [string](#string) |  | The JSON-encoded arguments to pass to the tool. |
+| metadata | [string](#string) | optional | Opaque provider-specific metadata (e.g., Gemini thought_signature). Frontend must echo this back unchanged when sending tool results. |
 
 
 

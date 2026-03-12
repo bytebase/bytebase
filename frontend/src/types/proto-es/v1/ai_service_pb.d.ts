@@ -111,6 +111,14 @@ export declare type AIChatToolCall = Message<"bytebase.v1.AIChatToolCall"> & {
    * @generated from field: string arguments = 3;
    */
   arguments: string;
+
+  /**
+   * Opaque provider-specific metadata (e.g., Gemini thought_signature).
+   * Frontend must echo this back unchanged when sending tool results.
+   *
+   * @generated from field: optional string metadata = 4;
+   */
+  metadata?: string;
 };
 
 /**

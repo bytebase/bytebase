@@ -228,7 +228,10 @@ type AIChatToolCall struct {
 	// The name of the tool to call.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// The JSON-encoded arguments to pass to the tool.
-	Arguments     string `protobuf:"bytes,3,opt,name=arguments,proto3" json:"arguments,omitempty"`
+	Arguments string `protobuf:"bytes,3,opt,name=arguments,proto3" json:"arguments,omitempty"`
+	// Opaque provider-specific metadata (e.g., Gemini thought_signature).
+	// Frontend must echo this back unchanged when sending tool results.
+	Metadata      *string `protobuf:"bytes,4,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -280,6 +283,13 @@ func (x *AIChatToolCall) GetName() string {
 func (x *AIChatToolCall) GetArguments() string {
 	if x != nil {
 		return x.Arguments
+	}
+	return ""
+}
+
+func (x *AIChatToolCall) GetMetadata() string {
+	if x != nil && x.Metadata != nil {
+		return *x.Metadata
 	}
 	return ""
 }
@@ -412,11 +422,13 @@ const file_v1_ai_service_proto_rawDesc = "" +
 	"\x14AIChatToolDefinition\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12+\n" +
-	"\x11parameters_schema\x18\x03 \x01(\tR\x10parametersSchema\"R\n" +
+	"\x11parameters_schema\x18\x03 \x01(\tR\x10parametersSchema\"\x80\x01\n" +
 	"\x0eAIChatToolCall\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
-	"\targuments\x18\x03 \x01(\tR\targuments\"\x95\x01\n" +
+	"\targuments\x18\x03 \x01(\tR\targuments\x12\x1f\n" +
+	"\bmetadata\x18\x04 \x01(\tH\x00R\bmetadata\x88\x01\x01B\v\n" +
+	"\t_metadata\"\x95\x01\n" +
 	"\rAIChatRequest\x126\n" +
 	"\bmessages\x18\x01 \x03(\v2\x1a.bytebase.v1.AIChatMessageR\bmessages\x12L\n" +
 	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionR\x0ftoolDefinitions\"w\n" +
@@ -480,6 +492,7 @@ func file_v1_ai_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_ai_service_proto_msgTypes[0].OneofWrappers = []any{}
+	file_v1_ai_service_proto_msgTypes[2].OneofWrappers = []any{}
 	file_v1_ai_service_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

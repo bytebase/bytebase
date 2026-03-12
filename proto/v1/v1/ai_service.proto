@@ -71,6 +71,10 @@ message AIChatToolCall {
 
   // The JSON-encoded arguments to pass to the tool.
   string arguments = 3;
+
+  // Opaque provider-specific metadata (e.g., Gemini thought_signature).
+  // Frontend must echo this back unchanged when sending tool results.
+  optional string metadata = 4;
 }
 
 // Request message for AIService.Chat.

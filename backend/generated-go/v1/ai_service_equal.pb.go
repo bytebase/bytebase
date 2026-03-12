@@ -65,6 +65,9 @@ func (x *AIChatToolCall) Equal(y *AIChatToolCall) bool {
 	if x.Arguments != y.Arguments {
 		return false
 	}
+	if p, q := x.Metadata, y.Metadata; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 

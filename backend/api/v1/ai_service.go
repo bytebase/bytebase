@@ -358,8 +358,9 @@ type chatGeminiPart struct {
 }
 
 type chatGeminiFunctionCall struct {
-	Name string `json:"name"`
-	Args any    `json:"args"`
+	Name             string `json:"name"`
+	Args             any    `json:"args"`
+	ThoughtSignature string `json:"thoughtSignature,omitempty"`
 }
 
 type chatGeminiFunctionResult struct {
@@ -380,12 +381,14 @@ type chatGeminiFunctionDecl struct {
 type chatGeminiResponse struct {
 	Candidates []struct {
 		Content struct {
-			Parts []struct {
-				Text         string                  `json:"text,omitempty"`
-				FunctionCall *chatGeminiFunctionCall `json:"functionCall,omitempty"`
-			} `json:"parts"`
+			Parts []chatGeminiResponsePart `json:"parts"`
 		} `json:"content"`
 	} `json:"candidates"`
+}
+
+type chatGeminiResponsePart struct {
+	Text         string                 `json:"text,omitempty"`
+	FunctionCall *chatGeminiFunctionCall `json:"functionCall,omitempty"`
 }
 
 func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
@@ -414,11 +417,15 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 				if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil {
 					args = tc.Arguments
 				}
+				fc := &chatGeminiFunctionCall{
+					Name: tc.Name,
+					Args: args,
+				}
+				if tc.Metadata != nil {
+					fc.ThoughtSignature = *tc.Metadata
+				}
 				parts = append(parts, chatGeminiPart{
-					FunctionCall: &chatGeminiFunctionCall{
-						Name: tc.Name,
-						Args: args,
-					},
+					FunctionCall: fc,
 				})
 			}
 			payload.Contents = append(payload.Contents, chatGeminiContent{
@@ -498,11 +505,15 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 				if err != nil {
 					return nil, errors.Errorf("failed to marshal function call args: %s", err)
 				}
-				result.ToolCalls = append(result.ToolCalls, &v1pb.AIChatToolCall{
+				tc := &v1pb.AIChatToolCall{
 					Id:        fmt.Sprintf("call_%s", part.FunctionCall.Name),
 					Name:      part.FunctionCall.Name,
 					Arguments: string(args),
-				})
+				}
+				if part.FunctionCall.ThoughtSignature != "" {
+					tc.Metadata = &part.FunctionCall.ThoughtSignature
+				}
+				result.ToolCalls = append(result.ToolCalls, tc)
 			}
 		}
 		if textContent != "" {

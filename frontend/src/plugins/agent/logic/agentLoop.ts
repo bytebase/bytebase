@@ -35,6 +35,7 @@ function messageToProto(msg: Message): AIChatMessage {
       id: tc.id,
       name: tc.name,
       arguments: tc.arguments,
+      metadata: tc.metadata,
     }));
   }
   return proto;
@@ -82,6 +83,7 @@ export async function runAgentLoop(
         id: tc.id,
         name: tc.name,
         arguments: tc.arguments,
+        metadata: tc.metadata,
       }));
 
       // Append assistant message with tool calls

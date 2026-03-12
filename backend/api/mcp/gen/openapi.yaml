@@ -6993,6 +6993,14 @@ components:
           type: string
           title: arguments
           description: The JSON-encoded arguments to pass to the tool.
+        metadata:
+          type:
+            - string
+            - "null"
+          title: metadata
+          description: |-
+            Opaque provider-specific metadata (e.g., Gemini thought_signature).
+             Frontend must echo this back unchanged when sending tool results.
       title: AIChatToolCall
       additionalProperties: false
       description: A tool call made by the AI.
