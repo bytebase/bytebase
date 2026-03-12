@@ -2473,6 +2473,16 @@
     },
     "tooltip-for-resource": "{scope} レベルでも設定可能です。Bytebase は環境レベルの設定を優先します。"
   },
+  "agent": {
+    "assistant-title": "Bytebase Assistant",
+    "new-chat": "New chat",
+    "minimize": "Minimize",
+    "close": "Close",
+    "input-placeholder": "Ask anything...",
+    "send": "Send",
+    "args": "Args:",
+    "result": "Result:"
+  },
   "audit-log": {
     "export-finished": "エクスポートが完了しました",
     "export-tooltip": "30日以内に開始時間と終了時間を選択する必要があります",

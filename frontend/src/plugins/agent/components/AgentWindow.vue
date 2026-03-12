@@ -121,11 +121,11 @@ onMounted(() => {
         class="flex items-center justify-between px-3 py-2 border-b bg-gray-50 cursor-move select-none"
         @mousedown="startDrag"
       >
-        <span class="text-sm font-medium">Bytebase Assistant</span>
+        <span class="text-sm font-medium">{{ $t("agent.assistant-title") }}</span>
         <div class="flex items-center gap-x-1">
           <button
             class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            title="New chat"
+            :title="$t('agent.new-chat')"
             @click.stop="agentStore.clearMessages()"
           >
             <svg
@@ -143,14 +143,14 @@ onMounted(() => {
           </button>
           <button
             class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            title="Minimize"
+            :title="$t('agent.minimize')"
             @click.stop="agentStore.minimize()"
           >
             &#8722;
           </button>
           <button
             class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            title="Close"
+            :title="$t('agent.close')"
             @click.stop="agentStore.toggle()"
           >
             &#10005;

@@ -1,7 +1,17 @@
 <script setup lang="ts">
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 import { computed, nextTick, ref, watch } from "vue";
+import AstToMarkdown from "@/plugins/ai/components/ChatView/Markdown/AstToVNode.vue";
 import { useAgentStore } from "../store/agent";
 import ToolCallCard from "./ToolCallCard.vue";
+
+const markdownProcessor = unified().use(remarkParse).use(remarkGfm);
+
+const parseMarkdown = (content: string) => {
+  return markdownProcessor.parse(content ?? "");
+};
 
 const agentStore = useAgentStore();
 const chatContainer = ref<HTMLElement | null>(null);
@@ -62,9 +72,9 @@ watch(
       <div v-else-if="msg.role === 'assistant'" class="flex flex-col gap-y-2">
         <div
           v-if="msg.content"
-          class="max-w-[80%] rounded-lg px-3 py-2 bg-gray-50 text-sm whitespace-pre-wrap"
+          class="max-w-[80%] rounded-lg px-3 py-2 bg-gray-50 text-sm markdown-content"
         >
-          {{ msg.content }}
+          <AstToMarkdown :ast="parseMarkdown(msg.content)" />
         </div>
         <ToolCallCard
           v-for="tc in msg.toolCalls"
@@ -83,3 +93,55 @@ watch(
     </div>
   </div>
 </template>
+
+<style scoped lang="postcss">
+.markdown-content :deep(p) {
+  @apply my-1;
+}
+.markdown-content :deep(p:first-child) {
+  @apply mt-0;
+}
+.markdown-content :deep(p:last-child) {
+  @apply mb-0;
+}
+.markdown-content :deep(pre) {
+  @apply my-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto;
+}
+.markdown-content :deep(code) {
+  @apply bg-gray-200 px-1 rounded text-xs;
+}
+.markdown-content :deep(pre code) {
+  @apply bg-transparent px-0;
+}
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  @apply my-1 pl-5;
+}
+.markdown-content :deep(ul) {
+  @apply list-disc;
+}
+.markdown-content :deep(ol) {
+  @apply list-decimal;
+}
+.markdown-content :deep(li) {
+  @apply my-0.5;
+}
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3) {
+  @apply font-semibold my-1;
+}
+.markdown-content :deep(a) {
+  @apply text-blue-600 underline;
+}
+.markdown-content :deep(blockquote) {
+  @apply border-l-2 border-gray-300 pl-2 my-1 text-gray-600;
+}
+.markdown-content :deep(table) {
+  @apply my-1 border-collapse text-xs;
+}
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+  @apply border border-gray-300 px-2 py-1;
+}
+</style>

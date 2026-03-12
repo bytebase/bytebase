@@ -30,12 +30,12 @@ function formatJson(value: string): string {
       <span class="ml-auto text-gray-400">{{ expanded ? "\u25BE" : "\u25B8" }}</span>
     </div>
     <div v-if="expanded" class="border-t px-2 py-1.5 space-y-1">
-      <div class="text-gray-500">Args:</div>
+      <div class="text-gray-500">{{ $t("agent.args") }}</div>
       <pre class="text-gray-700 whitespace-pre-wrap break-all">{{
         formatJson(toolCall.arguments)
       }}</pre>
       <template v-if="result">
-        <div class="text-gray-500">Result:</div>
+        <div class="text-gray-500">{{ $t("agent.result") }}</div>
         <pre
           class="text-gray-700 whitespace-pre-wrap break-all max-h-32 overflow-y-auto"
           >{{ formatJson(result) }}</pre

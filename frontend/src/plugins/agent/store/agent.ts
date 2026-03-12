@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import type { Message } from "../logic/types";
+
+const MESSAGES_KEY = "bb-agent-messages";
 
 export const useAgentStore = defineStore("agent", () => {
   // Window state
@@ -36,6 +38,12 @@ export const useAgentStore = defineStore("agent", () => {
 
   function clearMessages() {
     messages.value = [];
+    localStorage.removeItem(MESSAGES_KEY);
+  }
+
+  function clearConversation() {
+    clearMessages();
+    cancel();
   }
 
   function cancel() {
@@ -51,6 +59,25 @@ export const useAgentStore = defineStore("agent", () => {
     );
   }
 
+  function saveMessages() {
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages.value));
+  }
+
+  function loadMessages() {
+    const saved = localStorage.getItem(MESSAGES_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          messages.value = parsed;
+        }
+      } catch {
+        // Ignore corrupted data
+        localStorage.removeItem(MESSAGES_KEY);
+      }
+    }
+  }
+
   function loadWindowState() {
     const saved = localStorage.getItem("bb-agent-window");
     if (saved) {
@@ -59,6 +86,12 @@ export const useAgentStore = defineStore("agent", () => {
       if (state.size) size.value = state.size;
     }
   }
+
+  // Persist messages on every change
+  watch(messages, saveMessages, { deep: true });
+
+  // Load persisted messages on init
+  loadMessages();
 
   return {
     visible,
@@ -73,6 +106,7 @@ export const useAgentStore = defineStore("agent", () => {
     restore,
     addMessage,
     clearMessages,
+    clearConversation,
     cancel,
     saveWindowState,
     loadWindowState,

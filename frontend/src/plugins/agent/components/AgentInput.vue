@@ -101,7 +101,7 @@ async function send() {
       <textarea
         v-model="input"
         rows="1"
-        placeholder="Ask anything..."
+        :placeholder="$t('agent.input-placeholder')"
         class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         :disabled="agentStore.loading"
         @keydown.enter.exact.prevent="send"
@@ -111,7 +111,7 @@ async function send() {
         :disabled="!input.trim() || agentStore.loading"
         @click="send"
       >
-        Send
+        {{ $t("agent.send") }}
       </button>
     </div>
   </div>

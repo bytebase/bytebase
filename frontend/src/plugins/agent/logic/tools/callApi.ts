@@ -1,7 +1,6 @@
 import { getEndpointPath } from "./searchApi";
 
-const baseAddress =
-  import.meta.env.BB_GRPC_LOCAL || window.location.origin;
+const baseAddress = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 
 export interface CallApiArgs {
   operationId: string;
