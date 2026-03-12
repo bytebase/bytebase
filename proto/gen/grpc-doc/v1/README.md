@@ -133,6 +133,17 @@
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
+- [v1/ai_service.proto](#v1_ai_service-proto)
+    - [AIChatMessage](#bytebase-v1-AIChatMessage)
+    - [AIChatRequest](#bytebase-v1-AIChatRequest)
+    - [AIChatResponse](#bytebase-v1-AIChatResponse)
+    - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
+    - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
+  
+    - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
+  
+    - [AIService](#bytebase-v1-AIService)
+  
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
     - [BindingDelta](#bytebase-v1-BindingDelta)
@@ -2643,6 +2654,131 @@ ActuatorService manages system health and operational information.
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 | GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
+
+ 
+
+
+
+<a name="v1_ai_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/ai_service.proto
+
+
+
+<a name="bytebase-v1-AIChatMessage"></a>
+
+### AIChatMessage
+A single message in the conversation.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [AIChatMessageRole](#bytebase-v1-AIChatMessageRole) |  | The role of the message sender. |
+| content | [string](#string) | optional | The text content of the message. Optional for assistant messages that only contain tool calls. |
+| tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls made by the assistant. Only present in assistant messages. |
+| tool_call_id | [string](#string) | optional | The ID of the tool call this message is responding to. Only present in tool messages. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatRequest"></a>
+
+### AIChatRequest
+Request message for AIService.Chat.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| messages | [AIChatMessage](#bytebase-v1-AIChatMessage) | repeated | The conversation messages. |
+| tool_definitions | [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition) | repeated | The tool definitions available to the AI. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatResponse"></a>
+
+### AIChatResponse
+Response message for AIService.Chat.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
+| tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatToolCall"></a>
+
+### AIChatToolCall
+A tool call made by the AI.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The unique ID of this tool call. |
+| name | [string](#string) |  | The name of the tool to call. |
+| arguments | [string](#string) |  | The JSON-encoded arguments to pass to the tool. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatToolDefinition"></a>
+
+### AIChatToolDefinition
+A tool definition that the AI can invoke.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the tool. |
+| description | [string](#string) |  | A description of what the tool does. |
+| parameters_schema | [string](#string) |  | The JSON Schema describing the tool&#39;s parameters. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AIChatMessageRole"></a>
+
+### AIChatMessageRole
+Role of a chat message.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AI_CHAT_MESSAGE_ROLE_UNSPECIFIED | 0 | Unspecified role. |
+| AI_CHAT_MESSAGE_ROLE_SYSTEM | 1 | System message providing instructions. |
+| AI_CHAT_MESSAGE_ROLE_USER | 2 | User message. |
+| AI_CHAT_MESSAGE_ROLE_ASSISTANT | 3 | Assistant (AI) message. |
+| AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AIService"></a>
+
+### AIService
+AIService provides AI chat capabilities for the page agent.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Chat | [AIChatRequest](#bytebase-v1-AIChatRequest) | [AIChatResponse](#bytebase-v1-AIChatResponse) | Chat sends a conversation with tool definitions to the configured AI provider and returns the AI response. |
 
  
 
