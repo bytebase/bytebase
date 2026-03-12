@@ -710,64 +710,6 @@ func queryRetry(
 	return results, spans, duration, nil
 }
 
-func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, containerName string) (*storepb.ObjectSchema, error) {
-	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   instanceID,
-		DatabaseName: databaseName,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database schema: %q", databaseName)
-	}
-
-	if dbMetadata == nil {
-		return nil, nil
-	}
-
-	schemas := dbMetadata.GetConfig().GetSchemas()
-	if len(schemas) == 0 {
-		return nil, nil
-	}
-
-	schema := schemas[0]
-	tables := schema.GetTables()
-	for _, table := range tables {
-		if table.GetName() == containerName {
-			return table.GetObjectSchema(), nil
-		}
-	}
-
-	return nil, nil
-}
-
-func getMongoDBCollectionObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, collectionName string) (*storepb.ObjectSchema, error) {
-	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   instanceID,
-		DatabaseName: databaseName,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database schema: %q", databaseName)
-	}
-
-	if dbMetadata == nil {
-		return nil, nil
-	}
-
-	schemas := dbMetadata.GetConfig().GetSchemas()
-	if len(schemas) == 0 {
-		return nil, nil
-	}
-
-	for _, schema := range schemas {
-		for _, table := range schema.GetTables() {
-			if table.GetName() == collectionName {
-				return table.GetObjectSchema(), nil
-			}
-		}
-	}
-
-	return nil, nil
-}
-
 func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.ColumnResource) string {
 	var buf bytes.Buffer
 	_, _ = buf.WriteString("Using sensitive columns in WHERE clause is not allowed: ")

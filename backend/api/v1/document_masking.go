@@ -86,7 +86,7 @@ func preExecuteMaskingCheckMongoDB(
 			continue
 		}
 
-		objectSchema, err := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection))
 		}
@@ -119,7 +119,7 @@ func preExecuteMaskingCheckElasticsearch(
 		if indexName == "" {
 			continue
 		}
-		objectSchema, err := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
 		}
@@ -151,12 +151,12 @@ func checkSensitivePredicates(
 	var err error
 
 	if analysis := span.MongoDBAnalysis; analysis != nil && analysis.Collection != "" {
-		objectSchema, err = getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection)
 		}
 	} else if analysis := span.ElasticsearchAnalysis; analysis != nil && analysis.Index != "" {
-		objectSchema, err = getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
+		objectSchema, err = getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Index)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to get object schema for index %q", analysis.Index)
 		}
@@ -249,6 +249,30 @@ func getFirstSemanticTypeInPath(ast *parserbase.PathAST, objectSchema *storepb.O
 // ---------------------------------------------------------------------------
 // Shared JSON masking utilities
 // ---------------------------------------------------------------------------
+
+// maskDocumentString unmarshals a JSON string, masks it recursively using
+// the ObjectSchema and semantic type maskers, and marshals it back.
+func maskDocumentString(document string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
+	if document == "" || objectSchema == nil {
+		return document, nil
+	}
+
+	var parsed any
+	if err := json.Unmarshal([]byte(document), &parsed); err != nil {
+		return "", errors.Wrap(err, "failed to unmarshal document")
+	}
+
+	masked, err := walkAndMaskJSONRecursive(parsed, objectSchema, semanticTypeToMasker)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to mask document")
+	}
+
+	out, err := json.Marshal(masked)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal masked document")
+	}
+	return string(out), nil
+}
 
 func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
 	result := make(map[string]any)
@@ -535,7 +559,7 @@ func (*cosmosDBMasker) maskResults(
 	if len(spans) != 1 {
 		return connect.NewError(connect.CodeInternal, errors.New("expected one span for CosmosDB"))
 	}
-	objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
+	objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
@@ -630,7 +654,7 @@ func (*mongoDBMasker) maskResults(
 			continue
 		}
 
-		objectSchema, err := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
+		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, analysis.Collection)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for collection %q", analysis.Collection))
 		}
@@ -641,7 +665,7 @@ func (*mongoDBMasker) maskResults(
 		if len(analysis.JoinedCollections) > 0 {
 			var joined []joinedSchema
 			for _, jc := range analysis.JoinedCollections {
-				js, jsErr := getMongoDBCollectionObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
+				js, jsErr := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, jc.Collection)
 				if jsErr != nil {
 					return connect.NewError(connect.CodeInternal, errors.Wrapf(jsErr, "failed to get object schema for joined collection %q", jc.Collection))
 				}
@@ -659,7 +683,7 @@ func (*mongoDBMasker) maskResults(
 				continue
 			}
 
-			maskedValue, maskErr := maskMongoDBDocumentString(value, objectSchema, semanticTypeToMaskerMap)
+			maskedValue, maskErr := maskDocumentString(value, objectSchema, semanticTypeToMaskerMap)
 			if maskErr != nil {
 				return connect.NewError(connect.CodeInternal, errors.Wrapf(maskErr, "failed to mask MongoDB response"))
 			}
@@ -736,28 +760,6 @@ type joinedSchema struct {
 	schema  *storepb.ObjectSchema
 }
 
-func maskMongoDBDocumentString(document string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
-	if document == "" || objectSchema == nil {
-		return document, nil
-	}
-
-	var parsed any
-	if err := json.Unmarshal([]byte(document), &parsed); err != nil {
-		return "", errors.Wrap(err, "failed to unmarshal MongoDB result document")
-	}
-
-	masked, err := walkAndMaskJSONRecursive(parsed, objectSchema, semanticTypeToMasker)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to mask MongoDB result document")
-	}
-
-	maskedJSON, err := json.Marshal(masked)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal masked MongoDB result document")
-	}
-	return string(maskedJSON), nil
-}
-
 // ---------------------------------------------------------------------------
 // Elasticsearch
 // ---------------------------------------------------------------------------
@@ -801,7 +803,7 @@ func (*elasticsearchMasker) maskResults(
 		if indexName == "" {
 			continue
 		}
-		objectSchema, err := getElasticsearchIndexObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
+		objectSchema, err := getTableObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, indexName)
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get object schema for index %q", indexName))
 		}
@@ -834,7 +836,7 @@ func (*elasticsearchMasker) maskResults(
 					}
 				case parserbase.ElasticsearchAPIMaskGetDoc, parserbase.ElasticsearchAPIMaskExplain:
 					if colName == "_source" {
-						maskedValue, maskErr = maskElasticsearchDocSource(value, objectSchema, semanticTypeToMaskerMap)
+						maskedValue, maskErr = maskDocumentString(value, objectSchema, semanticTypeToMaskerMap)
 					} else {
 						continue
 					}
@@ -895,25 +897,6 @@ func lookupSemanticTypeByDotPath(dotPath string, objectSchema *storepb.ObjectSch
 		return current.SemanticType
 	}
 	return ""
-}
-
-// maskElasticsearchSourceObject masks a single _source JSON object using
-// the ObjectSchema and semantic type maskers. It delegates to walkAndMaskJSONRecursive:
-// when a field has a semantic type, the entire value is replaced directly
-// regardless of whether it is a primitive, object, or array.
-func maskElasticsearchSourceObject(source map[string]any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
-	if objectSchema == nil {
-		return source, nil
-	}
-	masked, err := walkAndMaskJSONRecursive(source, objectSchema, semanticTypeToMasker)
-	if err != nil {
-		return nil, err
-	}
-	result, ok := masked.(map[string]any)
-	if !ok {
-		return source, nil
-	}
-	return result, nil
 }
 
 // maskElasticsearchHitFields masks the "fields" section of a hit.
@@ -1030,7 +1013,7 @@ func maskElasticsearchHitSort(hitMap map[string]any, sortFields []string, object
 // maskElasticsearchSingleHit masks _source, fields, highlight, sort, and inner_hits for a single hit.
 func maskElasticsearchSingleHit(hitMap map[string]any, sortFields []string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) error {
 	if source, ok := hitMap["_source"].(map[string]any); ok {
-		masked, err := maskElasticsearchSourceObject(source, objectSchema, semanticTypeToMasker)
+		masked, err := walkAndMaskJSONRecursive(source, objectSchema, semanticTypeToMasker)
 		if err != nil {
 			return err
 		}
@@ -1133,26 +1116,6 @@ func maskElasticsearchHitsColumn(hitsColumnJSON string, sortFields []string, obj
 	return string(out), nil
 }
 
-// maskElasticsearchDocSource masks the _source column value for a GET _doc response.
-// The sourceColumnJSON is the JSON string from the "_source" column, which is the raw document.
-func maskElasticsearchDocSource(sourceColumnJSON string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
-	var source map[string]any
-	if err := json.Unmarshal([]byte(sourceColumnJSON), &source); err != nil {
-		return "", errors.Wrap(err, "failed to unmarshal _source column")
-	}
-
-	masked, err := maskElasticsearchSourceObject(source, objectSchema, semanticTypeToMasker)
-	if err != nil {
-		return "", err
-	}
-
-	out, err := json.Marshal(masked)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal masked _source column")
-	}
-	return string(out), nil
-}
-
 // maskElasticsearchGetSourceColumn masks a single field value from a GET _source response.
 // In _source responses, each top-level document field becomes a separate column.
 // fieldName is the column name (= field name), valueJSON is the marshaled value.
@@ -1198,7 +1161,7 @@ func maskElasticsearchMGetSource(docsColumnJSON string, objectSchema *storepb.Ob
 			continue
 		}
 		if source, ok := docMap["_source"].(map[string]any); ok {
-			masked, err := maskElasticsearchSourceObject(source, objectSchema, semanticTypeToMasker)
+			masked, err := walkAndMaskJSONRecursive(source, objectSchema, semanticTypeToMasker)
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to mask _source in doc %d", i)
 			}
@@ -1282,8 +1245,10 @@ func checkElasticsearchRequestBlocked(analysis *parserbase.ElasticsearchAnalysis
 	return nil
 }
 
-// getElasticsearchIndexObjectSchema retrieves the ObjectSchema for an ES index from the database config.
-func getElasticsearchIndexObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, indexName string) (*storepb.ObjectSchema, error) {
+// getTableObjectSchema retrieves the ObjectSchema for a table/collection/index/container
+// by name from the database config. This is the shared implementation for all document
+// databases (CosmosDB containers, MongoDB collections, Elasticsearch indices).
+func getTableObjectSchema(ctx context.Context, stores *store.Store, instanceID, databaseName, tableName string) (*storepb.ObjectSchema, error) {
 	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
@@ -1296,16 +1261,11 @@ func getElasticsearchIndexObjectSchema(ctx context.Context, stores *store.Store,
 		return nil, nil
 	}
 
-	schemas := dbMetadata.GetConfig().GetSchemas()
-	if len(schemas) == 0 {
-		return nil, nil
-	}
-
-	schema := schemas[0]
-	tables := schema.GetTables()
-	for _, table := range tables {
-		if table.GetName() == indexName {
-			return table.GetObjectSchema(), nil
+	for _, schema := range dbMetadata.GetConfig().GetSchemas() {
+		for _, table := range schema.GetTables() {
+			if table.GetName() == tableName {
+				return table.GetObjectSchema(), nil
+			}
 		}
 	}
 
