@@ -91,17 +91,19 @@
                 :timestamp="taskRun.updateTime"
                 custom-class="!text-xs !text-gray-400"
               />
-              <span v-if="getTaskRunCreator(taskRun)">·</span>
+              <span v-if="getTaskRunCreatorDisplay(taskRun)">·</span>
               <router-link
-                v-if="getTaskRunCreator(taskRun)"
+                v-if="getTaskRunCreatorDisplay(taskRun)"
                 :to="{
                   name: WORKSPACE_ROUTE_USER_PROFILE,
-                  params: { principalEmail: getTaskRunCreator(taskRun).email },
+                  params: {
+                    principalEmail: getTaskRunCreatorDisplay(taskRun)?.email || '',
+                  },
                 }"
                 class="hover:underline"
                 @click.stop
               >
-                {{ getTaskRunCreator(taskRun).title }}
+                {{ getTaskRunCreatorDisplay(taskRun)?.title }}
               </router-link>
               <NTooltip v-if="getTaskRunDuration(taskRun)">
                 <span>·</span>
@@ -327,12 +329,21 @@ watchEffect(() => {
   }
 });
 
-const getTaskRunCreator = (taskRun: TaskRun): User | undefined => {
-  if (!taskRun.creator) return undefined;
-  return (
-    userStore.getUserByIdentifier(taskRun.creator) ??
-    unknownUser(taskRun.creator)
-  );
+const taskRunCreatorMap = computed(() => {
+  const map = new Map<string, User>();
+  for (const taskRun of displayedTaskRuns.value) {
+    if (!taskRun.creator) continue;
+    map.set(
+      taskRun.name,
+      userStore.getUserByIdentifier(taskRun.creator) ??
+        unknownUser(taskRun.creator)
+    );
+  }
+  return map;
+});
+
+const getTaskRunCreatorDisplay = (taskRun: TaskRun): User | undefined => {
+  return taskRunCreatorMap.value.get(taskRun.name);
 };
 
 const handleClickTarget = (taskRun: TaskRun) => {
