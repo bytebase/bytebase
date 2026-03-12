@@ -1,30 +1,34 @@
 <template>
-  <NDataTable
-    key="project-table"
-    size="small"
-    v-bind="$attrs"
-    :columns="columnList"
-    :data="projectList"
-    :striped="true"
-    :bordered="bordered"
-    :loading="loading"
-    :row-key="(data: Project) => data.name"
-    :checked-row-keys="shouldShowSelection ? selectedProjectNames : undefined"
-    :row-props="rowProps"
-    :paginate-single-page="false"
-    @update:checked-row-keys="updateSelectedProjects"
-    @update:sorter="$emit('update:sorters', $event)"
-  />
+  <div ref="tableRef">
+    <NDataTable
+      key="project-table"
+      size="small"
+      v-bind="$attrs"
+      :columns="columnList"
+      :data="projectList"
+      :striped="true"
+      :bordered="bordered"
+      :loading="loading"
+      :scroll-x="scrollX"
+      :row-key="(data: Project) => data.name"
+      :checked-row-keys="shouldShowSelection ? selectedProjectNames : undefined"
+      :row-props="rowProps"
+      :paginate-single-page="false"
+      @update:checked-row-keys="updateSelectedProjects"
+      @update:sorter="$emit('update:sorters', $event)"
+    />
+  </div>
 </template>
 
 <script lang="tsx" setup>
+import { useElementSize } from "@vueuse/core";
 import { CheckIcon } from "lucide-vue-next";
 import {
   type DataTableColumn,
   type DataTableSortState,
   NDataTable,
 } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ProjectActionDropdown from "@/components/Project/ProjectActionDropdown.vue";
@@ -33,7 +37,11 @@ import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  extractProjectResourceName,
+  hasWorkspacePermissionV2,
+  TailwindBreakpoints,
+} from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
 import { mapSorterStatus } from "./utils";
 
@@ -79,6 +87,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
+const tableRef = ref<HTMLDivElement>();
+const { width: tableWidth } = useElementSize(tableRef);
+const showExtendedColumns = computed(
+  () => tableWidth.value > TailwindBreakpoints.md
+);
 
 const hasDeletePermission = computed(() =>
   hasWorkspacePermissionV2("bb.projects.delete")
@@ -98,7 +111,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "selection",
         type: shouldShowSelection.value ? "selection" : undefined,
-        width: !shouldShowSelection.value ? 32 : undefined,
+        width: !shouldShowSelection.value ? 32 : 48,
         hide: !shouldShowSelection.value && !props.currentProject,
         disabled: shouldShowSelection.value
           ? (project: Project) => {
@@ -128,7 +141,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "id",
         title: t("common.id"),
-        width: 128,
+        minWidth: 128,
         resizable: true,
         ellipsis: {
           tooltip: true,
@@ -145,6 +158,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "title",
         resizable: true,
+        minWidth: 200,
         title: t("project.table.name"),
         render: (project) => (
           <ProjectNameCell project={project} keyword={props.keyword} />
@@ -154,8 +168,8 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         key: "labels",
         title: t("common.labels"),
         resizable: true,
-        width: 300,
-        hide: !props.showLabels,
+        minWidth: 240,
+        hide: !props.showLabels || !showExtendedColumns.value,
         render: (project) => (
           <LabelsCell labels={project.labels} showCount={3} placeholder="-" />
         ),
@@ -179,6 +193,17 @@ const columnList = computed((): ProjectDataTableColumn[] => {
     ] as ProjectDataTableColumn[]
   ).filter((column) => !column.hide);
   return mapSorterStatus(columns, props.sorters);
+});
+
+const scrollX = computed(() => {
+  return columnList.value.reduce((sum, col) => {
+    return (
+      sum +
+      ((col as { width?: number; minWidth?: number }).width ??
+        (col as { minWidth?: number }).minWidth ??
+        100)
+    );
+  }, 0);
 });
 
 const rowProps = (project: Project) => {
