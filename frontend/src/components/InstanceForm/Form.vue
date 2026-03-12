@@ -937,7 +937,7 @@ const testConnectionForCurrentEditingDS = async () => {
 
   const result = await testConnection(ds, /* !silent */ false);
   if (!result.success && hasConfiguredConnectionOptions.value) {
-    void events.emit("show-connection-options");
+    events.emit("show-connection-options");
   }
 };
 

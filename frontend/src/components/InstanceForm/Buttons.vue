@@ -298,7 +298,7 @@ const maybeOpenConnectionOptions = (ds: EditDataSource) => {
   if (!hasConfiguredConnectionOptions(ds)) {
     return;
   }
-  void events.emit("show-connection-options");
+  events.emit("show-connection-options");
 };
 
 // We will also create the database * denoting all databases
