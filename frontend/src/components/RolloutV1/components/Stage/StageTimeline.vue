@@ -87,17 +87,31 @@
             />
             <!-- Duration and Timestamp -->
             <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+              <TimestampDisplay
+                :timestamp="taskRun.updateTime"
+                custom-class="!text-xs !text-gray-400"
+              />
+              <span v-if="getTaskRunCreatorDisplay(taskRun)">·</span>
+              <router-link
+                v-if="getTaskRunCreatorDisplay(taskRun)"
+                :to="{
+                  name: WORKSPACE_ROUTE_USER_PROFILE,
+                  params: {
+                    principalEmail: getTaskRunCreatorDisplay(taskRun)?.email || '',
+                  },
+                }"
+                class="hover:underline"
+                @click.stop
+              >
+                {{ getTaskRunCreatorDisplay(taskRun)?.title }}
+              </router-link>
               <NTooltip v-if="getTaskRunDuration(taskRun)">
+                <span>·</span>
                 <template #trigger>
                   <span>{{ getTaskRunDuration(taskRun) }}</span>
                 </template>
                 {{ $t("common.duration") }}
               </NTooltip>
-              <span v-if="getTaskRunDuration(taskRun)">·</span>
-              <TimestampDisplay
-                :timestamp="taskRun.updateTime"
-                custom-class="!text-xs !text-gray-400"
-              />
             </div>
           </div>
         </NTimelineItem>
@@ -131,14 +145,17 @@
 <script lang="ts" setup>
 import { SquareChartGanttIcon } from "lucide-vue-next";
 import { NTimeline, NTimelineItem, NTooltip } from "naive-ui";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch, watchEffect } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useCurrentProjectV1 } from "@/store";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import { useCurrentProjectV1, useUserStore } from "@/store";
+import { unknownUser } from "@/types";
 import type { Stage, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   databaseForTask,
   extractDatabaseResourceName,
@@ -172,6 +189,7 @@ const props = withDefaults(
 const isSidebarMode = computed(() => props.mode === "sidebar");
 
 const { project } = useCurrentProjectV1();
+const userStore = useUserStore();
 const { navigateToTaskDetail } = useTaskNavigation();
 const { lastRefreshTime } = useResourcePoller();
 
@@ -300,6 +318,32 @@ const getTaskTargetDisplay = (taskRun: TaskRun): TaskTargetDisplay => {
       fullPath: "unknown",
     }
   );
+};
+
+watchEffect(() => {
+  const creators = displayedTaskRuns.value
+    .map((taskRun) => taskRun.creator)
+    .filter((creator) => !!creator);
+  if (creators.length > 0) {
+    userStore.batchGetOrFetchUsers(creators);
+  }
+});
+
+const taskRunCreatorMap = computed(() => {
+  const map = new Map<string, User>();
+  for (const taskRun of displayedTaskRuns.value) {
+    if (!taskRun.creator) continue;
+    map.set(
+      taskRun.name,
+      userStore.getUserByIdentifier(taskRun.creator) ??
+        unknownUser(taskRun.creator)
+    );
+  }
+  return map;
+});
+
+const getTaskRunCreatorDisplay = (taskRun: TaskRun): User | undefined => {
+  return taskRunCreatorMap.value.get(taskRun.name);
 };
 
 const handleClickTarget = (taskRun: TaskRun) => {
