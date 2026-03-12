@@ -31,8 +31,7 @@
               </NTag>
             </div>
           </div>
-          <div class="shrink-0 flex items-center gap-x-2 text-control-light">
-            <span class="text-sm">{{ $t("common.edit") }}</span>
+          <div class="shrink-0 text-control-light">
             <ChevronDownIcon
               v-if="!isEngineSelectorCollapsed"
               class="w-4 h-4"
@@ -75,7 +74,7 @@
           {{ $t("instance.section.basic-info") }}
         </h3>
 
-        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+        <div class="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="name" class="textlabel flex flex-row items-center">
               {{ $t("instance.instance-name") }}
@@ -238,15 +237,11 @@
 
       <!-- Connection Card -->
       <div class="border border-block-border rounded-lg p-5">
-        <h3 class="text-base font-medium text-main flex items-center gap-x-1">
+        <h3 class="text-base font-medium text-main">
           {{ $t("instance.section.connection") }}
-          <InfoTrigger
-            v-if="isCreating && infoPanel"
-            @click="openInfoPanel('authentication')"
-          />
         </h3>
 
-        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
+        <div class="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
           <div class="sm:col-span-3 sm:col-start-1">
             <template v-if="basicInfo.engine === Engine.SPANNER">
               <SpannerHostInput
@@ -300,7 +295,7 @@
                   {{ $t("instance.host-or-socket") }}
                   <RequiredStar v-if="basicInfo.engine !== Engine.DYNAMODB" />
                   <InfoTrigger
-                    v-if="isCreating && infoPanel"
+                    v-if="isCreating && infoPanel && hasHostInfo"
                     @click="openInfoPanel('host')"
                   />
                 </template>
@@ -532,12 +527,50 @@
       <!-- Connection Options Card (Extra Params, SSL, SSH) -->
       <div
         v-if="basicInfo.engine !== Engine.DYNAMODB && editingDataSource"
-        class="border border-block-border rounded-lg p-5"
+        class="border border-block-border rounded-lg bg-white"
       >
-        <h3 class="text-base font-medium text-main">
-          {{ $t("instance.connection-options") }}
-        </h3>
-        <DataSourceForm :data-source="editingDataSource" options-only />
+        <button
+          type="button"
+          class="w-full flex items-center justify-between gap-x-3 px-5 py-4 text-left transition-colors hover:bg-gray-50"
+          @click="toggleConnectionOptions"
+        >
+          <h3 class="text-base font-medium text-main">
+            {{ $t("instance.connection-options") }}
+          </h3>
+          <div class="shrink-0 text-control-light">
+            <ChevronDownIcon
+              v-if="!isConnectionOptionsCollapsed"
+              class="w-4 h-4"
+            />
+            <ChevronRightIcon v-else class="w-4 h-4" />
+          </div>
+        </button>
+        <Transition name="connection-options">
+          <div
+            v-show="!isConnectionOptionsCollapsed"
+            class="border-t border-block-border px-5 py-4"
+          >
+            <DataSourceForm :data-source="editingDataSource" options-only />
+          </div>
+        </Transition>
+      </div>
+
+      <div
+        v-if="
+          isCreating &&
+          !!editingDataSource
+        "
+        class="flex justify-start"
+      >
+        <NButton
+          tertiary
+          type="primary"
+          :loading="state.isTestingConnection"
+          :disabled="!allowTestConnection"
+          @click.prevent="testConnectionForCurrentEditingDS"
+        >
+          {{ $t("instance.test-connection") }}
+        </NButton>
       </div>
 
       <!-- Sync Databases Card (create only) -->
@@ -550,6 +583,7 @@
         </p>
 
         <SyncDatabases
+          class="mt-2"
           :is-creating="true"
           :show-label="false"
           :allow-edit="allowEdit && !!allowCreate"
@@ -587,6 +621,7 @@ import {
   RichEngineName,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -610,6 +645,7 @@ import {
   autoSubscriptionRoute,
   extractInstanceResourceName,
   isDev,
+  isValidSpannerHost,
   onlyAllowNumber,
   supportedEngineV1List,
   urlfy,
@@ -625,13 +661,15 @@ import { useInstanceFormContext } from "./context";
 import DataSourceForm from "./DataSourceSection/DataSourceForm.vue";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import InfoTrigger from "./InfoTrigger.vue";
-import type { InfoSection } from "./info-content";
+import { hasInfoContent, type InfoSection } from "./info-content";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import SyncDatabases from "./SyncDatabases.vue";
 
 const context = useInstanceFormContext();
 const {
+  events,
+  state,
   specs,
   instance,
   environment,
@@ -644,6 +682,8 @@ const {
   labelKVList,
   adminDataSource,
   editingDataSource,
+  checkDataSource,
+  testConnection,
 } = context;
 const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 
@@ -665,8 +705,15 @@ watch(
 );
 
 const openInfoPanel = (section: InfoSection) => {
+  if (!hasInfoContent(basicInfo.value.engine, section)) {
+    return;
+  }
   infoPanel?.open(section);
 };
+
+const hasHostInfo = computed(() =>
+  hasInfoContent(basicInfo.value.engine, "host")
+);
 
 const { t } = useI18n();
 const instanceV1Store = useInstanceV1Store();
@@ -674,6 +721,66 @@ const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const scanIntervalInputRef = ref<InstanceType<typeof ScanIntervalInput>>();
 const isEngineSelectorCollapsed = ref(false);
+const isConnectionOptionsCollapsed = ref(true);
+
+const showConnectionOptionsCard = computed(() => {
+  return (
+    basicInfo.value.engine !== Engine.DYNAMODB && !!editingDataSource.value
+  );
+});
+
+const hasConfiguredConnectionOptions = computed(() => {
+  const ds = editingDataSource.value;
+  if (!ds) {
+    return false;
+  }
+
+  const hasExtraParameters =
+    Object.keys(ds.extraConnectionParameters ?? {}).length > 0;
+  const hasSslConfig = !!(ds.useSsl || ds.sslCa || ds.sslCert || ds.sslKey);
+  const hasSshConfig = !!(
+    ds.sshHost ||
+    ds.sshPort ||
+    ds.sshUser ||
+    ds.sshPassword ||
+    ds.sshPrivateKey
+  );
+
+  return hasExtraParameters || hasSslConfig || hasSshConfig;
+});
+
+watch(
+  () => ({
+    show: showConnectionOptionsCard.value,
+    creating: isCreating.value,
+    hasConfigured: hasConfiguredConnectionOptions.value,
+  }),
+  (next, prev) => {
+    if (!next.show) {
+      return;
+    }
+
+    const becameVisible = !prev?.show;
+    if (becameVisible) {
+      isConnectionOptionsCollapsed.value = next.creating
+        ? true
+        : !next.hasConfigured;
+      return;
+    }
+
+    if (!next.creating && next.hasConfigured && !prev?.hasConfigured) {
+      isConnectionOptionsCollapsed.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+useEmitteryEventListener(events, "show-connection-options", () => {
+  if (!showConnectionOptionsCard.value) {
+    return;
+  }
+  isConnectionOptionsCollapsed.value = false;
+});
 
 const availableLicenseCount = computed(() => {
   return Math.max(
@@ -791,6 +898,49 @@ const toggleEngineSelector = () => {
   isEngineSelectorCollapsed.value = !isEngineSelectorCollapsed.value;
 };
 
+const toggleConnectionOptions = () => {
+  isConnectionOptionsCollapsed.value = !isConnectionOptionsCollapsed.value;
+};
+
+const allowTestConnection = computed(() => {
+  if (
+    !allowEdit.value ||
+    state.value.isRequesting ||
+    state.value.isTestingConnection
+  ) {
+    return false;
+  }
+
+  const ds = editingDataSource.value;
+  if (!ds) {
+    return false;
+  }
+
+  if (basicInfo.value.engine === Engine.SPANNER) {
+    return isValidSpannerHost(ds.host);
+  }
+  if (basicInfo.value.engine === Engine.BIGQUERY) {
+    return ds.host !== "";
+  }
+  if (basicInfo.value.engine !== Engine.DYNAMODB && ds.host === "") {
+    return false;
+  }
+
+  return checkDataSource([ds]);
+});
+
+const testConnectionForCurrentEditingDS = async () => {
+  const ds = editingDataSource.value;
+  if (!ds) {
+    return;
+  }
+
+  const result = await testConnection(ds, /* !silent */ false);
+  if (!result.success && hasConfiguredConnectionOptions.value) {
+    events.emit("show-connection-options");
+  }
+};
+
 const handleChangeSyncDatabases = (databases: string[]) => {
   basicInfo.value.syncDatabases = [...databases];
 };
@@ -901,6 +1051,26 @@ const handleSelectEnvironment = (name: string | undefined) => {
 .engine-selector-enter-to,
 .engine-selector-leave-from {
   max-height: 32rem;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.connection-options-enter-active,
+.connection-options-leave-active {
+  overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.connection-options-enter-from,
+.connection-options-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+}
+
+.connection-options-enter-to,
+.connection-options-leave-from {
+  max-height: 80rem;
   opacity: 1;
   transform: translateY(0);
 }

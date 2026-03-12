@@ -6,10 +6,11 @@
     <div v-if="snippet.codeBlock" class="flex flex-col gap-y-1">
       <div class="flex flex-row">
         <NConfigProvider
-          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-control-border bg-gray-50 text-xs whitespace-pre-line rounded-l-[3px] overflow-x-auto"
+          class="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-control-border bg-gray-50 whitespace-pre-line rounded-l-[3px] overflow-x-auto"
           :hljs="hljs"
         >
           <NCode
+            class="text-[12px]"
             word-wrap
             :language="snippet.codeBlock.language"
             :code="snippet.codeBlock.code"
