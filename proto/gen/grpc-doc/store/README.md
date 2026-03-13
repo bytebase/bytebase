@@ -2682,7 +2682,7 @@ Issue is the metadata for issues that track database operations and access reque
 <a name="bytebase-store-RoleGrant"></a>
 
 ### RoleGrant
-RoleGrant contains details for requesting database access permissions.
+RoleGrant contains details for requesting a project role.
 
 
 | Field | Type | Label | Description |

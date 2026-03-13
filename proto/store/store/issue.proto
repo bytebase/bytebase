@@ -48,7 +48,7 @@ message Issue {
   string access_grant_id = 5;
 }
 
-// RoleGrant contains details for requesting database access permissions.
+// RoleGrant contains details for requesting a project role.
 message RoleGrant {
   // The role being requested for the user.
   // Format: roles/EXPORTER.

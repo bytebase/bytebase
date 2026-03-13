@@ -221,7 +221,7 @@ func (x *Issue) GetAccessGrantId() string {
 	return ""
 }
 
-// RoleGrant contains details for requesting database access permissions.
+// RoleGrant contains details for requesting a project role.
 type RoleGrant struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The role being requested for the user.
