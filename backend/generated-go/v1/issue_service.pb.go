@@ -92,11 +92,11 @@ const (
 	Issue_TYPE_UNSPECIFIED Issue_Type = 0
 	// Database schema or data change.
 	Issue_DATABASE_CHANGE Issue_Type = 1
-	// Database access grant request.
-	Issue_GRANT_REQUEST Issue_Type = 2
+	// Database role grant request.
+	Issue_ROLE_GRANT Issue_Type = 2
 	// Database data export request.
 	Issue_DATABASE_EXPORT Issue_Type = 3
-	// Temporary access grant request.
+	// Temporary access grant lifecycle issue.
 	Issue_ACCESS_GRANT Issue_Type = 4
 )
 
@@ -105,14 +105,14 @@ var (
 	Issue_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "DATABASE_CHANGE",
-		2: "GRANT_REQUEST",
+		2: "ROLE_GRANT",
 		3: "DATABASE_EXPORT",
 		4: "ACCESS_GRANT",
 	}
 	Issue_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"DATABASE_CHANGE":  1,
-		"GRANT_REQUEST":    2,
+		"ROLE_GRANT":       2,
 		"DATABASE_EXPORT":  3,
 		"ACCESS_GRANT":     4,
 	}
@@ -1141,8 +1141,8 @@ type Issue struct {
 	// Can be empty.
 	// Format: projects/{project}/plans/{plan}
 	Plan string `protobuf:"bytes,11,opt,name=plan,proto3" json:"plan,omitempty"`
-	// Used if the issue type is GRANT_REQUEST.
-	GrantRequest *GrantRequest `protobuf:"bytes,13,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
+	// Used if the issue type is ROLE_GRANT.
+	RoleGrant *RoleGrant `protobuf:"bytes,13,opt,name=role_grant,json=roleGrant,proto3" json:"role_grant,omitempty"`
 	// The risk level of the issue.
 	RiskLevel RiskLevel `protobuf:"varint,15,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
 	// Labels attached to the issue for categorization and filtering.
@@ -1262,9 +1262,9 @@ func (x *Issue) GetPlan() string {
 	return ""
 }
 
-func (x *Issue) GetGrantRequest() *GrantRequest {
+func (x *Issue) GetRoleGrant() *RoleGrant {
 	if x != nil {
-		return x.GrantRequest
+		return x.RoleGrant
 	}
 	return nil
 }
@@ -1297,7 +1297,7 @@ func (x *Issue) GetAccessGrant() string {
 	return ""
 }
 
-type GrantRequest struct {
+type RoleGrant struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The requested role.
 	// Format: roles/EXPORTER.
@@ -1313,20 +1313,20 @@ type GrantRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GrantRequest) Reset() {
-	*x = GrantRequest{}
+func (x *RoleGrant) Reset() {
+	*x = RoleGrant{}
 	mi := &file_v1_issue_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GrantRequest) String() string {
+func (x *RoleGrant) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GrantRequest) ProtoMessage() {}
+func (*RoleGrant) ProtoMessage() {}
 
-func (x *GrantRequest) ProtoReflect() protoreflect.Message {
+func (x *RoleGrant) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_issue_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1338,33 +1338,33 @@ func (x *GrantRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GrantRequest.ProtoReflect.Descriptor instead.
-func (*GrantRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use RoleGrant.ProtoReflect.Descriptor instead.
+func (*RoleGrant) Descriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *GrantRequest) GetRole() string {
+func (x *RoleGrant) GetRole() string {
 	if x != nil {
 		return x.Role
 	}
 	return ""
 }
 
-func (x *GrantRequest) GetUser() string {
+func (x *RoleGrant) GetUser() string {
 	if x != nil {
 		return x.User
 	}
 	return ""
 }
 
-func (x *GrantRequest) GetCondition() *expr.Expr {
+func (x *RoleGrant) GetCondition() *expr.Expr {
 	if x != nil {
 		return x.Condition
 	}
 	return nil
 }
 
-func (x *GrantRequest) GetExpiration() *durationpb.Duration {
+func (x *RoleGrant) GetExpiration() *durationpb.Duration {
 	if x != nil {
 		return x.Expiration
 	}
@@ -2218,7 +2218,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\xfb\t\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\xef\t\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2233,8 +2233,9 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x12\n" +
-	"\x04plan\x18\v \x01(\tR\x04plan\x12>\n" +
-	"\rgrant_request\x18\r \x01(\v2\x19.bytebase.v1.GrantRequestR\fgrantRequest\x125\n" +
+	"\x04plan\x18\v \x01(\tR\x04plan\x125\n" +
+	"\n" +
+	"role_grant\x18\r \x01(\v2\x16.bytebase.v1.RoleGrantR\troleGrant\x125\n" +
 	"\n" +
 	"risk_level\x18\x0f \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x12\x16\n" +
 	"\x06labels\x18\x11 \x03(\tR\x06labels\x12O\n" +
@@ -2248,11 +2249,12 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\"k\n" +
+	"\bREJECTED\x10\x03\"h\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fDATABASE_CHANGE\x10\x01\x12\x11\n" +
-	"\rGRANT_REQUEST\x10\x02\x12\x13\n" +
+	"\x0fDATABASE_CHANGE\x10\x01\x12\x0e\n" +
+	"\n" +
+	"ROLE_GRANT\x10\x02\x12\x13\n" +
 	"\x0fDATABASE_EXPORT\x10\x03\x12\x10\n" +
 	"\fACCESS_GRANT\x10\x04\"u\n" +
 	"\x0eApprovalStatus\x12\x1f\n" +
@@ -2262,8 +2264,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\bAPPROVED\x10\x03\x12\f\n" +
 	"\bREJECTED\x10\x04\x12\v\n" +
 	"\aSKIPPED\x10\x05::\xeaA7\n" +
-	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}\"\xa2\x01\n" +
-	"\fGrantRequest\x12\x12\n" +
+	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}\"\x9f\x01\n" +
+	"\tRoleGrant\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x12\n" +
 	"\x04user\x18\x02 \x01(\tR\x04user\x12/\n" +
 	"\tcondition\x18\x03 \x01(\v2\x11.google.type.ExprR\tcondition\x129\n" +
@@ -2396,7 +2398,7 @@ var file_v1_issue_service_proto_goTypes = []any{
 	(*RejectIssueRequest)(nil),              // 15: bytebase.v1.RejectIssueRequest
 	(*RequestIssueRequest)(nil),             // 16: bytebase.v1.RequestIssueRequest
 	(*Issue)(nil),                           // 17: bytebase.v1.Issue
-	(*GrantRequest)(nil),                    // 18: bytebase.v1.GrantRequest
+	(*RoleGrant)(nil),                       // 18: bytebase.v1.RoleGrant
 	(*ApprovalTemplate)(nil),                // 19: bytebase.v1.ApprovalTemplate
 	(*ApprovalFlow)(nil),                    // 20: bytebase.v1.ApprovalFlow
 	(*ListIssueCommentsRequest)(nil),        // 21: bytebase.v1.ListIssueCommentsRequest
@@ -2427,11 +2429,11 @@ var file_v1_issue_service_proto_depIdxs = []int32{
 	19, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
 	31, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
 	31, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
-	18, // 12: bytebase.v1.Issue.grant_request:type_name -> bytebase.v1.GrantRequest
+	18, // 12: bytebase.v1.Issue.role_grant:type_name -> bytebase.v1.RoleGrant
 	32, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
 	2,  // 14: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.Issue.ApprovalStatus
-	33, // 15: bytebase.v1.GrantRequest.condition:type_name -> google.type.Expr
-	34, // 16: bytebase.v1.GrantRequest.expiration:type_name -> google.protobuf.Duration
+	33, // 15: bytebase.v1.RoleGrant.condition:type_name -> google.type.Expr
+	34, // 16: bytebase.v1.RoleGrant.expiration:type_name -> google.protobuf.Duration
 	20, // 17: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
 	25, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
 	25, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment

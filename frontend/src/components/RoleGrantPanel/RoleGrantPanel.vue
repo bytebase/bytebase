@@ -61,7 +61,7 @@ import { getUserEmailInBinding } from "@/types";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
-  GrantRequestSchema,
+  RoleGrantSchema,
   IssueSchema,
   Issue_Type as NewIssue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -130,7 +130,7 @@ const doCreateIssue = async () => {
     return;
   }
 
-  const grantRequest = create(GrantRequestSchema, {
+  const roleGrant = create(RoleGrantSchema, {
     role: binding.role,
     user: `users/${currentUser.value.email}`,
     condition: binding.condition,
@@ -159,8 +159,8 @@ const doCreateIssue = async () => {
           )
         ),
     description: binding.condition?.description,
-    type: NewIssue_Type.GRANT_REQUEST,
-    grantRequest,
+    type: NewIssue_Type.ROLE_GRANT,
+    roleGrant,
     labels: labels.value,
   });
 

@@ -77,20 +77,20 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return CheckApprovalApproved(issue.Payload.Approval)
 }
 
-// UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
-func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
+// UpdateProjectPolicyFromRoleGrantIssue updates the project policy from a role grant issue.
+func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
 	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.ProjectID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get project policy for project %s", issue.ProjectID)
 	}
 
 	var newConditionExpr string
-	if grantRequest.Condition != nil {
-		newConditionExpr = grantRequest.Condition.Expression
+	if roleGrant.Condition != nil {
+		newConditionExpr = roleGrant.Condition.Expression
 	}
 	updated := false
 
-	email, err := extractEmailFromUserIdentifier(grantRequest.User)
+	email, err := extractEmailFromUserIdentifier(roleGrant.User)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	memberName := formatMemberNameByType(newUser)
 	for _, binding := range policyMessage.Policy.Bindings {
-		if binding.Role != grantRequest.Role {
+		if binding.Role != roleGrant.Role {
 			continue
 		}
 		var oldConditionExpr string
@@ -119,13 +119,13 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		break
 	}
 	if !updated {
-		condition := grantRequest.Condition
+		condition := roleGrant.Condition
 		if condition == nil {
 			condition = &expr.Expr{}
 		}
 		condition.Description = fmt.Sprintf("#%d", issue.UID)
 		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
-			Role:      grantRequest.Role,
+			Role:      roleGrant.Role,
 			Members:   []string{memberName},
 			Condition: condition,
 		})

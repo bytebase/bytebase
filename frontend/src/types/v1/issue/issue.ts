@@ -12,7 +12,7 @@ export interface IssueFilter {
   riskLevelList?: RiskLevel[];
   createdTsAfter?: number;
   createdTsBefore?: number;
-  // typeList is the issue types to filter by, for example: GRANT_REQUEST, DATABASE_EXPORT
+  // typeList is the issue types to filter by, for example: ROLE_GRANT, DATABASE_EXPORT
   typeList?: Issue_Type[];
   // filter by labels, for example: labels = "feature & bug"
   labels?: string[];

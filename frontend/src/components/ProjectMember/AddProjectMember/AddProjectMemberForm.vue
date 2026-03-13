@@ -126,7 +126,7 @@ import { NInput } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { BBAttention } from "@/bbkit";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
-import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
+import QuerierDatabaseResourceForm from "@/components/RoleGrantPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { EnvironmentSelect, RoleSelect } from "@/components/v2/Select";

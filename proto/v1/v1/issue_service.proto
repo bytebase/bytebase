@@ -386,11 +386,11 @@ message Issue {
     TYPE_UNSPECIFIED = 0;
     // Database schema or data change.
     DATABASE_CHANGE = 1;
-    // Database access grant request.
-    GRANT_REQUEST = 2;
+    // Database role grant request.
+    ROLE_GRANT = 2;
     // Database data export request.
     DATABASE_EXPORT = 3;
-    // Temporary access grant request.
+    // Temporary access grant lifecycle issue.
     ACCESS_GRANT = 4;
   }
   Type type = 4;
@@ -434,8 +434,8 @@ message Issue {
   // Format: projects/{project}/plans/{plan}
   string plan = 11;
 
-  // Used if the issue type is GRANT_REQUEST.
-  GrantRequest grant_request = 13;
+  // Used if the issue type is ROLE_GRANT.
+  RoleGrant role_grant = 13;
 
   // The risk level of the issue.
   RiskLevel risk_level = 15;
@@ -468,7 +468,7 @@ message Issue {
   ];
 }
 
-message GrantRequest {
+message RoleGrant {
   // The requested role.
   // Format: roles/EXPORTER.
   string role = 1;

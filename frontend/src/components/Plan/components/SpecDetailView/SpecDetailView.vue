@@ -76,9 +76,9 @@ const isCreateDatabasePlan = computed(() => {
   );
 });
 
-const isGrantRequestOrAccessGrantIssue = computed(() => {
+const isRoleGrantOrAccessGrantIssue = computed(() => {
   return (
-    issue.value?.type === Issue_Type.GRANT_REQUEST ||
+    issue.value?.type === Issue_Type.ROLE_GRANT ||
     issue.value?.type === Issue_Type.ACCESS_GRANT
   );
 });
@@ -87,7 +87,7 @@ const shouldShowSidebar = computed(() => {
   return (
     !isDataExportPlan.value &&
     !isCreateDatabasePlan.value &&
-    !isGrantRequestOrAccessGrantIssue.value
+    !isRoleGrantOrAccessGrantIssue.value
   );
 });
 

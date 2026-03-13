@@ -519,11 +519,11 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   plan: string;
 
   /**
-   * Used if the issue type is GRANT_REQUEST.
+   * Used if the issue type is ROLE_GRANT.
    *
-   * @generated from field: bytebase.v1.GrantRequest grant_request = 13;
+   * @generated from field: bytebase.v1.RoleGrant role_grant = 13;
    */
-  grantRequest?: GrantRequest;
+  roleGrant?: RoleGrant;
 
   /**
    * The risk level of the issue.
@@ -647,11 +647,11 @@ export enum Issue_Type {
   DATABASE_CHANGE = 1,
 
   /**
-   * Database access grant request.
+   * Database role grant request.
    *
-   * @generated from enum value: GRANT_REQUEST = 2;
+   * @generated from enum value: ROLE_GRANT = 2;
    */
-  GRANT_REQUEST = 2,
+  ROLE_GRANT = 2,
 
   /**
    * Database data export request.
@@ -661,7 +661,7 @@ export enum Issue_Type {
   DATABASE_EXPORT = 3,
 
   /**
-   * Temporary access grant request.
+   * Temporary access grant lifecycle issue.
    *
    * @generated from enum value: ACCESS_GRANT = 4;
    */
@@ -728,9 +728,9 @@ export enum Issue_ApprovalStatus {
 export declare const Issue_ApprovalStatusSchema: GenEnum<Issue_ApprovalStatus>;
 
 /**
- * @generated from message bytebase.v1.GrantRequest
+ * @generated from message bytebase.v1.RoleGrant
  */
-export declare type GrantRequest = Message<"bytebase.v1.GrantRequest"> & {
+export declare type RoleGrant = Message<"bytebase.v1.RoleGrant"> & {
   /**
    * The requested role.
    * Format: roles/EXPORTER.
@@ -763,10 +763,10 @@ export declare type GrantRequest = Message<"bytebase.v1.GrantRequest"> & {
 };
 
 /**
- * Describes the message bytebase.v1.GrantRequest.
- * Use `create(GrantRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.RoleGrant.
+ * Use `create(RoleGrantSchema)` to create a new message.
  */
-export declare const GrantRequestSchema: GenMessage<GrantRequest>;
+export declare const RoleGrantSchema: GenMessage<RoleGrant>;
 
 /**
  * @generated from message bytebase.v1.ApprovalTemplate

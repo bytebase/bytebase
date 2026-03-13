@@ -82,7 +82,7 @@ func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issu
 func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := issue.Payload
 
-	convertedGrantRequest := convertToGrantRequest(issuePayload.GrantRequest)
+	convertedRoleGrant := convertToRoleGrant(issuePayload.RoleGrant)
 
 	issueV1 := &v1pb.Issue{
 		Name:         common.FormatIssue(issue.ProjectID, issue.UID),
@@ -93,7 +93,7 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		Creator:      common.FormatUserEmail(issue.CreatorEmail),
 		CreateTime:   timestamppb.New(issue.CreatedAt),
 		UpdateTime:   timestamppb.New(issue.UpdatedAt),
-		GrantRequest: convertedGrantRequest,
+		RoleGrant: convertedRoleGrant,
 		Labels:       issuePayload.Labels,
 	}
 
@@ -177,8 +177,8 @@ func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
 	switch t {
 	case storepb.Issue_DATABASE_CHANGE:
 		return v1pb.Issue_DATABASE_CHANGE
-	case storepb.Issue_GRANT_REQUEST:
-		return v1pb.Issue_GRANT_REQUEST
+	case storepb.Issue_ROLE_GRANT:
+		return v1pb.Issue_ROLE_GRANT
 	case storepb.Issue_DATABASE_EXPORT:
 		return v1pb.Issue_DATABASE_EXPORT
 	case storepb.Issue_ACCESS_GRANT:
@@ -192,8 +192,8 @@ func convertToAPIIssueType(t v1pb.Issue_Type) (storepb.Issue_Type, error) {
 	switch t {
 	case v1pb.Issue_DATABASE_CHANGE:
 		return storepb.Issue_DATABASE_CHANGE, nil
-	case v1pb.Issue_GRANT_REQUEST:
-		return storepb.Issue_GRANT_REQUEST, nil
+	case v1pb.Issue_ROLE_GRANT:
+		return storepb.Issue_ROLE_GRANT, nil
 	case v1pb.Issue_DATABASE_EXPORT:
 		return storepb.Issue_DATABASE_EXPORT, nil
 	case v1pb.Issue_ACCESS_GRANT:
@@ -271,11 +271,11 @@ func convertToApprovalFlow(flow *storepb.ApprovalFlow) *v1pb.ApprovalFlow {
 	}
 }
 
-func convertToGrantRequest(v *storepb.GrantRequest) *v1pb.GrantRequest {
+func convertToRoleGrant(v *storepb.RoleGrant) *v1pb.RoleGrant {
 	if v == nil {
 		return nil
 	}
-	return &v1pb.GrantRequest{
+	return &v1pb.RoleGrant{
 		Role:       v.Role,
 		User:       v.User,
 		Condition:  v.Condition,

@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-y-4">
     <h3 class="text-base font-medium">
-      {{ $t("issue.grant-request.details") }}
+      {{ $t("issue.role-grant.details") }}
     </h3>
 
     <div class="p-4 border rounded-sm flex flex-col gap-y-4">
@@ -40,7 +40,7 @@
         </span>
         <div>
           <span v-if="condition.databaseResources.length === 0">
-            {{ $t("issue.grant-request.all-databases") }}
+            {{ $t("issue.role-grant.all-databases") }}
           </span>
           <DatabaseResourceTable
             v-else
@@ -53,7 +53,7 @@
       <!-- Expiration Time -->
       <div class="flex flex-col gap-y-2">
         <span class="text-sm text-control-light">
-          {{ $t("issue.grant-request.expired-at") }}
+          {{ $t("issue.role-grant.expired-at") }}
         </span>
         <div class="text-base">
           {{
@@ -81,7 +81,7 @@ const { issue } = usePlanContextWithIssue();
 const roleStore = useRoleStore();
 
 const requestRoleName = computed(() => {
-  return issue.value.grantRequest?.role;
+  return issue.value.roleGrant?.role;
 });
 
 const requestRole = computed(() =>
@@ -92,7 +92,7 @@ const condition = computedAsync(
   async () => {
     try {
       const conditionExpression = await convertFromCELString(
-        issue.value.grantRequest?.condition?.expression ?? ""
+        issue.value.roleGrant?.condition?.expression ?? ""
       );
       return conditionExpression;
     } catch (error) {

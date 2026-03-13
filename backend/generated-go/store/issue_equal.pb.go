@@ -18,7 +18,7 @@ func (x *Issue) Equal(y *Issue) bool {
 	if !x.Approval.Equal(y.Approval) {
 		return false
 	}
-	if !x.GrantRequest.Equal(y.GrantRequest) {
+	if !x.RoleGrant.Equal(y.RoleGrant) {
 		return false
 	}
 	if len(x.Labels) != len(y.Labels) {
@@ -38,7 +38,7 @@ func (x *Issue) Equal(y *Issue) bool {
 	return true
 }
 
-func (x *GrantRequest) Equal(y *GrantRequest) bool {
+func (x *RoleGrant) Equal(y *RoleGrant) bool {
 	if x == y {
 		return true
 	}

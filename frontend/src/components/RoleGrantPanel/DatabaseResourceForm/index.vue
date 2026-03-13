@@ -10,21 +10,21 @@
         <template #trigger>
           <NRadio
             :value="'ALL'"
-            :label="$t('issue.grant-request.all-databases')"
+            :label="$t('issue.role-grant.all-databases')"
           />
         </template>
-        {{ $t("issue.grant-request.all-databases-tip") }}
+        {{ $t("issue.role-grant.all-databases-tip") }}
       </NTooltip>
       <NRadio class="leading-6!" :value="'EXPRESSION'" :disabled="!project">
         <div class="flex items-center gap-x-1">
           <FeatureBadge :feature="requiredFeature" />
-          <span>{{ $t("issue.grant-request.use-cel") }}</span>
+          <span>{{ $t("issue.role-grant.use-cel") }}</span>
         </div>
       </NRadio>
       <NRadio class="leading-6!" :value="'SELECT'" :disabled="!project">
         <div class="flex items-center gap-x-1">
           <FeatureBadge :feature="requiredFeature" />
-          <span>{{ $t("issue.grant-request.manually-select") }}</span>
+          <span>{{ $t("issue.role-grant.manually-select") }}</span>
         </div>
       </NRadio>
     </NRadioGroup>

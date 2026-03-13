@@ -5,7 +5,7 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   isAccessGrantIssue,
   isDatabaseDataExportIssue,
-  isGrantRequestIssue,
+  isRoleGrantIssue,
 } from "@/utils";
 
 export type IssueStatusAction = "CLOSE" | "REOPEN";
@@ -34,11 +34,11 @@ export const getApplicableIssueStatusActionList = (
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
     if (
-      isGrantRequestIssue(issue) ||
+      isRoleGrantIssue(issue) ||
       isAccessGrantIssue(issue) ||
       isDatabaseDataExportIssue(issue)
     ) {
-      // Don't show REOPEN for grantRequest/accessGrant/dataExport issues.
+      // Don't show REOPEN for roleGrant/accessGrant/dataExport issues.
       if (action === "REOPEN") {
         return false;
       }

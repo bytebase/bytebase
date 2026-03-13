@@ -348,10 +348,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GrantRequest"><span class="badge">M</span>GrantRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Issue"><span class="badge">M</span>Issue</a>
                 </li>
               
@@ -397,6 +393,10 @@
               
                 <li>
                   <a href="#bytebase.v1.RequestIssueRequest"><span class="badge">M</span>RequestIssueRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RoleGrant"><span class="badge">M</span>RoleGrant</a>
                 </li>
               
                 <li>
@@ -4537,53 +4537,6 @@ Format: projects/{project}/issues/{issue} </p></td>
 
         
       
-        <h3 id="bytebase.v1.GrantRequest">GrantRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The requested role.
-Format: roles/EXPORTER. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>user</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The user to be granted.
-Format: users/{email}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>condition</td>
-                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
-                  <td></td>
-                  <td><p>The condition for the role. Same as the condition in IAM Binding message. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expiration</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The duration for which the grant is valid. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Issue">Issue</h3>
         <p></p>
 
@@ -4675,10 +4628,10 @@ Format: projects/{project}/plans/{plan} </p></td>
                 </tr>
               
                 <tr>
-                  <td>grant_request</td>
-                  <td><a href="#bytebase.v1.GrantRequest">GrantRequest</a></td>
+                  <td>role_grant</td>
+                  <td><a href="#bytebase.v1.RoleGrant">RoleGrant</a></td>
                   <td></td>
-                  <td><p>Used if the issue type is GRANT_REQUEST. </p></td>
+                  <td><p>Used if the issue type is ROLE_GRANT. </p></td>
                 </tr>
               
                 <tr>
@@ -5231,6 +5184,53 @@ Format: projects/{project}/issues/{issue} </p></td>
 
         
       
+        <h3 id="bytebase.v1.RoleGrant">RoleGrant</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The requested role.
+Format: roles/EXPORTER. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user to be granted.
+Format: users/{email}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#google.type.Expr">google.type.Expr</a></td>
+                  <td></td>
+                  <td><p>The condition for the role. Same as the condition in IAM Binding message. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expiration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The duration for which the grant is valid. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.SearchIssuesRequest">SearchIssuesRequest</h3>
         <p></p>
 
@@ -5533,9 +5533,9 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>GRANT_REQUEST</td>
+                <td>ROLE_GRANT</td>
                 <td>2</td>
-                <td><p>Database access grant request.</p></td>
+                <td><p>Database role grant request.</p></td>
               </tr>
             
               <tr>
@@ -5547,7 +5547,7 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ACCESS_GRANT</td>
                 <td>4</td>
-                <td><p>Temporary access grant request.</p></td>
+                <td><p>Temporary access grant lifecycle issue.</p></td>
               </tr>
             
           </tbody>

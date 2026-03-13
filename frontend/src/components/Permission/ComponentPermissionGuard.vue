@@ -38,7 +38,7 @@
     </NoPermissionPlaceholder>
   </template>
 
-  <GrantRequestPanel
+  <RoleGrantPanel
     v-if="showRequestRolePanel && project"
     :project-name="project.name"
     :required-permissions="missedPermissions"
@@ -53,7 +53,7 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge } from "@/components/FeatureGuard";
-import GrantRequestPanel from "@/components/GrantRequestPanel";
+import RoleGrantPanel from "@/components/RoleGrantPanel";
 import NoPermissionPlaceholder from "@/components/Permission/NoPermissionPlaceholder.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredBasicPermissionAlert from "@/components/Role/Setting/components/RequiredBasicPermissionAlert.vue";

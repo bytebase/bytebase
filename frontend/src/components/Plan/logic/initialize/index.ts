@@ -136,7 +136,7 @@ export function useInitializePlan(
         // Issue without plan - allow it to stay in CICD layout for issue-only view
         // This is expected for grant requests, but may indicate a problem for other issue types
         if (
-          issueResult.type !== Issue_Type.GRANT_REQUEST &&
+          issueResult.type !== Issue_Type.ROLE_GRANT &&
           issueResult.type !== Issue_Type.ACCESS_GRANT
         ) {
           console.warn(
