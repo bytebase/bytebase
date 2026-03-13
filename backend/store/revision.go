@@ -26,8 +26,8 @@ type RevisionMessage struct {
 }
 
 type FindRevisionMessage struct {
+	InstanceID   string
 	ResourceID   *string
-	InstanceID   *string
 	DatabaseName *string
 	Type         *storepb.SchemaChangeType
 
@@ -54,14 +54,11 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			version,
 			payload
 		FROM revision
-		WHERE TRUE
-	`)
+		WHERE instance = ?
+	`, find.InstanceID)
 
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
-	}
-	if v := find.InstanceID; v != nil {
-		q.And("instance = ?", *v)
 	}
 	if v := find.DatabaseName; v != nil {
 		q.And("db_name = ?", *v)
@@ -132,8 +129,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 
 func (s *Store) GetRevision(ctx context.Context, resourceID, instanceID, databaseName string) (*RevisionMessage, error) {
 	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{
+		InstanceID:   instanceID,
 		ResourceID:   &resourceID,
-		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 		ShowDeleted:  true,
 	})

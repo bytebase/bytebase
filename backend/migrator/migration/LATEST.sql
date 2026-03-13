@@ -108,17 +108,13 @@ CREATE TABLE policy (
 
 -- Project Hook
 CREATE TABLE project_webhook (
-    id serial PRIMARY KEY,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     project text NOT NULL REFERENCES project(resource_id),
     -- Stored as ProjectWebhook (proto/store/store/project_webhook.proto)
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_project_webhook_project ON project_webhook(project);
-CREATE UNIQUE INDEX idx_project_webhook_unique_resource_id ON project_webhook(resource_id);
-
-ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 
 -- Instance
 CREATE TABLE instance (
@@ -468,8 +464,8 @@ CREATE TABLE review_config (
 );
 
 CREATE TABLE revision (
-    id bigserial PRIMARY KEY,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
+    id bigserial,
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     instance text NOT NULL,
     db_name text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -481,8 +477,6 @@ CREATE TABLE revision (
     CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
-CREATE UNIQUE INDEX idx_revision_unique_resource_id ON revision(resource_id);
-
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
 CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_type_version_deleted_at_null ON revision(instance, db_name, (payload->>'type'), version) WHERE deleted_at IS NULL;
@@ -490,7 +484,8 @@ CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_type_version_deleted_at
 CREATE INDEX idx_revision_instance_db_name_type_version ON revision(instance, db_name, (payload->>'type'), version);
 
 CREATE TABLE sync_history (
-    id bigserial PRIMARY KEY,
+    id bigserial,
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
     db_name text NOT NULL,
@@ -505,19 +500,17 @@ ALTER SEQUENCE sync_history_id_seq RESTART WITH 101;
 CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
 
 CREATE TABLE changelog (
-    id bigserial PRIMARY KEY,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
+    id bigserial,
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
     db_name text NOT NULL,
     status text NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    sync_history_id bigint REFERENCES sync_history(id),
+    sync_history text REFERENCES sync_history(resource_id),
     -- Stored as ChangelogPayload (proto/store/store/changelog.proto)
     payload jsonb NOT NULL DEFAULT '{}',
     CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
-
-CREATE UNIQUE INDEX idx_changelog_unique_resource_id ON changelog(resource_id);
 
 ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 
