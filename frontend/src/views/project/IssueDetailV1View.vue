@@ -28,8 +28,8 @@ import AccessGrantView from "@/components/Plan/components/IssueReviewView/Access
 import { DatabaseChangeView } from "@/components/Plan/components/IssueReviewView/DatabaseChangeView";
 import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
-import RoleGrantView from "@/components/Plan/components/IssueReviewView/RoleGrantView.vue";
 import IssueBaseLayout from "@/components/Plan/components/IssueReviewView/IssueBaseLayout.vue";
+import RoleGrantView from "@/components/Plan/components/IssueReviewView/RoleGrantView.vue";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
 enum IssueType {
@@ -49,8 +49,7 @@ const { plan, issue } = usePlanContextWithIssue();
 const isLoading = ref(true);
 
 const issueType = computed(() => {
-  if (issue.value.type === Issue_Type.ROLE_GRANT)
-    return IssueType.ROLE_GRANT;
+  if (issue.value.type === Issue_Type.ROLE_GRANT) return IssueType.ROLE_GRANT;
   if (issue.value.type === Issue_Type.ACCESS_GRANT)
     return IssueType.ACCESS_GRANT;
 

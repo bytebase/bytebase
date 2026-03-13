@@ -61,9 +61,9 @@ import { getUserEmailInBinding } from "@/types";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
-  RoleGrantSchema,
   IssueSchema,
   Issue_Type as NewIssue_Type,
+  RoleGrantSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   displayRoleTitle,
