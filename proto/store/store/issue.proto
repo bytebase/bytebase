@@ -16,11 +16,11 @@ message Issue {
     ISSUE_TYPE_UNSPECIFIED = 0;
     // Issue for database schema or data changes.
     DATABASE_CHANGE = 1;
-    // Issue requesting a project role or database permission.
+    // Role grant request.
     ROLE_GRANT = 2;
     // Issue for exporting data from databases.
     DATABASE_EXPORT = 3;
-    // Issue for a temporary access grant lifecycle.
+    // Temporary access grant request.
     ACCESS_GRANT = 4;
   }
 

@@ -2722,9 +2722,9 @@ Type represents the category of issue.
 | ---- | ------ | ----------- |
 | ISSUE_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CHANGE | 1 | Issue for database schema or data changes. |
-| ROLE_GRANT | 2 | Issue requesting a project role or database permission. |
+| ROLE_GRANT | 2 | Role grant request. |
 | DATABASE_EXPORT | 3 | Issue for exporting data from databases. |
-| ACCESS_GRANT | 4 | Issue for a temporary access grant lifecycle. |
+| ACCESS_GRANT | 4 | Temporary access grant request. |
 
 
  

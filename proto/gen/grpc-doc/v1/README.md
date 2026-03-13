@@ -1690,9 +1690,9 @@ The type of issue.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified issue type. |
 | DATABASE_CHANGE | 1 | Database schema or data change. |
-| ROLE_GRANT | 2 | Database role grant request. |
+| ROLE_GRANT | 2 | Role grant request. |
 | DATABASE_EXPORT | 3 | Database data export request. |
-| ACCESS_GRANT | 4 | Temporary access grant lifecycle issue. |
+| ACCESS_GRANT | 4 | Temporary access grant request. |
 
 
 

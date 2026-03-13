@@ -92,11 +92,11 @@ const (
 	Issue_TYPE_UNSPECIFIED Issue_Type = 0
 	// Database schema or data change.
 	Issue_DATABASE_CHANGE Issue_Type = 1
-	// Database role grant request.
+	// Role grant request.
 	Issue_ROLE_GRANT Issue_Type = 2
 	// Database data export request.
 	Issue_DATABASE_EXPORT Issue_Type = 3
-	// Temporary access grant lifecycle issue.
+	// Temporary access grant request.
 	Issue_ACCESS_GRANT Issue_Type = 4
 )
 

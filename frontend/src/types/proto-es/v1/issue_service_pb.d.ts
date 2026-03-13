@@ -647,7 +647,7 @@ export enum Issue_Type {
   DATABASE_CHANGE = 1,
 
   /**
-   * Database role grant request.
+   * Role grant request.
    *
    * @generated from enum value: ROLE_GRANT = 2;
    */
@@ -661,7 +661,7 @@ export enum Issue_Type {
   DATABASE_EXPORT = 3,
 
   /**
-   * Temporary access grant lifecycle issue.
+   * Temporary access grant request.
    *
    * @generated from enum value: ACCESS_GRANT = 4;
    */

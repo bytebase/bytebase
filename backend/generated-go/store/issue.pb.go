@@ -30,11 +30,11 @@ const (
 	Issue_ISSUE_TYPE_UNSPECIFIED Issue_Type = 0
 	// Issue for database schema or data changes.
 	Issue_DATABASE_CHANGE Issue_Type = 1
-	// Issue requesting a project role or database permission.
+	// Role grant request.
 	Issue_ROLE_GRANT Issue_Type = 2
 	// Issue for exporting data from databases.
 	Issue_DATABASE_EXPORT Issue_Type = 3
-	// Issue for a temporary access grant lifecycle.
+	// Temporary access grant request.
 	Issue_ACCESS_GRANT Issue_Type = 4
 )
 

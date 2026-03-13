@@ -386,11 +386,11 @@ message Issue {
     TYPE_UNSPECIFIED = 0;
     // Database schema or data change.
     DATABASE_CHANGE = 1;
-    // Database role grant request.
+    // Role grant request.
     ROLE_GRANT = 2;
     // Database data export request.
     DATABASE_EXPORT = 3;
-    // Temporary access grant lifecycle issue.
+    // Temporary access grant request.
     ACCESS_GRANT = 4;
   }
   Type type = 4;
