@@ -132,13 +132,28 @@ for (const [schemaName, schemaDef] of Object.entries(componentSchemas)) {
     continue;
   }
 
-  // Handle object types with properties
-  if (!schemaDef.properties) continue;
+  // Merge allOf properties into a flat properties object
+  let mergedProperties = schemaDef.properties;
+  let mergedRequired = schemaDef.required || [];
+  if (schemaDef.allOf && Array.isArray(schemaDef.allOf)) {
+    mergedProperties = {};
+    for (const part of schemaDef.allOf) {
+      if (part.properties) {
+        Object.assign(mergedProperties, part.properties);
+      }
+      if (part.required) {
+        mergedRequired = mergedRequired.concat(part.required);
+      }
+    }
+  }
 
-  const requiredSet = new Set(schemaDef.required || []);
+  // Handle object types with properties
+  if (!mergedProperties || Object.keys(mergedProperties).length === 0) continue;
+
+  const requiredSet = new Set(mergedRequired);
   const properties = [];
 
-  for (const [propName, propDef] of Object.entries(schemaDef.properties)) {
+  for (const [propName, propDef] of Object.entries(mergedProperties)) {
     const { type, description } = extractPropertyTypeAndDesc(propDef);
     const prop = { name: propName, type };
     if (description) prop.description = description;

@@ -18,11 +18,7 @@
     "input-placeholder": "输入任何问题...",
     "send": "发送",
     "args": "参数：",
-    "result": "结果：",
-    "loading-skill": "加载技能...",
-    "shortcut-hint": "Ctrl+Shift+A",
-    "retry-failed": "重试后请求失败",
-    "error-prefix": "错误"
+    "result": "结果："
   },
   "audit-log": {
     "export-finished": "导出完成",
