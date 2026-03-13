@@ -13,6 +13,7 @@ import (
 )
 
 type IssueCommentMessage struct {
+	ProjectID    string
 	ResourceID   string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -22,6 +23,7 @@ type IssueCommentMessage struct {
 }
 
 type FindIssueCommentMessage struct {
+	ProjectID  string
 	ResourceID *string
 	IssueUID   *int
 
@@ -30,6 +32,7 @@ type FindIssueCommentMessage struct {
 }
 
 type UpdateIssueCommentMessage struct {
+	ProjectID  string
 	ResourceID string
 
 	Comment *string
@@ -52,6 +55,7 @@ func (s *Store) GetIssueComment(ctx context.Context, find *FindIssueCommentMessa
 func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMessage) ([]*IssueCommentMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
+			project,
 			resource_id,
 			creator,
 			created_at,
@@ -60,8 +64,8 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			payload
 		FROM
 			issue_comment
-		WHERE TRUE
-	`)
+		WHERE project = ?
+	`, find.ProjectID)
 
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
@@ -96,6 +100,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		}
 		var p []byte
 		if err := rows.Scan(
+			&ic.ProjectID,
 			&ic.ResourceID,
 			&ic.CreatorEmail,
 			&ic.CreatedAt,
@@ -127,6 +132,7 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	}
 
 	// Prepare all payloads.
+	projectIDs := make([]string, 0, len(creates))
 	issueIDs := make([]int, 0, len(creates))
 	payloads := make([][]byte, 0, len(creates))
 	for _, create := range creates {
@@ -134,15 +140,16 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
+		projectIDs = append(projectIDs, create.ProjectID)
 		issueIDs = append(issueIDs, create.IssueUID)
 		payloads = append(payloads, payload)
 	}
 
 	// Use UNNEST to insert all comments in one query.
 	q := qb.Q().Space(`
-		INSERT INTO issue_comment (creator, issue_id, payload)
-		SELECT ?, unnest(?::INT[]), unnest(?::JSONB[])
-	`, creator, issueIDs, payloads)
+		INSERT INTO issue_comment (creator, project, issue_id, payload)
+		SELECT ?, unnest(?::TEXT[]), unnest(?::INT[]), unnest(?::JSONB[])
+	`, creator, projectIDs, issueIDs, payloads)
 
 	// For single comment, use RETURNING to get the created comment details.
 	if len(creates) == 1 {
@@ -180,7 +187,7 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 		q.Join(", ", "payload = payload || jsonb_build_object('comment',?::TEXT)", *v)
 	}
 
-	q.Space("WHERE resource_id = ?", patch.ResourceID)
+	q.Space("WHERE project = ? AND resource_id = ?", patch.ProjectID, patch.ResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

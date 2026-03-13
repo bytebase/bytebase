@@ -53,18 +53,20 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	plan, err := rc.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: ref.ProjectID, UID: &planID})
 	if err != nil {
 		slog.Error("failed to get plan for rollout creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return
 	}
 	if plan == nil {
-		slog.Debug("plan not found for rollout creation", slog.Int("plan_id", int(planID)))
+		slog.Debug("plan not found for rollout creation", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 		return
 	}
 
 	// Skip deleted (closed) plans
 	if plan.Deleted {
 		slog.Debug("plan is deleted, skipping rollout creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)))
 		return
 	}
@@ -72,6 +74,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	// Idempotency: skip if rollout already exists
 	if plan.Config != nil && plan.Config.HasRollout {
 		slog.Debug("rollout already exists, skipping creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)))
 		return
 	}
@@ -79,25 +82,28 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	// Only auto-create rollout for plans with change database specs
 	if !hasOnlyChangeDatabaseSpecs(plan) {
 		slog.Debug("plan has non-change-database specs, skipping auto-creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)))
 		return
 	}
 
-	issue, err := rc.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
+	issue, err := rc.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{ref.ProjectID}, PlanUID: &planID})
 	if err != nil {
 		slog.Error("failed to get issue for rollout creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return
 	}
 	if issue == nil {
-		slog.Debug("issue not found for rollout creation", slog.Int("plan_id", int(planID)))
+		slog.Debug("issue not found for rollout creation", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 		return
 	}
 
 	// Skip canceled issues
 	if issue.Status == storepb.Issue_CANCELED {
 		slog.Debug("issue is canceled, skipping rollout creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)))
 		return
 	}
@@ -118,12 +124,14 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	approved, err := utils.CheckIssueApproved(issue)
 	if err != nil {
 		slog.Error("failed to check if the issue is approved",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return
 	}
 	if !approved {
 		slog.Debug("issue not approved, skipping rollout creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)))
 		return
 	}
@@ -132,6 +140,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	planCheckRun, err := rc.store.GetPlanCheckRun(ctx, plan.ProjectID, planID)
 	if err != nil {
 		slog.Error("failed to get plan check run for rollout creation",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return
@@ -142,6 +151,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		// Check if plan checks are in DONE status
 		if planCheckRun.Status != store.PlanCheckRunStatusDone {
 			slog.Debug("plan checks not in DONE status, skipping rollout creation",
+				slog.String("project", ref.ProjectID),
 				slog.Int("plan_id", int(planID)),
 				slog.String("status", string(planCheckRun.Status)))
 			return
@@ -152,6 +162,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 			for _, result := range planCheckRun.Result.Results {
 				if result.Status == storepb.Advice_ERROR {
 					slog.Debug("plan checks have errors, skipping rollout creation",
+						slog.String("project", ref.ProjectID),
 						slog.Int("plan_id", int(planID)))
 					return
 				}
@@ -160,12 +171,13 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	}
 
 	// All conditions met - create the rollout
-	slog.Info("auto-creating rollout", slog.Int("plan_id", int(planID)))
+	slog.Info("auto-creating rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 
 	// Create rollout and pending tasks
 	// Use issue creator's email since this is auto-rollout for their issue
 	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, issue.CreatorEmail, plan, issue, project, nil); err != nil {
 		slog.Error("failed to create rollout and pending tasks",
+			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return
@@ -174,7 +186,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	// Tickle task run scheduler
 	rc.bus.TaskRunTickleChan <- 0
 
-	slog.Info("successfully auto-created rollout", slog.Int("plan_id", int(planID)))
+	slog.Info("successfully auto-created rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 }
 
 // hasOnlyChangeDatabaseSpecs checks if every spec in the plan is a change database spec.

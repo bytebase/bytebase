@@ -17,6 +17,12 @@ type TaskRunRef struct {
 	ID        int
 }
 
+// IssueRef identifies an issue by project and UID.
+type IssueRef struct {
+	ProjectID string
+	UID       int
+}
+
 // PlanCheckRunRef identifies a plan check run by project and UID.
 type PlanCheckRunRef struct {
 	ProjectID string
@@ -27,7 +33,7 @@ type PlanCheckRunRef struct {
 type Bus struct {
 	// ApprovalCheckChan signals when an issue needs approval template finding.
 	// Triggered by plan check completion, issue creation (if checks already done).
-	ApprovalCheckChan chan int64 // issue UID
+	ApprovalCheckChan chan IssueRef
 
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[TaskRunRef]context.CancelFunc
@@ -49,7 +55,7 @@ type Bus struct {
 
 func New() (*Bus, error) {
 	return &Bus{
-		ApprovalCheckChan:       make(chan int64, 1000),
+		ApprovalCheckChan:       make(chan IssueRef, 1000),
 		PlanCheckTickleChan:     make(chan int, 1000),
 		TaskRunTickleChan:       make(chan int, 1000),
 		RolloutCreationChan:     make(chan PlanRef, 100),

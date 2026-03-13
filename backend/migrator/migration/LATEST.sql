@@ -298,7 +298,7 @@ CREATE TABLE task_run_log (
 -----------------------
 -- issue
 CREATE TABLE issue (
-    id serial PRIMARY KEY,
+    id serial,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -314,6 +314,7 @@ CREATE TABLE issue (
     -- Stored as Issue (proto/store/store/issue.proto)
     payload jsonb NOT NULL DEFAULT '{}',
     ts_vector tsvector,
+    PRIMARY KEY (project, id),
     FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
 );
 
@@ -358,20 +359,20 @@ CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
 ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
-    id bigserial PRIMARY KEY,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    issue_id integer NOT NULL REFERENCES issue(id),
+    project text NOT NULL,
+    issue_id integer NOT NULL,
     -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (resource_id),
+    FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)
 );
 
-CREATE INDEX idx_issue_comment_issue_id ON issue_comment(issue_id);
+CREATE INDEX idx_issue_comment_issue_id ON issue_comment(project, issue_id);
 CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
-
-ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
 CREATE TABLE query_history (
     id bigserial PRIMARY KEY,

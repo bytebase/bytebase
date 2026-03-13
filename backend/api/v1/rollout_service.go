@@ -252,8 +252,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 
 	// Fetch issue associated with this plan (if any)
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectIDs: []string{projectID},
+		PlanUID:    &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
@@ -399,13 +399,14 @@ func CreateRolloutAndPendingTasks(
 	// Update issue status to DONE when rollout is created
 	if issue != nil {
 		newStatus := storepb.Issue_DONE
-		updatedIssue, err := s.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+		updatedIssue, err := s.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 		if err != nil {
 			return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 		}
 
 		if _, err := s.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
+			ProjectID: issue.ProjectID,
+			IssueUID:  issue.UID,
 			Payload: &storepb.IssueCommentPayload{
 				Event: &storepb.IssueCommentPayload_IssueUpdate_{
 					IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
@@ -731,8 +732,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectIDs: []string{projectID},
+		PlanUID:    &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
@@ -858,8 +859,8 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectIDs: []string{projectID},
+		PlanUID:    &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
@@ -948,8 +949,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		ProjectID: &projectID,
-		PlanUID:   &planID,
+		ProjectIDs: []string{projectID},
+		PlanUID:    &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))

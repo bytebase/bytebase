@@ -51,7 +51,7 @@ func postCreateIssue(
 
 		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
 			slog.Error("failed to find approval template",
-				slog.Int("issue_uid", issue.UID),
+				slog.String("project", issue.ProjectID), slog.Int("issue_uid", issue.UID),
 				slog.String("issue_title", issue.Title),
 				log.BBError(err))
 		}
@@ -59,7 +59,7 @@ func postCreateIssue(
 		// Refresh issue to get updated approval payload.
 		uid := issue.UID
 		var err error
-		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{issue.ProjectID}, UID: &uid})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to refresh issue")
 		}
@@ -81,7 +81,7 @@ func postCreateIssue(
 			return nil, errors.Wrapf(err, "failed to complete role grant")
 		}
 	case storepb.Issue_DATABASE_CHANGE:
-		b.ApprovalCheckChan <- int64(issue.UID)
+		b.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 	default:
 	}
 
@@ -110,13 +110,14 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 	}
 
 	newStatus := storepb.Issue_DONE
-	updatedIssue, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
 	if _, err := stores.CreateIssueComments(ctx, userEmail, &store.IssueCommentMessage{
-		IssueUID: issue.UID,
+		ProjectID: issue.ProjectID,
+		IssueUID:  issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Event: &storepb.IssueCommentPayload_IssueUpdate_{
 				IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
