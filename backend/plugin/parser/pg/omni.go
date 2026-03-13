@@ -1,13 +1,10 @@
 package pg
 
 import (
-	"errors"
-	"fmt"
 	"unicode/utf8"
 
-	"github.com/bytebase/omni/pg/ast"
 	omnipg "github.com/bytebase/omni/pg"
-	"github.com/bytebase/omni/pg/parser"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -70,33 +67,4 @@ func byteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 		Line:   line,
 		Column: runeCol + 1, // convert to 1-based
 	}
-}
-
-// convertOmniError converts omni's ParseError to base.SyntaxError.
-func convertOmniError(sql string, err error) error {
-	var parseErr *parser.ParseError
-	if errors.As(err, &parseErr) {
-		pos := byteOffsetToRunePosition(sql, parseErr.Position)
-		return &base.SyntaxError{
-			Position: pos,
-			Message: fmt.Sprintf("Syntax error at line %d:%d \nrelated text: %s",
-				pos.Line, pos.Column, extractErrorContext(sql, parseErr.Position)),
-			RawMessage: parseErr.Message,
-		}
-	}
-	return err
-}
-
-// extractErrorContext extracts a snippet of SQL around the error position for context.
-func extractErrorContext(sql string, bytePos int) string {
-	// Find the start: search backward for newline or beginning.
-	start := bytePos
-	for start > 0 && sql[start-1] != '\n' {
-		start--
-	}
-	end := bytePos + 20
-	if end > len(sql) {
-		end = len(sql)
-	}
-	return sql[start:end]
 }
