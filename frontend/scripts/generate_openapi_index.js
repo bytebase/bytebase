@@ -233,3 +233,31 @@ console.log(`Generated ${OUTPUT_FILE}`);
 console.log(
   `  Endpoints: ${endpoints.length}, Schemas: ${schemaCount} (${objectCount} objects, ${enumCount} enums)`
 );
+
+// Validate service directory coverage
+const DIRECTORY_FILE = path.join(
+  __dirname,
+  "../src/plugins/agent/logic/tools/gen/service-directory.ts"
+);
+if (fs.existsSync(DIRECTORY_FILE)) {
+  const dirContent = fs.readFileSync(DIRECTORY_FILE, "utf8");
+  const specServices = new Set(endpoints.map((ep) => ep.service));
+  const missing = [];
+  for (const svc of specServices) {
+    if (!dirContent.includes(svc)) {
+      missing.push(svc);
+    }
+  }
+  if (missing.length > 0) {
+    console.warn(
+      `  ⚠ Services not in service-directory.ts: ${missing.join(", ")}`
+    );
+    console.warn(
+      `    Run: pnpm --dir frontend run generate:service-directory`
+    );
+  } else {
+    console.log(`  ✓ Service directory covers all ${specServices.size} services`);
+  }
+} else {
+  console.warn(`  ⚠ No service-directory.ts found. Run: pnpm --dir frontend run generate:service-directory`);
+}

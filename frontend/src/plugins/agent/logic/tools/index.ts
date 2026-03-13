@@ -11,18 +11,17 @@ export function getToolDefinitions(): ToolDefinition[] {
   return [
     {
       name: "search_api",
-      description: `Discover Bytebase API endpoints. **Always call before call_api - never guess schemas.**
+      description: `Browse API endpoints and get request/response schemas. Use the API Directory in the system prompt to identify the right service first.
 
 | Mode | Parameters | Result |
 |------|------------|--------|
-| List | (none) | All services |
-| Browse | service="SQLService" | All endpoints in service |
-| Search | query="database" | Matching endpoints |
-| Filter | service+query | Search within service |
+| Browse | service="SQLService" | All endpoints in a service |
 | Details | operationId="SQLService/Query" | Request/response schema |
 | Schema | schema="Instance" | Message type definition |
+| Search | query="database" | Keyword search (fallback) |
+| List | (none) | All services |
 
-**Workflow:** search_api() → search_api(operationId="...") → call_api(...)`,
+**Typical workflow:** Read API Directory → search_api(service="...") → search_api(operationId="...") → call_api(...)`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -86,17 +85,28 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
     },
     {
       name: "navigate",
-      description:
-        "Navigate to a page in Bytebase. Use URL paths like /projects, /sql-editor, /instances, /settings.",
+      description: `Navigate to a page in Bytebase, or list all available routes.
+
+| Mode | Parameters | Result |
+|------|------------|--------|
+| Navigate | path="/projects" | Navigates to the page |
+| List | list=true | Returns all valid route patterns |
+
+**Always call with list=true first if you are unsure about the exact path.** Do not guess paths — a wrong path causes a 404.`,
       parametersSchema: {
         type: "object",
         properties: {
           path: {
             type: "string",
-            description: "URL path to navigate to",
+            description:
+              "URL path to navigate to. Supports param placeholders like /projects/:projectId.",
+          },
+          list: {
+            type: "boolean",
+            description:
+              "Set to true to list all available route patterns instead of navigating.",
           },
         },
-        required: ["path"],
       },
     },
     {
@@ -195,7 +205,7 @@ export function createToolExecutor(router: Router): ToolExecutor {
       case "call_api":
         return callApi(args as unknown as CallApiArgs);
       case "navigate":
-        return navigateTool(args as { path: string });
+        return navigateTool(args as { path?: string; list?: boolean });
       case "get_page_state":
         return pageStateTool(args as PageStateArgs);
       case "dom_action":

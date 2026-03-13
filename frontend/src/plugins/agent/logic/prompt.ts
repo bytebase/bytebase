@@ -1,3 +1,5 @@
+import { serviceDirectory } from "./tools/gen/service-directory";
+
 export function buildSystemPrompt(pageContext: {
   path: string;
   title: string;
@@ -9,7 +11,7 @@ and navigate the platform.
 
 Rules:
 - Always call get_page_state first to understand the current page context.
-- Use navigate for "show me" / "go to" requests.
+- Use navigate for "show me" / "go to" requests. Call navigate(list=true) first if unsure about the path — never guess routes.
 - Use get_skill to load step-by-step workflow guides before multi-step tasks (SQL queries, schema changes, permission grants).
 - Always confirm destructive actions (drop database, delete project) before executing.
 
@@ -19,7 +21,9 @@ Tool selection — choose based on context, not a fixed preference:
 - Either works for mutations on persisted resources. Use DOM if the user is already on the relevant page and would benefit from seeing the interaction. Use API for speed or when the relevant page is not open.
 
 DOM interaction workflow: get_page_state(mode="dom") → read element indices → dom_action(type, index, value).
-API interaction workflow: search_api(query="...") → call_api(operationId="...", body={...}).
+API interaction workflow: Use the directory below to find the right service, then search_api(service="...") to browse endpoints, search_api(operationId="...") for request/response schemas, then call_api(...).
+
+${serviceDirectory}
 
 Core concepts:
 - Workspace: top-level container. One workspace per deployment.

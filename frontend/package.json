@@ -15,7 +15,8 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest --coverage",
     "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && pnpm fix",
-    "generate:openapi-index": "node scripts/generate_openapi_index.js"
+    "generate:openapi-index": "node scripts/generate_openapi_index.js",
+    "generate:service-directory": "node scripts/generate_service_directory.js"
   },
   "dependencies": {
     "@buf/googleapis_googleapis.bufbuild_es": "2.10.2-20251126203132-004180b77378.1",

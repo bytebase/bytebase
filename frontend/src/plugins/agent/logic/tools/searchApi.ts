@@ -62,6 +62,49 @@ const PRIMARY_CRUD_PREFIXES = [
   "Execute",
 ];
 
+// Maps user-facing feature names to API services and keywords.
+// Bridges the vocabulary gap between how users think about features
+// and how the API is organized.
+const CONCEPT_ALIASES: Record<string, string[]> = {
+  "semantic type": ["DatabaseCatalogService", "catalog", "semantic"],
+  "semantic types": ["DatabaseCatalogService", "catalog", "semantic"],
+  "data masking": ["DatabaseCatalogService", "catalog", "masking"],
+  "column masking": ["DatabaseCatalogService", "catalog", "masking"],
+  masking: ["DatabaseCatalogService", "catalog", "masking"],
+  classification: ["DatabaseCatalogService", "catalog", "classification"],
+  catalog: ["DatabaseCatalogService", "catalog"],
+  "sql review": ["SQLReviewConfigService", "review", "config"],
+  lint: ["SQLReviewConfigService", "review"],
+  "sql check": ["SQLReviewConfigService", "review"],
+  approval: ["IssueService", "approval", "review"],
+  "custom approval": ["RiskService", "approval"],
+  rollout: ["RolloutService", "rollout", "stage", "task"],
+  deploy: ["RolloutService", "rollout"],
+  deployment: ["RolloutService", "rollout"],
+  migration: ["DatabaseService", "changelog", "revision"],
+  changelog: ["DatabaseService", "changelog"],
+  "slow query": ["DatabaseService", "slow"],
+  "slow queries": ["DatabaseService", "slow"],
+  sso: ["IdentityProviderService", "idp"],
+  "single sign-on": ["IdentityProviderService", "idp"],
+  idp: ["IdentityProviderService"],
+  permission: ["RoleService", "policy", "iam"],
+  role: ["RoleService"],
+  rbac: ["RoleService", "policy"],
+  vcs: ["VCSConnectorService", "VCSProviderService"],
+  git: ["VCSConnectorService", "VCSProviderService"],
+  gitops: ["VCSConnectorService", "VCSProviderService"],
+  webhook: ["ProjectService", "webhook"],
+  sheet: ["SheetService"],
+  worksheet: ["SheetService"],
+  risk: ["RiskService"],
+  "access grant": ["AccessGrantService"],
+  "data export": ["SQLService", "export"],
+  backup: ["DatabaseService", "backup"],
+  secret: ["DatabaseService", "secret"],
+  label: ["DatabaseService", "label"],
+};
+
 // Extract short name from a schema ref.
 // "#/components/schemas/bytebase.v1.ListSettingsResponse" -> "ListSettingsResponse"
 function refBaseName(ref: string): string {
@@ -193,19 +236,70 @@ class OpenAPIIndex {
     return this.byService.get(service) ?? [];
   }
 
+  // Resolve concept aliases for a query.
+  // Returns expanded keywords from the alias map.
+  resolveAliases(query: string): string[] {
+    const queryLower = query.toLowerCase().trim();
+    const expanded: string[] = [];
+
+    // Check exact match first, then check if query contains an alias
+    for (const [concept, terms] of Object.entries(CONCEPT_ALIASES)) {
+      if (queryLower === concept || queryLower.includes(concept)) {
+        expanded.push(...terms);
+      }
+    }
+    return expanded;
+  }
+
   // Keyword search with scoring, matching Go's Search().
   search(query: string): EndpointInfo[] {
     const queryKeywords = extractKeywords(query);
-    if (queryKeywords.length === 0) return [];
+
+    // Expand with concept aliases
+    const aliasTerms = this.resolveAliases(query);
+    const aliasKeywords = extractKeywords(...aliasTerms);
+
+    if (queryKeywords.length === 0 && aliasKeywords.length === 0) return [];
 
     const scores = new Map<EndpointInfo, number>();
 
-    // Keyword matches
+    // Direct keyword matches
     for (const kw of queryKeywords) {
+      // Exact keyword match
       const hits = this.keywords.get(kw);
       if (hits) {
         for (const ep of hits) {
           scores.set(ep, (scores.get(ep) ?? 0) + 1);
+        }
+      }
+      // Partial keyword match (e.g. "seman" matches "semantic")
+      if (!hits || hits.length === 0) {
+        for (const [indexedKw, kwEps] of this.keywords) {
+          if (indexedKw.includes(kw) || kw.includes(indexedKw)) {
+            for (const ep of kwEps) {
+              scores.set(ep, (scores.get(ep) ?? 0) + 0.5);
+            }
+          }
+        }
+      }
+    }
+
+    // Alias keyword matches (boosted — aliases are high-confidence mappings)
+    for (const kw of aliasKeywords) {
+      const hits = this.keywords.get(kw);
+      if (hits) {
+        for (const ep of hits) {
+          scores.set(ep, (scores.get(ep) ?? 0) + 3);
+        }
+      }
+    }
+
+    // Alias service matches (direct service boost)
+    for (const term of aliasTerms) {
+      const serviceEps = this.byService.get(term);
+      if (serviceEps) {
+        for (const ep of serviceEps) {
+          scores.set(ep, (scores.get(ep) ?? 0) + 5);
         }
       }
     }
@@ -454,7 +548,27 @@ export async function searchApi(args: SearchApiArgs): Promise<string> {
   // Query-only search
   const eps = index.search(query!);
   if (eps.length === 0) {
-    return `No endpoints found for query: "${query}"\n\nTry:\n- Different keywords\n- Listing services with search_api() (no parameters)\n- Browsing a service with search_api(service="ServiceName")`;
+    // Suggest similar concepts from the alias map
+    const queryLower = query!.toLowerCase();
+    const suggestions: string[] = [];
+    for (const concept of Object.keys(CONCEPT_ALIASES)) {
+      // Check if any word in the query partially matches a concept
+      const queryWords = queryLower.split(/\s+/);
+      for (const word of queryWords) {
+        if (
+          word.length >= 3 &&
+          (concept.includes(word) || word.includes(concept))
+        ) {
+          suggestions.push(concept);
+          break;
+        }
+      }
+    }
+    const suggestionText =
+      suggestions.length > 0
+        ? `\n\nDid you mean: ${suggestions.map((s) => `"${s}"`).join(", ")}?`
+        : "";
+    return `No endpoints found for query: "${query}"${suggestionText}\n\nTry:\n- Different keywords\n- Listing services with search_api() (no parameters)\n- Browsing a service with search_api(service="ServiceName")`;
   }
   return formatEndpoints(eps, getLimit(limit));
 }
