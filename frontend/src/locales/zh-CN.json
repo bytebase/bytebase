@@ -1033,8 +1033,7 @@
             "database-change": "数据库变更",
             "role-grant": "角色授权",
             "database-export": "数据导出",
-            "access-grant": "访问授权",
-            "grant-request": "权限申请"
+            "access-grant": "访问授权"
           }
         },
         "table": {
@@ -1177,16 +1176,7 @@
     "approval": {
       "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
     },
-    "grant-request": {
-      "details": "请求详细",
-      "expired-at": "过期时间",
-      "all-databases": "所有数据库",
-      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
-      "manually-select": "手动选择",
-      "use-cel": "使用 CEL 表达式",
-      "custom-date": "自定义日期",
-      "custom-date-placeholder": "选择到期日期和时间"
-    }
+    "grant-request": {}
   },
   "plan": {
     "plans": "变更计划",
@@ -3043,6 +3033,7 @@
     "input-placeholder": "输入任何问题...",
     "send": "发送",
     "args": "参数：",
-    "result": "结果："
+    "result": "结果：",
+    "stop": "停止"
   }
 }

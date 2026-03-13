@@ -1033,8 +1033,7 @@
             "database-change": "Database Change",
             "role-grant": "Role Grant",
             "database-export": "Database Export",
-            "access-grant": "Access Grant",
-            "grant-request": "Grant Request"
+            "access-grant": "Access Grant"
           }
         },
         "table": {
@@ -1177,16 +1176,7 @@
     "approval": {
       "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
     },
-    "grant-request": {
-      "details": "Request Details",
-      "expired-at": "Expired at",
-      "all-databases": "All",
-      "all-databases-tip": "All current and future databases in this project.",
-      "manually-select": "Manually select",
-      "use-cel": "Use CEL Expression",
-      "custom-date": "Custom date",
-      "custom-date-placeholder": "Select expiration date and time"
-    }
+    "grant-request": {}
   },
   "plan": {
     "plans": "Plans",
@@ -3043,6 +3033,7 @@
     "input-placeholder": "Ask anything...",
     "send": "Send",
     "args": "Args:",
-    "result": "Result:"
+    "result": "Result:",
+    "stop": "Stop"
   }
 }

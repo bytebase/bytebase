@@ -105,12 +105,19 @@ async function send() {
         rows="1"
         :placeholder="$t('agent.input-placeholder')"
         class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-        :disabled="agentStore.loading"
         @keydown.enter.exact.prevent="send"
       />
       <button
+        v-if="agentStore.loading"
+        class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"
+        @click="agentStore.cancel()"
+      >
+        {{ $t("agent.stop") }}
+      </button>
+      <button
+        v-else
         class="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        :disabled="!input.trim() || agentStore.loading"
+        :disabled="!input.trim()"
         @click="send"
       >
         {{ $t("agent.send") }}
