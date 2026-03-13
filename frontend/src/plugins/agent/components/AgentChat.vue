@@ -91,6 +91,13 @@ watch(
     >
       <span class="animate-pulse">&#9679;</span> {{ $t("common.loading") }}
     </div>
+    <!-- Error -->
+    <div
+      v-if="agentStore.error"
+      class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
+    >
+      {{ agentStore.error }}
+    </div>
   </div>
 </template>
 
