@@ -94,7 +94,7 @@ onMounted(() => {
     <div
       v-if="agentStore.visible && agentStore.minimized"
       data-agent-window
-      class="fixed z-[9999] bottom-4 right-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600"
+      class="fixed z-[1999] bottom-4 right-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600"
       @click="agentStore.restore()"
     >
       <svg
@@ -115,7 +115,7 @@ onMounted(() => {
     <div
       v-if="agentStore.visible && !agentStore.minimized"
       data-agent-window
-      class="fixed z-[9999] flex flex-col rounded-lg border border-gray-200 shadow-xl bg-white overflow-hidden"
+      class="fixed z-[1999] flex flex-col rounded-lg border border-gray-200 shadow-xl bg-white overflow-hidden"
       :style="windowStyle"
     >
       <!-- Title bar -->
