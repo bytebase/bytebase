@@ -1,157 +1,4 @@
 {
-  "activity": {
-    "sentence": {
-      "created-issue": "创建工单",
-      "changed-description": "修改描述",
-      "changed-labels": "改变标签",
-      "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
-      "reopened-issue": "重开工单",
-      "resolved-issue": "完成工单",
-      "canceled-issue": "关闭工单"
-    }
-  },
-  "agent": {
-    "assistant-title": "Bytebase 助手",
-    "new-chat": "新对话",
-    "minimize": "最小化",
-    "close": "关闭",
-    "input-placeholder": "输入任何问题...",
-    "send": "发送",
-    "args": "参数：",
-    "result": "结果："
-  },
-  "audit-log": {
-    "export-finished": "导出完成",
-    "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
-    "table": {
-      "created-ts": "时间",
-      "actor": "操作者",
-      "level": "事件等级",
-      "method": "操作",
-      "request": "请求信息",
-      "response": "响应信息",
-      "status": "状态",
-      "latency": "延迟",
-      "service-data": "服务数据"
-    },
-    "advanced-search": {
-      "scope": {
-        "actor": {
-          "title": "操作者",
-          "description": "按审计日志操作者搜索"
-        },
-        "method": {
-          "title": "操作",
-          "description": "按审计日志操作搜索"
-        },
-        "level": {
-          "title": "事件等级",
-          "description": "按审计日志事件等级搜索"
-        }
-      }
-    }
-  },
-  "auth": {
-    "sign-up": {
-      "title": "注册您的账号",
-      "admin-title": "设置 {account}",
-      "admin-account": "管理员账号",
-      "create-admin-account": "注册管理员",
-      "existing-user": "已有账号?",
-      "accept-terms-and-policy": "我接受 Bytebase 的{terms}和{policy}",
-      "terms-of-service": "服务条款",
-      "privacy-policy": "隐私政策"
-    },
-    "sign-in": {
-      "forget-password": "忘记密码?",
-      "new-user": "第一次使用 Bytebase?",
-      "demo-account": "Demo Account",
-      "sign-in-with-idp": "通过 {idp} 登录"
-    },
-    "password-forget": {
-      "title": "忘记了您的密码？",
-      "selfhost": "请联系您的 Bytebase 管理员重置密码",
-      "cloud": "请登录 {link} 并重置密码",
-      "return-to-sign-in": "返回登录"
-    },
-    "password-forgot": "忘记密码",
-    "password-reset": {
-      "title": "重置您的密码",
-      "content": "依据密码限制策略，您需要重置登录密码。"
-    },
-    "login-as-another": {
-      "title": "您已以其他用户身份登录",
-      "content": "我们将把您重定向到主页。"
-    },
-    "token-expired-title": "Token 已过期",
-    "token-expired-description": "Token 已过期，请重新登录",
-    "inactive-modal": {
-      "title": "您的会话即将结束",
-      "description": "您已有一段时间未活动。为了您的安全，我们将在{minutes}分钟后自动退出您的登录。",
-      "stay-signed-in": "保持登录状态"
-    },
-    "back-to-signin": "返回登录页面",
-    "close-window": "关闭此窗口"
-  },
-  "banner": {
-    "license-expired": "您的{plan}证书已在 {expireAt} 过期",
-    "license-expires": "您的{plan}证书将在 {days} 天后（{expireAt}）过期",
-    "trial-expires": "您的{plan}试用将在 {days} 天后（{expireAt}）过期",
-    "deploy": "本地部署",
-    "cloud": "云服务",
-    "request-demo": "预约一个 30 分钟的产品演示。",
-    "external-url": "Bytebase 还没有配置 --external-url",
-    "ha-not-licensed": "检测到多个副本但没有 HA 许可证。后端任务运行器已禁用。"
-  },
-  "bbkit": {
-    "confirm-button": {
-      "sure-to-delete": "确定要删除吗？",
-      "sure-to-abandon": "确定要废弃吗？",
-      "cannot-undo": "此操作无法撤销。",
-      "can-undo": "此操作可以撤销。"
-    }
-  },
-  "branch": {
-    "select-tables-to-rollout": "选择要发布的表",
-    "index": {
-      "drop-index-confirm": "删除索引？"
-    },
-    "table-partition": {
-      "drop-partition-confirm": "删除表分区？",
-      "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
-    }
-  },
-  "cel": {
-    "condition": {
-      "self": "条件",
-      "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
-      "add": "添加条件",
-      "add-group": "添加条件组",
-      "add-raw-expression": "添加 Raw 表达式",
-      "group": {
-        "or": {
-          "description": "以下任一为真…"
-        },
-        "and": {
-          "description": "以下全部为真…"
-        },
-        "tooltip": "条件组是一系列由「与」或「或」运算符连接的条件的集合。"
-      },
-      "input-value": "输入值",
-      "add-condition-in-group-placeholder": "点击{plus}添加条件",
-      "select-value": "选择值",
-      "input-value-press-enter": "输入值，按回车确认",
-      "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
-    }
-  },
-  "changelog": {
-    "self": "变更历史",
-    "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
-    "no-schema-change": "本次变更没有任何 Schema 的改动",
-    "show-diff": "显示差异",
-    "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
-    "current-schema-empty": "当前 schema 为空"
-  },
   "common": {
     "view": "查看",
     "you": "您",
@@ -422,1865 +269,161 @@
     "archive-description": "将「{name}」标记为已归档且只读。",
     "delete-resource-description": "删除「{name}」后将无法恢复，请确认。"
   },
-  "create-db": {
-    "new-database-name": "新数据库名称",
-    "database-owner-name": "数据库所有者",
-    "cluster": "集群",
-    "reserved-db-error": "{databaseName} 是一个预留名称",
-    "new-collection-name": "新集合名称"
-  },
-  "custom-approval": {
-    "self": "自定义审批",
-    "risk-rule": {
-      "risk": {
-        "risk-level": {
-          "default": "默认",
-          "low": "低",
-          "moderate": "中",
-          "high": "高"
-        },
-        "namespace": {
-          "change_database": "变更数据库",
-          "create_database": "创建数据库",
-          "data_export": "导出数据",
-          "request-role": "请求角色",
-          "request-access": "请求即时访问"
-        }
-      }
-    },
-    "approval-flow": {
-      "self": "审批流",
-      "create-approval-flow": "创建审批流",
-      "node": {
-        "nodes": "审批节点",
-        "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
-        "order": "顺序",
-        "approver": "审批人",
-        "add": "增加节点",
-        "delete": "删除审批节点"
-      },
-      "skip": "无需审批",
-      "add-rule": "添加规则",
-      "edit-rule": "编辑规则",
-      "fallback-rules": "兜底规则",
-      "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
-      "template": {
-        "presets-title": "预设模板",
-        "presets": {
-          "drop-or-truncate": "删除/清空表",
-          "high-affected-rows": "高影响行数",
-          "fallback": "兜底规则"
-        },
-        "preset-descriptions": {
-          "drop-or-truncate": "DROP TABLE 或 TRUNCATE 语句需要审批。",
-          "high-affected-rows": "影响行数超过 100 时需要审批。",
-          "fallback": "匹配所有请求的兜底规则，请将其放在规则列表的末尾。"
-        }
-      }
-    },
-    "risk": {
-      "self": "风险中心",
-      "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
-      "how-it-works": "工作原理",
-      "how-it-works-description": "当您创建数据库变更时，Bytebase 会自动分析 SQL 语句，并根据预定义规则分配风险等级（低、中、高）。",
-      "risk-levels": "风险等级",
-      "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
-      "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
-      "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
-      "integration": "与审批流集成",
-      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审批。"
-    },
-    "rule": {
-      "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
-    },
-    "issue-review": {
-      "generating-approval-flow": "正在生成审批流",
-      "approved-issue": "批准工单",
-      "rejected-issue": "驳回工单",
-      "disallow-approve-reason": {
-        "some-task-checks-didnt-pass": "尚有未通过的任务检查项。",
-        "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
-        "x-field-is-required": "{field}为必填项"
-      },
-      "re-request-review": "请求再次审批",
-      "re-request-review-success": "已成功请求再次审批",
-      "re-requested-review": "再次请求审批工单",
-      "approved-by": "已批准",
-      "rejected-by": "被拒绝",
-      "and-n-other-users": "{names} 和另外 {count} 位用户",
-      "self-approval-not-allowed": "此项目不允许工单创建者审批。您无法以创建者身份批准。"
-    }
-  },
-  "data-source": {
-    "snowflake-keypair-tip": "密钥对认证",
-    "private-key-passphrase": "私钥密码",
-    "private-key-passphrase-tip": "加密私钥的可选密码",
-    "private-key-passphrase-placeholder": "如果私钥未加密，请留空",
-    "extra-params": {
-      "self": "额外的参数",
-      "description": "数据库连接字符串的其他参数"
-    },
-    "ssl": {
-      "ca-cert": "CA 证书",
-      "client-key": "客户端密钥",
-      "client-cert": "客户端证书",
-      "verify-certificate": "验证 TLS 证书",
-      "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
-    },
-    "ssh-type": {
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
-      "none": "不使用"
-    },
-    "ssh": {
-      "host": "服务器",
-      "port": "端口",
-      "user": "用户名",
-      "password": "密码",
-      "ssh-key": "SSH 密钥",
-      "tunnel": "隧道",
-      "private-key": "私钥"
-    },
-    "ssl-connection": "SSL 连接",
-    "ssh-connection": "SSH 连接",
-    "read-replica-host": "只读副本 Host",
-    "read-replica-port": "只读副本端口",
-    "delete-read-only-data-source": "删除只读数据源",
-    "connection-string-schema": "连接串模式",
-    "connection-type": "连接类型",
-    "additional-node-addresses": "附加节点地址",
-    "replica-set": "副本集",
-    "admin": "管理员",
-    "read-only": "只读",
-    "direct-connection": "Direct Connection",
-    "select-query-data-source": "选择查询数据源"
-  },
-  "database": {
-    "labels": "数据库标签",
-    "no-environment": "该数据库尚未绑定到环境",
-    "set-environment": "设置环境",
-    "sync-database": "同步数据库",
-    "sync-schema-button": "同步 Schema",
-    "export-schema": "导出 Schema",
-    "export-schema-single-file": "单文件",
-    "export-schema-multi-file": "多文件 (ZIP)",
-    "successfully-exported-schema": "成功导出 Schema",
-    "failed-to-export-schema": "导出 Schema 失败",
-    "select": "选择数据库",
-    "sync-status": "同步状态",
-    "sync-status-failed": "同步失败",
-    "last-sync": "最后一次同步",
-    "sync-complete-for-instance": "实例 '{0}' 同步完成",
-    "filter-database": "过滤数据库",
-    "transfer-project": "转移项目",
-    "unassign": "取消分配",
-    "unassign-alert-title": "取消分配数据库",
-    "unassign-alert-description": "选定的数据库将从项目中移除",
-    "change-database": "变更数据库",
-    "edit-schema": "变更 Schema",
-    "edit-labels": "编辑标签",
-    "edit-environment": "编辑环境",
-    "mixed-values-for-label": "该标签拥有不同的值",
-    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
-    "table-detail": "表详情",
-    "batch-action-disabled": "无法对来自不同项目的数据库{action}",
-    "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
-    "successfully-transferred-databases": "数据库转移完成",
-    "nullable": "可为空",
-    "expression": "表达式",
-    "unique": "Unique",
-    "visible": "Visible",
-    "comment": "注释",
-    "engine": "引擎",
-    "row-count-estimate": "估计行数",
-    "data-size": "数据大小",
-    "index-size": "索引大小",
-    "column": "列",
-    "columns": "列",
-    "indexes": "索引",
-    "row-count-est": "估计行数",
-    "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
-    "go-to-transfer": "前去转移",
-    "unassigned-databases": "未分配的数据库",
-    "selected-n-databases": "已选择 {n} 个数据库",
-    "n-databases": "{n} 个数据库",
-    "sync-schema": {
-      "title": "库表同步",
-      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
-      "copy-schema": "粘贴 Schema 文本",
-      "select-source-schema": "选择源 Schema",
-      "select-target-databases": "选择目标数据库",
-      "source-schema": "源 Schema",
-      "target-databases": "目标数据库",
-      "with-diff": "有差异",
-      "no-diff": "无差异",
-      "message": {
-        "select-a-target-database-first": "请先选择一个目标数据库。",
-        "no-target-databases": "无目标数据库",
-        "no-diff-found": "未发现差异。"
-      },
-      "schema-change-preview": "预览 '{database}' 的 Schema 变更",
-      "synchronize-statements": "对应生成的 DDL 语句",
-      "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句",
-      "preview-issue": "预览工单",
-      "schema-change": "Schema 变化",
-      "generated-ddl-statement": "生成的 DDL 语句"
-    },
-    "access-denied": "您无权访问该数据库",
-    "schema": {
-      "select": "选择 schema",
-      "unspecified": "未指定"
-    },
-    "table": {
-      "select": "选择表",
-      "select-tip": "请选择一个表来开始查询。"
-    },
-    "all": "所有数据库",
-    "transfer": {
-      "errors": {
-        "select-target-project": "选择目标项目",
-        "select-at-least-one-database": "至少选择一个数据库"
-      },
-      "select-databases": "选择数据库",
-      "select-target-project": "选择目标项目"
-    },
-    "transfer-database-to": "将数据库转移到目标项目",
-    "classification": {
-      "self": "分类分级",
-      "description": "通过分类分级，来批量管理列的脱敏规则。"
-    },
-    "partitioned": "分区",
-    "partition-tables": "分区表",
-    "external-server-name": "外部服务器名称",
-    "external-database-name": "外部数据库名称",
-    "foreign-table-detail": "外部表详情",
-    "view-definition": "查看定义",
-    "foreign-keys": "外键",
-    "foreign-key": {
-      "reference": "引用"
-    },
-    "general": {
-      "workspace": {
-        "watermark": {},
-        "allow-admin-data-source": {},
-        "product-improvement": {},
-        "audit-log-stdout": {},
-        "enable-debug": {},
-        "disallow-signup": {},
-        "require-2fa": {},
-        "disallow-password-signin": {},
-        "external-url": {},
-        "access-token-duration": {},
-        "refresh-token-duration": {},
-        "inactive-session-timeout": {},
-        "maximum-role-expiration": {},
-        "maximum-sql-result": {
-          "size": {},
-          "rows": {}
-        },
-        "query-data-policy": {
-          "timeout": {}
-        },
-        "domain-restriction": {
-          "members-restriction": {}
-        },
-        "password-restriction": {},
-        "ai-assistant": {
-          "provider": {},
-          "api-key": {},
-          "endpoint": {},
-          "model": {}
-        },
-        "announcement": {},
-        "announcement-alert-level": {},
-        "announcement-text": {},
-        "extra-link": {},
-        "default-landing-page": {
-          "workspace": {},
-          "sql-editor": {}
-        }
-      }
-    },
-    "sensitive-data": {
-      "global-rules": {
-        "error": {}
-      },
-      "semantic-types": {
-        "table": {},
-        "template": {}
-      },
-      "algorithms": {
-        "table": {},
-        "error": {},
-        "full-mask": {},
-        "range-mask": {},
-        "md5-mask": {},
-        "inner-outer-mask": {}
-      },
-      "classification": {}
-    }
-  },
-  "remind": {
-    "release": {
-      "new-version-available": "有新版本可更新",
-      "new-version-available-with-tag": "新版本 {tag} 已推出",
-      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。"
-    },
-    "role-expire": {
-      "title": "角色到期提醒",
-      "content": "您的角色即将到期",
-      "checkbox": "直到有更新再提醒",
-      "go-to-project": "前往项目页面"
-    }
-  },
-  "activity": {
-    "sentence": {
-      "created-issue": "创建工单",
-      "changed-description": "修改描述",
-      "changed-labels": "改变标签",
-      "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
-      "reopened-issue": "重开工单",
-      "resolved-issue": "批准工单",
-      "canceled-issue": "关闭工单"
-    }
-  },
-  "issue": {
-    "labels": "工单标签",
-    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
-    "my-issues": "我的工单",
-    "waiting-approval": "等待审批",
-    "create-rollout": "创建发布",
-    "status-transition": {
-      "modal": {
-        "reopen": "重开工单？",
-        "close": "关闭工单？"
-      }
-    },
-    "leave-a-comment": "发表一条评论…",
-    "no-description-provided": "未提供描述",
-    "comment-editor": {
-      "write": "编辑",
-      "preview": "预览",
-      "nothing-to-preview": "暂无预览",
-      "toolbar": {
-        "header": "插入标题",
-        "bold": "插入粗体文本",
-        "code": "插入 SQL 代码片段",
-        "link": "插入链接",
-        "hashtag": "通过 id 插入工单链接。请在\"#\"后填入工单 id"
-      }
-    },
-    "advanced-search": {
-      "self": "高级搜索",
-      "filter": "过滤",
-      "search": "输入名称或 ID 来搜索",
-      "scope": {
-        "project": {
-          "title": "项目",
-          "description": "根据项目过滤"
-        },
-        "instance": {
-          "title": "实例",
-          "description": "根据实例过滤"
-        },
-        "environment": {
-          "title": "环境",
-          "description": "根据环境过滤"
-        },
-        "creator": {
-          "title": "创建人",
-          "description": "根据创建人搜索"
-        },
-        "current-approver": {
-          "title": "当前审批人",
-          "description": "按工单的当前审批人搜索"
-        },
-        "status": {
-          "description": "按工单状态搜索"
-        },
-        "approval": {
-          "value": {
-            "checking": "检查中",
-            "pending": "待审批",
-            "approved": "审批通过",
-            "rejected": "已拒绝",
-            "skipped": "已跳过"
-          },
-          "description": "按工单的审批状态搜索",
-          "title": "审批状态"
-        },
-        "issue-label": {
-          "title": "工单标签",
-          "description": "按工单标签过滤"
-        },
-        "issue-type": {
-          "title": "类型",
-          "description": "按工单类型过滤",
-          "value": {
-            "database-change": "数据库变更",
-            "role-grant": "角色授权",
-            "database-export": "数据导出",
-            "access-grant": "访问授权"
-          }
-        },
-        "table": {
-          "title": "表",
-          "description": "输入值然后按 Enter"
-        },
-        "label": {
-          "description": "输入 \"key:value\" 后按下回车"
-        },
-        "engine": {
-          "title": "引擎",
-          "description": "按引擎过滤"
-        },
-        "state": {
-          "description": "按状态过滤"
-        }
-      }
-    },
-    "sort": {
-      "sort": "排序",
-      "created": "创建时间",
-      "updated": "更新时间",
-      "ascending": "正序",
-      "descending": "倒序"
-    },
-    "table": {
-      "open": "开启中",
-      "closed": "已关闭",
-      "name": "名称",
-      "updated": "更新于",
-      "creator": "创建人",
-      "approved": "已审批",
-      "approval-progress": "{approved}/{total} 已审批",
-      "waiting-role": "等待: {role}"
-    },
-    "migration-mode": {
-      "online": {
-        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
-      }
-    },
-    "upload-sql": "上传 SQL",
-    "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
-    "options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
-    "overwrite-current-statement": "覆盖当前的 SQL 语句",
-    "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
-    "transaction-mode": {
-      "label": "事务模式",
-      "on-tooltip": "将所有语句包装在单个事务中（BEGIN/COMMIT）。",
-      "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。",
-      "execution-order-note": "非事务性语句将最后执行。"
-    },
-    "batch-transition": {
-      "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "open-cannot-reopen": "打开中的工单无法重开",
-      "done-cannot-reopen": "已批准的工单无法重开",
-      "done-cannot-close": "已批准的工单无法关闭",
-      "canceled-cannot-close": "已取消的工单无法关闭",
-      "reopen": "重开",
-      "reopened": "重开",
-      "action-n-issues": "{action} {n} 个工单",
-      "closed": "关闭",
-      "close": "关闭"
-    },
-    "approval-flow": {
-      "self": "审批流"
-    },
-    "force-rollout-hint": "手动创建发布以跳过失败的 SQL 检查。",
-    "checks-block-rollout-hint": "SQL 检查失败导致无法创建发布。请修复错误后再继续。",
-    "checks-warning-hint": "此变更计划存在未通过的检查。审批通过后将需要手动创建发布。",
-    "risk-level": {
-      "self": "风险等级",
-      "low": "低风险",
-      "moderate": "中风险",
-      "high": "高风险",
-      "filter": "按风险等级筛选"
-    },
-    "issue-name": "工单名称",
-    "access-grant": {
-      "details": "访问授权详情",
-      "expired-at": "过期时间"
-    },
-    "role-grant": {
-      "details": "请求详细",
-      "expired-at": "过期时间",
-      "all-databases": "所有数据库",
-      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
-      "manually-select": "手动选择",
-      "use-cel": "使用 CEL 表达式",
-      "custom-date": "自定义日期",
-      "custom-date-placeholder": "选择到期日期和时间"
-    },
-    "action-anyway": "仍要{action}",
-    "sql-check": {
-      "sql-checks": "SQL 检查项",
-      "not-executed-yet": "尚未执行",
-      "statement-is-required": "SQL 语句不能为空",
-      "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。",
-      "back-to-edit": "返回编辑",
-      "sql-review-violations": "违反的 SQL 审核规则"
-    },
-    "error": {
-      "statement-cannot-be-modified": "工单创建后，语句将无法修改"
-    },
-    "unfinished-resolved-issue-tips": "该工单被标记为「已批准」，但其中部分任务并未成功执行。",
-    "data-export": {
-      "options": "配置项",
-      "limits": "限制",
-      "format": "导出格式",
-      "download-tooltip": "24 小时可用",
-      "file-expired": "文件已过期"
-    },
-    "task-run": {
-      "logs": "日志",
-      "session": "会话",
-      "task-run-session": {
-        "blocking-sessions": {
-          "self": "阻塞会话",
-          "description": "当前会话被以下会话阻塞"
-        },
-        "blocked-sessions": {
-          "self": "被阻塞会话",
-          "description": "当前会话阻塞了以下会话"
-        },
-        "no-session-found": "未找到会话。"
-      }
-    },
-    "title": {
-      "change-database": "变更数据库",
-      "export-data": "导出数据",
-      "create-database": "创建数据库",
-      "request-role": "请求角色",
-      "request-specific-role": "请求“{role}”角色"
-    },
-    "review": {
-      "self": "审批",
-      "comment-description": "提交反馈，不进行批准操作",
-      "approve-description": "提交反馈并批准此工单",
-      "reject-description": "提交反馈并要求修改"
-    },
-    "approval": {
-      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
-    }
-  },
-  "plan": {
-    "plans": "变更计划",
-    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
-    "new-plan": "创建变更计划",
-    "add-spec": "添加变更项",
-    "select-targets": "选择目标库",
-    "ready-for-review": "提交审批",
-    "labels-required-for-review": "提交审批前需要选择标签",
-    "overview": {
-      "no-checks": "没有检查"
-    },
-    "run": "运行检查",
-    "navigator": {
-      "changes": "变更项",
-      "checks": "SQL 检查",
-      "statement-empty": "变更语句为空"
-    },
-    "checks": {
-      "self": "检查",
-      "no-results-match-filters": "没有匹配筛选条件的结果",
-      "no-check-results": "没有检查结果"
-    },
-    "spec": {
-      "change": "变更项",
-      "type": {
-        "create-database": "创建数据库",
-        "database-change": "数据库变更",
-        "export-data": "导出数据",
-        "unknown": "未知"
-      },
-      "delete-change": {
-        "title": "删除变更项",
-        "content": "您确定要删除该变更项吗？"
-      },
-      "role-selection": {
-        "title": "数据库角色选择",
-        "description": "选择以哪个 PostgreSQL 角色来执行此语句。",
-        "technical-note": "将“SET ROLE {role};”添加到您的 SQL 语句中。"
-      }
-    },
-    "targets": {
-      "title": "目标库",
-      "no-targets-found": "未找到目标库",
-      "view-all": "查看全部 ({count})",
-      "non-env-warning": "{count} 个数据库因没有环境将被排除在发布任务之外:"
-    },
-    "select-isolation-level": "选择隔离级别",
-    "isolation-level": {
-      "self": "隔离级别",
-      "description": "控制事务如何处理并发更改。仅在事务模式开启时适用。"
-    },
-    "options": {
-      "self": "配置项",
-      "no-options-available": "暂无可配置项"
-    },
-    "editor": {
-      "save-changes-before-continuing": "请保存或取消更改，然后再继续",
-      "unsaved-changes": "未保存的更改",
-      "unsaved-changes-message": "有未保存的更改。您确定要离开吗？"
-    },
-    "pre-backup": {
-      "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
-      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'。如果使用了 SET ROLE，请将该 schema 的 USAGE 和 CREATE 权限授予对应角色。然后同步数据库",
-      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
-      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
-    },
-    "ghost": {
-      "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
-      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-database": "请在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库"
-    },
-    "refresh-indicator": {
-      "last-refresh": "上次刷新：{time}"
-    },
-    "state": {
-      "close-confirm": "确定关闭该变更计划？",
-      "reopen-confirm": "确定重新开启该变更计划？"
-    },
-    "description": {
-      "placeholder": "添加描述"
-    },
-    "checks": "Check 约束",
-    "revision": {}
-  },
-  "database-group": {
-    "create": "新建数据库分组",
-    "deleted": "已删除的数据库组",
-    "matched-database": "相匹配的数据库",
-    "unmatched-database": "不匹配的数据库",
-    "condition": {
-      "self": "条件"
-    },
-    "select": "选择数据库分组",
-    "no-matched-databases": "没有匹配的数据库",
-    "delete-group": "删除数据库组 {name}"
-  },
-  "db": {
-    "encoding": "字符编码",
-    "character-set": "字符集",
-    "collation": "字符排序规则",
-    "tables": "表",
-    "collections": "集合",
-    "views": "视图",
-    "extensions": "插件",
-    "external-tables": "外部表",
-    "functions": "函数",
-    "streams": "Streams",
-    "tasks": "任务",
-    "labels-for-resource": "{resource}的标签",
-    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
-    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
-    "start-to-sync-schema": "开始同步 schema",
-    "syncing-databases-for-instance": "正在同步 {0} 的数据库...",
-    "n-databases-had-sync-errors": "{0} 个数据库同步出错",
-    "failed-to-sync-schema": "同步 schema 失败",
-    "successfully-synced-schema": "Schema 同步完成",
-    "procedures": "存储过程",
-    "partitions": "分区",
-    "packages": "包",
-    "sequences": "序列",
-    "sequence": {
-      "data-type": "数据类型",
-      "start": "起始值",
-      "min-value": "最小值",
-      "max-value": "最大值",
-      "increment": "增量",
-      "cycle": "循环",
-      "cacheSize": "缓存大小",
-      "lastValue": "最后值"
-    },
-    "triggers": "触发器",
-    "trigger": {
-      "body": "主体",
-      "timing": "时机",
-      "event": "事件"
-    },
-    "schema": {
-      "default": "默认"
-    },
-    "catalog": {
-      "description": "编辑并上传表的 Catalog"
-    }
-  },
-  "environment": {
-    "select": "选择环境",
-    "delete": "删除此环境",
-    "delete-description": "删除环境也会将其从相关实例和数据库中删除。@:common.cannot-undo-this-action",
-    "create": "创建环境",
-    "reorder": "重新排序环境",
-    "successfully-updated-environment": "环境'{name}'更新成功",
-    "production-environment": "生产环境"
-  },
   "error-page": {
     "forbidden": "禁止访问",
     "go-back-home": "回到主页",
     "not-found": "页面未找到"
   },
-  "export-center": {
-    "self": "导出中心",
-    "data-export": "数据导出"
-  },
-  "export-data": {
-    "export-rows": "导出行数",
-    "error": {
-      "export-rows-required": "需要指定导出行数",
-      "export-rows-must-gt-zero": "导出行数必须大于 0"
-    },
-    "export-format": "导出格式",
-    "password-optional": "设置密码加密（可选）",
-    "password-info": "提供密码来对导出的文件进行加密"
-  },
-  "gitops": {
-    "self": "GitOps",
-    "overview": {
-      "title": "什么是 GitOps",
-      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
-      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。"
-    },
-    "checklist": {
-      "title": "开始前检查",
-      "external-url": "外部访问地址",
-      "workload-identity": "工作负载身份",
-      "target-databases": "目标数据库",
-      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
-      "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
-      "wif-notice-suffix": "以使用服务账号配置 GitOps。"
-    },
-    "workload-identity": {
-      "select-placeholder": "选择工作负载身份"
-    },
-    "workflow": {
-      "title": "工作流文件生成",
-      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
-      "file-hint": "保存为仓库中的 {filePath}",
-      "self-hosted-runner": "自托管 runner",
-      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。"
-    },
-    "test-setup": {
-      "title": "测试您的首次 GitOps 迁移",
-      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
-      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
-      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
-      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
-      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。"
-    },
-    "documentation": "查看文档"
-  },
-  "help-drawer": {
-    "dont-show-again": "不再显示这些提示"
-  },
-  "identity-provider": {
-    "test-connection": "测试连接",
-    "test-connection-success": "测试连接成功",
-    "userinfo-description": "匹配到的用户信息。",
-    "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
-    "no-claims": "身份提供商未返回 claims。",
-    "identity-provider-created": "身份提供商创建成功",
-    "identity-provider-deleted": "身份提供商已成功删除",
-    "identity-provider-update-failed": "无法更新身份提供商",
-    "identity-provider-create-failed": "无法创建身份提供商",
-    "identity-provider-delete-failed": "无法删除身份提供商",
-    "identity-provider-permission-denied": "没有权限",
-    "delete-warning": "您确定要删除此身份提供者吗？通过此 SSO 注册的用户将无法再使用该身份提供者登录。如果您在工作区设置中禁用了密码登录，这些用户可能会被完全锁定。"
-  },
-  "instance": {
-    "select-database-user": "选择数据库用户",
-    "new-database": "@:common.new@:common.database",
-    "syncing": "同步中 ...",
-    "sync": {
-      "self": "同步实例",
-      "sync-all": "同步所有数据库",
-      "sync-new": "仅同步新数据库",
-      "sync-all-tip": "数据库同步是异步的，可能需要几秒到几分钟"
-    },
-    "no-environment": "此实例尚未绑定到环境",
-    "selected-n-instances": "已选择 {n} 个实例",
-    "users": "用户",
-    "successfully-restored-instance": "已成功恢复实例“{0}”。",
-    "successfully-archived-instance": "成功归档实例'{0}'。",
-    "archive-instance-instance-name": "归档实例'{0}'?",
-    "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
-    "restore": "恢复",
-    "restore-instance-instance-name-to-normal-state": "恢复实例'{0}'到正常状态?",
-    "account-locator": "账户定位符",
-    "host-or-socket": "Host 或 Socket",
-    "endpoint": "端点",
-    "project-id": "项目 ID",
-    "instance-id": "实例 ID",
-    "your-snowflake-account-locator": "您的 Snowflake 账户定位符",
-    "port": "端口",
-    "authentication-database": "认证数据库",
-    "instance-name": "实例名称",
-    "snowflake-web-console": "Snowflake Web 控制台",
-    "external-link": "外部链接",
-    "connection-info": "连接信息",
-    "connection-options": "连接选项",
-    "section": {
-      "basic-info": "基本信息",
-      "connection": "连接"
-    },
-    "info-panel": {
-      "no-info": "暂无该引擎的额外信息。"
-    },
-    "role-arn": "角色 ARN",
-    "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
-    "role-arn-description": "用于跨账户访问的 IAM 角色。同账户访问请留空。",
-    "external-id": "外部 ID",
-    "external-id-placeholder": "可选的外部 ID",
-    "external-id-description": "承担角色时用于额外安全性的外部 ID（可选）",
-    "show-how-to-create": "如何创建",
-    "no-read-only-data-source-warn-for-admin-dba": "该实例没有配置只读连接，请考虑配置。",
-    "no-read-only-data-source-warn-for-developer": "该实例没有配置只读连接，请让您的 DBA 配置一个。",
-    "sentence": {
-      "host": {
-        "none-snowflake": "例如 host.docker.internal {'|'} ip {'|'} local socket"
-      },
-      "proxy": {
-        "snowflake": "对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT"
-      },
-      "console": {
-        "snowflake": "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
-      },
-      "create-admin-user": "这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。",
-      "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
-      "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
-      "create-readonly-user-non-sql": "这是 Bytebase 用于连接数据库，执行只读操作的用户。",
-      "google-cloud-sql": {
-        "instance-name": "实例连接名称",
-        "instance-name-tips": "实例连接名称应为 {instance}。",
-        "mysql": {
-          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。"
-        },
-        "postgresql": {
-          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
-        }
-      },
-      "aws-rds": {
-        "mysql": {
-          "template": "下面是创建用户 {user}{'@'}% 并授予该用户所需权限的示例。"
-        },
-        "postgresql": {
-          "template": "下面是创建用户“{user}”并授予该用户所需权限的示例。"
-        }
-      },
-      "create-user-example": {
-        "snowflake": {
-          "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
-        },
-        "mysql": {
-          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
-        },
-        "clickhouse": {
-          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
-          "sql-driven-workflow": "SQL 工作流"
-        },
-        "postgresql": {
-          "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
-          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
-        },
-        "redis": {
-          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
-        }
-      },
-      "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。"
-    },
-    "no-password": "无密码",
-    "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
-    "password-write-only": "YOUR_DB_PWD - 仅写入",
-    "password-type": {
-      "password": "密码",
-      "google-iam": "Google Cloud SQL IAM",
-      "aws-iam": "AWS RDS IAM",
-      "azure-iam": "Azure IAM",
-      "external-secret-vault": "Vault (KV v2)",
-      "external-secret-aws": "AWS Secrets Manager",
-      "external-secret-gcp": "GCP Secret Manager",
-      "external-secret-azure": "Azure Key Vault"
-    },
-    "iam-extension": {
-      "credential-source": "凭证来源",
-      "tenant-id": "Tenant ID",
-      "client-id": "Client ID",
-      "client-secret": "Client Secret",
-      "specific-credential": "指定凭证",
-      "saas-default-credential-restriction": "出于安全考虑，Bytebase Cloud 不支持使用默认凭证。请提供具体凭证。"
-    },
-    "database-region": "数据库区域",
-    "external-secret-gcp": {
-      "secret-name": "密钥完整路径",
-      "secret-name-tips": "密钥完整路径应类似于 \"projects/project-id/secrets/secret-id\""
-    },
-    "external-secret-azure": {
-      "vault-url": "Key Vault URL",
-      "vault-url-tips": "Key Vault URL 应类似于 \"https://myvault.vault.azure.net/\"",
-      "secret-name": "密钥名称",
-      "secret-name-tips": "存储在 Azure Key Vault 中的密钥名称。"
-    },
-    "external-secret-vault": {
-      "vault-url": "Vault URL",
-      "vault-auth-type": {
-        "self": "认证方式",
-        "token": {
-          "self": "Token",
-          "tips": "没有过期时限的根 token"
-        },
-        "approle": {
-          "self": "AppRole",
-          "role-id": "Auth role id",
-          "secret-id": "Auth secret id",
-          "secret-id-plain-text": "Secret id 明文",
-          "secret-id-environment": "储存 secret id 的环境变量名",
-          "secret-plain-text": "明文",
-          "secret-env-name": "环境变量名",
-          "secret-tips": "未封装、无有效期限的 secret id，您可以使用明文、环境变量名或文件路径。{learn_more}"
-        }
-      },
-      "vault-secret-engine-name": "Secret engine name",
-      "vault-secret-path": "Secret path",
-      "vault-secret-key": "Secret key",
-      "vault-secret-engine-tips": "仅支持 KV v2 储存",
-      "vault-tls-config": "Vault TLS 配置（可选）",
-      "verify-vault-certificate": "验证 Vault TLS 证书",
-      "vault-ca-cert": "Vault CA 证书",
-      "vault-client-cert": "Vault 客户端证书",
-      "vault-client-key": "Vault 客户端密钥"
-    },
-    "external-secret": {
-      "secret-name": "Secret name",
-      "key-name": "Secret key"
-    },
-    "test-connection": "测试连接",
-    "new-instance": "新实例",
-    "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{0}",
-    "successfully-created-instance-createdinstance-name": "成功创建实例'{0}'。",
-    "successfully-updated-instance-instance-name": "成功更新实例'{0}'。",
-    "successfully-connected-instance": "成功连接到实例。",
-    "failed-to-connect-instance": "连接到实例失败。",
-    "failed-to-connect-instance-localhost": "如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
-    "filter-instance-name": "过滤实例名称",
-    "grants": "权限",
-    "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
-    "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
-    "create-gcp-credentials": "创建凭据的方法见",
-    "all": "所有实例",
-    "force-archive-description": "强制归档。所有数据库均将被取消分配。",
-    "scan-interval": {
-      "self": "扫描间隔",
-      "default-never": "默认（永不）",
-      "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
-      "min-value": "最小值 {value} 分钟"
-    },
-    "sync-databases": {
-      "self": "同步数据库",
-      "description": "仅同步选定的数据库。",
-      "sync-all": "同步所有数据库",
-      "search-database": "搜索数据库",
-      "add-database": "+ 添加数据库，按回车键提交"
-    },
-    "advanced-search": {
-      "scope": {
-        "host": {
-          "title": "服务器地址",
-          "description": "按实例服务器地址过滤。请输入值然后按 Enter。"
-        },
-        "port": {
-          "title": "端口",
-          "description": "按实例端口过滤。请输入值然后按 Enter。"
-        }
-      }
-    },
-    "no-params-yet-add-above": "尚未配置参数。\n使用上面的形式添加参数。",
-    "no-extra-params-configured": "没有配置的额外连接参数",
-    "parameter-name-placeholder": "参数名称",
-    "parameter-value-placeholder": "参数值"
-  },
-  "issue": {
-    "labels": "工单标签",
-    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
-    "my-issues": "我的工单",
-    "waiting-approval": "等待审批",
-    "create-rollout": "创建发布",
-    "status-transition": {
-      "modal": {
-        "reopen": "重开工单？",
-        "close": "关闭工单？"
-      }
-    },
-    "leave-a-comment": "发表一条评论…",
-    "no-description-provided": "未提供描述",
-    "comment-editor": {
-      "write": "编辑",
-      "preview": "预览",
-      "nothing-to-preview": "暂无预览",
-      "toolbar": {
-        "header": "插入标题",
-        "bold": "插入粗体文本",
-        "code": "插入 SQL 代码片段",
-        "link": "插入链接",
-        "hashtag": "通过 id 插入工单链接。请在\"#\"后填入工单 id"
-      }
-    },
-    "advanced-search": {
-      "self": "高级搜索",
-      "filter": "过滤",
-      "search": "输入名称或 ID 来搜索",
-      "scope": {
-        "project": {
-          "title": "项目",
-          "description": "根据项目过滤"
-        },
-        "instance": {
-          "title": "实例",
-          "description": "根据实例过滤"
-        },
-        "environment": {
-          "title": "环境",
-          "description": "根据环境过滤"
-        },
-        "creator": {
-          "title": "创建人",
-          "description": "根据创建人搜索"
-        },
-        "current-approver": {
-          "title": "当前审批人",
-          "description": "按工单的当前审批人搜索"
-        },
-        "status": {
-          "description": "按工单状态搜索"
-        },
-        "approval": {
-          "value": {
-            "checking": "检查中",
-            "pending": "待审批",
-            "approved": "审批通过",
-            "rejected": "已拒绝",
-            "skipped": "已跳过"
-          },
-          "description": "按工单的审批状态搜索",
-          "title": "审批状态"
-        },
-        "issue-label": {
-          "title": "工单标签",
-          "description": "按工单标签过滤"
-        },
-        "issue-type": {
-          "title": "类型",
-          "description": "按工单类型过滤",
-          "value": {
-            "database-change": "数据库变更",
-            "grant-request": "权限申请",
-            "database-export": "数据导出",
-            "access-grant": "访问授权"
-          }
-        },
-        "table": {
-          "title": "表",
-          "description": "输入值然后按 Enter"
-        },
-        "label": {
-          "description": "输入 \"key:value\" 后按下回车"
-        },
-        "engine": {
-          "title": "引擎",
-          "description": "按引擎过滤"
-        },
-        "state": {
-          "description": "按状态过滤"
-        }
-      }
-    },
-    "sort": {
-      "sort": "排序",
-      "created": "创建时间",
-      "updated": "更新时间",
-      "ascending": "正序",
-      "descending": "倒序"
-    },
-    "table": {
-      "open": "开启中",
-      "closed": "已关闭",
-      "name": "名称",
-      "updated": "更新于",
-      "creator": "创建人",
-      "approved": "已审批",
-      "approval-progress": "{approved}/{total} 已审批",
-      "waiting-role": "等待: {role}"
-    },
-    "migration-mode": {
-      "online": {
-        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
-      }
-    },
-    "upload-sql": "上传 SQL",
-    "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
-    "options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
-    "overwrite-current-statement": "覆盖当前的 SQL 语句",
-    "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
-    "transaction-mode": {
-      "label": "事务模式",
-      "on-tooltip": "将所有语句包装在单个事务中（BEGIN/COMMIT）。",
-      "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。",
-      "execution-order-note": "非事务性语句将最后执行。"
-    },
-    "batch-transition": {
-      "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "open-cannot-reopen": "打开中的工单无法重开",
-      "done-cannot-reopen": "已完成的工单无法重开",
-      "done-cannot-close": "已完成的工单无法关闭",
-      "canceled-cannot-close": "已取消的工单无法关闭",
-      "reopen": "重开",
-      "reopened": "重开",
-      "action-n-issues": "{action} {n} 个工单",
-      "closed": "关闭",
-      "close": "关闭"
-    },
-    "approval-flow": {
-      "self": "审批流"
-    },
-    "force-rollout-hint": "手动创建发布以跳过失败的 SQL 检查。",
-    "checks-block-rollout-hint": "SQL 检查失败导致无法创建发布。请修复错误后再继续。",
-    "checks-warning-hint": "此变更计划存在未通过的检查。审批通过后将需要手动创建发布。",
-    "risk-level": {
-      "self": "风险等级",
-      "low": "低风险",
-      "moderate": "中风险",
-      "high": "高风险",
-      "filter": "按风险等级筛选"
-    },
-    "issue-name": "工单名称",
-    "access-grant": {
-      "details": "访问授权详情"
-    },
-    "grant-request": {
-      "details": "请求详细",
-      "expired-at": "过期时间",
-      "all-databases": "所有数据库",
-      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
-      "manually-select": "手动选择",
-      "use-cel": "使用 CEL 表达式",
-      "custom-date": "自定义日期",
-      "custom-date-placeholder": "选择到期日期和时间"
-    },
-    "action-anyway": "仍要{action}",
-    "sql-check": {
-      "sql-checks": "SQL 检查项",
-      "not-executed-yet": "尚未执行",
-      "statement-is-required": "SQL 语句不能为空",
-      "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。",
-      "back-to-edit": "返回编辑",
-      "sql-review-violations": "违反的 SQL 审核规则"
-    },
-    "error": {
-      "statement-cannot-be-modified": "工单创建后，语句将无法修改"
-    },
-    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
-    "data-export": {
-      "options": "配置项",
-      "limits": "限制",
-      "format": "导出格式",
-      "download-tooltip": "24 小时可用",
-      "file-expired": "文件已过期"
-    },
-    "task-run": {
-      "logs": "日志",
-      "session": "会话",
-      "task-run-session": {
-        "blocking-sessions": {
-          "self": "阻塞会话",
-          "description": "当前会话被以下会话阻塞"
-        },
-        "blocked-sessions": {
-          "self": "被阻塞会话",
-          "description": "当前会话阻塞了以下会话"
-        },
-        "no-session-found": "未找到会话。"
-      }
-    },
-    "title": {
-      "change-database": "变更数据库",
-      "export-data": "导出数据",
-      "create-database": "创建数据库",
-      "request-role": "请求角色",
-      "request-specific-role": "请求“{role}”角色"
-    },
-    "review": {
-      "self": "审批",
-      "comment-description": "提交反馈，不进行批准操作",
-      "approve-description": "提交反馈并批准此工单",
-      "reject-description": "提交反馈并要求修改"
-    },
-    "approval": {
-      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
-    }
-  },
-  "label": {
-    "empty-label-value": "空",
-    "error": {
-      "key-necessary": "需要指定 Key",
-      "value-necessary": "需要指定值",
-      "key-duplicated": "Key 重复了",
-      "max-value-length-exceeded": "值的长度不能超过 {length} 字符"
-    },
-    "add-label": "添加标签"
-  },
-  "landing": {
-    "quick-link": {
-      "self": "快捷访问",
-      "manage": "管理快捷访问",
-      "visit-prjects": "访问项目",
-      "visit-issues": "访问工单"
-    },
-    "last-visit": "上次访问",
-    "changelog-for-version": "{version} 的更新日志"
-  },
-  "masking": {
-    "reason": {
-      "title": "为什么这些数据被遮盖？",
-      "semantic-type": "语义类型",
-      "algorithm": "遮盖方法",
-      "context": "规则",
-      "classification": "分类级别"
-    }
-  },
-  "multi-factor": {
-    "self": "多重认证",
-    "auth-code": "认证码",
-    "recovery-code": "恢复码",
-    "other-methods": {
-      "self": "其他方法",
-      "use-auth-app": {
-        "self": "使用身份验证器应用程序",
-        "description": "在您的移动设备上打开双重认证器（TOTP）应用程序，查看认证码。"
-      },
-      "use-recovery-code": {
-        "self": "使用恢复码",
-        "description": "如果您无法访问您的移动设备，请输入一个恢复码来验证您的身份。"
-      }
-    }
-  },
-  "oauth": {
-    "unknown-event": "未知的事件类型，认证失败"
-  },
-  "oauth2": {
-    "consent": {
-      "title": "授权请求",
-      "description": "{clientName} 正在请求访问您的账户",
-      "permissions": "此应用程序将能够:",
-      "permission-access": "使用您的权限访问您的 Bytebase 账户"
-    }
-  },
-  "plan": {
-    "plans": "变更计划",
-    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
-    "new-plan": "创建变更计划",
-    "add-spec": "添加变更项",
-    "select-targets": "选择目标库",
-    "ready-for-review": "提交审批",
-    "labels-required-for-review": "提交审批前需要选择标签",
-    "overview": {
-      "no-checks": "没有检查"
-    },
-    "run": "运行检查",
-    "navigator": {
-      "changes": "变更项",
-      "checks": "SQL 检查",
-      "statement-empty": "变更语句为空"
-    },
-    "checks": {
-      "self": "检查",
-      "no-results-match-filters": "没有匹配筛选条件的结果",
-      "no-check-results": "没有检查结果"
-    },
-    "spec": {
-      "change": "变更项",
-      "type": {
-        "create-database": "创建数据库",
-        "database-change": "数据库变更",
-        "export-data": "导出数据",
-        "unknown": "未知"
-      },
-      "delete-change": {
-        "title": "删除变更项",
-        "content": "您确定要删除该变更项吗？"
-      },
-      "role-selection": {
-        "title": "数据库角色选择",
-        "description": "选择以哪个 PostgreSQL 角色来执行此语句。",
-        "technical-note": "将“SET ROLE {role};”添加到您的 SQL 语句中。"
-      }
-    },
-    "targets": {
-      "title": "目标库",
-      "no-targets-found": "未找到目标库",
-      "view-all": "查看全部 ({count})",
-      "non-env-warning": "{count} 个数据库因没有环境将被排除在发布任务之外:"
-    },
-    "select-isolation-level": "选择隔离级别",
-    "isolation-level": {
-      "self": "隔离级别",
-      "description": "控制事务如何处理并发更改。仅在事务模式开启时适用。"
-    },
-    "options": {
-      "self": "配置项",
-      "no-options-available": "暂无可配置项"
-    },
-    "editor": {
-      "save-changes-before-continuing": "请保存或取消更改，然后再继续",
-      "unsaved-changes": "未保存的更改",
-      "unsaved-changes-message": "有未保存的更改。您确定要离开吗？"
-    },
-    "pre-backup": {
-      "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
-      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'。如果使用了 SET ROLE，请将该 schema 的 USAGE 和 CREATE 权限授予对应角色。然后同步数据库",
-      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
-      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
-    },
-    "ghost": {
-      "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
-      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-database": "请在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库"
-    },
-    "refresh-indicator": {
-      "last-refresh": "上次刷新：{time}"
-    },
-    "state": {
-      "close-confirm": "确定关闭该变更计划？",
-      "reopen-confirm": "确定重新开启该变更计划？"
-    },
-    "description": {
-      "placeholder": "添加描述"
-    }
-  },
-  "plugin": {
-    "ai": {
-      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会将其转换成 SQL 语句",
-      "conversation": {
-        "untitled": "未命名会话",
-        "delete": "删除会话",
-        "rename": "修改会话名称",
-        "select-or-create": "选择或{create}一个会话以开始。",
-        "history-conversations": "历史对话",
-        "view-history-conversations": "查看历史对话",
-        "new-conversation": "开启新对话",
-        "no-message": "无消息",
-        "tips": {
-          "suggest-prompt": "生成提示词...",
-          "no-more": "没有了"
-        }
-      },
-      "text2sql": "Text2SQL",
-      "actions": {
-        "explain-code": "解释代码",
-        "find-problems": "找出问题",
-        "insert-at-caret": "在光标处插入"
-      },
-      "send": "发送",
-      "new-line": "换行",
-      "ai-assistant": "AI 助手",
-      "not-configured": {
-        "self": "AI 助手尚未配置。",
-        "contact-admin-to-configure": "请联系您的组织管理员。",
-        "go-to-configure": "前往配置"
-      }
-    }
-  },
-  "policy": {
-    "rollout": {
-      "name": "发布策略",
-      "tip": "新策略对旧工单也生效",
-      "info": "拥有 “{permission}” 权限或以下角色的用户可以发布。",
-      "auto": "自动发布",
-      "auto-info": "如果预检查都通过的话，会自动发布，执行变更。"
-    },
-    "environment-tier": {
-      "name": "环境级别",
-      "description": "使该环境在显示上不同于其他环境。",
-      "mark-env-as-production": "标记为生产环境"
-    }
-  },
-  "project": {
-    "filter-projects": "过滤项目",
-    "table": {
-      "name": "@:common.name"
-    },
-    "create-modal": {
-      "project-name": "@:{'common.project'}@:{'common.name'}",
-      "success-prompt": "成功创建 {name}."
-    },
-    "overview": {
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
-    },
-    "webhook": {
-      "success-created-prompt": "成功创建 {name} webhook.",
-      "success-updated-prompt": "成功更新 {name} webhook.",
-      "success-deleted-prompt": "成功删除 {name} webhook.",
-      "success-tested-prompt": "测试 webhook 事件成功.",
-      "fail-tested-title": "测试 webhook 事件失败.",
-      "add-a-webhook": "添加 webhook",
-      "create-webhook": "创建 webhook",
-      "destination": "外部应用",
-      "webhook-url": "Webhook URL",
-      "triggering-activity": "触发事件",
-      "test-webhook": "测试 Webhook",
-      "creation": {
-        "title": "创建 webhook",
-        "desc": "为 {destination} 创建一个 webhook",
-        "view-doc": "{destination} 的官方文档"
-      },
-      "deletion": {
-        "confirm-title": "删除 webhook '{title}'?"
-      },
-      "direct-messages": "私信通知",
-      "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",
-      "enable-direct-messages": "启用私信通知",
-      "direct-messages-description": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。仅支持：{events}",
-      "direct-messages-warning": "您需要配置 {im} 才能使其正常工作。",
-      "activity-support-direct-message": "支持向相关用户发送私信通知",
-      "activity-item": {
-        "issue-creation": {
-          "title": "创建@:common.issue",
-          "label": "当一个新的工单被创建"
-        },
-        "issue-approval-notify": {
-          "title": "工单待审批",
-          "label": "当工单需要审批"
-        },
-        "issue-sent-back": {
-          "title": "工单被退回",
-          "label": "当工单被审批人退回"
-        },
-        "pipeline-failed": {
-          "title": "流水线失败",
-          "label": "当流水线任务失败"
-        },
-        "pipeline-completed": {
-          "title": "流水线完成",
-          "label": "当流水线成功完成"
-        }
-      }
-    },
-    "settings": {
-      "success-updated": "项目设置更新成功",
-      "update-failed": "无法更新项目设置。",
-      "success-member-added-prompt": "成功添加到当前项目中.",
-      "archive": {
-        "title": "归档项目",
-        "description": "已归档项目将不再显示。",
-        "btn-text": "归档这个@:common.project"
-      },
-      "restore": {
-        "title": "恢复项目",
-        "btn-text": "恢复这个@:common.project"
-      },
-      "issue-related": {
-        "self": "工单相关",
-        "labels": {
-          "self": "工单标签",
-          "description": "可以在工单中附加标签以便管理",
-          "configure-labels": "配置标签",
-          "placeholder": "按 Enter 键添加标签",
-          "force-issue-labels": {
-            "self": "要求所有工单都必须有标签",
-            "description": "创建工单时必须添加至少一个标签。",
-            "warning": "至少需要配置一个标签"
-          }
-        },
-        "enforce-issue-title": {
-          "self": "要求手动输入标题",
-          "description": "工单和计划的标题必须由用户输入，而不是自动生成。"
-        },
-        "enforce-sql-review": {
-          "self": "强制 SQL 审核",
-          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。"
-        },
-        "allow-self-approval": {
-          "self": "允许创建者审批",
-          "description": "允许创建者审批自己创建的工单。"
-        },
-        "postgres-database-tenant-mode": {
-          "self": "Postgres 数据库租户模式",
-          "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。"
-        },
-        "max-retries": {
-          "self": "锁超时的最大重试数",
-          "description": "运行任务时锁超时的最大重试数。默认值为0。只对 PostgreSQL 有效。"
-        },
-        "ci-sampling-size": {
-          "self": "CI 数据采样大小",
-          "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
-        },
-        "parallel_tasks_per_rollout": {
-          "self": "每个发布的并行任务数",
-          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
-        },
-        "require-issue-approval": {
-          "self": "创建发布前需要工单审批",
-          "description": "工单必须在创建发布前获得批准。"
-        },
-        "require-plan-check-no-error": {
-          "self": "创建发布前要求变更检查通过",
-          "description": "所有变更检查必须无错误才能创建发布。"
-        },
-        "allow-request-role": {
-          "self": "允许申请角色",
-          "description": "非项目所有者可以自行申请项目级角色"
-        },
-        "allow-jit": {
-          "self": "允许即时访问",
-          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。"
-        },
-        "approval-flow-configured": "审批流程已配置",
-        "approval-flow-fallback": "使用默认审批规则",
-        "approval-flow-not-configured": "未配置审批流程",
-        "view-approval-flow": "查看审批流程"
-      },
-      "project-labels": {
-        "self": "项目标签",
-        "description": "用键值标签组织项目（最多64个）"
-      },
-      "confirm-archive-project": "归档「{name}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
-      "confirm-delete-project": "删除「{name}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。"
-    },
-    "members": {
-      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "edit": "编辑成员 - {member}",
-      "view-by-members": "按成员查看",
-      "view-by-roles": "按角色查看",
-      "revoke-role-from-user": "删除'{user}'{role}的角色",
-      "never-expires": "永不过期",
-      "role-never-expires": "此角色没有过期时间。",
-      "add-more": "增加更多",
-      "condition-name": "条件名称",
-      "workspace-level-roles": "工作空间级别角色",
-      "project-level-roles": "项目级别角色",
-      "roles-are-filtered-by-permissions": "角色已按权限筛选",
-      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
-      "disallow-ddl": "禁止在所有环境中执行 DDL/DML 语句。"
-    },
-    "select": "选择项目",
-    "all": "所有项目",
-    "masking-exemption": {
-      "self": "脱敏豁免",
-      "grant-exemption": "授予豁免",
-      "revoke-exemption-title": "是否撤销 {member} 的导出和查询脱敏？"
-    },
-    "batch": {
-      "selected": "已选择 {count} 个项目 | 已选择 {count} 个项目",
-      "archive": {
-        "title": "归档 {count} 个项目？| 归档 {count} 个项目？",
-        "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。",
-        "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
-        "error": "无法归档项目"
-      },
-      "delete": {
-        "title": "删除 {count} 个项目？| 删除 {count} 个项目？",
-        "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
-        "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。",
-        "success": "成功删除 {count} 个项目 | 成功删除 {count} 个项目",
-        "error": "无法删除项目"
-      },
-      "projects-to-archive": "要归档的项目",
-      "projects-to-delete": "要删除的项目",
-      "resource-warning": {
-        "title": "项目与资源",
-        "description": "以下项目包含数据库或未解决的工单："
-      }
-    }
-  },
-  "quick-action": {
-    "create-db": "创建数据库",
-    "new-db": "创建数据库",
-    "add-instance": "@:common.add@:common.instance",
-    "new-project": "@:common.new@:common.project",
-    "create-project": "@:common.create@:common.project",
-    "transfer-in-db": "转入",
-    "from-unassigned-databases": "未分配的数据库",
-    "from-projects": "从其他项目",
-    "transfer-in-db-title": "转进数据库",
-    "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
-    "request-export-data": "申请导出数据"
-  },
-  "quick-start": {
-    "self": "新手任务",
-    "guide": "可点击步骤进行尝试",
-    "view-an-issue": "查看工单",
-    "visit-project": "@:common.visit@:common.projects",
-    "visit-instance": "@:common.visit@:common.instances",
-    "visit-database": "@:common.visit@:common.databases",
-    "visit-environment": "@:common.visit@:common.environments",
-    "visit-member": "@:common.visit@:common.members",
-    "query-data": "查询数据",
-    "notice": {
-      "title": "新手任务已关闭",
-      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务"
-    }
-  },
   "refresh-remind": {
     "title": "检测到过时版本",
     "description": "检测到过时版本。请刷新页面。"
   },
-  "release": {
-    "title": "发布包",
-    "releases": "发布包",
-    "files": "文件",
-    "total-files": "共 {count} 个文件",
-    "change-tip": "此变更项已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
-    "not-found": "未找到",
-    "vcs-source": "VCS 源",
-    "view-all-files": "查看全部文件",
-    "and-n-more-files": "还有 {count} 个文件",
-    "file-type": {
-      "versioned": "版本化",
-      "declarative": "声明式",
-      "unspecified": "未指定"
+  "task": {
+    "checking": "检查中…",
+    "check-result": {
+      "title-general": "检查结果"
     },
-    "vcs-type": {
-      "unspecified": "未指定"
+    "check-type": {
+      "sql-review": {
+        "self": "SQL 审核",
+        "description": "分析 SQL 语句中的潜在问题并提供建议。包括内置规则以及您的自定义规则。"
+      },
+      "ghost-sync": "gh-ost 同步",
+      "affected-rows": {
+        "self": "影响行数",
+        "description": "根据统计信息估算。"
+      },
+      "summary-report": "概要报告"
     },
-    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
-    "filter-by-category": "按类别过滤"
-  },
-  "remind": {
-    "release": {
-      "new-version-available": "有新版本可更新",
-      "new-version-available-with-tag": "新版本 {tag} 已推出",
-      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。"
+    "comment": "评论",
+    "started": "开始于",
+    "status": {
+      "running": "运行中",
+      "available": "就绪",
+      "failed": "失败",
+      "canceled": "取消",
+      "skipped": "已跳过",
+      "done": "完成",
+      "pending": "待执行",
+      "not-started": "未开始"
     },
-    "role-expire": {
-      "title": "角色到期提醒",
-      "content": "您的角色即将到期",
-      "checkbox": "直到有更新再提醒",
-      "go-to-project": "前往项目页面"
+    "task-checks": "任务检查项",
+    "prior-backup": "预备份受影响数据",
+    "skip-prior-backup": "跳过预备份",
+    "skip-prior-backup-description": "跳过变更前的自动数据备份",
+    "execution-time": "执行时间",
+    "run-checks": "运行检查",
+    "cancel-task": "取消任务",
+    "skip-task": "跳过任务 | 跳过任务",
+    "run-task": "运行任务 | 运行任务",
+    "created": "创建于",
+    "run-immediately": {
+      "self": "立即运行",
+      "description": "点击“运行”后，任务将立即开始执行。"
+    },
+    "schedule-for-later": {
+      "self": "定时运行",
+      "description": "设置任务自动开始运行的特定时间。"
+    },
+    "select-task": "选择任务 | 选择任务",
+    "no-tasks-selected": "未选择任何任务",
+    "no-runnable-tasks": "没有可运行的任务",
+    "no-skippable-tasks": "没有可跳过的任务",
+    "no-cancellable-tasks": "没有可取消的任务",
+    "no-selectable-tasks": "没有可选择的任务",
+    "no-permission": "无权限执行该操作",
+    "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
+    "scheduled-time": "计划时间",
+    "scheduled-at": "计划于",
+    "run-history": "执行历史",
+    "only-showing-latest-n-runs": "仅显示最近 {n} 条记录",
+    "select-scheduled-time": "选择计划时间",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "计划时间必须是将来的时间"
+    },
+    "online-migration": {
+      "self": "在线大表变更",
+      "configure-ghost-parameters": "配置 gh-ost 参数",
+      "ghost-parameters": "gh-ost 参数",
+      "configure": "配置",
+      "error": {
+        "nothing-changed": "无任何改变",
+        "not-applicable": {
+          "database-doesnt-meet-ghost-requirement": "数据库 {database} 不符合 gh-ost 的要求"
+        }
+      },
+      "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
+    },
+    "prior-backup-tips": "提前备份受影响的数据。仅适用于数据变更（UPDATE、DELETE），不适用于结构变更。",
+    "executed-by": "执行者",
+    "affected-rows": "影响行数",
+    "type": {
+      "database-create": "创建数据库",
+      "migrate": "变更",
+      "database-export": "导出数据",
+      "general": "通用"
     }
   },
-  "resource": {
-    "delete-warning": "“{name}”将被删除。此操作无法撤消。",
-    "delete-warning-with-resources": "以下资源使用了“{name}”：",
-    "delete-warning-retry": "请将其从这些资源中删除，然后重试。"
-  },
-  "resource-id": {
-    "self": "{resource} ID",
-    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
-    "cannot-be-changed-later": "创建之后无法修改。",
-    "validation": {
-      "duplicated": "{resource} ID 已存在。请使用其他 ID。",
-      "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
-      "minlength": "{resource} ID 至少包含 1 个字符。",
-      "overflow": "{resource} ID 应该少于 64 个字符。",
-      "empty": "{resource} ID 不能为空"
+  "task-run": {
+    "failed-runs": "失败的任务 - 最新的执行日志",
+    "history": "执行记录",
+    "latest-logs": "执行日志",
+    "latest": "最新执行",
+    "status": {
+      "enqueued": "等待执行。",
+      "enqueued-with-rollout-time": "等待执行，{time}后执行。",
+      "waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{time}。"
+    },
+    "rollback": {
+      "available": "可回滚 {n} 个任务",
+      "preview-statement": {
+        "self": "预览语句",
+        "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
+      },
+      "no-statement-generated": "生成的回滚语句为空"
+    },
+    "log-type": {
+      "schema-dump": "结构导出",
+      "command-execute": "命令执行",
+      "database-sync": "数据库同步",
+      "transaction": "事务",
+      "prior-backup": "预备份",
+      "retry": "重试",
+      "compute-diff": "计算差异",
+      "release-file-execute": "发布包文件"
+    },
+    "log-detail": {
+      "dumping": "导出中...",
+      "syncing": "同步中...",
+      "backup-completed": "已完成（{count} 个表）",
+      "backing-up": "备份中...",
+      "retry-attempt": "第 {current}/{max} 次尝试",
+      "computing": "计算中..."
+    },
+    "log-viewer": {
+      "multiple-replicas-notice": "检测到执行期间服务重启，日志按副本分组显示。",
+      "replica-n": "副本 #{n}",
+      "expand-all": "全部展开",
+      "collapse-all": "全部收起",
+      "summary": "{sections} 个分组 · {entries} 条记录"
     }
   },
-  "role": {
-    "self": "角色",
-    "setting": {
-      "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
-      "add": "添加角色",
-      "edit": "编辑角色",
-      "title-placeholder": "输入角色称谓",
-      "description-placeholder": "输入角色描述"
-    },
-    "title": "称谓",
-    "select-role": "选择角色",
-    "expired-tip": "该角色可能已经过期。",
-    "import-from-role": "从角色导入",
-    "workspace-roles": {
-      "self": "工作空间角色"
-    },
-    "project-roles": {
-      "self": "项目角色",
-      "apply-to-all-projects": "应用到所有项目"
-    },
-    "custom-roles": {
-      "self": "自定义角色"
-    },
-    "workspace-admin": {
-      "self": "工作空间管理员",
-      "description": "工作空间内的所有权限。"
-    },
-    "workspace-dba": {
-      "self": "工作空间 DBA",
-      "description": "可以管理工作空间的所有数据库和实例"
-    },
-    "workspace-member": {
-      "self": "工作空间成员",
-      "description": "工作空间中的普通用户"
-    },
-    "project-owner": {
-      "self": "项目所有者",
-      "description": "项目内的所有权限。"
-    },
-    "project-developer": {
-      "self": "项目开发者",
-      "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。"
-    },
-    "project-releaser": {
-      "self": "项目发布者",
-      "description": "可查看项目基本信息，并可在指定流程中发布变更。"
-    },
-    "sql-editor-user": {
-      "self": "SQL 编辑器用户",
-      "description": "可查询指定范围的数据。"
-    },
-    "sql-editor-read-user": {
-      "self": "SQL 编辑器只读用户",
-      "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。"
-    },
-    "gitops-service-agent": {
-      "self": "GitOps 服务代理",
-      "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。"
-    },
-    "project-viewer": {
-      "self": "项目查看者",
-      "description": "仅可查看项目和数据库的基本信息，用户可自助发起工单请求数据查询和导出。"
-    }
+  "banner": {
+    "license-expired": "您的{plan}证书已在 {expireAt} 过期",
+    "license-expires": "您的{plan}证书将在 {days} 天后（{expireAt}）过期",
+    "trial-expires": "您的{plan}试用将在 {days} 天后（{expireAt}）过期",
+    "deploy": "本地部署",
+    "cloud": "云服务",
+    "request-demo": "预约一个 30 分钟的产品演示。",
+    "external-url": "Bytebase 还没有配置 --external-url",
+    "ha-not-licensed": "检测到多个副本但没有 HA 许可证。后端任务运行器已禁用。"
   },
-  "rollout": {
-    "rollouts": "发布任务",
-    "bypass-stage-requirements": "绕过提醒",
-    "task-execution-errors": "任务执行错误",
-    "stage": {
-      "self": "阶段 | 阶段",
-      "run-stage": "运行任务",
-      "confirm-create": "确定要为此阶段创建任务吗？"
-    },
-    "task": {
-      "selected-count": "已选择 {count} 个任务",
-      "no-tasks": "此阶段没有任务",
-      "no-statement": "没有 SQL 语句",
-      "view-full-details": "查看详情",
-      "statement-truncated-hint": "由于语句过长，已被截断。"
-    },
-    "no-stages": "没有可用的阶段",
-    "no-tasks-created": "尚未创建任何任务",
-    "pending-tasks-preview": {
-      "title": "待处理任务",
-      "description": "以下任务尚未创建。",
-      "action": "预览",
-      "task-count": "{count} 个任务 | {count} 个任务",
-      "no-pending-tasks": "没有待处理任务"
-    }
-  },
-  "schema-designer": {
-    "use-tips": "选择需要设计的表"
-  },
-  "schema-diagram": {
-    "self": "Schema 关系图",
-    "fit-content-with-view": "自动适应视图"
-  },
-  "schema-editor": {
-    "self": "Schema 编辑器",
-    "raw-sql": "SQL 语句",
-    "search-database-and-table": "搜索数据库和表",
-    "insert-sql": "插入 SQL",
-    "template-database": "模板数据库",
-    "actions": {
-      "create-schema": "新建 Schema",
-      "drop-schema": "删除 Schema",
-      "create-table": "新建表",
-      "rename": "重命名",
-      "drop-table": "删除表",
-      "restore": "恢复",
-      "add-column": "添加列",
-      "drop-column": "删除列",
-      "create-procedure": "新建存储过程",
-      "create-function": "新建函数",
-      "drop": "删除",
-      "create-view": "创建视图"
-    },
-    "database": {
-      "name": "名称",
-      "engine": "引擎",
-      "collation": "字符排序规则",
-      "comment": "注释"
-    },
-    "schema": {
-      "select": "选择 schema",
-      "name": "Schema 名称"
-    },
-    "tables": "表",
-    "table": {
-      "select": "选择表",
-      "name": "表名"
-    },
-    "columns": "列",
-    "column": {
-      "select": "选择列",
-      "name": "名称",
-      "type": "类型",
-      "default": "默认值",
-      "comment": "注释",
-      "not-null": "不可为空",
-      "primary": "主键",
-      "foreign-key": "外键",
-      "on-update": "更新时"
-    },
-    "default": {
-      "placeholder": "输入默认值或留空以不使用默认值"
-    },
-    "message": {
-      "invalid-schema-name": "无效的 Schema 名称",
-      "invalid-table-name": "无效的表名",
-      "duplicated-table-name": "重复的表名",
-      "invalid-schema": "无效的 Schema",
-      "cannot-drop-the-last-column": "不能删除最后一列",
-      "duplicated-procedure-name": "重复的存储过程名称",
-      "invalid-procedure-name": "无效的存储过程名称",
-      "duplicated-function-name": "重复的函数名称",
-      "invalid-function-name": "无效的函数名称",
-      "invalid-view-name": "无效的视图名称",
-      "duplicated-view-name": "重复的视图名称"
-    },
-    "foreign-key": {
-      "edit": "修改外键",
-      "name-description": "外键的名称应该是唯一的"
-    },
-    "index": {
-      "indexes": "索引",
-      "edit-indexes": "编辑索引",
-      "unique": "唯一",
-      "dependency-columns": "依赖列"
-    },
-    "table-partition": {
-      "partitions": "分区",
-      "edit-partitions": "编辑分区",
-      "expression": "表达式",
-      "value": "值",
-      "add-sub-partition": "添加子分区",
-      "type": "类型"
-    },
-    "views": "视图",
-    "procedures": "存储过程",
-    "functions": "函数",
-    "preview-schema-text": "预览文本 schema",
-    "preview-view-definition": "预览视图定义"
-  },
-  "schema-template": {
-    "classification": {
-      "select": "选择分类",
-      "search": "搜索分类"
-    }
-  },
-  "sensitive-data": {
-    "self": "敏感数据"
-  },
-  "setting": {
-    "label": {
-      "value-placeholder": "标签值…",
-      "key-placeholder": "标签 key..."
+  "bbkit": {
+    "confirm-button": {
+      "sure-to-delete": "确定要删除吗？",
+      "sure-to-abandon": "确定要废弃吗？",
+      "cannot-undo": "此操作无法撤销。",
+      "can-undo": "此操作可以撤销。"
     }
   },
   "settings": {
@@ -2790,50 +933,1177 @@
       "view-example": "查看样例"
     }
   },
-  "setup": {
-    "self": "设置",
-    "basic-info": "基本信息",
-    "skip-setup": "跳过设置",
-    "purposes": {
-      "self": "您使用 Bytebase 的主要目的是什么？",
-      "alter-schema": "变更 Schema",
-      "query-data": "查询数据"
+  "remind": {
+    "release": {
+      "new-version-available": "有新版本可更新",
+      "new-version-available-with-tag": "新版本 {tag} 已推出",
+      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。"
     },
-    "workflow": {
-      "self": "您使用数据库的工作流程是怎样的？",
-      "team": "与队友合作，需要 CI/CD 工作流",
-      "simple": "无需复杂的工作流程，需要 UI 工具"
-    },
-    "data": {
-      "self-setup": "设置项目",
-      "built-in": "使用内置示例",
-      "built-in-desc": "生成示例项目和实例"
+    "role-expire": {
+      "title": "角色到期提醒",
+      "content": "您的角色即将到期",
+      "checkbox": "直到有更新再提醒",
+      "go-to-project": "前往项目页面"
     }
   },
-  "sheet": {
-    "mine": "我的",
-    "shared": "共享的",
-    "notifications": {
-      "duplicate-success": "已成功拷贝至“我的工作表”"
+  "activity": {
+    "sentence": {
+      "created-issue": "创建工单",
+      "changed-description": "修改描述",
+      "changed-labels": "改变标签",
+      "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
+      "reopened-issue": "重开工单",
+      "resolved-issue": "批准工单",
+      "canceled-issue": "关闭工单"
+    }
+  },
+  "issue": {
+    "labels": "工单标签",
+    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
+    "my-issues": "我的工单",
+    "waiting-approval": "等待审批",
+    "create-rollout": "创建发布",
+    "status-transition": {
+      "modal": {
+        "reopen": "重开工单？",
+        "close": "关闭工单？"
+      }
     },
-    "filter": {
-      "show-mine": "显示我的",
-      "show-shared": "显示共享",
-      "show-draft": "显示草稿",
-      "only-show-starred": "仅显示收藏"
+    "leave-a-comment": "发表一条评论…",
+    "no-description-provided": "未提供描述",
+    "comment-editor": {
+      "write": "编辑",
+      "preview": "预览",
+      "nothing-to-preview": "暂无预览",
+      "toolbar": {
+        "header": "插入标题",
+        "bold": "插入粗体文本",
+        "code": "插入 SQL 代码片段",
+        "link": "插入链接",
+        "hashtag": "通过 id 插入工单链接。请在\"#\"后填入工单 id"
+      }
     },
-    "hint-tips": {
-      "non-empty-folder-title": "非空文件夹",
-      "non-empty-folder-content": "您是想将所有工作表移动到根文件夹，还是直接删除它们？",
-      "move-to-root-folder": "移动到根文件夹",
-      "delete-all-sheets": "删除所有文件",
-      "duplicate-folder-name-title": "重复的文件夹名称",
-      "duplicate-folder-name-content": "是否要将所有子文件夹和文件合并到现有文件夹“{folder}”中？",
-      "confirm-to-delete-sheet-title": "确认删除此工作表？",
-      "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
+    "advanced-search": {
+      "self": "高级搜索",
+      "filter": "过滤",
+      "search": "输入名称或 ID 来搜索",
+      "scope": {
+        "project": {
+          "title": "项目",
+          "description": "根据项目过滤"
+        },
+        "instance": {
+          "title": "实例",
+          "description": "根据实例过滤"
+        },
+        "environment": {
+          "title": "环境",
+          "description": "根据环境过滤"
+        },
+        "creator": {
+          "title": "创建人",
+          "description": "根据创建人搜索"
+        },
+        "current-approver": {
+          "title": "当前审批人",
+          "description": "按工单的当前审批人搜索"
+        },
+        "status": {
+          "description": "按工单状态搜索"
+        },
+        "approval": {
+          "value": {
+            "checking": "检查中",
+            "pending": "待审批",
+            "approved": "审批通过",
+            "rejected": "已拒绝",
+            "skipped": "已跳过"
+          },
+          "description": "按工单的审批状态搜索",
+          "title": "审批状态"
+        },
+        "issue-label": {
+          "title": "工单标签",
+          "description": "按工单标签过滤"
+        },
+        "issue-type": {
+          "title": "类型",
+          "description": "按工单类型过滤",
+          "value": {
+            "database-change": "数据库变更",
+            "role-grant": "角色授权",
+            "database-export": "数据导出",
+            "access-grant": "访问授权",
+            "grant-request": "权限申请"
+          }
+        },
+        "table": {
+          "title": "表",
+          "description": "输入值然后按 Enter"
+        },
+        "label": {
+          "description": "输入 \"key:value\" 后按下回车"
+        },
+        "engine": {
+          "title": "引擎",
+          "description": "按引擎过滤"
+        },
+        "state": {
+          "description": "按状态过滤"
+        }
+      }
     },
-    "search-sheets": "搜索工作表",
-    "move-worksheets": "移动工作表"
+    "sort": {
+      "sort": "排序",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "ascending": "正序",
+      "descending": "倒序"
+    },
+    "table": {
+      "open": "开启中",
+      "closed": "已关闭",
+      "name": "名称",
+      "updated": "更新于",
+      "creator": "创建人",
+      "approved": "已审批",
+      "approval-progress": "{approved}/{total} 已审批",
+      "waiting-role": "等待: {role}"
+    },
+    "migration-mode": {
+      "online": {
+        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
+      }
+    },
+    "upload-sql": "上传 SQL",
+    "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
+    "options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
+    "overwrite-current-statement": "覆盖当前的 SQL 语句",
+    "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
+    "transaction-mode": {
+      "label": "事务模式",
+      "on-tooltip": "将所有语句包装在单个事务中（BEGIN/COMMIT）。",
+      "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。",
+      "execution-order-note": "非事务性语句将最后执行。"
+    },
+    "batch-transition": {
+      "not-allowed-tips": "部分选中的工单无法被{operation}",
+      "open-cannot-reopen": "打开中的工单无法重开",
+      "done-cannot-reopen": "已完成的工单无法重开",
+      "done-cannot-close": "已完成的工单无法关闭",
+      "canceled-cannot-close": "已取消的工单无法关闭",
+      "reopen": "重开",
+      "reopened": "重开",
+      "action-n-issues": "{action} {n} 个工单",
+      "closed": "关闭",
+      "close": "关闭"
+    },
+    "approval-flow": {
+      "self": "审批流"
+    },
+    "force-rollout-hint": "手动创建发布以跳过失败的 SQL 检查。",
+    "checks-block-rollout-hint": "SQL 检查失败导致无法创建发布。请修复错误后再继续。",
+    "checks-warning-hint": "此变更计划存在未通过的检查。审批通过后将需要手动创建发布。",
+    "risk-level": {
+      "self": "风险等级",
+      "low": "低风险",
+      "moderate": "中风险",
+      "high": "高风险",
+      "filter": "按风险等级筛选"
+    },
+    "issue-name": "工单名称",
+    "access-grant": {
+      "details": "访问授权详情",
+      "expired-at": "过期时间"
+    },
+    "role-grant": {
+      "details": "请求详细",
+      "expired-at": "过期时间",
+      "all-databases": "所有数据库",
+      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
+      "manually-select": "手动选择",
+      "use-cel": "使用 CEL 表达式",
+      "custom-date": "自定义日期",
+      "custom-date-placeholder": "选择到期日期和时间"
+    },
+    "action-anyway": "仍要{action}",
+    "sql-check": {
+      "sql-checks": "SQL 检查项",
+      "not-executed-yet": "尚未执行",
+      "statement-is-required": "SQL 语句不能为空",
+      "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。",
+      "back-to-edit": "返回编辑",
+      "sql-review-violations": "违反的 SQL 审核规则"
+    },
+    "error": {
+      "statement-cannot-be-modified": "工单创建后，语句将无法修改"
+    },
+    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
+    "data-export": {
+      "options": "配置项",
+      "limits": "限制",
+      "format": "导出格式",
+      "download-tooltip": "24 小时可用",
+      "file-expired": "文件已过期"
+    },
+    "task-run": {
+      "logs": "日志",
+      "session": "会话",
+      "task-run-session": {
+        "blocking-sessions": {
+          "self": "阻塞会话",
+          "description": "当前会话被以下会话阻塞"
+        },
+        "blocked-sessions": {
+          "self": "被阻塞会话",
+          "description": "当前会话阻塞了以下会话"
+        },
+        "no-session-found": "未找到会话。"
+      }
+    },
+    "title": {
+      "change-database": "变更数据库",
+      "export-data": "导出数据",
+      "create-database": "创建数据库",
+      "request-role": "请求角色",
+      "request-specific-role": "请求“{role}”角色"
+    },
+    "review": {
+      "self": "审批",
+      "comment-description": "提交反馈，不进行批准操作",
+      "approve-description": "提交反馈并批准此工单",
+      "reject-description": "提交反馈并要求修改"
+    },
+    "approval": {
+      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
+    },
+    "grant-request": {
+      "details": "请求详细",
+      "expired-at": "过期时间",
+      "all-databases": "所有数据库",
+      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
+      "manually-select": "手动选择",
+      "use-cel": "使用 CEL 表达式",
+      "custom-date": "自定义日期",
+      "custom-date-placeholder": "选择到期日期和时间"
+    }
+  },
+  "plan": {
+    "plans": "变更计划",
+    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
+    "new-plan": "创建变更计划",
+    "add-spec": "添加变更项",
+    "select-targets": "选择目标库",
+    "ready-for-review": "提交审批",
+    "labels-required-for-review": "提交审批前需要选择标签",
+    "overview": {
+      "no-checks": "没有检查"
+    },
+    "run": "运行检查",
+    "navigator": {
+      "changes": "变更项",
+      "checks": "SQL 检查",
+      "statement-empty": "变更语句为空"
+    },
+    "checks": {
+      "self": "检查",
+      "no-results-match-filters": "没有匹配筛选条件的结果",
+      "no-check-results": "没有检查结果"
+    },
+    "spec": {
+      "change": "变更项",
+      "type": {
+        "create-database": "创建数据库",
+        "database-change": "数据库变更",
+        "export-data": "导出数据",
+        "unknown": "未知"
+      },
+      "delete-change": {
+        "title": "删除变更项",
+        "content": "您确定要删除该变更项吗？"
+      },
+      "role-selection": {
+        "title": "数据库角色选择",
+        "description": "选择以哪个 PostgreSQL 角色来执行此语句。",
+        "technical-note": "将“SET ROLE {role};”添加到您的 SQL 语句中。"
+      }
+    },
+    "targets": {
+      "title": "目标库",
+      "no-targets-found": "未找到目标库",
+      "view-all": "查看全部 ({count})",
+      "non-env-warning": "{count} 个数据库因没有环境将被排除在发布任务之外:"
+    },
+    "select-isolation-level": "选择隔离级别",
+    "isolation-level": {
+      "self": "隔离级别",
+      "description": "控制事务如何处理并发更改。仅在事务模式开启时适用。"
+    },
+    "options": {
+      "self": "配置项",
+      "no-options-available": "暂无可配置项"
+    },
+    "editor": {
+      "save-changes-before-continuing": "请保存或取消更改，然后再继续",
+      "unsaved-changes": "未保存的更改",
+      "unsaved-changes-message": "有未保存的更改。您确定要离开吗？"
+    },
+    "pre-backup": {
+      "only-some-databases-checked": "仅检查部分数据库",
+      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
+      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
+      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
+      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'。如果使用了 SET ROLE，请将该 schema 的 USAGE 和 CREATE 权限授予对应角色。然后同步数据库",
+      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
+      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库"
+    },
+    "ghost": {
+      "only-some-databases-checked": "仅检查部分数据库",
+      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
+      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
+      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
+      "missing-backup-database": "请在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库"
+    },
+    "refresh-indicator": {
+      "last-refresh": "上次刷新：{time}"
+    },
+    "state": {
+      "close-confirm": "确定关闭该变更计划？",
+      "reopen-confirm": "确定重新开启该变更计划？"
+    },
+    "description": {
+      "placeholder": "添加描述"
+    }
+  },
+  "rollout": {
+    "rollouts": "发布任务",
+    "bypass-stage-requirements": "绕过提醒",
+    "task-execution-errors": "任务执行错误",
+    "stage": {
+      "self": "阶段 | 阶段",
+      "run-stage": "运行任务",
+      "confirm-create": "确定要为此阶段创建任务吗？"
+    },
+    "task": {
+      "selected-count": "已选择 {count} 个任务",
+      "no-tasks": "此阶段没有任务",
+      "no-statement": "没有 SQL 语句",
+      "view-full-details": "查看详情",
+      "statement-truncated-hint": "由于语句过长，已被截断。"
+    },
+    "no-stages": "没有可用的阶段",
+    "no-tasks-created": "尚未创建任何任务",
+    "pending-tasks-preview": {
+      "title": "待处理任务",
+      "description": "以下任务尚未创建。",
+      "action": "预览",
+      "task-count": "{count} 个任务 | {count} 个任务",
+      "no-pending-tasks": "没有待处理任务"
+    }
+  },
+  "quick-action": {
+    "create-db": "创建数据库",
+    "new-db": "创建数据库",
+    "add-instance": "@:common.add@:common.instance",
+    "new-project": "@:common.new@:common.project",
+    "create-project": "@:common.create@:common.project",
+    "transfer-in-db": "转入",
+    "from-unassigned-databases": "未分配的数据库",
+    "from-projects": "从其他项目",
+    "transfer-in-db-title": "转进数据库",
+    "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
+    "request-export-data": "申请导出数据"
+  },
+  "create-db": {
+    "new-database-name": "新数据库名称",
+    "database-owner-name": "数据库所有者",
+    "cluster": "集群",
+    "reserved-db-error": "{databaseName} 是一个预留名称",
+    "new-collection-name": "新集合名称"
+  },
+  "db": {
+    "encoding": "字符编码",
+    "character-set": "字符集",
+    "collation": "字符排序规则",
+    "tables": "表",
+    "collections": "集合",
+    "views": "视图",
+    "extensions": "插件",
+    "external-tables": "外部表",
+    "functions": "函数",
+    "streams": "Streams",
+    "tasks": "任务",
+    "labels-for-resource": "{resource}的标签",
+    "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
+    "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
+    "start-to-sync-schema": "开始同步 schema",
+    "syncing-databases-for-instance": "正在同步 {0} 的数据库...",
+    "n-databases-had-sync-errors": "{0} 个数据库同步出错",
+    "failed-to-sync-schema": "同步 schema 失败",
+    "successfully-synced-schema": "Schema 同步完成",
+    "procedures": "存储过程",
+    "partitions": "分区",
+    "packages": "包",
+    "sequences": "序列",
+    "sequence": {
+      "data-type": "数据类型",
+      "start": "起始值",
+      "min-value": "最小值",
+      "max-value": "最大值",
+      "increment": "增量",
+      "cycle": "循环",
+      "cacheSize": "缓存大小",
+      "lastValue": "最后值"
+    },
+    "triggers": "触发器",
+    "trigger": {
+      "body": "主体",
+      "timing": "时机",
+      "event": "事件"
+    },
+    "schema": {
+      "default": "默认"
+    },
+    "catalog": {
+      "description": "编辑并上传表的 Catalog"
+    }
+  },
+  "instance": {
+    "select-database-user": "选择数据库用户",
+    "new-database": "@:common.new@:common.database",
+    "syncing": "同步中 ...",
+    "sync": {
+      "self": "同步实例",
+      "sync-all": "同步所有数据库",
+      "sync-new": "仅同步新数据库",
+      "sync-all-tip": "数据库同步是异步的，可能需要几秒到几分钟"
+    },
+    "no-environment": "此实例尚未绑定到环境",
+    "selected-n-instances": "已选择 {n} 个实例",
+    "users": "用户",
+    "successfully-restored-instance": "已成功恢复实例“{0}”。",
+    "successfully-archived-instance": "成功归档实例'{0}'。",
+    "archive-instance-instance-name": "归档实例'{0}'?",
+    "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
+    "restore": "恢复",
+    "restore-instance-instance-name-to-normal-state": "恢复实例'{0}'到正常状态?",
+    "account-locator": "账户定位符",
+    "host-or-socket": "Host 或 Socket",
+    "endpoint": "端点",
+    "project-id": "项目 ID",
+    "instance-id": "实例 ID",
+    "your-snowflake-account-locator": "您的 Snowflake 账户定位符",
+    "port": "端口",
+    "authentication-database": "认证数据库",
+    "instance-name": "实例名称",
+    "snowflake-web-console": "Snowflake Web 控制台",
+    "external-link": "外部链接",
+    "connection-info": "连接信息",
+    "connection-options": "连接选项",
+    "section": {
+      "basic-info": "基本信息",
+      "connection": "连接"
+    },
+    "info-panel": {
+      "no-info": "暂无该引擎的额外信息。"
+    },
+    "role-arn": "角色 ARN",
+    "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "role-arn-description": "用于跨账户访问的 IAM 角色。同账户访问请留空。",
+    "external-id": "外部 ID",
+    "external-id-placeholder": "可选的外部 ID",
+    "external-id-description": "承担角色时用于额外安全性的外部 ID（可选）",
+    "show-how-to-create": "如何创建",
+    "no-read-only-data-source-warn-for-admin-dba": "该实例没有配置只读连接，请考虑配置。",
+    "no-read-only-data-source-warn-for-developer": "该实例没有配置只读连接，请让您的 DBA 配置一个。",
+    "sentence": {
+      "host": {
+        "none-snowflake": "例如 host.docker.internal {'|'} ip {'|'} local socket"
+      },
+      "proxy": {
+        "snowflake": "对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT"
+      },
+      "console": {
+        "snowflake": "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
+      },
+      "create-admin-user": "这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。",
+      "create-readonly-user": "这是 Bytebase 用于连接数据库，执行诸如 SELECT 的只读操作的用户。",
+      "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
+      "create-readonly-user-non-sql": "这是 Bytebase 用于连接数据库，执行只读操作的用户。",
+      "google-cloud-sql": {
+        "instance-name": "实例连接名称",
+        "instance-name-tips": "实例连接名称应为 {instance}。",
+        "mysql": {
+          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。"
+        },
+        "postgresql": {
+          "template": "创建一个名为 {user} 的服务帐户，然后将其作为 IAM 用户 {user}{'@'}project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。"
+        }
+      },
+      "aws-rds": {
+        "mysql": {
+          "template": "下面是创建用户 {user}{'@'}% 并授予该用户所需权限的示例。"
+        },
+        "postgresql": {
+          "template": "下面是创建用户“{user}”并授予该用户所需权限的示例。"
+        }
+      },
+      "create-user-example": {
+        "snowflake": {
+          "template": "创建用户 {user}，密码 {password}，warehouse 为{warehouse}，并授予必要权限的例子如下。"
+        },
+        "mysql": {
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
+        },
+        "clickhouse": {
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。您需要首先启用 {link}，才能执行以下创建用户的命令。",
+          "sql-driven-workflow": "SQL 工作流"
+        },
+        "postgresql": {
+          "warn": "如果您将要连接到的实例是由云服务供应商管理的话，那么 SUPERUSER 是不可用的，您需要通过供应商的管理员控制台来创建用户。您所创建的用户会拥有供应商特定的 semi-SUPERUSER 的权限。 您应该对所有 role 用 'GRANT role_name TO bytebase;' 语句赋予 Bytebase 权限，否则 Bytebase 可能没有权限操作已有的数据库或者表导致操作失败。",
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。"
+        },
+        "redis": {
+          "template": "创建用户 {user}，密码 {password}，并授予必要权限的例子如下。"
+        }
+      },
+      "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。"
+    },
+    "no-password": "无密码",
+    "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
+    "password-write-only": "YOUR_DB_PWD - 仅写入",
+    "password-type": {
+      "password": "密码",
+      "google-iam": "Google Cloud SQL IAM",
+      "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
+      "external-secret-vault": "Vault (KV v2)",
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-gcp": "GCP Secret Manager",
+      "external-secret-azure": "Azure Key Vault"
+    },
+    "iam-extension": {
+      "credential-source": "凭证来源",
+      "tenant-id": "Tenant ID",
+      "client-id": "Client ID",
+      "client-secret": "Client Secret",
+      "specific-credential": "指定凭证",
+      "saas-default-credential-restriction": "出于安全考虑，Bytebase Cloud 不支持使用默认凭证。请提供具体凭证。"
+    },
+    "database-region": "数据库区域",
+    "external-secret-gcp": {
+      "secret-name": "密钥完整路径",
+      "secret-name-tips": "密钥完整路径应类似于 \"projects/project-id/secrets/secret-id\""
+    },
+    "external-secret-azure": {
+      "vault-url": "Key Vault URL",
+      "vault-url-tips": "Key Vault URL 应类似于 \"https://myvault.vault.azure.net/\"",
+      "secret-name": "密钥名称",
+      "secret-name-tips": "存储在 Azure Key Vault 中的密钥名称。"
+    },
+    "external-secret-vault": {
+      "vault-url": "Vault URL",
+      "vault-auth-type": {
+        "self": "认证方式",
+        "token": {
+          "self": "Token",
+          "tips": "没有过期时限的根 token"
+        },
+        "approle": {
+          "self": "AppRole",
+          "role-id": "Auth role id",
+          "secret-id": "Auth secret id",
+          "secret-id-plain-text": "Secret id 明文",
+          "secret-id-environment": "储存 secret id 的环境变量名",
+          "secret-plain-text": "明文",
+          "secret-env-name": "环境变量名",
+          "secret-tips": "未封装、无有效期限的 secret id，您可以使用明文、环境变量名或文件路径。{learn_more}"
+        }
+      },
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-path": "Secret path",
+      "vault-secret-key": "Secret key",
+      "vault-secret-engine-tips": "仅支持 KV v2 储存",
+      "vault-tls-config": "Vault TLS 配置（可选）",
+      "verify-vault-certificate": "验证 Vault TLS 证书",
+      "vault-ca-cert": "Vault CA 证书",
+      "vault-client-cert": "Vault 客户端证书",
+      "vault-client-key": "Vault 客户端密钥"
+    },
+    "external-secret": {
+      "secret-name": "Secret name",
+      "key-name": "Secret key"
+    },
+    "test-connection": "测试连接",
+    "new-instance": "新实例",
+    "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{0}",
+    "successfully-created-instance-createdinstance-name": "成功创建实例'{0}'。",
+    "successfully-updated-instance-instance-name": "成功更新实例'{0}'。",
+    "successfully-connected-instance": "成功连接到实例。",
+    "failed-to-connect-instance": "连接到实例失败。",
+    "failed-to-connect-instance-localhost": "如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
+    "filter-instance-name": "过滤实例名称",
+    "grants": "权限",
+    "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
+    "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
+    "create-gcp-credentials": "创建凭据的方法见",
+    "all": "所有实例",
+    "force-archive-description": "强制归档。所有数据库均将被取消分配。",
+    "scan-interval": {
+      "self": "扫描间隔",
+      "default-never": "默认（永不）",
+      "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
+      "min-value": "最小值 {value} 分钟"
+    },
+    "sync-databases": {
+      "self": "同步数据库",
+      "description": "仅同步选定的数据库。",
+      "sync-all": "同步所有数据库",
+      "search-database": "搜索数据库",
+      "add-database": "+ 添加数据库，按回车键提交"
+    },
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "title": "服务器地址",
+          "description": "按实例服务器地址过滤。请输入值然后按 Enter。"
+        },
+        "port": {
+          "title": "端口",
+          "description": "按实例端口过滤。请输入值然后按 Enter。"
+        }
+      }
+    },
+    "no-params-yet-add-above": "尚未配置参数。\n使用上面的形式添加参数。",
+    "no-extra-params-configured": "没有配置的额外连接参数",
+    "parameter-name-placeholder": "参数名称",
+    "parameter-value-placeholder": "参数值"
+  },
+  "environment": {
+    "select": "选择环境",
+    "delete": "删除此环境",
+    "delete-description": "删除环境也会将其从相关实例和数据库中删除。@:common.cannot-undo-this-action",
+    "create": "创建环境",
+    "reorder": "重新排序环境",
+    "successfully-updated-environment": "环境'{name}'更新成功",
+    "production-environment": "生产环境"
+  },
+  "quick-start": {
+    "self": "新手任务",
+    "guide": "可点击步骤进行尝试",
+    "view-an-issue": "查看工单",
+    "visit-project": "@:common.visit@:common.projects",
+    "visit-instance": "@:common.visit@:common.instances",
+    "visit-database": "@:common.visit@:common.databases",
+    "visit-environment": "@:common.visit@:common.environments",
+    "visit-member": "@:common.visit@:common.members",
+    "query-data": "查询数据",
+    "notice": {
+      "title": "新手任务已关闭",
+      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务"
+    }
+  },
+  "auth": {
+    "sign-up": {
+      "title": "注册您的账号",
+      "admin-title": "设置 {account}",
+      "admin-account": "管理员账号",
+      "create-admin-account": "注册管理员",
+      "existing-user": "已有账号?",
+      "accept-terms-and-policy": "我接受 Bytebase 的{terms}和{policy}",
+      "terms-of-service": "服务条款",
+      "privacy-policy": "隐私政策"
+    },
+    "sign-in": {
+      "forget-password": "忘记密码?",
+      "new-user": "第一次使用 Bytebase?",
+      "demo-account": "Demo Account",
+      "sign-in-with-idp": "通过 {idp} 登录"
+    },
+    "password-forget": {
+      "title": "忘记了您的密码？",
+      "selfhost": "请联系您的 Bytebase 管理员重置密码",
+      "cloud": "请登录 {link} 并重置密码",
+      "return-to-sign-in": "返回登录"
+    },
+    "password-forgot": "忘记密码",
+    "password-reset": {
+      "title": "重置您的密码",
+      "content": "依据密码限制策略，您需要重置登录密码。"
+    },
+    "login-as-another": {
+      "title": "您已以其他用户身份登录",
+      "content": "我们将把您重定向到主页。"
+    },
+    "token-expired-title": "Token 已过期",
+    "token-expired-description": "Token 已过期，请重新登录",
+    "inactive-modal": {
+      "title": "您的会话即将结束",
+      "description": "您已有一段时间未活动。为了您的安全，我们将在{minutes}分钟后自动退出您的登录。",
+      "stay-signed-in": "保持登录状态"
+    },
+    "back-to-signin": "返回登录页面",
+    "close-window": "关闭此窗口"
+  },
+  "policy": {
+    "rollout": {
+      "name": "发布策略",
+      "tip": "新策略对旧工单也生效",
+      "info": "拥有 “{permission}” 权限或以下角色的用户可以发布。",
+      "auto": "自动发布",
+      "auto-info": "如果预检查都通过的话，会自动发布，执行变更。"
+    },
+    "environment-tier": {
+      "name": "环境级别",
+      "description": "使该环境在显示上不同于其他环境。",
+      "mark-env-as-production": "标记为生产环境"
+    }
+  },
+  "changelog": {
+    "self": "变更历史",
+    "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
+    "no-schema-change": "本次变更没有任何 Schema 的改动",
+    "show-diff": "显示差异",
+    "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
+    "current-schema-empty": "当前 schema 为空"
+  },
+  "database": {
+    "labels": "数据库标签",
+    "no-environment": "该数据库尚未绑定到环境",
+    "set-environment": "设置环境",
+    "sync-database": "同步数据库",
+    "sync-schema-button": "同步 Schema",
+    "export-schema": "导出 Schema",
+    "export-schema-single-file": "单文件",
+    "export-schema-multi-file": "多文件 (ZIP)",
+    "successfully-exported-schema": "成功导出 Schema",
+    "failed-to-export-schema": "导出 Schema 失败",
+    "select": "选择数据库",
+    "sync-status": "同步状态",
+    "sync-status-failed": "同步失败",
+    "last-sync": "最后一次同步",
+    "sync-complete-for-instance": "实例 '{0}' 同步完成",
+    "filter-database": "过滤数据库",
+    "transfer-project": "转移项目",
+    "unassign": "取消分配",
+    "unassign-alert-title": "取消分配数据库",
+    "unassign-alert-description": "选定的数据库将从项目中移除",
+    "change-database": "变更数据库",
+    "edit-schema": "变更 Schema",
+    "edit-labels": "编辑标签",
+    "edit-environment": "编辑环境",
+    "mixed-values-for-label": "该标签拥有不同的值",
+    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
+    "table-detail": "表详情",
+    "batch-action-disabled": "无法对来自不同项目的数据库{action}",
+    "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
+    "successfully-transferred-databases": "数据库转移完成",
+    "nullable": "可为空",
+    "expression": "表达式",
+    "unique": "Unique",
+    "visible": "Visible",
+    "comment": "注释",
+    "engine": "引擎",
+    "row-count-estimate": "估计行数",
+    "data-size": "数据大小",
+    "index-size": "索引大小",
+    "column": "列",
+    "columns": "列",
+    "indexes": "索引",
+    "row-count-est": "估计行数",
+    "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
+    "go-to-transfer": "前去转移",
+    "unassigned-databases": "未分配的数据库",
+    "selected-n-databases": "已选择 {n} 个数据库",
+    "n-databases": "{n} 个数据库",
+    "sync-schema": {
+      "title": "库表同步",
+      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
+      "copy-schema": "粘贴 Schema 文本",
+      "select-source-schema": "选择源 Schema",
+      "select-target-databases": "选择目标数据库",
+      "source-schema": "源 Schema",
+      "target-databases": "目标数据库",
+      "with-diff": "有差异",
+      "no-diff": "无差异",
+      "message": {
+        "select-a-target-database-first": "请先选择一个目标数据库。",
+        "no-target-databases": "无目标数据库",
+        "no-diff-found": "未发现差异。"
+      },
+      "schema-change-preview": "预览 '{database}' 的 Schema 变更",
+      "synchronize-statements": "对应生成的 DDL 语句",
+      "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句",
+      "preview-issue": "预览工单",
+      "schema-change": "Schema 变化",
+      "generated-ddl-statement": "生成的 DDL 语句"
+    },
+    "access-denied": "您无权访问该数据库",
+    "schema": {
+      "select": "选择 schema",
+      "unspecified": "未指定"
+    },
+    "table": {
+      "select": "选择表",
+      "select-tip": "请选择一个表来开始查询。"
+    },
+    "all": "所有数据库",
+    "transfer": {
+      "errors": {
+        "select-target-project": "选择目标项目",
+        "select-at-least-one-database": "至少选择一个数据库"
+      },
+      "select-databases": "选择数据库",
+      "select-target-project": "选择目标项目"
+    },
+    "transfer-database-to": "将数据库转移到目标项目",
+    "classification": {
+      "self": "分类分级",
+      "description": "通过分类分级，来批量管理列的脱敏规则。"
+    },
+    "partitioned": "分区",
+    "partition-tables": "分区表",
+    "external-server-name": "外部服务器名称",
+    "external-database-name": "外部数据库名称",
+    "foreign-table-detail": "外部表详情",
+    "view-definition": "查看定义",
+    "foreign-keys": "外键",
+    "foreign-key": {
+      "reference": "引用"
+    },
+    "checks": "Check 约束",
+    "engine-not-supported-for-backup": "引擎不支持预备份：{databases}",
+    "revision": {
+      "self": "版本",
+      "filename": "文件名",
+      "import-revision": "导入版本",
+      "select-source": "选择来源",
+      "select-release": "选择发布包",
+      "select-files": "选择文件",
+      "from-release": "来自发布包",
+      "from-release-description": "从发布包的文件中导入数据库版本记录",
+      "from-local-files": "来自本地文件",
+      "from-local-files-description": "从本地 SQL 文件上传并导入数据库版本记录",
+      "select-release-description": "选择要导入发布包",
+      "select-files-description": "选择一个或多个文件来创建版本记录",
+      "no-releases-found": "该项目中未找到任何发布包",
+      "no-files-found": "在此发布包中未找到任何文件",
+      "available-files": "可用文件",
+      "available-files-description": "选择要作为新版本导入的文件",
+      "files-already-imported": "已导入",
+      "files-already-imported-description": "这些文件的版本已存在于目标数据库中，无法再次导入",
+      "upload-files": "上传文件",
+      "upload-files-description": "从本地上传 SQL 文件以创建数据库版本记录",
+      "drag-drop-or-click": "将文件拖放到此处，或单击选择",
+      "supported-formats": "支持：.sql、.txt、.md 文件",
+      "uploaded-files": "已上传的文件",
+      "add-more-files": "添加更多",
+      "content-preview": "内容预览",
+      "revision-type": "类型",
+      "type-versioned": "版本化",
+      "type-declarative": "声明式",
+      "invalid-version-format": "版本必须是用点分隔的数字部分（例如，1.0.0）",
+      "version-already-exists": "此版本已存在于数据库中",
+      "delete-confirm-dialog": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
+    },
+    "general": {
+      "workspace": {
+        "watermark": {},
+        "allow-admin-data-source": {},
+        "product-improvement": {},
+        "audit-log-stdout": {},
+        "enable-debug": {},
+        "disallow-signup": {},
+        "require-2fa": {},
+        "disallow-password-signin": {},
+        "external-url": {},
+        "access-token-duration": {},
+        "refresh-token-duration": {},
+        "inactive-session-timeout": {},
+        "maximum-role-expiration": {},
+        "maximum-sql-result": {
+          "size": {},
+          "rows": {}
+        },
+        "query-data-policy": {
+          "timeout": {}
+        },
+        "domain-restriction": {
+          "members-restriction": {}
+        },
+        "password-restriction": {},
+        "ai-assistant": {
+          "provider": {},
+          "api-key": {},
+          "endpoint": {},
+          "model": {}
+        },
+        "announcement": {},
+        "announcement-alert-level": {},
+        "announcement-text": {},
+        "extra-link": {},
+        "default-landing-page": {
+          "workspace": {},
+          "sql-editor": {}
+        }
+      }
+    },
+    "sensitive-data": {
+      "global-rules": {
+        "error": {}
+      },
+      "semantic-types": {
+        "table": {},
+        "template": {}
+      },
+      "algorithms": {
+        "table": {},
+        "error": {},
+        "full-mask": {},
+        "range-mask": {},
+        "md5-mask": {},
+        "inner-outer-mask": {}
+      },
+      "classification": {}
+    }
+  },
+  "project": {
+    "filter-projects": "过滤项目",
+    "table": {
+      "name": "@:common.name"
+    },
+    "create-modal": {
+      "project-name": "@:{'common.project'}@:{'common.name'}",
+      "success-prompt": "成功创建 {name}."
+    },
+    "overview": {
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
+    },
+    "webhook": {
+      "success-created-prompt": "成功创建 {name} webhook.",
+      "success-updated-prompt": "成功更新 {name} webhook.",
+      "success-deleted-prompt": "成功删除 {name} webhook.",
+      "success-tested-prompt": "测试 webhook 事件成功.",
+      "fail-tested-title": "测试 webhook 事件失败.",
+      "add-a-webhook": "添加 webhook",
+      "create-webhook": "创建 webhook",
+      "destination": "外部应用",
+      "webhook-url": "Webhook URL",
+      "triggering-activity": "触发事件",
+      "test-webhook": "测试 Webhook",
+      "creation": {
+        "title": "创建 webhook",
+        "desc": "为 {destination} 创建一个 webhook",
+        "view-doc": "{destination} 的官方文档"
+      },
+      "deletion": {
+        "confirm-title": "删除 webhook '{title}'?"
+      },
+      "direct-messages": "私信通知",
+      "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",
+      "enable-direct-messages": "启用私信通知",
+      "direct-messages-description": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。仅支持：{events}",
+      "direct-messages-warning": "您需要配置 {im} 才能使其正常工作。",
+      "activity-support-direct-message": "支持向相关用户发送私信通知",
+      "activity-item": {
+        "issue-creation": {
+          "title": "创建@:common.issue",
+          "label": "当一个新的工单被创建"
+        },
+        "issue-approval-notify": {
+          "title": "工单待审批",
+          "label": "当工单需要审批"
+        },
+        "issue-sent-back": {
+          "title": "工单被退回",
+          "label": "当工单被审批人退回"
+        },
+        "pipeline-failed": {
+          "title": "流水线失败",
+          "label": "当流水线任务失败"
+        },
+        "pipeline-completed": {
+          "title": "流水线完成",
+          "label": "当流水线成功完成"
+        }
+      }
+    },
+    "settings": {
+      "success-updated": "项目设置更新成功",
+      "update-failed": "无法更新项目设置。",
+      "success-member-added-prompt": "成功添加到当前项目中.",
+      "archive": {
+        "title": "归档项目",
+        "description": "已归档项目将不再显示。",
+        "btn-text": "归档这个@:common.project"
+      },
+      "restore": {
+        "title": "恢复项目",
+        "btn-text": "恢复这个@:common.project"
+      },
+      "issue-related": {
+        "self": "工单相关",
+        "labels": {
+          "self": "工单标签",
+          "description": "可以在工单中附加标签以便管理",
+          "configure-labels": "配置标签",
+          "placeholder": "按 Enter 键添加标签",
+          "force-issue-labels": {
+            "self": "要求所有工单都必须有标签",
+            "description": "创建工单时必须添加至少一个标签。",
+            "warning": "至少需要配置一个标签"
+          }
+        },
+        "enforce-issue-title": {
+          "self": "要求手动输入标题",
+          "description": "工单和计划的标题必须由用户输入，而不是自动生成。"
+        },
+        "enforce-sql-review": {
+          "self": "强制 SQL 审核",
+          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。"
+        },
+        "allow-self-approval": {
+          "self": "允许创建者审批",
+          "description": "允许创建者审批自己创建的工单。"
+        },
+        "postgres-database-tenant-mode": {
+          "self": "Postgres 数据库租户模式",
+          "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。"
+        },
+        "max-retries": {
+          "self": "锁超时的最大重试数",
+          "description": "运行任务时锁超时的最大重试数。默认值为0。只对 PostgreSQL 有效。"
+        },
+        "ci-sampling-size": {
+          "self": "CI 数据采样大小",
+          "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "每个发布的并行任务数",
+          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
+        },
+        "require-issue-approval": {
+          "self": "创建发布前需要工单审批",
+          "description": "工单必须在创建发布前获得批准。"
+        },
+        "require-plan-check-no-error": {
+          "self": "创建发布前要求变更检查通过",
+          "description": "所有变更检查必须无错误才能创建发布。"
+        },
+        "allow-request-role": {
+          "self": "允许申请角色",
+          "description": "非项目所有者可以自行申请项目级角色"
+        },
+        "allow-jit": {
+          "self": "允许即时访问",
+          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。"
+        },
+        "approval-flow-configured": "审批流程已配置",
+        "approval-flow-fallback": "使用默认审批规则",
+        "approval-flow-not-configured": "未配置审批流程",
+        "view-approval-flow": "查看审批流程"
+      },
+      "project-labels": {
+        "self": "项目标签",
+        "description": "用键值标签组织项目（最多64个）"
+      },
+      "confirm-archive-project": "归档「{name}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
+      "confirm-delete-project": "删除「{name}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。"
+    },
+    "members": {
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
+      "edit": "编辑成员 - {member}",
+      "view-by-members": "按成员查看",
+      "view-by-roles": "按角色查看",
+      "revoke-role-from-user": "删除'{user}'{role}的角色",
+      "never-expires": "永不过期",
+      "role-never-expires": "此角色没有过期时间。",
+      "add-more": "增加更多",
+      "condition-name": "条件名称",
+      "workspace-level-roles": "工作空间级别角色",
+      "project-level-roles": "项目级别角色",
+      "roles-are-filtered-by-permissions": "角色已按权限筛选",
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
+      "disallow-ddl": "禁止在所有环境中执行 DDL/DML 语句。"
+    },
+    "select": "选择项目",
+    "all": "所有项目",
+    "masking-exemption": {
+      "self": "脱敏豁免",
+      "grant-exemption": "授予豁免",
+      "revoke-exemption-title": "是否撤销 {member} 的导出和查询脱敏？"
+    },
+    "batch": {
+      "selected": "已选择 {count} 个项目 | 已选择 {count} 个项目",
+      "archive": {
+        "title": "归档 {count} 个项目？| 归档 {count} 个项目？",
+        "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。",
+        "success": "成功归档 {count} 个项目 | 成功归档 {count} 个项目",
+        "error": "无法归档项目"
+      },
+      "delete": {
+        "title": "删除 {count} 个项目？| 删除 {count} 个项目？",
+        "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
+        "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。",
+        "success": "成功删除 {count} 个项目 | 成功删除 {count} 个项目",
+        "error": "无法删除项目"
+      },
+      "projects-to-archive": "要归档的项目",
+      "projects-to-delete": "要删除的项目",
+      "resource-warning": {
+        "title": "项目与资源",
+        "description": "以下项目包含数据库或未解决的工单："
+      }
+    }
+  },
+  "data-source": {
+    "snowflake-keypair-tip": "密钥对认证",
+    "private-key-passphrase": "私钥密码",
+    "private-key-passphrase-tip": "加密私钥的可选密码",
+    "private-key-passphrase-placeholder": "如果私钥未加密，请留空",
+    "extra-params": {
+      "self": "额外的参数",
+      "description": "数据库连接字符串的其他参数"
+    },
+    "ssl": {
+      "ca-cert": "CA 证书",
+      "client-key": "客户端密钥",
+      "client-cert": "客户端证书",
+      "verify-certificate": "验证 TLS 证书",
+      "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
+    },
+    "ssh-type": {
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "不使用"
+    },
+    "ssh": {
+      "host": "服务器",
+      "port": "端口",
+      "user": "用户名",
+      "password": "密码",
+      "ssh-key": "SSH 密钥",
+      "tunnel": "隧道",
+      "private-key": "私钥"
+    },
+    "ssl-connection": "SSL 连接",
+    "ssh-connection": "SSH 连接",
+    "read-replica-host": "只读副本 Host",
+    "read-replica-port": "只读副本端口",
+    "delete-read-only-data-source": "删除只读数据源",
+    "connection-string-schema": "连接串模式",
+    "connection-type": "连接类型",
+    "additional-node-addresses": "附加节点地址",
+    "replica-set": "副本集",
+    "admin": "管理员",
+    "read-only": "只读",
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "选择查询数据源"
+  },
+  "setting": {
+    "label": {
+      "value-placeholder": "标签值…",
+      "key-placeholder": "标签 key..."
+    }
   },
   "sql-editor": {
     "self": "SQL 编辑器",
@@ -3011,65 +2281,105 @@
     "activate-confirm": "确定要激活此访问授权吗？",
     "re-request": "重新申请"
   },
-  "sql-review": {
-    "title": "SQL 审核策略",
-    "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
-    "disabled": "SQL 审核策略已禁用",
-    "create-policy": "创建审核策略",
-    "select-review": "选择 SQL 审核",
-    "select-review-rules": "选择 SQL 审核规则",
-    "select-all": "选择全部",
-    "select-review-label": "您可以将现有的 SQL 审核策略附加到资源，或者 {create}。",
-    "configure-policy": "配置审核策略",
-    "policy-removed": "审核策略已删除",
-    "policy-created": "审核策略已创建",
-    "policy-create-failed": "审核策略创建失败",
-    "policy-updated": "审核策略已更新",
-    "policy-update-failed": "审核策略更新失败",
-    "add-rules": "添加规则",
-    "add-or-remove-rules": "添加或删除规则",
-    "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
-    "delete": "删除审核策略",
-    "input-then-press-enter": "输入后按下回车来添加",
-    "attach-resource": {
-      "no-linked-resources": "没有绑定的资源",
-      "change-resources": "更改绑定的资源",
-      "self": "绑定到资源",
-      "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
-      "label-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
-      "label-project": "SQL 审核策略将影响所选项目下的所有数据库。数据库所属环境的 SQL 审核策略将被忽略。",
-      "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击“{button}”将覆盖配置。"
+  "schema-editor": {
+    "self": "Schema 编辑器",
+    "raw-sql": "SQL 语句",
+    "search-database-and-table": "搜索数据库和表",
+    "insert-sql": "插入 SQL",
+    "template-database": "模板数据库",
+    "actions": {
+      "create-schema": "新建 Schema",
+      "drop-schema": "删除 Schema",
+      "create-table": "新建表",
+      "rename": "重命名",
+      "drop-table": "删除表",
+      "restore": "恢复",
+      "add-column": "添加列",
+      "drop-column": "删除列",
+      "create-procedure": "新建存储过程",
+      "create-function": "新建函数",
+      "drop": "删除",
+      "create-view": "创建视图"
     },
-    "create": {
-      "breadcrumb": "创建审核策略",
-      "basic-info": {
-        "name": "基本信息",
-        "display-name": "名称",
-        "display-name-placeholder": "审核策略名称",
-        "display-name-default": "SQL 审核策略",
-        "display-name-label": "用以区分不同审核策略的名称。",
-        "choose-template": "选择模板"
-      },
-      "configure-rule": {
-        "name": "配置规则",
-        "change-template": "更改模板",
-        "confirm-override-title": "规则变更",
-        "confirm-override-description": "之前的规则将会被覆盖"
-      }
+    "database": {
+      "name": "名称",
+      "engine": "引擎",
+      "collation": "字符排序规则",
+      "comment": "注释"
     },
-    "enabled-rules": "开启的规则数",
-    "rule-detail": "规则详情",
-    "view-definition": "查看定义",
-    "all-checks-passed": "所有检查都通过了",
-    "category": {
-      "builtin": "内置"
+    "schema": {
+      "select": "选择 schema",
+      "name": "Schema 名称"
     },
-    "level": {
-      "name": "级别",
-      "error": "错误",
-      "warning": "警告"
+    "tables": "表",
+    "table": {
+      "select": "选择表",
+      "name": "表名"
     },
-    "tooltip-for-resource": "也可在 {scope} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
+    "columns": "列",
+    "column": {
+      "select": "选择列",
+      "name": "名称",
+      "type": "类型",
+      "default": "默认值",
+      "comment": "注释",
+      "not-null": "不可为空",
+      "primary": "主键",
+      "foreign-key": "外键",
+      "on-update": "更新时"
+    },
+    "default": {
+      "placeholder": "输入默认值或留空以不使用默认值"
+    },
+    "message": {
+      "invalid-schema-name": "无效的 Schema 名称",
+      "invalid-table-name": "无效的表名",
+      "duplicated-table-name": "重复的表名",
+      "invalid-schema": "无效的 Schema",
+      "cannot-drop-the-last-column": "不能删除最后一列",
+      "duplicated-procedure-name": "重复的存储过程名称",
+      "invalid-procedure-name": "无效的存储过程名称",
+      "duplicated-function-name": "重复的函数名称",
+      "invalid-function-name": "无效的函数名称",
+      "invalid-view-name": "无效的视图名称",
+      "duplicated-view-name": "重复的视图名称"
+    },
+    "foreign-key": {
+      "edit": "修改外键",
+      "name-description": "外键的名称应该是唯一的"
+    },
+    "index": {
+      "indexes": "索引",
+      "edit-indexes": "编辑索引",
+      "unique": "唯一",
+      "dependency-columns": "依赖列"
+    },
+    "table-partition": {
+      "partitions": "分区",
+      "edit-partitions": "编辑分区",
+      "expression": "表达式",
+      "value": "值",
+      "add-sub-partition": "添加子分区",
+      "type": "类型"
+    },
+    "views": "视图",
+    "procedures": "存储过程",
+    "functions": "函数",
+    "preview-schema-text": "预览文本 schema",
+    "preview-view-definition": "预览视图定义"
+  },
+  "label": {
+    "empty-label-value": "空",
+    "error": {
+      "key-necessary": "需要指定 Key",
+      "value-necessary": "需要指定值",
+      "key-duplicated": "Key 重复了",
+      "max-value-length-exceeded": "值的长度不能超过 {length} 字符"
+    },
+    "add-label": "添加标签"
+  },
+  "oauth": {
+    "unknown-event": "未知的事件类型，认证失败"
   },
   "subscription": {
     "try-for-free": "免费试用",
@@ -3149,134 +2459,174 @@
       "try": "免费试用。"
     }
   },
-  "task": {
-    "checking": "检查中…",
-    "check-result": {
-      "title-general": "检查结果"
+  "sheet": {
+    "mine": "我的",
+    "shared": "共享的",
+    "notifications": {
+      "duplicate-success": "已成功拷贝至“我的工作表”"
     },
-    "check-type": {
-      "sql-review": {
-        "self": "SQL 审核",
-        "description": "分析 SQL 语句中的潜在问题并提供建议。包括内置规则以及您的自定义规则。"
+    "filter": {
+      "show-mine": "显示我的",
+      "show-shared": "显示共享",
+      "show-draft": "显示草稿",
+      "only-show-starred": "仅显示收藏"
+    },
+    "hint-tips": {
+      "non-empty-folder-title": "非空文件夹",
+      "non-empty-folder-content": "您是想将所有工作表移动到根文件夹，还是直接删除它们？",
+      "move-to-root-folder": "移动到根文件夹",
+      "delete-all-sheets": "删除所有文件",
+      "duplicate-folder-name-title": "重复的文件夹名称",
+      "duplicate-folder-name-content": "是否要将所有子文件夹和文件合并到现有文件夹“{folder}”中？",
+      "confirm-to-delete-sheet-title": "确认删除此工作表？",
+      "confirm-to-duplicate-sheet": "确定要复制这条工作表?"
+    },
+    "search-sheets": "搜索工作表",
+    "move-worksheets": "移动工作表"
+  },
+  "sql-review": {
+    "title": "SQL 审核策略",
+    "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
+    "disabled": "SQL 审核策略已禁用",
+    "create-policy": "创建审核策略",
+    "select-review": "选择 SQL 审核",
+    "select-review-rules": "选择 SQL 审核规则",
+    "select-all": "选择全部",
+    "select-review-label": "您可以将现有的 SQL 审核策略附加到资源，或者 {create}。",
+    "configure-policy": "配置审核策略",
+    "policy-removed": "审核策略已删除",
+    "policy-created": "审核策略已创建",
+    "policy-create-failed": "审核策略创建失败",
+    "policy-updated": "审核策略已更新",
+    "policy-update-failed": "审核策略更新失败",
+    "add-rules": "添加规则",
+    "add-or-remove-rules": "添加或删除规则",
+    "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
+    "delete": "删除审核策略",
+    "input-then-press-enter": "输入后按下回车来添加",
+    "attach-resource": {
+      "no-linked-resources": "没有绑定的资源",
+      "change-resources": "更改绑定的资源",
+      "self": "绑定到资源",
+      "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
+      "label-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
+      "label-project": "SQL 审核策略将影响所选项目下的所有数据库。数据库所属环境的 SQL 审核策略将被忽略。",
+      "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击“{button}”将覆盖配置。"
+    },
+    "create": {
+      "breadcrumb": "创建审核策略",
+      "basic-info": {
+        "name": "基本信息",
+        "display-name": "名称",
+        "display-name-placeholder": "审核策略名称",
+        "display-name-default": "SQL 审核策略",
+        "display-name-label": "用以区分不同审核策略的名称。",
+        "choose-template": "选择模板"
       },
-      "ghost-sync": "gh-ost 同步",
-      "affected-rows": {
-        "self": "影响行数",
-        "description": "根据统计信息估算。"
-      },
-      "summary-report": "概要报告"
+      "configure-rule": {
+        "name": "配置规则",
+        "change-template": "更改模板",
+        "confirm-override-title": "规则变更",
+        "confirm-override-description": "之前的规则将会被覆盖"
+      }
     },
-    "comment": "评论",
-    "started": "开始于",
-    "status": {
-      "running": "运行中",
-      "available": "就绪",
-      "failed": "失败",
-      "canceled": "取消",
-      "skipped": "已跳过",
-      "done": "完成",
-      "pending": "待执行",
-      "not-started": "未开始"
+    "enabled-rules": "开启的规则数",
+    "rule-detail": "规则详情",
+    "view-definition": "查看定义",
+    "all-checks-passed": "所有检查都通过了",
+    "category": {
+      "builtin": "内置"
     },
-    "task-checks": "任务检查项",
-    "prior-backup": "预备份受影响数据",
-    "skip-prior-backup": "跳过预备份",
-    "skip-prior-backup-description": "跳过变更前的自动数据备份",
-    "execution-time": "执行时间",
-    "run-checks": "运行检查",
-    "cancel-task": "取消任务",
-    "skip-task": "跳过任务 | 跳过任务",
-    "run-task": "运行任务 | 运行任务",
-    "created": "创建于",
-    "run-immediately": {
-      "self": "立即运行",
-      "description": "点击“运行”后，任务将立即开始执行。"
+    "level": {
+      "name": "级别",
+      "error": "错误",
+      "warning": "警告"
     },
-    "schedule-for-later": {
-      "self": "定时运行",
-      "description": "设置任务自动开始运行的特定时间。"
+    "tooltip-for-resource": "也可在 {scope} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
+  },
+  "audit-log": {
+    "export-finished": "导出完成",
+    "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
+    "table": {
+      "created-ts": "时间",
+      "actor": "操作者",
+      "level": "事件等级",
+      "method": "操作",
+      "request": "请求信息",
+      "response": "响应信息",
+      "status": "状态",
+      "latency": "延迟",
+      "service-data": "服务数据"
     },
-    "select-task": "选择任务 | 选择任务",
-    "no-tasks-selected": "未选择任何任务",
-    "no-runnable-tasks": "没有可运行的任务",
-    "no-skippable-tasks": "没有可跳过的任务",
-    "no-cancellable-tasks": "没有可取消的任务",
-    "no-selectable-tasks": "没有可选择的任务",
-    "no-permission": "无权限执行该操作",
-    "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
-    "scheduled-time": "计划时间",
-    "scheduled-at": "计划于",
-    "run-history": "执行历史",
-    "only-showing-latest-n-runs": "仅显示最近 {n} 条记录",
-    "select-scheduled-time": "选择计划时间",
-    "error": {
-      "scheduled-time-must-be-in-the-future": "计划时间必须是将来的时间"
-    },
-    "online-migration": {
-      "self": "在线大表变更",
-      "configure-ghost-parameters": "配置 gh-ost 参数",
-      "ghost-parameters": "gh-ost 参数",
-      "configure": "配置",
-      "error": {
-        "nothing-changed": "无任何改变",
-        "not-applicable": {
-          "database-doesnt-meet-ghost-requirement": "数据库 {database} 不符合 gh-ost 的要求"
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "操作者",
+          "description": "按审计日志操作者搜索"
+        },
+        "method": {
+          "title": "操作",
+          "description": "按审计日志操作搜索"
+        },
+        "level": {
+          "title": "事件等级",
+          "description": "按审计日志事件等级搜索"
         }
-      },
-      "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
-    },
-    "prior-backup-tips": "提前备份受影响的数据。仅适用于数据变更（UPDATE、DELETE），不适用于结构变更。",
-    "executed-by": "执行者",
-    "affected-rows": "影响行数",
-    "type": {
-      "database-create": "创建数据库",
-      "migrate": "变更",
-      "database-export": "导出数据",
-      "general": "通用"
+      }
     }
   },
-  "task-run": {
-    "failed-runs": "失败的任务 - 最新的执行日志",
-    "history": "执行记录",
-    "latest-logs": "执行日志",
-    "latest": "最新执行",
-    "status": {
-      "enqueued": "等待执行。",
-      "enqueued-with-rollout-time": "等待执行，{time}后执行。",
-      "waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{time}。"
-    },
-    "rollback": {
-      "available": "可回滚 {n} 个任务",
-      "preview-statement": {
-        "self": "预览语句",
-        "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
+  "schema-diagram": {
+    "self": "Schema 关系图",
+    "fit-content-with-view": "自动适应视图"
+  },
+  "identity-provider": {
+    "test-connection": "测试连接",
+    "test-connection-success": "测试连接成功",
+    "userinfo-description": "匹配到的用户信息。",
+    "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
+    "no-claims": "身份提供商未返回 claims。",
+    "identity-provider-created": "身份提供商创建成功",
+    "identity-provider-deleted": "身份提供商已成功删除",
+    "identity-provider-update-failed": "无法更新身份提供商",
+    "identity-provider-create-failed": "无法创建身份提供商",
+    "identity-provider-delete-failed": "无法删除身份提供商",
+    "identity-provider-permission-denied": "没有权限",
+    "delete-warning": "您确定要删除此身份提供者吗？通过此 SSO 注册的用户将无法再使用该身份提供者登录。如果您在工作区设置中禁用了密码登录，这些用户可能会被完全锁定。"
+  },
+  "sensitive-data": {
+    "self": "敏感数据"
+  },
+  "resource": {
+    "delete-warning": "“{name}”将被删除。此操作无法撤消。",
+    "delete-warning-with-resources": "以下资源使用了“{name}”：",
+    "delete-warning-retry": "请将其从这些资源中删除，然后重试。"
+  },
+  "resource-id": {
+    "self": "{resource} ID",
+    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。",
+    "cannot-be-changed-later": "创建之后无法修改。",
+    "validation": {
+      "duplicated": "{resource} ID 已存在。请使用其他 ID。",
+      "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
+      "minlength": "{resource} ID 至少包含 1 个字符。",
+      "overflow": "{resource} ID 应该少于 64 个字符。",
+      "empty": "{resource} ID 不能为空"
+    }
+  },
+  "multi-factor": {
+    "self": "多重认证",
+    "auth-code": "认证码",
+    "recovery-code": "恢复码",
+    "other-methods": {
+      "self": "其他方法",
+      "use-auth-app": {
+        "self": "使用身份验证器应用程序",
+        "description": "在您的移动设备上打开双重认证器（TOTP）应用程序，查看认证码。"
       },
-      "no-statement-generated": "生成的回滚语句为空"
-    },
-    "log-type": {
-      "schema-dump": "结构导出",
-      "command-execute": "命令执行",
-      "database-sync": "数据库同步",
-      "transaction": "事务",
-      "prior-backup": "预备份",
-      "retry": "重试",
-      "compute-diff": "计算差异",
-      "release-file-execute": "发布包文件"
-    },
-    "log-detail": {
-      "dumping": "导出中...",
-      "syncing": "同步中...",
-      "backup-completed": "已完成（{count} 个表）",
-      "backing-up": "备份中...",
-      "retry-attempt": "第 {current}/{max} 次尝试",
-      "computing": "计算中..."
-    },
-    "log-viewer": {
-      "multiple-replicas-notice": "检测到执行期间服务重启，日志按副本分组显示。",
-      "replica-n": "副本 #{n}",
-      "expand-all": "全部展开",
-      "collapse-all": "全部收起",
-      "summary": "{sections} 个分组 · {entries} 条记录"
+      "use-recovery-code": {
+        "self": "使用恢复码",
+        "description": "如果您无法访问您的移动设备，请输入一个恢复码来验证您的身份。"
+      }
     }
   },
   "two-factor": {
@@ -3328,7 +2678,371 @@
       "cannot-disable": "您的管理员要求所有用户配置双重认证。您无法禁用双重认证。"
     }
   },
+  "plugin": {
+    "ai": {
+      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会将其转换成 SQL 语句",
+      "conversation": {
+        "untitled": "未命名会话",
+        "delete": "删除会话",
+        "rename": "修改会话名称",
+        "select-or-create": "选择或{create}一个会话以开始。",
+        "history-conversations": "历史对话",
+        "view-history-conversations": "查看历史对话",
+        "new-conversation": "开启新对话",
+        "no-message": "无消息",
+        "tips": {
+          "suggest-prompt": "生成提示词...",
+          "no-more": "没有了"
+        }
+      },
+      "text2sql": "Text2SQL",
+      "actions": {
+        "explain-code": "解释代码",
+        "find-problems": "找出问题",
+        "insert-at-caret": "在光标处插入"
+      },
+      "send": "发送",
+      "new-line": "换行",
+      "ai-assistant": "AI 助手",
+      "not-configured": {
+        "self": "AI 助手尚未配置。",
+        "contact-admin-to-configure": "请联系您的组织管理员。",
+        "go-to-configure": "前往配置"
+      }
+    }
+  },
+  "custom-approval": {
+    "self": "自定义审批",
+    "risk-rule": {
+      "risk": {
+        "risk-level": {
+          "default": "默认",
+          "low": "低",
+          "moderate": "中",
+          "high": "高"
+        },
+        "namespace": {
+          "change_database": "变更数据库",
+          "create_database": "创建数据库",
+          "data_export": "导出数据",
+          "request-role": "请求角色",
+          "request-access": "请求即时访问"
+        }
+      }
+    },
+    "approval-flow": {
+      "self": "审批流",
+      "create-approval-flow": "创建审批流",
+      "node": {
+        "nodes": "审批节点",
+        "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
+        "order": "顺序",
+        "approver": "审批人",
+        "add": "增加节点",
+        "delete": "删除审批节点"
+      },
+      "skip": "无需审批",
+      "add-rule": "添加规则",
+      "edit-rule": "编辑规则",
+      "fallback-rules": "兜底规则",
+      "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
+      "template": {
+        "presets-title": "预设模板",
+        "presets": {
+          "drop-or-truncate": "删除/清空表",
+          "high-affected-rows": "高影响行数",
+          "fallback": "兜底规则"
+        },
+        "preset-descriptions": {
+          "drop-or-truncate": "DROP TABLE 或 TRUNCATE 语句需要审批。",
+          "high-affected-rows": "影响行数超过 100 时需要审批。",
+          "fallback": "匹配所有请求的兜底规则，请将其放在规则列表的末尾。"
+        }
+      }
+    },
+    "risk": {
+      "self": "风险中心",
+      "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
+      "how-it-works": "工作原理",
+      "how-it-works-description": "当您创建数据库变更时，Bytebase 会自动分析 SQL 语句，并根据预定义规则分配风险等级（低、中、高）。",
+      "risk-levels": "风险等级",
+      "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
+      "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
+      "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
+      "integration": "与审批流集成",
+      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审批。"
+    },
+    "rule": {
+      "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
+    },
+    "issue-review": {
+      "generating-approval-flow": "正在生成审批流",
+      "approved-issue": "批准工单",
+      "rejected-issue": "驳回工单",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "尚有未通过的任务检查项。",
+        "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
+        "x-field-is-required": "{field}为必填项"
+      },
+      "re-request-review": "请求再次审批",
+      "re-request-review-success": "已成功请求再次审批",
+      "re-requested-review": "再次请求审批工单",
+      "approved-by": "已批准",
+      "rejected-by": "被拒绝",
+      "and-n-other-users": "{names} 和另外 {count} 位用户",
+      "self-approval-not-allowed": "此项目不允许工单创建者审批。您无法以创建者身份批准。"
+    }
+  },
+  "schema-template": {
+    "classification": {
+      "select": "选择分类",
+      "search": "搜索分类"
+    }
+  },
+  "role": {
+    "self": "角色",
+    "setting": {
+      "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
+      "add": "添加角色",
+      "edit": "编辑角色",
+      "title-placeholder": "输入角色称谓",
+      "description-placeholder": "输入角色描述"
+    },
+    "title": "称谓",
+    "select-role": "选择角色",
+    "expired-tip": "该角色可能已经过期。",
+    "import-from-role": "从角色导入",
+    "workspace-roles": {
+      "self": "工作空间角色"
+    },
+    "project-roles": {
+      "self": "项目角色",
+      "apply-to-all-projects": "应用到所有项目"
+    },
+    "custom-roles": {
+      "self": "自定义角色"
+    },
+    "workspace-admin": {
+      "self": "工作空间管理员",
+      "description": "工作空间内的所有权限。"
+    },
+    "workspace-dba": {
+      "self": "工作空间 DBA",
+      "description": "可以管理工作空间的所有数据库和实例"
+    },
+    "workspace-member": {
+      "self": "工作空间成员",
+      "description": "工作空间中的普通用户"
+    },
+    "project-owner": {
+      "self": "项目所有者",
+      "description": "项目内的所有权限。"
+    },
+    "project-developer": {
+      "self": "项目开发者",
+      "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。"
+    },
+    "project-releaser": {
+      "self": "项目发布者",
+      "description": "可查看项目基本信息，并可在指定流程中发布变更。"
+    },
+    "sql-editor-user": {
+      "self": "SQL 编辑器用户",
+      "description": "可查询指定范围的数据。"
+    },
+    "sql-editor-read-user": {
+      "self": "SQL 编辑器只读用户",
+      "description": "只读权限，可查询数据库数据，不包含 DDL 或 DML 访问权限。"
+    },
+    "gitops-service-agent": {
+      "self": "GitOps 服务代理",
+      "description": "通过 GitOps 自动化 CI/CD 工作流创建和执行数据库变更的权限。"
+    },
+    "project-viewer": {
+      "self": "项目查看者",
+      "description": "仅可查看项目和数据库的基本信息，用户可自助发起工单请求数据查询和导出。"
+    }
+  },
+  "database-group": {
+    "create": "新建数据库分组",
+    "deleted": "已删除的数据库组",
+    "matched-database": "相匹配的数据库",
+    "unmatched-database": "不匹配的数据库",
+    "condition": {
+      "self": "条件"
+    },
+    "select": "选择数据库分组",
+    "no-matched-databases": "没有匹配的数据库",
+    "delete-group": "删除数据库组 {name}"
+  },
+  "export-center": {
+    "self": "导出中心",
+    "data-export": "数据导出"
+  },
+  "schema-designer": {
+    "use-tips": "选择需要设计的表"
+  },
+  "cel": {
+    "condition": {
+      "self": "条件",
+      "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
+      "add": "添加条件",
+      "add-group": "添加条件组",
+      "add-raw-expression": "添加 Raw 表达式",
+      "group": {
+        "or": {
+          "description": "以下任一为真…"
+        },
+        "and": {
+          "description": "以下全部为真…"
+        },
+        "tooltip": "条件组是一系列由「与」或「或」运算符连接的条件的集合。"
+      },
+      "input-value": "输入值",
+      "add-condition-in-group-placeholder": "点击{plus}添加条件",
+      "select-value": "选择值",
+      "input-value-press-enter": "输入值，按回车确认",
+      "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
+    }
+  },
+  "release": {
+    "title": "发布包",
+    "releases": "发布包",
+    "files": "文件",
+    "total-files": "共 {count} 个文件",
+    "change-tip": "此变更项已配置为使用发布包。数据库变更将使用所选发布包文件中的 SQL 语句执行。",
+    "not-found": "未找到",
+    "vcs-source": "VCS 源",
+    "view-all-files": "查看全部文件",
+    "and-n-more-files": "还有 {count} 个文件",
+    "file-type": {
+      "versioned": "版本化",
+      "declarative": "声明式",
+      "unspecified": "未指定"
+    },
+    "vcs-type": {
+      "unspecified": "未指定"
+    },
+    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
+    "filter-by-category": "按类别过滤"
+  },
+  "gitops": {
+    "self": "GitOps",
+    "overview": {
+      "title": "什么是 GitOps",
+      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
+      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。"
+    },
+    "checklist": {
+      "title": "开始前检查",
+      "external-url": "外部访问地址",
+      "workload-identity": "工作负载身份",
+      "target-databases": "目标数据库",
+      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
+      "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
+      "wif-notice-suffix": "以使用服务账号配置 GitOps。"
+    },
+    "workload-identity": {
+      "select-placeholder": "选择工作负载身份"
+    },
+    "workflow": {
+      "title": "工作流文件生成",
+      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
+      "file-hint": "保存为仓库中的 {filePath}",
+      "self-hosted-runner": "自托管 runner",
+      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。"
+    },
+    "test-setup": {
+      "title": "测试您的首次 GitOps 迁移",
+      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
+      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
+      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
+      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
+      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。"
+    },
+    "documentation": "查看文档"
+  },
+  "export-data": {
+    "export-rows": "导出行数",
+    "error": {
+      "export-rows-required": "需要指定导出行数",
+      "export-rows-must-gt-zero": "导出行数必须大于 0"
+    },
+    "export-format": "导出格式",
+    "password-optional": "设置密码加密（可选）",
+    "password-info": "提供密码来对导出的文件进行加密"
+  },
+  "branch": {
+    "select-tables-to-rollout": "选择要发布的表",
+    "index": {
+      "drop-index-confirm": "删除索引？"
+    },
+    "table-partition": {
+      "drop-partition-confirm": "删除表分区？",
+      "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
+    }
+  },
   "worksheet": {
     "self": "工作表"
+  },
+  "setup": {
+    "self": "设置",
+    "basic-info": "基本信息",
+    "skip-setup": "跳过设置",
+    "purposes": {
+      "self": "您使用 Bytebase 的主要目的是什么？",
+      "alter-schema": "变更 Schema",
+      "query-data": "查询数据"
+    },
+    "workflow": {
+      "self": "您使用数据库的工作流程是怎样的？",
+      "team": "与队友合作，需要 CI/CD 工作流",
+      "simple": "无需复杂的工作流程，需要 UI 工具"
+    },
+    "data": {
+      "self-setup": "设置项目",
+      "built-in": "使用内置示例",
+      "built-in-desc": "生成示例项目和实例"
+    }
+  },
+  "masking": {
+    "reason": {
+      "title": "为什么这些数据被遮盖？",
+      "semantic-type": "语义类型",
+      "algorithm": "遮盖方法",
+      "context": "规则",
+      "classification": "分类级别"
+    }
+  },
+  "landing": {
+    "quick-link": {
+      "self": "快捷访问",
+      "manage": "管理快捷访问",
+      "visit-prjects": "访问项目",
+      "visit-issues": "访问工单"
+    },
+    "last-visit": "上次访问",
+    "changelog-for-version": "{version} 的更新日志"
+  },
+  "oauth2": {
+    "consent": {
+      "title": "授权请求",
+      "description": "{clientName} 正在请求访问您的账户",
+      "permissions": "此应用程序将能够:",
+      "permission-access": "使用您的权限访问您的 Bytebase 账户"
+    }
+  },
+  "help-drawer": {
+    "dont-show-again": "不再显示这些提示"
+  },
+  "agent": {
+    "assistant-title": "Bytebase 助手",
+    "new-chat": "新对话",
+    "minimize": "最小化",
+    "close": "关闭",
+    "input-placeholder": "输入任何问题...",
+    "send": "发送",
+    "args": "参数：",
+    "result": "结果："
   }
 }
