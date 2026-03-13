@@ -207,7 +207,7 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		PlanTitle:  c.PlanTitle,
 	}
 
-	if v := c.SyncHistory; v != nil {
+	if c.SyncHistory != nil {
 		cl.Schema = c.Schema
 		cl.SchemaSize = int64(len(cl.Schema))
 	}
