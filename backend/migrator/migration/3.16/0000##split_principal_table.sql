@@ -10,6 +10,14 @@ DECLARE
     new_email TEXT;
     base_local TEXT;
 BEGIN
+    -- Only run if principal still has a type column (i.e., not yet split).
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'principal' AND column_name = 'type'
+    ) THEN
+        RETURN;
+    END IF;
+
     FOR rec IN
         SELECT id, email, project
         FROM principal
@@ -45,7 +53,7 @@ BEGIN
 END $$;
 
 -- Step 1: Create service_account table
-CREATE TABLE service_account (
+CREATE TABLE IF NOT EXISTS service_account (
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
@@ -54,14 +62,15 @@ CREATE TABLE service_account (
     project text REFERENCES project(resource_id)
 );
 
-CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
 
 INSERT INTO service_account (deleted, created_at, name, email, service_key_hash, project)
 SELECT deleted, created_at, name, email, password_hash, project
-FROM principal WHERE type = 'SERVICE_ACCOUNT';
+FROM principal WHERE type = 'SERVICE_ACCOUNT'
+ON CONFLICT (email) DO NOTHING;
 
 -- Step 2: Create workload_identity table
-CREATE TABLE workload_identity (
+CREATE TABLE IF NOT EXISTS workload_identity (
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
@@ -71,12 +80,13 @@ CREATE TABLE workload_identity (
     config jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
 
 INSERT INTO workload_identity (deleted, created_at, name, email, project, config)
 SELECT deleted, created_at, name, email, project,
        COALESCE(profile->'workloadIdentityConfig', '{}')
-FROM principal WHERE type = 'WORKLOAD_IDENTITY';
+FROM principal WHERE type = 'WORKLOAD_IDENTITY'
+ON CONFLICT (email) DO NOTHING;
 
 -- Step 3: Drop FK constraints on creator/deleter columns that can reference SA/WI emails.
 -- Keep FKs on oauth2_authorization_code, oauth2_refresh_token, web_refresh_token (END_USER only).
@@ -92,12 +102,20 @@ ALTER TABLE release DROP CONSTRAINT IF EXISTS release_creator_fkey;
 ALTER TABLE access_grant DROP CONSTRAINT IF EXISTS access_grant_creator_fkey;
 
 -- Step 4: Add missing index for plan.creator (queried in plan filter)
-CREATE INDEX idx_plan_creator ON plan(creator);
+CREATE INDEX IF NOT EXISTS idx_plan_creator ON plan(creator);
 
 -- Step 5: Clean up principal table
-DELETE FROM principal WHERE type != 'END_USER';
-ALTER TABLE principal DROP CONSTRAINT IF EXISTS principal_project_type_check;
-ALTER TABLE principal DROP CONSTRAINT IF EXISTS principal_type_check;
-ALTER TABLE principal DROP COLUMN type;
-ALTER TABLE principal DROP COLUMN project;
-DROP INDEX IF EXISTS idx_principal_project;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'principal' AND column_name = 'type'
+    ) THEN
+        DELETE FROM principal WHERE type != 'END_USER';
+        ALTER TABLE principal DROP CONSTRAINT IF EXISTS principal_project_type_check;
+        ALTER TABLE principal DROP CONSTRAINT IF EXISTS principal_type_check;
+        ALTER TABLE principal DROP COLUMN type;
+        ALTER TABLE principal DROP COLUMN project;
+        DROP INDEX IF EXISTS idx_principal_project;
+    END IF;
+END $$;
