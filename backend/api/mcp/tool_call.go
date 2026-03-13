@@ -1,14 +1,10 @@
 package mcp
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
-	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
@@ -72,72 +68,38 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 	if body == nil {
 		body = make(map[string]any)
 	}
-	bodyBytes, err := json.Marshal(body)
+
+	// Execute API request
+	resp, err := s.apiRequest(ctx, endpoint.Path, body)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to marshal request body")
-	}
-
-	// Build HTTP request
-	url := fmt.Sprintf("http://localhost:%d%s", s.profile.Port, endpoint.Path)
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create HTTP request")
-	}
-
-	// Set headers for Connect RPC
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Connect-Protocol-Version", "1")
-
-	// Forward the auth token from the MCP context
-	if token := getAccessToken(ctx); token != "" {
-		httpReq.Header.Set("Authorization", "Bearer "+token)
-	}
-
-	// Execute request with timeout
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to execute API request")
-	}
-	defer resp.Body.Close()
-
-	// Read response body
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to read response body")
+		return nil, nil, err
 	}
 
 	// Check for binary response - not supported
-	contentType := resp.Header.Get("Content-Type")
+	contentType := resp.Headers.Get("Content-Type")
 	if isBinaryContentType(contentType) {
 		return nil, nil, errors.Errorf("binary response not supported (content-type: %s)", contentType)
 	}
 
 	// Parse JSON response
 	var respJSON any
-	if len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, &respJSON); err != nil {
+	if len(resp.Body) > 0 {
+		if err := json.Unmarshal(resp.Body, &respJSON); err != nil {
 			// If not valid JSON, return as string
-			respJSON = string(respBody)
+			respJSON = string(resp.Body)
 		}
 	}
 
 	output := CallOutput{
-		Status:   resp.StatusCode,
+		Status:   resp.Status,
 		Response: respJSON,
 	}
 
 	// Check for error response
-	if resp.StatusCode >= 400 {
-		if errMap, ok := respJSON.(map[string]any); ok {
-			if msg, ok := errMap["message"].(string); ok {
-				output.Error = msg
-			} else if code, ok := errMap["code"].(string); ok {
-				output.Error = code
-			}
-		}
+	if resp.Status >= 400 {
+		output.Error = parseError(resp.Body)
 		if output.Error == "" {
-			output.Error = fmt.Sprintf("HTTP %d", resp.StatusCode)
+			output.Error = fmt.Sprintf("HTTP %d", resp.Status)
 		}
 	}
 
@@ -185,20 +147,4 @@ func isBinaryContentType(ct string) bool {
 		}
 	}
 	return false
-}
-
-// Context key for storing the access token.
-type accessTokenKey struct{}
-
-// withAccessToken adds the access token to the context.
-func withAccessToken(ctx context.Context, token string) context.Context {
-	return context.WithValue(ctx, accessTokenKey{}, token)
-}
-
-// getAccessToken retrieves the access token from the context.
-func getAccessToken(ctx context.Context) string {
-	if token, ok := ctx.Value(accessTokenKey{}).(string); ok {
-		return token
-	}
-	return ""
 }
