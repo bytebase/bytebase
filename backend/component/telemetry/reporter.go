@@ -14,6 +14,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 const (
@@ -62,6 +63,7 @@ func InitGlobalReporter(workspaceID, version, gitCommit string, enabled bool) {
 // gomongoFallbackPayload is the JSON payload for gomongo fallback events.
 type gomongoFallbackPayload struct {
 	WorkspaceID     string `json:"workspaceId"`
+	Email           string `json:"email"`
 	Version         string `json:"version"`
 	Commit          string `json:"commit"`
 	GomongoFallback struct {
@@ -105,17 +107,25 @@ func ReportGomongoFallback(ctx context.Context, statement string, errorMessage s
 		return
 	}
 
+	// Extract email from context user.
+	var email string
+	if user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
+		email = user.Email
+	}
+
 	// Build payload
 	payload := gomongoFallbackPayload{
 		WorkspaceID: workspaceID,
+		Email:       email,
 		Version:     version,
 		Commit:      gitCommit,
 	}
 	payload.GomongoFallback.Statement = truncatedStatement
 	payload.GomongoFallback.ErrorMessage = errorMessage
 
-	// Send async to not block query execution
-	go globalReporter.send(ctx, payload)
+	// Send async with a detached context so the request context cancellation
+	// does not abort the telemetry HTTP call.
+	go globalReporter.send(context.WithoutCancel(ctx), payload)
 }
 
 func (r *Reporter) shouldReport(hash string) bool {
