@@ -45,8 +45,8 @@ export const flattenTaskV1List = (rollout: Rollout | undefined) => {
   return rollout?.stages.flatMap((stage) => stage.tasks) || [];
 };
 
-export const isGrantRequestIssue = (issue: Issue): boolean => {
-  return issue.type === Issue_Type.GRANT_REQUEST;
+export const isRoleGrantIssue = (issue: Issue): boolean => {
+  return issue.type === Issue_Type.ROLE_GRANT;
 };
 
 export const isAccessGrantIssue = (issue: Issue): boolean => {

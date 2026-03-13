@@ -744,11 +744,11 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.GrantRequest"><span class="badge">M</span>GrantRequest</a>
+                  <a href="#bytebase.store.Issue"><span class="badge">M</span>Issue</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.Issue"><span class="badge">M</span>Issue</a>
+                  <a href="#bytebase.store.RoleGrant"><span class="badge">M</span>RoleGrant</a>
                 </li>
               
               
@@ -8006,8 +8006,60 @@ For MySQL, it is the global privileges as GRANT statements, which means it only 
       <p></p>
 
       
-        <h3 id="bytebase.store.GrantRequest">GrantRequest</h3>
-        <p>GrantRequest contains details for requesting database access permissions.</p>
+        <h3 id="bytebase.store.Issue">Issue</h3>
+        <p>Issue is the metadata for issues that track database operations and access requests.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>approval</td>
+                  <td><a href="#bytebase.store.IssuePayloadApproval">IssuePayloadApproval</a></td>
+                  <td></td>
+                  <td><p>Approval information for the issue workflow. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role_grant</td>
+                  <td><a href="#bytebase.store.RoleGrant">RoleGrant</a></td>
+                  <td></td>
+                  <td><p>Role grant details if this is a role grant issue. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Labels attached to categorize and filter the issue. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>risk_level</td>
+                  <td><a href="#bytebase.store.RiskLevel">RiskLevel</a></td>
+                  <td></td>
+                  <td><p>Risk level for the issue, calculated from statement types. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_grant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The access grant id for ACCESS_GRANT type issue. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.RoleGrant">RoleGrant</h3>
+        <p>RoleGrant contains details for requesting a project role.</p>
 
         
           <table class="field-table">
@@ -8044,58 +8096,6 @@ Format: users/{email}. </p></td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
                   <td><p>Duration after which the grant automatically expires. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.Issue">Issue</h3>
-        <p>Issue is the metadata for issues that track database operations and access requests.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>approval</td>
-                  <td><a href="#bytebase.store.IssuePayloadApproval">IssuePayloadApproval</a></td>
-                  <td></td>
-                  <td><p>Approval information for the issue workflow. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>grant_request</td>
-                  <td><a href="#bytebase.store.GrantRequest">GrantRequest</a></td>
-                  <td></td>
-                  <td><p>Access grant request details if this is a grant request issue. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>labels</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Labels attached to categorize and filter the issue. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>risk_level</td>
-                  <td><a href="#bytebase.store.RiskLevel">RiskLevel</a></td>
-                  <td></td>
-                  <td><p>Risk level for the issue, calculated from statement types. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>access_grant_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The access grant id for ACCESS_GRANT type issue. </p></td>
                 </tr>
               
             </tbody>
@@ -8163,9 +8163,9 @@ Format: users/{email}. </p></td>
               </tr>
             
               <tr>
-                <td>GRANT_REQUEST</td>
+                <td>ROLE_GRANT</td>
                 <td>2</td>
-                <td><p>Issue requesting database access permissions.</p></td>
+                <td><p>Role grant request.</p></td>
               </tr>
             
               <tr>

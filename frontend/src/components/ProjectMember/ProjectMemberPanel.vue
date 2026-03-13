@@ -111,7 +111,7 @@
     @close="state.editingMember = undefined"
   />
 
-  <GrantRequestPanel
+  <RoleGrantPanel
     v-if="state.showRequestRolePanel"
     :project-name="project.name"
     @close="state.showRequestRolePanel = false"
@@ -151,7 +151,7 @@ import {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2, isBindingPolicyExpired } from "@/utils";
-import GrantRequestPanel from "../GrantRequestPanel";
+import RoleGrantPanel from "../RoleGrantPanel";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";

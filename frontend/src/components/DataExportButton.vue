@@ -143,7 +143,7 @@ import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { isNullOrUndefined } from "@/utils";
-import MaxRowCountSelect from "./GrantRequestPanel/MaxRowCountSelect.vue";
+import MaxRowCountSelect from "./RoleGrantPanel/MaxRowCountSelect.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
 
 interface LocalState {

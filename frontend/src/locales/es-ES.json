@@ -1033,7 +1033,7 @@
           "description": "Filter by issue type",
           "value": {
             "database-change": "Database Change",
-            "grant-request": "Grant Request",
+            "role-grant": "Role Grant",
             "database-export": "Database Export",
             "access-grant": "Access Grant"
           }
@@ -1114,9 +1114,10 @@
     },
     "issue-name": "Nombre de la incidencia",
     "access-grant": {
-      "details": "Access Grant Details"
+      "details": "Access Grant Details",
+      "expired-at": "tiempo de caducidad"
     },
-    "grant-request": {
+    "role-grant": {
       "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
       "all-databases": "todas las bases de datos",

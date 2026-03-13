@@ -20,7 +20,7 @@
       </NButton>
     </PermissionGuardWrapper>
 
-    <GrantRequestPanel
+    <RoleGrantPanel
       v-if="showPanel"
       :project-name="project.name"
       :database-resources="missingResources"
@@ -43,9 +43,9 @@ import { ShieldUserIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
-import GrantRequestPanel from "@/components/GrantRequestPanel";
-import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
+import RoleGrantPanel from "@/components/RoleGrantPanel";
+import { parseStringToResource } from "@/components/RoleGrantPanel/DatabaseResourceForm/common";
 import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
 import {
   type DatabaseResource,

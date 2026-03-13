@@ -17,7 +17,7 @@
         type="datetime"
         :is-date-disabled="isDateDisabled"
         clearable
-        :placeholder="$t('issue.grant-request.custom-date-placeholder')"
+        :placeholder="$t('issue.role-grant.custom-date-placeholder')"
         @update:value="handleCustomDateChange"
       />
       <div v-if="maximumRoleExpiration" class="text-xs text-gray-500">
@@ -175,7 +175,7 @@ const options = computed((): ExpirationOption[] => {
   // Add custom date option prominently after "Never expires"
   availableOptions.push({
     value: -1,
-    label: t("issue.grant-request.custom-date"),
+    label: t("issue.role-grant.custom-date"),
   });
 
   // Add time-based options

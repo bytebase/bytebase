@@ -160,7 +160,7 @@ const expirationText = computed(() => {
     const dur = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
     return t("sql-editor.expire-in", { time: dur });
   }
-  return `${t("issue.grant-request.expired-at")} ${info.value}`;
+  return `${t("issue.access-grant.expired-at")} ${info.value}`;
 });
 
 const allDatabaseNames = computed(() => {

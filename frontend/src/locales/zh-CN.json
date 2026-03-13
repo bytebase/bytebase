@@ -1033,7 +1033,7 @@
           "description": "按工单类型过滤",
           "value": {
             "database-change": "数据库变更",
-            "grant-request": "权限申请",
+            "role-grant": "角色授权",
             "database-export": "数据导出",
             "access-grant": "访问授权"
           }
@@ -1114,9 +1114,10 @@
     },
     "issue-name": "工单名称",
     "access-grant": {
-      "details": "访问授权详情"
+      "details": "访问授权详情",
+      "expired-at": "过期时间"
     },
-    "grant-request": {
+    "role-grant": {
       "details": "请求详细",
       "expired-at": "过期时间",
       "all-databases": "所有数据库",

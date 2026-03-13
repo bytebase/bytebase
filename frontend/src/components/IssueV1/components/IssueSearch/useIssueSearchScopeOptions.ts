@@ -197,11 +197,11 @@ export const useIssueSearchScopeOptions = (
               ),
           },
           {
-            value: Issue_Type[Issue_Type.GRANT_REQUEST],
+            value: Issue_Type[Issue_Type.ROLE_GRANT],
             keywords: ["grant", "request"],
             render: () =>
               renderSpan(
-                t("issue.advanced-search.scope.issue-type.value.grant-request")
+                t("issue.advanced-search.scope.issue-type.value.role-grant")
               ),
           },
           {
