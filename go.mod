@@ -34,6 +34,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260211083148-d2ea344b4b65
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
+	github.com/bytebase/omni v0.0.0-20260313074616-3f695e9ee28c
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
@@ -142,7 +143,6 @@ require (
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/bytebase/omni v0.0.0-20260313074616-3f695e9ee28c // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
