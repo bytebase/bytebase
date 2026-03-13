@@ -3034,6 +3034,7 @@
     "send": "Send",
     "args": "Args:",
     "result": "Result:",
-    "stop": "Stop"
+    "stop": "Stop",
+    "interrupted": "Interrupted"
   }
 }

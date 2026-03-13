@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { runAgentLoop } from "../logic/agentLoop";
 import { buildSystemPrompt } from "../logic/prompt";
@@ -7,6 +8,7 @@ import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import type { Message } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const agentStore = useAgentStore();
@@ -87,7 +89,12 @@ async function send() {
     // AbortError from DOMException or ConnectError with "[canceled]"
     const isAbort =
       error.name === "AbortError" || error.message.includes("[canceled]");
-    if (!isAbort) {
+    if (isAbort) {
+      agentStore.addMessage({
+        role: "assistant",
+        content: `_${t("agent.interrupted")}_`,
+      });
+    } else {
       agentStore.addMessage({
         role: "assistant",
         content: `Error: ${error.message}`,

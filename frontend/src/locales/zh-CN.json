@@ -3034,6 +3034,7 @@
     "send": "发送",
     "args": "参数：",
     "result": "结果：",
-    "stop": "停止"
+    "stop": "停止",
+    "interrupted": "已中断"
   }
 }
