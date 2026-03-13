@@ -112,6 +112,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       ? worksheet
       : clone(WorksheetSchema, worksheet);
     const request = create(CreateWorksheetRequestSchema, {
+      parent: fullWorksheet.project,
       worksheet: fullWorksheet,
     });
     const response =
@@ -196,8 +197,9 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     return promise;
   };
 
-  const fetchWorksheetList = async (filter: string) => {
+  const fetchWorksheetList = async (parent: string, filter: string) => {
     const request = create(SearchWorksheetsRequestSchema, {
+      parent,
       filter,
     });
     const response =
