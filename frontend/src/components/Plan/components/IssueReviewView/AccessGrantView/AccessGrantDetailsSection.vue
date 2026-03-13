@@ -60,7 +60,7 @@
             {{ $t("common.duration") }}
           </template>
           <template v-else>
-            {{ $t("issue.grant-request.expired-at") }}
+            {{ $t("issue.access-grant.expired-at") }}
           </template>
         </span>
         <div class="text-base">

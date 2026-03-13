@@ -16,8 +16,8 @@ message Issue {
     ISSUE_TYPE_UNSPECIFIED = 0;
     // Issue for database schema or data changes.
     DATABASE_CHANGE = 1;
-    // Issue requesting database access permissions.
-    GRANT_REQUEST = 2;
+    // Role grant request.
+    ROLE_GRANT = 2;
     // Issue for exporting data from databases.
     DATABASE_EXPORT = 3;
     // Temporary access grant request.
@@ -37,8 +37,8 @@ message Issue {
 
   // Approval information for the issue workflow.
   IssuePayloadApproval approval = 1;
-  // Access grant request details if this is a grant request issue.
-  GrantRequest grant_request = 2;
+  // Role grant details if this is a role grant issue.
+  RoleGrant role_grant = 2;
   // Labels attached to categorize and filter the issue.
   repeated string labels = 3;
   // Risk level for the issue, calculated from statement types.
@@ -48,8 +48,8 @@ message Issue {
   string access_grant_id = 5;
 }
 
-// GrantRequest contains details for requesting database access permissions.
-message GrantRequest {
+// RoleGrant contains details for requesting a project role.
+message RoleGrant {
   // The role being requested for the user.
   // Format: roles/EXPORTER.
   string role = 1;

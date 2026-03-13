@@ -20318,31 +20318,6 @@ components:
       required:
         - name
       additionalProperties: false
-    bytebase.v1.GrantRequest:
-      type: object
-      properties:
-        role:
-          type: string
-          title: role
-          description: |-
-            The requested role.
-             Format: roles/EXPORTER.
-        user:
-          type: string
-          title: user
-          description: |-
-            The user to be granted.
-             Format: users/{email}.
-        condition:
-          title: condition
-          description: The condition for the role. Same as the condition in IAM Binding message.
-          $ref: '#/components/schemas/google.type.Expr'
-        expiration:
-          title: expiration
-          description: The duration for which the grant is valid.
-          $ref: '#/components/schemas/google.protobuf.Duration'
-      title: GrantRequest
-      additionalProperties: false
     bytebase.v1.GridLevel:
       type: object
       properties:
@@ -20869,10 +20844,10 @@ components:
             The plan associated with the issue.
              Can be empty.
              Format: projects/{project}/plans/{plan}
-        grantRequest:
-          title: grant_request
-          description: Used if the issue type is GRANT_REQUEST.
-          $ref: '#/components/schemas/bytebase.v1.GrantRequest'
+        roleGrant:
+          title: role_grant
+          description: Used if the issue type is ROLE_GRANT.
+          $ref: '#/components/schemas/bytebase.v1.RoleGrant'
         riskLevel:
           title: risk_level
           description: The risk level of the issue.
@@ -20936,7 +20911,7 @@ components:
       enum:
         - TYPE_UNSPECIFIED
         - DATABASE_CHANGE
-        - GRANT_REQUEST
+        - ROLE_GRANT
         - DATABASE_EXPORT
         - ACCESS_GRANT
       description: The type of issue.
@@ -24598,6 +24573,31 @@ components:
         - TYPE_UNSPECIFIED
         - BUILT_IN
         - CUSTOM
+    bytebase.v1.RoleGrant:
+      type: object
+      properties:
+        role:
+          type: string
+          title: role
+          description: |-
+            The requested role.
+             Format: roles/EXPORTER.
+        user:
+          type: string
+          title: user
+          description: |-
+            The user to be granted.
+             Format: users/{email}.
+        condition:
+          title: condition
+          description: The condition for the role. Same as the condition in IAM Binding message.
+          $ref: '#/components/schemas/google.type.Expr'
+        expiration:
+          title: expiration
+          description: The duration for which the grant is valid.
+          $ref: '#/components/schemas/google.protobuf.Duration'
+      title: RoleGrant
+      additionalProperties: false
     bytebase.v1.Rollout:
       type: object
       properties:

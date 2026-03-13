@@ -308,7 +308,7 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.Plan != y.Plan {
 		return false
 	}
-	if !x.GrantRequest.Equal(y.GrantRequest) {
+	if !x.RoleGrant.Equal(y.RoleGrant) {
 		return false
 	}
 	if x.RiskLevel != y.RiskLevel {
@@ -331,7 +331,7 @@ func (x *Issue) Equal(y *Issue) bool {
 	return true
 }
 
-func (x *GrantRequest) Equal(y *GrantRequest) bool {
+func (x *RoleGrant) Equal(y *RoleGrant) bool {
 	if x == y {
 		return true
 	}

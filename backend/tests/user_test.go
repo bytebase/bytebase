@@ -249,14 +249,14 @@ func TestUpdateUserEmail(t *testing.T) {
 	ctl.authInterceptor.token = loginResp.Msg.Token
 
 	// Create Issue
-	// Use GRANT_REQUEST to avoid plan requirement and also test payload update.
+	// Use ROLE_GRANT to avoid plan requirement and also test payload update.
 	grantUser := common.FormatUserEmail(originalEmail)
 	issueResp, err := ctl.issueServiceClient.CreateIssue(userCtx, connect.NewRequest(&v1pb.CreateIssueRequest{
 		Parent: "projects/" + projectID,
 		Issue: &v1pb.Issue{
 			Title: "Test Grant Request",
-			Type:  v1pb.Issue_GRANT_REQUEST,
-			GrantRequest: &v1pb.GrantRequest{
+			Type:  v1pb.Issue_ROLE_GRANT,
+			RoleGrant: &v1pb.RoleGrant{
 				Role: "roles/projectDeveloper",
 				User: grantUser,
 			},
@@ -302,8 +302,8 @@ func TestUpdateUserEmail(t *testing.T) {
 	a.NoError(err)
 	// Creator is a string "users/{email}"
 	a.Equal(common.FormatUserEmail(newEmail), updatedIssueResp.Msg.Creator, "Issue creator should be updated")
-	// Verify GrantRequest User in Payload
-	a.Equal(common.FormatUserEmail(newEmail), updatedIssueResp.Msg.GrantRequest.User, "GrantRequest user should be updated")
+	// Verify RoleGrant user in payload.
+	a.Equal(common.FormatUserEmail(newEmail), updatedIssueResp.Msg.RoleGrant.User, "RoleGrant user should be updated")
 
 	// Verify Issue Comment Creator
 	commentsResp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{

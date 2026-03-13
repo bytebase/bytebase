@@ -48,7 +48,6 @@
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
-    - [GrantRequest](#bytebase-v1-GrantRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
     - [IssueComment](#bytebase-v1-IssueComment)
@@ -61,6 +60,7 @@
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
     - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
+    - [RoleGrant](#bytebase-v1-RoleGrant)
     - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
@@ -1324,24 +1324,6 @@ Webhook integration type.
 
 
 
-<a name="bytebase-v1-GrantRequest"></a>
-
-### GrantRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user to be granted. Format: users/{email}. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
-| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
-
-
-
-
-
-
 <a name="bytebase-v1-Issue"></a>
 
 ### Issue
@@ -1361,7 +1343,7 @@ Webhook integration type.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
-| grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
+| role_grant | [RoleGrant](#bytebase-v1-RoleGrant) |  | Used if the issue type is ROLE_GRANT. |
 | risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
 | labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
 | approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
@@ -1574,6 +1556,24 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 
 
+<a name="bytebase-v1-RoleGrant"></a>
+
+### RoleGrant
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The requested role. Format: roles/EXPORTER. |
+| user | [string](#string) |  | The user to be granted. Format: users/{email}. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
+| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
+
+
+
+
+
+
 <a name="bytebase-v1-SearchIssuesRequest"></a>
 
 ### SearchIssuesRequest
@@ -1690,7 +1690,7 @@ The type of issue.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified issue type. |
 | DATABASE_CHANGE | 1 | Database schema or data change. |
-| GRANT_REQUEST | 2 | Database access grant request. |
+| ROLE_GRANT | 2 | Role grant request. |
 | DATABASE_EXPORT | 3 | Database data export request. |
 | ACCESS_GRANT | 4 | Temporary access grant request. |
 

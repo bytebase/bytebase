@@ -370,8 +370,8 @@ func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
 // done=false means the caller should retry later (e.g., waiting for plan check runs).
 func buildCELVariablesForIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	switch issue.Type {
-	case storepb.Issue_GRANT_REQUEST:
-		return buildCELVariablesForGrantRequest(ctx, stores, issue)
+	case storepb.Issue_ROLE_GRANT:
+		return buildCELVariablesForRoleGrant(ctx, stores, issue)
 	case storepb.Issue_DATABASE_CHANGE:
 		return buildCELVariablesForDatabaseChange(ctx, stores, issue)
 	case storepb.Issue_DATABASE_EXPORT:
@@ -668,28 +668,28 @@ func buildCELVariablesForDataExport(ctx context.Context, stores *store.Store, is
 	return celVarsList, true, nil
 }
 
-// buildCELVariablesForGrantRequest builds CEL variables for GRANT_REQUEST issues.
-func buildCELVariablesForGrantRequest(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
+// buildCELVariablesForRoleGrant builds CEL variables for ROLE_GRANT issues.
+func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
-	if payload.GrantRequest == nil {
-		return nil, false, errors.New("grant request payload not found")
+	if payload.RoleGrant == nil {
+		return nil, false, errors.New("role grant payload not found")
 	}
 
-	factors, err := common.GetQueryExportFactors(payload.GetGrantRequest().GetCondition().GetExpression())
+	factors, err := common.GetQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get query export factors")
 	}
 
 	// Default to max int if expiration is not set (no expiration)
 	expirationDays := int64(math.MaxInt32)
-	if payload.GrantRequest.Expiration != nil {
-		expirationDays = int64(payload.GrantRequest.Expiration.AsDuration().Hours() / 24)
+	if payload.RoleGrant.Expiration != nil {
+		expirationDays = int64(payload.RoleGrant.Expiration.AsDuration().Hours() / 24)
 	}
 
 	baseVars := map[string]any{
 		common.CELAttributeResourceProjectID:     issue.ProjectID,
 		common.CELAttributeRequestExpirationDays: expirationDays,
-		common.CELAttributeRequestRole:           payload.GrantRequest.Role,
+		common.CELAttributeRequestRole:           payload.RoleGrant.Role,
 	}
 
 	// If no specific databases, create one entry per environment
@@ -711,9 +711,9 @@ func buildCELVariablesForGrantRequest(ctx context.Context, stores *store.Store, 
 	}
 
 	// Build one entry per database
-	databases, err := getDatabasesForGrantRequest(ctx, stores, issue.ProjectID, factors.Databases)
+	databases, err := getDatabasesForRoleGrant(ctx, stores, issue.ProjectID, factors.Databases)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to retrieve databases for grant request")
+		return nil, false, errors.Wrap(err, "failed to retrieve databases for role grant")
 	}
 
 	var celVarsList []map[string]any
@@ -795,10 +795,10 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	return celVarsList, true, nil
 }
 
-// getDatabasesForGrantRequest fetches database messages for the given database identifiers.
-// Used exclusively by grant request approval flow to retrieve database information.
+// getDatabasesForRoleGrant fetches database messages for the given database identifiers.
+// Used exclusively by role grant approval flow to retrieve database information.
 // Returns a deduplicated list of databases.
-func getDatabasesForGrantRequest(ctx context.Context, stores *store.Store, projectID string, databaseIdentifiers []string) ([]*store.DatabaseMessage, error) {
+func getDatabasesForRoleGrant(ctx context.Context, stores *store.Store, projectID string, databaseIdentifiers []string) ([]*store.DatabaseMessage, error) {
 	// Parse and deduplicate database identifiers
 	type dbKey struct {
 		instanceID   string
@@ -850,7 +850,7 @@ func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceAppr
 // getApprovalSourceFromIssue determines the approval rule source enum from the issue type.
 func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage) (storepb.WorkspaceApprovalSetting_Rule_Source, error) {
 	switch issue.Type {
-	case storepb.Issue_GRANT_REQUEST:
+	case storepb.Issue_ROLE_GRANT:
 		return storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE, nil
 	case storepb.Issue_DATABASE_CHANGE:
 		if issue.PlanUID == nil {

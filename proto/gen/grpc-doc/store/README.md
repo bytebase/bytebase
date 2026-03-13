@@ -146,8 +146,8 @@
     - [DataSourceType](#bytebase-store-DataSourceType)
   
 - [store/issue.proto](#store_issue-proto)
-    - [GrantRequest](#bytebase-store-GrantRequest)
     - [Issue](#bytebase-store-Issue)
+    - [RoleGrant](#bytebase-store-RoleGrant)
   
     - [Issue.Status](#bytebase-store-Issue-Status)
     - [Issue.Type](#bytebase-store-Issue-Type)
@@ -2660,24 +2660,6 @@ InstanceRole is the API message for instance role.
 
 
 
-<a name="bytebase-store-GrantRequest"></a>
-
-### GrantRequest
-GrantRequest contains details for requesting database access permissions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user who will receive the role. Format: users/{email}. |
-| condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
-| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
-
-
-
-
-
-
 <a name="bytebase-store-Issue"></a>
 
 ### Issue
@@ -2687,10 +2669,28 @@ Issue is the metadata for issues that track database operations and access reque
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | approval | [IssuePayloadApproval](#bytebase-store-IssuePayloadApproval) |  | Approval information for the issue workflow. |
-| grant_request | [GrantRequest](#bytebase-store-GrantRequest) |  | Access grant request details if this is a grant request issue. |
+| role_grant | [RoleGrant](#bytebase-store-RoleGrant) |  | Role grant details if this is a role grant issue. |
 | labels | [string](#string) | repeated | Labels attached to categorize and filter the issue. |
 | risk_level | [RiskLevel](#bytebase-store-RiskLevel) |  | Risk level for the issue, calculated from statement types. |
 | access_grant_id | [string](#string) |  | The access grant id for ACCESS_GRANT type issue. |
+
+
+
+
+
+
+<a name="bytebase-store-RoleGrant"></a>
+
+### RoleGrant
+RoleGrant contains details for requesting a project role.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
+| user | [string](#string) |  | The user who will receive the role. Format: users/{email}. |
+| condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
+| expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
 
 
 
@@ -2722,7 +2722,7 @@ Type represents the category of issue.
 | ---- | ------ | ----------- |
 | ISSUE_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CHANGE | 1 | Issue for database schema or data changes. |
-| GRANT_REQUEST | 2 | Issue requesting database access permissions. |
+| ROLE_GRANT | 2 | Role grant request. |
 | DATABASE_EXPORT | 3 | Issue for exporting data from databases. |
 | ACCESS_GRANT | 4 | Temporary access grant request. |
 

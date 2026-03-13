@@ -10,7 +10,7 @@
     <DatabaseExportView v-else-if="issueType === IssueType.EXPORT_DATA" />
 
     <!-- Grant Request View -->
-    <GrantRequestView v-else-if="issueType === IssueType.GRANT_REQUEST" />
+    <RoleGrantView v-else-if="issueType === IssueType.ROLE_GRANT" />
 
     <!-- Access Grant View -->
     <AccessGrantView v-else-if="issueType === IssueType.ACCESS_GRANT" />
@@ -28,14 +28,14 @@ import AccessGrantView from "@/components/Plan/components/IssueReviewView/Access
 import { DatabaseChangeView } from "@/components/Plan/components/IssueReviewView/DatabaseChangeView";
 import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
-import GrantRequestView from "@/components/Plan/components/IssueReviewView/GrantRequestView.vue";
 import IssueBaseLayout from "@/components/Plan/components/IssueReviewView/IssueBaseLayout.vue";
+import RoleGrantView from "@/components/Plan/components/IssueReviewView/RoleGrantView.vue";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
 enum IssueType {
   CREATE_DATABASE = "CREATE_DATABASE",
   EXPORT_DATA = "EXPORT_DATA",
-  GRANT_REQUEST = "GRANT_REQUEST",
+  ROLE_GRANT = "ROLE_GRANT",
   ACCESS_GRANT = "ACCESS_GRANT",
   DATABASE_CHANGE = "DATABASE_CHANGE",
 }
@@ -49,8 +49,7 @@ const { plan, issue } = usePlanContextWithIssue();
 const isLoading = ref(true);
 
 const issueType = computed(() => {
-  if (issue.value.type === Issue_Type.GRANT_REQUEST)
-    return IssueType.GRANT_REQUEST;
+  if (issue.value.type === Issue_Type.ROLE_GRANT) return IssueType.ROLE_GRANT;
   if (issue.value.type === Issue_Type.ACCESS_GRANT)
     return IssueType.ACCESS_GRANT;
 

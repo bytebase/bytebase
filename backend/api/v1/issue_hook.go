@@ -46,7 +46,7 @@ func postCreateIssue(
 	switch issue.Type {
 	case
 		storepb.Issue_ACCESS_GRANT,
-		storepb.Issue_GRANT_REQUEST,
+		storepb.Issue_ROLE_GRANT,
 		storepb.Issue_DATABASE_EXPORT:
 
 		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
@@ -68,7 +68,7 @@ func postCreateIssue(
 			return issue, nil
 		}
 
-		// For ACCESS_GRANT/GRANT_REQUEST that is auto-approved (no approval template), complete it.
+		// For ACCESS_GRANT/ROLE_GRANT that is auto-approved (no approval template), complete it.
 		approved, err := utils.CheckApprovalApproved(issue.Payload.Approval)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check if approval is approved")
@@ -78,7 +78,7 @@ func postCreateIssue(
 		}
 		issue, err = completeAccessRequestIssue(ctx, stores, creatorEmail, issue)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to complete grant request")
+			return nil, errors.Wrapf(err, "failed to complete role grant")
 		}
 	case storepb.Issue_DATABASE_CHANGE:
 		b.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
@@ -88,8 +88,8 @@ func postCreateIssue(
 	return issue, nil
 }
 
-// completeAccessRequestIssue completes the ACCESS_GRANT/GRANT_REQUEST issue.
-// For GRANT_REQUEST issue: grant the privilege and updating the status.
+// completeAccessRequestIssue completes the ACCESS_GRANT/ROLE_GRANT issue.
+// For ROLE_GRANT issue: grant the privilege and update the status.
 // For ACCESS_GRANT issue: mark the status as ACTIVE.
 func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEmail string, issue *store.IssueMessage) (*store.IssueMessage, error) {
 	switch issue.Type {
@@ -101,8 +101,8 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 		if _, err := activateAccessGrant(ctx, stores, accessGrantName, true /* refresh expire time */); err != nil {
 			return nil, errors.Wrapf(err, "failed to activate access grant %v", accessGrantName)
 		}
-	case storepb.Issue_GRANT_REQUEST:
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, stores, issue, issue.Payload.GrantRequest); err != nil {
+	case storepb.Issue_ROLE_GRANT:
+		if err := utils.UpdateProjectPolicyFromRoleGrantIssue(ctx, stores, issue, issue.Payload.RoleGrant); err != nil {
 			return nil, err
 		}
 	default:

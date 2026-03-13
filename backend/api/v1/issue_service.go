@@ -421,59 +421,58 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	var planUID *int64
-	var grantRequest *storepb.GrantRequest
+	var roleGrant *storepb.RoleGrant
 	var title, description string
 
 	// Type-specific validation and preparation
 	switch request.Issue.Type {
-	case v1pb.Issue_GRANT_REQUEST:
-		// Title is required for grant requests
+	case v1pb.Issue_ROLE_GRANT:
+		// Title is required for role grant requests.
 		if request.Issue.Title == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
 		}
 
-		// Check if grant request feature is enabled
+		// Check if role grant workflow feature is enabled.
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied,
 				errors.Errorf("role request requires approval workflow feature (available in Enterprise plan)"))
 		}
 
-		// Validate grant request fields
-		if request.Issue.GrantRequest.GetRole() == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect grant request role"))
+		// Validate role grant fields.
+		if request.Issue.RoleGrant.GetRole() == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect role grant role"))
 		}
-		if request.Issue.GrantRequest.GetUser() == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect grant request user"))
+		if request.Issue.RoleGrant.GetUser() == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect role grant user"))
 		}
 
-		// Validate CEL expression if it's not empty
-		if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
+		// Validate CEL expression if it's not empty.
+		if expression := request.Issue.RoleGrant.GetCondition().GetExpression(); expression != "" {
 			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment"))
 			}
 			if _, issues := e.Compile(expression); issues != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("found issues in grant request condition expression, issues: %v", issues.String()))
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("found issues in role grant condition expression, issues: %v", issues.String()))
 			}
 		}
 
-		// Convert grant request (inlined from convertGrantRequest)
-		grantRequestUserEmail, err := common.GetUserEmail(request.Issue.GrantRequest.User)
+		roleGrantUserEmail, err := common.GetUserEmail(request.Issue.RoleGrant.User)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user email from %q", request.Issue.GrantRequest.User))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user email from %q", request.Issue.RoleGrant.User))
 		}
-		grantRequestUser, err := s.store.GetUserByEmail(ctx, grantRequestUserEmail)
+		roleGrantUser, err := s.store.GetUserByEmail(ctx, roleGrantUserEmail)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", grantRequestUserEmail))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", roleGrantUserEmail))
 		}
-		if grantRequestUser == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", request.Issue.GrantRequest.User))
+		if roleGrantUser == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", request.Issue.RoleGrant.User))
 		}
-		grantRequest = &storepb.GrantRequest{
-			Role:       request.Issue.GrantRequest.Role,
-			User:       common.FormatUserEmail(grantRequestUser.Email),
-			Condition:  request.Issue.GrantRequest.Condition,
-			Expiration: request.Issue.GrantRequest.Expiration,
+		roleGrant = &storepb.RoleGrant{
+			Role:       request.Issue.RoleGrant.Role,
+			User:       common.FormatUserEmail(roleGrantUser.Email),
+			Condition:  request.Issue.RoleGrant.Condition,
+			Expiration: request.Issue.RoleGrant.Expiration,
 		}
 
 		title = request.Issue.Title
@@ -528,7 +527,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		Type:         issueType,
 		Description:  description,
 		Payload: &storepb.Issue{
-			GrantRequest: grantRequest,
+			RoleGrant: roleGrant,
 			Approval: &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: false,
 				ApprovalTemplate:    nil,
@@ -625,11 +624,11 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 
-	// If the issue is a grant request and approved, complete it
+	// If the issue is a role grant request and approved, complete it.
 	if approved {
 		issue, err = completeAccessRequestIssue(ctx, s.store, user.Email, issue)
 		if err != nil {
-			slog.Debug("failed to complete grant request issue", log.BBError(err))
+			slog.Debug("failed to complete role grant issue", log.BBError(err))
 		}
 	}
 

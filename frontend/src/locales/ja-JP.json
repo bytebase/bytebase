@@ -1033,7 +1033,7 @@
           "description": "Filter by issue type",
           "value": {
             "database-change": "Database Change",
-            "grant-request": "Grant Request",
+            "role-grant": "Role Grant",
             "database-export": "Database Export",
             "access-grant": "Access Grant"
           }
@@ -1114,9 +1114,10 @@
     },
     "issue-name": "イシュー名",
     "access-grant": {
-      "details": "Access Grant Details"
+      "details": "Access Grant Details",
+      "expired-at": "有効期限"
     },
-    "grant-request": {
+    "role-grant": {
       "details": "リクエストの詳細",
       "expired-at": "有効期限",
       "all-databases": "すべてのデータベース",

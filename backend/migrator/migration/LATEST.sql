@@ -307,7 +307,7 @@ CREATE TABLE issue (
     plan_id bigint,
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
-    -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
+    -- type: DATABASE_CHANGE, ROLE_GRANT, DATABASE_EXPORT, ACCESS_GRANT
     -- Enum: Issue.Type (proto/store/store/issue.proto)
     type text NOT NULL,
     description text NOT NULL DEFAULT '',

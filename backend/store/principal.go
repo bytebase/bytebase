@@ -487,24 +487,24 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 		}
 	}
 
-	// 2. Update GrantRequest in Issue payload
-	// The user in GrantRequest is stored as "users/{email}" within the JSON payload.
+	// 2. Update RoleGrant in issue payload.
+	// The user in RoleGrant is stored as "users/{email}" within the JSON payload.
 	// We use text replacement for the specific path.
 	oldUserRef := common.FormatUserEmail(user.Email)
 	newUserRef := common.FormatUserEmail(newEmail)
 
-	// 'grantRequest' is the json key for grant_request field in Issue proto
+	// 'roleGrant' is the json key for role_grant field in Issue proto.
 	query = qb.Q().Space(`
 		UPDATE issue 
-		SET payload = jsonb_set(payload, '{grantRequest,user}', to_jsonb(?::text)) 
-		WHERE payload->'grantRequest'->>'user' = ?`,
+		SET payload = jsonb_set(payload, '{roleGrant,user}', to_jsonb(?::text)) 
+		WHERE payload->'roleGrant'->>'user' = ?`,
 		newUserRef, oldUserRef)
 	sqlStr, args, err = query.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build update grant request sql")
+		return nil, errors.Wrapf(err, "failed to build update role grant sql")
 	}
 	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue grant request")
+		return nil, errors.Wrapf(err, "failed to update issue role grant")
 	}
 
 	// 2b. Update Approval approvers in Issue payload
