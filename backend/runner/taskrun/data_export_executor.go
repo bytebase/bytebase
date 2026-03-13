@@ -52,7 +52,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	// Get plan to retrieve export format from spec
-	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan")
 	}

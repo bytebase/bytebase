@@ -4634,6 +4634,7 @@ Signal represents a notification payload sent via PostgreSQL NOTIFY for HA coord
 | ----- | ---- | ----- | ----------- |
 | type | [Signal.Type](#bytebase-store-Signal-Type) |  |  |
 | uid | [int32](#int32) |  |  |
+| project | [string](#string) |  |  |
 
 
 

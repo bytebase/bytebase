@@ -166,7 +166,7 @@ CREATE TABLE sheet_blob (
 
 -- plan table stores the plan for a project
 CREATE TABLE plan (
-    id bigserial PRIMARY KEY,
+    id bigserial,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
@@ -176,7 +176,8 @@ CREATE TABLE plan (
     name text NOT NULL,
     description text NOT NULL,
     -- Stored as PlanConfig (proto/store/store/plan.proto)
-    config jsonb NOT NULL DEFAULT '{}'
+    config jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, id)
 );
 
 CREATE INDEX idx_plan_project ON plan(project);
@@ -187,16 +188,19 @@ CREATE UNIQUE INDEX idx_plan_unique_resource_id ON plan(resource_id);
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
 CREATE TABLE plan_check_run (
-    id serial PRIMARY KEY,
+    id serial,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    plan_id bigint NOT NULL REFERENCES plan(id),
+    project text NOT NULL,
+    plan_id bigint NOT NULL,
     status text NOT NULL CHECK (status IN ('AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
-    result jsonb NOT NULL DEFAULT '{}'
+    result jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, id),
+    FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
 );
 
-CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(plan_id);
+CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(project, plan_id);
 
 CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status IN ('AVAILABLE', 'RUNNING');
 
@@ -206,38 +210,45 @@ ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 -- One row per plan at any time - mutually exclusive events.
 -- Row is deleted when user clicks BatchRunTasks to reset notification state.
 CREATE TABLE plan_webhook_delivery (
-    plan_id BIGINT PRIMARY KEY REFERENCES plan(id),
+    project TEXT NOT NULL,
+    plan_id BIGINT NOT NULL,
     -- Event type: 'PIPELINE_FAILED' or 'PIPELINE_COMPLETED'
     event_type TEXT NOT NULL,
-    delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (project, plan_id),
+    FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
 );
 
 -- task table stores the task for a plan
 CREATE TABLE task (
-    id serial PRIMARY KEY,
+    id serial,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    plan_id bigint NOT NULL REFERENCES plan(id),
+    project text NOT NULL REFERENCES project(resource_id),
+    plan_id bigint NOT NULL,
     instance text NOT NULL REFERENCES instance(resource_id),
     environment text,
     db_name text,
     type text NOT NULL,
     -- Stored as Task (proto/store/store/task.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, id),
+    FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
 );
 
-CREATE INDEX idx_task_plan_id_environment ON task(plan_id, environment);
+CREATE INDEX idx_task_plan_id_environment ON task(project, plan_id, environment);
 CREATE UNIQUE INDEX idx_task_unique_resource_id ON task(resource_id);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
 -- task run table stores the task run
 CREATE TABLE task_run (
-    id serial PRIMARY KEY,
+    id serial,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    task_id integer NOT NULL REFERENCES task(id),
+    project text NOT NULL,
+    task_id integer NOT NULL,
     attempt integer NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
@@ -247,13 +258,15 @@ CREATE TABLE task_run (
     result jsonb NOT NULL DEFAULT '{}',
     replica_id TEXT,
     -- Stored as TaskRunPayload (proto/store/store/task_run.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, id),
+    FOREIGN KEY (project, task_id) REFERENCES task(project, id)
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
 CREATE UNIQUE INDEX idx_task_run_unique_resource_id ON task_run(resource_id);
 
-CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run(project, task_id, attempt);
 
 -- Partial index for active task runs. Most task runs are in terminal states (DONE, FAILED, CANCELED)
 -- that never change. Queries frequently filter for active statuses (PENDING, RUNNING), so a partial
@@ -272,11 +285,13 @@ CREATE TABLE replica_heartbeat (
 );
 
 CREATE TABLE task_run_log (
-    task_run_id integer NOT NULL REFERENCES task_run(id),
+    project text NOT NULL,
+    task_run_id integer NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as TaskRunLog (proto/store/store/task_run_log.proto)
     payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (task_run_id, created_at)
+    PRIMARY KEY (project, task_run_id, created_at),
+    FOREIGN KEY (project, task_run_id) REFERENCES task_run(project, id)
 );
 
 -- Pipeline related END
@@ -289,7 +304,7 @@ CREATE TABLE issue (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
-    plan_id bigint REFERENCES plan(id),
+    plan_id bigint,
     name text NOT NULL,
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     -- type: DATABASE_CHANGE, GRANT_REQUEST, DATABASE_EXPORT
@@ -298,12 +313,13 @@ CREATE TABLE issue (
     description text NOT NULL DEFAULT '',
     -- Stored as Issue (proto/store/store/issue.proto)
     payload jsonb NOT NULL DEFAULT '{}',
-    ts_vector tsvector
+    ts_vector tsvector,
+    FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
 );
 
 CREATE INDEX idx_issue_project ON issue(project);
 
-CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(plan_id);
+CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(project, plan_id);
 
 CREATE INDEX idx_issue_creator ON issue(creator);
 

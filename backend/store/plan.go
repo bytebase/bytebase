@@ -35,9 +35,8 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
-	UID        *int64
-	ProjectID  *string
-	ProjectIDs *[]string
+	UID       *int64
+	ProjectID string
 
 	HasRollout *bool
 
@@ -49,7 +48,9 @@ type FindPlanMessage struct {
 
 // UpdatePlanMessage is the message to update a plan.
 type UpdatePlanMessage struct {
-	UID         int64
+	UID       int64
+	ProjectID string
+
 	Name        *string
 	Description *string
 	// Config replaces the entire plan config.
@@ -123,24 +124,14 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.deleted
 		FROM plan
 		LEFT JOIN issue on plan.id = issue.plan_id
-		WHERE TRUE
-	`)
+		WHERE plan.project = ?
+	`, find.ProjectID)
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
 	}
 	if v := find.UID; v != nil {
 		q.And("plan.id = ?", *v)
-	}
-	if v := find.ProjectID; v != nil {
-		q.And("plan.project = ?", *v)
-	}
-	if v := find.ProjectIDs; v != nil {
-		if len(*v) == 0 {
-			q.And("FALSE")
-		} else {
-			q.And("plan.project = ANY(?)", *v)
-		}
 	}
 	if v := find.HasRollout; v != nil {
 		if *v {
@@ -226,8 +217,8 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 		args = append(args, config)
 	}
 
-	args = append(args, patch.UID)
-	q := qb.Q().Space(fmt.Sprintf("UPDATE plan SET %s WHERE id = ? RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted", strings.Join(set, ", ")), args...)
+	args = append(args, patch.UID, patch.ProjectID)
+	q := qb.Q().Space(fmt.Sprintf("UPDATE plan SET %s WHERE id = ? AND project = ? RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted", strings.Join(set, ", ")), args...)
 
 	query, finalArgs, err := q.ToSQL()
 	if err != nil {

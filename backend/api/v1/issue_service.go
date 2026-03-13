@@ -486,7 +486,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
 
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: project.ResourceID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 		}
@@ -636,7 +636,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	// Auto-create rollout if this approval completes the approval flow
 	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
 		if issue.PlanUID != nil {
-			s.bus.RolloutCreationChan <- *issue.PlanUID
+			s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
 		}
 	}
 

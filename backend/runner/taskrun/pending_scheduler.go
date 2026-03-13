@@ -61,9 +61,7 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 		}
 	}()
 
-	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_PENDING},
-	})
+	taskRuns, err := s.store.ListTaskRunsByStatus(ctx, []storepb.TaskRun_Status{storepb.TaskRun_PENDING})
 	if err != nil {
 		return errors.Wrapf(err, "failed to list pending task runs")
 	}
@@ -84,7 +82,7 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 }
 
 func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage, sc *schedulingContext) error {
-	task, err := s.store.GetTaskByID(ctx, taskRun.TaskUID)
+	task, err := s.store.GetTaskByID(ctx, taskRun.ProjectID, taskRun.TaskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
@@ -105,8 +103,8 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	if err != nil {
 		return errors.Wrapf(err, "failed to get max parallel limit")
 	}
-	if !sc.checkParallelLimit(task.PlanID, maxParallel) {
-		s.storeParallelLimitCause(ctx, taskRun.ID)
+	if !sc.checkParallelLimit(task, maxParallel) {
+		s.storeParallelLimitCause(ctx, taskRun.ProjectID, taskRun.ID)
 		return nil
 	}
 
@@ -119,7 +117,7 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	return nil
 }
 
-func (s *Scheduler) storeParallelLimitCause(ctx context.Context, taskRunID int) {
+func (s *Scheduler) storeParallelLimitCause(ctx context.Context, projectID string, taskRunID int) {
 	payload := &storepb.TaskRunPayload{
 		SchedulerInfo: &storepb.SchedulerInfo{
 			ReportTime: timestamppb.Now(),
@@ -130,13 +128,13 @@ func (s *Scheduler) storeParallelLimitCause(ctx context.Context, taskRunID int) 
 			},
 		},
 	}
-	if err := s.store.UpdateTaskRunPayload(ctx, taskRunID, payload); err != nil {
+	if err := s.store.UpdateTaskRunPayload(ctx, projectID, taskRunID, payload); err != nil {
 		slog.Error("failed to store parallel limit cause", log.BBError(err))
 	}
 }
 
 func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskMessage) (int, error) {
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get plan")
 	}
@@ -157,14 +155,15 @@ func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskM
 
 func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
 	// Clear scheduler info by writing empty payload
-	if err := s.store.UpdateTaskRunPayload(ctx, taskRun.ID, &storepb.TaskRunPayload{}); err != nil {
+	if err := s.store.UpdateTaskRunPayload(ctx, taskRun.ProjectID, taskRun.ID, &storepb.TaskRunPayload{}); err != nil {
 		slog.Error("failed to clear scheduler info", log.BBError(err))
 	}
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
-		ID:      taskRun.ID,
-		Updater: "",
-		Status:  storepb.TaskRun_AVAILABLE,
+		ID:        taskRun.ID,
+		ProjectID: taskRun.ProjectID,
+		Updater:   "",
+		Status:    storepb.TaskRun_AVAILABLE,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to available")
 	}
@@ -177,59 +176,69 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 	return nil
 }
 
+// planKey identifies a plan by project and ID.
+type planKey struct {
+	projectID string
+	planID    int64
+}
+
 // schedulingContext holds pre-fetched and indexed active task run data for a scheduling cycle.
 type schedulingContext struct {
 	// Pre-indexed active task runs (AVAILABLE + RUNNING)
-	activeByDatabase  map[string]int // dbKey -> blocking taskID (first found)
-	activeCountByPlan map[int64]int  // planID -> active count
+	activeByDatabase  map[string]int  // dbKey -> blocking taskID (first found)
+	activeCountByPlan map[planKey]int // (project, planID) -> active count
 
 	// Tracks promotions this round
 	promotedDBs    map[string]bool
-	promotedCounts map[int64]int
+	promotedCounts map[planKey]int
 }
 
 func newSchedulingContext(ctx context.Context, s *store.Store) (*schedulingContext, error) {
-	activeTaskRuns, err := s.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_AVAILABLE, storepb.TaskRun_RUNNING},
-	})
+	activeTaskRuns, err := s.ListTaskRunsByStatus(ctx, []storepb.TaskRun_Status{storepb.TaskRun_AVAILABLE, storepb.TaskRun_RUNNING})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list active task runs")
 	}
 
 	sc := &schedulingContext{
 		activeByDatabase:  make(map[string]int),
-		activeCountByPlan: make(map[int64]int),
+		activeCountByPlan: make(map[planKey]int),
 		promotedDBs:       make(map[string]bool),
-		promotedCounts:    make(map[int64]int),
+		promotedCounts:    make(map[planKey]int),
 	}
 
 	if len(activeTaskRuns) == 0 {
 		return sc, nil
 	}
 
-	// Batch fetch all tasks
-	taskIDs := make([]int, len(activeTaskRuns))
-	for i, tr := range activeTaskRuns {
-		taskIDs[i] = tr.TaskUID
+	// Group task run task UIDs by project for correct project-scoped lookups.
+	taskIDsByProject := make(map[string][]int)
+	for _, tr := range activeTaskRuns {
+		taskIDsByProject[tr.ProjectID] = append(taskIDsByProject[tr.ProjectID], tr.TaskUID)
 	}
 
-	tasks, err := s.ListTasks(ctx, &store.TaskFind{IDs: &taskIDs})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list tasks")
+	// Batch fetch tasks per project.
+	type taskKey struct {
+		projectID string
+		id        int
 	}
-
-	taskByID := make(map[int]*store.TaskMessage, len(tasks))
-	for _, t := range tasks {
-		taskByID[t.ID] = t
+	taskByKey := make(map[taskKey]*store.TaskMessage)
+	for projectID, ids := range taskIDsByProject {
+		tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, IDs: &ids})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list tasks for project %s", projectID)
+		}
+		for _, t := range tasks {
+			taskByKey[taskKey{projectID: t.ProjectID, id: t.ID}] = t
+		}
 	}
 
 	// Build indexes
 	for _, tr := range activeTaskRuns {
-		task := taskByID[tr.TaskUID]
+		task := taskByKey[taskKey{projectID: tr.ProjectID, id: tr.TaskUID}]
 		if task == nil {
 			continue
 		}
-		sc.activeCountByPlan[task.PlanID]++
+		sc.activeCountByPlan[planKey{projectID: task.ProjectID, planID: task.PlanID}]++
 
 		if task.DatabaseName != nil && isSequentialTask(task) {
 			dbKey := getDatabaseKey(task.InstanceID, *task.DatabaseName)
@@ -262,11 +271,12 @@ func (sc *schedulingContext) checkDatabaseMutualExclusion(task *store.TaskMessag
 	return true, nil
 }
 
-func (sc *schedulingContext) checkParallelLimit(planID int64, maxParallel int) bool {
+func (sc *schedulingContext) checkParallelLimit(task *store.TaskMessage, maxParallel int) bool {
 	if maxParallel <= 0 {
 		return true // no limit
 	}
-	currentCount := sc.activeCountByPlan[planID] + sc.promotedCounts[planID]
+	pk := planKey{projectID: task.ProjectID, planID: task.PlanID}
+	currentCount := sc.activeCountByPlan[pk] + sc.promotedCounts[pk]
 	return currentCount < maxParallel
 }
 
@@ -274,5 +284,5 @@ func (sc *schedulingContext) markPromoted(task *store.TaskMessage) {
 	if task.DatabaseName != nil && isSequentialTask(task) {
 		sc.promotedDBs[getDatabaseKey(task.InstanceID, *task.DatabaseName)] = true
 	}
-	sc.promotedCounts[task.PlanID]++
+	sc.promotedCounts[planKey{projectID: task.ProjectID, planID: task.PlanID}]++
 }

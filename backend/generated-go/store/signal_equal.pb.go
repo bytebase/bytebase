@@ -16,5 +16,8 @@ func (x *Signal) Equal(y *Signal) bool {
 	if x.Uid != y.Uid {
 		return false
 	}
+	if x.Project != y.Project {
+		return false
+	}
 	return true
 }

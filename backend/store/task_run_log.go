@@ -19,13 +19,13 @@ type TaskRunLog struct {
 	Payload *storepb.TaskRunLog
 }
 
-func (s *Store) CreateTaskRunLogS(ctx context.Context, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) {
-	if err := s.CreateTaskRunLog(ctx, taskRunUID, t, replicaID, e); err != nil {
+func (s *Store) CreateTaskRunLogS(ctx context.Context, projectID string, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) {
+	if err := s.CreateTaskRunLog(ctx, projectID, taskRunUID, t, replicaID, e); err != nil {
 		slog.Error("failed to create task run log", log.BBError(err))
 	}
 }
 
-func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) error {
+func (s *Store) CreateTaskRunLog(ctx context.Context, projectID string, taskRunUID int, t time.Time, replicaID string, e *storepb.TaskRunLog) error {
 	e.ReplicaId = replicaID
 	p, err := protojson.Marshal(e)
 	if err != nil {
@@ -34,15 +34,17 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 
 	q := qb.Q().Space(`
 		INSERT INTO task_run_log (
+			project,
 			task_run_id,
 			created_at,
 			payload
 		) VALUES (
 			?,
 			?,
+			?,
 			?
 		)
-	`, taskRunUID, t, p)
+	`, projectID, taskRunUID, t, p)
 
 	sql, args, err := q.ToSQL()
 	if err != nil {
@@ -55,15 +57,15 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 	return nil
 }
 
-func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRunLog, error) {
+func (s *Store) ListTaskRunLogs(ctx context.Context, projectID string, taskRunUID int) ([]*TaskRunLog, error) {
 	q := qb.Q().Space(`
 		SELECT
 			created_at,
 			payload
 		FROM task_run_log
-		WHERE task_run_log.task_run_id = ?
+		WHERE task_run_log.project = ? AND task_run_log.task_run_id = ?
 		ORDER BY created_at
-	`, taskRunUID)
+	`, projectID, taskRunUID)
 
 	sql, args, err := q.ToSQL()
 	if err != nil {
