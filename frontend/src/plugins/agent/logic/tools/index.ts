@@ -1,5 +1,6 @@
 import type { Router } from "vue-router";
 import type { ToolDefinition, ToolExecutor } from "../types";
+import { getSkill, type GetSkillArgs } from "../skills";
 import { callApi, type CallApiArgs } from "./callApi";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createNavigateTool } from "./navigate";
@@ -152,6 +153,29 @@ Use mode="dom" before dom_action to get element indices.`,
         required: ["type", "index"],
       },
     },
+    {
+      name: "get_skill",
+      description: `Get step-by-step workflow guides for common Bytebase tasks. Load a skill before performing multi-step operations.
+
+| Mode | Parameters | Result |
+|------|------------|--------|
+| List | (none) | All available skills |
+| Load | name="query" | Step-by-step workflow guide |
+
+**Available skills:** query, database-change, grant-permission
+
+**Workflow:** get_skill() → get_skill(name="...") → follow the guide using search_api + call_api`,
+      parametersSchema: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description:
+              'Skill name to load. Omit to list all skills. Examples: "query", "database-change", "grant-permission"',
+          },
+        },
+      },
+    },
   ];
 }
 
@@ -175,6 +199,8 @@ export function createToolExecutor(router: Router): ToolExecutor {
         return pageStateTool(args as PageStateArgs);
       case "dom_action":
         return domActionTool(args as unknown as DomActionArgs);
+      case "get_skill":
+        return getSkill(args as GetSkillArgs);
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
