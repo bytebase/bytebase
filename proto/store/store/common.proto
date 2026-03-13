@@ -40,6 +40,7 @@ enum Engine {
   COSMOSDB = 23;
   TRINO = 24;
   CASSANDRA = 25;
+  MILVUS = 26;
 }
 
 // VCSType represents the type of version control system.
