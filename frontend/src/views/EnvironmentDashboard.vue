@@ -4,10 +4,10 @@
       type="line"
       :bar-width="200"
       :value="state.selectedId"
-      size="large"
+      :size="tabSize"
       justify-content="start"
       class="h-full"
-      tab-style="margin: 0 1rem; padding-left: 2rem; padding: 0 2.5rem 0.5rem 2.5rem;"
+      :tab-style="isMdOrAbove?'margin: 0 1rem; padding-left: 2rem; padding: 0 2.5rem 0.5rem 2.5rem;':''"
       @update:value="onTabChange"
     >
       <NTabPane
@@ -24,6 +24,9 @@
           @delete="doDelete"
         />
       </NTabPane>
+      <template v-if="!isMdOrAbove" #prefix>
+        <span/>
+      </template>
       <template #suffix>
         <PermissionGuardWrapper
           v-slot="slotProps"
@@ -37,7 +40,7 @@
               <template #icon>
                 <ListOrderedIcon class="h-4 w-4" />
               </template>
-              {{ t("common.reorder") }}
+              <span v-if="showToolbarLabel">{{ t("common.reorder") }}</span>
             </NButton>
             <NButton
               type="primary"
@@ -47,7 +50,7 @@
               <template #icon>
                 <PlusIcon class="h-4 w-4" />
               </template>
-              {{ t("environment.create") }}
+              <span v-if="showToolbarLabel">{{ t("environment.create") }}</span>
             </NButton>
           </div>
         </PermissionGuardWrapper>
@@ -124,6 +127,7 @@ import {
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Drawer, DrawerContent, EnvironmentV1Name } from "@/components/v2";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
+import { useWideScreen } from "@/composables/useWideScreen";
 import {
   environmentNamePrefix,
   pushNotification,
@@ -139,7 +143,7 @@ import type { Policy } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { type VueClass } from "@/utils";
+import { TailwindBreakpoints, type VueClass } from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
@@ -164,6 +168,9 @@ const uiStateStore = useUIStateStore();
 const policyV1Store = usePolicyV1Store();
 const router = useRouter();
 const environmentDetailRefs = ref<InstanceType<typeof EnvironmentDetail>[]>([]);
+const showToolbarLabel = useWideScreen(TailwindBreakpoints.sm);
+const isMdOrAbove = useWideScreen();
+const tabSize = computed(() => (isMdOrAbove.value ? "large" : "small"));
 
 const environmentList = computed(() => environmentV1Store.environmentList);
 
