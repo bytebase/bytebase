@@ -83,11 +83,14 @@ async function send() {
       controller.signal
     );
   } catch (err) {
-    if ((err as Error).name !== "AbortError") {
-      agentStore.error = (err as Error).message;
+    const error = err instanceof Error ? err : new Error(String(err));
+    // AbortError from DOMException or ConnectError with "[canceled]"
+    const isAbort =
+      error.name === "AbortError" || error.message.includes("[canceled]");
+    if (!isAbort) {
       agentStore.addMessage({
         role: "assistant",
-        content: `Error: ${(err as Error).message}`,
+        content: `Error: ${error.message}`,
       });
     }
   } finally {
