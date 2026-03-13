@@ -129,15 +129,16 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
 | Action | When to use | value param |
 |--------|-------------|-------------|
 | click  | Buttons, links, tabs, checkboxes | not needed |
-| input  | Text fields, textareas | required — the text to enter |
+| input  | Text fields, textareas, code editors | required — the text to enter |
 | select | Dropdowns | required — the option text to select |
+| read   | Get full content of an element (editor, input) | not needed |
 | scroll | Bring element into viewport | not needed |`,
       parametersSchema: {
         type: "object",
         properties: {
           type: {
             type: "string",
-            enum: ["click", "input", "select", "scroll"],
+            enum: ["click", "input", "select", "read", "scroll"],
             description: "The action to perform",
           },
           index: {

@@ -1,6 +1,6 @@
 export { extractDomTree, getElementByIndex } from "./domTree";
 
-export type DomActionType = "click" | "input" | "select" | "scroll";
+export type DomActionType = "click" | "input" | "select" | "scroll" | "read";
 
 export interface DomActionParams {
   type: DomActionType;
@@ -157,6 +157,27 @@ async function handleSelect(
   });
 }
 
+async function handleRead(el: Element): Promise<DomActionResult> {
+  // Monaco editor — read full content via API
+  const monacoEditor = await findMonacoEditor(el);
+  if (monacoEditor) {
+    return { success: true, message: monacoEditor.getValue() };
+  }
+
+  // Standard inputs
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    return { success: true, message: el.value };
+  }
+
+  const inner = findInnerInput(el);
+  if (inner) {
+    return { success: true, message: inner.value };
+  }
+
+  // Fallback: text content
+  return { success: true, message: el.textContent?.trim() ?? "" };
+}
+
 async function handleScroll(el: Element): Promise<DomActionResult> {
   el.scrollIntoView({ behavior: "smooth", block: "center" });
   return { success: true, message: "Scrolled element into view" };
@@ -173,6 +194,8 @@ export async function executeDomAction(
       return handleInput(element, params.value ?? "");
     case "select":
       return handleSelect(element, params.value ?? "");
+    case "read":
+      return handleRead(element);
     case "scroll":
       return handleScroll(element);
     default:
