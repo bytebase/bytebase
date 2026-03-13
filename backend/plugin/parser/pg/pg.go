@@ -17,33 +17,28 @@ func init() {
 
 // parsePgStatements is the ParseStatementsFunc for PostgreSQL.
 // Returns []ParsedStatement with both text and AST populated.
+// Uses omni's lexical splitter for splitting, then ANTLR for parsing each statement.
+// This preserves ANTLRAST compatibility for existing callers.
 func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
-	// Split once to get Statement with text and positions
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse using the pre-split statements to avoid double-splitting
-	parseResults, err := parsePostgreSQLStatements(stmts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
-	astIndex := 0
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
+		if stmt.Empty {
+			continue
+		}
+		ast, err := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine())
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, base.ParsedStatement{
 			Statement: stmt,
-		}
-		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = parseResults[astIndex]
-			astIndex++
-		}
-		result = append(result, ps)
+			AST:       ast,
+		})
 	}
-
 	return result, nil
 }
 
