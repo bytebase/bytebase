@@ -19,20 +19,6 @@ type apiResponse struct {
 	Headers http.Header
 }
 
-// toolError is a structured error for MCP tool failures.
-type toolError struct {
-	Code       string
-	Message    string
-	Suggestion string
-}
-
-func (e *toolError) Error() string {
-	if e.Suggestion != "" {
-		return fmt.Sprintf("%s: %s (%s)", e.Code, e.Message, e.Suggestion)
-	}
-	return fmt.Sprintf("%s: %s", e.Code, e.Message)
-}
-
 // apiRequest executes an HTTP POST to an internal Bytebase API endpoint.
 // It handles URL building, auth forwarding, Connect-RPC headers, and JSON marshaling.
 func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiResponse, error) {
