@@ -53,7 +53,7 @@
     "markdown-it": "^14.1.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@26.2.1",
     "monaco-languageclient": "10.7.0",
-    "naive-ui": "2.43.2",
+    "naive-ui": "2.44.1",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.20.2",
     "pinia": "3.0.4",
@@ -146,10 +146,5 @@
   },
   "browserslist": [
     "> 0.08%, not dead"
-  ],
-  "pnpm": {
-    "patchedDependencies": {
-      "naive-ui@2.43.2": "patches/naive-ui@2.43.2.patch"
-    }
-  }
+  ]
 }

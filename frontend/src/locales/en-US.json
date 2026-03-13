@@ -55,7 +55,7 @@
     "rejected": "Rejected",
     "under-review": "Under review",
     "approve": "Approve",
-    "done": "Done",
+    "approved": "Approved",
     "create": "Create",
     "run": "Run",
     "retry": "Retry",
@@ -955,7 +955,7 @@
       "changed-labels": "changed labels",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "reopened-issue": "reopened issue",
-      "resolved-issue": "completed the issue",
+      "resolved-issue": "approved the issue",
       "canceled-issue": "closed the issue"
     }
   },
@@ -1090,8 +1090,8 @@
     "batch-transition": {
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
       "open-cannot-reopen": "Open issues cannot be reopened",
-      "done-cannot-reopen": "Done issues cannot be reopened",
-      "done-cannot-close": "Done issues cannot be closed",
+      "done-cannot-reopen": "Approved issues cannot be reopened",
+      "done-cannot-close": "Approved issues cannot be closed",
       "canceled-cannot-close": "Canceled issues cannot be closed",
       "reopen": "Reopen",
       "reopened": "reopened",
@@ -1138,7 +1138,7 @@
     "error": {
       "statement-cannot-be-modified": "Statement cannot be modified after the issue is created"
     },
-    "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
+    "unfinished-resolved-issue-tips": "This issue is marked as \"Approved\" but some of its tasks are not executed successfully.",
     "data-export": {
       "options": "Options",
       "limits": "Limits",
