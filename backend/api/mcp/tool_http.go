@@ -68,7 +68,7 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 // parseError extracts the error message from an API error response body.
 func parseError(body json.RawMessage) string {
 	var errMap map[string]any
-	if err := json.Unmarshal(body, &errMap); err != nil {
+	if json.Unmarshal(body, &errMap) != nil {
 		return ""
 	}
 	if msg, ok := errMap["message"].(string); ok {

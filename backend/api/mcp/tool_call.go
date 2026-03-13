@@ -87,7 +87,7 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 	}
 	if len(resp.Body) > 0 {
 		var respJSON any
-		if err := json.Unmarshal(resp.Body, &respJSON); err != nil {
+		if json.Unmarshal(resp.Body, &respJSON) != nil {
 			respJSON = string(resp.Body)
 		}
 		output.Response = respJSON
