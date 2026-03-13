@@ -58,12 +58,14 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID             *int
-	ProjectID       *string
-	ProjectIDs      *[]string
-	PlanUID         *int64
-	PlanUIDs        *[]int64
-	CreatorID       *string
+	// Required field
+	ProjectIDs []string
+
+	UID       *int
+	PlanUID   *int64
+	PlanUIDs  *[]int64
+	CreatorID *string
+
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
 	Types           *[]storepb.Issue_Type
@@ -165,12 +167,12 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 		return nil, err
 	}
 
-	return s.GetIssue(ctx, &FindIssueMessage{UID: &create.UID})
+	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{create.ProjectID}, UID: &create.UID})
 }
 
 // UpdateIssue updates an issue.
-func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
-	oldIssue, err := s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
+func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
+	oldIssue, err := s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +213,7 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 		set.Comma("ts_vector = ?", tsVector)
 	}
 
-	q := qb.Q().Space("UPDATE issue SET ? WHERE id = ?", set, uid)
+	q := qb.Q().Space("UPDATE issue SET ? WHERE project = ? AND id = ?", set, projectID, uid)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -222,7 +224,7 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 		return nil, err
 	}
 
-	return s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
+	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
 }
 
 // ListIssues returns the list of issues by find query.
@@ -230,6 +232,15 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	orderByClause := "ORDER BY issue.id DESC"
 	from := qb.Q().Space("issue")
 	where := qb.Q()
+
+	if len(find.ProjectIDs) == 0 {
+		return nil, errors.Errorf("empty project filter")
+	}
+	if len(find.ProjectIDs) == 1 {
+		where.And("issue.project = ?", find.ProjectIDs[0])
+	} else {
+		where.And("issue.project = ANY(?)", find.ProjectIDs)
+	}
 
 	if v := find.UID; v != nil {
 		where.And("issue.id = ?", *v)
@@ -240,12 +251,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if v := find.PlanUIDs; v != nil {
 		where.And("issue.plan_id = ANY(?)", *v)
 	}
-	if v := find.ProjectID; v != nil {
-		where.And("issue.project = ?", *v)
-	}
-	if v := find.ProjectIDs; v != nil {
-		where.And("issue.project = ANY(?)", *v)
-	}
+
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator = ?", *v)
 	}

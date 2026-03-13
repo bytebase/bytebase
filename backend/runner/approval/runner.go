@@ -48,12 +48,12 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case issueUID := <-r.bus.ApprovalCheckChan:
+		case ref := <-r.bus.ApprovalCheckChan:
 			if err := r.licenseService.CheckReplicaLimit(ctx); err != nil {
 				slog.Warn("Approval runner skipped due to HA license restriction", log.BBError(err))
 				continue
 			}
-			r.processIssue(ctx, issueUID)
+			r.processIssue(ctx, ref)
 		case <-ctx.Done():
 			return
 		}
@@ -77,13 +77,13 @@ func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webh
 	return nil
 }
 
-func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
+func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 	// Get fresh issue from database
-	uid := int(issueUID)
-	issue, err := r.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+	uid := ref.UID
+	issue, err := r.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{ref.ProjectID}, UID: &uid})
 	if err != nil {
 		slog.Error("failed to get issue for approval check",
-			slog.Int64("issue_uid", issueUID), log.BBError(err))
+			slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID), log.BBError(err))
 		return
 	}
 	if issue == nil {
@@ -98,7 +98,7 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 
 	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
 		slog.Error("failed to find approval template",
-			slog.Int64("issue_uid", issueUID),
+			slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID),
 			slog.String("issue_title", issue.Title),
 			log.BBError(err))
 		// Don't persist error - user can rerun plan check to retry
@@ -110,10 +110,10 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 	// If approved, trigger rollout creation.
 	if issue.PlanUID != nil {
 		// Re-fetch issue to get updated approval state
-		issue, err = r.store.GetIssue(ctx, &store.FindIssueMessage{UID: &uid})
+		issue, err = r.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{ref.ProjectID}, UID: &uid})
 		if err != nil {
 			slog.Error("failed to re-fetch issue after approval finding",
-				slog.Int64("issue_uid", issueUID), log.BBError(err))
+				slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID), log.BBError(err))
 			return
 		}
 		if issue == nil {
@@ -123,7 +123,7 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 		approved, err := utils.CheckIssueApproved(issue)
 		if err != nil {
 			slog.Error("failed to check if issue is approved",
-				slog.Int64("issue_uid", issueUID), log.BBError(err))
+				slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID), log.BBError(err))
 			return
 		}
 		if approved {
@@ -209,7 +209,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 	}
 	payload.RiskLevel = riskLevel
 
-	if _, err := stores.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+	if _, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval:  payload.Approval,
 			RiskLevel: riskLevel,

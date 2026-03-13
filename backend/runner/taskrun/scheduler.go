@@ -170,7 +170,7 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 	// Deferred rollout plans are those with only exportDataConfig or createDatabaseConfig specs.
 	// These are simple single-phase operations that don't require manual resolution.
 	if isDeferredRolloutPlan(plan) {
-		s.autoResolveIssue(ctx, planID)
+		s.autoResolveIssue(ctx, ref.ProjectID, planID)
 	}
 }
 
@@ -190,8 +190,8 @@ func isDeferredRolloutPlan(plan *store.PlanMessage) bool {
 }
 
 // autoResolveIssue automatically resolves the issue associated with a plan by setting its status to DONE.
-func (s *Scheduler) autoResolveIssue(ctx context.Context, planID int64) {
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
+func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, planID int64) {
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, PlanUID: &planID})
 	if err != nil {
 		slog.Error("failed to get issue for auto-resolve", log.BBError(err))
 		return
@@ -204,9 +204,9 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, planID int64) {
 	}
 
 	newStatus := storepb.Issue_DONE
-	if _, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}); err != nil {
-		slog.Error("failed to auto-resolve issue", slog.Int("issueUID", issue.UID), log.BBError(err))
+	if _, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}); err != nil {
+		slog.Error("failed to auto-resolve issue", slog.String("project", projectID), slog.Int("issueUID", issue.UID), log.BBError(err))
 		return
 	}
-	slog.Info("auto-resolved deferred rollout issue", slog.Int("issueUID", issue.UID), slog.Int64("planID", planID))
+	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int("issueUID", issue.UID), slog.Int64("planID", planID))
 }

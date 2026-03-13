@@ -46,7 +46,7 @@ type DataExportExecutor struct {
 
 // RunOnce will run the data export task executor once.
 func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (*storepb.TaskRunResult, error) {
-	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
+	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{task.ProjectID}, PlanUID: &task.PlanID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue")
 	}

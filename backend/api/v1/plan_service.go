@@ -322,13 +322,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			planCheckRunsTrigger = true
 
 			// Evict approvals if issue exists to request re-approval.
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
+			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, PlanUID: &oldPlan.UID})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
 			if issue != nil {
 				// Reset approval finding status
-				updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+				updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 					PayloadUpsert: &storepb.Issue{
 						Approval: &storepb.IssuePayloadApproval{
 							ApprovalFindingDone: false,
@@ -345,7 +345,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
 					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
 						slog.Error("failed to find approval template after plan update",
-							slog.Int("issue_uid", updatedIssue.UID),
+							slog.String("project", updatedIssue.ProjectID), slog.Int("issue_uid", updatedIssue.UID),
 							slog.String("issue_title", updatedIssue.Title),
 							log.BBError(err))
 						// Continue anyway - non-fatal error
@@ -765,7 +765,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 		planUIDs[i] = int64(p.UID)
 	}
 
-	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{PlanUIDs: &planUIDs})
+	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{ProjectIDs: []string{plans[0].ProjectID}, PlanUIDs: &planUIDs})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list issues")
 	}
@@ -794,7 +794,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
+	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{plan.ProjectID}, PlanUID: &plan.UID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}

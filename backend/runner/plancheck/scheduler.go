@@ -168,16 +168,16 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, 
 
 	// Trigger approval finding after plan checks complete.
 	// The approval runner will trigger rollout creation after it finishes.
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planUID})
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, PlanUID: &planUID})
 	if err != nil {
 		slog.Error("failed to get issue for approval check after plan check",
-			slog.Int("plan_id", int(planUID)),
+			slog.String("project", projectID), slog.Int("plan_id", int(planUID)),
 			log.BBError(err))
 		return
 	}
 	if issue != nil && issue.PlanUID != nil {
 		// Trigger approval finding.
-		s.bus.ApprovalCheckChan <- int64(issue.UID)
+		s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: projectID, UID: issue.UID}
 	}
 }
 
