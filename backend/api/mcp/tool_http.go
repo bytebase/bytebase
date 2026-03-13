@@ -71,10 +71,10 @@ func parseError(body json.RawMessage) string {
 	if err := json.Unmarshal(body, &errMap); err != nil {
 		return ""
 	}
-	if msg, ok := errMap["message"].(string); ok {
+	if msg, _ := errMap["message"].(string); msg != "" {
 		return msg
 	}
-	if code, ok := errMap["code"].(string); ok {
+	if code, _ := errMap["code"].(string); code != "" {
 		return code
 	}
 	return ""

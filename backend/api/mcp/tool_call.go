@@ -82,17 +82,15 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 	}
 
 	// Parse JSON response
-	var respJSON any
+	output := CallOutput{
+		Status: resp.Status,
+	}
 	if len(resp.Body) > 0 {
+		var respJSON any
 		if err := json.Unmarshal(resp.Body, &respJSON); err != nil {
-			// If not valid JSON, return as string
 			respJSON = string(resp.Body)
 		}
-	}
-
-	output := CallOutput{
-		Status:   resp.Status,
-		Response: respJSON,
+		output.Response = respJSON
 	}
 
 	// Check for error response
