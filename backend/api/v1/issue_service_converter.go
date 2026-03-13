@@ -85,16 +85,16 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 	convertedRoleGrant := convertToRoleGrant(issuePayload.RoleGrant)
 
 	issueV1 := &v1pb.Issue{
-		Name:         common.FormatIssue(issue.ProjectID, issue.UID),
-		Title:        issue.Title,
-		Description:  issue.Description,
-		Type:         convertToIssueType(issue.Type),
-		Status:       convertToIssueStatus(issue.Status),
-		Creator:      common.FormatUserEmail(issue.CreatorEmail),
-		CreateTime:   timestamppb.New(issue.CreatedAt),
-		UpdateTime:   timestamppb.New(issue.UpdatedAt),
-		RoleGrant: convertedRoleGrant,
-		Labels:       issuePayload.Labels,
+		Name:        common.FormatIssue(issue.ProjectID, issue.UID),
+		Title:       issue.Title,
+		Description: issue.Description,
+		Type:        convertToIssueType(issue.Type),
+		Status:      convertToIssueStatus(issue.Status),
+		Creator:     common.FormatUserEmail(issue.CreatorEmail),
+		CreateTime:  timestamppb.New(issue.CreatedAt),
+		UpdateTime:  timestamppb.New(issue.UpdatedAt),
+		RoleGrant:   convertedRoleGrant,
+		Labels:      issuePayload.Labels,
 	}
 
 	if issuePayload.AccessGrantId != "" {
