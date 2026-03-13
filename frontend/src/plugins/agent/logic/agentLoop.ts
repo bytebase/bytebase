@@ -1,5 +1,7 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { aiServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import type {
   AIChatMessage,
   AIChatToolDefinition,
@@ -110,7 +112,10 @@ export async function runAgentLoop(
       () =>
         aiServiceClientConnect.chat(
           { messages: protoMessages, toolDefinitions: protoTools },
-          { signal }
+          {
+            signal,
+            contextValues: createContextValues().set(silentContextKey, true),
+          }
         ),
       signal
     );
