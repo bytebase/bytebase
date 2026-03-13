@@ -105,10 +105,10 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
 
 | Mode | Result |
 |------|--------|
-| semantic (default) | Route path, params, title |
+| semantic (default) | Route path, params, title + context from Pinia stores (project, database, issue, user info when available) |
 | dom | Above + indexed DOM tree of interactive elements |
 
-Use mode="dom" before dom_action to get element indices.`,
+Use mode="dom" before dom_action to get element indices. Use semantic mode (default) to understand the current page context.`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -116,7 +116,7 @@ Use mode="dom" before dom_action to get element indices.`,
             type: "string",
             enum: ["semantic", "dom"],
             description:
-              'Default "semantic" returns route info. "dom" adds an indexed tree of interactive elements for use with dom_action.',
+              'Default "semantic" returns route info + store context. "dom" adds an indexed tree of interactive elements for use with dom_action.',
           },
         },
       },

@@ -89,7 +89,7 @@ watch(
       v-if="agentStore.loading"
       class="flex items-center gap-x-2 text-sm text-gray-400"
     >
-      <span class="animate-pulse">&#9679;</span> Thinking...
+      <span class="animate-pulse">&#9679;</span> {{ $t("common.loading") }}
     </div>
   </div>
 </template>

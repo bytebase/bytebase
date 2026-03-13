@@ -89,7 +89,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
-import { AgentWindow } from "@/plugins/agent";
+import { AgentWindow, useAgentShortcut } from "@/plugins/agent";
 import { t } from "@/plugins/i18n";
 import environmentV1Routes from "@/router/dashboard/environmentV1";
 import instanceRoutes from "@/router/dashboard/instance";
@@ -190,6 +190,8 @@ onUnmounted(() => {
     clearInterval(refreshRemindTimer.value);
   }
 });
+
+useAgentShortcut();
 
 provideBodyLayoutContext({
   mainContainerRef,

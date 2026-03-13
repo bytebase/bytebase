@@ -12,6 +12,39 @@ import {
 import type { Message, ToolCall, ToolDefinition, ToolExecutor } from "./types";
 
 const MAX_ITERATIONS = 10;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
+
+async function callWithRetry<T>(
+  fn: () => Promise<T>,
+  signal?: AbortSignal
+): Promise<T> {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (signal?.aborted) {
+      throw new DOMException("Agent loop aborted", "AbortError");
+    }
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (lastError.name === "AbortError") throw lastError;
+      const msg = lastError.message.toLowerCase();
+      if (
+        msg.includes("400") ||
+        msg.includes("401") ||
+        msg.includes("403") ||
+        msg.includes("404")
+      ) {
+        throw lastError;
+      }
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError!;
+}
 
 const ROLE_MAP: Record<Message["role"], AIChatMessageRole> = {
   system: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_SYSTEM,
@@ -73,9 +106,13 @@ export async function runAgentLoop(
 
     const protoMessages = conversation.map(messageToProto);
 
-    const response = await aiServiceClientConnect.chat(
-      { messages: protoMessages, toolDefinitions: protoTools },
-      { signal }
+    const response = await callWithRetry(
+      () =>
+        aiServiceClientConnect.chat(
+          { messages: protoMessages, toolDefinitions: protoTools },
+          { signal }
+        ),
+      signal
     );
 
     if (response.toolCalls.length > 0) {

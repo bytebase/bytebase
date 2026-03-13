@@ -18,7 +18,11 @@
     "input-placeholder": "Ask anything...",
     "send": "Send",
     "args": "Args:",
-    "result": "Result:"
+    "result": "Result:",
+    "loading-skill": "Loading skill...",
+    "shortcut-hint": "Ctrl+Shift+A",
+    "retry-failed": "Request failed after retries",
+    "error-prefix": "Error"
   },
   "audit-log": {
     "export-finished": "Export finished",

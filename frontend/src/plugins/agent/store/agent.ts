@@ -17,6 +17,7 @@ export const useAgentStore = defineStore("agent", () => {
   // Conversation
   const messages = ref<Message[]>([]);
   const loading = ref(false);
+  const error = ref<string | null>(null);
   const abortController = ref<AbortController | null>(null);
 
   function toggle() {
@@ -44,6 +45,10 @@ export const useAgentStore = defineStore("agent", () => {
   function clearConversation() {
     clearMessages();
     cancel();
+  }
+
+  function clearError() {
+    error.value = null;
   }
 
   function cancel() {
@@ -100,6 +105,7 @@ export const useAgentStore = defineStore("agent", () => {
     minimized,
     messages,
     loading,
+    error,
     abortController,
     toggle,
     minimize,
@@ -107,6 +113,7 @@ export const useAgentStore = defineStore("agent", () => {
     addMessage,
     clearMessages,
     clearConversation,
+    clearError,
     cancel,
     saveWindowState,
     loadWindowState,

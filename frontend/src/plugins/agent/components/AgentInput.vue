@@ -15,6 +15,7 @@ const input = ref("");
 async function send() {
   const text = input.value.trim();
   if (!text || agentStore.loading) return;
+  agentStore.clearError();
   input.value = "";
 
   agentStore.addMessage({ role: "user", content: text });
@@ -83,6 +84,7 @@ async function send() {
     );
   } catch (err) {
     if ((err as Error).name !== "AbortError") {
+      agentStore.error = (err as Error).message;
       agentStore.addMessage({
         role: "assistant",
         content: `Error: ${(err as Error).message}`,
