@@ -108,6 +108,7 @@ for (const [pathStr, pathItem] of Object.entries(paths)) {
     service,
     method,
     summary: op.summary || "",
+    description: op.description || "",
     requestSchemaRef,
     responseSchemaRef,
   });
@@ -187,6 +188,7 @@ lines.push(
   "  service: string;",
   "  method: string;",
   "  summary: string;",
+  "  description: string;",
   "  requestSchemaRef: string;",
   "  responseSchemaRef: string;",
   "}",

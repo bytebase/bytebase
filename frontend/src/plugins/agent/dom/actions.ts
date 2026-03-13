@@ -61,6 +61,24 @@ function findInnerInput(
   );
 }
 
+async function findMonacoEditor(
+  el: Element
+): Promise<{ getValue(): string; setValue(v: string): void } | null> {
+  try {
+    const { isMonacoLoaded, getMonacoEditor } = await import(
+      "@/components/MonacoEditor/lazy-editor"
+    );
+    if (!isMonacoLoaded()) return null;
+    const monaco = await getMonacoEditor();
+    for (const editor of monaco.editor.getEditors()) {
+      if (el.contains(editor.getDomNode())) return editor;
+    }
+  } catch {
+    // Monaco not available
+  }
+  return null;
+}
+
 async function handleClick(el: Element): Promise<DomActionResult> {
   dispatchClick(el);
   return { success: true, message: `Clicked ${el.tagName.toLowerCase()}` };
@@ -70,6 +88,16 @@ async function handleInput(
   el: Element,
   value: string
 ): Promise<DomActionResult> {
+  // Monaco editor
+  const monacoEditor = await findMonacoEditor(el);
+  if (monacoEditor) {
+    monacoEditor.setValue(value);
+    return {
+      success: true,
+      message: `Set editor content (${value.length} chars)`,
+    };
+  }
+
   let target: HTMLInputElement | HTMLTextAreaElement | null = null;
 
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {

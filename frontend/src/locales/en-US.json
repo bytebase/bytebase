@@ -660,268 +660,63 @@
     },
     "general": {
       "workspace": {
-        "id": "Workspace ID",
-        "id-description": "The unique, read-only workspace id.",
-        "branding": "Branding",
-        "logo": "Logo",
-        "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
-        "select-logo": "Upload a file",
-        "drag-logo": "or drag here",
-        "logo-upload-tip": "{extension} up to {size} MiB",
-        "security": "Security",
-        "account": "Account",
-        "log": "Log",
-        "watermark": {
-          "description": "Display watermarks on pages, including username, ID and email.",
-          "enable": "Enable watermark"
-        },
-        "data-export": "Enable data export",
-        "data-copy": "Enable data copying",
-        "allow-admin-data-source": {
-          "self": "Allow querying the admin data source",
-          "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources."
-        },
-        "product-improvement": {
-          "self": "Product Improvement",
-          "participate": "Participate in improvement program",
-          "description": "Help improve Bytebase by sharing anonymous usage data"
-        },
-        "audit-log-stdout": {
-          "enable": "Enable audit logging to stdout",
-          "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
-        },
-        "enable-debug": {
-          "enable": "Enable debug level log for the backend service"
-        },
-        "disallow-signup": {
-          "enable": "Disallow self-service signup",
-          "description": "Users cannot self-service signup and can only be invited by the workspace admin."
-        },
-        "require-2fa": {
-          "enable": "Require two-factor authentication for all users",
-          "description": "Users who do not have two-factor authentication enabled for their personal accounts will be forced to configure."
-        },
-        "disallow-password-signin": {
-          "enable": "Disallow signin with email & password",
-          "description": "Users cannot sign in with email & password, only SSO is allowed.",
-          "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
-        },
-        "external-url": {
-          "self": "External URL",
-          "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
-          "managed-by-flag": "This setting is managed via the --external-url command-line flag",
-          "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
-        },
-        "access-token-duration": {
-          "self": "Access token duration",
-          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
-          "minutes": "Minute(s)",
-          "hours": "Hour(s)"
-        },
-        "refresh-token-duration": {
-          "self": "Refresh token duration",
-          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
-          "hours": "Hour(s)",
-          "days": "Day(s)"
-        },
-        "inactive-session-timeout": {
-          "self": "Inactive session timeout",
-          "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
-          "hours": "Hour(s)"
-        },
-        "maximum-role-expiration": {
-          "self": "Maximum role expiration",
-          "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner.",
-          "days": "Day(s)",
-          "never-expires": "Never expires"
-        },
+        "watermark": {},
+        "allow-admin-data-source": {},
+        "product-improvement": {},
+        "audit-log-stdout": {},
+        "enable-debug": {},
+        "disallow-signup": {},
+        "require-2fa": {},
+        "disallow-password-signin": {},
+        "external-url": {},
+        "access-token-duration": {},
+        "refresh-token-duration": {},
+        "inactive-session-timeout": {},
+        "maximum-role-expiration": {},
         "maximum-sql-result": {
-          "size": {
-            "self": "Maximum SQL result size",
-            "description": "Limit the output SQL query result size.",
-            "default": "Default limit {limit} MB"
-          },
-          "rows": {
-            "self": "Maximum SQL result rows",
-            "rows": "Rows",
-            "description": "Limit the output rows in SQL query result."
-          }
+          "size": {},
+          "rows": {}
         },
-        "no-limit": "No limit when the value <= 0",
         "query-data-policy": {
-          "timeout": {
-            "self": "Maximum query time",
-            "description": "The maximum time allowed for a query to run."
-          },
-          "seconds": "Seconds",
-          "project-scope": "project",
-          "environment-scope": "environment"
+          "timeout": {}
         },
         "domain-restriction": {
-          "self": "Workspace Domain",
-          "description": "Specify the domain that could be used as the email domain for workspace members.",
-          "domain-input-placeholder": "Please input domain, e.g. example.com",
-          "members-restriction": {
-            "self": "Members restriction",
-            "description": "Restrict sign-in to users with email addresses from the specified domains."
-          }
+          "members-restriction": {}
         },
-        "password-restriction": {
-          "self": "Password Restriction",
-          "min-length": "Minimum length for password should no less than {min} characters",
-          "require-number": "The password must contain at least one number",
-          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
-          "require-uppercase-letter": "The password must contain at least one upper case letter",
-          "require-special-character": "The password must contain at least one special character",
-          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
-          "password-rotation": "Require users reset their password every {day} days"
-        },
-        "config-updated": "Configuration is updated.",
-        "config-partly-updated": "Configuration partly updated.",
-        "failed-to-update-setting": "Failed to update setting \"{title}\"",
+        "password-restriction": {},
         "ai-assistant": {
-          "self": "AI Assistant",
-          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode",
-          "enable-ai-assistant": "Enable AI Assistant",
-          "description": "Use AI to assist the database development tasks.",
-          "provider": {
-            "self": "AI Provider",
-            "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI",
-            "gemini": "Gemini",
-            "claude": "Claude"
-          },
-          "api-key": {
-            "self": "API Key",
-            "description": "Supply API Key, read-only. {viewDoc}",
-            "find-my-key": "Find my key",
-            "placeholder": "An API Key usually starts with sk-*****"
-          },
-          "endpoint": {
-            "self": "API Endpoint",
-            "description": "Supply private deployment of API Endpoint."
-          },
-          "model": {
-            "self": "Model Name",
-            "description": "Supply private deployment of model name."
-          }
+          "provider": {},
+          "api-key": {},
+          "endpoint": {},
+          "model": {}
         },
-        "announcement": {
-          "self": "Announcement"
-        },
-        "announcement-alert-level": {
-          "description": "Level"
-        },
-        "announcement-text": {
-          "self": "Title",
-          "description": "To hide the announcement, leave it empty.",
-          "placeholder": "Input announcement title"
-        },
-        "extra-link": {
-          "self": "Link",
-          "placeholder": "Input announcement link"
-        },
+        "announcement": {},
+        "announcement-alert-level": {},
+        "announcement-text": {},
+        "extra-link": {},
         "default-landing-page": {
-          "self": "Default landing page",
-          "workspace": {
-            "self": "Workspace",
-            "description": "Use issue to request, review, rollout, and version database changes, suitable for teams with access control and CI & CD workflow."
-          },
-          "sql-editor": {
-            "self": "SQL Editor",
-            "description": "Use SQL Editor to execute database changes directly, suitable for single-person use or environments that do not require supervision."
-          },
-          "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
-          "go-to-sql-editor": "Go to SQL Editor",
-          "go-to-workspace": "Go to workspace"
+          "workspace": {},
+          "sql-editor": {}
         }
       }
     },
     "sensitive-data": {
-      "remove-sensitive-column-tips": "Expose this column?",
-      "remove-semantic-type-tips": "Remove the semantic type for this column?",
-      "remove-classification-tips": "Remove the classification for this column?",
-      "grant-access": "Grant Access",
-      "never-expires": "Never expires",
       "global-rules": {
-        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and apply the masking algorithm.",
-        "condition-order": "Condition order",
-        "re-order": "Re-order",
-        "delete-rule-tip": "Delete this rule?",
-        "error": {
-          "missing-semantic-type": "Semantic type is required",
-          "invalid-condition": "Condition is invalid"
-        }
+        "error": {}
       },
       "semantic-types": {
-        "self": "Semantic Types",
-        "label": "Columns having the same semantic type will use the same masking algorithms.",
-        "use-predefined-type": "Use Predefined Type",
-        "add-from-template": "Add from template",
-        "table": {
-          "icon": "Icon",
-          "semantic-type": "Semantic Type",
-          "description": "Description",
-          "masking-algorithm": "Masking Algorithm",
-          "delete": "Delete this semantic type?"
-        },
-        "template": {
-          "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed.",
-          "duplicate-warning": "Semantic type \"{title}\" already exists"
-        },
-        "select": "Select semantic type"
+        "table": {},
+        "template": {}
       },
       "algorithms": {
-        "add": "Add algorithm",
-        "edit": "Edit algorithm",
-        "table": {
-          "masking-type": "Masking Type"
-        },
-        "error": {
-          "substitution-required": "Substitution is required",
-          "substitution-length": "Substitution should be less than 16 bytes",
-          "salt-required": "Salt is required",
-          "slice-required": "Slice is required",
-          "slice-invalid-number": "Slice start or end is not a valid number",
-          "slice-overlap": "The slice range cannot overlap"
-        },
-        "full-mask": {
-          "self": "Full mask",
-          "substitution": "Substitution",
-          "substitution-label": "Substitution is the string used to replace the original value, the max length of the string is 16 bytes."
-        },
-        "range-mask": {
-          "self": "Range mask",
-          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution. The index starts from 0.",
-          "slice-start": "Slice start",
-          "slice-end": "Slice end",
-          "substitution": "Substitution"
-        },
-        "md5-mask": {
-          "self": "MD5 mask",
-          "salt": "Salt",
-          "salt-label": "Salt is used to generate a hash from the original value."
-        },
-        "inner-outer-mask": {
-          "self": "Inner / Outer mask",
-          "type": "Mask Type",
-          "inner-label": "Inner mask masks the interior part of a string. The prefix and suffix represent the unmasked parts of the data.",
-          "inner-mask": "Inner Mask",
-          "outer-label": "Outer mask masks the left and right ends of a string. The prefix and suffix represent the masked parts of the data.",
-          "outer-mask": "Outer Mask",
-          "prefix-length": "Prefix Length",
-          "suffix-length": "Suffix Length"
-        }
+        "table": {},
+        "error": {},
+        "full-mask": {},
+        "range-mask": {},
+        "md5-mask": {},
+        "inner-outer-mask": {}
       },
-      "classification": {
-        "upload": "Upload classification",
-        "upload-label": "You can upload classification file with JSON format.",
-        "override-title": "Classification data override",
-        "override-desc": "Existed classification data will be overridden and affect all projects.",
-        "override-confirm": "Still upload"
-      },
-      "json-format-example": "JSON format example",
-      "view-example": "View example"
+      "classification": {}
     }
   },
   "remind": {
@@ -1255,40 +1050,7 @@
       "placeholder": "Add a description"
     },
     "checks": "Checks",
-    "engine-not-supported-for-backup": "Prior backup is not supported for: {databases}",
-    "revision": {
-      "self": "Revision",
-      "filename": "Filename",
-      "import-revision": "Import Revision",
-      "select-source": "Select Source",
-      "select-release": "Select Release",
-      "select-files": "Select Files",
-      "from-release": "From Release",
-      "from-release-description": "Import database revisions from files in a release",
-      "from-local-files": "From Local Files",
-      "from-local-files-description": "Upload and import database revisions from local SQL files",
-      "select-release-description": "Select a release to import revisions from",
-      "select-files-description": "Select one or more files to create revisions",
-      "no-releases-found": "No releases found in this project",
-      "no-files-found": "No files found in this release",
-      "available-files": "Available Files",
-      "available-files-description": "Select files to import as new revisions",
-      "files-already-imported": "Already Imported",
-      "files-already-imported-description": "These files' versions already exist in the target database and cannot be imported again",
-      "upload-files": "Upload Files",
-      "upload-files-description": "Upload SQL files from your local computer to create database revisions",
-      "drag-drop-or-click": "Drag and drop files here, or click to select",
-      "supported-formats": "Supported: .sql, .txt, .md files",
-      "uploaded-files": "Uploaded Files",
-      "add-more-files": "Add More",
-      "content-preview": "Content Preview",
-      "revision-type": "Revision Type",
-      "type-versioned": "Versioned",
-      "type-declarative": "Declarative",
-      "invalid-version-format": "Version must be numeric parts separated by dots (e.g., 1.0.0)",
-      "version-already-exists": "This version already exists in the database",
-      "delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
-    }
+    "revision": {}
   },
   "database-group": {
     "create": "New database group",

@@ -11,7 +11,7 @@ import {
 } from "@/types/proto-es/v1/ai_service_pb";
 import type { Message, ToolCall, ToolDefinition, ToolExecutor } from "./types";
 
-const MAX_ITERATIONS = 10;
+const MAX_ITERATIONS = 50;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 

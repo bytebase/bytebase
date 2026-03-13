@@ -1,10 +1,7 @@
 import type { RouteLocationNormalizedLoaded } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import {
-  IssueStatus,
-  Issue_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 
 interface PageContext {
   user?: { name: string; email: string; title: string };
@@ -66,7 +63,7 @@ export async function extractRouteContext(
         ctx.database = {
           name: db.name,
           engine: db.instanceResource
-            ? Engine[db.instanceResource.engine] ?? ""
+            ? (Engine[db.instanceResource.engine] ?? "")
             : "",
           environment: db.effectiveEnvironment ?? "",
         };

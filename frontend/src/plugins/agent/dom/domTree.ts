@@ -77,6 +77,22 @@ function isVisible(el: Element): boolean {
   );
 }
 
+function isMonacoEditor(el: Element): boolean {
+  return el.classList.contains("monaco-editor");
+}
+
+function getMonacoContent(el: Element): string | undefined {
+  // Read content directly from Monaco's rendered DOM lines
+  const viewLines = el.querySelector(".view-lines");
+  if (!viewLines) return undefined;
+  const lines: string[] = [];
+  for (const line of Array.from(viewLines.querySelectorAll(".view-line"))) {
+    lines.push(line.textContent ?? "");
+  }
+  const content = lines.join("\n").trim();
+  return content || undefined;
+}
+
 function isInteractive(el: Element): boolean {
   if (INTERACTIVE_TAGS.has(el.tagName)) return true;
 
@@ -166,6 +182,27 @@ function walkDom(node: Element, depth: number, lines: string[]): void {
   if (SKIP_TAGS.has(node.tagName)) return;
   if (node.hasAttribute("data-agent-window")) return;
   if (!isVisible(node)) return;
+
+  // Monaco editor — register as a single interactive element
+  if (isMonacoEditor(node)) {
+    const index = elementRegistry.length;
+    const content = getMonacoContent(node) ?? "";
+    const preview =
+      content.length > 200 ? content.slice(0, 200) + "..." : content;
+    const label = content ? `SQL: ${preview}` : "empty editor";
+
+    elementRegistry.push({
+      index,
+      tag: "editor",
+      label,
+      value: content,
+      element: node,
+    });
+
+    const indent = "  ".repeat(depth);
+    lines.push(`${indent}[${index}]<editor>${label}</editor>`);
+    return;
+  }
 
   if (isInteractive(node)) {
     const index = elementRegistry.length;

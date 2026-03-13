@@ -62,6 +62,15 @@ const PRIMARY_CRUD_PREFIXES = [
   "Execute",
 ];
 
+// Extract short name from a schema ref.
+// "#/components/schemas/bytebase.v1.ListSettingsResponse" -> "ListSettingsResponse"
+function refBaseName(ref: string): string {
+  const parts = ref.split("/");
+  const full = parts[parts.length - 1];
+  const dotIdx = full.lastIndexOf(".");
+  return dotIdx >= 0 ? full.slice(dotIdx + 1) : full;
+}
+
 // Split camelCase/PascalCase into words.
 // "SQLService" -> ["SQL", "Service"], "ListDatabases" -> ["List", "Databases"]
 function splitCamelCase(s: string): string[] {
@@ -140,8 +149,19 @@ class OpenAPIIndex {
       }
       serviceSet.add(ep.service);
 
-      // Index keywords
-      const kws = extractKeywords(ep.service, ep.method, ep.summary);
+      // Index keywords (include schema names for discoverability)
+      const schemaTexts: string[] = [];
+      if (ep.requestSchemaRef)
+        schemaTexts.push(refBaseName(ep.requestSchemaRef));
+      if (ep.responseSchemaRef)
+        schemaTexts.push(refBaseName(ep.responseSchemaRef));
+      const kws = extractKeywords(
+        ep.service,
+        ep.method,
+        ep.summary,
+        ep.description,
+        ...schemaTexts
+      );
       for (const kw of kws) {
         const kwList = this.keywords.get(kw);
         if (kwList) {
@@ -216,6 +236,11 @@ class OpenAPIIndex {
       }
 
       if (ep.summary.toLowerCase().includes(queryLower)) {
+        scores.set(ep, (scores.get(ep) ?? 0) + 2);
+        matched = true;
+      }
+
+      if (ep.description.toLowerCase().includes(queryLower)) {
         scores.set(ep, (scores.get(ep) ?? 0) + 2);
         matched = true;
       }
