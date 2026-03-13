@@ -101,7 +101,15 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
 
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get semantic types setting"))
+	}
+
 	if err := validateCatalogSchemaNames(databaseConfig, dbMetadata.GetProto()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateCatalogSemanticTypeIDs(databaseConfig, semanticTypesSetting); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -218,6 +226,79 @@ func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storep
 		return nil
 	}
 	return errors.Errorf("schema name must not be empty for database %v", strings.TrimSuffix(config.Name, common.CatalogSuffix))
+}
+
+func validateCatalogSemanticTypeIDs(config *storepb.DatabaseConfig, setting *storepb.SemanticTypeSetting) error {
+	if config == nil {
+		return nil
+	}
+
+	validSemanticTypeIDs := make(map[string]bool)
+	for _, semanticType := range setting.GetTypes() {
+		validSemanticTypeIDs[semanticType.Id] = true
+	}
+
+	for _, schema := range config.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			if err := validateTableCatalogSemanticTypeIDs(table, validSemanticTypeIDs); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateTableCatalogSemanticTypeIDs(table *storepb.TableCatalog, validSemanticTypeIDs map[string]bool) error {
+	if table == nil {
+		return nil
+	}
+	for _, column := range table.GetColumns() {
+		if err := validateColumnCatalogSemanticTypeIDs(column, validSemanticTypeIDs); err != nil {
+			return err
+		}
+	}
+	return validateObjectSchemaSemanticTypeIDs(table.GetObjectSchema(), validSemanticTypeIDs)
+}
+
+func validateColumnCatalogSemanticTypeIDs(column *storepb.ColumnCatalog, validSemanticTypeIDs map[string]bool) error {
+	if column == nil {
+		return nil
+	}
+	if err := validateSemanticTypeID(column.SemanticType, validSemanticTypeIDs); err != nil {
+		return errors.Wrapf(err, "invalid semantic type for column %q", column.Name)
+	}
+	if err := validateObjectSchemaSemanticTypeIDs(column.GetObjectSchema(), validSemanticTypeIDs); err != nil {
+		return errors.Wrapf(err, "invalid object schema for column %q", column.Name)
+	}
+	return nil
+}
+
+func validateObjectSchemaSemanticTypeIDs(objectSchema *storepb.ObjectSchema, validSemanticTypeIDs map[string]bool) error {
+	if objectSchema == nil {
+		return nil
+	}
+	if err := validateSemanticTypeID(objectSchema.SemanticType, validSemanticTypeIDs); err != nil {
+		return err
+	}
+	for name, property := range objectSchema.GetStructKind().GetProperties() {
+		if err := validateObjectSchemaSemanticTypeIDs(property, validSemanticTypeIDs); err != nil {
+			return errors.Wrapf(err, "invalid semantic type for object property %q", name)
+		}
+	}
+	if err := validateObjectSchemaSemanticTypeIDs(objectSchema.GetArrayKind().GetKind(), validSemanticTypeIDs); err != nil {
+		return errors.Wrap(err, "invalid semantic type for array element")
+	}
+	return nil
+}
+
+func validateSemanticTypeID(semanticTypeID string, validSemanticTypeIDs map[string]bool) error {
+	if semanticTypeID == "" {
+		return nil
+	}
+	if validSemanticTypeIDs[semanticTypeID] {
+		return nil
+	}
+	return errors.Errorf("semantic type id %q not found", semanticTypeID)
 }
 
 func hasEmptySchemaName[T interface{ GetName() string }](schemas []T) bool {
