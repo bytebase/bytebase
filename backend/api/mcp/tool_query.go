@@ -149,9 +149,26 @@ type dataSource struct {
 	Type string `json:"type"`
 }
 
+// buildDatabaseFilter builds a CEL filter expression for ListDatabases.
+func buildDatabaseFilter(input QueryInput) string {
+	// name.matches does substring matching server-side.
+	filter := fmt.Sprintf("name.matches(%q)", input.Database)
+	if input.Instance != "" {
+		filter += fmt.Sprintf(" && instance == %q", "instances/"+input.Instance)
+	}
+	if input.Project != "" {
+		filter += fmt.Sprintf(" && project == %q", "projects/"+input.Project)
+	}
+	return filter
+}
+
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
 func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
-	body := map[string]any{"parent": "workspaces/-"}
+	body := map[string]any{
+		"parent":   "workspaces/-",
+		"filter":   buildDatabaseFilter(input),
+		"pageSize": 1000,
+	}
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list databases")
@@ -165,16 +182,17 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 		return nil, errors.Wrap(err, "failed to parse database list")
 	}
 
-	// Filter by instance/project if provided.
-	filtered := filterByConstraints(listResp.Databases, input.Instance, input.Project)
+	// Server-side filter already narrows by name substring and instance/project.
+	// Apply client-side tiered matching to pick the best result.
+	databases := listResp.Databases
 
 	// Tiered matching: exact -> case-insensitive exact -> substring.
-	matches := matchExact(filtered, input.Database)
+	matches := matchExact(databases, input.Database)
 	if len(matches) == 0 {
-		matches = matchCaseInsensitive(filtered, input.Database)
+		matches = matchCaseInsensitive(databases, input.Database)
 	}
 	if len(matches) == 0 {
-		matches = matchSubstring(filtered, input.Database)
+		matches = matchSubstring(databases, input.Database)
 	}
 
 	if len(matches) == 0 {
@@ -204,37 +222,12 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 
 	// Single match.
 	db := matches[0]
-	dsID := selectDataSource(db.InstanceResource.DataSources)
 	return &resolvedDatabase{
 		resourceName: db.Name,
-		dataSourceID: dsID,
+		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
 	}, nil
 }
 
-// filterByConstraints filters databases by optional instance and project constraints.
-func filterByConstraints(databases []databaseEntry, instance, project string) []databaseEntry {
-	if instance == "" && project == "" {
-		return databases
-	}
-
-	result := make([]databaseEntry, 0, len(databases))
-	for _, db := range databases {
-		if instance != "" {
-			instanceShort := extractShortName(db.InstanceResource.Name)
-			if !strings.EqualFold(instanceShort, instance) {
-				continue
-			}
-		}
-		if project != "" {
-			projectShort := extractShortName(db.Project)
-			if !strings.EqualFold(projectShort, project) {
-				continue
-			}
-		}
-		result = append(result, db)
-	}
-	return result
-}
 
 // matchExact returns databases whose short name exactly matches the input.
 func matchExact(databases []databaseEntry, name string) []databaseEntry {

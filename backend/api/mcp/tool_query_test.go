@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -43,13 +44,76 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 }
 
 // mockListDatabases returns an HTTP handler that serves a ListDatabases response.
+// It applies basic filter awareness: if the request contains a "filter" field with
+// an instance constraint, only matching databases are returned.
 func mockListDatabases(databases []map[string]any) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		resp := map[string]any{"databases": databases}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var reqBody struct {
+			Filter string `json:"filter"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&reqBody)
+
+		result := databases
+		if reqBody.Filter != "" {
+			result = applyMockFilter(databases, reqBody.Filter)
+		}
+
+		resp := map[string]any{"databases": result}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resp)
 	})
+}
+
+// applyMockFilter applies a simplified filter to mock databases.
+// Supports: name.matches("x"), instance == "instances/x", project == "projects/x"
+func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
+	var result []map[string]any
+	for _, db := range databases {
+		name, _ := db["name"].(string)
+		ir, _ := db["instanceResource"].(map[string]any)
+		instanceName, _ := ir["name"].(string)
+		project, _ := db["project"].(string)
+
+		match := true
+		// Check name.matches("x") — substring match
+		if idx := strings.Index(filter, `name.matches(`); idx >= 0 {
+			start := idx + len(`name.matches("`)
+			end := strings.Index(filter[start:], `"`)
+			if end > 0 {
+				substr := filter[start : start+end]
+				if !strings.Contains(strings.ToLower(name), strings.ToLower(substr)) {
+					match = false
+				}
+			}
+		}
+		// Check instance == "instances/x"
+		if idx := strings.Index(filter, `instance == "`); idx >= 0 {
+			start := idx + len(`instance == "`)
+			end := strings.Index(filter[start:], `"`)
+			if end > 0 {
+				expected := filter[start : start+end]
+				if instanceName != expected {
+					match = false
+				}
+			}
+		}
+		// Check project == "projects/x"
+		if idx := strings.Index(filter, `project == "`); idx >= 0 {
+			start := idx + len(`project == "`)
+			end := strings.Index(filter[start:], `"`)
+			if end > 0 {
+				expected := filter[start : start+end]
+				if project != expected {
+					match = false
+				}
+			}
+		}
+		if match {
+			result = append(result, db)
+		}
+	}
+	return result
 }
 
 func TestQueryDatabase_SingleMatch(t *testing.T) {
@@ -180,6 +244,7 @@ func TestQueryDatabase_AdminFallback(t *testing.T) {
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "ds-admin-1", resolved.dataSourceID)
 }
+
 
 func TestQueryDatabase_FormatAmbiguousResult(t *testing.T) {
 	candidates := []Candidate{
