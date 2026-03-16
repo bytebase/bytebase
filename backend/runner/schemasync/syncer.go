@@ -366,17 +366,17 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 }
 
 // doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.
-func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryID int64, retErr error) {
+func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryResourceID string, retErr error) {
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 	}
 	if instance == nil {
-		return 0, errors.Errorf("instance %q not found", database.InstanceID)
+		return "", errors.Errorf("instance %q not found", database.InstanceID)
 	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer driver.Close(ctx)
 	// Sync database schema
@@ -384,11 +384,11 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	defer cancelFunc()
 	syncedDatabaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
 	var schemaBuf bytes.Buffer
 	if err := driver.Dump(deadlineCtx, &schemaBuf, syncedDatabaseMetadata); err != nil {
-		return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 	}
 	rawDump := schemaBuf.Bytes()
 
@@ -397,7 +397,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
 	// If the schema does not exist, then we create a new one.
 	// This happens when creating a new database in the test.
@@ -424,7 +424,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		Deleted:         proto.Bool(false),
 		MetadataUpdates: metadataUpdates,
 	}); err != nil {
-		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+		return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
 	if err := s.store.UpsertDBSchema(ctx,
@@ -436,28 +436,28 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 			}
 		}
-		return 0, errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
+		return "", errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 	}
 
 	// Create sync history if requested
 	if createSyncHistory {
-		id, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, syncedDatabaseMetadata, string(rawDump))
+		resourceID, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, syncedDatabaseMetadata, string(rawDump))
 		if err != nil {
 			if strings.Contains(err.Error(), "escape sequence") {
 				if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {
 					slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 				}
 			}
-			return 0, errors.Wrapf(err, "failed to insert sync history for database %q", database.DatabaseName)
+			return "", errors.Wrapf(err, "failed to insert sync history for database %q", database.DatabaseName)
 		}
-		return id, nil
+		return resourceID, nil
 	}
 
-	return 0, nil
+	return "", nil
 }
 
 // SyncDatabaseSchemaToHistory will sync the schema for a database and create a sync history record.
-func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (int64, error) {
+func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (string, error) {
 	return s.doSyncDatabaseSchema(ctx, database, true)
 }
 

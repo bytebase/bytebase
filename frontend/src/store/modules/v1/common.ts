@@ -159,8 +159,11 @@ export const getProjectIdPlanUidStageUidTaskUidFromRolloutName = (
 };
 
 export const getWorksheetId = (name: string): string => {
-  const tokens = getNameParentTokens(name, [worksheetNamePrefix]);
-  return tokens[0];
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    worksheetNamePrefix,
+  ]);
+  return tokens[1] || "";
 };
 
 export const getInstanceId = (name: string): string[] => {

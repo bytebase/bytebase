@@ -11064,6 +11064,7 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where this worksheet will be created. Format: projects/{project} |
 | worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to create. |
 
 
@@ -11079,7 +11080,7 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the worksheet to delete. Format: worksheets/{worksheet} |
+| name | [string](#string) |  | The name of the worksheet to delete. Format: projects/{project}/worksheets/{worksheet} |
 
 
 
@@ -11094,7 +11095,7 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the worksheet to retrieve. Format: worksheets/{worksheet} |
+| name | [string](#string) |  | The name of the worksheet to retrieve. Format: projects/{project}/worksheets/{worksheet} |
 
 
 
@@ -11109,11 +11110,12 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource of the worksheets. Format: projects/{project} |
 | filter | [string](#string) |  | To filter the search result. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+Supported filter: - creator: the worksheet creator in &#34;users/{email}&#34; format, support &#34;==&#34; and &#34;!=&#34; operator. - starred: should be &#34;true&#34; or &#34;false&#34;, filter starred/unstarred sheets, support &#34;==&#34; operator. - visibility: check Visibility enum in the Worksheet message for values, support &#34;==&#34; and &#34;in [xx]&#34; operator.
 
-For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; project == &#34;projects/{project resource id}&#34; |
+For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#34; starred == true starred == false visibility in [&#34;PRIVATE&#34;, &#34;PROJECT_READ&#34;, &#34;PROJECT_WRITE&#34;] visibility == &#34;PRIVATE&#34; |
 
 
 
@@ -11145,7 +11147,7 @@ For example: creator == &#34;users/{email}&#34; creator != &#34;users/{email}&#3
 | ----- | ---- | ----- | ----------- |
 | organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer to update.
 
-The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: worksheets/{worksheet} |
+The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: projects/{project}/worksheets/{worksheet} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` |
 | allow_missing | [bool](#bool) |  | If set to true, and the worksheet organizer is not found, a new worksheet organizer will be created. In this situation, `update_mask` is ignored. |
 
@@ -11164,7 +11166,7 @@ The organizer&#39;s `worksheet` field is used to identify the worksheet. Format:
 | ----- | ---- | ----- | ----------- |
 | worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to update.
 
-The worksheet&#39;s `name` field is used to identify the worksheet to update. Format: worksheets/{worksheet} |
+The worksheet&#39;s `name` field is used to identify the worksheet to update. Format: projects/{project}/worksheets/{worksheet} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet. (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
 
 
@@ -11180,7 +11182,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the worksheet resource, generated by the server. Canonical parent is project. Format: worksheets/{worksheet} |
+| name | [string](#string) |  | The name of the worksheet resource, generated by the server. Canonical parent is project. Format: projects/{project}/worksheets/{worksheet} |
 | project | [string](#string) |  | The project resource name. Format: projects/{project} |
 | database | [string](#string) |  | The database resource name. Format: instances/{instance}/databases/{database} If the database parent doesn&#39;t exist, the database field is empty. |
 | title | [string](#string) |  | The title of the worksheet. |
@@ -11206,7 +11208,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| worksheet | [string](#string) |  | The name of the worksheet. Format: worksheets/{worksheet} |
+| worksheet | [string](#string) |  | The name of the worksheet. Format: projects/{project}/worksheets/{worksheet} |
 | starred | [bool](#bool) |  | starred means if the worksheet is starred. |
 | folders | [string](#string) | repeated |  |
 

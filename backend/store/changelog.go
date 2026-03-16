@@ -27,8 +27,8 @@ type ChangelogMessage struct {
 	DatabaseName string
 	Payload      *storepb.ChangelogPayload
 
-	SyncHistoryUID *int64
-	Status         ChangelogStatus
+	SyncHistory *string
+	Status      ChangelogStatus
 
 	// output only
 	ResourceID string
@@ -39,8 +39,8 @@ type ChangelogMessage struct {
 }
 
 type FindChangelogMessage struct {
+	InstanceID   string
 	ResourceID   *string
-	InstanceID   *string
 	DatabaseName *string
 
 	Status          *ChangelogStatus
@@ -58,9 +58,9 @@ type FindChangelogMessage struct {
 type UpdateChangelogMessage struct {
 	ResourceID string
 
-	SyncHistoryUID *int64
-	Status         *ChangelogStatus
-	DumpVersion    *int32
+	SyncHistory *string
+	Status      *ChangelogStatus
+	DumpVersion *int32
 }
 
 func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (string, error) {
@@ -74,7 +74,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 			instance,
 			db_name,
 			status,
-			sync_history_id,
+			sync_history,
 			payload
 		) VALUES (
 		 	?,
@@ -84,7 +84,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 			?
 		)
 		RETURNING resource_id
-	`, create.InstanceID, create.DatabaseName, create.Status, create.SyncHistoryUID, p)
+	`, create.InstanceID, create.DatabaseName, create.Status, create.SyncHistory, p)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -101,8 +101,8 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 
 func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMessage) error {
 	set := qb.Q()
-	if v := update.SyncHistoryUID; v != nil {
-		set.Comma("sync_history_id = ?", *v)
+	if v := update.SyncHistory; v != nil {
+		set.Comma("sync_history = ?", *v)
 	}
 	if v := update.Status; v != nil {
 		set.Comma("status = ?", *v)
@@ -143,26 +143,23 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.instance,
 			changelog.db_name,
 			changelog.status,
-			changelog.sync_history_id,
-			` + schemaExpr + `,
+			changelog.sync_history,
+			`+schemaExpr+`,
 			changelog.payload,
 			COALESCE(plan.name, '')
 		FROM changelog
-		LEFT JOIN sync_history sh_cur ON sh_cur.id = changelog.sync_history_id
+		LEFT JOIN sync_history sh_cur ON sh_cur.resource_id = changelog.sync_history
 		LEFT JOIN LATERAL (
 			SELECT task.plan_id
 			FROM task
 			WHERE task.id = (regexp_match(changelog.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
 		) task_info ON TRUE
 		LEFT JOIN plan ON plan.id = task_info.plan_id
-		WHERE TRUE
-	`)
+		WHERE changelog.instance = ?
+	`, find.InstanceID)
 
 	if v := find.ResourceID; v != nil {
 		q.And("changelog.resource_id = ?", *v)
-	}
-	if v := find.InstanceID; v != nil {
-		q.And("changelog.instance = ?", *v)
 	}
 	if v := find.DatabaseName; v != nil {
 		q.And("changelog.db_name = ?", *v)
@@ -171,7 +168,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		q.And("changelog.status = ?", string(*v))
 	}
 	if find.HasSyncHistory {
-		q.And("changelog.sync_history_id IS NOT NULL")
+		q.And("changelog.sync_history IS NOT NULL")
 	}
 	if v := find.CreatedAtBefore; v != nil {
 		q.And("changelog.created_at <= ?", *v)
@@ -212,7 +209,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			&c.InstanceID,
 			&c.DatabaseName,
 			&c.Status,
-			&c.SyncHistoryUID,
+			&c.SyncHistory,
 			&c.Schema,
 			&payload,
 			&c.PlanTitle,

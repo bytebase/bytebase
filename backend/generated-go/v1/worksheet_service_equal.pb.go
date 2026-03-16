@@ -15,6 +15,9 @@ func (x *CreateWorksheetRequest) Equal(y *CreateWorksheetRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Parent != y.Parent {
+		return false
+	}
 	if !x.Worksheet.Equal(y.Worksheet) {
 		return false
 	}
@@ -156,6 +159,9 @@ func (x *SearchWorksheetsRequest) Equal(y *SearchWorksheetsRequest) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
 	}
 	if x.Filter != y.Filter {
 		return false

@@ -202,7 +202,7 @@ const prepareSheet = async () => {
   }
 
   await maybeSwitchProject(`projects/${projectId}`);
-  return await switchWorksheet(`worksheets/${sheetId}`);
+  return await switchWorksheet(`projects/${projectId}/worksheets/${sheetId}`);
 };
 
 const prepareConnectionParams = async () => {
