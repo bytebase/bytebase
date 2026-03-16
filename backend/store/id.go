@@ -3,8 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
+	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/pkg/errors"
 )
 
@@ -22,8 +22,17 @@ func nextProjectID(ctx context.Context, tx *sql.Tx, table, projectID string) (in
 		return 0, errors.Wrapf(err, "failed to lock project %s", projectID)
 	}
 	var maxID int64
-	query := fmt.Sprintf("SELECT COALESCE(MAX(id), 0) FROM %s WHERE project = $1", table)
-	if err := tx.QueryRowContext(ctx, query, projectID).Scan(&maxID); err != nil {
+
+	q := qb.Q()
+	q.Space(`
+		SELECT COALESCE(MAX(id), 0) FROM ? WHERE project = ?
+	`, qb.Q().Space(table), projectID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to build sql")
+	}
+
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&maxID); err != nil {
 		return 0, errors.Wrapf(err, "failed to get max id for %s", table)
 	}
 	nextID := maxID + 1
